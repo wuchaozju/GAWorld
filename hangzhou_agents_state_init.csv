@@ -1,4 +1,4 @@
-﻿id,name,gender,age,hukou,residence,emotion,stress,econ_security,city_identity,policy_sensitivity,platform_dependence,risk_preference,voice_propensity,mobility_intent
+id,name,gender,age,hukou,residence,emotion,stress,econ_security,city_identity,policy_sensitivity,platform_dependence,risk_preference,voice_propensity,mobility_intent
 1,李泽宇,男,24,外省,余杭·未来科技城,0.58,0.62,0.5,0.48,0.45,0.55,0.4,0.2,0.6
 2,周婉清,女,26,外省,滨江·白马湖,0.62,0.6,0.55,0.6,0.6,0.45,0.45,0.55,0.55
 3,陈一航,男,22,省内,钱塘·下沙高校,0.55,0.62,0.4,0.5,0.5,0.3,0.5,0.35,0.65
@@ -50,3 +50,4 @@
 49,罗俊杰,男,31,外省,拱墅·居住区,0.58,0.65,0.55,0.55,0.65,0.45,0.4,0.35,0.5
 50,许知夏,女,27,本地,西湖·居住区,0.62,0.6,0.55,0.72,0.8,0.35,0.6,0.65,0.45
 51,内田有纪,女,18,外国,商城·青年公寓,0.83,0.8,0.7,0.6,0.6,0.54,0.2,0.75,0.55
+52,郭林峰,男,25,外省,西湖·浙大校区,0.72,0.58,0.55,0.68,0.70,0.30,0.55,0.50,0.30

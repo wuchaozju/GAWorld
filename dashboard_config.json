@@ -10,7 +10,8 @@
   "sim_days": 1,
   "seconds_per_day": 10,
   "agent_ids": [
-    5
+    5,
+    52
   ],
   "simulate_realtime": false,
   "time_step_minutes": null
