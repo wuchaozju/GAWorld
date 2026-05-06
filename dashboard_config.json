@@ -5,13 +5,29 @@
       "tasks": {
         "schedule": "minimax"
       }
+    },
+    "providers": {
+      "minimax": {
+        "type": "anthropic",
+        "base_url": "https://api.minimaxi.com/anthropic",
+        "model": "MiniMax-M2.7",
+        "api_key_env": "MINIMAX_API_KEY",
+        "api_key_envs": ["MINIMAX_API_KEY"],
+        "authorization_scheme": "bearer",
+        "authorization_retry_schemes": ["raw"],
+        "include_x_api_key": false,
+        "timeout": 120,
+        "max_tokens": 512
+      }
     }
   },
-  "sim_days": 1,
+  "sim_days": 3,
   "seconds_per_day": 10,
-  "agent_ids": [
-    5
-  ],
+  "agent_ids": [52, 6, 15, 33, 38],
   "simulate_realtime": false,
-  "time_step_minutes": null
+  "time_step_minutes": null,
+  "concurrency": {
+    "enabled": false,
+    "day_routine_workers": 1
+  }
 }
