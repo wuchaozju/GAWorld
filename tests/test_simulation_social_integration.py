@@ -59,6 +59,19 @@ class TestIntegration(unittest.TestCase):
                   if isinstance(v, dict) and v.get("kind") == "ghost"]
         self.assertGreater(len(ghosts), 0)
 
+    def test_relationship_phase_keeps_continuous_emotion(self):
+        agent = self._make_agent()
+        agent["current_day"] = 3
+        agent["state"]["emotion"] = 0.52
+        agent["state"]["emotion_state"] = 1
+        agent["relationships"]["12"]["closeness"] = 0.72
+        rec = human_realism.relationship_update(agent, 12, "negative", {})
+        self.assertEqual(rec["phase"], 2)
+        self.assertEqual(rec["last_interaction_day"], 3)
+        self.assertEqual(rec["last_contact_day"], 3)
+        self.assertEqual(agent["state"]["emotion"], 0.52)
+        self.assertIn(agent["state"]["emotion_state"], {2, 3})
+
     def test_decay_runs_on_mixed_in_sim_and_ghost(self):
         agent = self._make_agent()
         sn.bootstrap_social_roster(agent, None, current_day=0)
