@@ -25,8 +25,8 @@
       title: "教程 v2（完整手册）",
       en: "Tutorial v2",
       group: "快速上手",
-      summary: "最全的一本：长时段快进、对照实验、群体模拟、外部系统、分析导出全都在里面。",
-      tags: ["手册", "快进", "fast-forward", "对照", "analytics"],
+      summary: "最全的一本：长时段快进与月/年尺度长跑、对照实验、群体模拟、外部系统、分析导出全都在里面。",
+      tags: ["手册", "快进", "fast-forward", "月", "年", "长跑", "对照", "analytics"],
     },
     {
       id: "readme",

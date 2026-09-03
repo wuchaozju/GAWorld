@@ -8,7 +8,8 @@
 | 功能特性 | 作用 | 访问方法 |
 |---|---|---|
 | 运行仿真 | 让一批智能体按天循环"生活"，产出日志、记忆、状态、经济等全部产物 | `python generative_city_sim.py run` |
-| 长时段快进 | 把每天压缩成每个智能体一条日简报（每 agent 每天 1 次 LLM 调用），跳过日内时刻循环，实现"快进+近似"，适合 60/600 天长期模拟；状态/目标/关系仍近似推进 | `python generative_city_sim.py run --sim-days 600 --fast-forward`；Dashboard 工具栏勾选「长时段快进」 |
+| 长时段快进 | 把一步压缩成每个智能体一条简报（每 agent 每步 1 次 LLM 调用），跳过日内时刻循环，实现"快进+近似"，适合 60/600 天长期模拟；状态/目标/关系仍近似推进 | `python generative_city_sim.py run --sim-days 600 --fast-forward`；Dashboard 工具栏勾选「长时段快进」 |
+| 大跨度模拟（以月 / 年为单位） | 一步 = 一个日历月或一年，压缩成每人一条「阶段简报」（含 2–4 条里程碑），让数年到数十年的模拟跑得起（10 年 × 50 人：按年 500 次调用 vs 按天 18.25 万次）；仿真日历仍按天推进，经济等日边界钩子按 ≤30 天区块补跑 | `python generative_city_sim.py run --sim-years 10` / `--sim-months 24` / `--time-unit month`；`CONFIG["long_run"]["unit"]`；Dashboard 工具栏「步长单位」下拉 + 随之变成「仿真月数 / 仿真年数」的时长字段 |
 | 重置 | 清除有状态产物，从 Day 1 重新开始（改记忆 schema 后必做） | `python generative_city_sim.py reset` |
 | 智能体采访 | 基于某 agent 当前记忆与状态向其提问 | `python generative_city_sim.py interview --agent-id 31 --question "..."` / `--questions-file q.txt` |
 | 从社交内容创建智能体 | 用社媒页面或文本生成新 agent 画像 | `python generative_city_sim.py create-agent-from-social --url "..."` / `--file ... --name "..."` |
@@ -47,7 +48,8 @@ Dashboard 讨论与合作会话支持暂停、继续和终止。服务重启时�
 | 兴趣爱好与技能成长 | 为每个 agent 派生成长画像并动态演化（幂律学习、里程碑、遗忘衰减、发展四阶段、社交兴趣传染），影响日程、动作权重与工作选择 | `CONFIG["interests"]["enabled"]`（日终机制见 `interests.decay` / `interests.evolution`）；产物 `output/memory/agent_<id>_growth.json` |
 | 社交网络 | 关系衰减、Dunbar 分层、off-screen ghost 事件 | 自动运行；`gaworld/social/network.py`；产物 `output/network/` |
 | 家庭与户 | 按年龄段 × 性别抽样婚姻状态（未婚/已婚/离异/丧偶），匹配得上的居民在仿真内配成夫妻并**共享同一个住处**，配不上的补场外家人；子女、同住长辈、合租室友随之生成。家庭进入日程（接送、陪写作业、照料老人、回家吃晚饭）、账本（育儿与赡养开销按收入分摊、伴侣互相补现金缺口，全程守恒）、事件（同一件事同一 tick 落到全家人身上）与户内情绪传染 | `CONFIG["family"]`（配置面板「家庭与户」分区）；产物 `output/records/family.*.jsonl`；详见 [家庭系统设计](FAMILY_DESIGN.md) |
-| 生命事件 | 生日、疾病、换工作等调度事件 | 自动运行；`gaworld/events/life.py` |
+| 生命事件 | 生日、疾病、关系破裂等调度事件 | 自动运行；`gaworld/events/life.py` |
+| 就业事件（换工作 / 失业） | 「换工作」「失业」两个模板会**真的改写 `agent["job"]` 与收入**，不只是感知文本：换工作按新岗位的收入带重抽时薪（可在面板指定「新职业」，留空则自动跨行业转岗）；失业沿用裁员冲击的形状——大幅砍收入 + 30–90 天恢复倒计时，并把职业改成待业、记下 `previous_job`，倒计时结束后按原岗位收入带的 85–100% 复职（留疤）。日程也跟着换成「办理入职交接 / 熟悉新工作」「办理离职交接 / 求职投递」——**求职不发工资**（活动名刻意避开 `INCOME_KEYWORDS` 命中的「工作」二字） | 面板「人生事件」选模板 + 可选「新职业」；`gaworld/economy/finance.py:apply_employment_event`；日志 `[JobChange Day N ...] 旧职业 → 新职业（时薪 a → b）`，同时写进 `economy.shock_log` |
 | 政策 / 环境事件 | 政策冲击与环境扰动注入仿真 | `CONFIG["policy_events"]`；`gaworld/env/system.py`；产物 `output/environment/timeline.jsonl` |
 | PolicySim 干预评估 | 本地无网络评估推荐 / 曝光，记录立场 / 毒性 / 误信息 / 跨观点 / 奖励指标 | `CONFIG["intervention"]["enabled"]`；产物 `output/intervention/intervention_metrics.csv` |
 
@@ -62,7 +64,12 @@ Dashboard 讨论与合作会话支持暂停、继续和终止。服务重启时�
 | 可复用 Skill 库 | 全局 / 私有 Markdown 技能，注入认知与工作 brief 影响行为 | `CONFIG["skills"]`；全局库 `data/skills/*.md`；`SkillRegistry().attach_to_agent(agent, "id")` |
 | 经验 → Skill 自动提炼 | agent 从最近经历自总结私有技能 | `CONFIG["memory"]["skill_consolidation"]["enabled"]`（默认 OFF）；产物 `output/memory/agent_<id>_skills/*.md` |
 | 真实工作任务系统 | agent 按职业 / 技能产出真实产物（HTML / Python / 文章 / 教案 / 研究笔记）并接单结算 | `CONFIG["real_work"]["enabled"]`；产物 `output/work/agent_<id>/<task_id>/` |
-| 长时段快进（fast-forward） | 每天压缩成每个智能体一条日简报、跳过日内时刻循环，让 60/600 天长期模拟可行；状态/目标/关系仍近似推进，输出为每天一个 `Day N 简报` | `CONFIG["long_run"]["enabled"]`（或 `run --fast-forward`）；`long_run.randomness`(0–1) 越高突发事件越频繁、波动越大；Dashboard 工具栏勾选「长时段快进」+「随机性」滑杆 |
+| 长时段快进（fast-forward） | 一步压缩成每个智能体一条简报、跳过日内时刻循环，让 60/600 天长期模拟可行；状态/目标/关系仍近似推进，输出为每步一个 `Day N` / `Month N` / `Year N 简报` | `CONFIG["long_run"]["enabled"]`（或 `run --fast-forward`）；`long_run.randomness`(0–1) 越高突发事件越频繁、波动越大；Dashboard 工具栏勾选「长时段快进」+「随机性」滑杆 |
+| 大跨度的社交影响 | 粗粒度下关系有**走向**而不只是一次互动：简报报告这段时间亲密度的净增量（单步上限 0.25，信任按半速跟随），**正增量算有来往会重置衰减计时、负增量刻意不重置**（疏远就是没来往）。可以结识新的人——但只能从运行中真实存在且尚未认识的居民里选。换工作时同事自动转为前同事，衰减率从 0.006 切到 0.015（`SOCIAL_NETWORK_DESIGN.md` §6 里等了很久的"外部触发"） | 自动随 `long_run.unit` 生效；日志 `[Social Year N] #id 0.72→0.85；+#7(coworker)` |
+| 大跨度的个体发展 | 粗粒度下**技能会长、人会变老**。简报报告这段时间在成长档案各项上的平均每周投入（`development`），由 `growth.step` 按经过的周数重放已有的幂律学习曲线；年龄按累计天数推进，满 365 天涨一岁。修掉了两个洞：快进下练习进度挂在 tick 事件上从不触发（于是技能**只衰减不成长**，一年 0.30→0.10），以及年龄在整个仿真里从未被写过 | 自动随 `long_run.unit` 生效；日志 `[GrowthStep Day N ...]`、`[Birthday Day N ...]` |
+| 大跨度的模拟框架 | 阶段简报的输入不是作息表，而是**人生处境**：年龄/职业/居住/家庭、前几个阶段的简报（弧线而非某一周的三句记忆）、成长档案的当前水平、重要关系的**当前亲密度**。作息骨架降格为「生活底色」，并明确要求不要逐日展开 | 自动随 `long_run.unit` 生效 |
+| 大跨度的动作与事件空间 | 粗粒度下**动作空间和事件空间跟着跨度换档**，而不是沿用按日的那一套。**动作空间**：月/年步长的简报会拿到一份「人生动作」清单（取自人生事件模板：换工作 / 失业 / 升职 / 生病 / 中奖 / 被陷害 / 家庭急事 / 关系破裂），模型选中的动作会**被真正执行**（换工作会改写 `agent["job"]` 并按新岗位收入带重抽时薪），而不是只写进简报。**事件空间**：外部环境按整段时间生成结构性事件（政策、行业景气、物价房租、人口流动、季节气候），不再是「今天小雨」；`intraday_rules`（日内突发概率）在无 tick 的步长下被丢弃。此外**排队中的人生事件也终于会触发**——按 tick 走的那条链路在快进下从不执行 | 自动随 `long_run.unit` 生效；日志 `[JobChange Day N ...]`、`[LifeEvent ...]` |
+| 时间单位：天 / 月 / 年 | 快进的步长单位。选 `month`/`year` 时一步压缩整月整年，简报带里程碑列表，状态增量上限自动 ×2/×3，突发事件个数按跨度放大；日边界钩子（经济结算、兴趣衰减、家庭开销）按 `hook_chunk_days` ≤30 天补跑，跑一年会走满 12 次月结算；无 tick 时按「宏观时薪 × 目标工时 × 工作日」补记近似工资（走 firms 池，货币守恒） | `CONFIG["long_run"]["unit"]`（`day`/`month`/`year`，**选 month/year 即自动打开快进**——没有按月的日内循环）、`period_brief_max_chars`、`hook_chunk_days`；CLI `--time-unit` / `--sim-months` / `--sim-years` |
 | 日程网格对齐 | 把每个 agent 的日程对齐到固定时间网格，让 tick 数恒为 `1440/step` 而不随人口超线性增长。**只设 `time_step_minutes` 不够**——主时间线是网格与 LLM 自拟时间的并集 | `CONFIG["time_grid_snap"]=True` + `CONFIG["time_step_minutes"]=30`；默认 OFF（会改变日内时序） |
 | Cohort 遥测插件 | 在个体运行中发布群体划分与逐日漂移到 recorder，只观测不改行为 | `CONFIG["group"]["enabled"]=True`；产物 `output/records/*.jsonl` 中的 `group.partition` / `group.cohort_stats` |
 | 大五人格（OCEAN） | 每位居民带一组离线生成的五维人格分（五维全部 51/51 有分，运行内不漂移），经 `rules`（动作选择加性权重项「性格倾向」+ 打断阈值 / 冲动 / 搭话 / 决策噪声 / 消费储蓄倾向的乘性微调 + 个人情绪基准线，确定性、零 token）、`prompt`（第二人称行为锚句注入日程 / 日内调整 / 目标 / 新闻反应四类提示词）、`voice`（同样的锚句只进日记提示词）三条通道影响行为；profile 有 `人格与行为倾向` 字段时提示词渲染该段而非旧的「性格与情绪特征」行（`agent["personality"]` 本身不变，按关键词读它的子系统行为照旧）；无人格数据的 agent 或关掉的通道与加入前逐位一致 | `CONFIG["personality"]["enabled"]`（默认 ON，插件 `big_five`）；`channels` 分通道开关，`strength=0` 为对照组；数据 `data/agents_big5.csv`；产物 `output/traits/agent_traits.csv` |

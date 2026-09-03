@@ -939,8 +939,161 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
             # Recover: re-seek employment at slightly lower base
             econ.pop("_layoff_days_remaining", None)
             events.append({"type": "layoff_recovery"})
+            rehire = _rehire_after_unemployment(agent, econ, cfg)
+            if rehire:
+                events.append(rehire)
 
     return events
+
+
+# ---------------------------------------------------------------------------
+# 8b. EMPLOYMENT EVENTS (life event -> job & income)
+# ---------------------------------------------------------------------------
+# A 换工作/失业 life event must change where (and whether) the agent works, not
+# only how they feel about it: `job` is the text the schedule, location, goal
+# and income-band code all read. This is the economic half of those templates;
+# the narrative/state half lives in gaworld/events (LifeEventsPlugin calls in
+# here once the event fires for an agent).
+
+#: Life-event template keys handled below.
+EMPLOYMENT_EVENT_KEYS = ("job_change", "unemployment")
+
+#: Job text an agent carries while unemployed. Deliberately matches the
+#: 失业/待业 keywords in JOB_INCOME_BANDS and NON_EMPLOYED_JOBS, so the income
+#: band and every downstream keyword read agree on the state.
+UNEMPLOYED_JOB_TEXT = "待业中"
+
+
+def is_employment_event(event):
+    """True for a life event that should rewrite the agent's job, not just mood."""
+    if not isinstance(event, dict):
+        return False
+    if str(event.get("template_key", "")) in EMPLOYMENT_EVENT_KEYS:
+        return True
+    return "employment" in [str(t) for t in (event.get("impact_tags") or [])]
+
+
+def _draw_hourly_for_job(job_text, income_skill, cfg):
+    """Hourly income for ``job_text`` — the same draw ``_init_agent_economy`` uses."""
+    low, high = _job_income_band(job_text)
+    hourly = _rng.uniform(low, high) * (0.75 + 0.55 * _clip(_to_float(income_skill, 0.5), 0.0, 1.0))
+    return max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0), hourly)
+
+
+def _pick_new_job(current_job):
+    """A job title from an industry the agent doesn't currently work in.
+
+    Used when a 换工作 event doesn't name the destination: an unspecified job
+    change reads as a career switch rather than a sideways move.
+    """
+    from gaworld.population.synth import JOB_TITLES
+
+    current = _infer_industry({"job": current_job})
+    pools = [titles for industry, titles in JOB_TITLES.items() if industry != current]
+    return _rng.choice(_rng.choice(pools or list(JOB_TITLES.values())))
+
+
+def _apply_new_job_income(agent, econ, new_hourly, cfg):
+    """Re-derive the salary fields from ``new_hourly`` and the (already set) job.
+
+    Mirrors the layoff shock: hourly + gross move together and the monthly
+    settlement rebuilds tax, social insurance and the budget from there.
+    """
+    new_hourly = round(new_hourly, 2)
+    econ["base_hourly_income"] = new_hourly
+    econ["hourly_income"] = new_hourly
+    # Denormalised like `industry`: the per-agent economy file is the only
+    # runtime artefact the dashboard reads, so the job has to travel with it.
+    econ["job"] = str(agent.get("job", ""))
+    econ["gross_monthly_salary"] = round(
+        new_hourly
+        * _to_float(cfg.get("work_hours_per_day", 8), 8)
+        * _to_float(cfg.get("work_days_per_month", 22), 22), 2)
+    econ["income_target_daily"] = round(max(
+        40.0, new_hourly * _to_float(cfg.get("target_work_hours_per_day", 7.0), 7.0)), 2)
+    econ["industry"] = _infer_industry(agent)
+    return new_hourly
+
+
+def apply_employment_event(agent, event, config=None, day=None):
+    """Apply a 换工作 / 失业 life event to the agent's job and income.
+
+    Unemployment reuses the layoff shock's shape — a hard income cut plus a
+    30–90 day recovery countdown, floored at ``min_hourly_income`` because the
+    settlement path has no zero-income branch — and additionally rewrites the
+    job text so the agent's day, goals and perception follow. A job change
+    moves the agent to ``event["new_job"]`` (or a switch out of their current
+    industry) and re-draws income from the new job's band.
+
+    ``day`` is stamped onto the record (and so onto ``shock_log``) when the
+    caller knows it, which is what the dashboard's employment history shows.
+
+    Returns a record of what changed, or ``None`` when ``event`` isn't an
+    employment event or ``agent`` has no economy state to update.
+    """
+    if not isinstance(agent, dict) or not is_employment_event(event):
+        return None
+    cfg = _get_cfg({"config": config or {}})
+    old_job = str(agent.get("job", "")).strip()
+    unemployed = str(event.get("template_key", "")) == "unemployment"
+    new_job = UNEMPLOYED_JOB_TEXT if unemployed else (
+        str(event.get("new_job", "")).strip() or _pick_new_job(old_job))
+
+    agent["job"] = new_job
+    agent["employment"] = "unemployed" if unemployed else "employed"
+
+    record = {
+        "type": "unemployment" if unemployed else "job_change",
+        "from_job": old_job,
+        "to_job": new_job,
+    }
+    if day is not None:
+        record["day"] = day
+    econ = agent.get("economy")
+    if not isinstance(econ, dict):
+        return record
+
+    old_hourly = _to_float(econ.get("base_hourly_income", 0.0), 0.0)
+    if unemployed:
+        cut = _rng.uniform(0.5, 0.85)
+        new_hourly = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0),
+                         old_hourly * (1.0 - cut))
+        econ["_layoff_days_remaining"] = _rng.randint(30, 90)
+        econ["previous_job"] = old_job
+        record["recovery_days"] = econ["_layoff_days_remaining"]
+    else:
+        new_hourly = _draw_hourly_for_job(new_job, econ.get("income_skill", 0.5), cfg)
+        econ.pop("_layoff_days_remaining", None)
+        econ.pop("previous_job", None)
+
+    record["from_hourly"] = round(old_hourly, 2)
+    record["to_hourly"] = _apply_new_job_income(agent, econ, new_hourly, cfg)
+    econ.setdefault("shock_log", []).append(record)
+    return record
+
+
+def _rehire_after_unemployment(agent, econ, cfg):
+    """Put an agent whose unemployment spell just ended back into work.
+
+    Only fires for agents an unemployment *event* put on the bench (they carry
+    ``previous_job``); the random layoff shock keeps its old behaviour of
+    cutting income without touching the job text. Re-hired at 85–100% of the
+    old job's band, so the spell leaves a scar.
+    """
+    if not isinstance(agent, dict) or not isinstance(econ, dict):
+        return None
+    previous_job = str(econ.get("previous_job", "") or "").strip()
+    if not previous_job or str(agent.get("job", "")).strip() != UNEMPLOYED_JOB_TEXT:
+        return None
+    econ.pop("previous_job", None)
+    agent["job"] = previous_job
+    agent["employment"] = "employed"
+    hourly = _draw_hourly_for_job(previous_job, econ.get("income_skill", 0.5), cfg)
+    return {
+        "type": "rehired",
+        "to_job": previous_job,
+        "to_hourly": _apply_new_job_income(agent, econ, hourly * _rng.uniform(0.85, 1.0), cfg),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1680,6 +1833,7 @@ def _init_agent_economy(agent, cfg, context):
         "wealth_drive": round(_clip(wealth_drive, 0.0, 1.0), 4),
         "income_skill": round(_clip(income_skill, 0.0, 1.0), 4),
         "risk_tolerance": round(risk_tolerance, 4),
+        "job": job,
         "industry": _infer_industry(agent),
 
         # --- Salary ---
@@ -1944,6 +2098,64 @@ def on_simulation_start(context):
 
 
 # ---------------------------------------------------------------------------
+# 15b. COARSE (MONTH/YEAR) STEP SUPPORT
+# ---------------------------------------------------------------------------
+#
+# In long-horizon fast-forward the simulator compresses a whole day — or, at
+# ``long_run.unit`` = month/year, a whole month or year — into one step, and
+# the intra-day tick loop never runs. Two consequences the economy has to
+# handle, both driven off ``context["period_days"]`` (the number of sim days
+# this hook emission stands for, always 1 in the normal loop):
+#
+#   1. *Fixed* costs and shock draws are per-day, so they scale with the span;
+#   2. wage income is normally credited per tick by ``on_agent_post_step``,
+#      which never fires — without a proxy, agents pay rent forever and never
+#      earn, and a one-year run bankrupts the whole population.
+#
+# The caller keeps each emission to at most 30 days (see
+# ``gaworld.sim._fastforward.plan_hook_chunks``), so a span crosses at most
+# one monthly settlement boundary and the settlement block below stays exactly
+# as it is for the fine-grained loop.
+
+# Share of a span's days on which an employed agent earns (a 5-day week).
+_COARSE_WORK_DAY_RATIO = 5.0 / 7.0
+
+
+def _period_days(context):
+    """Sim days this hook emission stands for (1 in the normal day loop)."""
+    try:
+        return max(1, int(_to_float(context.get("period_days", 1), 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _accrue_coarse_income(econ, cfg, days, sectors):
+    """Credit approximate labour income for a step that ran no ticks.
+
+    Mirrors the ``income_target_daily`` formula already used at day end, but
+    off the macro-adjusted ``hourly_income`` so recessions and layoffs still
+    bite. Paid out of the firms pool via :func:`_pay_agent_income`, so money
+    is conserved and the wage lands in the monthly tax base. A no-op when
+    ticks did run (``daily_income`` already non-zero).
+    """
+    if _to_float(econ.get("daily_income", 0.0), 0.0) > 0:
+        return 0.0
+    hourly = _to_float(econ.get("hourly_income", 0.0), 0.0)
+    if hourly <= 0:
+        hourly = _to_float(econ.get("base_hourly_income", 0.0), 0.0)
+    if hourly <= 0:
+        return 0.0
+    hours = _to_float(cfg.get("target_work_hours_per_day", 7.0), 7.0)
+    drive = _to_float(econ.get("wealth_drive", 0.5), 0.5)
+    work_days = max(0.0, float(days)) * _COARSE_WORK_DAY_RATIO
+    amount = round(max(0.0, hourly * hours * (0.90 + 0.35 * drive) * work_days), 2)
+    if amount <= 0:
+        return 0.0
+    _pay_agent_income(econ, amount, sectors)
+    return amount
+
+
+# ---------------------------------------------------------------------------
 # 16. HOOK: on_day_start
 # ---------------------------------------------------------------------------
 
@@ -1953,10 +2165,13 @@ def on_day_start(context):
     if not runtime.get("enabled", False):
         return
 
-    # Advance macro cycle
+    # Advance macro cycle — once per sim day the span covers, so the phase
+    # drift of a month/year step matches a month/year of daily steps.
+    days = _period_days(context)
     macro_state = runtime.get("macro", {})
-    _advance_macro_cycle(macro_state, cfg)
-    runtime["sim_day_counter"] = runtime.get("sim_day_counter", 0) + 1
+    for _ in range(days):
+        _advance_macro_cycle(macro_state, cfg)
+    runtime["sim_day_counter"] = runtime.get("sim_day_counter", 0) + days
 
     # Dashboard-queued interventions land *after* the cycle advance, so an
     # operator-set inflation/unemployment figure is the one this day actually
@@ -1992,9 +2207,10 @@ def on_day_start(context):
             base_hour * daily_shift * income_mult
         ), 2)
 
-        # Fixed daily expenses: rent + utilities (from monthly budget)
-        housing = max(0.0, _to_float(econ.get("monthly_rent", 0.0), 0.0) / 30.0)
-        utilities = max(0.0, _to_float(cfg.get("daily_utilities_cost", 12.0), 12.0))
+        # Fixed daily expenses: rent + utilities (from monthly budget), times
+        # the number of days this emission covers.
+        housing = max(0.0, _to_float(econ.get("monthly_rent", 0.0), 0.0) / 30.0) * days
+        utilities = max(0.0, _to_float(cfg.get("daily_utilities_cost", 12.0), 12.0)) * days
         expense_mult = _macro_expense_multiplier(macro_state, cfg)
         if housing > 0:
             paid_rent = _pay_expense(econ, "housing", housing * expense_mult, cfg, sectors)
@@ -2004,9 +2220,13 @@ def on_day_start(context):
         if utilities > 0:
             _pay_expense(econ, "housing", utilities * expense_mult, cfg, sectors)
 
-        # Check shock events
-        shocks = _check_daily_shocks(agent, econ, cfg, macro_state,
-                                     event_layoff=event_layoff, sectors=sectors)
+        # Check shock events — one draw per sim day, so a month-long step has
+        # a month's worth of layoff / raise / medical risk (and the layoff
+        # recovery countdown ticks down by a month, not by one step).
+        shocks = []
+        for _ in range(days):
+            shocks.extend(_check_daily_shocks(agent, econ, cfg, macro_state,
+                                              event_layoff=event_layoff, sectors=sectors))
         if shocks:
             econ.setdefault("shock_log", []).extend(shocks)
 
@@ -2017,8 +2237,9 @@ def on_day_start(context):
         if shocks:
             shock_str = " SHOCKS=" + ",".join(s["type"] for s in shocks)
 
+        span = f"x{days}d " if days > 1 else ""
         line = (
-            f"[EconomyDayStart D{context.get('day', '')}] "
+            f"[EconomyDayStart D{context.get('day', '')}] {span}"
             f"phase={macro_state.get('phase', '?')} "
             f"fixed={housing + utilities:.1f} "
             f"hourly={econ.get('hourly_income', 0):.1f} "
@@ -2135,12 +2356,17 @@ def on_day_end(context):
         return
 
     day = int(_to_float(context.get("day", 0), 0))
+    days = _period_days(context)
+    coarse = bool(context.get("coarse", False))
     sim_day = runtime.get("sim_day_counter", 0)
     macro_state = runtime.get("macro", {})
     sectors = runtime.get("sectors")
 
-    # Monthly settlement (every 30 sim days)
-    is_month_end = (sim_day > 0 and sim_day % 30 == 0)
+    # Monthly settlement: fires on the emission that crosses a 30-sim-day
+    # boundary. With ``days == 1`` this is the original ``sim_day % 30 == 0``;
+    # spans are capped at 30 days upstream, so at most one month is settled
+    # per emission and ``month_gross_income`` still holds one month of wages.
+    is_month_end = (sim_day > 0 and (sim_day // 30) > ((sim_day - days) // 30))
     market_returns = None
     if is_month_end:
         runtime["sim_month_counter"] = runtime.get("sim_month_counter", 0) + 1
@@ -2149,6 +2375,15 @@ def on_day_end(context):
 
     agents_list = context.get("agents", [])
     agent_map = {a.get("id"): a for a in agents_list if isinstance(a, dict)}
+
+    # Fast-forward runs no intra-day ticks, so `on_agent_post_step` never
+    # credited any wages. Book the approximate ones now — before distress
+    # detection and friend loans see the balance.
+    if coarse:
+        for agent in agents_list:
+            econ = agent.get("economy") if isinstance(agent, dict) else None
+            if isinstance(econ, dict):
+                _accrue_coarse_income(econ, cfg, days, sectors)
 
     # P3: route today's consumption/rent shares to merchant & landlord agents,
     # then let distressed agents borrow from friends over the social network.

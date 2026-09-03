@@ -61,6 +61,13 @@ class GoalsPlugin(Plugin):
             self._append_agent_log(agent, line)
 
     def _day_end_reviews(self, hook_ctx):
+        # Long-horizon fast-forward replays the day-boundary hooks in chunks
+        # (a year = 12 emissions), but a goal review is a *cognitive* beat, not
+        # a bookkeeping one: run it once per simulation step, on the final
+        # chunk. Day and month steps are a single chunk, so this is a no-op
+        # there; a year step reviews once instead of twelve times.
+        if hook_ctx.get("coarse") and not hook_ctx.get("period_end", True):
+            return
         sim = hook_ctx["sim"]
         day = int(hook_ctx.get("day", 0) or 0)
         agents = hook_ctx.get("agents", [])

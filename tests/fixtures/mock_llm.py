@@ -236,6 +236,20 @@ DEFAULT_RESPONSES: dict[str, str] = {
         },
         ensure_ascii=False,
     ),
+    # Long-horizon fast-forward period brief (one call/agent/month or /year).
+    "fast_forward_period": json.dumps(
+        {
+            "brief": "这段时间工作强度一直不低，和同事的关系稳住了，周末开始固定去公园散步，"
+                     "月底交掉了一个小项目，心情比开头好一些。",
+            "memory": "把手上的活交出去时松了口气。",
+            "highlights": ["接手了一个新项目", "开始每周去公园散步"],
+            "state_changes": {"emotion": 0.06, "stress": -0.03},
+            "goal_progress": [],
+            "social": [],
+            "intentions": {"priorities": ["保持节奏"], "avoidances": ["熬夜"]},
+        },
+        ensure_ascii=False,
+    ),
 }
 
 # Used when the simulator dispatches a task we haven't seen before.

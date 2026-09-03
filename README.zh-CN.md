@@ -178,6 +178,16 @@ python generative_city_sim.py run
 python generative_city_sim.py run --sim-days 600 --fast-forward
 ```
 
+**大跨度模拟**：把一步做成一整个月或一整年——每人每月/每年一条「阶段简报」，附 2–4 条里程碑写进记忆。这是数年到数十年模拟跑得起来的前提：50 个居民跑 10 年，按年约 500 次 LLM 调用，按天则是约 18.25 万次。底层仿真日历仍逐日推进（大小月、闰年都算对），经济结算、兴趣衰减、家庭开销等日边界钩子按 ≤30 天区块补跑，所以跑满一年会扣一年房租、走满 12 次月度结算，而不是只扣一天：
+
+```bash
+python generative_city_sim.py run --sim-years 10              # 一年一步
+python generative_city_sim.py run --sim-months 24             # 一个月一步
+python generative_city_sim.py run --sim-years 10 --time-unit month
+```
+
+`--sim-months` / `--sim-years` / `--time-unit` 任意一个都会自动打开快进。代价是彻底的：日内与逐日细节全部消失，一步只剩一条叙事简报和一组累计增量。适合看长期演化（生涯轨迹、政策的多年后效），不适合看日内行为。
+
 重置状态：
 
 ```bash

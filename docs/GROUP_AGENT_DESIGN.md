@@ -79,8 +79,9 @@ timeline = build_master_timeline(daily_schedules, TIME_STEP_MINUTES)   # generat
 
 ### 1.4 已有的加速资产
 
-- **`gaworld/sim/_fastforward.py`（491 行）**：`simulate_agent_day()`（`:325`）把一整天压成 **1 次 LLM 调用/agent/天**，产出简报 + clamped state deltas，完全绕过 tick 循环；`apply_state_changes()`（`:400`）只允许改 7 个 key（`LONG_RUN_STATE_KEYS`，`:52-60`，**注意缺 `risk_preference` / `voice_propensity`**）；有确定性 fallback `_fallback_digest()`（`:259`）。摘要通过 `parallel_map` 并发（`generative_city_sim.py:3890-3900`）。
+- **`gaworld/sim/_fastforward.py`（999 行）**：`simulate_agent_day()`（`:684`）把一整天压成 **1 次 LLM 调用/agent/天**，产出简报 + clamped state deltas，完全绕过 tick 循环；`apply_state_changes()`（`:862`）只允许改 7 个 key（`LONG_RUN_STATE_KEYS`，`:71-79`，**注意缺 `risk_preference` / `voice_propensity`**）；有确定性 fallback `_fallback_digest()`（`:524`）。摘要通过 `parallel_map` 并发（`generative_city_sim.py:3977-3984`）。
   → **这是 group 模拟最现成的底座。**
+  → **2026-08-29 更新**：这一层现在还有 `simulate_agent_period()`（`:757`），把**一整个月或一整年**压成每人一条阶段简报（`long_run.unit` = `day`/`month`/`year`），并配套 `Period` / `plan_horizon()` / `plan_hook_chunks()`。对 group 方案是**利好而非冲突**：把"一天"换成"一个月"和把"个体"换成"cohort"是两个正交的压缩维度，可以叠乘。行号已按当前代码复核，原文写于该功能之前。
 - `parallel_map`（`gaworld/core/runner.py:53`）：保序、首个异常重抛。注意注释警告全局 `random` 状态在并发下不可复现（`runner.py:26-31`）。
 - 地点动作偏好缓存（`gaworld/sim/_action.py:293-300`）、embedding LRU（`gaworld/memory/store.py:490-497`）。
 - ⚠️ `gaworld/distributed/comm.py` **不是算力并行**，是跨进程 agent 消息收发，对规模无帮助。
@@ -132,7 +133,7 @@ timeline = build_master_timeline(daily_schedules, TIME_STEP_MINUTES)   # generat
 **推荐 B 作为 v1，并从第一天起植入 D 的 shadow-audit 回路（记作 B+）。**
 
 - **B 匹配产品形态**：需求是"面板调节人群分布 + 500 人小镇"，这本质就是"把人群分成若干可参数化的 group"。B 的交互模型与面板一一对应。
-- **B 匹配现有代码**：`simulate_agent_day()` 函数体内**确实只有 1 处 LLM 调用**（`gaworld/sim/_fastforward.py:379`，失败走 `_fallback_digest`），换成 cohort 是同构改造。而 12 阶段是 `run_simulation` 的闭包（`generative_city_sim.py:2903-3823`），**外部插件根本无法复用**——这反而说明 group 层不该去挤 tick 流水线，应该走 fast-forward 这条平行通道。
+- **B 匹配现有代码**：`simulate_agent_day()` **整条路径上确实只有 1 处 LLM 调用**（现已抽到共用的 `_run_digest()`，`gaworld/sim/_fastforward.py:669`，失败走 `_fallback_digest`），换成 cohort 是同构改造。而 12 阶段是 `run_simulation` 的闭包（`generative_city_sim.py:2942-3864`），**外部插件根本无法复用**——这反而说明 group 层不该去挤 tick 流水线，应该走 fast-forward 这条平行通道。
 - **排除 A**：Kirman 与 Bisbee 是两条独立的、已发表的失效结论，直接命中 GAWorld 关心的极化/政策响应/少数派场景。
 - **排除 C**：GAWorld 的研究价值在于观察涌现；把行为写进规则层等于把结论写进假设。
 - **D 是终态但不是起点**：实现最重。但它的 shadow-audit（保留 1–5% 个体走完整流水线做在线残差估计）应该**在 v1 就装上**，这样 B → D 是连续演进而非重写。
@@ -745,3 +746,29 @@ shadow-audit 自适应回路、`CONFIG["simulation_mode"]` 开关（关口已过
 **审稿核实为正确的关键结论**（不再赘述）：`time_step_minutes` 默认 `None` 且 union 语义；`simulate_agent_day()` 函数体内确实只有 1 处 LLM 调用；`LONG_RUN_STATE_KEYS` 确为 7 个 key 且确缺 `risk_preference`/`voice_propensity`；CSV 表头 15 列 + 51 行数据、9 个状态变量名逐字一致；`dashboard_server.py` 1397 行且无 Flask/FastAPI；`:944-945` 确有重复 `return normalized` 死代码；`studio.js` 七步行号全部精确命中；测试 5 个文件合计 1519 行；`AGENTS.md:43/67/75` 三条约定原文均在；对数正态基尼公式正确；arXiv 编号年月与标注年份全部自洽。
 
 **同时订正了一条项目记忆**：`.gitignore:148-154` 反向豁免了 `!/site/dashboard/**` 与 `!/site/console/**`，**这两个目录受版本控制**（`git check-ignore -v` 实测）。此前"`site/` 整个被 gitignore"的认知只对 `site/simviz`、`site/citymap`、`site/assets`、`site/vendor` 成立。
+
+### 7.x 行号漂移说明（2026-08-29 补记）
+
+上面那份「审稿核实」是**当时那次评审的快照**，不是长期承诺——所以本节的数字**原样保留**，
+不追改。它记录的是"评审时核对过什么"，改掉等于篡改记录。
+
+自那以后代码动过，以下引用已在正文里按当前代码复核并更新：
+
+| 位置 | 原文 | 现状 |
+|---|---|---|
+| §1.4 | `_fastforward.py` 491 行 | **999 行**（新增月/年步长机制） |
+| §1.4 | `simulate_agent_day()` `:325` | `:684` |
+| §1.4 | `apply_state_changes()` `:400` | `:862` |
+| §1.4 | `LONG_RUN_STATE_KEYS` `:52-60` | `:71-79`（仍是 7 个 key，仍缺 `risk_preference`/`voice_propensity`） |
+| §1.4 | `_fallback_digest()` `:259` | `:524` |
+| §1.4 | `parallel_map` 并发 `:3890-3900` | `:3977-3984` |
+| §2.3 | 唯一 LLM 调用 `_fastforward.py:379` | 抽到共用的 `_run_digest()`，`:669` |
+| §2.3 | 12 阶段闭包 `2903-3823` | `2942-3864` |
+
+**结论没有变**：`simulate_agent_day()` 整条路径上仍然只有 1 处 LLM 调用，
+12 阶段仍然是 `run_simulation` 的闭包、外部插件仍然无法复用——
+所以「group 层走 fast-forward 平行通道而不是挤 tick 流水线」这个判断依旧成立。
+
+§7 里其余的行号（`dashboard_server.py` 行数、`studio.js` 七步、测试文件行数、
+`AGENTS.md` 三条约定的行号等）随其他功能一起漂了，本次**未逐条复核**——
+要引用请以当前代码为准。

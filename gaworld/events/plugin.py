@@ -56,16 +56,19 @@ class LifeEventsPlugin(Plugin):
         # Domain imports stay out of kernel assembly; resolved once here.
         import random
 
+        from gaworld.economy.finance import apply_employment_event
         from gaworld.events import life as impl
         from gaworld.memory.store import append_agent_log
         from gaworld.sim._diary import _append_memory_record
-        from gaworld.social.network import generate_ghost_event
+        from gaworld.social.network import generate_ghost_event, retire_work_ties
 
         self._impl = impl
+        self._apply_employment_event = apply_employment_event
         self._rng = random
         self._append_agent_log = append_agent_log
         self._append_memory_record = _append_memory_record
         self._generate_ghost_event = generate_ghost_event
+        self._retire_work_ties = retire_work_ties
         self._push_aftermath = impl.push_event_aftermath
         self._decay_aftermath_impl = impl.decay_event_aftermath
         self._apply_aftermath_pressure = impl.apply_aftermath_state_pressure
@@ -74,6 +77,8 @@ class LifeEventsPlugin(Plugin):
         ctx.bus.on("on_day_start", self._inject_ghost_events)
         ctx.bus.on("on_day_start", self._decay_aftermath)
         ctx.bus.on("on_time_tick", self._drain_tick, priority=10)
+        ctx.bus.on("life.step", self._apply_step)
+        ctx.bus.on("life.step", self._advance_age, priority=20)
         ctx.bus.on("env.events.compose", self._agent_events)
         ctx.bus.on("env.events.tick", self._tick_events)
         ctx.bus.on("perception.compose", self._life_context, priority=20)
@@ -195,7 +200,158 @@ class LifeEventsPlugin(Plugin):
         # Part C: seed a decaying cross-day aftermath from serious events.
         for event in agent_life_events:
             self._push_aftermath(agent, event, hook_ctx.get("day"), sim.config)
+            self._apply_job_change(agent, event, hook_ctx)
         return [self._as_env_event(event) for event in agent_life_events]
+
+    # -- fast-forward: the whole tick path, once per step -------------------
+
+    def _advance_age(self, hook_ctx):
+        """Let residents get older on long horizons.
+
+        Nothing else in the simulator ever writes ``agent["age"]`` — it is
+        read once from the seed CSV and frozen. That is invisible over a
+        fortnight and absurd over a decade: a 10-year run had a 34-year-old
+        still 34, while `age` feeds household assignment, job bands and
+        life-stage reasoning. Days are accumulated rather than divided so a
+        run made of uneven steps ages people by the same total.
+        """
+        try:
+            span_days = max(1, int(hook_ctx.get("period_days") or 1))
+        except (TypeError, ValueError):
+            span_days = 1
+        for agent in hook_ctx.get("agents", []) or []:
+            try:
+                age = int(agent.get("age") or 0)
+            except (TypeError, ValueError):
+                continue
+            if age <= 0:
+                continue
+            carried = float(agent.get("_age_days", 0.0)) + span_days
+            years, carried = divmod(carried, 365.0)
+            agent["_age_days"] = carried
+            if years:
+                agent["age"] = age + int(years)
+                text = (
+                    f"[Birthday Day {hook_ctx.get('day')}] "
+                    f"{agent.get('name', agent['id'])}: {age} → {agent['age']} 岁\n"
+                )
+                daily_logs = hook_ctx.get("daily_logs")
+                if daily_logs is not None:
+                    daily_logs[agent["id"]] += text
+                self._append_agent_log(agent, text)
+
+    def _apply_step(self, hook_ctx):
+        """Run the life-event pipeline for one fast-forward step.
+
+        The normal path is tick-scoped — ``_drain_tick`` (on_time_tick) →
+        ``_agent_events`` (env.events.compose) → ``_apply_state_effects``
+        (state.effects). Fast-forward runs no ticks, so without this handler
+        the entire subsystem is inert there: events queued from the dashboard
+        never fire, ``state_effects`` are never applied, and a 换工作 event
+        never reaches ``apply_employment_event``. That is most wrong exactly
+        where it matters most — at month/year granularity, life events *are*
+        the event space.
+
+        Two sources land together, because they are the same kind of thing:
+
+        1. **Queued events** due anywhere inside the step's day range. One
+           drain call covers the range: ``_event_is_due`` already treats any
+           event dated before the current day as due.
+        2. **Digest life moves** — the coarse action space. The period digest
+           picks from the template catalogue, so a move becomes a real event
+           via ``normalize_life_event`` and gets the template's state effects,
+           severity and job rewriting rather than staying prose.
+        """
+        sim = hook_ctx["sim"]
+        day = int(hook_ctx.get("day") or 0)
+        time_str = str(hook_ctx.get("time_str") or "fast_forward")
+        daily_logs = hook_ctx.get("daily_logs")
+        moves_by_agent = hook_ctx.get("moves_by_agent") or {}
+        due = self._impl.drain_due_life_events(day, "23:59", sim.config)
+        for agent in hook_ctx.get("agents", []) or []:
+            events = list(self._impl.life_events_for_agent(due, agent["id"]))
+            events.extend(self._events_from_moves(moves_by_agent.get(agent["id"]), agent))
+            if not events:
+                continue
+            self._record_for_agent(agent, events, day, time_str, daily_logs)
+            step_ctx = {
+                "sim": sim, "agent": agent, "day": day, "time_str": time_str,
+                "daily_logs": daily_logs,
+            }
+            for event in events:
+                self._push_aftermath(agent, event, day, sim.config)
+                self._apply_job_change(agent, event, step_ctx)
+            # Reuse the tick handler verbatim so severity scaling and the
+            # `[0,1]` clipping cannot drift between the two paths.
+            self._apply_state_effects({"agent": agent, "step": {"life_events": events}})
+
+    def _events_from_moves(self, moves, agent):
+        """Turn the digest's whitelisted life moves into real events."""
+        events = []
+        for move in moves or []:
+            if not isinstance(move, dict):
+                continue
+            key = str(move.get("key", "")).strip()
+            if not key:
+                continue
+            payload = {
+                "template_key": key,
+                "agent_id": agent["id"],
+                "schedule_mode": "immediate",
+                "created_by": "fast_forward_digest",
+            }
+            note = str(move.get("note", "") or "").strip()
+            if note:
+                payload["description"] = note
+            new_job = str(move.get("new_job", "") or "").strip()
+            if new_job:
+                payload["new_job"] = new_job
+            try:
+                events.append(self._impl.normalize_life_event(payload))
+            except (ValueError, TypeError) as exc:  # noqa: PERF203 - per-move guard
+                _LOG.warning("could not build life event for move %s: %s", key, exc)
+        return events
+
+    def _apply_job_change(self, agent, event, hook_ctx):
+        """Let a 换工作/失业 event rewrite the agent's job and income.
+
+        Everything downstream (schedule, commute, goals, income band) reads
+        ``agent["job"]``, so the change has to land on the agent, not just in
+        the perception text. Recorded like the event itself so an operator can
+        see the concrete before/after."""
+        # Guard like _record_for_agent: applying the same event twice would
+        # cut the same income twice.
+        applied = agent.setdefault("_applied_job_event_ids", set())
+        event_id = str(event.get("id", ""))
+        if event_id and event_id in applied:
+            return
+        change = self._apply_employment_event(
+            agent, event, hook_ctx["sim"].config, day=hook_ctx.get("day"))
+        if not change:
+            return
+        if event_id:
+            applied.add(event_id)
+        text = (
+            f"[JobChange Day {hook_ctx.get('day')} {hook_ctx.get('time_str')}] "
+            f"{agent.get('name', agent.get('id', 'agent'))}: "
+            f"{change.get('from_job') or '—'} → {change.get('to_job')}"
+        )
+        if "to_hourly" in change:
+            text += f"（时薪 {change.get('from_hourly')} → {change['to_hourly']}）"
+        # Leaving a job ends the ties that came with it: colleagues become
+        # former colleagues and start decaying 2.5x faster. The role table
+        # has always encoded this; nothing performed the switch, so a resident
+        # who changed jobs kept decaying their old colleagues as if they still
+        # sat next to them (SOCIAL_NETWORK_DESIGN.md §6, "needs an external
+        # trigger" — this event is that trigger).
+        retired = self._retire_work_ties(agent, current_day=hook_ctx.get("day") or 0)
+        if retired:
+            text += f"，{len(retired)} 位同事转为前同事"
+        print(text)
+        daily_logs = hook_ctx.get("daily_logs")
+        if daily_logs is not None:
+            daily_logs[agent["id"]] += text + "\n"
+        self._append_agent_log(agent, text + "\n")
 
     def _record_for_agent(self, agent, events, day, time_str, daily_logs):
         recorded_ids = agent.setdefault("_recorded_life_event_ids", set())

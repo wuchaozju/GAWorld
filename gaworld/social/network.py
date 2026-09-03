@@ -169,6 +169,144 @@ def ensure_relationship_schema(
     return item
 
 
+#: Current-work roles that stop being current when the job ends.
+WORK_TIE_ROLES: tuple[str, ...] = ("coworker", "boss", "subordinate")
+RETIRED_WORK_ROLE = "former_coworker"
+
+
+def retire_work_ties(
+    agent: dict[str, Any],
+    *,
+    current_day: int = 0,
+    roles: tuple[str, ...] = WORK_TIE_ROLES,
+    new_role: str = RETIRED_WORK_ROLE,
+) -> list[str]:
+    """Move current-work ties to past ties when the agent's job ends.
+
+    The role table already encodes what that means — ``coworker`` decays at
+    0.006/day and owes 0.42, ``former_coworker`` at 0.015 and owes 0.20 — but
+    nothing ever performed the switch, so someone who changed jobs kept
+    colleagues from a company they had left, decaying as if they still saw
+    them daily. ``SOCIAL_NETWORK_DESIGN.md`` §6 lists this as needing "an
+    external trigger"; the employment life event is that trigger.
+
+    ``role`` alone is not enough: ``ensure_relationship_schema`` fills the
+    role-driven fields with ``setdefault``, so the rate has to be rewritten
+    explicitly or the tie would keep the old one forever. Returns the keys
+    that changed.
+    """
+    relationships = agent.get("relationships") if isinstance(agent, dict) else None
+    if not isinstance(relationships, dict):
+        return []
+    target = role_config(new_role)
+    changed: list[str] = []
+    for key, item in relationships.items():
+        if not isinstance(item, dict) or str(item.get("role", "")) not in roles:
+            continue
+        item["role"] = new_role
+        item["decay_rate"] = float(target["decay_rate"])
+        item["obligation_base"] = float(target["obligation_base"])
+        item["channels"] = list(target["channels"])
+        # Leaving a workplace is itself the last easy contact.
+        item.setdefault("last_contact_day", int(current_day))
+        changed.append(str(key))
+    return changed
+
+
+def apply_closeness_delta(
+    agent: dict[str, Any],
+    neighbor_key: Any,
+    delta: float,
+    *,
+    current_day: int = 0,
+    max_delta: float = 0.25,
+) -> dict[str, Any] | None:
+    """Move one tie along its trajectory over a long step.
+
+    ``relationship_update`` books a single interaction (±0.03 closeness),
+    which is the right unit for a tick and noise over a year. A coarse step
+    reports where the relationship *went* instead, and this applies it.
+
+    Trust follows closeness at half rate — slower to build, slower to lose.
+    A positive delta counts as contact and resets the decay clock; a negative
+    one deliberately does not, because drifting apart is precisely the
+    absence of contact, and letting decay keep running is what makes it go on
+    drifting.
+    """
+    if not isinstance(agent, dict):
+        return None
+    try:
+        step = float(delta)
+    except (TypeError, ValueError):
+        return None
+    cap = max(0.0, float(max_delta))
+    step = max(-cap, min(cap, step))
+    if step == 0.0:
+        return None
+    relationships = agent.setdefault("relationships", {})
+    if not isinstance(relationships, dict):
+        return None
+    key = str(neighbor_key)
+    item = relationships.get(key)
+    if not isinstance(item, dict):
+        return None
+    ensure_relationship_schema(item, current_day=current_day)
+    before = float(item.get("closeness", 0.5))
+    item["closeness"] = max(_MIN_CLOSENESS_FLOOR, min(1.0, before + step))
+    trust = float(item.get("trust", 0.5))
+    item["trust"] = max(_MIN_CLOSENESS_FLOOR, min(1.0, trust + step * 0.5))
+    if step > 0:
+        item["last_contact_day"] = int(current_day)
+        item["last_interaction_day"] = int(current_day)
+    return {"key": key, "before": round(before, 4),
+            "after": round(item["closeness"], 4), "delta": round(step, 4)}
+
+
+def form_tie(
+    agent: dict[str, Any],
+    neighbor_key: Any,
+    *,
+    role: str = "acquaintance",
+    closeness: float = 0.35,
+    current_day: int = 0,
+    tie_origin: str = "",
+) -> dict[str, Any] | None:
+    """Open a relationship the agent did not have before.
+
+    Over a day nobody's social circle reorganises; over a year it does — new
+    colleagues, a partner's friends, neighbours after a move. Without this the
+    graph can only ever shrink (decay plus Dunbar pruning), so a decade-long
+    run ends with everyone lonelier than they started — an artefact of the
+    model rather than a finding.
+    """
+    if not isinstance(agent, dict):
+        return None
+    relationships = agent.setdefault("relationships", {})
+    if not isinstance(relationships, dict):
+        return None
+    key = str(neighbor_key)
+    if key in relationships:
+        return None
+    item = ensure_relationship_schema(
+        {"closeness": max(0.0, min(1.0, float(closeness)))},
+        role=role if role in ROLE_CONFIG else "acquaintance",
+        tie_origin=tie_origin or "in_sim",
+        current_day=current_day,
+    )
+    item["last_contact_day"] = int(current_day)
+    item["last_interaction_day"] = int(current_day)
+    relationships[key] = item
+    neighbors = agent.setdefault("social_neighbors", [])
+    if isinstance(neighbors, list):
+        try:
+            nid = int(neighbor_key)
+        except (TypeError, ValueError):
+            nid = None
+        if nid is not None and nid not in neighbors:
+            neighbors.append(nid)
+    return item
+
+
 def migrate_relationships(agent: dict[str, Any], current_day: int = 0) -> None:
     """Walk ``agent['relationships']`` once and apply the schema."""
     rels = agent.setdefault("relationships", {}) if isinstance(agent, dict) else {}

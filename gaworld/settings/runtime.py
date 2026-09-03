@@ -27,25 +27,42 @@ def simulation_settings() -> dict[str, Any]:
         # same-seed traces stay bit-comparable until you opt in. Requires
         # ``time_step_minutes`` to be set; ignored otherwise.
         "time_grid_snap": False,
-        # Long-horizon fast-forward mode. When enabled, each day is compressed
-        # into a single per-agent "daily brief" (one LLM call/agent/day) instead
-        # of the intra-day tick megaloop, so 60/600-day horizons stay tractable.
+        # Long-horizon fast-forward mode. When enabled, each *step* is
+        # compressed into a single per-agent brief (one LLM call/agent/step)
+        # instead of the intra-day tick megaloop, so 60/600-day — and, at
+        # month/year granularity, decade-scale — horizons stay tractable.
         # State / goals / relationships still evolve, but approximately. OFF by
         # default so the normal fine-grained loop is unchanged.
         "long_run": {
             "enabled": False,
-            # Use one LLM call per agent per day to author the brief + deltas.
+            # Step unit: "day" | "month" | "year". A coarser unit compresses a
+            # whole month/year into one brief per agent, which is what makes
+            # multi-year runs affordable (10 years x 50 residents = 500 calls
+            # at "year" vs 182,500 at "day"). Sim days still advance normally
+            # underneath; only the cognition granularity changes.
+            "unit": "day",
+            # Use one LLM call per agent per step to author the brief + deltas.
             # When False, the brief is produced deterministically (zero LLM).
             "brief_llm": True,
             # Clamp for the magnitude of any single per-day approximate state
-            # delta the digest may apply.
+            # delta the digest may apply. Month/year steps scale this up (x2 /
+            # x3) since the delta is cumulative over a wider window.
             "max_state_delta": 0.15,
             # Randomness of the long run, 0..1. Higher → more frequent sudden
-            # ("burst") events and larger day-to-day state swings. 0 = fully
-            # deterministic (no bursts, no jitter).
+            # ("burst") events and larger state swings. 0 = fully deterministic
+            # (no bursts, no jitter). At month/year granularity the expected
+            # burst count scales with the number of days the step covers.
             "randomness": 0.3,
             # Soft length cap (characters) for each agent's daily brief.
             "brief_max_chars": 240,
+            # Same, for a month brief; a year brief gets 1.5x this.
+            "period_brief_max_chars": 480,
+            # A month/year step replays the day-boundary hooks (economy
+            # settlement, interest decay, household duties) in chunks of at
+            # most this many days, so a year does not book a single day of
+            # rent. Capped at 30 so a chunk crosses at most one monthly
+            # settlement boundary.
+            "hook_chunk_days": 30,
         },
         # Calendar settings for weekday/weekend simulation.
         "calendar": {

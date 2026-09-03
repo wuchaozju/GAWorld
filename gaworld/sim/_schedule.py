@@ -473,6 +473,10 @@ _LIFE_EVENT_ACTIVITY_MAP = {
     "framed": ("处理纠纷", "善后与澄清"),
     "conflict": ("处理纠纷", "善后处理"),
     "relationship_break": ("处理冲突情绪", "独自缓一缓"),
+    # "求职投递" rather than "找工作": INCOME_KEYWORDS matches the substring
+    # 工作, and a job hunt must not pay wages.
+    "unemployment": ("办理离职交接", "求职投递"),
+    "job_change": ("办理入职交接", "熟悉新工作"),
     "obligation": ("处理急事", "跟进后续"),
     "routine": ("临时处理要务", "跟进后续"),
 }

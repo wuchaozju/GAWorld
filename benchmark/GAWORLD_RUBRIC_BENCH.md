@@ -76,9 +76,11 @@ Rubric-as-reward 的三条要义：
 | `authored_diary` | 日记由 LLM 撰写 | ✅ | ❌（`_fallback_daily_diary` 模板） |
 | `social_graph` | episodes 里可解析的 `social_partners` | ✅ | ❌ |
 
-**为什么快进不能单独支撑 Track R**：`_run_fast_forward_day`（`generative_city_sim.py:3862`）
-是独立分支，完全绕过日内 tick loop，而 `append_agent_episode` 在 tick loop 里（:3662）——
+**为什么快进不能单独支撑 Track R**：`_run_fast_forward_step`（`generative_city_sim.py:3882`）
+是独立分支，完全绕过日内 tick loop，而 `append_agent_episode` 在 tick loop 里（:3682）——
 快进 run 一条 episode 都不写。R1 全部、R3 全部、R4 全部、R2.2/R2.4 因此不可评。
+月/年步长（`long_run.unit`）走的是同一个分支，所以这条结论对粗粒度长跑同样成立，
+只是"每天一点"的状态序列会变成"每步一点"。
 
 **为什么 `fos_fast_mode`（`compare-event --fast`）也不行**：它保留 tick loop（episodes 照写），
 但 `deterministic_cognition: True` 让 `planning` / `reflection` 走 `_fallback_*_struct`，

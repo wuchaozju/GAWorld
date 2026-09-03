@@ -97,9 +97,11 @@ from gaworld.cognition.realism import (
     update_needs,
 )
 from gaworld.social.network import (
+    apply_closeness_delta,
     bootstrap_social_roster,
     decay_relationships,
     enforce_dunbar,
+    form_tie,
     migrate_relationships,
 )
 from gaworld.events.life import list_life_events
@@ -458,7 +460,16 @@ TIME_GRID_SNAP = bool(CONFIG.get("time_grid_snap", False)) and bool(TIME_STEP_MI
 # inline here — this runs at import time, before the staged `# noqa: E402`
 # import of the fast-forward helpers further down the file.
 LONG_RUN_CONFIG = CONFIG.get("long_run", {}) if isinstance(CONFIG.get("long_run"), dict) else {}
-LONG_RUN_ENABLED = bool(LONG_RUN_CONFIG.get("enabled", False))
+# Step unit: "day" (classic fast-forward) | "month" | "year". Anything else
+# degrades to "day".
+LONG_RUN_UNIT = str(LONG_RUN_CONFIG.get("unit", "day") or "day").strip().lower()
+if LONG_RUN_UNIT not in ("day", "month", "year"):
+    LONG_RUN_UNIT = "day"
+# A coarse unit *is* fast-forward — there is no per-month tick loop, so
+# "unit=year, enabled=False" would silently mean "run 365 tick-loop days",
+# which is the expensive wrong answer. Mirrors `_fastforward.long_run_enabled`
+# and the CLI, where --sim-years implies --fast-forward.
+LONG_RUN_ENABLED = bool(LONG_RUN_CONFIG.get("enabled", False)) or LONG_RUN_UNIT != "day"
 ROUTINE_CHANGE_CONFIG = CONFIG.get("routine_change", {})
 ROUTINE_CHANGE_ENABLED = bool(ROUTINE_CHANGE_CONFIG.get("enabled", True))
 ROUTINE_CHANGE_BASE_CHANCE = float(ROUTINE_CHANGE_CONFIG.get("base_chance", 0.08))
@@ -2542,10 +2553,17 @@ from gaworld.sim._summary import (  # noqa: E402
 from gaworld.sim._fastforward import (  # noqa: E402
     apply_random_jitter as _ff_apply_random_jitter,
     apply_state_changes as _ff_apply_state_changes,
+    hook_chunk_days as _ff_hook_chunk_days,
+    jitter_scale_for as _ff_jitter_scale,
     long_run_config as _long_run_config,
+    max_state_delta_for as _ff_max_state_delta,
+    plan_hook_chunks as _ff_plan_hook_chunks,
+    plan_horizon as _ff_plan_horizon,
     randomness_level as _ff_randomness,
-    render_day_brief_block as _ff_render_day_brief,
-    simulate_agent_day as _ff_simulate_agent_day,
+    render_period_brief_block as _ff_render_brief,
+    _REL_DELTA_CAP as _FF_REL_DELTA_CAP,
+    simulate_agent_period as _ff_simulate_agent_period,
+    span_days as _ff_span_days,
 )
 
 # =========================================================
@@ -3868,42 +3886,87 @@ def run_simulation():
     if step_pipeline.stage_names != list(DEFAULT_AGENT_STEP_ORDER):
         print(f"🧠 认知管线：{' → '.join(step_pipeline.stage_names)}")
 
-    def _run_fast_forward_day(day, day_context, day_desc, daily_logs, day_env_events, day_env_context):
-        """Long-horizon fast-forward: compress the whole day into one brief
-        per agent (one LLM call/agent/day) instead of the tick megaloop.
+    def _run_fast_forward_step(
+        period, day_context, day_desc, daily_logs, day_env_events, day_env_context
+    ):
+        """Long-horizon fast-forward: compress the whole step into one brief
+        per agent (one LLM call/agent/step) instead of the tick megaloop.
 
-        Day / goals / relationships still evolve, but approximately: the
-        digest's clamped deltas are applied, memory + diary are written, and
-        the day-boundary hooks (growth/interests/economy) still fire so the
-        long run keeps drifting. Reuses ``base_schedule_map`` as the作息骨架
-        context — no per-day routine LLM call is made in this mode.
+        ``period`` covers one day (``long_run.unit="day"``), one month or one
+        year. State / goals / relationships still evolve, but approximately:
+        the digest's clamped deltas are applied, memory + diary are written,
+        and the day-boundary hooks (growth/interests/economy) still fire so
+        the long run keeps drifting. Reuses ``base_schedule_map`` as the
+        作息骨架 context — no per-day routine LLM call is made in this mode.
+
+        A month/year step replays the day-boundary hooks in chunks of at most
+        ``long_run.hook_chunk_days`` days (:func:`plan_hook_chunks`) rather
+        than once, so a year books a year of rent and twelve monthly
+        settlements instead of one day's worth. The hooks are told the span
+        via ``period_days`` / ``coarse``; ``period_end`` marks the last chunk
+        so per-step LLM work (goal reviews) fires once per step, not once per
+        chunk.
         """
         schedule_map = base_schedule_map
+        day = period.end_day
+        # ``coarse`` means "this step ran no intra-day ticks", which is true of
+        # every fast-forward step including the day unit. Subsystems that
+        # normally accrue per tick (wage income) use it to book an approximate
+        # amount instead of silently earning nothing.
+        coarse = True
+        chunks = _ff_plan_hook_chunks(period, _ff_hook_chunk_days(CONFIG))
         for agent in agents:
             agent["current_day"] = day
-        hook_bus.emit(
-            "on_day_start",
-            day=day,
-            config=CONFIG,
-            agents=agents,
-            agents_by_id=agents_by_id,
-            city_map=city_map,
-            city_map_text=city_map_text,
-            schedule_map=schedule_map,
-            actions=actions,
-            timeline=[],
-            daily_logs=daily_logs,
-            env_events=day_env_events,
-            env_context=day_env_context,
-            extension_state=extension_state,
-        )
+
+        def _emit_day_start(chunk_end, chunk_days, period_end):
+            hook_bus.emit(
+                "on_day_start",
+                day=chunk_end - chunk_days + 1,
+                config=CONFIG,
+                agents=agents,
+                agents_by_id=agents_by_id,
+                city_map=city_map,
+                city_map_text=city_map_text,
+                schedule_map=schedule_map,
+                actions=actions,
+                timeline=[],
+                daily_logs=daily_logs,
+                env_events=day_env_events,
+                env_context=day_env_context,
+                extension_state=extension_state,
+                period_days=chunk_days,
+                coarse=coarse,
+                period_end=period_end,
+            )
+
+        def _emit_day_end(chunk_end, chunk_days, period_end):
+            hook_bus.emit(
+                "on_day_end",
+                day=chunk_end,
+                config=CONFIG,
+                agents=agents,
+                agents_by_id=agents_by_id,
+                city_map=city_map,
+                city_map_text=city_map_text,
+                schedule_map=schedule_map,
+                actions=actions,
+                daily_logs=daily_logs,
+                state_history=state_history,
+                extension_state=extension_state,
+                period_days=chunk_days,
+                coarse=coarse,
+                period_end=period_end,
+            )
+
+        first_end, first_days = chunks[0]
+        _emit_day_start(first_end, first_days, len(chunks) == 1)
 
         def _compute_digest(agent):
-            digest = _ff_simulate_agent_day(
+            digest = _ff_simulate_agent_period(
                 agent,
-                day=day,
-                day_desc=day_desc,
+                period=period,
                 base_schedule=base_schedule_map.get(agent["id"]),
+                day_desc=day_desc,
                 goals_context=_goals_hint(agent),
                 env_events=day_env_events,
                 env_context=day_env_context,
@@ -3923,24 +3986,32 @@ def run_simulation():
                 _compute_digest,
                 agents,
                 max_workers=_digest_workers,
-                label="fast_forward_day",
+                label=f"fast_forward_{period.unit}",
             )
         )
 
         _ff_rand = _ff_randomness(CONFIG)  # full config; randomness_level unwraps long_run
+        _ff_delta_cap = _ff_max_state_delta(period.unit, CONFIG)
+        _ff_jitter = _ff_jitter_scale(period.unit)
+        _ff_empty_brief = "（平稳的一天）" if period.unit == "day" else "（这段时间平稳度过）"
+        span_desc = period.describe(day_desc)
         agent_briefs = []
         for agent in agents:
             agent_id = agent["id"]
             digest = _digest_results.get(agent_id) or {}
             brief = str(digest.get("brief", "")).strip()
             burst = bool(digest.get("burst"))
-            # Mark burst days so the brief block and log read as eventful.
+            # Mark burst steps so the brief block and log read as eventful.
             brief_disp = ("⚡ " + brief) if (burst and brief) else brief
             agent_briefs.append((agent.get("name", str(agent_id)), brief_disp))
 
             # 1) approximate state deltas + randomness-driven volatility jitter
-            _ff_apply_state_changes(agent, digest.get("state_changes", {}))
-            _ff_apply_random_jitter(agent, randomness=_ff_rand, burst=burst, rng=random)
+            _ff_apply_state_changes(
+                agent, digest.get("state_changes", {}), max_delta=_ff_delta_cap
+            )
+            _ff_apply_random_jitter(
+                agent, randomness=_ff_rand, burst=burst, rng=random, scale=_ff_jitter
+            )
 
             # 2) social signals → relationship nudges
             for item in digest.get("social", []) or []:
@@ -3952,7 +4023,38 @@ def run_simulation():
                     agent, neighbor_id, item.get("signal", "neutral"), HUMAN_REALISM_CONFIG
                 )
 
-            # 3) tomorrow's intentions (from the digest, if any)
+            # 2b) relationship *trajectories*. A ping (`social`) is one
+            #     interaction — the right unit for a tick, noise over a year.
+            #     Over a long step what matters is the net drift, and whether
+            #     the circle itself reorganised.
+            _rel_moves = []
+            for move in digest.get("relationships", []) or []:
+                applied = apply_closeness_delta(
+                    agent,
+                    move.get("neighbor"),
+                    move.get("closeness_delta", 0.0),
+                    current_day=day,
+                    max_delta=_FF_REL_DELTA_CAP,
+                )
+                if applied:
+                    _rel_moves.append(
+                        f"#{applied['key']} {applied['before']:.2f}→{applied['after']:.2f}"
+                    )
+            for tie in digest.get("new_ties", []) or []:
+                if form_tie(
+                    agent,
+                    tie.get("neighbor"),
+                    role=tie.get("role", "acquaintance"),
+                    current_day=day,
+                    tie_origin="fast_forward",
+                ) is not None:
+                    _rel_moves.append(f"+#{tie.get('neighbor')}({tie.get('role')})")
+            if _rel_moves:
+                _rel_log = f"[Social {period.title}] {'；'.join(_rel_moves)}\n"
+                daily_logs[agent_id] += _rel_log
+                append_agent_log(agent, _rel_log)
+
+            # 3) next step's intentions (from the digest, if any)
             intentions = digest.get("intentions") or {}
             if isinstance(intentions, dict) and intentions:
                 intentions = dict(intentions)
@@ -3970,14 +4072,22 @@ def run_simulation():
                 if goal_notes:
                     print(f"🎯 {agent['name']} 的目标推进：{'；'.join(goal_notes)}")
 
-            # 5) memory line for the day
-            memory_line = str(digest.get("memory", "")).strip()
-            if memory_line:
+            # 5) memory lines for the step (a day yields one; a month/year
+            #    yields the milestone list, so memory density per simulated
+            #    month stays comparable across units)
+            memory_lines = [
+                str(line).strip()
+                for line in (digest.get("memories") or [digest.get("memory", "")])
+                if str(line or "").strip()
+            ]
+            for memory_line in memory_lines:
                 _append_memory_record(
                     agent, memory_line, entry_type="memory", day=day, time_str="fast_forward"
                 )
 
-            # 6) day-end relationship decay + Dunbar prune
+            # 6) step-end relationship decay + Dunbar prune. Decay is driven by
+            #    the day gap since last contact, so a month/year step decays a
+            #    month/year's worth in one call.
             if HUMAN_REALISM_ENABLED:
                 decay_relationships(agent, current_day=day, cfg=HUMAN_REALISM_CONFIG)
                 enforce_dunbar(agent)
@@ -3987,7 +4097,7 @@ def run_simulation():
                 agent,
                 day,
                 day_context=day_context,
-                day_memory=memory_line,
+                day_memory="；".join(memory_lines),
                 consolidation_text=brief,
                 intentions=agent.get("intentions", {}),
             )
@@ -3996,14 +4106,22 @@ def run_simulation():
                 agent_id, "diary", diary_text, sim_day=day, sim_time="fast_forward_diary"
             )
 
-            # 8) log the brief + record state history
-            brief_log = f"[FastForward Day {day}] {brief_disp or '（平稳的一天）'}\n"
+            # 8) carry the brief forward as this agent's period history, so
+            #    the next step sees the arc instead of three stray memory
+            #    lines from one week of it.
+            if period.unit != "day":
+                _history = list(agent.get("_period_briefs") or [])
+                _history.append(f"{period.title}：{brief or '（平稳）'}")
+                agent["_period_briefs"] = _history[-6:]
+
+            # 9) log the brief + record state history
+            brief_log = f"[FastForward {period.title}] {brief_disp or _ff_empty_brief}\n"
             daily_logs[agent_id] += brief_log
             append_agent_log(agent, brief_log)
             vector_db_add_entry(
                 agent_id,
                 "fast_forward",
-                f"[FastForward Day {day} {day_desc}] {brief}",
+                f"[FastForward {period.title} {span_desc}] {brief}",
                 sim_day=day,
                 sim_time="fast_forward",
             )
@@ -4019,16 +4137,49 @@ def run_simulation():
                         agent_id, agent["goals"], CONFIG.get("memory_dir", "output/memory")
                     )
 
-        # World-level daily brief block to the console + every agent log.
+        # World-level brief block to the console + every agent log.
         world_line = ""
         if day_env_events:
             world_line = "；".join(
                 _format_external_env_event(ev) for ev in day_env_events[:2]
             )
-        brief_block = _ff_render_day_brief(day, day_desc, agent_briefs, world_line=world_line)
+        brief_block = _ff_render_brief(
+            period, agent_briefs, world_line=world_line, day_desc=day_desc
+        )
         print(brief_block)
 
-        # Day-boundary evolution hooks (growth decay / interests / economy).
+        # Life events for the step. Fast-forward runs no ticks, so the
+        # tick-scoped life-event path never fires; this is where queued events
+        # get drained and where the digest's life moves (the coarse action
+        # space) become real events — state effects, aftermath, job rewriting.
+        hook_bus.emit(
+            "life.step",
+            day=day,
+            start_day=period.start_day,
+            period_days=period.days,
+            time_str="fast_forward",
+            agents=agents,
+            daily_logs=daily_logs,
+            moves_by_agent={
+                aid: (digest or {}).get("life_moves") or []
+                for aid, digest in _digest_results.items()
+            },
+        )
+        # Individual development: practice normally accrues per tick, so
+        # without this a fast-forward run can only *lose* skill.
+        hook_bus.emit(
+            "growth.step",
+            day=day,
+            period_days=period.days,
+            agents=agents,
+            daily_logs=daily_logs,
+            development_by_agent={
+                aid: (digest or {}).get("development") or []
+                for aid, digest in _digest_results.items()
+            },
+        )
+
+        # Step-boundary memory work: once per step, whatever the unit.
         for agent in agents:
             try:
                 run_daily_memory_lifecycle(
@@ -4037,20 +4188,14 @@ def run_simulation():
             except Exception as _lifecycle_exc:  # noqa: BLE001
                 print(f"⚠️ memory lifecycle hook failed for {agent.get('name')}: {_lifecycle_exc}")
             hook_bus.emit("memory.consolidate", agent=agent, day=day)
-        hook_bus.emit(
-            "on_day_end",
-            day=day,
-            config=CONFIG,
-            agents=agents,
-            agents_by_id=agents_by_id,
-            city_map=city_map,
-            city_map_text=city_map_text,
-            schedule_map=schedule_map,
-            actions=actions,
-            daily_logs=daily_logs,
-            state_history=state_history,
-            extension_state=extension_state,
-        )
+
+        # Day-boundary evolution hooks (growth decay / interests / economy),
+        # replayed chunk by chunk so the economy advances a full period.
+        _emit_day_end(first_end, first_days, len(chunks) == 1)
+        for position, (chunk_end, chunk_days) in enumerate(chunks[1:], start=2):
+            is_last = position == len(chunks)
+            _emit_day_start(chunk_end, chunk_days, is_last)
+            _emit_day_end(chunk_end, chunk_days, is_last)
         if visualizer is not None:
             visualizer.record_frame(
                 day=day,
@@ -4062,8 +4207,20 @@ def run_simulation():
                 policy={},
             )
 
-    # ----- PHASE 3: DAY LOOP — runs once per simulated day -----
-    for day in range(start_day, start_day + SIM_DAYS):
+    # ----- PHASE 3: STEP LOOP — one iteration per day / month / year -----
+    # ``horizon`` is a list of `Period`s. At the default day granularity it is
+    # one period per day, so this is the classic day loop; at month/year
+    # granularity each iteration covers a whole period, which only the
+    # fast-forward branch below can handle — the tick megaloop plans an
+    # intra-day timeline, which has no meaning for a month. That is why a
+    # coarse unit forces LONG_RUN_ENABLED on above rather than being dropped
+    # here; the `else` is now only reachable if someone sets the global by hand.
+    step_unit = LONG_RUN_UNIT if LONG_RUN_ENABLED else "day"
+    horizon = _ff_plan_horizon(
+        start_day, SIM_DAYS, step_unit, start_date=SIM_START_DATE
+    )
+    for period in horizon:
+        day = period.end_day
         sim_ctx.clock.start_day(day)
         # K5: apply population interventions queued via
         # controller.intervene("remove_agent", ...) at the day boundary —
@@ -4095,13 +4252,29 @@ def run_simulation():
             f"{day_context.get('weekday_zh', '周一')} "
             f"{day_context.get('day_type_zh', '工作日')}"
         ).strip()
-        print(f"\n================= Day {day} ({day_desc}) =================")
+        step_desc = period.describe(day_desc)
+        # Coarse banners carry the step's last sim day too: it is what
+        # `gaworld.parallel.runner.latest_day` reads to report progress, and
+        # "Month 3" alone is a step index, not a day number.
+        banner = period.title if period.unit == "day" else f"{period.title} · Day {day}"
+        print(f"\n================= {banner} ({step_desc}) =================")
         if distributed_client.enabled:
             distributed_client.refresh_directory()
         # K3e: off-screen ghost-event injection now rides `on_day_start`
         # (gaworld/events/plugin.py), before the first tick's queue drain.
         daily_logs = defaultdict(str)
-        day_env_events = env_system.start_day(day, day_context=day_context, agents=agents)
+        # The environment is asked at the step's own scale: a month step gets
+        # structural drivers (policy, prices, industry, season), not one day's
+        # weather stretched over thirty.
+        day_env_events = env_system.start_day(
+            day,
+            day_context=day_context,
+            agents=agents,
+            span=(
+                {"days": period.days, "unit": period.unit, "label": step_desc}
+                if period.days > 1 else None
+            ),
+        )
         day_env_context = env_system.get_day_context_text()
         append_jsonl(
             env_timeline_path,
@@ -4115,7 +4288,7 @@ def run_simulation():
         )
         if day_env_events:
             env_lines = "\n".join(f"- {_format_external_env_event(ev)}" for ev in day_env_events)
-            env_header = f"\n[ExternalEnvironment Day {day} {day_desc}]\n{env_lines}\n"
+            env_header = f"\n[ExternalEnvironment {period.title} {step_desc}]\n{env_lines}\n"
             print(env_header.strip())
             for agent in agents:
                 daily_logs[agent["id"]] += env_header
@@ -4129,10 +4302,11 @@ def run_simulation():
                 )
         # Long-horizon fast-forward: skip the per-day routine LLM pass, the
         # intra-day tick megaloop and the normal day-end consolidation; a
-        # single per-agent digest carries the whole day (see _fastforward.py).
+        # single per-agent digest carries the whole step — a day, a month or a
+        # year, depending on ``long_run.unit`` (see _fastforward.py).
         if LONG_RUN_ENABLED:
-            _run_fast_forward_day(
-                day, day_context, day_desc, daily_logs, day_env_events, day_env_context
+            _run_fast_forward_step(
+                period, day_context, day_desc, daily_logs, day_env_events, day_env_context
             )
             if STATEFUL:
                 save_sim_state({
@@ -5350,13 +5524,42 @@ def _build_arg_parser():
     run_cmd = subparsers.add_parser("run", help="Run the full simulation")
     run_cmd.add_argument("--sim-days", type=int, default=None, help="Override simulation days")
     run_cmd.add_argument(
+        "--sim-months",
+        type=int,
+        default=None,
+        help=(
+            "Run for N calendar months. Implies --fast-forward with a monthly "
+            "step unit unless --time-unit says otherwise."
+        ),
+    )
+    run_cmd.add_argument(
+        "--sim-years",
+        type=int,
+        default=None,
+        help=(
+            "Run for N calendar years. Implies --fast-forward with a yearly "
+            "step unit unless --time-unit says otherwise."
+        ),
+    )
+    run_cmd.add_argument(
+        "--time-unit",
+        choices=("day", "month", "year"),
+        default=None,
+        help=(
+            "Fast-forward step unit: one brief per agent per day (default), "
+            "per month, or per year. Coarser units are what make multi-year "
+            "horizons affordable. Implies --fast-forward."
+        ),
+    )
+    run_cmd.add_argument(
         "--fast-forward",
         action="store_true",
         help=(
-            "Long-horizon fast-forward: compress each day into one per-agent "
-            "daily brief (one LLM call/agent/day) instead of the intra-day tick "
+            "Long-horizon fast-forward: compress each step into one per-agent "
+            "brief (one LLM call/agent/step) instead of the intra-day tick "
             "loop. State/goals/relationships still evolve, approximately. Pairs "
-            "with a large --sim-days (e.g. 60, 600)."
+            "with a large --sim-days (e.g. 60, 600) or with --sim-months / "
+            "--sim-years."
         ),
     )
     subparsers.add_parser("reset", help="Reset simulation memory/logs/cache")
@@ -5675,19 +5878,39 @@ def _main():
         )
         return
 
+    global SIM_DAYS, LONG_RUN_ENABLED, LONG_RUN_CONFIG, LONG_RUN_UNIT
+
     if getattr(args, "sim_days", None) is not None:
         CONFIG["sim_days"] = int(args.sim_days)
-        global SIM_DAYS
         SIM_DAYS = int(args.sim_days)
 
-    if getattr(args, "fast_forward", False):
+    # --sim-months / --sim-years pick both the horizon and (unless overridden)
+    # the step unit; --time-unit sets the unit alone. Any of the three turns
+    # fast-forward on, since a month-long tick loop is not a thing.
+    _span_unit = None
+    _span_count = None
+    if getattr(args, "sim_years", None) is not None:
+        _span_unit, _span_count = "year", int(args.sim_years)
+    elif getattr(args, "sim_months", None) is not None:
+        _span_unit, _span_count = "month", int(args.sim_months)
+    _unit = getattr(args, "time_unit", None) or _span_unit
+    if _span_count is not None:
+        total_days = _ff_span_days(_span_unit, _span_count, start_date=SIM_START_DATE)
+        CONFIG["sim_days"] = total_days
+        SIM_DAYS = total_days
+    if _unit:
+        CONFIG.setdefault("long_run", {})["unit"] = _unit
+        LONG_RUN_UNIT = _unit
+
+    if getattr(args, "fast_forward", False) or _unit:
         CONFIG.setdefault("long_run", {})["enabled"] = True
-        global LONG_RUN_ENABLED, LONG_RUN_CONFIG
         LONG_RUN_CONFIG = _long_run_config(CONFIG)
         LONG_RUN_ENABLED = True
+        _unit_zh = {"day": "天", "month": "月", "year": "年"}[LONG_RUN_UNIT]
+        _steps = len(_ff_plan_horizon(1, SIM_DAYS, LONG_RUN_UNIT, start_date=SIM_START_DATE))
         print(
-            f"⏩ 长时段快进模式已启用：{SIM_DAYS} 天，每天每个智能体生成一条日简报"
-            f"（近似推进状态/目标/关系）。"
+            f"⏩ 长时段快进模式已启用：{SIM_DAYS} 天 = {_steps} 个「{_unit_zh}」步，"
+            f"每步每个智能体生成一条简报（近似推进状态/目标/关系）。"
         )
 
     run_simulation()

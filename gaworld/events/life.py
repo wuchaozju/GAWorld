@@ -81,6 +81,32 @@ LIFE_EVENT_TEMPLATES = [
         },
     },
     {
+        "key": "job_change",
+        "title": "换工作",
+        "description": "离开原岗位换到一份新工作，收入水平、通勤和日常节奏都要重新适应。",
+        "severity": 0.66,
+        "impact_tags": ["career", "employment", "routine", "income"],
+        "state_effects": {
+            "emotion": 0.04,
+            "stress": 0.12,
+            "econ_security": -0.05,
+            "time_pressure": 0.10,
+        },
+    },
+    {
+        "key": "unemployment",
+        "title": "失业",
+        "description": "失去工作，收入中断，接下来的时间主要用于找工作和压缩开支。",
+        "severity": 0.88,
+        "impact_tags": ["career", "employment", "routine", "money"],
+        "state_effects": {
+            "emotion": -0.18,
+            "stress": 0.22,
+            "econ_security": -0.26,
+            "self_control": -0.06,
+        },
+    },
+    {
         "key": "relationship_break",
         "title": "关系破裂",
         "description": "与重要朋友、伴侣或同事发生严重冲突，信任感和日常节奏受到冲击。",
@@ -312,6 +338,8 @@ def normalize_life_event(payload, current_frame=None):
         "time": event_time,
         "impact_tags": _clean_tags(payload.get("impact_tags", template.get("impact_tags", []))),
         "state_effects": _clean_state_effects(state_effects),
+        # Destination job for a 换工作 event; empty means "let the economy pick".
+        "new_job": str(payload.get("new_job") or "").strip()[:60],
         "created_at": str(payload.get("created_at") or _now_text()),
         "created_by": str(payload.get("created_by") or "dashboard")[:80],
         "triggered_at": "",

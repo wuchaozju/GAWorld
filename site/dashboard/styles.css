@@ -148,6 +148,9 @@ p { color: var(--muted); line-height: 1.7; }
   align-items: end;
 }
 .toolbar-actions { flex: 0 0 auto; align-self: end; }
+/* 定时运行: the time field and its button read as one control. */
+.schedule-run { display: flex; gap: 8px; align-items: center; }
+.schedule-run input { width: auto; }
 
 label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 800; }
 input, select, textarea {

@@ -29,7 +29,7 @@
           <input id="agentIdsInput" data-i18n-placeholder="agent.ids_placeholder" placeholder="1,2,3" />
         </label>
         <label>
-          <span class="field-label"><span data-i18n="sim.days">仿真天数</span><span class="help-tip" data-i18n-help="sim.days_hint" data-help="本次仿真持续的天数。"></span></span>
+          <span class="field-label"><span id="simSpanLabel" data-i18n="sim.days">仿真天数</span><span id="simSpanHelp" class="help-tip" data-i18n-help="sim.days_hint" data-help="本次仿真持续的天数。"></span></span>
           <input id="simDaysInput" type="number" min="1" />
         </label>
         <label>
@@ -52,9 +52,17 @@
           <input id="realtimeInput" type="checkbox" />
           <span data-i18n="sim.realtime">实时等待</span>
         </label>
-        <label class="checkline" data-i18n-title="sim.fast_forward_hint" title="长时段快进：每天压缩成一条日简报（每智能体每天一次 LLM 调用），跳过日内时刻循环；适合 60/600 天等长期模拟。">
+        <label class="checkline" data-i18n-title="sim.fast_forward_hint" title="长时段快进：一步压缩成一条简报（每智能体每步一次 LLM 调用），跳过日内时刻循环；状态/目标/关系仍近似推进。一步多长由旁边的「步长单位」决定——按天适合 60/600 天，按月/按年才跑得动数年到数十年。">
           <input id="fastForwardInput" type="checkbox" />
           <span data-i18n="sim.fast_forward">长时段快进</span>
+        </label>
+        <label class="field">
+          <span class="field-label"><span data-i18n="sim.step_unit">步长单位</span><span class="help-tip" data-i18n-help="sim.step_unit_hint" data-help="快进时一步代表多长时间：按天（每人每天一条简报）、按月、按年。跑数年以上必须用月或年——否则调用量按天数线性增长。仅在长时段快进时生效。"></span></span>
+          <select id="stepUnitSelect">
+            <option value="day" data-i18n="sim.step_unit_day">天</option>
+            <option value="month" data-i18n="sim.step_unit_month">月</option>
+            <option value="year" data-i18n="sim.step_unit_year">年</option>
+          </select>
         </label>
       </div>
       <div class="toolbar-lower">
@@ -73,6 +81,11 @@
           <a href="/#settings" target="_top" class="button" data-i18n-title="btn.all_settings_hint" title="打开配置中心：本项目的全部配置项集中在那里，每一项都有说明。"><span data-i18n="btn.all_settings">全部配置</span> ↗</a>
           <button id="saveConfigBtn" class="button" data-i18n="btn.save_config">保存配置</button>
           <button id="runBtn" class="button primary" data-i18n="btn.run_simulation">运行仿真</button>
+          <div class="schedule-run">
+            <input id="scheduleAtInput" type="datetime-local" data-i18n-title="btn.schedule_run_hint" title="定时运行：到达设定时刻后，服务器用当前配置自动启动仿真。时间按运行面板所在机器的本地时间计算，页面关掉也不影响。" />
+            <button id="scheduleRunBtn" class="button" data-i18n="btn.schedule_run">定时运行</button>
+            <button id="cancelScheduleBtn" class="button" data-i18n="btn.cancel_schedule" hidden>取消定时</button>
+          </div>
           <button id="resetRunBtn" class="button" data-i18n="btn.reset_and_run">重置并运行</button>
           <button id="stopBtn" class="button danger" data-i18n="btn.stop">停止</button>
         </div>
@@ -277,6 +290,10 @@
             <label>
               <span data-i18n="life_event.severity">强度</span>
               <input id="lifeEventSeverityInput" type="number" min="0" max="1" step="0.05" value="0.7" />
+            </label>
+            <label id="lifeEventNewJobField" hidden>
+              <span data-i18n="life_event.new_job">新职业</span>
+              <input id="lifeEventNewJobInput" data-i18n-placeholder="life_event.new_job_placeholder" placeholder="留空=自动转行" />
             </label>
           </div>
           <input id="lifeEventTitleInput" class="event-title-input" data-i18n-placeholder="life_event.title_placeholder" placeholder="事件标题（可覆盖模板）" />

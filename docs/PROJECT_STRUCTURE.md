@@ -18,6 +18,16 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `remove_agent`).
 - `gaworld/sim/pipeline.py`: the agent step as a configurable sequence of
   12 named stages (`CONFIG["pipeline"]["agent_step"]`).
+- `gaworld/sim/_fastforward.py`: the *other* driver — long-horizon
+  fast-forward, which compresses one step into a single per-agent brief
+  instead of running the 12 stages per tick. `long_run.unit` picks how much
+  wall-time a step covers (`day` / `month` / `year`), which is what makes
+  decade-scale runs affordable; `Period` + `plan_horizon` turn a run length
+  into the list of steps the main loop iterates, and `plan_hook_chunks`
+  splits each step into the ≤30-day day-boundary hook emissions that keep
+  the economy's monthly settlement cadence landing. A `day`-unit horizon is
+  one period per day, so the classic day loop and the coarse loop are the
+  same loop.
 - `gaworld/plugins/`: built-in plugin assembly — `builtin_plugins()` is
   the one place that may import built-in plugin classes.
 - Built-in plugins (one per subsystem): `gaworld/policy/plugin.py`
@@ -33,6 +43,12 @@ CLI/backward-compat entrypoints until their callers have been migrated.
 - `generative_city_sim.py`: CLI entrypoint and simulator loop — pipeline
   scaffolding only; subsystem logic lives in the plugins above.
 - `config.py`: compatibility shim that exposes `CONFIG`.
+- `environment.py`: compatibility shim re-exporting `EnvironmentSystem` /
+  `RemoteEnvironmentClient` from `gaworld/env/system.py`. It was a full copy
+  until 2026-08-29; the two drifted in both directions and the simulator
+  imported the *root* one, which is why `_annotate_anomaly` never ran. Keep
+  it a re-export — `tests/test_environment_shim.py` fails if anything is
+  defined here again.
 - `data/`: tracked seed data and local baseline inputs.
 - `gaworld/settings/`: focused configuration fragments assembled into the legacy `CONFIG` dict.
 - `gaworld/core/`: typed core abstractions used by new code.

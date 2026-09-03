@@ -49,6 +49,7 @@ class InterestsPlugin(Plugin):
         if not self._enabled:
             return
         ctx.bus.on("episode.compose", self._grow_from_episode)
+        ctx.bus.on("growth.step", self._grow_from_step)
         ctx.bus.on("on_day_end", self._day_end_evolution, priority=10)
 
     # -- hooks ---------------------------------------------------------------
@@ -77,6 +78,69 @@ class InterestsPlugin(Plugin):
             growth_log = f"[GrowthProfile] {agent.get('name', agent['id'])}\n{context}\n"
             print(growth_log.strip())
             self._append_agent_log(agent, growth_log)
+
+    def _grow_from_step(self, hook_ctx):
+        """Grow skills over a fast-forward step.
+
+        Practice normally accrues on ``episode.compose``, one tick at a time.
+        Fast-forward builds no episodes, so only the day-end *decay* ran and
+        skills could only fall — a simulated year took 阅读 from 0.30 to 0.10
+        no matter how the resident spent it. That is the opposite of
+        individual development, and it is worst exactly where development is
+        the point.
+
+        The period digest reports average weekly minutes per item; this
+        replays the existing power-law curve once per elapsed week rather
+        than inventing a second growth model, on consecutive days so the
+        streak bonus behaves as it does in a fine-grained run.
+        """
+        sim = hook_ctx["sim"]
+        day = int(hook_ctx.get("day") or 0)
+        try:
+            span_days = max(1, int(hook_ctx.get("period_days") or 1))
+        except (TypeError, ValueError):
+            span_days = 1
+        weeks = max(1, round(span_days / 7))
+        by_agent = hook_ctx.get("development_by_agent") or {}
+        stateful = bool(sim.config.get("stateful", False))
+        memory_dir = sim.config.get("memory_dir", "output/memory")
+        for agent in hook_ctx.get("agents", []) or []:
+            entries = by_agent.get(agent["id"]) or []
+            if not entries:
+                continue
+            changed = {}
+            for entry in entries:
+                name = str(entry.get("item", "")).strip()
+                minutes = entry.get("weekly_minutes")
+                if not name or not minutes:
+                    continue
+                for week in range(weeks):
+                    episode = {
+                        "final_activity": name,
+                        "action": str(entry.get("note", "") or name),
+                        "reflection": "",
+                        # Consecutive days keep the streak bonus meaningful.
+                        "day": max(1, day - weeks + week + 1),
+                    }
+                    profile, progress = self._impl.update_growth_from_episode(
+                        agent.get("growth_profile"), episode, step_minutes=int(minutes),
+                    )
+                    agent["growth_profile"] = profile
+                    changed.update(progress.get("level_changes") or {})
+            if not changed:
+                continue
+            if stateful:
+                self._impl.save_agent_growth_profile(
+                    agent["id"], agent.get("growth_profile"), memory_dir)
+            line = "；".join(
+                f"{name} {vals['before']:.2f}→{vals['after']:.2f}"
+                for name, vals in changed.items()
+            )
+            text = f"[GrowthStep Day {day}] {agent.get('name', agent['id'])}: {line}\n"
+            daily_logs = hook_ctx.get("daily_logs")
+            if daily_logs is not None:
+                daily_logs[agent["id"]] += text
+            self._append_agent_log(agent, text)
 
     def _grow_from_episode(self, hook_ctx):
         sim = hook_ctx["sim"]

@@ -44,7 +44,14 @@ python generative_city_sim.py run
 python generative_city_sim.py run --sim-days 600 --fast-forward
 ```
 
-（Dashboard 工具栏也可勾选「长时段快进」并拖动「随机性」滑杆。详见 [TUTORIAL.v2 §3.1](./TUTORIAL.v2.md#31-长时段快进fast-forward跑-10--60--600-天)。）
+要跑**数年到数十年**，把一步做大——一个月或一整年压缩成每人一条阶段简报。调用量按**步数**算而不是天数：50 人跑 10 年，按年 500 次，按天 18.25 万次。
+
+```bash
+python generative_city_sim.py run --sim-years 10       # 一年一步
+python generative_city_sim.py run --sim-months 24      # 一个月一步
+```
+
+（Dashboard 工具栏也可勾选「长时段快进」、选「步长单位」并拖动「随机性」滑杆；选月/年后左边的时长字段会变成「仿真月数 / 仿真年数」。详见 [TUTORIAL.v2 §3.1](./TUTORIAL.v2.md#31-长时段快进fast-forward跑-10--60--600-天) 与 [§3.2](./TUTORIAL.v2.md#32-大跨度模拟以月年为时间单位)。）
 
 重点查看：
 

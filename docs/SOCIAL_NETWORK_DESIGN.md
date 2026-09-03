@@ -175,7 +175,11 @@
 - **跨智能体"得知"的自动化**：目前 `disclose_ghost` 需要显式调用，未来可在对话/反思阶段抽取 ghost 引用自动 disclose。
 - **Ghost ↔ Ghost 之间的关系**：现在 ghost 是叶节点，互相不知道。如果要做"我妈和我表姐有矛盾"这种二度关系，需要扩 ghost record。
 - **结构化时间事件**：生日/节日目前嵌在 closeness 阈值里，未来可加 `ghost.profile.birthday` 让事件发生在具体日期。
-- **岗位驱动的 coworker 生命周期**：换工作时旧 coworker 自动转为 `former_coworker`、衰减率切档；当前需要外部触发。
+- ~~**岗位驱动的 coworker 生命周期**：换工作时旧 coworker 自动转为 `former_coworker`、衰减率切档；当前需要外部触发。~~
+  **已实现（2026-08-29）**：`retire_work_ties()` 执行切换，由「换工作 / 失业」人生事件触发
+  （`events/plugin.py:_apply_job_change`）。`coworker` / `boss` / `subordinate` 三个
+  current-work 角色转为 `former_coworker`，衰减率 0.006 → 0.015、义务 0.42 → 0.20、
+  渠道从 face+chat 降为 chat。`client` 不转（客户可能跟着人走）。
 - **Visualization**：可以把每个 agent 的 social_roster 输出成节点图，便于人工检查。
 
 ---

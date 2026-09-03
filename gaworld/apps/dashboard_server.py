@@ -1,5 +1,6 @@
 import atexit
 import csv
+import datetime
 import json
 import os
 import re
@@ -65,7 +66,13 @@ RUN_STATE = {
     "process": None,
     "started_at": None,
     "log_path": RUN_LOG_PATH,
+    # Pending "定时运行": the timer thread that will start the run, the wall
+    # clock it fires at, the payload to start with, and the error a fired
+    # timer left behind (so a failed auto-start is visible in the panel).
+    "schedule": None,
 }
+
+_SCHEDULE_LOCK = threading.Lock()
 
 _COLLABORATION_SERVICE = None
 _COLLABORATION_LOCK = threading.Lock()
@@ -107,8 +114,31 @@ def _dashboard_config():
 
 
 def _effective_config():
-    cfg = deepcopy(CONFIG)
+    """The configuration a fresh process would load, as of right now.
+
+    Deliberately *not* ``deepcopy(CONFIG)``. ``CONFIG`` is assembled once at
+    import and ``settings/overrides.py`` already merges the override files
+    into it, so it is a snapshot that goes stale the moment the dashboard
+    writes one. Reading it back told a user who had just reset a key that it
+    still held its old value — the exact "the edit looks like it worked"
+    failure the 配置 panel exists to prevent — because the reset emptied the
+    override file while the stale copy kept the overridden value.
+
+    So rebuild from the Python defaults and re-apply the layers in the order
+    ``overrides.apply_runtime_overrides`` uses (env last, twice, so it beats
+    the environment file). The dashboard layer comes from
+    ``_dashboard_config()`` rather than the loader's relative path, keeping
+    the module path constants the single lever over where it reads.
+    """
+    from gaworld.settings.defaults import build_default_config
+    from gaworld.settings.overrides import load_env_override, load_environment_config
+
+    cfg = build_default_config()
+    env_override = load_env_override()
     _deep_update(cfg, _dashboard_config())
+    _deep_update(cfg, env_override)
+    _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
+    _deep_update(cfg, env_override)
     return cfg
 
 
@@ -320,12 +350,40 @@ def _provider_names(cfg):
     return sorted(providers.keys())
 
 
+def _sim_start_date(cfg):
+    from gaworld.sim._utils import _parse_sim_start_date
+
+    calendar = cfg.get("calendar", {}) if isinstance(cfg.get("calendar"), dict) else {}
+    return _parse_sim_start_date(calendar.get("start_date", "today"))
+
+
+def _sim_span(cfg):
+    """The run horizon expressed in the configured step unit.
+
+    The toolbar shows one horizon field whose unit follows ``long_run.unit``,
+    mirroring the CLI's ``--sim-days`` / ``--sim-months`` / ``--sim-years``.
+    ``count`` is the number of steps the run actually plans, so a 3653-day
+    year-unit run reads back as "10 年" rather than as a day count nobody
+    typed.
+    """
+    from gaworld.sim._fastforward import long_run_unit, plan_horizon
+
+    unit = long_run_unit(cfg)
+    try:
+        total_days = max(1, int(cfg.get("sim_days") or 1))
+    except (TypeError, ValueError):
+        total_days = 1
+    periods = plan_horizon(1, total_days, unit, start_date=_sim_start_date(cfg))
+    return {"unit": unit, "count": len(periods) or 1}
+
+
 def _config_summary():
     cfg = _effective_config()
     routing = cfg.get("llm", {}).get("routing", {})
     return {
         "agent_ids": cfg.get("agent_ids", []),
         "sim_days": cfg.get("sim_days"),
+        "sim_span": _sim_span(cfg),
         "seconds_per_day": cfg.get("seconds_per_day"),
         "simulate_realtime": cfg.get("simulate_realtime"),
         "time_step_minutes": cfg.get("time_step_minutes"),
@@ -346,6 +404,23 @@ def _sanitize_config_patch(payload):
     for key in ("sim_days", "seconds_per_day"):
         if key in payload:
             patch[key] = max(1, int(payload[key]))
+    # The toolbar sends the horizon in the step unit ("10 年"); the calendar
+    # math that turns it into sim days lives in one place, so do it here
+    # rather than approximating 30/365 in the browser. Wins over `sim_days`
+    # when both are present.
+    span = payload.get("sim_span")
+    if isinstance(span, dict):
+        from gaworld.sim._fastforward import span_days
+
+        unit = str(span.get("unit") or "day").strip().lower()
+        try:
+            count = max(1, int(span.get("count") or 1))
+        except (TypeError, ValueError):
+            count = 1
+        if unit in ("day", "month", "year"):
+            patch["sim_days"] = span_days(
+                unit, count, start_date=_sim_start_date(_effective_config())
+            )
     if "agent_ids" in payload:
         ids = payload.get("agent_ids")
         if isinstance(ids, str):
@@ -363,6 +438,17 @@ def _sanitize_config_patch(payload):
             clean["enabled"] = bool(lr["enabled"])
         if "brief_llm" in lr:
             clean["brief_llm"] = bool(lr["brief_llm"])
+        if "unit" in lr:
+            unit = str(lr["unit"] or "day").strip().lower()
+            if unit in ("day", "month", "year"):
+                clean["unit"] = unit
+                # Picking 月/年 is picking fast-forward: there is no per-month
+                # tick loop, so persisting "unit=year, enabled=false" would
+                # save a config that silently runs 365 tick-loop days. Write
+                # the combination the run will actually use, so the checkbox
+                # reads back ticked instead of lying to the next visitor.
+                if unit != "day":
+                    clean["enabled"] = True
         if "max_state_delta" in lr:
             try:
                 clean["max_state_delta"] = max(0.0, min(1.0, float(lr["max_state_delta"])))
@@ -1251,6 +1337,35 @@ def _run_log_markdown():
     return "\n".join(lines), f"gaworld-run-log-{stamp}.md"
 
 
+#: Shock-log entry types written by the employment life events.
+_EMPLOYMENT_RECORD_TYPES = ("job_change", "unemployment", "rehired")
+
+
+def _employment_payload(agent_id):
+    """Current job + the job changes behind it, for the agent panel.
+
+    Read from the per-agent economy state file — the only runtime artefact
+    carrying a *live* job (the profile markdown holds the Day-1 one, which is
+    exactly what stops being true after a 换工作/失业 event fires).
+    """
+    from gaworld.economy.finance import UNEMPLOYED_JOB_TEXT
+
+    econ = _read_json_file(_memory_file(agent_id, "_economy"), {})
+    if not isinstance(econ, dict) or not econ:
+        return {}
+    job = str(econ.get("job") or "")
+    history = [row for row in econ.get("shock_log", [])
+               if isinstance(row, dict) and row.get("type") in _EMPLOYMENT_RECORD_TYPES]
+    return {
+        "job": job,
+        "status": "unemployed" if job == UNEMPLOYED_JOB_TEXT else "employed",
+        "hourly_income": _num(econ.get("base_hourly_income"), 0.0),
+        "previous_job": str(econ.get("previous_job") or ""),
+        "recovery_days": int(_num(econ.get("_layoff_days_remaining"), 0)),
+        "history": history[-5:],
+    }
+
+
 def _memory_payload(agent_id):
     memory_dir = _effective_config().get("memory_dir", "output/memory")
     base = os.path.join(REPO_ROOT, memory_dir)
@@ -1269,6 +1384,7 @@ def _memory_payload(agent_id):
         "goals": goals,
         "episodes_tail": episodes,
         "log_tail": log_text,
+        "employment": _employment_payload(agent_id),
     }
 
 
@@ -1302,11 +1418,16 @@ def _run_status(log_offset=None):
     code = None if not proc else proc.poll()
     log_path = RUN_STATE.get("log_path") or RUN_LOG_PATH
     chunk = _run_log_slice(log_path, log_offset)
+    schedule = RUN_STATE.get("schedule") or {}
     return {
         "running": running,
         "returncode": code,
         "started_at": RUN_STATE.get("started_at"),
         "log_path": RUN_STATE.get("log_path"),
+        # Only a schedule that still holds a live timer is pending; one whose
+        # timer already fired lingers only to carry `schedule_error`.
+        "scheduled_at": schedule.get("at") if schedule.get("timer") else None,
+        "schedule_error": schedule.get("error"),
         # `log_append` tells the client whether to append `log_tail` to what it
         # already shows or replace it. Clients that send no offset always get a
         # replacement, so the field stays backwards compatible.
@@ -1356,6 +1477,88 @@ def _start_simulation(payload):
     RUN_STATE["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     RUN_STATE["log_path"] = RUN_LOG_PATH
     return _run_status()
+
+
+def _parse_schedule_time(raw):
+    """Parse the ``datetime-local`` value the dashboard sends ("2026-08-30T21:30").
+
+    Naive local time on purpose: the timer fires against the server's own clock,
+    and the dashboard is a local console — browser and server share a machine.
+    A value that does carry an offset is converted to local time first.
+    """
+    text = str(raw or "").strip().replace(" ", "T")
+    if not text:
+        raise ValueError("Scheduled time is required")
+    try:
+        when = datetime.datetime.fromisoformat(text)
+    except ValueError:
+        raise ValueError(f"Invalid scheduled time: {raw}")
+    if when.tzinfo is not None:
+        when = when.astimezone().replace(tzinfo=None)
+    return when
+
+
+def _schedule_simulation(payload):
+    """Arm a timer that starts the simulation at the requested wall clock.
+
+    The config from the form is kept with the schedule and applied when the
+    timer fires, so a scheduled run behaves exactly like pressing 运行仿真 then.
+    """
+    when = _parse_schedule_time(payload.get("at"))
+    delay = (when - datetime.datetime.now()).total_seconds()
+    if delay <= 0:
+        raise ValueError("Scheduled time must be in the future")
+    start_payload = {
+        "reset": bool(payload.get("reset")),
+        "config": payload.get("config"),
+    }
+    with _SCHEDULE_LOCK:
+        previous = RUN_STATE.get("schedule") or {}
+        if previous.get("timer"):
+            previous["timer"].cancel()
+        timer = threading.Timer(delay, _fire_scheduled_simulation)
+        timer.daemon = True
+        RUN_STATE["schedule"] = {
+            "at": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "timer": timer,
+            "payload": start_payload,
+            "error": None,
+        }
+        timer.start()
+    return _run_status()
+
+
+def _cancel_scheduled_simulation():
+    with _SCHEDULE_LOCK:
+        schedule = RUN_STATE.get("schedule") or {}
+        if schedule.get("timer"):
+            schedule["timer"].cancel()
+        RUN_STATE["schedule"] = None
+    return _run_status()
+
+
+def _fire_scheduled_simulation():
+    with _SCHEDULE_LOCK:
+        schedule = RUN_STATE.get("schedule")
+        if not schedule:
+            return
+        # Drop the timer first: from here on the schedule is spent, and the
+        # entry only survives long enough to report a failed start.
+        schedule["timer"] = None
+        start_payload = schedule.get("payload") or {}
+    try:
+        _start_simulation(start_payload)
+    except Exception as exc:
+        # Nobody is waiting on this call, so a failure has to be parked where
+        # /api/run/status can show it instead of raising into the timer thread.
+        _LOG.exception("Scheduled run failed to start: %s", exc)
+        with _SCHEDULE_LOCK:
+            schedule = RUN_STATE.get("schedule")
+            if schedule:
+                schedule["error"] = str(exc)
+    else:
+        with _SCHEDULE_LOCK:
+            RUN_STATE["schedule"] = None
 
 
 def _stop_simulation():
@@ -1811,6 +2014,10 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(_start_simulation(payload))
         if path == "/api/run/stop":
             return self._json_response(_stop_simulation())
+        if path == "/api/run/schedule":
+            return self._json_response(_schedule_simulation(payload))
+        if path == "/api/run/schedule/cancel":
+            return self._json_response(_cancel_scheduled_simulation())
         if path == "/api/interview":
             return self._json_response(_interview_agent(payload))
         if path == "/api/life-events":

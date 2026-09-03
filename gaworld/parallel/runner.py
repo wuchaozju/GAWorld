@@ -32,11 +32,15 @@ from gaworld.parallel.spec import ExperimentSpec, world_overrides
 
 _LOG = get_logger("gaworld.parallel.runner")
 
-#: The intra-day banner (``===== Day 3 (…)``) and the fast-forward line
-#: (``[FastForward Day 3] …``). Anchored on purpose: a bare ``Day (\d+)``
-#: also matches agent goal text like "目标 Day 14", which reported a
-#: one-day run as being on day 14.
-_DAY_RE = re.compile(r"^=+ Day (\d+)|^\[FastForward Day (\d+)", re.MULTILINE)
+#: The intra-day banner (``===== Day 3 (…)``), the coarse month/year banner
+#: (``===== Month 3 · Day 90 (…)``, whose day number is the step's *last*
+#: sim day) and the fast-forward line (``[FastForward Day 3] …``). Anchored
+#: on purpose: a bare ``Day (\d+)`` also matches agent goal text like
+#: "目标 Day 14", which reported a one-day run as being on day 14.
+_DAY_RE = re.compile(
+    r"^=+ Day (\d+)|^=+ (?:Month|Year) \d+ · Day (\d+)|^\[FastForward Day (\d+)",
+    re.MULTILINE,
+)
 
 #: How much of a run log to read when sampling progress.
 _LOG_TAIL_BYTES = 8192

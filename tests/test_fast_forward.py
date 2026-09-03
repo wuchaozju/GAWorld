@@ -258,7 +258,7 @@ class TestFastForwardE2E(unittest.TestCase):
             "AGENT_IDS", "SIM_DAYS", "STATEFUL", "SIMULATE_REALTIME",
             "SECONDS_PER_DAY", "NEWS_ENABLED", "INTERVENTION_ENABLED",
             "HUMAN_REALISM_ENABLED", "VISUALIZATION_ENABLED",
-            "LIFE_EVENTS_ENABLED", "LONG_RUN_ENABLED",
+            "LIFE_EVENTS_ENABLED", "LONG_RUN_ENABLED", "LONG_RUN_UNIT",
         )
         _saved = {name: getattr(sim, name) for name in _globals if hasattr(sim, name)}
         self.addCleanup(lambda: [setattr(sim, k, v) for k, v in _saved.items()])
@@ -274,6 +274,11 @@ class TestFastForwardE2E(unittest.TestCase):
         sim.VISUALIZATION_ENABLED = False
         sim.LIFE_EVENTS_ENABLED = False
         sim.LONG_RUN_ENABLED = True
+        # Pin the step unit: this test is about *day*-granularity fast-forward,
+        # and the unit otherwise comes from the developer's local
+        # dashboard_config.json — a month there would silently turn this into a
+        # period run and break the per-day assertions below.
+        sim.LONG_RUN_UNIT = "day"
 
         with install() as mock:
             sim.run_simulation()

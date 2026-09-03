@@ -173,6 +173,16 @@ Run a **long-horizon fast-forward** (compress each day into one per-agent daily 
 python generative_city_sim.py run --sim-days 600 --fast-forward
 ```
 
+Go **multi-year** by making one step a whole month or year — one "period brief" per agent per month/year, with a list of milestones folded into memory. This is what makes decade-scale runs affordable: 10 years x 50 residents is ~500 LLM calls at `--time-unit year` versus ~182,500 at day granularity. The sim calendar still advances day by day underneath (real month lengths and leap years), and the day-boundary hooks — economy settlement, interest decay, household spending — are replayed in <=30-day chunks, so a simulated year books a year of rent and twelve monthly settlements rather than one day's worth:
+
+```bash
+python generative_city_sim.py run --sim-years 10              # one step per year
+python generative_city_sim.py run --sim-months 24             # one step per month
+python generative_city_sim.py run --sim-years 10 --time-unit month
+```
+
+Any of `--sim-months` / `--sim-years` / `--time-unit` turns fast-forward on. The trade is total: intra-day and day-to-day detail is gone — a step leaves one narrative brief plus a set of cumulative deltas. Use it for long-run evolution (life trajectories, multi-year policy after-effects), not for behaviour within a day.
+
 Reset stateful artifacts:
 
 ```bash

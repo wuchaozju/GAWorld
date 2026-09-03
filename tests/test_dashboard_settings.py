@@ -205,6 +205,29 @@ class SaveTests(unittest.TestCase):
 
 
 class ResetTests(unittest.TestCase):
+    def test_the_tree_is_not_a_stale_snapshot_of_import_time_config(self):
+        """The panel must read the layers, not ``CONFIG``.
+
+        ``settings/overrides.py`` merges the override files into ``CONFIG``
+        at import, so ``deepcopy(CONFIG)`` is a snapshot that goes stale the
+        moment the dashboard writes one. It made reset look like it had not
+        worked — the override file was empty, the panel still showed the old
+        value — which is precisely the "the edit looks like it worked"
+        confusion this panel exists to remove, running in reverse.
+        """
+        with _TempRepo(dashboard_config={"sim_days": 9}):
+            self.assertEqual(9, api.overview()["tree"]["sim_days"])
+            # A write made *after* import has to be visible immediately.
+            _TempRepo.write(ds.DASHBOARD_CONFIG_PATH, {"sim_days": 77})
+            self.assertEqual(77, api.overview()["tree"]["sim_days"])
+            # ...and so does its removal.
+            _TempRepo.write(ds.DASHBOARD_CONFIG_PATH, {})
+            payload = api.overview()
+            self.assertEqual(
+                payload["defaults"]["sim_days"], payload["tree"]["sim_days"],
+                "with no override left, the tree is the Python default",
+            )
+
     def test_reset_deletes_the_key_instead_of_writing_the_default_back(self):
         # Writing the default value into the override file would pin it: a
         # later change to the Python default would silently not take effect.

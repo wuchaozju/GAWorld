@@ -173,10 +173,12 @@ def load_profiles(output_dir: Path) -> dict[int, str]:
 def detect_run_mode(output_dir: Path) -> str:
     """``fast_forward`` | ``full`` | ``unknown``.
 
-    Fast-forward days log a ``[FastForward Day N]`` block instead of a per-tick
-    trace, so the logs are the cheapest reliable marker. This matters because a
-    fast-forward run writes no episodes and its diaries come from the
-    deterministic fallback -- both change which rubric items are answerable.
+    Fast-forward steps log a ``[FastForward <Day|Month|Year> N]`` block instead
+    of a per-tick trace, so the logs are the cheapest reliable marker. This
+    matters because a fast-forward run writes no episodes and its diaries come
+    from the deterministic fallback -- both change which rubric items are
+    answerable. The marker prefix is unit-agnostic on purpose: a month/year
+    run is fast-forward too, just coarser.
     """
     logs = Path(output_dir) / "logs"
     if not logs.is_dir():
@@ -186,7 +188,7 @@ def detect_run_mode(output_dir: Path) -> str:
             head = path.read_text(encoding="utf-8", errors="ignore")[:200_000]
         except OSError:
             continue
-        if "[FastForward Day" in head:
+        if "[FastForward " in head:
             return "fast_forward"
         if "=== Day " in head or "===== Day" in head:
             return "full"

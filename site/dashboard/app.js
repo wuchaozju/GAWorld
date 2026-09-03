@@ -21,6 +21,11 @@ const state = {
   // server already sent us, so each poll only brings back what was appended.
   // Null offset asks for a full (re)load.
   runLog: { text: "", offset: null, size: 0, skipped: 0 },
+  // Wall clock ("YYYY-MM-DD HH:MM:SS") of a pending 定时运行, or null. Owned by
+  // the server — the timer lives there, so it survives closing this page.
+  scheduledAt: null,
+  // Last schedule failure already reported, so the poll does not re-toast it.
+  scheduleError: null,
   // Household assignment for the current run, read from the recorder output.
   // Null until the first fetch; `{available:false}` once we know a run has
   // not produced any yet.
@@ -36,12 +41,18 @@ const els = {
   scheduleProviderSelect: document.getElementById("scheduleProviderSelect"),
   realtimeInput: document.getElementById("realtimeInput"),
   fastForwardInput: document.getElementById("fastForwardInput"),
+  stepUnitSelect: document.getElementById("stepUnitSelect"),
+  simSpanLabel: document.getElementById("simSpanLabel"),
+  simSpanHelp: document.getElementById("simSpanHelp"),
   randomnessInput: document.getElementById("randomnessInput"),
   randomnessValue: document.getElementById("randomnessValue"),
   routineRandomnessInput: document.getElementById("routineRandomnessInput"),
   routineRandomnessValue: document.getElementById("routineRandomnessValue"),
   saveConfigBtn: document.getElementById("saveConfigBtn"),
   runBtn: document.getElementById("runBtn"),
+  scheduleAtInput: document.getElementById("scheduleAtInput"),
+  scheduleRunBtn: document.getElementById("scheduleRunBtn"),
+  cancelScheduleBtn: document.getElementById("cancelScheduleBtn"),
   resetRunBtn: document.getElementById("resetRunBtn"),
   stopBtn: document.getElementById("stopBtn"),
   runStatusBadge: document.getElementById("runStatusBadge"),
@@ -76,6 +87,8 @@ const els = {
   lifeEventSeverityInput: document.getElementById("lifeEventSeverityInput"),
   lifeEventTitleInput: document.getElementById("lifeEventTitleInput"),
   lifeEventDescriptionInput: document.getElementById("lifeEventDescriptionInput"),
+  lifeEventNewJobField: document.getElementById("lifeEventNewJobField"),
+  lifeEventNewJobInput: document.getElementById("lifeEventNewJobInput"),
   useSelectedAgentBtn: document.getElementById("useSelectedAgentBtn"),
   addLifeEventBtn: document.getElementById("addLifeEventBtn"),
   reloadLifeEventsBtn: document.getElementById("reloadLifeEventsBtn"),
@@ -196,6 +209,13 @@ function syncRunButtons() {
   els.runBtn.disabled = running;
   els.resetRunBtn.disabled = running;
   els.stopBtn.disabled = !running;
+  // A pending schedule swaps its button for 取消定时: re-arming would silently
+  // replace the timer, so cancelling has to be the visible next step.
+  const scheduled = Boolean(state.scheduledAt);
+  els.scheduleRunBtn.hidden = scheduled;
+  els.cancelScheduleBtn.hidden = !scheduled;
+  els.scheduleAtInput.disabled = running || scheduled;
+  els.scheduleRunBtn.disabled = running;
   [
     els.agentIdsInput,
     els.simDaysInput,
@@ -205,6 +225,7 @@ function syncRunButtons() {
     els.scheduleProviderSelect,
     els.realtimeInput,
     els.fastForwardInput,
+    els.stepUnitSelect,
     els.randomnessInput,
     els.routineRandomnessInput,
   ].forEach((el) => { el.disabled = running; });
@@ -242,17 +263,72 @@ function setLogText(el, text) {
   if (nearBottom) el.scrollTop = el.scrollHeight;
 }
 
+// The run horizon is entered in whatever the step unit is: "30 天", "24 月",
+// "10 年". Only the label and the number change here — the day count is
+// derived server-side, where the calendar lives.
+const SPAN_FIELD_KEYS = {
+  day: ["sim.days", "sim.days_hint"],
+  month: ["sim.months", "sim.months_hint"],
+  year: ["sim.years", "sim.years_hint"],
+};
+const SPAN_APPROX_DAYS = { day: 1, month: 30, year: 365 };
+
+function currentStepUnit() {
+  const unit = els.stepUnitSelect ? els.stepUnitSelect.value : "day";
+  return SPAN_FIELD_KEYS[unit] ? unit : "day";
+}
+
+function applyStepUnitLabels() {
+  const [labelKey, helpKey] = SPAN_FIELD_KEYS[currentStepUnit()];
+  els.simSpanLabel.setAttribute("data-i18n", labelKey);
+  els.simSpanHelp.setAttribute("data-i18n-help", helpKey);
+  // Re-run the i18n pass instead of writing the text ourselves: before the
+  // locale file lands __() echoes the key back, and we would paint
+  // "sim.years" into the toolbar.
+  if (window.applyTranslations) window.applyTranslations();
+  // Remember what the number currently means, so the next change can rescale
+  // it. Kept on the element rather than in a closure: loadConfig() sets the
+  // unit after the listeners are bound, and a closure would go stale.
+  els.stepUnitSelect.dataset.spanUnit = currentStepUnit();
+}
+
+// Switching the unit rescales the number so the horizon stays roughly where
+// it was (30 days -> 1 month). Approximate on purpose: it is a starting
+// value the user then edits, and whatever they submit is converted exactly.
+function onStepUnitChanged() {
+  const previousUnit = els.stepUnitSelect.dataset.spanUnit || "day";
+  const unit = currentStepUnit();
+  const days = Number(els.simDaysInput.value || 1) * (SPAN_APPROX_DAYS[previousUnit] || 1);
+  els.simDaysInput.value = Math.max(1, Math.round(days / SPAN_APPROX_DAYS[unit]));
+  // Picking 月/年 is picking fast-forward — there is no per-month tick loop.
+  // Tick the box so the toolbar shows what will actually run instead of
+  // quietly falling back to a day-by-day run over a now-huge horizon.
+  if (unit !== "day") els.fastForwardInput.checked = true;
+  applyStepUnitLabels();
+}
+
+// ...and the reverse: turning fast-forward off leaves no runner that can take
+// a month-long step, so the unit has to come back to 天.
+function onFastForwardChanged() {
+  if (els.fastForwardInput.checked || currentStepUnit() === "day") return;
+  els.stepUnitSelect.value = "day";
+  onStepUnitChanged();
+}
+
 function configPayloadFromForm() {
   const defaultProvider = els.defaultProviderSelect.value;
   const scheduleProvider = els.scheduleProviderSelect.value || defaultProvider;
   return {
     agent_ids: els.agentIdsInput.value,
-    sim_days: Number(els.simDaysInput.value || 1),
+    // The horizon field is expressed in the step unit; the server does the
+    // calendar math (leap years, 28/31-day months) and derives sim_days.
+    sim_span: { unit: currentStepUnit(), count: Number(els.simDaysInput.value || 1) },
     seconds_per_day: Number(els.secondsPerDayInput.value || 10),
     simulate_realtime: els.realtimeInput.checked,
     time_step_minutes: els.timeStepInput.value.trim(),
     long_run: {
       enabled: els.fastForwardInput.checked,
+      unit: els.stepUnitSelect.value || "day",
       randomness: Number(els.randomnessInput.value),
     },
     routine_change: {
@@ -271,11 +347,14 @@ async function loadConfig() {
   state.config = await api("/api/config");
   const cfg = state.config;
   els.agentIdsInput.value = (cfg.agent_ids || []).join(",");
-  els.simDaysInput.value = cfg.sim_days || 1;
+  const span = cfg.sim_span || { unit: "day", count: cfg.sim_days || 1 };
+  els.simDaysInput.value = span.count || 1;
   els.secondsPerDayInput.value = cfg.seconds_per_day || 10;
   els.timeStepInput.value = cfg.time_step_minutes == null ? "" : cfg.time_step_minutes;
   els.realtimeInput.checked = Boolean(cfg.simulate_realtime);
   els.fastForwardInput.checked = Boolean(cfg.long_run && cfg.long_run.enabled);
+  els.stepUnitSelect.value = (cfg.long_run && cfg.long_run.unit) || "day";
+  applyStepUnitLabels();
   const randomness = cfg.long_run && cfg.long_run.randomness != null ? cfg.long_run.randomness : 0.3;
   els.randomnessInput.value = randomness;
   els.randomnessValue.textContent = Number(randomness).toFixed(2);
@@ -449,6 +528,8 @@ function applyLifeEventTemplate() {
     els.lifeEventDescriptionInput.value = template.description || "";
   }
   els.lifeEventSeverityInput.value = template.severity == null ? 0.7 : template.severity;
+  // Only a 换工作 event has a destination job to name; 失业 always goes to 待业中.
+  els.lifeEventNewJobField.hidden = template.key !== "job_change";
 }
 
 function renderLifeEvents() {
@@ -491,6 +572,7 @@ function lifeEventPayloadFromForm() {
     severity: Number(els.lifeEventSeverityInput.value || 0.7),
     title: els.lifeEventTitleInput.value.trim(),
     description: els.lifeEventDescriptionInput.value.trim(),
+    new_job: els.lifeEventNewJobInput.value.trim(),
   };
 }
 
@@ -839,6 +921,51 @@ const INTENTION_LABELS = {
   target_recovery: "恢复目标",
 };
 
+const EMPLOYMENT_RECORD_LABELS = {
+  job_change: "换工作", unemployment: "失业", rehired: "复职",
+};
+
+// The profile markdown carries the Day-1 job, which is exactly what stops
+// being true once a 换工作/失业 event fires — so the live job comes from the
+// economy state instead, together with the changes that produced it.
+function employmentHtml(employment) {
+  const info = (employment && typeof employment === "object") ? employment : {};
+  const job = textOf(info.job);
+  if (!job) return "";
+  const unemployed = info.status === "unemployed";
+  const statusChip = `<span class="mem-chip${unemployed ? " warn" : ""}">`
+    + `${escapeHtml(unemployed ? tr("memory.employment_unemployed", "待业")
+      : tr("memory.employment_employed", "在职"))}</span>`;
+
+  let html = memRow(tr("memory.employment_job", "当前职业"), escapeHtml(job) + statusChip);
+  const hourly = Number(info.hourly_income) || 0;
+  if (hourly > 0) {
+    html += memRow(tr("memory.employment_hourly", "时薪"), escapeHtml(hourly.toFixed(2)));
+  }
+  const recovery = Number(info.recovery_days) || 0;
+  if (unemployed && recovery > 0) {
+    const previous = textOf(info.previous_job);
+    html += memRow(
+      tr("memory.employment_recovery", "复职倒计时"),
+      escapeHtml(__f("memory.employment_days", {days: recovery})
+        + (previous ? ` · ${previous}` : "")));
+  }
+
+  const history = Array.isArray(info.history) ? info.history : [];
+  html += history.slice().reverse().map((row) => {
+    const fallback = EMPLOYMENT_RECORD_LABELS[row.type];
+    const label = fallback ? tr(`memory.employment.${row.type}`, fallback) : textOf(row.type);
+    const move = `${textOf(row.from_job) || "—"} → ${textOf(row.to_job)}`;
+    const pay = (row.from_hourly == null || row.to_hourly == null) ? ""
+      : `（${Number(row.from_hourly).toFixed(2)} → ${Number(row.to_hourly).toFixed(2)}）`;
+    return `<div class="mem-item">`
+      + (row.day == null ? "" : `<span class="mem-chip time">Day ${escapeHtml(row.day)}</span>`)
+      + `<span class="mem-chip">${escapeHtml(label)}</span>`
+      + `<p>${escapeHtml(move + pay)}</p></div>`;
+  }).join("");
+  return html;
+}
+
 function renderStateMemory(payload) {
   const slots = scheduleEntries(payload.schedule);
   const scheduleHtml = slots.length
@@ -872,7 +999,8 @@ function renderStateMemory(payload) {
     return text ? memRow(label, escapeHtml(text)) : "";
   }).join("");
 
-  const html = memBlock(tr("memory.block_schedule", "日程"), scheduleHtml)
+  const html = memBlock(tr("memory.block_employment", "职业"), employmentHtml(payload.employment))
+    + memBlock(tr("memory.block_schedule", "日程"), scheduleHtml)
     + memBlock(tr("memory.block_habits", "习惯"), habitsHtml)
     + memBlock(tr("memory.block_intentions", "意图"), intentionRows);
   els.stateMemoryView.innerHTML = html || emptyHtml(tr("memory.no_state", "暂无日程 / 习惯 / 意图。"));
@@ -1087,6 +1215,26 @@ async function runSimulation(reset = false) {
   await refreshStatus();
 }
 
+// 定时运行: hand the server the wall clock and the current form config, and let
+// its timer start the run — the page does not have to stay open.
+async function scheduleSimulation() {
+  const at = els.scheduleAtInput.value;
+  if (!at) {
+    message(tr("sim.schedule_pick_time", "请先选择开始运行的时间。"), "error");
+    return;
+  }
+  const payload = { at, reset: false, config: configPayloadFromForm() };
+  const status = await api("/api/run/schedule", { method: "POST", body: JSON.stringify(payload) });
+  message(window.__f("sim.scheduled", { at: status.scheduled_at || at }));
+  await refreshStatus();
+}
+
+async function cancelScheduledSimulation() {
+  await api("/api/run/schedule/cancel", { method: "POST", body: "{}" });
+  message(tr("sim.schedule_cancelled", "已取消定时运行"));
+  await refreshStatus();
+}
+
 async function stopSimulation() {
   await api("/api/run/stop", { method: "POST", body: "{}" });
   message("已停止仿真");
@@ -1152,9 +1300,22 @@ async function refreshStatus() {
   const offset = state.runLog.offset;
   const status = await api(`/api/run/status${offset == null ? "" : `?log_offset=${offset}`}`);
   state.running = Boolean(status.running);
+  state.scheduledAt = status.scheduled_at || null;
   syncRunButtons();
-  els.runStatusBadge.textContent = status.running ? __("sim.running") : status.returncode == null ? __("sim.not_run") : __("sim.finished") + " " + status.returncode;
+  const badge = status.running
+    ? __("sim.running")
+    : status.returncode == null ? __("sim.not_run") : __("sim.finished") + " " + status.returncode;
+  // A pending schedule is the most useful thing the badge can say while
+  // nothing runs, so it takes over the idle text.
+  els.runStatusBadge.textContent = !status.running && state.scheduledAt
+    ? window.__f("sim.scheduled_badge", { at: state.scheduledAt })
+    : badge;
   els.runStatusBadge.className = `status-badge ${status.running ? "running" : status.returncode === 0 ? "done" : status.returncode ? "error" : ""}`;
+  // A timer that fired but could not start the run reports once, here.
+  if (status.schedule_error && status.schedule_error !== state.scheduleError) {
+    message(window.__f("sim.schedule_failed", { error: status.schedule_error }), "error");
+  }
+  state.scheduleError = status.schedule_error || null;
   applyRunLog(status);
   if (status.running) loadTrace(false).catch(() => {});
 }
@@ -1359,8 +1520,12 @@ function initFrameJson() {
 function bindEvents() {
   initCollapsibles();
   initFrameJson();
+  els.stepUnitSelect.addEventListener("change", onStepUnitChanged);
+  els.fastForwardInput.addEventListener("change", onFastForwardChanged);
   els.saveConfigBtn.addEventListener("click", withBusy(els.saveConfigBtn, saveConfig));
   els.runBtn.addEventListener("click", withBusy(els.runBtn, () => runSimulation(false)));
+  els.scheduleRunBtn.addEventListener("click", withBusy(els.scheduleRunBtn, scheduleSimulation));
+  els.cancelScheduleBtn.addEventListener("click", withBusy(els.cancelScheduleBtn, cancelScheduledSimulation));
   els.resetRunBtn.addEventListener("click", withBusy(els.resetRunBtn, () => runSimulation(true)));
   els.stopBtn.addEventListener("click", withBusy(els.stopBtn, stopSimulation));
   els.reloadTraceBtn.addEventListener("click", withBusy(els.reloadTraceBtn, async () => {
