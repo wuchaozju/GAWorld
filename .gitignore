@@ -154,6 +154,8 @@ celerybeat.pid
 !/site/console/**
 !/site/mobile/
 !/site/mobile/**
+!/site/simviz/
+!/site/simviz/**
 dashboard_config.json
 
 # mypy

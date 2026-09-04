@@ -190,6 +190,21 @@
       color: #f8fbf6;
     }
 
+    .form-status {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .form-status.success {
+      color: var(--green);
+    }
+
+    .form-status.error {
+      color: var(--red);
+    }
+
     .button.alt {
       background: var(--blue);
       border-color: var(--blue);
@@ -381,11 +396,11 @@
 <body>
   <div class="page">
     <section class="hero">
-      <img src="./video/public/gaworld-graphical-abstract.png" alt="GAWorld project overview" />
+      <img src="/video/public/gaworld-graphical-abstract.png" alt="GAWorld project overview" />
       <div class="hero-copy">
         <p class="eyebrow">GAWorld Participant Board</p>
         <h1>功能提案、认领与开发状态</h1>
-        <p>参与者可以在这里提出新的功能点，注明提出人，认领开发责任，并持续更新状态。页面数据保存在浏览器本地，不依赖后端。</p>
+        <p>参与者可以在这里提出新的功能点，注明提出人，认领开发责任，并持续更新状态。数据由团队服务器统一保存，方便吴老师集中 Review。</p>
       </div>
     </section>
 
@@ -443,19 +458,19 @@
       </div>
     </section>
 
-    <section class="panel composer">
+    <form id="todoForm" class="panel composer" method="post" action="/api/todos/create-form">
       <div class="composer-side">
         <label class="field">
           <span>功能标题</span>
-          <input id="titleInput" type="text" placeholder="例如：让 dashboard 支持批量 agent 采访" />
+          <input id="titleInput" name="title" type="text" required placeholder="例如：让 dashboard 支持批量 agent 采访" />
         </label>
         <label class="field">
           <span>提出人</span>
-          <input id="proposerInput" type="text" placeholder="例如：张三" />
+          <input id="proposerInput" name="proposer" type="text" required placeholder="例如：张三" />
         </label>
         <label class="field">
           <span>优先级</span>
-          <select id="priorityInput">
+          <select id="priorityInput" name="priority">
             <option value="high">高</option>
             <option value="medium" selected>中</option>
             <option value="low">低</option>
@@ -463,11 +478,12 @@
         </label>
         <label class="field">
           <span>功能说明</span>
-          <textarea id="detailInput" placeholder="写清楚场景、目标和预期结果"></textarea>
+          <textarea id="detailInput" name="details" required placeholder="写清楚场景、目标和预期结果"></textarea>
         </label>
         <div class="button-row">
-          <button id="addBtn" class="button primary" type="button">提交新功能点</button>
+          <button id="addBtn" class="button primary" type="submit">提交新功能点</button>
         </div>
+        <div id="formStatus" class="form-status" aria-live="polite">填写后点击按钮会提交并刷新看板。</div>
       </div>
 
       <div class="composer-side">
@@ -475,20 +491,19 @@
           <h2>协作规则</h2>
           <p>提出功能点时尽量写明背景和目标，便于其他参与者判断价值与工作量。认领后应填写自己的名字，并在推进时主动更新状态。</p>
           <p>如果某个功能点遇到外部依赖、接口权限或设计不明确，可标记为“阻塞”，让其他人看到卡点在哪里。</p>
-          <p>页面会把所有数据保存在当前浏览器的本地存储中，适合小组内部共享模板后各自维护。</p>
+          <p>所有成员访问同一个地址即可看到一致的功能列表；认领、状态更新和新增功能都会写入服务器。</p>
         </div>
       </div>
-    </section>
+    </form>
 
     <section class="board" id="board"></section>
 
     <section class="footer-note">
-      当前页面文件是静态 HTML。直接双击打开，或运行 <code>python -m http.server</code> 后在浏览器访问，都可以使用。
+      当前页面由 GAWorld dashboard server 提供共享数据接口。推荐团队统一访问 <code>/board</code>。
     </section>
   </div>
 
   <script>
-    const STORAGE_KEY = "gaworld-feature-board-v1";
     const STATUSES = [
       { key: "pending", label: "待评估" },
       { key: "in_progress", label: "开发中" },
@@ -498,7 +513,7 @@
     const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
     const SAMPLE_ITEMS = [
       {
-        id: crypto.randomUUID(),
+        id: "sample-bulk-interview",
         title: "Dashboard 支持批量采访",
         proposer: "陈一航",
         details: "允许一次对多个 agent 发同一组问题，并导出对比结果，减少研究者逐个操作的时间成本。",
@@ -509,7 +524,7 @@
         updatedAt: new Date().toISOString(),
       },
       {
-        id: crypto.randomUUID(),
+        id: "sample-chart-summary",
         title: "对照实验结果页增加图表摘要",
         proposer: "许曼婷",
         details: "让 compare-event 结果除了 markdown 和 csv 之外，再展示几个关键指标的可视化图表。",
@@ -520,7 +535,7 @@
         updatedAt: new Date().toISOString(),
       },
       {
-        id: crypto.randomUUID(),
+        id: "sample-event-filter",
         title: "增加外部环境事件时间轴过滤",
         proposer: "周婉清",
         details: "在可视化页面里按日期和事件类型筛选 external environment timeline，便于定位单个冲击。",
@@ -535,6 +550,7 @@
     const els = {
       board: document.getElementById("board"),
       titleInput: document.getElementById("titleInput"),
+      todoForm: document.getElementById("todoForm"),
       proposerInput: document.getElementById("proposerInput"),
       priorityInput: document.getElementById("priorityInput"),
       detailInput: document.getElementById("detailInput"),
@@ -545,6 +561,7 @@
       sortSelect: document.getElementById("sortSelect"),
       seedBtn: document.getElementById("seedBtn"),
       clearBtn: document.getElementById("clearBtn"),
+      formStatus: document.getElementById("formStatus"),
       statTotal: document.getElementById("statTotal"),
       statPending: document.getElementById("statPending"),
       statInProgress: document.getElementById("statInProgress"),
@@ -552,68 +569,98 @@
     };
 
     const state = {
-      items: loadItems(),
+      items: [],
     };
 
-    function loadItems() {
+    async function todoApi(path, payload) {
+      const options = payload
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
+        : { cache: "no-store" };
+      const response = await fetch(path, options);
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error || `HTTP ${response.status}`);
+      return data;
+    }
+
+    function createClientId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function setFormStatus(text, tone = "") {
+      els.formStatus.textContent = text || "";
+      els.formStatus.className = `form-status ${tone}`.trim();
+    }
+
+    async function loadItems() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+        const payload = await todoApi("/api/todos");
+        state.items = Array.isArray(payload.items) ? payload.items : [];
+      } catch (error) {
+        alert(`读取团队看板失败：${error.message}`);
+        state.items = [];
       }
     }
 
-    function saveItems() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
+    async function saveBoard(items) {
+      const payload = await todoApi("/api/todos", { items });
+      state.items = Array.isArray(payload.items) ? payload.items : [];
+      render();
     }
 
-    function addItem() {
+    async function addItem() {
       const title = els.titleInput.value.trim();
       const proposer = els.proposerInput.value.trim();
       const details = els.detailInput.value.trim();
       const priority = els.priorityInput.value;
       if (!title || !proposer || !details) {
-        alert("请至少填写功能标题、提出人和功能说明。");
+        setFormStatus("请至少填写功能标题、提出人和功能说明。", "error");
         return;
       }
-      const now = new Date().toISOString();
-      state.items.unshift({
-        id: crypto.randomUUID(),
+      els.addBtn.disabled = true;
+      setFormStatus("正在提交...", "");
+      try {
+        const payload = await todoApi("/api/todos/create", {
         title,
         proposer,
         details,
         priority,
-        status: "pending",
-        owner: "",
+        });
+        state.items = Array.isArray(payload.items) ? payload.items : [];
+        els.titleInput.value = "";
+        els.proposerInput.value = "";
+        els.detailInput.value = "";
+        els.priorityInput.value = "medium";
+        render();
+        setFormStatus("已提交，新功能点已加入看板。", "success");
+        els.board.scrollIntoView({ behavior: "smooth", block: "start" });
+      } finally {
+        els.addBtn.disabled = false;
+      }
+    }
+
+    async function fillSamples() {
+      if (state.items.length && !confirm("当前看板已有内容，仍要追加示例吗？")) return;
+      const now = new Date().toISOString();
+      const samples = SAMPLE_ITEMS.map((item) => ({
+        ...item,
+        id: createClientId(),
         createdAt: now,
         updatedAt: now,
-      });
-      saveItems();
-      els.titleInput.value = "";
-      els.proposerInput.value = "";
-      els.detailInput.value = "";
-      els.priorityInput.value = "medium";
+      }));
+      await saveBoard([...samples, ...state.items]);
+    }
+
+    async function clearBoard() {
+      if (!confirm("确认清空团队服务器上的功能点数据？")) return;
+      const payload = await todoApi("/api/todos/clear", {});
+      state.items = Array.isArray(payload.items) ? payload.items : [];
       render();
     }
 
-    function fillSamples() {
-      if (state.items.length && !confirm("当前看板已有内容，仍要追加示例吗？")) return;
-      state.items = [...SAMPLE_ITEMS, ...state.items];
-      saveItems();
-      render();
-    }
-
-    function clearBoard() {
-      if (!confirm("确认清空当前浏览器里的功能点数据？")) return;
-      state.items = [];
-      saveItems();
-      render();
-    }
-
-    function claimItem(id, ownerValue) {
+    async function claimItem(id, ownerValue) {
       const item = state.items.find((entry) => entry.id === id);
       if (!item) return;
       const owner = ownerValue.trim() || els.quickOwnerInput.value.trim();
@@ -621,19 +668,20 @@
         alert("请输入认领人姓名。");
         return;
       }
-      item.owner = owner;
-      if (item.status === "pending") item.status = "in_progress";
-      item.updatedAt = new Date().toISOString();
-      saveItems();
+      const payload = await todoApi("/api/todos/update", {
+        ...item,
+        owner,
+        status: item.status === "pending" ? "in_progress" : item.status,
+      });
+      state.items = Array.isArray(payload.items) ? payload.items : [];
       render();
     }
 
-    function updateStatus(id, nextStatus) {
+    async function updateStatus(id, nextStatus) {
       const item = state.items.find((entry) => entry.id === id);
       if (!item) return;
-      item.status = nextStatus;
-      item.updatedAt = new Date().toISOString();
-      saveItems();
+      const payload = await todoApi("/api/todos/update", { ...item, status: nextStatus });
+      state.items = Array.isArray(payload.items) ? payload.items : [];
       render();
     }
 
@@ -751,8 +799,10 @@
           const claimBtn = card.querySelector("button");
           const statusSelect = card.querySelector("select");
 
-          claimBtn.addEventListener("click", () => claimItem(item.id, claimInput.value));
-          statusSelect.addEventListener("change", (event) => updateStatus(item.id, event.target.value));
+          claimBtn.addEventListener("click", () => claimItem(item.id, claimInput.value).catch((error) => alert(error.message)));
+          statusSelect.addEventListener("change", (event) => {
+            updateStatus(item.id, event.target.value).catch((error) => alert(error.message));
+          });
 
           body.appendChild(card);
         });
@@ -787,14 +837,17 @@
       return escapeHtml(value).replaceAll("\n", " ");
     }
 
-    els.addBtn.addEventListener("click", addItem);
-    els.seedBtn.addEventListener("click", fillSamples);
-    els.clearBtn.addEventListener("click", clearBoard);
+    els.todoForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      addItem().catch((error) => setFormStatus(error.message, "error"));
+    });
+    els.seedBtn.addEventListener("click", () => fillSamples().catch((error) => setFormStatus(error.message, "error")));
+    els.clearBtn.addEventListener("click", () => clearBoard().catch((error) => setFormStatus(error.message, "error")));
     els.statusFilter.addEventListener("change", render);
     els.searchInput.addEventListener("input", render);
     els.sortSelect.addEventListener("change", render);
 
-    render();
+    loadItems().then(render);
   </script>
 </body>
 </html>

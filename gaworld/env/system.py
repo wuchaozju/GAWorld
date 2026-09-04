@@ -52,8 +52,12 @@ class EnvironmentSystem:
         if not isinstance(generator_cfg, dict):
             generator_cfg = {}
         self.generator_cfg = generator_cfg
-        self.generator_mode = str(generator_cfg.get("mode", "llm")).strip().lower()
-        self.generator_description = str(generator_cfg.get("description", "")).strip()
+        self.generator_mode = str(
+            generator_cfg.get("mode", self.external_cfg.get("generator_mode", "llm"))
+        ).strip().lower()
+        self.generator_description = str(
+            generator_cfg.get("description", self.external_cfg.get("generator_description", ""))
+        ).strip()
         self.generator_history_days = max(0, int(generator_cfg.get("history_days", 3)))
         seed = self.external_cfg.get("seed")
         self.rng = random.Random(seed) if seed is not None else random.Random()
@@ -113,31 +117,59 @@ class EnvironmentSystem:
             day=day,
         )
 
-    def _llm_generate_day_environment(self, day, day_context):
+    def _llm_generate_day_environment(self, day, day_context, span=None):
         if not self.llm_fn or self.generator_mode != "llm":
             return None
         description = self.generator_description or "经济温和波动、天气多变、政策与技术持续调整的城市环境。"
         history = self._recent_day_summaries[-self.generator_history_days:] if self.generator_history_days > 0 else []
         history_text = "；".join(history) if history else "无历史摘要"
+        span = span if isinstance(span, dict) else {}
+        span_days = int(_safe_float(span.get("days", 1), 1))
+        span_unit = str(span.get("unit", "day")).strip().lower()
+        span_label = str(span.get("label", "")).strip()
+        coarse = span_days > 1
+        if span_unit == "month":
+            period_phrase = "这一月"
+        elif span_unit == "year":
+            period_phrase = "这一年"
+        elif coarse:
+            period_phrase = f"这一段{span_days}天"
+        else:
+            period_phrase = "今天"
+        schema_tail = ""
+        if not coarse:
+            schema_tail = """,
+  "intraday_rules": {
+    "natural_shock_chance": 0.0-1.0,
+    "economic_shock_chance": 0.0-1.0,
+    "political_shock_chance": 0.0-1.0,
+    "technology_shock_chance": 0.0-1.0,
+    "natural_shocks": ["..."],
+    "economic_shocks": ["..."],
+    "political_shocks": ["..."],
+    "technology_shocks": ["..."]
+  }"""
         prompt = f"""
 你是城市模拟器的“外部环境生成器”。
-请根据给定环境描述与近期演化历史，生成“今天”的外部环境与变化规则。
+请根据给定环境描述与近期演化历史，生成“{period_phrase}”的外部环境与变化规则。
 
 环境描述：
 {description}
 
-今天信息：
+时间信息：
 - day: {day}
 - 日期: {day_context.get('sim_date', '')}
 - 星期: {day_context.get('weekday_zh', '')}
 - 日类型: {day_context.get('day_type_zh', '')}
+- 跨度: {span_label or period_phrase}
+- 跨度天数: {span_days}
 
 近期历史摘要：
 {history_text}
 
 仅输出 JSON 对象，格式：
 {{
-  "day_summary": "一句话总结今天外部环境主线",
+  "day_summary": "一句话总结{period_phrase}外部环境主线",
   "day_events": [
     {{
       "type": "natural|economic|political|technology",
@@ -147,25 +179,17 @@ class EnvironmentSystem:
       "severity": 0.0-1.0,
       "impact_tags": ["mobility","stress"]
     }}
-  ],
-  "intraday_rules": {{
-    "natural_shock_chance": 0.0-1.0,
-    "economic_shock_chance": 0.0-1.0,
-    "political_shock_chance": 0.0-1.0,
-    "technology_shock_chance": 0.0-1.0,
-    "natural_shocks": ["..."],
-    "economic_shocks": ["..."],
-    "political_shocks": ["..."],
-    "technology_shocks": ["..."]
-  }}
+  ]{schema_tail}
 }}
 要求：
 1) day_events 保持 1-4 条，覆盖你认为最重要的领域。
 2) 不要编造具体数值统计来源；只描述趋势和情境。
-3) 仅输出 JSON，不要其他文字。
+3) 月/年跨度只生成结构性趋势，不要把某一天的天气或日内波动扩展成整段环境。
+4) 仅输出 JSON，不要其他文字。
 """
         try:
-            resp = self.llm_fn(prompt, task="external_environment", agent_id=None)
+            task = "external_environment_period" if coarse else "external_environment"
+            resp = self.llm_fn(prompt, task=task, agent_id=None)
         except (requests.RequestException, ValueError, RuntimeError) as exc:
             # LLM may fail with network errors, HTTP errors, or auth/config issues.
             _LOG.warning("LLM env generation failed: %s", exc)
@@ -181,7 +205,7 @@ class EnvironmentSystem:
                 ev = self._coerce_generated_event(item, day, day_scope=True)
                 if ev:
                     day_events.append(ev)
-        intraday_rules = parsed.get("intraday_rules", {})
+        intraday_rules = {} if coarse else parsed.get("intraday_rules", {})
         if not isinstance(intraday_rules, dict):
             intraday_rules = {}
         summary = str(parsed.get("day_summary", "")).strip()
@@ -575,24 +599,28 @@ class EnvironmentSystem:
             chunks.append(f"{ev.get('type', 'event')}/{topic}({severity:.2f}): {ev.get('description', '')}")
         return " ; ".join(chunks)
 
-    def start_day(self, day, day_context=None, agents=None):
+    def start_day(self, day, day_context=None, agents=None, span=None):
         if not self.enabled:
             self._day_events = []
             self._day_context = ""
             self._current_events = []
             return []
         events = []
+        day_context = day_context or {}
+        span = span if isinstance(span, dict) else None
+        coarse = bool(span and int(_safe_float(span.get("days", 1), 1)) > 1)
         self._day_context = ""
         self._intraday_rules = {}
         generated = None
         if self.external_enabled and self.generator_mode == "llm":
-            generated = self._llm_generate_day_environment(day, day_context or {})
+            generated = self._llm_generate_day_environment(day, day_context, span=span)
         if generated:
             events.extend(generated.get("day_events", []))
             self._intraday_rules = generated.get("intraday_rules", {}) if isinstance(generated.get("intraday_rules", {}), dict) else {}
             self._day_context = str(generated.get("day_summary", "")).strip() or "今日外部环境总体平稳。"
         elif self.external_enabled:
-            events.extend(self._generate_natural_day_event(day, day_context))
+            if not coarse:
+                events.extend(self._generate_natural_day_event(day, day_context))
             events.extend(self._generate_economic_day_event(day, day_context))
             events.extend(self._generate_political_day_event(day, day_context))
             events.extend(self._generate_technology_day_event(day, day_context))
@@ -681,13 +709,15 @@ class RemoteEnvironmentClient:
             _LOG.warning("Remote env POST %s failed: %s", url, exc)
             return {}
 
-    def start_day(self, day, day_context=None, agents=None):
+    def start_day(self, day, day_context=None, agents=None, span=None):
         if not self.enabled:
             self._day_events = []
             self._day_context = "今日外部环境总体平稳。"
             self._current_events = []
             return []
         payload = {"day": int(day), "day_context": day_context or {}}
+        if isinstance(span, dict):
+            payload["span"] = span
         data = self._post("/day/start", payload)
         if not data:
             if self.fallback_to_empty:

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from copy import deepcopy
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -42,6 +43,7 @@ RELAY_STATE_PATH = os.path.join(
     CONFIG.get("distributed", {}).get("server", {}).get("state_path", "output/distributed/relay_state.json"),
 )
 RUN_LOG_PATH = os.path.join(REPO_ROOT, "output", "dashboard", "simulation_run.log")
+TODO_BOARD_PATH = os.path.join(REPO_ROOT, "output", "dashboard", "todo_board.json")
 #: Upper bound for the first (non-incremental) run-log read. Later polls only
 #: ship the bytes appended since the client's offset, so this only caps how far
 #: back a freshly opened page starts; the Markdown export is never truncated.
@@ -73,6 +75,7 @@ RUN_STATE = {
 }
 
 _SCHEDULE_LOCK = threading.Lock()
+TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
 _COLLABORATION_LOCK = threading.Lock()
@@ -106,6 +109,73 @@ def _atomic_write_json(path, payload):
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
     os.replace(tmp_path, path)
+
+
+def _todo_board_payload():
+    with TODO_LOCK:
+        payload = _read_json_file(TODO_BOARD_PATH, {"items": []})
+        if isinstance(payload, list):
+            payload = {"items": payload}
+        if not isinstance(payload, dict):
+            payload = {"items": []}
+        items = payload.get("items", [])
+        return {"items": items if isinstance(items, list) else []}
+
+
+def _save_todo_board(items):
+    if not isinstance(items, list):
+        raise ValueError("items must be a list")
+    with TODO_LOCK:
+        payload = {
+            "items": items,
+            "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        _atomic_write_json(TODO_BOARD_PATH, payload)
+        return {"ok": True, **payload}
+
+
+def _normalize_todo_item(payload, existing=None):
+    if not isinstance(payload, dict):
+        raise ValueError("todo payload must be an object")
+    item = dict(existing or {})
+    now = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    if not item.get("id"):
+        item["id"] = str(uuid.uuid4())
+        item["createdAt"] = now
+    for key in ("title", "proposer", "details", "priority", "status", "owner"):
+        if key in payload:
+            item[key] = str(payload.get(key, "")).strip()
+    item.setdefault("priority", "medium")
+    item.setdefault("status", "pending")
+    item.setdefault("owner", "")
+    item.setdefault("createdAt", now)
+    item["updatedAt"] = now
+    if not item.get("title") or not item.get("proposer") or not item.get("details"):
+        raise ValueError("title, proposer and details are required")
+    return item
+
+
+def _create_todo_item(payload):
+    with TODO_LOCK:
+        board = _todo_board_payload()
+        item = _normalize_todo_item(payload)
+        board["items"].insert(0, item)
+        return _save_todo_board(board["items"])
+
+
+def _update_todo_item(payload):
+    if not isinstance(payload, dict):
+        raise ValueError("todo payload must be an object")
+    item_id = str(payload.get("id", "")).strip()
+    if not item_id:
+        raise ValueError("id is required")
+    with TODO_LOCK:
+        board = _todo_board_payload()
+        for index, item in enumerate(board["items"]):
+            if str(item.get("id")) == item_id:
+                board["items"][index] = _normalize_todo_item(payload, existing=item)
+                return _save_todo_board(board["items"])
+    raise ValueError(f"todo item {item_id} not found")
 
 
 def _dashboard_config():
@@ -1824,6 +1894,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _redirect(self, location, status=303):
+        self.send_response(status)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
     def _read_json_body(self):
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length <= 0:
@@ -1833,6 +1909,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if not isinstance(payload, dict):
             raise ValueError("JSON body must be an object")
         return payload
+
+    def _read_form_body(self):
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length).decode("utf-8")
+        parsed = parse_qs(raw, keep_blank_values=True)
+        return {key: values[0] if values else "" for key, values in parsed.items()}
 
     def _handle_api_get(self, path, query):
         # Population Studio / group mode live in their own module; this file is
@@ -1918,6 +2002,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response({"runs": _replay_runs()})
         if path == "/api/life-events":
             return self._json_response(_life_events_payload())
+        if path == "/api/todos":
+            return self._json_response(_todo_board_payload())
         if path == "/api/collaboration/sessions":
             service = _get_collaboration_service()
             kind = (query.get("kind") or [""])[0]
@@ -2022,6 +2108,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(_interview_agent(payload))
         if path == "/api/life-events":
             return self._json_response(_add_life_event(payload))
+        if path == "/api/todos":
+            return self._json_response(_save_todo_board(payload.get("items", [])))
+        if path == "/api/todos/create":
+            return self._json_response(_create_todo_item(payload))
+        if path == "/api/todos/update":
+            return self._json_response(_update_todo_item(payload))
+        if path == "/api/todos/clear":
+            return self._json_response(_save_todo_board([]))
         if path == "/api/fos-export":
             return self._json_response(_fos_export(payload))
         if path == "/api/relationships/friends":
@@ -2094,6 +2188,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.path = "/site/console/index.html"
         elif path in ("/dashboard", "/dashboard/"):
             self.path = "/site/dashboard/index.html"
+        elif path in ("/board", "/board/", "/todo", "/todo/"):
+            self.path = "/docs/todo_board.html"
         return super().do_GET()
 
     def do_HEAD(self):
@@ -2103,11 +2199,22 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.path = "/site/console/index.html"
         elif path in ("/dashboard", "/dashboard/"):
             self.path = "/site/dashboard/index.html"
+        elif path in ("/board", "/board/", "/todo", "/todo/"):
+            self.path = "/docs/todo_board.html"
         return super().do_HEAD()
 
     def do_POST(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if path == "/api/todos/create-form":
+            try:
+                _create_todo_item(self._read_form_body())
+                return self._redirect("/board")
+            except (ValueError, KeyError) as exc:
+                return self._json_response({"error": str(exc)}, status=400)
+            except Exception as exc:
+                _LOG.exception("POST %s failed: %s", path, exc)
+                return self._json_response({"error": str(exc)}, status=500)
         if not path.startswith("/api/"):
             return self._json_response({"error": "POST is only supported under /api"}, status=404)
         try:

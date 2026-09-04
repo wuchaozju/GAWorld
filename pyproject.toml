@@ -38,6 +38,7 @@ dev = [
 
 [project.scripts]
 gaworld = "generative_city_sim:_main"
+gaworld-deploy = "gaworld.apps.deploy_services:main"
 
 [tool.setuptools]
 # All logic lives in gaworld/. The only root-level module is the CLI entry point.

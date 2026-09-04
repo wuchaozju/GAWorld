@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld · 仿真回放</title>
+  <meta name="description" content="GAWorld simulation replay viewer" />
+  <link rel="stylesheet" href="/site/simviz/replay.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">GAWorld</p>
+        <h1>仿真回放</h1>
+      </div>
+      <label class="run-picker">
+        <span>运行</span>
+        <select id="runSelect"></select>
+      </label>
+    </header>
+
+    <section class="workspace">
+      <div class="map-shell">
+        <canvas id="mapCanvas" width="1200" height="760" aria-label="simulation map"></canvas>
+      </div>
+      <aside class="inspector">
+        <div class="now">
+          <span id="frameStamp">等待数据</span>
+          <strong id="frameTitle">-</strong>
+        </div>
+        <div id="agentList" class="agent-list"></div>
+      </aside>
+    </section>
+
+    <footer class="controls">
+      <button id="playBtn" type="button">播放</button>
+      <input id="timeline" type="range" min="0" max="0" value="0" />
+      <button id="latestBtn" type="button">最新</button>
+      <label>
+        <span>速度</span>
+        <select id="speedSelect">
+          <option value="250">4x</option>
+          <option value="500" selected>2x</option>
+          <option value="1000">1x</option>
+          <option value="1600">0.6x</option>
+        </select>
+      </label>
+      <button id="refreshBtn" type="button">刷新</button>
+      <span id="statusText" class="status">初始化</span>
+    </footer>
+  </main>
+
+  <script src="/site/dashboard/citymap-view.js"></script>
+  <script src="/site/simviz/replay.js"></script>
+</body>
+</html>
