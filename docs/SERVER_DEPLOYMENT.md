@@ -73,6 +73,29 @@ curl http://127.0.0.1:8766/api/todos
 curl http://127.0.0.1:8877/health
 ```
 
+## 长期测试分支
+
+测试循环脚本在：
+
+```text
+scripts/test_branch_loop.sh
+```
+
+服务器上的 `start_test_loop.sh` 应设置：
+
+```bash
+export TEST_BRANCH="Dev"
+export TEST_INTERVAL_SECONDS="300"
+export PYTHON_BIN="python3"
+exec scripts/test_branch_loop.sh
+```
+
+这样服务器会持续拉取并测试 `Dev`，测试日志写入：
+
+```text
+output/test-logs/latest.log
+```
+
 ## 自动部署
 
 长期轮询远端分支，发现新 commit 后自动部署：
