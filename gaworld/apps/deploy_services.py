@@ -17,6 +17,7 @@ class ServiceSpec:
     name: str
     command: list[str]
     health_url: str
+    systemd_unit: str
 
 
 def _run(command: list[str], *, cwd: Path, dry_run: bool = False, check: bool = True) -> subprocess.CompletedProcess:
@@ -62,6 +63,7 @@ def service_specs(args, python_bin: str) -> list[ServiceSpec]:
                 str(args.dashboard_port),
             ],
             health_url=f"http://{health_host}:{args.dashboard_port}/api/config",
+            systemd_unit=getattr(args, "dashboard_unit", "gaworld-dashboard.service"),
         ),
         ServiceSpec(
             name="relay",
@@ -79,6 +81,7 @@ def service_specs(args, python_bin: str) -> list[ServiceSpec]:
                 str(args.relay_max_messages),
             ],
             health_url=f"http://{health_host}:{args.relay_port}/health",
+            systemd_unit=getattr(args, "relay_unit", "gaworld-agent-relay.service"),
         ),
     ]
 
@@ -149,6 +152,13 @@ def _start_service(repo: Path, spec: ServiceSpec, runtime_dir: Path, *, dry_run:
         )
     pidfile.write_text(str(process.pid), encoding="utf-8")
     return process.pid
+
+
+def _restart_systemd_user_services(repo: Path, specs: list[ServiceSpec], *, dry_run: bool = False) -> None:
+    units = [spec.systemd_unit for spec in specs if spec.systemd_unit]
+    if not units:
+        raise ValueError("no systemd units configured")
+    _run(["systemctl", "--user", "restart", *units], cwd=repo, dry_run=dry_run)
 
 
 def _health_ok(url: str, timeout: float = 2.0) -> bool:
@@ -224,8 +234,11 @@ def deploy_once(args) -> int:
     sync_code(args, repo)
     runtime_python = install_dependencies(args, repo)
     specs = service_specs(args, str(runtime_python))
-    for spec in specs:
-        _start_service(repo, spec, runtime_dir, dry_run=args.dry_run)
+    if args.process_manager == "systemd-user":
+        _restart_systemd_user_services(repo, specs, dry_run=args.dry_run)
+    else:
+        for spec in specs:
+            _start_service(repo, spec, runtime_dir, dry_run=args.dry_run)
     return 0 if _wait_for_health(specs, seconds=args.health_timeout, dry_run=args.dry_run) else 1
 
 
@@ -237,10 +250,20 @@ def status(args) -> int:
         runtime_python = Path(args.python).expanduser().resolve() if args.python else Path(sys.executable)
     failed = False
     for spec in service_specs(args, str(runtime_python)):
-        pid = _read_pid(runtime_dir / f"{spec.name}.pid")
-        running = _is_running(pid or 0)
+        pid = None
+        if args.process_manager == "systemd-user":
+            active = subprocess.run(
+                ["systemctl", "--user", "is-active", "--quiet", spec.systemd_unit],
+                cwd=str(repo),
+                check=False,
+            ).returncode == 0
+            running = active
+        else:
+            pid = _read_pid(runtime_dir / f"{spec.name}.pid")
+            running = _is_running(pid or 0)
         healthy = _health_ok(spec.health_url)
-        print(f"{spec.name}: pid={pid or '-'} running={running} healthy={healthy} url={spec.health_url}")
+        manager = spec.systemd_unit if args.process_manager == "systemd-user" else f"pid={pid or '-'}"
+        print(f"{spec.name}: {manager} running={running} healthy={healthy} url={spec.health_url}")
         failed = failed or not healthy
     return 1 if failed else 0
 
@@ -278,6 +301,14 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--relay-max-messages", type=int, default=20000)
     parser.add_argument("--runtime-dir", default="runtime/services", help="Pid/log directory.")
+    parser.add_argument(
+        "--process-manager",
+        choices=("pidfile", "systemd-user"),
+        default="pidfile",
+        help="Use pidfiles managed by this CLI, or restart existing user systemd units.",
+    )
+    parser.add_argument("--dashboard-unit", default="gaworld-dashboard.service")
+    parser.add_argument("--relay-unit", default="gaworld-agent-relay.service")
     parser.add_argument("--python", default=None, help="Python executable used to create/run the venv.")
     parser.add_argument("--venv", default=".venv-deploy", help="Virtualenv directory.")
     parser.add_argument("--requirements", default="requirements.txt")

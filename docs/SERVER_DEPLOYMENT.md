@@ -15,6 +15,7 @@ Agent Relay:            8877
 python scripts/deploy_services.py deploy \
   --repo "$HOME/GAWorld" \
   --branch Dev \
+  --process-manager systemd-user \
   --host 0.0.0.0 \
   --dashboard-port 8766 \
   --relay-port 8877
@@ -39,11 +40,19 @@ pip install -r requirements.txt
 检查 /api/config 和 /health
 ```
 
+`--process-manager systemd-user` 适合当前团队服务器，因为 8766/8877 已经由
+`gaworld-dashboard.service` 和 `gaworld-agent-relay.service` 托管。该模式会复用现有
+systemd 服务，不会额外启动一组抢端口的进程。
+
+如果是在没有 systemd 的普通机器上运行，可以去掉 `--process-manager systemd-user`，
+CLI 会用 `runtime/services/*.pid` 自己管理进程。
+
 ## 状态检查
 
 ```bash
 python scripts/deploy_services.py status \
   --repo "$HOME/GAWorld" \
+  --process-manager systemd-user \
   --host 0.0.0.0 \
   --dashboard-port 8766 \
   --relay-port 8877
@@ -73,6 +82,7 @@ mkdir -p "$HOME/GAWorld/runtime/services"
 nohup python "$HOME/GAWorld/scripts/deploy_services.py" watch \
   --repo "$HOME/GAWorld" \
   --branch Dev \
+  --process-manager systemd-user \
   --host 0.0.0.0 \
   --dashboard-port 8766 \
   --relay-port 8877 \
@@ -80,12 +90,40 @@ nohup python "$HOME/GAWorld/scripts/deploy_services.py" watch \
   > "$HOME/GAWorld/runtime/services/deploy-watch.log" 2>&1 &
 ```
 
+在团队服务器上建议用 user systemd 托管 watch：
+
+```bash
+mkdir -p "$HOME/.config/systemd/user"
+cat > "$HOME/.config/systemd/user/gaworld-deploy-watch.service" <<'EOF'
+[Unit]
+Description=GAWorld Dev auto deployment watcher
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/GAWorld
+ExecStart=/usr/bin/python3 %h/GAWorld/scripts/deploy_services.py watch --repo %h/GAWorld --branch Dev --process-manager systemd-user --host 0.0.0.0 --dashboard-port 8766 --relay-port 8877 --interval 60 --skip-install
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now gaworld-deploy-watch.service
+```
+
+如果后续依赖变化频繁，可以去掉 `--skip-install`，让每次部署都执行
+`pip install -r requirements.txt`。
+
 如果使用本次集成分支验证：
 
 ```bash
 nohup python "$HOME/GAWorld/scripts/deploy_services.py" watch \
   --repo "$HOME/GAWorld" \
   --branch integration/latest-dev-2026-09-04 \
+  --process-manager systemd-user \
   --host 0.0.0.0 \
   --dashboard-port 8766 \
   --relay-port 8877 \
