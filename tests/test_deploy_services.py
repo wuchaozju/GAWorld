@@ -60,3 +60,14 @@ def test_parser_supports_systemd_user_manager():
     assert args.process_manager == "systemd-user"
     assert args.dashboard_unit == "custom-dashboard.service"
     assert args.relay_unit == "custom-relay.service"
+
+
+def test_deployed_revision_path_is_relative_to_repo(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    path = deploy_services._repo_path(repo, "runtime/services/deployed-rev")
+    deploy_services._write_text(path, "abc123")
+
+    assert path == repo / "runtime" / "services" / "deployed-rev"
+    assert deploy_services._read_text(path) == "abc123"

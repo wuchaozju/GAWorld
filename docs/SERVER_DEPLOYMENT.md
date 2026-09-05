@@ -113,6 +113,15 @@ nohup python "$HOME/GAWorld/scripts/deploy_services.py" watch \
   > "$HOME/GAWorld/runtime/services/deploy-watch.log" 2>&1 &
 ```
 
+watch 模式会在部署成功后记录：
+
+```text
+runtime/services/deployed-rev
+```
+
+后续是否需要部署以这个文件为准，而不是只看本地 `HEAD`。因此即使测试循环已经提前
+`git pull Dev`，watch 仍然能识别“这个 commit 还没有重启到服务上”。
+
 在团队服务器上建议用 user systemd 托管 watch：
 
 ```bash

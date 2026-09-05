@@ -37,6 +37,23 @@ def _repo_root(value: str | None) -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _repo_path(repo: Path, value: str) -> Path:
+    path = Path(value).expanduser()
+    return path if path.is_absolute() else repo / path
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def _write_text(path: Path, value: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(value.strip() + "\n", encoding="utf-8")
+
+
 def _venv_python(repo: Path, venv: str) -> Path:
     root = (repo / venv).resolve()
     if sys.platform == "win32":
@@ -239,7 +256,10 @@ def deploy_once(args) -> int:
     else:
         for spec in specs:
             _start_service(repo, spec, runtime_dir, dry_run=args.dry_run)
-    return 0 if _wait_for_health(specs, seconds=args.health_timeout, dry_run=args.dry_run) else 1
+    healthy = _wait_for_health(specs, seconds=args.health_timeout, dry_run=args.dry_run)
+    if healthy and not args.dry_run:
+        _write_text(_repo_path(repo, args.deployed_rev_path), _capture(["git", "rev-parse", "HEAD"], cwd=repo))
+    return 0 if healthy else 1
 
 
 def status(args) -> int:
@@ -270,10 +290,11 @@ def status(args) -> int:
 
 def watch(args) -> int:
     repo = _repo_root(args.repo)
+    deployed_rev_path = _repo_path(repo, args.deployed_rev_path)
     while True:
         try:
-            before = _capture(["git", "rev-parse", "HEAD"], cwd=repo)
             _run(["git", "fetch", args.remote], cwd=repo, dry_run=args.dry_run, check=True)
+            before = _read_text(deployed_rev_path) or _capture(["git", "rev-parse", "HEAD"], cwd=repo)
             after = _capture(["git", "rev-parse", f"{args.remote}/{args.branch}"], cwd=repo)
             if before != after:
                 print(f"new version detected: {before[:12]} -> {after[:12]}")
@@ -281,7 +302,7 @@ def watch(args) -> int:
                 if code != 0:
                     print("deploy failed; will retry on next poll")
             else:
-                print(f"no change on {args.remote}/{args.branch}: {before[:12]}")
+                print(f"no change on {args.remote}/{args.branch}: deployed={before[:12]}")
         except Exception as exc:
             print(f"watch iteration failed: {exc}", file=sys.stderr)
         time.sleep(max(5, int(args.interval)))
@@ -301,6 +322,11 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--relay-max-messages", type=int, default=20000)
     parser.add_argument("--runtime-dir", default="runtime/services", help="Pid/log directory.")
+    parser.add_argument(
+        "--deployed-rev-path",
+        default="runtime/services/deployed-rev",
+        help="File used by watch mode to remember the last successfully deployed commit.",
+    )
     parser.add_argument(
         "--process-manager",
         choices=("pidfile", "systemd-user"),
