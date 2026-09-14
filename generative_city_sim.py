@@ -1204,6 +1204,11 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
     memory_hits = retrieve_relevant_memories(agent, "周末 休息 兴趣 爱好 日程", max_items=VECTOR_DB_TOP_K)
     memory_hint = _format_memory_hint(memory_hits)
     intent_hint = intention_text(agent.get("intentions")) if HUMAN_REALISM_ENABLED else "无"
+    state_brief_text = _state_brief_for_prompt(agent)
+    yesterday_recap_text = _yesterday_recap_for_prompt(agent, day)
+    recent_events_text = _recent_life_events_for_prompt(agent, day)
+    aftermath_text = _event_aftermath_for_prompt(agent, day)
+    social_pulse_text = _social_pulse_for_prompt(agent, day)
     weekday_zh = day_context.get("weekday_zh", "周末")
     sim_date_text = day_context.get("sim_date", "")
     day_label = f"Day {day}" if day is not None else "当日"
@@ -1226,8 +1231,13 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
 日期：{day_label}，{sim_date_text}，{weekday_zh}（周末）
 角色资料：
 {profile_text}
-当前周末草案：
+基础日程（当前周末草案）：
 {routine_text}
+{state_brief_text}
+{yesterday_recap_text}
+{recent_events_text}
+{aftermath_text}
+{social_pulse_text}
 相关记忆：{memory_hint}
 今日行为意图：{intent_hint}
 

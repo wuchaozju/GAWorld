@@ -543,29 +543,92 @@ def relationship_update(agent, neighbor_id, interaction_signal, cfg):
             "obligation": 0.5,
             "friction": 0.5,
             "last_interaction_day": int(agent.get("current_day", 0)),
+            "phase": 1,
         },
     )
     signal = str(interaction_signal or "neutral")
-    if signal == "positive":
-        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) + 0.03)
-        item["trust"] = _clamp(float(item.get("trust", 0.5)) + 0.02)
-        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.015)
-        item["friction"] = _clamp(float(item.get("friction", 0.5)) - 0.02)
-    elif signal == "negative":
-        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) - 0.04)
-        item["trust"] = _clamp(float(item.get("trust", 0.5)) - 0.03)
-        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.01)
-        item["friction"] = _clamp(float(item.get("friction", 0.5)) + 0.05)
+    phase = int(item.get("phase", 1))
+    closeness = float(item.get("closeness", 0.5))
+    if closeness > 0.7 and phase < 3:
+        phase += 1
+        item["phase"] = phase
+    elif closeness < 0.3 and phase > -1:
+        phase -= 1
+        item["phase"] = phase
     else:
-        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) + 0.01)
-        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.015)
-        item["friction"] = _clamp(float(item.get("friction", 0.5)) - 0.005)
+        item["phase"] = phase
+    mult = 2.0 if phase >= 3 else 1.0
+    if signal == "positive":
+        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) + 0.03 * mult)
+        item["trust"] = _clamp(float(item.get("trust", 0.5)) + 0.02 * mult)
+        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.015 * mult)
+        item["friction"] = _clamp(float(item.get("friction", 0.5)) - 0.02 * mult)
+    elif signal == "negative":
+        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) - 0.04 * mult)
+        item["trust"] = _clamp(float(item.get("trust", 0.5)) - 0.03 * mult)
+        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.01 * mult)
+        item["friction"] = _clamp(float(item.get("friction", 0.5)) + 0.05 * mult)
+    else:
+        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) + 0.01 * mult)
+        item["obligation"] = _clamp(float(item.get("obligation", 0.5)) + 0.015 * mult)
+        item["friction"] = _clamp(float(item.get("friction", 0.5)) - 0.005 * mult)
     today = int(agent.get("current_day", 0))
     item["last_interaction_day"] = today
     # Mirror to last_contact_day so the social_network decay/dunbar
     # subsystems share a single "last touched" clock.
     item["last_contact_day"] = today
+    _update_emotion_state(agent, signal)
     return item
+
+
+def _update_emotion_state(agent, signal):
+    state = agent.setdefault("state", {})
+    current = int(state.get("emotion_state", 1))
+    energy = float(state.get("energy", 0.75))
+    fatigue = float(state.get("fatigue_debt", 0.20))
+    hunger = float(state.get("hunger", 0.25))
+    if signal == "positive":
+        if current in (2, 3, 4):
+            new = 1
+        else:
+            new = max(0, current - 1)
+    elif signal == "negative":
+        if current == 0:
+            new = 2
+        elif current == 1:
+            new = 3 if random.random() < 0.4 else 2
+        else:
+            new = min(4, current + 1)
+    elif energy < 0.3 or fatigue > 0.7 or hunger > 0.7:
+        if current < 2:
+            new = current + 1
+        elif current > 2 and random.random() < 0.2:
+            new = current - 1
+        else:
+            new = current
+    else:
+        new = current
+    state["emotion_state"] = new
+
+
+def apply_relationship_decay(agent, current_day):
+    rels = agent.get("relationships", {})
+    for item in rels.values():
+        if not isinstance(item, dict):
+            continue
+        last_day = int(item.get("last_interaction_day", item.get("last_contact_day", 0)))
+        days_no_interact = int(current_day) - last_day
+        if days_no_interact <= 1:
+            continue
+        decay = 0.05 * (days_no_interact - 1)
+        item["closeness"] = _clamp(float(item.get("closeness", 0.5)) - decay)
+        item["trust"] = _clamp(float(item.get("trust", 0.5)) - decay * 0.5)
+        closeness = float(item.get("closeness", 0.5))
+        phase = int(item.get("phase", 1))
+        if closeness < 0.3 and phase > -1:
+            item["phase"] = phase - 1
+        elif closeness > 0.7 and phase < 3:
+            item["phase"] = phase + 1
 
 
 def relationship_weight(agent, neighbor_id):

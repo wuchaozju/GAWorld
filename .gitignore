@@ -131,11 +131,11 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+/env/
+/venv/
+/ENV/
+/env.bak/
+/venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -154,6 +154,8 @@ venv.bak/
 !/site/console/**
 !/site/mobile/
 !/site/mobile/**
+!/site/simviz/
+!/site/simviz/**
 dashboard_config.json
 
 # mypy

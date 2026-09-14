@@ -147,6 +147,8 @@ class DistributedRelayBackend:
                     "name": _normalize_text(item.get("name", ""), max_chars=64),
                     "node_id": node_id,
                     "agent_type": agent_type,
+                    "public_profile": _safe_dict(item.get("public_profile")),
+                    "public_state": _safe_dict(item.get("public_state")),
                     "updated_at": now,
                 }
                 # Store extended profile for OpenClaw agents.
@@ -291,6 +293,116 @@ class DistributedRelayBackend:
         profiles.sort(key=lambda x: _to_int(x.get("agent_id"), 0))
         return {"ok": True, "profiles": profiles}
 
+    def social_snapshot(self, cluster, recent_limit=20):
+        cluster = str(cluster or "default")
+        recent_limit = max(1, min(200, _to_int(recent_limit, 20)))
+        with self.lock:
+            cluster_map = {
+                str(key): dict(value)
+                for key, value in _safe_dict(self.directory.get(cluster)).items()
+                if isinstance(value, dict)
+            }
+            messages = [
+                dict(msg)
+                for msg in self.messages
+                if isinstance(msg, dict) and str(msg.get("cluster", "")) == cluster
+            ]
+
+        agents = {}
+        for key, entry in cluster_map.items():
+            aid = _to_int(entry.get("agent_id", key), 0)
+            if aid <= 0:
+                continue
+            agents[aid] = {
+                **entry,
+                "agent_id": aid,
+                "message_counts": {"inbound": 0, "outbound": 0},
+                "recent_partners": [],
+                "public_profile": _safe_dict(entry.get("public_profile")),
+                "public_state": _safe_dict(entry.get("public_state")),
+            }
+
+        edges = {}
+        recent_messages = []
+        for msg in messages:
+            sender = _to_int(msg.get("from_agent"), 0)
+            recipient = _to_int(msg.get("to_agent"), 0)
+            if sender <= 0 or recipient <= 0:
+                continue
+            for aid in (sender, recipient):
+                agents.setdefault(
+                    aid,
+                    {
+                        "agent_id": aid,
+                        "name": f"Agent {aid}",
+                        "node_id": "",
+                        "agent_type": "native",
+                        "message_counts": {"inbound": 0, "outbound": 0},
+                        "recent_partners": [],
+                        "public_profile": {},
+                        "public_state": {},
+                    },
+                )
+            agents[sender]["message_counts"]["outbound"] += 1
+            agents[recipient]["message_counts"]["inbound"] += 1
+            agents[sender]["recent_partners"] = [
+                recipient,
+                *[aid for aid in agents[sender]["recent_partners"] if aid != recipient],
+            ][:8]
+            agents[recipient]["recent_partners"] = [
+                sender,
+                *[aid for aid in agents[recipient]["recent_partners"] if aid != sender],
+            ][:8]
+            edge_key = tuple(sorted((sender, recipient)))
+            edge = edges.setdefault(
+                edge_key,
+                {
+                    "source": edge_key[0],
+                    "target": edge_key[1],
+                    "interaction_count": 0,
+                    "last_message_id": 0,
+                },
+            )
+            edge["interaction_count"] += 1
+            edge["last_message_id"] = max(edge["last_message_id"], _to_int(msg.get("id"), 0))
+            recent_messages.append(
+                {
+                    "id": _to_int(msg.get("id"), 0),
+                    "from_agent": sender,
+                    "from_name": _normalize_text(msg.get("from_name"), max_chars=64),
+                    "to_agent": recipient,
+                    "kind": _normalize_text(msg.get("kind", ""), max_chars=40),
+                    "intent": _normalize_text(msg.get("intent", ""), max_chars=40),
+                    "text": _normalize_text(msg.get("text", ""), max_chars=160),
+                    "social_summary": _safe_dict(msg.get("social_summary")),
+                    "created_at": float(msg.get("created_at", 0.0) or 0.0),
+                }
+            )
+
+        agent_list = sorted(agents.values(), key=lambda item: _to_int(item.get("agent_id"), 0))
+        edge_list = sorted(
+            edges.values(),
+            key=lambda item: (-_to_int(item.get("interaction_count"), 0), -_to_int(item.get("last_message_id"), 0)),
+        )
+        recent_messages = sorted(recent_messages, key=lambda item: _to_int(item.get("id"), 0), reverse=True)[
+            :recent_limit
+        ]
+        return {
+            "ok": True,
+            "cluster": cluster,
+            "tick": dict(self.tick_state),
+            "stats": {
+                "agent_count": len(agent_list),
+                "active_agent_count": len(agent_list),
+                "edge_count": len(edge_list),
+                "recent_message_count": len(recent_messages),
+                "total_message_count": len(messages),
+            },
+            "agents": agent_list,
+            "edges": edge_list,
+            "recent_messages": recent_messages,
+        }
+
     def snapshot(self):
         with self.lock:
             cluster_count = len(self.directory)
@@ -359,6 +471,11 @@ class DistributedRelayRequestHandler(BaseHTTPRequestHandler):
         if path == "/agents/profiles":
             cluster = (query.get("cluster") or ["default"])[0]
             self._write_json(200, self.backend.list_agent_profiles(cluster))
+            return
+        if path == "/social/snapshot":
+            cluster = (query.get("cluster") or ["default"])[0]
+            limit = (query.get("limit") or ["20"])[0]
+            self._write_json(200, self.backend.social_snapshot(cluster, recent_limit=limit))
             return
         if path.startswith("/agents/profile/"):
             aid_str = path.rsplit("/", 1)[-1]
