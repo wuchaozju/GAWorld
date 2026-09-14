@@ -1,0 +1,522 @@
+{
+  "meta": {
+    "source": "demo",
+    "note": "Indoor floor-plan showcase for the simviz spatial tree."
+  },
+  "map": {
+    "nodes": [
+      {
+        "id": "Maple Court",
+        "label": "Maple Court",
+        "kind": "hub",
+        "category": "residential",
+        "grid_x": 5,
+        "grid_y": 4,
+        "capacity": 60,
+        "district": "Riverside",
+        "tile_x": 10,
+        "tile_y": 8,
+        "style": {
+          "color": "#cf9d6a",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Riverside Clinic",
+        "label": "Riverside Clinic",
+        "kind": "hub",
+        "category": "medical",
+        "grid_x": 10,
+        "grid_y": 4,
+        "capacity": 40,
+        "district": "Riverside",
+        "tile_x": 20,
+        "tile_y": 8,
+        "style": {
+          "color": "#d97b7b",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Sunnyside School",
+        "label": "Sunnyside School",
+        "kind": "hub",
+        "category": "education",
+        "grid_x": 15,
+        "grid_y": 4,
+        "capacity": 80,
+        "district": "Riverside",
+        "tile_x": 30,
+        "tile_y": 8,
+        "style": {
+          "color": "#6fa8dc",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Corner Market",
+        "label": "Corner Market",
+        "kind": "hub",
+        "category": "commerce",
+        "grid_x": 5,
+        "grid_y": 9,
+        "capacity": 30,
+        "district": "Riverside",
+        "tile_x": 10,
+        "tile_y": 18,
+        "style": {
+          "color": "#e0a458",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Town Hall",
+        "label": "Town Hall",
+        "kind": "hub",
+        "category": "government",
+        "grid_x": 10,
+        "grid_y": 9,
+        "capacity": 30,
+        "district": "Riverside",
+        "tile_x": 20,
+        "tile_y": 18,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Riverside Park",
+        "label": "Riverside Park",
+        "kind": "hub",
+        "category": "leisure",
+        "grid_x": 15,
+        "grid_y": 9,
+        "capacity": 200,
+        "district": "Riverside",
+        "tile_x": 30,
+        "tile_y": 18,
+        "style": {
+          "color": "#7da35d",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      },
+      {
+        "id": "Bean & Leaf Cafe",
+        "label": "Bean & Leaf Cafe",
+        "kind": "hub",
+        "category": "leisure",
+        "grid_x": 20,
+        "grid_y": 9,
+        "capacity": 24,
+        "district": "Riverside",
+        "tile_x": 40,
+        "tile_y": 18,
+        "style": {
+          "color": "#7da35d",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    ],
+    "edges": [],
+    "metro_lines": [],
+    "bridges": [],
+    "river": null,
+    "bounds": {
+      "min_x": 3,
+      "min_y": 2,
+      "max_x": 22,
+      "max_y": 11
+    },
+    "tile_map": {
+      "width": 48,
+      "height": 28,
+      "bounds": {
+        "min_x": 3,
+        "min_y": 2,
+        "max_x": 22,
+        "max_y": 11
+      }
+    },
+    "scale": {},
+    "terrain_legend": {}
+  },
+  "agents": [
+    {
+      "agent_id": 1,
+      "name": "Ada Brooks"
+    },
+    {
+      "agent_id": 2,
+      "name": "Rosa Perez"
+    },
+    {
+      "agent_id": 3,
+      "name": "Iris Reed"
+    },
+    {
+      "agent_id": 4,
+      "name": "Gabe Reyes"
+    },
+    {
+      "agent_id": 5,
+      "name": "Cara Green"
+    },
+    {
+      "agent_id": 6,
+      "name": "Leo Park"
+    },
+    {
+      "agent_id": 7,
+      "name": "Mia Cole"
+    }
+  ],
+  "frames": [
+    {
+      "day": 1,
+      "date": "2026-06-10",
+      "weekday": "周三",
+      "time": "06:40",
+      "agents": [
+        {
+          "agent_id": 1,
+          "name": "Ada Brooks",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "刷牙",
+          "scheduled_activity": "刷牙",
+          "action": "刷牙"
+        },
+        {
+          "agent_id": 2,
+          "name": "Rosa Perez",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "睡觉",
+          "scheduled_activity": "睡觉",
+          "action": "睡觉"
+        },
+        {
+          "agent_id": 3,
+          "name": "Iris Reed",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "吃早饭",
+          "scheduled_activity": "吃早饭",
+          "action": "吃早饭"
+        },
+        {
+          "agent_id": 4,
+          "name": "Gabe Reyes",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "刷牙",
+          "scheduled_activity": "刷牙",
+          "action": "刷牙"
+        },
+        {
+          "agent_id": 5,
+          "name": "Cara Green",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "上厕所",
+          "scheduled_activity": "上厕所",
+          "action": "上厕所"
+        },
+        {
+          "agent_id": 6,
+          "name": "Leo Park",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "读书",
+          "scheduled_activity": "读书",
+          "action": "读书"
+        },
+        {
+          "agent_id": 7,
+          "name": "Mia Cole",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "弹钢琴",
+          "scheduled_activity": "弹钢琴",
+          "action": "弹钢琴"
+        }
+      ]
+    },
+    {
+      "day": 1,
+      "date": "2026-06-10",
+      "weekday": "周三",
+      "time": "07:20",
+      "agents": [
+        {
+          "agent_id": 1,
+          "name": "Ada Brooks",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "吃早饭",
+          "scheduled_activity": "吃早饭",
+          "action": "吃早饭"
+        },
+        {
+          "agent_id": 2,
+          "name": "Rosa Perez",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "洗漱",
+          "scheduled_activity": "洗漱",
+          "action": "洗漱"
+        },
+        {
+          "agent_id": 3,
+          "name": "Iris Reed",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "做饭",
+          "scheduled_activity": "做饭",
+          "action": "做饭"
+        },
+        {
+          "agent_id": 4,
+          "name": "Gabe Reyes",
+          "location": "Bean & Leaf Cafe",
+          "resolved_location": "Bean & Leaf Cafe",
+          "target_location": "Bean & Leaf Cafe",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "喝咖啡",
+          "scheduled_activity": "喝咖啡",
+          "action": "喝咖啡"
+        },
+        {
+          "agent_id": 5,
+          "name": "Cara Green",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "刷牙",
+          "scheduled_activity": "刷牙",
+          "action": "刷牙"
+        },
+        {
+          "agent_id": 6,
+          "name": "Leo Park",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "弹钢琴",
+          "scheduled_activity": "弹钢琴",
+          "action": "弹钢琴"
+        },
+        {
+          "agent_id": 7,
+          "name": "Mia Cole",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "读书",
+          "scheduled_activity": "读书",
+          "action": "读书"
+        }
+      ]
+    },
+    {
+      "day": 1,
+      "date": "2026-06-10",
+      "weekday": "周三",
+      "time": "08:00",
+      "agents": [
+        {
+          "agent_id": 1,
+          "name": "Ada Brooks",
+          "location": "Sunnyside School",
+          "resolved_location": "Sunnyside School",
+          "target_location": "Sunnyside School",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "上课",
+          "scheduled_activity": "上课",
+          "action": "上课"
+        },
+        {
+          "agent_id": 2,
+          "name": "Rosa Perez",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "吃早饭",
+          "scheduled_activity": "吃早饭",
+          "action": "吃早饭"
+        },
+        {
+          "agent_id": 3,
+          "name": "Iris Reed",
+          "location": "Town Hall",
+          "resolved_location": "Town Hall",
+          "target_location": "Town Hall",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "办公",
+          "scheduled_activity": "办公",
+          "action": "办公"
+        },
+        {
+          "agent_id": 4,
+          "name": "Gabe Reyes",
+          "location": "Bean & Leaf Cafe",
+          "resolved_location": "Bean & Leaf Cafe",
+          "target_location": "Bean & Leaf Cafe",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "喝咖啡",
+          "scheduled_activity": "喝咖啡",
+          "action": "喝咖啡"
+        },
+        {
+          "agent_id": 5,
+          "name": "Cara Green",
+          "location": "Corner Market",
+          "resolved_location": "Corner Market",
+          "target_location": "Corner Market",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "购物",
+          "scheduled_activity": "购物",
+          "action": "购物"
+        },
+        {
+          "agent_id": 6,
+          "name": "Leo Park",
+          "location": "Maple Court",
+          "resolved_location": "Maple Court",
+          "target_location": "Maple Court",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "读书",
+          "scheduled_activity": "读书",
+          "action": "读书"
+        },
+        {
+          "agent_id": 7,
+          "name": "Mia Cole",
+          "location": "Riverside Park",
+          "resolved_location": "Riverside Park",
+          "target_location": "Riverside Park",
+          "travel": {
+            "status": "idle",
+            "route": [],
+            "progress": 1.0
+          },
+          "activity": "散步",
+          "scheduled_activity": "散步",
+          "action": "散步"
+        }
+      ]
+    }
+  ]
+}

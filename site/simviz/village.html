@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld Town Village</title>
+  <meta name="description" data-i18n-content="village.meta_description" content="GAWorld 像素小镇可视化：俯视村落、头顶气泡、活动场景卡片，仿 Generative Agents Smallville 风格。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">GAWorld Town Village</p>
+        <h1 data-i18n="village.headline">像素小镇 · 生成式智能体回放</h1>
+        <p class="subcopy" data-i18n="village.sub">俯视村落、头顶气泡、活动场景卡片；建筑由 citymap 节点自动布局。</p>
+      </div>
+      <div class="status-cluster">
+        <span id="statusBadge" class="badge badge-live" data-i18n="village.awaiting_data">等待数据</span>
+        <span id="frameBadge" class="badge">Frame 0</span>
+      </div>
+    </header>
+
+    <section class="control-strip">
+      <label class="data-path">
+        <span data-i18n="village.data_source">数据源</span>
+        <input id="dataPathInput" type="text" />
+      </label>
+      <button id="reloadBtn" class="button button-ghost" data-i18n="village.refresh">刷新</button>
+      <button id="playBtn" class="button button-primary" data-i18n="village.play">播放</button>
+      <label class="toggle">
+        <input id="liveToggle" type="checkbox" checked />
+        <span data-i18n="village.live_poll">实时轮询</span>
+      </label>
+      <label class="toggle">
+        <input id="cardsToggle" type="checkbox" checked />
+        <span data-i18n="village.scene_cards">场景卡片</span>
+      </label>
+      <div class="view-toggle">
+        <button id="viewVillageBtn" class="button button-ghost active" type="button" data-i18n="village.view_village">村落</button>
+        <button id="viewIndoorBtn" class="button button-ghost" type="button" data-i18n="village.view_indoor">室内</button>
+      </div>
+      <label class="toggle">
+        <input id="continuousToggle" type="checkbox" />
+        <span data-i18n="village.continuous">连续时间</span>
+      </label>
+      <label class="speed-wrap">
+        <span data-i18n="village.speed">速度</span>
+        <select id="speedSelect">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="2">2x</option>
+          <option value="4">4x</option>
+        </select>
+      </label>
+    </section>
+
+    <main class="main-grid">
+      <section class="stage-panel panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Town Village Map</p>
+            <h2 id="frameTitle" data-i18n="village.awaiting_viz">等待可视化数据</h2>
+          </div>
+          <div id="frameMeta" class="mini-meta"></div>
+        </div>
+        <div class="map-wrap">
+          <div id="mapCanvasWrap" style="position:absolute;inset:0;"></div>
+          <div id="sceneCardsLayer" class="scene-cards" aria-hidden="true"></div>
+          <div class="zoom-controls" id="zoomControls">
+            <button id="zoomInBtn" type="button" data-i18n-title="village.zoom_in" title="放大">＋</button>
+            <button id="zoomOutBtn" type="button" data-i18n-title="village.zoom_out" title="缩小">－</button>
+            <button id="zoomResetBtn" type="button" data-i18n-title="village.zoom_reset" title="重置">⟲</button>
+            <span id="zoomLevel">100%</span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="legend-swatch sw-grass"></i><span data-i18n="village.grass">草地</span></span>
+          <span><i class="legend-swatch sw-path"></i><span data-i18n="village.path">路径</span></span>
+          <span><i class="legend-swatch sw-water"></i><span data-i18n="village.water">水域</span></span>
+          <span><i class="legend-swatch sw-res"></i><span data-i18n="village.residential">住宅</span></span>
+          <span><i class="legend-swatch sw-com"></i><span data-i18n="village.commercial">商业</span></span>
+          <span><i class="legend-swatch sw-edu"></i><span data-i18n="village.education">教育</span></span>
+          <span><i class="legend-swatch sw-med"></i><span data-i18n="village.medical">医疗</span></span>
+          <span><i class="legend-swatch sw-park"></i><span data-i18n="village.leisure">休闲</span></span>
+          <span><i class="legend-swatch sw-gov"></i><span data-i18n="village.government">政府</span></span>
+        </div>
+        <div class="timeline-wrap">
+          <input id="timelineSlider" type="range" min="0" max="0" value="0" />
+          <div class="timeline-meta">
+            <span id="timelineLabel" data-i18n="village.no_frames">暂无帧</span>
+            <span id="timelineHint" data-i18n="village.timeline_hint">拖动时间轴查看 agent 在小镇中的活动。</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="panel summary-panel">
+          <div class="panel-head compact">
+            <div class="agent-heading">
+              <div class="agent-avatar-wrap">
+                <img id="agentAvatar" class="agent-avatar" alt="" />
+              </div>
+              <div>
+                <p class="panel-kicker">Selected Agent</p>
+                <h2 id="agentName" data-i18n="village.no_selection">未选择</h2>
+              </div>
+            </div>
+            <div id="agentMeta" class="mini-meta"></div>
+          </div>
+          <div class="summary-grid">
+            <article><span class="label" data-i18n="village.location">当前位置</span><strong id="agentLocation">-</strong></article>
+            <article><span class="label" data-i18n="village.target">目标地点</span><strong id="agentTarget">-</strong></article>
+            <article><span class="label" data-i18n="village.activity">活动</span><strong id="agentActivity">-</strong></article>
+            <article><span class="label" data-i18n="village.action">动作</span><strong id="agentAction">-</strong></article>
+            <article><span class="label" data-i18n="village.travel_mode">交通方式</span><strong id="agentTravelMode">-</strong></article>
+            <article><span class="label" data-i18n="village.travel_stats">路程/耗时</span><strong id="agentTravelStats">-</strong></article>
+            <article><span class="label" data-i18n="village.coords">经纬度</span><strong id="agentCoords">-</strong></article>
+            <article><span class="label" data-i18n="village.path_changed">路径变更</span><strong id="agentChanged">-</strong></article>
+          </div>
+          <div class="thoughts">
+            <article class="thought-card thought-perception"><span data-i18n="village.perception">感知</span><p id="agentPerception">-</p></article>
+            <article class="thought-card thought-plan"><span data-i18n="village.plan">计划</span><p id="agentPlan">-</p></article>
+            <article class="thought-card thought-reflection"><span data-i18n="village.reflection">反思</span><p id="agentReflection">-</p></article>
+          </div>
+        </section>
+
+        <section class="panel event-panel">
+          <div class="panel-head compact">
+            <div>
+              <p class="panel-kicker">Context</p>
+              <h2 data-i18n="village.context">环境与事件</h2>
+            </div>
+          </div>
+          <p id="envContext" class="body-copy">-</p>
+          <div id="eventChips" class="chips"></div>
+        </section>
+
+        <section class="panel roster-panel">
+          <div class="panel-head compact">
+            <div>
+              <p class="panel-kicker">Agents</p>
+              <h2 data-i18n="village.roster">当前帧名单</h2>
+            </div>
+          </div>
+          <div id="rosterList" class="roster-list"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="../vendor/phaser.min.js"></script>
+  <script src="./spatial-tree.js"></script>
+  <script src="./phaser-app.js"></script>
+</body>
+</html>
