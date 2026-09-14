@@ -178,6 +178,16 @@ def _doc_map(tree: dict[str, Any]) -> dict[str, dict[str, str]]:
                 help_text = config_docs.help_for(path)
                 if help_text:
                     entry["help"] = help_text
+                # Both languages travel together and the browser picks, so this
+                # payload stays locale-agnostic and cacheable. An absent *_en
+                # means no English exists; the panel then shows the Chinese,
+                # which is the truth rather than a guess.
+                label_en = config_docs.label_en_for(path)
+                if label_en and label_en != label:
+                    entry["label_en"] = label_en
+                help_en = config_docs.help_en_for(path)
+                if help_en:
+                    entry["help_en"] = help_en
                 if entry:
                     docs[path] = entry
                 visit(item, path)

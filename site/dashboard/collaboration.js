@@ -14,6 +14,13 @@
 }(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
+  /* The page is required headlessly by tests/test_collaboration_frontend.py,
+     where i18n.js is not loaded. Delegate to the globals when they exist and
+     fall back to the key so the module stays importable either way; in the
+     browser collaboration.html loads i18n.js first, so the globals are there. */
+  const t = (key) => (typeof __ === "function" ? __(key) : key);
+  const tf = (key, params) => (typeof __f === "function" ? __f(key, params) : key);
+
   function safeArtifactUrl(rawUrl, sessionId, baseHref, rawScope) {
     const cleanSessionId = String(sessionId || "");
     if (
@@ -114,7 +121,7 @@
 
     function nameOf(candidate) {
       const id = Number(candidate);
-      return String(names[id] || "居民 " + String(id));
+      return String(names[id] || tf("cl.resident_n", { id: id }));
     }
 
     const badges = [];
@@ -124,7 +131,7 @@
         badges.push(role);
       }
       if (Number(scope.leaderId) === agentId) {
-        badges.push("负责人");
+        badges.push(t("cl.leader"));
       }
     }
 
@@ -132,12 +139,12 @@
     const hasStep = Number.isInteger(stepIndex);
     const step = hasStep ? plan[stepIndex] : null;
     const stepLabel = step
-      ? "步骤 " + String(stepIndex + 1) + " · " + String(step.title || "")
+      ? tf("cl.step_n", { n: stepIndex + 1 }) + " · " + String(step.title || "")
       : "";
     const phase = String(metadata.phase || "");
-    let round = hasStep ? "第 " + String(stepIndex + 1) + " 轮" : "";
+    let round = hasStep ? tf("cl.round_n", { n: stepIndex + 1 }) : "";
     if (metadata.final === true || phase === "synthesis") {
-      round = "统稿";
+      round = t("cl.round_synthesis");
     }
     const excerpt = String(metadata.excerpt || "");
 
@@ -146,45 +153,45 @@
     let speech = "";
 
     if (type === "turn_started") {
-      action = {
-        execute: "开始撰写子任务成果",
-        review: "开始审阅成果",
-        revision: "开始按意见修订",
-        synthesis: "开始统稿最终成果",
-      }[phase] || "开始新的回合";
+      action = t({
+        execute: "cl.turn_execute",
+        review: "cl.turn_review",
+        revision: "cl.turn_revision",
+        synthesis: "cl.turn_synthesis",
+      }[phase] || "cl.turn_default");
       detail = [stepLabel, content].filter(Boolean).join(" · ");
     } else if (type === "artifact") {
-      action = metadata.final === true ? "汇总了最终成果" : "提交了子任务产物";
+      action = t(metadata.final === true ? "cl.artifact_final" : "cl.artifact_sub");
       detail = [stepLabel, content].filter(Boolean).join(" · ");
       speech = excerpt;
     } else if (type === "revision") {
-      action = "按审阅意见完成修订";
+      action = t("cl.revision_done");
       detail = [stepLabel, content].filter(Boolean).join(" · ");
       speech = excerpt;
     } else if (type === "review") {
-      action = metadata.approved === true ? "审阅通过" : "提出了修改意见";
+      action = t(metadata.approved === true ? "cl.review_approved" : "cl.review_changes");
       detail = [stepLabel, String(metadata.artifact || "")]
         .filter(Boolean)
         .join(" · ");
       speech = content;
     } else if (type === "plan_created") {
       const steps = Array.isArray(metadata.plan) ? metadata.plan : [];
-      detail = steps.length ? "共 " + String(steps.length) + " 个步骤" : "";
+      detail = steps.length ? tf("cl.plan_steps", { count: steps.length }) : "";
     } else if (type === "role_assigned") {
       detail = metadata.leader_id === null || metadata.leader_id === undefined
         ? ""
-        : "负责人 · " + nameOf(metadata.leader_id);
+        : tf("cl.leader_is", { name: nameOf(metadata.leader_id) });
     } else if (type === "created") {
-      action = "创建了合作任务";
+      action = t("cl.created");
       detail = content;
     } else if (type === "error") {
-      action = "任务出错";
+      action = t("cl.errored");
       speech = content;
     }
 
     return {
       type,
-      speaker: hasAgent ? nameOf(agentId) : "系统",
+      speaker: hasAgent ? nameOf(agentId) : t("cl.system"),
       role: badges.join(" · "),
       round,
       action,
@@ -282,16 +289,16 @@
     function agentName(agentId) {
       const agent = agentFor(agentId);
       return agent
-        ? String(agent.name || "居民 " + agentId)
-        : "居民 " + String(agentId);
+        ? String(agent.name || tf("cl.resident_n", { id: agentId }))
+        : tf("cl.resident_n", { id: agentId });
     }
 
     function capabilityHint(agentId) {
       const detail = state.agentDetails.get(Number(agentId));
       if (!detail) {
         return state.detailLoading.has(Number(agentId))
-          ? "正在读取能力…"
-          : "选择后加载能力线索";
+          ? t("cl.caps_loading")
+          : t("cl.caps_hint");
       }
       const capabilities = detail.capabilities || {};
       const values = []
@@ -299,7 +306,7 @@
         .concat(capabilities.deliverables || [])
         .filter(Boolean)
         .slice(0, 3);
-      return values.length ? values.join(" · ") : "暂无能力标签";
+      return values.length ? values.join(" · ") : t("cl.caps_none");
     }
 
     function selectedIds() {
@@ -322,7 +329,7 @@
       if (!state.agents.length) {
         const empty = document.createElement("p");
         empty.className = "empty-state";
-        empty.textContent = "暂无可用居民。";
+        empty.textContent = t("cl.no_agents");
         els.memberPicker.appendChild(empty);
         return;
       }
@@ -359,7 +366,7 @@
       els.leaderSelect.replaceChildren();
       const automatic = document.createElement("option");
       automatic.value = "";
-      automatic.textContent = "自动推选";
+      automatic.textContent = t("cl.leader_auto");
       els.leaderSelect.appendChild(automatic);
       selectedIds().forEach(function (agentId) {
         const option = document.createElement("option");
@@ -377,10 +384,10 @@
     function renderRoleOverrides() {
       els.roleOverrides.replaceChildren();
       const legend = document.createElement("legend");
-      legend.textContent = "角色覆盖（可选）";
+      legend.textContent = t("cl.roles_legend");
       const note = document.createElement("p");
       note.className = "field-note";
-      note.textContent = "为选中成员指定研究、撰写或审阅职责。";
+      note.textContent = t("cl.roles_note");
       els.roleOverrides.append(legend, note);
 
       selectedIds().forEach(function (agentId) {
@@ -394,7 +401,7 @@
         input.id = inputId;
         input.className = "role-input";
         input.type = "text";
-        input.placeholder = "自动分配";
+        input.placeholder = t("cl.role_auto");
         input.value = String(state.roles.get(agentId) || "");
         input.disabled = state.creating || Boolean(state.actionPending);
         input.addEventListener("input", function () {
@@ -458,7 +465,7 @@
       if (!state.sessions.length) {
         const empty = document.createElement("p");
         empty.className = "empty-state";
-        empty.textContent = "还没有合作任务记录。";
+        empty.textContent = t("cl.no_sessions");
         els.sessionList.appendChild(empty);
         return;
       }
@@ -493,7 +500,7 @@
       const empty = document.createElement("p");
       empty.className = "empty-state";
       empty.dataset.activityEmpty = "true";
-      empty.textContent = "任务活动将在这里按序出现。";
+      empty.textContent = t("cl.activity_empty");
       els.activityFeed.appendChild(empty);
     }
 
@@ -592,9 +599,9 @@
       if (!session || !(session.member_ids || []).length) {
         const empty = document.createElement("p");
         empty.className = "empty-state";
-        empty.textContent = "尚未装载协作团队。";
+        empty.textContent = t("cl.team_empty");
         els.activeTeam.appendChild(empty);
-        els.leaderBadge.textContent = "未指定负责人";
+        els.leaderBadge.textContent = t("cl.leader_unset");
         return;
       }
       const roles = Object.assign(
@@ -610,13 +617,13 @@
         const name = document.createElement("strong");
         name.textContent = agentName(agentId);
         const role = document.createElement("span");
-        role.textContent = String(roles[String(agentId)] || "角色待分配");
+        role.textContent = String(roles[String(agentId)] || t("cl.role_pending"));
         card.append(id, name, role);
         els.activeTeam.appendChild(card);
       });
       els.leaderBadge.textContent = session.leader_id
-        ? "负责人 · " + agentName(session.leader_id)
-        : "负责人由系统推选";
+        ? tf("cl.leader_is", { name: agentName(session.leader_id) })
+        : t("cl.leader_auto_note");
     }
 
     function renderPlan() {
@@ -628,9 +635,9 @@
       if (!plan.length) {
         const empty = document.createElement("li");
         empty.className = "empty-state";
-        empty.textContent = "计划生成后，步骤会沿执行拓扑展开。";
+        empty.textContent = t("cl.plan_empty");
         els.taskPlan.appendChild(empty);
-        els.currentStepText.textContent = "等待计划生成";
+        els.currentStepText.textContent = t("cl.plan_waiting");
         els.progressText.textContent = "0 / 0";
         els.taskProgress.setAttribute("aria-valuenow", "0");
         els.taskProgressBar.style.width = "0%";
@@ -647,11 +654,11 @@
       els.taskProgress.setAttribute("aria-valuenow", String(progress));
       els.taskProgressBar.style.width = String(progress) + "%";
       els.currentStepText.textContent = currentStep < plan.length
-        ? "当前步骤 "
-          + String(currentStep + 1)
-          + " · "
-          + agentName(plan[currentStep].agent_id)
-        : "计划已执行完毕";
+        ? tf("cl.current_step", {
+            n: currentStep + 1,
+            name: agentName(plan[currentStep].agent_id),
+          })
+        : t("cl.plan_done");
 
       plan.forEach(function (step, index) {
         const item = document.createElement("li");
@@ -663,7 +670,7 @@
         );
         const body = document.createElement("div");
         const title = document.createElement("strong");
-        title.textContent = String(step.title || "未命名步骤");
+        title.textContent = String(step.title || t("cl.step_untitled"));
         const owner = document.createElement("span");
         owner.textContent = agentName(step.agent_id)
           + (step.artifact ? " · " + String(step.artifact) : "");
@@ -696,7 +703,7 @@
       if (!artifacts.length) {
         const empty = document.createElement("p");
         empty.className = "empty-state";
-        empty.textContent = "暂无交付成果。";
+        empty.textContent = t("cl.artifacts_empty");
         els.artifactList.appendChild(empty);
         return;
       }
@@ -755,14 +762,14 @@
     function renderWorkspace() {
       const session = state.session;
       els.taskStatus.textContent = state.creating
-        ? "正在创建任务"
-        : String(session && session.status || "等待任务");
+        ? t("cl.creating_task")
+        : String(session && session.status || t("cl.awaiting_task"));
       els.sessionCode.textContent = session
         ? String(session.id)
         : "NO ACTIVE SESSION";
       els.activeTaskTitle.textContent = session
         ? String(session.task || session.title || session.id)
-        : "选择历史任务或启动新的协作";
+        : t("cl.pick_or_start");
       renderSessionActions();
       renderActiveTeam();
       renderPlan();
@@ -853,8 +860,8 @@
           : [];
         setFormStatus(
           state.agents.length
-            ? "选择至少两位成员并描述任务。"
-            : "居民名录为空。",
+            ? t("cl.form_hint")
+            : t("cl.roster_empty"),
           false,
         );
       } catch (error) {
@@ -917,7 +924,7 @@
       const agentIds = selectedIds();
       const task = els.taskInput.value.trim();
       if (agentIds.length < 2 || !task) {
-        setFormStatus("请填写任务并至少选择两位成员。", true);
+        setFormStatus(t("cl.form_incomplete"), true);
         return;
       }
       const previousSession = state.session;
@@ -926,7 +933,7 @@
       state.session = null;
       resetActivity();
       renderWorkspace();
-      setFormStatus("正在创建合作任务…", false);
+      setFormStatus(t("cl.creating"), false);
       const payload = core.cooperationPayload(
         agentIds,
         task,
@@ -948,7 +955,7 @@
         state.session = session;
         resetActivity();
         renderWorkspace();
-        setFormStatus("合作任务已创建。", false);
+        setFormStatus(t("cl.created_ok"), false);
         loadSessions();
         refreshSession();
       } catch (error) {
@@ -1017,7 +1024,7 @@
           candidate,
         );
         renderWorkspace();
-        setFormStatus("任务状态已更新。", false);
+        setFormStatus(t("cl.status_updated"), false);
         loadSessions();
         schedulePoll();
       } catch (error) {
@@ -1098,6 +1105,28 @@
       renderEmptyActivity();
       Promise.all([loadAgents(), loadSessions()]);
     }
+
+    /* The whole page is drawn from JS, so the language switch has to redraw it.
+       The activity feed is not re-rendered from here: its entries are a log of
+       what was said at the time, and rebuilding them would need the raw events
+       kept around purely to re-translate history. Whatever arrives next is in
+       the new language; what already happened stays as it was written. */
+    document.addEventListener("locale-changed", function () {
+      renderMemberPicker();
+      renderLeaderSelect();
+      renderRoleOverrides();
+      renderSessionList();
+      renderWorkspace();
+      // The activity placeholder is painted at init, before the locale file
+      // lands, so it is the one node that can be left showing a raw key. Drop
+      // it and let renderEmptyActivity() put it back in the new language; real
+      // entries are left alone (see the note above).
+      const placeholder = els.activityFeed.querySelector("[data-activity-empty]");
+      if (placeholder) {
+        placeholder.remove();
+        renderEmptyActivity();
+      }
+    });
 
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", init);

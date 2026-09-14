@@ -32,6 +32,7 @@ from gaworld.family import events as family_events
 from gaworld.family import finance as family_finance
 from gaworld.family.assign import assign_households, pair_roommates
 from gaworld.family.duties import care_load, duty_hint
+from gaworld.family.lifecycle import apply_transition, family_facts, refresh_household_type
 from gaworld.family.narrative import family_brief, family_section, family_summary_line
 from gaworld.family.schema import family_config
 from gaworld.family.ties import apply_family_ties, reconcile_ghost_kin
@@ -59,6 +60,11 @@ class FamilyPlugin(Plugin):
         ctx.bus.on("on_day_end", self._settle, priority=-10)
         ctx.bus.on("perception.sections", self._perception_section)
         ctx.bus.on("state.effects", self._contagion)
+        # Long-horizon steps: the household ages along with the agent.
+        ctx.bus.on("life.step", self._age_household, priority=15)
+        # Marriage / childbirth / bereavement land here once the life-events
+        # plugin has applied them.
+        ctx.bus.on("life.event.applied", self._apply_life_transition)
 
     # -- construction -------------------------------------------------------
 
@@ -119,6 +125,7 @@ class FamilyPlugin(Plugin):
             # above, so the brief is rebuilt rather than reused.
             agent["family"] = family_brief(record)
             agent["family_today"] = self._duty_text(record, day=day, ctx=ctx)
+            self._publish_facts(agent, record)
             print(family_summary_line(str(agent.get("name", agent.get("id"))), record))
             # Recorded *here* rather than at `agents.built`: only now are the
             # member names reconciled against the off-screen roster, so this is
@@ -207,6 +214,120 @@ class FamilyPlugin(Plugin):
                 _LOG.warning("family event injection failed (%s): %s", household.id, exc)
 
     # -- perception ---------------------------------------------------------
+
+    def _age_household(self, hook_ctx):
+        """Age every household member, and let children grow up and move out.
+
+        Household members carry an ``age`` that was written once at assignment
+        and never touched again, so over a ten-year run a five-year-old stayed
+        five and a seventy-year-old parent stayed seventy — the family was
+        frozen while the resident aged around it. That is the family analogue
+        of the agent-ageing gap, and it matters more here: care load, family
+        duties and the household *type* are all read off these ages.
+
+        A child crossing adulthood stops being co-resident (they move out),
+        which is the one composition change that follows from ageing alone and
+        needs no new mechanic. Marriage, births and bereavement are real
+        changes too, but they are decisions and events rather than arithmetic,
+        so they are not invented here.
+        """
+        try:
+            span_days = max(1, int(hook_ctx.get("period_days") or 1))
+        except (TypeError, ValueError):
+            span_days = 1
+        ctx = hook_ctx["sim"]
+        day = hook_ctx.get("day")
+        adult_age = 18
+        for agent in hook_ctx.get("agents") or []:
+            record = self._record_for(ctx, agent)
+            members = record.get("members") or []
+            if not members:
+                continue
+            carried = float(record.get("_member_age_days", 0.0)) + span_days
+            years, carried = divmod(carried, 365.0)
+            record["_member_age_days"] = carried
+            if not years:
+                continue
+            moved_out = []
+            for member in members:
+                if not isinstance(member, dict):
+                    continue
+                try:
+                    member_age = int(float(member.get("age") or 0))
+                except (TypeError, ValueError):
+                    continue
+                if member_age <= 0:
+                    continue
+                member["age"] = member_age + int(years)
+                if (
+                    str(member.get("role", "")) == "child"
+                    and member.get("coresident")
+                    and member_age < adult_age <= member["age"]
+                ):
+                    member["coresident"] = False
+                    moved_out.append(str(member.get("name") or member.get("key") or "子女"))
+            # The brief and duty text are read off the members, so they have
+            # to be rebuilt or the prompts keep quoting the old ages.
+            refresh_household_type(record)
+            agent["family"] = family_brief(record)
+            self._publish_facts(agent, record)
+            if moved_out:
+                text = (
+                    f"[Household Day {day}] {agent.get('name', agent['id'])}: "
+                    f"{'、'.join(moved_out)} 成年离家\n"
+                )
+                daily_logs = hook_ctx.get("daily_logs")
+                if daily_logs is not None:
+                    daily_logs[agent["id"]] += text
+                print(text.strip())
+
+    def _publish_facts(self, agent, record) -> None:
+        """Expose the household as checkable facts, not only as prose.
+
+        ``agent["family"]`` is an authored brief — right for a prompt, useless
+        for "does this person have a partner?". Eligibility checks and the
+        digest's action menu both need the latter.
+        """
+        try:
+            agent["family_facts"] = family_facts(record)
+        except Exception as exc:  # noqa: BLE001
+            _LOG.warning("family facts failed for %s: %s", agent.get("id"), exc)
+
+    def _apply_life_transition(self, hook_ctx):
+        """Turn a family life event into an actual change of household.
+
+        Without this a digest could report a marriage and the household would
+        still say 单身 — the prose-versus-model gap these events exist to
+        close. Eligibility is re-checked inside the transition, so an event
+        injected from the dashboard cannot marry someone who already has a
+        spouse either.
+        """
+        event = hook_ctx.get("life_event") or {}
+        key = str(event.get("template_key", ""))
+        if key not in ("marriage", "childbirth", "bereavement"):
+            return
+        ctx = hook_ctx["sim"]
+        agent = hook_ctx.get("agent") or {}
+        day = int(hook_ctx.get("day") or 0)
+        record = self._record_for(ctx, agent)
+        if not record:
+            return
+        change = apply_transition(key, record, agent, day=day, rng=self._rng)
+        if not change:
+            return
+        member = change.get("member") or {}
+        agent["family"] = family_brief(record)
+        self._publish_facts(agent, record)
+        verb = {"marriage": "结婚", "childbirth": "添丁", "bereavement": "亲人离世"}[key]
+        text = (
+            f"[Household Day {day}] {agent.get('name', agent.get('id'))}: "
+            f"{verb} — {member.get('name', '')}（{member.get('role', '')}）"
+            f"，户类型 → {change.get('household_type')}\n"
+        )
+        daily_logs = hook_ctx.get("daily_logs")
+        if daily_logs is not None:
+            daily_logs[agent["id"]] = daily_logs.get(agent["id"], "") + text
+        print(text.strip())
 
     def _perception_section(self, hook_ctx):
         ctx = hook_ctx["sim"]

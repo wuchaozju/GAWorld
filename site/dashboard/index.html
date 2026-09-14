@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GAWorld Console</title>
   <meta name="description" data-i18n-content="meta.description" content="GAWorld 本地仿真控制台" />
-  <link rel="stylesheet" href="/site/dashboard/styles.css?v=5" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/interaction.css" />
 </head>
 <body>
@@ -172,7 +172,7 @@
         <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
-              <p class="kicker" data-i18n="interview.title">Interview</p>
+              <p class="kicker" data-i18n="interview.kicker">Interview</p>
               <h2 data-i18n="interview.title">采访</h2>
             </div>
             <div class="head-actions">
@@ -184,7 +184,7 @@
           <div class="button-row end">
             <button id="interviewBtn" class="button primary" data-i18n="btn.start_interview">开始采访</button>
           </div>
-          <pre id="interviewOutput" class="codebox" data-i18n="interview.title">采访结果会显示在这里。</pre>
+          <pre id="interviewOutput" class="codebox" data-i18n="interview.no_output">采访结果会显示在这里。</pre>
         </section>
 
         <section id="collaborationPanel" class="panel collaboration-panel collapsible is-collapsed">
@@ -255,7 +255,7 @@
         <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
-              <p class="kicker" data-i18n="life_event.title">Life Event</p>
+              <p class="kicker" data-i18n="life_event.kicker">Life Event</p>
               <h2 data-i18n="life_event.title">人生事件</h2>
             </div>
             <div class="head-actions">
@@ -263,6 +263,13 @@
               <button id="reloadLifeEventsBtn" class="button small" data-i18n="btn.reload_life_events">刷新</button>
             </div>
           </div>
+          <div class="candidate-head">
+            <span data-i18n="life_event.candidates">状态候选事件</span>
+            <span class="help-tip" data-i18n-help="life_event.candidates_hint" data-help="根据当前人物的年龄、职业、家庭与状态变量自动生成的候选大事件，点一下即刻对该人物触发；人物状态变化后标签会自动更新。"></span>
+            <strong id="lifeEventCandidateAgent" class="candidate-agent"></strong>
+          </div>
+          <div id="lifeEventCandidates" class="candidate-tags"></div>
+
           <div class="event-grid">
             <label>
               <span data-i18n="life_event.template">事件模板</span>
@@ -308,7 +315,7 @@
         <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
-              <p class="kicker" data-i18n="fos_export.title">FOS Export</p>
+              <p class="kicker" data-i18n="fos_export.kicker">FOS Export</p>
               <h2 data-i18n="fos_export.title">FOS AI Scientist Export</h2>
             </div>
             <div class="head-actions">
@@ -336,7 +343,7 @@
         <section class="panel collapsible">
           <div class="section-head">
             <div>
-              <p class="kicker" data-i18n="memory.title">Memory</p>
+              <p class="kicker" data-i18n="memory.kicker">Memory</p>
               <h2 data-i18n="memory.title">记忆与习惯</h2>
             </div>
             <div class="head-actions">
@@ -380,7 +387,7 @@
         <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
-              <p class="kicker" data-i18n="run_log.title">Run Log</p>
+              <p class="kicker" data-i18n="run_log.kicker">Run Log</p>
               <h2 data-i18n="run_log.title">运行输出</h2>
             </div>
             <div class="head-actions">
@@ -415,10 +422,10 @@
     </div>
   </div>
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/help.js?v=1"></script>
+  <script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/collaboration-core.js"></script>
-  <script src="/site/dashboard/citymap-view.js?v=1"></script>
-  <script src="/site/dashboard/app.js?v=7"></script>
+  <script src="/site/dashboard/citymap-view.js"></script>
+  <script src="/site/dashboard/app.js"></script>
   <script src="/site/dashboard/interaction.js"></script>
 </body>
 </html>

@@ -27,6 +27,15 @@
     return (map && map[key]) || key;
   }
 
+  /* The exported documents follow the interface language: the metric names in
+     them already do (they come from `labels`), and leaving the surrounding
+     headings in one language would produce a mixed-language report — worse
+     than either consistent choice. The translator arrives through `labels`
+     rather than off a global, so this file stays pure and testable in node. */
+  function t(labels, key) {
+    return labels && typeof labels.t === "function" ? labels.t(key) : key;
+  }
+
   function pad(value) {
     return String(value).padStart(2, "0");
   }
@@ -66,16 +75,16 @@
 
   // Which run the export came from. The picker sits in the page chrome the
   // report strips out, so the name has to be carried into the file itself.
-  function runTitle(state) {
+  function runTitle(state, labels) {
     var run = state.runInfo;
-    if (!run || run.kind === "live") return "当前运行";
+    if (!run || run.kind === "live") return t(labels, "an.current_run");
     return run.label || run.id;
   }
 
   function scopeSummary(state, labels) {
     var pick = selection(state);
     return {
-      run: runTitle(state),
+      run: runTitle(state, labels),
       metrics: pick.metrics.map(function (key) { return label(labels.metric, key); }),
       agents: pick.agents.map(function (agent) { return agent.name; }),
       econ_series: pick.econSeries.map(function (key) { return label(labels.econ, key); }),
@@ -167,19 +176,25 @@
       var data = state.overview;
       var meta = data.sim_meta || {};
       rows = [
-        ["参与智能体", data.agent_count], ["状态指标数", data.metric_count],
-        ["状态采样步数", data.step_count], ["回放帧数", data.frame_count],
-        ["环境事件", data.event_total], ["日记条目", data.diary_count],
-        ["社会关系", data.relationship_total],
-        ["首日", data.day_span ? data.day_span.first : ""],
-        ["末日", data.day_span ? data.day_span.last : ""],
-        ["已完成", data.finished ? "true" : "false"],
-        ["仿真天数", meta.sim_days], ["每天秒数", meta.seconds_per_day],
-        ["时间步长", meta.time_step_minutes], ["地图", meta.map_path],
-        ["生成时间", data.generated_at], ["最后更新", data.last_updated],
+        [t(labels, "an.kpi_agents"), data.agent_count],
+        [t(labels, "ax.metric_count"), data.metric_count],
+        [t(labels, "an.kpi_steps"), data.step_count],
+        [t(labels, "an.kpi_frames"), data.frame_count],
+        [t(labels, "an.kpi_events"), data.event_total],
+        [t(labels, "an.kpi_diary"), data.diary_count],
+        [t(labels, "an.kpi_relations"), data.relationship_total],
+        [t(labels, "ax.day_first"), data.day_span ? data.day_span.first : ""],
+        [t(labels, "ax.day_last"), data.day_span ? data.day_span.last : ""],
+        [t(labels, "ax.finished_flag"), data.finished ? "true" : "false"],
+        [t(labels, "an.meta_sim_days"), meta.sim_days],
+        [t(labels, "an.meta_seconds"), meta.seconds_per_day],
+        [t(labels, "an.meta_time_step"), meta.time_step_minutes],
+        [t(labels, "an.meta_map"), meta.map_path],
+        [t(labels, "an.meta_generated"), data.generated_at],
+        [t(labels, "an.meta_updated"), data.last_updated],
       ];
       (data.top_movers || []).forEach(function (item) {
-        rows.push(["变化最显著 · " + label(labels.metric, item.metric), item.mean_delta]);
+        rows.push([t(labels, "ax.top_mover_prefix") + label(labels.metric, item.metric), item.mean_delta]);
       });
       files.push({ name: "overview.csv", text: csv(["item", "value"], rows) });
     }
@@ -323,8 +338,8 @@
 
   /* ------------------------------------------------------------ markdown */
 
-  function mdTable(header, rows) {
-    if (!rows.length) return "_暂无数据_\n";
+  function mdTable(header, rows, labels) {
+    if (!rows.length) return t(labels, "ax.no_data") + "\n";
     return "| " + header.join(" | ") + " |\n"
       + "| " + header.map(function () { return "---"; }).join(" | ") + " |\n"
       + rows.map(function (row) {
@@ -336,37 +351,45 @@
 
   function buildMarkdown(state, labels, stamp) {
     var pick = selection(state);
-    var out = ["# GAWorld 仿真结果分析", "", "运行：" + runTitle(state), "", "导出时间：" + stamp, ""];
+    var none = t(labels, "ax.none");
+    var out = [
+      "# " + t(labels, "ax.report_title"), "",
+      t(labels, "ax.run") + "：" + runTitle(state, labels), "",
+      t(labels, "ax.exported_at") + "：" + stamp, "",
+    ];
 
-    out.push("**导出范围**：" + [
-      "指标 " + (pick.metrics.length ? pick.metrics.map(function (k) { return label(labels.metric, k); }).join("、") : "无"),
-      "居民 " + (pick.agents.length ? pick.agents.map(function (a) { return a.name; }).join("、") : "无"),
-      "经济序列 " + (pick.econSeries.length ? pick.econSeries.map(function (k) { return label(labels.econ, k); }).join("、") : "无"),
+    out.push("**" + t(labels, "ax.scope") + "**：" + [
+      t(labels, "ax.scope_metrics") + " " + (pick.metrics.length ? pick.metrics.map(function (k) { return label(labels.metric, k); }).join("、") : none),
+      t(labels, "ax.scope_agents") + " " + (pick.agents.length ? pick.agents.map(function (a) { return a.name; }).join("、") : none),
+      t(labels, "ax.scope_econ") + " " + (pick.econSeries.length ? pick.econSeries.map(function (k) { return label(labels.econ, k); }).join("、") : none),
     ].join("；"), "");
 
     var data = state.overview;
     if (data) {
       var meta = data.sim_meta || {};
-      out.push("## 运行总览", "");
-      out.push(mdTable(["项目", "数值"], [
-        ["参与智能体", data.agent_count], ["状态指标数", data.metric_count],
-        ["状态采样步数", data.step_count], ["回放帧数", data.frame_count],
-        ["环境事件", data.event_total], ["日记条目", data.diary_count],
-        ["社会关系", data.relationship_total],
-        ["天数范围", data.day_span ? "Day " + data.day_span.first + " – " + data.day_span.last : "—"],
-        ["运行状态", data.finished ? "已完成" : "运行中 / 部分数据"],
-        ["仿真天数", meta.sim_days == null ? "—" : meta.sim_days],
-        ["地图", meta.map_path || "—"],
-        ["最后更新", data.last_updated || "—"],
-      ]));
-      out.push("", "### 变化最显著的状态指标", "");
-      out.push(mdTable(["指标", "全体均值 Δ"], (data.top_movers || []).map(function (item) {
+      out.push("## " + t(labels, "ax.h_overview"), "");
+      out.push(mdTable([t(labels, "ax.col_item"), t(labels, "ax.col_value")], [
+        [t(labels, "an.kpi_agents"), data.agent_count],
+        [t(labels, "ax.metric_count"), data.metric_count],
+        [t(labels, "an.kpi_steps"), data.step_count],
+        [t(labels, "an.kpi_frames"), data.frame_count],
+        [t(labels, "an.kpi_events"), data.event_total],
+        [t(labels, "an.kpi_diary"), data.diary_count],
+        [t(labels, "an.kpi_relations"), data.relationship_total],
+        [t(labels, "ax.day_range"), data.day_span ? "Day " + data.day_span.first + " – " + data.day_span.last : "—"],
+        [t(labels, "ax.run_state"), t(labels, data.finished ? "an.runs_done" : "an.runs_partial")],
+        [t(labels, "an.meta_sim_days"), meta.sim_days == null ? "—" : meta.sim_days],
+        [t(labels, "an.meta_map"), meta.map_path || "—"],
+        [t(labels, "an.meta_updated"), data.last_updated || "—"],
+      ], labels));
+      out.push("", "### " + t(labels, "ax.h_top_movers"), "");
+      out.push(mdTable([t(labels, "ax.col_metric"), t(labels, "ax.col_mean_delta")], (data.top_movers || []).map(function (item) {
         return [label(labels.metric, item.metric), (item.mean_delta > 0 ? "+" : "") + num(item.mean_delta, 3)];
-      })));
+      }), labels));
     }
 
     if (pick.metrics.length && pick.agents.length) {
-      out.push("", "## 智能体状态变化（首末对比）", "");
+      out.push("", "## " + t(labels, "ax.h_state_delta"), "");
       var rows = [];
       pick.metrics.forEach(function (metric) {
         pick.agents.forEach(function (agent) {
@@ -379,72 +402,81 @@
           ]);
         });
       });
-      out.push(mdTable(["指标", "居民", "起始", "结束", "Δ", "均值"], rows));
+      out.push(mdTable([
+        t(labels, "ax.col_metric"), t(labels, "ax.col_resident"),
+        t(labels, "ax.col_first"), t(labels, "ax.col_last"), "Δ", t(labels, "ax.col_mean"),
+      ], rows, labels));
     }
 
     if (state.economy && state.economy.available) {
       var macro = state.economy.macro || {};
-      out.push("", "## 经济", "", "### 宏观状态", "");
-      out.push(mdTable(["项目", "数值"], [
-        ["宏观周期", macro.phase || "—"],
-        ["通胀率", macro.inflation_rate == null ? "—" : (macro.inflation_rate * 100).toFixed(2) + "%"],
-        ["失业率", macro.unemployment_rate == null ? "—" : (macro.unemployment_rate * 100).toFixed(2) + "%"],
-        ["累计通胀", num(macro.cumulative_inflation, 4) || "—"],
-        ["货币守恒漂移", state.economy.conservation ? num(state.economy.conservation.drift, 6) : "—"],
-      ]));
-      out.push("", "### 最终财富排名（前 10）", "");
-      out.push(mdTable(["居民", "总资产"], state.economy.wealth.slice(0, 10).map(function (item) {
+      out.push("", "## " + t(labels, "ax.h_economy"), "", "### " + t(labels, "ax.h_macro"), "");
+      out.push(mdTable([t(labels, "ax.col_item"), t(labels, "ax.col_value")], [
+        [t(labels, "an.macro_phase"), macro.phase || "—"],
+        [t(labels, "an.macro_inflation"), macro.inflation_rate == null ? "—" : (macro.inflation_rate * 100).toFixed(2) + "%"],
+        [t(labels, "an.macro_unemployment"), macro.unemployment_rate == null ? "—" : (macro.unemployment_rate * 100).toFixed(2) + "%"],
+        [t(labels, "an.macro_cum_inflation"), num(macro.cumulative_inflation, 4) || "—"],
+        [t(labels, "an.money_drift"), state.economy.conservation ? num(state.economy.conservation.drift, 6) : "—"],
+      ], labels));
+      out.push("", "### " + t(labels, "ax.h_wealth"), "");
+      out.push(mdTable([t(labels, "ax.col_resident"), t(labels, "ax.col_assets")], state.economy.wealth.slice(0, 10).map(function (item) {
         return [item.name, num(item.balance, 2)];
-      })));
+      }), labels));
     }
 
     if (state.social && state.social.available) {
-      out.push("", "## 社交关系", "");
-      out.push(mdTable(["分层", "数量"], Object.keys(state.social.tier_counts).map(function (tier) {
+      out.push("", "## " + t(labels, "ax.h_social"), "");
+      out.push(mdTable([t(labels, "ax.col_tier"), t(labels, "ax.col_count")], Object.keys(state.social.tier_counts).map(function (tier) {
         return [tier, state.social.tier_counts[tier]];
-      })));
-      out.push("", "### 关系角色分布", "");
-      out.push(mdTable(["角色", "数量"], Object.keys(state.social.role_counts).map(function (role) {
+      }), labels));
+      out.push("", "### " + t(labels, "ax.h_roles"), "");
+      out.push(mdTable([t(labels, "ax.col_role"), t(labels, "ax.col_count")], Object.keys(state.social.role_counts).map(function (role) {
         return [role, state.social.role_counts[role]];
-      })));
+      }), labels));
     }
 
     if (state.behavior && state.behavior.available) {
-      out.push("", "## 行为与空间", "", "### 高频地点（前 10）", "");
-      out.push(mdTable(["地点", "到访次数"], state.behavior.places.slice(0, 10).map(function (item) {
+      out.push("", "## " + t(labels, "ax.h_behavior"), "", "### " + t(labels, "ax.h_places"), "");
+      out.push(mdTable([t(labels, "ax.col_place"), t(labels, "ax.col_visits")], state.behavior.places.slice(0, 10).map(function (item) {
         return [item.name, item.visits];
-      })));
-      out.push("", "### 出行方式", "");
-      out.push(mdTable(["方式", "出行次数"], state.behavior.modes.map(function (item) {
+      }), labels));
+      out.push("", "### " + t(labels, "ax.h_modes"), "");
+      out.push(mdTable([t(labels, "ax.col_mode"), t(labels, "ax.col_trips")], state.behavior.modes.map(function (item) {
         return [item.mode, item.trips];
-      })));
-      out.push("", "### 最强习惯（前 10）", "");
-      out.push(mdTable(["居民", "时段", "情境", "活动", "强度"],
+      }), labels));
+      out.push("", "### " + t(labels, "ax.h_habits"), "");
+      out.push(mdTable([
+        t(labels, "ax.col_resident"), t(labels, "ax.col_period"), t(labels, "ax.col_context"),
+        t(labels, "ax.col_activity"), t(labels, "ax.col_strength"),
+      ],
         state.behavior.habits.slice(0, 10).map(function (habit) {
           return [
             habit.name || habit.agent_id, label(labels.period, habit.period),
             habit.context, habit.activity, num(habit.strength, 3),
           ];
-        })));
+        }), labels));
     }
 
     if (state.events && state.events.available) {
-      out.push("", "## 环境与政策事件", "");
-      out.push(mdTable(["事件类型", "次数"], Object.keys(state.events.type_counts).map(function (type) {
+      out.push("", "## " + t(labels, "ax.h_events"), "");
+      out.push(mdTable([t(labels, "ax.col_event_type"), t(labels, "ax.col_times")], Object.keys(state.events.type_counts).map(function (type) {
         return [type, state.events.type_counts[type]];
-      })));
-      out.push("", "### 影响标签分布", "");
-      out.push(mdTable(["标签", "次数"], Object.keys(state.events.impact_counts).map(function (tag) {
+      }), labels));
+      out.push("", "### " + t(labels, "ax.h_impacts"), "");
+      out.push(mdTable([t(labels, "ax.col_tag"), t(labels, "ax.col_times")], Object.keys(state.events.impact_counts).map(function (tag) {
         return [tag, state.events.impact_counts[tag]];
-      })));
+      }), labels));
       var recent = [];
       state.events.timeline.slice(-30).reverse().forEach(function (frame) {
         frame.events.forEach(function (event) {
           recent.push(["Day " + frame.day, event.type, event.name, event.scope, num(event.severity, 2)]);
         });
       });
-      out.push("", "### 最近事件", "");
-      out.push(mdTable(["天", "类型", "事件", "范围", "强度"], recent));
+      out.push("", "### " + t(labels, "ax.h_recent"), "");
+      out.push(mdTable([
+        t(labels, "ax.col_day"), t(labels, "ax.col_type"), t(labels, "ax.col_event"),
+        t(labels, "ax.col_scope"), t(labels, "ax.col_strength"),
+      ], recent, labels));
     }
 
     return out.join("\n").replace(/\n{3,}/g, "\n\n") + "\n";
@@ -463,17 +495,18 @@
   // no chart library, no network, printable straight to PDF.
   function buildHtmlReport(state, labels, stamp, bodyHtml, css) {
     var scope = scopeSummary(state, labels);
+    var none = t(labels, "ax.none");
     var lines = [
-      ["运行", scope.run],
-      ["导出时间", stamp],
-      ["状态指标", scope.metrics.join("、") || "无"],
-      ["居民", scope.agents.join("、") || "无"],
-      ["经济指标", scope.econ_series.join("、") || "无"],
+      [t(labels, "ax.run"), scope.run],
+      [t(labels, "ax.exported_at"), stamp],
+      [t(labels, "ax.state_metrics"), scope.metrics.join("、") || none],
+      [t(labels, "ax.col_resident"), scope.agents.join("、") || none],
+      [t(labels, "ax.econ_metrics"), scope.econ_series.join("、") || none],
     ];
-    return "<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n"
+    return "<!doctype html>\n<html lang=\"" + (labels && labels.lang ? labels.lang : "zh-CN") + "\">\n<head>\n"
       + '<meta charset="utf-8" />\n'
       + '<meta name="viewport" content="width=device-width, initial-scale=1" />\n'
-      + "<title>GAWorld 仿真结果分析 · " + escapeHtml(stamp) + "</title>\n"
+      + "<title>" + escapeHtml(t(labels, "ax.report_title")) + " · " + escapeHtml(stamp) + "</title>\n"
       + "<style>\n" + css + "\n"
       + ".an-report-scope{display:grid;gap:6px;padding:14px 16px;margin-bottom:4px;"
       + "border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card);font-size:12px}\n"

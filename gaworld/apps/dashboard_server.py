@@ -1,6 +1,6 @@
 import atexit
 import csv
-import datetime
+import math
 import json
 import os
 import re
@@ -17,7 +17,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from gaworld.settings import CONFIG
 from gaworld.apps import analytics, replay_runs
+from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
+from gaworld.family.lifecycle import family_facts
 from gaworld.integrations.fos_prompt import generate_fos_prompt
 from gaworld.logging_setup import get_logger
 
@@ -66,13 +68,7 @@ RUN_STATE = {
     "process": None,
     "started_at": None,
     "log_path": RUN_LOG_PATH,
-    # Pending "定时运行": the timer thread that will start the run, the wall
-    # clock it fires at, the payload to start with, and the error a fired
-    # timer left behind (so a failed auto-start is visible in the panel).
-    "schedule": None,
 }
-
-_SCHEDULE_LOCK = threading.Lock()
 
 _COLLABORATION_SERVICE = None
 _COLLABORATION_LOCK = threading.Lock()
@@ -114,31 +110,8 @@ def _dashboard_config():
 
 
 def _effective_config():
-    """The configuration a fresh process would load, as of right now.
-
-    Deliberately *not* ``deepcopy(CONFIG)``. ``CONFIG`` is assembled once at
-    import and ``settings/overrides.py`` already merges the override files
-    into it, so it is a snapshot that goes stale the moment the dashboard
-    writes one. Reading it back told a user who had just reset a key that it
-    still held its old value — the exact "the edit looks like it worked"
-    failure the 配置 panel exists to prevent — because the reset emptied the
-    override file while the stale copy kept the overridden value.
-
-    So rebuild from the Python defaults and re-apply the layers in the order
-    ``overrides.apply_runtime_overrides`` uses (env last, twice, so it beats
-    the environment file). The dashboard layer comes from
-    ``_dashboard_config()`` rather than the loader's relative path, keeping
-    the module path constants the single lever over where it reads.
-    """
-    from gaworld.settings.defaults import build_default_config
-    from gaworld.settings.overrides import load_env_override, load_environment_config
-
-    cfg = build_default_config()
-    env_override = load_env_override()
+    cfg = deepcopy(CONFIG)
     _deep_update(cfg, _dashboard_config())
-    _deep_update(cfg, env_override)
-    _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
-    _deep_update(cfg, env_override)
     return cfg
 
 
@@ -350,40 +323,12 @@ def _provider_names(cfg):
     return sorted(providers.keys())
 
 
-def _sim_start_date(cfg):
-    from gaworld.sim._utils import _parse_sim_start_date
-
-    calendar = cfg.get("calendar", {}) if isinstance(cfg.get("calendar"), dict) else {}
-    return _parse_sim_start_date(calendar.get("start_date", "today"))
-
-
-def _sim_span(cfg):
-    """The run horizon expressed in the configured step unit.
-
-    The toolbar shows one horizon field whose unit follows ``long_run.unit``,
-    mirroring the CLI's ``--sim-days`` / ``--sim-months`` / ``--sim-years``.
-    ``count`` is the number of steps the run actually plans, so a 3653-day
-    year-unit run reads back as "10 年" rather than as a day count nobody
-    typed.
-    """
-    from gaworld.sim._fastforward import long_run_unit, plan_horizon
-
-    unit = long_run_unit(cfg)
-    try:
-        total_days = max(1, int(cfg.get("sim_days") or 1))
-    except (TypeError, ValueError):
-        total_days = 1
-    periods = plan_horizon(1, total_days, unit, start_date=_sim_start_date(cfg))
-    return {"unit": unit, "count": len(periods) or 1}
-
-
 def _config_summary():
     cfg = _effective_config()
     routing = cfg.get("llm", {}).get("routing", {})
     return {
         "agent_ids": cfg.get("agent_ids", []),
         "sim_days": cfg.get("sim_days"),
-        "sim_span": _sim_span(cfg),
         "seconds_per_day": cfg.get("seconds_per_day"),
         "simulate_realtime": cfg.get("simulate_realtime"),
         "time_step_minutes": cfg.get("time_step_minutes"),
@@ -404,23 +349,6 @@ def _sanitize_config_patch(payload):
     for key in ("sim_days", "seconds_per_day"):
         if key in payload:
             patch[key] = max(1, int(payload[key]))
-    # The toolbar sends the horizon in the step unit ("10 年"); the calendar
-    # math that turns it into sim days lives in one place, so do it here
-    # rather than approximating 30/365 in the browser. Wins over `sim_days`
-    # when both are present.
-    span = payload.get("sim_span")
-    if isinstance(span, dict):
-        from gaworld.sim._fastforward import span_days
-
-        unit = str(span.get("unit") or "day").strip().lower()
-        try:
-            count = max(1, int(span.get("count") or 1))
-        except (TypeError, ValueError):
-            count = 1
-        if unit in ("day", "month", "year"):
-            patch["sim_days"] = span_days(
-                unit, count, start_date=_sim_start_date(_effective_config())
-            )
     if "agent_ids" in payload:
         ids = payload.get("agent_ids")
         if isinstance(ids, str):
@@ -438,17 +366,6 @@ def _sanitize_config_patch(payload):
             clean["enabled"] = bool(lr["enabled"])
         if "brief_llm" in lr:
             clean["brief_llm"] = bool(lr["brief_llm"])
-        if "unit" in lr:
-            unit = str(lr["unit"] or "day").strip().lower()
-            if unit in ("day", "month", "year"):
-                clean["unit"] = unit
-                # Picking 月/年 is picking fast-forward: there is no per-month
-                # tick loop, so persisting "unit=year, enabled=false" would
-                # save a config that silently runs 365 tick-loop days. Write
-                # the combination the run will actually use, so the checkbox
-                # reads back ticked instead of lying to the next visitor.
-                if unit != "day":
-                    clean["enabled"] = True
         if "max_state_delta" in lr:
             try:
                 clean["max_state_delta"] = max(0.0, min(1.0, float(lr["max_state_delta"])))
@@ -1124,6 +1041,245 @@ def _finance_snapshot(agent_id):
     return None
 
 
+# ---------------------------------------------------------------------------
+# Big Five (OCEAN) seed scores — studio panel, step 2.
+# ---------------------------------------------------------------------------
+
+#: Where the plugin reads the frozen z scores from. Editing here takes effect on
+#: the **next** run, like every other seed the studio writes: the plugin loads
+#: this file once at ``agents.built`` and the record is read-only afterwards.
+BIG5_CSV_PATH = os.path.join(
+    REPO_ROOT,
+    (CONFIG.get("personality", {}) or {}).get("profile_path", "data/agents_big5.csv"),
+)
+
+#: The generator's authoring floor. A dimension at or above this was written
+#: into the resident's 人格与行为倾向 paragraph; below it the paragraph is
+#: silent. This one rule is the whole basis of the consistency flags below --
+#: they are arithmetic on the scores, **not** an analysis of the text.
+BIG5_AUTHORING_FLOOR = 0.5
+
+#: Snapshot column: the five values the paragraph was authored from. Without it
+#: the baseline is destroyed by the first edit and the contradiction becomes
+#: invisible on reload -- which is the failure the panel exists to prevent.
+BIG5_AUTHORED_COLUMN = "authored_z"
+
+BIG5_DIMENSIONS = ("o", "c", "e", "a", "n")
+
+#: Shown beside each slider so the reader knows what to look for in the
+#: paragraph. Same wording as ``scripts/calibrate_big5.py``'s anchors, so the
+#: panel and the calibrator describe the same poles.
+BIG5_POLES = {
+    "o": ("只走熟悉的路线、认准的做法很少改", "主动找新鲜事物、爱试没试过的做法"),
+    "c": ("计划容易落空、事情往后拖", "提前排好顺序、被打断也会补回来"),
+    "e": ("回避热闹场合、独处恢复精力", "主动搭话、独处久了会闷"),
+    "a": ("说话直接、不太迁就别人", "先替别人考虑、难以拒绝"),
+    "n": ("情绪很稳、别人急他不急", "容易往坏处想、情绪起落大"),
+}
+
+BIG5_NAMES_ZH = {
+    "o": "开放性", "c": "尽责性", "e": "外向性", "a": "宜人性", "n": "神经质",
+}
+
+#: English twins, shipped alongside so the studio panel can label the sliders
+#: in either language. Same approach as the config docs: both languages travel
+#: in the payload and the client picks, rather than the server guessing from an
+#: Accept-Language header the dashboard never sets.
+BIG5_POLES_EN = {
+    "o": ("sticks to familiar routes, rarely changes a settled approach",
+          "seeks out what is new, likes trying what they have not tried"),
+    "c": ("plans slip, things get put off",
+          "orders things in advance, picks them back up after an interruption"),
+    "e": ("avoids crowded occasions, recovers energy alone",
+          "starts conversations, gets restless alone for long"),
+    "a": ("speaks directly, does not bend much for others",
+          "thinks of others first, finds it hard to refuse"),
+    "n": ("steady, unhurried when others panic",
+          "assumes the worst, large swings of mood"),
+}
+
+BIG5_NAMES_EN = {
+    "o": "Openness", "c": "Conscientiousness", "e": "Extraversion",
+    "a": "Agreeableness", "n": "Neuroticism",
+}
+
+
+def _read_big5_rows():
+    if not os.path.exists(BIG5_CSV_PATH):
+        return [], []
+    with open(BIG5_CSV_PATH, "r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        return list(reader.fieldnames or []), [dict(row) for row in reader]
+
+
+def _parse_authored(raw):
+    """``"o=-0.35;c=0.48;..."`` -> dict, tolerating a missing or broken value."""
+    out = {}
+    for chunk in str(raw or "").split(";"):
+        key, _, value = chunk.partition("=")
+        key = key.strip()
+        if key in BIG5_DIMENSIONS:
+            try:
+                out[key] = round(float(value), 4)
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def _format_authored(values):
+    return ";".join(f"{dim}={values.get(dim, 0.0):.4f}" for dim in BIG5_DIMENSIONS)
+
+
+def _big5_paragraph(agent_id):
+    section = _agent_profile(agent_id)
+    if not section:
+        return ""
+    match = re.search(r"\*\*人格与行为倾向\*\*：(.+)", section.get("text", "") or "")
+    return match.group(1).strip() if match else ""
+
+
+def _big5_consistency(current, authored, paragraph):
+    """Per-dimension flags for "does the paragraph still describe this?".
+
+    Derived from one rule -- the generator wrote a dimension into the paragraph
+    iff ``|z| >= BIG5_AUTHORING_FLOOR`` -- applied to the value the paragraph
+    was authored from versus the value now. **No keyword matching.** A keyword
+    probe on this corpus already misled once (the personality proposal records
+    an E probe reading -0.13 because the word list used topic nouns rather than
+    valence-bearing phrases), and a wrong-but-confident indicator here would be
+    worse than none: the operator would trust it instead of reading.
+
+    * ``rewrite``      -- the paragraph describes this dimension and the score
+      moved away from what it describes. ``severity: "flip"`` when the sign
+      changed, which is a guaranteed contradiction rather than a drift.
+    * ``now_missing``  -- the paragraph is silent here and the score is now
+      distinctive, so the text under-describes the resident.
+    * ``now_moot``     -- the paragraph describes a pole the resident no longer
+      has, so the text over-describes them.
+    * ``ok``           -- nothing to do.
+    """
+    flags = {}
+    for dim in BIG5_DIMENSIONS:
+        now = float(current.get(dim, 0.0))
+        was = authored.get(dim)
+        was_written = was is not None and abs(was) >= BIG5_AUTHORING_FLOOR
+        is_written = abs(now) >= BIG5_AUTHORING_FLOOR
+        state, severity = "ok", ""
+        if was is None:
+            state = "unknown"
+        elif was_written and is_written:
+            if (now > 0) != (was > 0):
+                state, severity = "rewrite", "flip"
+            elif abs(now - was) >= BIG5_AUTHORING_FLOOR:
+                state, severity = "rewrite", "drift"
+        elif was_written and not is_written:
+            state = "now_moot"
+        elif not was_written and is_written:
+            state = "now_missing"
+        flags[dim] = {
+            "state": state,
+            "severity": severity,
+            "authored": was,
+            "current": round(now, 4),
+            "written_in_paragraph": was_written,
+        }
+    return flags
+
+
+def _agent_big5(agent_id):
+    _, rows = _read_big5_rows()
+    target = next((r for r in rows if _row_id(r) == int(agent_id)), None)
+    if target is None:
+        return None
+    values = {}
+    for dim in BIG5_DIMENSIONS:
+        try:
+            values[dim] = round(float(target.get(dim) or 0.0), 4)
+        except (TypeError, ValueError):
+            values[dim] = 0.0
+    authored = _parse_authored(target.get(BIG5_AUTHORED_COLUMN))
+    if not authored and str(target.get("source", "")).strip() == "sampled_authored":
+        # Never hand-edited: the values on disk *are* what the paragraph was
+        # written from, so they are the baseline.
+        authored = dict(values)
+    paragraph = _big5_paragraph(agent_id)
+    return {
+        "id": int(agent_id),
+        "name": target.get("name", ""),
+        "values": values,
+        "authored": authored,
+        "source": target.get("source", ""),
+        "paragraph": paragraph,
+        "consistency": _big5_consistency(values, authored, paragraph),
+        "poles": BIG5_POLES,
+        "names": BIG5_NAMES_ZH,
+        "poles_en": BIG5_POLES_EN,
+        "names_en": BIG5_NAMES_EN,
+        "floor": BIG5_AUTHORING_FLOOR,
+        "clip": 2.5,
+    }
+
+
+def _save_agent_big5(agent_id, payload):
+    """Write the five z scores back to the seed CSV.
+
+    Three things happen besides the numbers:
+
+    * ``source`` becomes ``hand_edited`` so a later run is not attributed to the
+      sampler that no longer produced these values;
+    * the authored baseline is snapshotted on the first edit, so the paragraph
+      comparison survives reloads;
+    * ``redundant`` is cleared, because it was the verdict of a collinearity
+      gate run against values that have just changed.
+    """
+    fieldnames, rows = _read_big5_rows()
+    if not fieldnames:
+        raise ValueError("Big Five CSV is missing or empty")
+    target = next((r for r in rows if _row_id(r) == int(agent_id)), None)
+    if target is None:
+        raise ValueError(f"Agent {agent_id} not found in {os.path.basename(BIG5_CSV_PATH)}")
+
+    if BIG5_AUTHORED_COLUMN not in fieldnames:
+        fieldnames = list(fieldnames) + [BIG5_AUTHORED_COLUMN]
+    if not str(target.get(BIG5_AUTHORED_COLUMN, "")).strip():
+        baseline = {}
+        for dim in BIG5_DIMENSIONS:
+            try:
+                baseline[dim] = round(float(target.get(dim) or 0.0), 4)
+            except (TypeError, ValueError):
+                baseline[dim] = 0.0
+        target[BIG5_AUTHORED_COLUMN] = _format_authored(baseline)
+
+    incoming = payload.get("values") or {}
+    changed = False
+    for dim in BIG5_DIMENSIONS:
+        if incoming.get(dim) is None:
+            continue
+        try:
+            value = float(incoming[dim])
+        except (TypeError, ValueError):
+            raise ValueError(f"{dim} is not a number") from None
+        if not math.isfinite(value):
+            raise ValueError(f"{dim} is not finite")
+        value = round(max(-2.5, min(2.5, value)), 4)
+        if str(target.get(dim, "")) != str(value):
+            changed = True
+        target[dim] = value
+    if changed:
+        target["source"] = "hand_edited"
+        if "redundant" in fieldnames:
+            target["redundant"] = ""
+
+    tmp_path = BIG5_CSV_PATH + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+    os.replace(tmp_path, BIG5_CSV_PATH)
+    return _agent_big5(agent_id)
+
+
 def _agent_detail(agent_id):
     state = _agent_state(agent_id)
     if state is None:
@@ -1337,35 +1493,6 @@ def _run_log_markdown():
     return "\n".join(lines), f"gaworld-run-log-{stamp}.md"
 
 
-#: Shock-log entry types written by the employment life events.
-_EMPLOYMENT_RECORD_TYPES = ("job_change", "unemployment", "rehired")
-
-
-def _employment_payload(agent_id):
-    """Current job + the job changes behind it, for the agent panel.
-
-    Read from the per-agent economy state file — the only runtime artefact
-    carrying a *live* job (the profile markdown holds the Day-1 one, which is
-    exactly what stops being true after a 换工作/失业 event fires).
-    """
-    from gaworld.economy.finance import UNEMPLOYED_JOB_TEXT
-
-    econ = _read_json_file(_memory_file(agent_id, "_economy"), {})
-    if not isinstance(econ, dict) or not econ:
-        return {}
-    job = str(econ.get("job") or "")
-    history = [row for row in econ.get("shock_log", [])
-               if isinstance(row, dict) and row.get("type") in _EMPLOYMENT_RECORD_TYPES]
-    return {
-        "job": job,
-        "status": "unemployed" if job == UNEMPLOYED_JOB_TEXT else "employed",
-        "hourly_income": _num(econ.get("base_hourly_income"), 0.0),
-        "previous_job": str(econ.get("previous_job") or ""),
-        "recovery_days": int(_num(econ.get("_layoff_days_remaining"), 0)),
-        "history": history[-5:],
-    }
-
-
 def _memory_payload(agent_id):
     memory_dir = _effective_config().get("memory_dir", "output/memory")
     base = os.path.join(REPO_ROOT, memory_dir)
@@ -1384,7 +1511,6 @@ def _memory_payload(agent_id):
         "goals": goals,
         "episodes_tail": episodes,
         "log_tail": log_text,
-        "employment": _employment_payload(agent_id),
     }
 
 
@@ -1418,16 +1544,11 @@ def _run_status(log_offset=None):
     code = None if not proc else proc.poll()
     log_path = RUN_STATE.get("log_path") or RUN_LOG_PATH
     chunk = _run_log_slice(log_path, log_offset)
-    schedule = RUN_STATE.get("schedule") or {}
     return {
         "running": running,
         "returncode": code,
         "started_at": RUN_STATE.get("started_at"),
         "log_path": RUN_STATE.get("log_path"),
-        # Only a schedule that still holds a live timer is pending; one whose
-        # timer already fired lingers only to carry `schedule_error`.
-        "scheduled_at": schedule.get("at") if schedule.get("timer") else None,
-        "schedule_error": schedule.get("error"),
         # `log_append` tells the client whether to append `log_tail` to what it
         # already shows or replace it. Clients that send no offset always get a
         # replacement, so the field stays backwards compatible.
@@ -1477,88 +1598,6 @@ def _start_simulation(payload):
     RUN_STATE["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     RUN_STATE["log_path"] = RUN_LOG_PATH
     return _run_status()
-
-
-def _parse_schedule_time(raw):
-    """Parse the ``datetime-local`` value the dashboard sends ("2026-08-30T21:30").
-
-    Naive local time on purpose: the timer fires against the server's own clock,
-    and the dashboard is a local console — browser and server share a machine.
-    A value that does carry an offset is converted to local time first.
-    """
-    text = str(raw or "").strip().replace(" ", "T")
-    if not text:
-        raise ValueError("Scheduled time is required")
-    try:
-        when = datetime.datetime.fromisoformat(text)
-    except ValueError:
-        raise ValueError(f"Invalid scheduled time: {raw}")
-    if when.tzinfo is not None:
-        when = when.astimezone().replace(tzinfo=None)
-    return when
-
-
-def _schedule_simulation(payload):
-    """Arm a timer that starts the simulation at the requested wall clock.
-
-    The config from the form is kept with the schedule and applied when the
-    timer fires, so a scheduled run behaves exactly like pressing 运行仿真 then.
-    """
-    when = _parse_schedule_time(payload.get("at"))
-    delay = (when - datetime.datetime.now()).total_seconds()
-    if delay <= 0:
-        raise ValueError("Scheduled time must be in the future")
-    start_payload = {
-        "reset": bool(payload.get("reset")),
-        "config": payload.get("config"),
-    }
-    with _SCHEDULE_LOCK:
-        previous = RUN_STATE.get("schedule") or {}
-        if previous.get("timer"):
-            previous["timer"].cancel()
-        timer = threading.Timer(delay, _fire_scheduled_simulation)
-        timer.daemon = True
-        RUN_STATE["schedule"] = {
-            "at": when.strftime("%Y-%m-%d %H:%M:%S"),
-            "timer": timer,
-            "payload": start_payload,
-            "error": None,
-        }
-        timer.start()
-    return _run_status()
-
-
-def _cancel_scheduled_simulation():
-    with _SCHEDULE_LOCK:
-        schedule = RUN_STATE.get("schedule") or {}
-        if schedule.get("timer"):
-            schedule["timer"].cancel()
-        RUN_STATE["schedule"] = None
-    return _run_status()
-
-
-def _fire_scheduled_simulation():
-    with _SCHEDULE_LOCK:
-        schedule = RUN_STATE.get("schedule")
-        if not schedule:
-            return
-        # Drop the timer first: from here on the schedule is spent, and the
-        # entry only survives long enough to report a failed start.
-        schedule["timer"] = None
-        start_payload = schedule.get("payload") or {}
-    try:
-        _start_simulation(start_payload)
-    except Exception as exc:
-        # Nobody is waiting on this call, so a failure has to be parked where
-        # /api/run/status can show it instead of raising into the timer thread.
-        _LOG.exception("Scheduled run failed to start: %s", exc)
-        with _SCHEDULE_LOCK:
-            schedule = RUN_STATE.get("schedule")
-            if schedule:
-                schedule["error"] = str(exc)
-    else:
-        with _SCHEDULE_LOCK:
-            RUN_STATE["schedule"] = None
 
 
 def _stop_simulation():
@@ -1632,10 +1671,147 @@ def _life_events_payload():
 
 
 def _add_life_event(payload):
-    event = add_life_event(payload, CONFIG, current_frame=_current_trace_frame())
+    event = add_life_event(
+        _expand_candidate_payload(payload), CONFIG, current_frame=_current_trace_frame()
+    )
     return {
         "event": event,
         "events": list_life_events(CONFIG, include_consumed=True),
+    }
+
+
+# ---------------------------------------------------------------------------
+# State-aware life-event candidates. `gaworld.events.candidates` ranks a
+# catalogue against one agent's situation; the reading of that situation off
+# the files on disk is this module's job (see `context_from_agent`).
+# ---------------------------------------------------------------------------
+
+def _expand_candidate_payload(payload):
+    """Turn a tag-cloud click into a full life-event body.
+
+    A ``candidate_key`` is the cloud's shorthand: the catalogue already holds
+    that event's title, description, severity and effects, so the client sends
+    the key and the agent rather than restating all of it. A payload from the
+    事件模板 form carries no key and passes through untouched.
+    """
+    candidate_key = str(payload.get("candidate_key") or "").strip()
+    if not candidate_key:
+        return payload
+    return candidate_events.candidate_event_payload(
+        candidate_key,
+        agent_ids=payload.get("agent_ids", ()),
+        severity=payload.get("severity"),
+    )
+
+
+def _agent_job(agent_id):
+    """The 职业与工作节奏 line from the Markdown profile.
+
+    The state CSV has no job column — the job is prose, and the candidate
+    gates read it (平台规则突变 for platform workers, 创业失败 for the
+    self-employed). Same field `agents_loader.parse_profile` pulls, without
+    that parser's hard requirement on the other profile fields.
+    """
+    profile = _agent_profile(agent_id) or {}
+    match = re.search(r"\*\*职业与工作节奏\*\*：(.+)", profile.get("text", ""))
+    return match.group(1).strip() if match else ""
+
+
+def _agent_family_record(agent_id):
+    """This agent's recorded household, or None before the first run."""
+    from gaworld.apps import family_api
+
+    agent_id = int(agent_id)
+    for row in family_api.overview().get("agents", []):
+        try:
+            if int(row.get("agent_id")) == agent_id:
+                return row
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _life_event_history(agent_id):
+    """This agent's life events in the shape `cooldown_keys` reads.
+
+    A pending event carries no day — it has not fired, and `cooldown_keys`
+    hides its tag on that basis alone rather than putting it on a clock.
+    """
+    from gaworld.events.life import life_events_for_agent
+
+    events = list_life_events(CONFIG, include_consumed=True)
+    return [
+        {
+            "key": event.get("template_key"),
+            "day": event.get("triggered_day", event.get("day")),
+            "pending": event.get("status", "pending") == "pending",
+        }
+        for event in life_events_for_agent(events, agent_id)
+    ]
+
+
+def _life_event_current_day(history):
+    """The simulation day the cooldowns are measured against.
+
+    A live run publishes the day in its latest frame. Between runs there is no
+    frame, and falling back to 0 would make every past event look like it
+    fired in the future — which `cooldown_keys` reads as a reset run and
+    stops hiding anything. The last day something fired is the honest floor.
+    """
+    day = _current_trace_frame().get("day")
+    if day is not None:
+        return day
+    fired = [
+        item["day"]
+        for item in history or []
+        if isinstance(item, dict) and not item.get("pending") and item.get("day") is not None
+    ]
+    return max(fired, default=0)
+
+
+def _life_event_candidate_context(agent_id):
+    """The gate context for one agent, or None if there is no such agent."""
+    state = _agent_state(agent_id)
+    if state is None:
+        return None
+    record = _agent_family_record(agent_id)
+    finance = _agent_finance(agent_id) or {}
+    context = candidate_events.context_from_agent(
+        {
+            "id": state["id"],
+            "name": state["name"],
+            "age": state["age"],
+            "hukou": state["hukou"],
+            "job": _agent_job(agent_id),
+            "state": state["state"],
+            "family_facts": family_facts(record) if record else None,
+            "economy": {
+                "balance": finance.get("balance", 0.0),
+                "debt": finance.get("debt", 0.0),
+            },
+        }
+    )
+    # Cooldowns are measured in simulation days, so they need the run's clock.
+    history = _life_event_history(agent_id)
+    context["day"] = _life_event_current_day(history)
+    context["recent_events"] = history
+    return context
+
+
+def _life_event_candidates_payload(agent_id, limit=None):
+    context = _life_event_candidate_context(agent_id)
+    if context is None:
+        return None
+    return {
+        "agent_id": int(agent_id),
+        "agent_name": context.get("name", ""),
+        # The client polls this endpoint and repaints only when the digest
+        # moves, so a tag cloud that has not changed costs it no DOM work.
+        "signature": candidate_events.context_signature(context),
+        "candidates": candidate_events.rank_life_event_candidates(
+            context,
+            candidate_events.DEFAULT_CANDIDATE_LIMIT if limit is None else limit,
+        ),
     }
 
 
@@ -1880,6 +2056,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             if state is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             return self._json_response(state)
+        if path.startswith("/api/agents/") and path.endswith("/big5"):
+            agent_id = path.split("/")[3]
+            data = _agent_big5(agent_id)
+            if data is None:
+                return self._json_response({"error": "Agent not found"}, status=404)
+            return self._json_response(data)
         if path.startswith("/api/agents/") and path.endswith("/detail"):
             agent_id = path.split("/")[3]
             detail = _agent_detail(agent_id)
@@ -1918,6 +2100,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response({"runs": _replay_runs()})
         if path == "/api/life-events":
             return self._json_response(_life_events_payload())
+        if path == "/api/life-events/candidates":
+            agent_id = (query.get("agent_id") or [""])[0].strip()
+            if not agent_id:
+                return self._json_response({"error": "agent_id is required"}, status=400)
+            raw_limit = (query.get("limit") or [""])[0].strip()
+            payload = _life_event_candidates_payload(
+                agent_id, int(raw_limit) if raw_limit else None
+            )
+            if payload is None:
+                return self._json_response({"error": "Agent not found"}, status=404)
+            return self._json_response(payload)
         if path == "/api/collaboration/sessions":
             service = _get_collaboration_service()
             kind = (query.get("kind") or [""])[0]
@@ -1994,6 +2187,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if path.startswith("/api/agents/") and path.endswith("/state"):
             agent_id = path.split("/")[3]
             return self._json_response(_save_agent_state(agent_id, payload))
+        if path.startswith("/api/agents/") and path.endswith("/big5"):
+            agent_id = path.split("/")[3]
+            try:
+                return self._json_response(_save_agent_big5(agent_id, payload))
+            except ValueError as exc:
+                return self._json_response({"error": str(exc)}, status=400)
         if path.startswith("/api/agents/") and path.endswith("/goals"):
             agent_id = path.split("/")[3]
             try:
@@ -2014,10 +2213,6 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(_start_simulation(payload))
         if path == "/api/run/stop":
             return self._json_response(_stop_simulation())
-        if path == "/api/run/schedule":
-            return self._json_response(_schedule_simulation(payload))
-        if path == "/api/run/schedule/cancel":
-            return self._json_response(_cancel_scheduled_simulation())
         if path == "/api/interview":
             return self._json_response(_interview_agent(payload))
         if path == "/api/life-events":
@@ -2090,7 +2285,13 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 # HTTP boundary: log the full traceback and surface a 500.
                 _LOG.exception("GET %s failed: %s", path, exc)
                 return self._json_response({"error": str(exc)}, status=500)
-        if path in ("/", "/console", "/console/"):
+        # "/" is the project landing page — the intro and the way in to every
+        # console view. The console itself keeps the /console route it already
+        # had, so nothing that linked to it breaks. To go back to opening the
+        # console at the root, point "/" at /site/console/index.html again.
+        if path in ("/", ""):
+            self.path = "/site/index.html"
+        elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
         elif path in ("/dashboard", "/dashboard/"):
             self.path = "/site/dashboard/index.html"
@@ -2099,7 +2300,13 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
-        if path in ("/", "/console", "/console/"):
+        # "/" is the project landing page — the intro and the way in to every
+        # console view. The console itself keeps the /console route it already
+        # had, so nothing that linked to it breaks. To go back to opening the
+        # console at the root, point "/" at /site/console/index.html again.
+        if path in ("/", ""):
+            self.path = "/site/index.html"
+        elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
         elif path in ("/dashboard", "/dashboard/"):
             self.path = "/site/dashboard/index.html"

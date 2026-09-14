@@ -774,6 +774,26 @@ global.fetch = function (url) {
   else body = PREVIEW;
   return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve(JSON.parse(JSON.stringify(body))); } });
 };
+/* The wizard draws its text through __()/__f() now, so supply the real zh-CN
+   locale rather than a stub that echoes keys: the Chinese assertions below keep
+   their meaning, and a typo'd key lands in missingKeys. */
+var LOCALE = require(require("path").join(__dirname, "locales", "zh-CN.json"));
+var missingKeys = [];
+global.__ = function (key) {
+  if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {
+    missingKeys.push(key);
+    return key;
+  }
+  return LOCALE[key];
+};
+global.__f = function (key, params) {
+  var text = global.__(key);
+  Object.keys(params || {}).forEach(function (name) {
+    text = text.split("{" + name + "}").join(String(params[name]));
+  });
+  return text;
+};
+
 var mod = require(require("path").join(__dirname, "population.js"));
 
 realSetTimeout(function () {
@@ -802,6 +822,9 @@ realSetTimeout(function () {
     ["written file shows a preview", panel.indexOf("预览前几行") >= 0],
     ["bilingual label used", panel.indexOf("<em") >= 0],
     ["raw技术输出 still available", panel.indexOf("展开完整技术输出") >= 0],
+    ["every locale key the wizard asks for exists",
+      missingKeys.length === 0 || !process.stdout.write(
+        "    missing: " + missingKeys.join(", ") + "\n")],
   ];
   var failed = 0;
   checks.forEach(function (c) { if (!c[1]) failed++; process.stdout.write((c[1] ? "  ok   " : "  FAIL ") + c[0] + "\n"); });

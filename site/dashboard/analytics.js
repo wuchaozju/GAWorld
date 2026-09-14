@@ -15,29 +15,51 @@
     "#17936c", "#b3703a", "#4a7fb5", "#8a9a3f", "#a4478b",
   ];
 
-  // The nine seeded state variables get a Chinese label; anything else the
-  // simulator emits falls back to its raw key.
-  var METRIC_LABELS = {
-    emotion: "情绪", stress: "压力", econ_security: "经济安全感",
-    city_identity: "城市认同", policy_sensitivity: "政策敏感度",
-    platform_dependence: "平台依赖", risk_preference: "风险偏好",
-    voice_propensity: "表达倾向", mobility_intent: "出行意愿",
-    energy: "精力", fatigue_debt: "疲劳负债", hunger: "饥饿",
-    social_need: "社交需求", self_control: "自控力", time_pressure: "时间压力",
-    stance_score: "立场倾向", toxicity_score: "戾气指数",
-    misinformation_risk: "误信风险", cross_viewpoint_exposure: "跨观点暴露",
-    intervention_reward: "干预回报", metric: "综合指标",
-  };
+  /* The seeded state variables, finance rows and time bands get a translated
+     label; anything else the simulator emits falls back to its raw key.
+     These are the machine keys, not the text — the text comes from the locale
+     at call time, because a module-level literal would freeze whatever language
+     was current when this file was evaluated. */
+  var METRIC_KEYS = [
+    "emotion", "stress", "econ_security", "city_identity", "policy_sensitivity",
+    "platform_dependence", "risk_preference", "voice_propensity", "mobility_intent",
+    "energy", "fatigue_debt", "hunger", "social_need", "self_control",
+    "time_pressure", "stance_score", "toxicity_score", "misinformation_risk",
+    "cross_viewpoint_exposure", "intervention_reward", "metric",
+  ];
+  var ECON_KEYS = [
+    "balance", "income", "expense", "checking", "savings", "investment",
+    "debt", "econ_security", "engel_coefficient",
+  ];
+  var PERIOD_KEYS = ["morning", "noon", "afternoon", "evening", "night"];
 
-  var ECON_LABELS = {
-    balance: "总资产", income: "收入", expense: "支出", checking: "活期",
-    savings: "储蓄", investment: "投资", debt: "负债",
-    econ_security: "经济安全感", engel_coefficient: "恩格尔系数",
-  };
+  /* `key` doubles as an identifier elsewhere, so an unknown one is shown raw
+     rather than replaced by a missing-key name. */
+  function lookup(known, prefix, key) {
+    return known.indexOf(key) >= 0 ? __(prefix + String(key).replace(/-/g, "_")) : key;
+  }
+  function econLabel(key) { return lookup(ECON_KEYS, "an.econ_", key); }
+  function periodLabel(key) { return lookup(PERIOD_KEYS, "an.period_", key); }
+  function sectionLabel(key) { return lookup(SECTION_KEYS, "an.section_", key); }
 
-  var PERIOD_LABELS = {
-    morning: "上午", noon: "中午", afternoon: "下午", evening: "傍晚", night: "夜间",
-  };
+  /* The exporter takes plain maps, so build them from the current locale each
+     time rather than handing it a table frozen at load. */
+  function labelTables() {
+    function table(keys, prefix) {
+      var out = {};
+      keys.forEach(function (key) { out[key] = __(prefix + key.replace(/-/g, "_")); });
+      return out;
+    }
+    return {
+      metric: table(METRIC_KEYS, "an.metric_"),
+      econ: table(ECON_KEYS, "an.econ_"),
+      period: table(PERIOD_KEYS, "an.period_"),
+      // The exporter is pure and reaches for no globals, so the translator and
+      // the language tag for the HTML report travel with the labels.
+      t: __,
+      lang: typeof getLocale === "function" ? getLocale() : "zh-CN",
+    };
+  }
 
   var EVENT_COLORS = {
     natural: "#3c5a68", technology: "#7b5ea7", policy: "#0e7a58",
@@ -55,12 +77,7 @@
     runInfo: null,      // the selected entry of state.runs
   };
 
-  var SECTION_LABELS = {
-    "state-history": "状态变化", economy: "经济轨迹",
-    social: "社交网络", behavior: "行为分布", events: "事件时间线",
-  };
-
-  var LABELS = { metric: METRIC_LABELS, econ: ECON_LABELS, period: PERIOD_LABELS };
+  var SECTION_KEYS = ["state-history", "economy", "social", "behavior", "events"];
   var exporter = window.GAWorldAnalyticsExport;
 
   function $(id) { return document.getElementById(id); }
@@ -71,7 +88,7 @@
     });
   }
 
-  function metricLabel(key) { return METRIC_LABELS[key] || key; }
+  function metricLabel(key) { return lookup(METRIC_KEYS, "an.metric_", key); }
   function color(index) { return PALETTE[index % PALETTE.length]; }
   function num(value, digits) {
     if (value == null || isNaN(value)) return "—";
@@ -80,8 +97,8 @@
   function compact(value) {
     if (value == null || isNaN(value)) return "—";
     var abs = Math.abs(value);
-    if (abs >= 1e8) return (value / 1e8).toFixed(2) + "亿";
-    if (abs >= 1e4) return (value / 1e4).toFixed(2) + "万";
+    if (abs >= 1e8) return (value / 1e8).toFixed(2) + __("an.unit_yi");
+    if (abs >= 1e4) return (value / 1e4).toFixed(2) + __("an.unit_wan");
     return Number(value).toFixed(abs >= 100 ? 0 : 2);
   }
 
@@ -109,13 +126,13 @@
     opts = opts || {};
     var W = 320, H = 150, padL = 34, padR = 8, padT = 10, padB = 20;
     var live = series.filter(function (s) { return s.points && s.points.length; });
-    if (!live.length) return note("暂无数据");
+    if (!live.length) return note(__("an.no_data"));
 
     var values = [];
     live.forEach(function (s) {
       s.points.forEach(function (v) { if (v != null && !isNaN(v)) values.push(v); });
     });
-    if (!values.length) return note("暂无数据");
+    if (!values.length) return note(__("an.no_data"));
     var lo = opts.yMin != null ? opts.yMin : Math.min.apply(null, values);
     var hi = opts.yMax != null ? opts.yMax : Math.max.apply(null, values);
     if (hi - lo < 1e-9) { hi = lo + Math.max(1e-6, Math.abs(lo) * 0.1 || 1); }
@@ -168,7 +185,8 @@
       });
     } else {
       xAxis = '<text x="' + (W - padR) + '" y="' + (H - 5) +
-        '" font-size="8" fill="#8a968f" text-anchor="end">' + maxLen + " 步</text>";
+        '" font-size="8" fill="#8a968f" text-anchor="end">' +
+        esc(__f("an.axis_steps", { count: maxLen })) + "</text>";
     }
 
     return '<svg class="an-chart" viewBox="0 0 ' + W + " " + H + '" role="img">' +
@@ -178,7 +196,7 @@
   // Horizontal bars. Values may be negative (diverging around a zero axis).
   function barChart(items, opts) {
     opts = opts || {};
-    if (!items.length) return note("暂无数据");
+    if (!items.length) return note(__("an.no_data"));
     var rowH = 20, W = 320, padL = opts.labelWidth || 96;
     // Reserve room for the longest value label, otherwise long strings such as
     // "0.62 → 1.00" run past the viewBox and get clipped by the card.
@@ -218,7 +236,7 @@
   }
 
   function radarChart(axes, entries) {
-    if (!axes.length || !entries.length) return note("暂无数据");
+    if (!axes.length || !entries.length) return note(__("an.no_data"));
     var cx = 110, cy = 110, R = 74, n = axes.length;
     var angle = function (i) { return (-90 + (i * 360) / n) * (Math.PI / 180); };
     var point = function (i, r) { return [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r]; };
@@ -253,7 +271,7 @@
   }
 
   function heatmap(rows, cols, lookup, labelFor) {
-    if (!rows.length || !cols.length) return note("暂无数据");
+    if (!rows.length || !cols.length) return note(__("an.no_data"));
     var cellW = 54, cellH = 26, padL = 62, padT = 34;
     var W = padL + cols.length * cellW + 8;
     var H = padT + rows.length * cellH + 6;
@@ -293,12 +311,14 @@
     if (!data) return;
     var span = data.day_span ? "Day " + data.day_span.first + " – " + data.day_span.last : "—";
     var cards = [
-      { label: "参与智能体", value: data.agent_count, hint: data.metric_count + " 项状态指标" },
-      { label: "状态采样步数", value: data.step_count, hint: span },
-      { label: "回放帧数", value: data.frame_count, hint: data.finished ? "已完成" : "运行中" },
-      { label: "环境事件", value: data.event_total, hint: "累计注入" },
-      { label: "日记条目", value: data.diary_count, hint: "跨天叙事" },
-      { label: "社会关系", value: data.relationship_total, hint: "含亲属/熟人" },
+      { label: __("an.kpi_agents"), value: data.agent_count,
+        hint: __f("an.kpi_metrics_hint", { count: data.metric_count }) },
+      { label: __("an.kpi_steps"), value: data.step_count, hint: span },
+      { label: __("an.kpi_frames"), value: data.frame_count,
+        hint: __(data.finished ? "an.kpi_finished" : "an.kpi_running") },
+      { label: __("an.kpi_events"), value: data.event_total, hint: __("an.kpi_events_hint") },
+      { label: __("an.kpi_diary"), value: data.diary_count, hint: __("an.kpi_diary_hint") },
+      { label: __("an.kpi_relations"), value: data.relationship_total, hint: __("an.kpi_relations_hint") },
     ];
     $("anOverview").innerHTML = cards.map(function (card) {
       return '<article class="an-kpi"><span class="an-kpi-label">' + esc(card.label) +
@@ -311,16 +331,16 @@
     });
     $("anMovers").innerHTML = movers.length
       ? barChart(movers, { diverging: true })
-      : note("尚未产生状态变化。运行一次仿真后刷新。");
+      : note(__("an.no_movers"));
 
     var meta = data.sim_meta || {};
     $("anRunMeta").innerHTML = [
-      ["仿真天数", meta.sim_days],
-      ["每天秒数", meta.seconds_per_day],
-      ["时间步长", meta.time_step_minutes == null ? "默认" : meta.time_step_minutes],
-      ["地图", meta.map_path],
-      ["生成时间", data.generated_at],
-      ["最后更新", data.last_updated],
+      [__("an.meta_sim_days"), meta.sim_days],
+      [__("an.meta_seconds"), meta.seconds_per_day],
+      [__("an.meta_time_step"), meta.time_step_minutes == null ? __("an.meta_default") : meta.time_step_minutes],
+      [__("an.meta_map"), meta.map_path],
+      [__("an.meta_generated"), data.generated_at],
+      [__("an.meta_updated"), data.last_updated],
     ].map(function (pair) {
       return '<div><dt>' + esc(pair[0]) + "</dt><dd>" + esc(pair[1] == null || pair[1] === "" ? "—" : pair[1]) + "</dd></div>";
     }).join("");
@@ -358,13 +378,13 @@
   function renderStateCharts() {
     var data = state.history;
     if (!data || !data.available) {
-      $("anStateGrid").innerHTML = note("尚无状态历史。运行仿真后会生成 output/state/agent_state_history.csv。");
+      $("anStateGrid").innerHTML = note(__("an.empty_history"));
       $("anStateDelta").innerHTML = "";
       $("anStateRadar").innerHTML = "";
       return;
     }
     if (!state.metrics.length || !state.agents.length) {
-      $("anStateGrid").innerHTML = note("请至少选择一个指标和一位居民。");
+      $("anStateGrid").innerHTML = note(__("an.pick_metric_agent"));
       $("anStateDelta").innerHTML = "";
       $("anStateRadar").innerHTML = "";
       return;
@@ -402,7 +422,7 @@
     });
     $("anStateDelta").innerHTML = bars.length
       ? barChart(bars, { diverging: true, labelWidth: 118 })
-      : note("暂无变化数据");
+      : note(__("an.no_change_data"));
 
     var axes = state.metrics.slice(0, 9);
     var entries = state.agents.map(function (agentId) {
@@ -419,7 +439,7 @@
   function renderEconomy() {
     var data = state.economy;
     if (!data || !data.available) {
-      $("anEconGrid").innerHTML = note("尚无经济数据。开启经济模块运行仿真后会生成 output/economy/。");
+      $("anEconGrid").innerHTML = note(__("an.empty_economy"));
       $("anEconSeriesPicker").innerHTML = "";
       $("anEconWealth").innerHTML = "";
       $("anEconMacro").innerHTML = "";
@@ -434,7 +454,7 @@
     $("anEconSeriesPicker").innerHTML = data.series_keys.map(function (key) {
       var on = state.econSeries.indexOf(key) >= 0;
       return '<button type="button" class="an-chip' + (on ? " is-on" : "") +
-        '" data-econ="' + esc(key) + '">' + esc(ECON_LABELS[key] || key) + "</button>";
+        '" data-econ="' + esc(key) + '">' + esc(econLabel(key)) + "</button>";
     }).join("");
 
     $("anEconGrid").innerHTML = state.econSeries.map(function (key) {
@@ -444,7 +464,7 @@
       var labels = (ledgers[0] && ledgers[0].days || []).map(function (day) { return "D" + day; });
       var bounded = key === "engel_coefficient" || key === "econ_security";
       return '<article class="an-card"><header class="an-card-head"><h4>' +
-        esc(ECON_LABELS[key] || key) + "</h4></header>" +
+        esc(econLabel(key)) + "</h4></header>" +
         lineChart(series, bounded ? { yMin: 0, yMax: 1, xLabels: labels } : { xLabels: labels }) +
         "</article>";
     }).join("");
@@ -456,15 +476,15 @@
 
     var macro = data.macro || {};
     var chips = [
-      ["宏观周期", macro.phase || "—"],
-      ["周期进度", macro.phase_day_counter == null ? "—" : macro.phase_day_counter + " / " + macro.phase_duration],
-      ["通胀率", macro.inflation_rate == null ? "—" : (macro.inflation_rate * 100).toFixed(2) + "%"],
-      ["失业率", macro.unemployment_rate == null ? "—" : (macro.unemployment_rate * 100).toFixed(2) + "%"],
-      ["累计通胀", macro.cumulative_inflation == null ? "—" : macro.cumulative_inflation.toFixed(4)],
+      [__("an.macro_phase"), macro.phase || "—"],
+      [__("an.macro_progress"), macro.phase_day_counter == null ? "—" : macro.phase_day_counter + " / " + macro.phase_duration],
+      [__("an.macro_inflation"), macro.inflation_rate == null ? "—" : (macro.inflation_rate * 100).toFixed(2) + "%"],
+      [__("an.macro_unemployment"), macro.unemployment_rate == null ? "—" : (macro.unemployment_rate * 100).toFixed(2) + "%"],
+      [__("an.macro_cum_inflation"), macro.cumulative_inflation == null ? "—" : macro.cumulative_inflation.toFixed(4)],
     ];
     if (data.conservation) {
-      chips.push(["货币守恒漂移", num(data.conservation.drift, 4)]);
-      chips.push(["系统总量", compact(data.conservation.system_total)]);
+      chips.push([__("an.money_drift"), num(data.conservation.drift, 4)]);
+      chips.push([__("an.money_total"), compact(data.conservation.system_total)]);
     }
     $("anEconMacro").innerHTML = chips.map(function (pair) {
       return '<div><dt>' + esc(pair[0]) + "</dt><dd>" + esc(pair[1]) + "</dd></div>";
@@ -531,7 +551,7 @@
   function renderSocial() {
     var data = state.social;
     if (!data || !data.available) {
-      $("anSocialGraph").innerHTML = note("尚无关系数据。运行仿真后会生成 output/memory/agent_*_relationships.json。");
+      $("anSocialGraph").innerHTML = note(__("an.empty_social"));
       $("anSocialTiers").innerHTML = "";
       $("anSocialRoles").innerHTML = "";
       return;
@@ -547,7 +567,9 @@
         '" y2="' + b.y.toFixed(1) + '" stroke="' + (trust >= 0.6 ? "#0e7a58" : trust >= 0.35 ? "#8aa79a" : "#c9b7a0") +
         '" stroke-width="' + (0.6 + 3 * (link.closeness || 0)).toFixed(2) +
         '" stroke-opacity="0.6"><title>' +
-        esc(link.role + " 亲密度 " + num(link.closeness, 2) + " · 信任 " + num(trust, 2)) +
+        esc(__f("an.edge_tooltip", {
+          role: link.role, closeness: num(link.closeness, 2), trust: num(trust, 2),
+        })) +
         "</title></line>";
     }).join("");
 
@@ -570,10 +592,10 @@
     $("anSocialGraph").innerHTML =
       '<svg class="an-graph" viewBox="0 0 ' + W + " " + H + '" role="img">' + edges + dots + "</svg>";
 
-    var tierNames = { inner: "核心圈", close: "亲近", acquaintance: "熟人", weak: "弱连接", unknown: "未分层" };
+    var TIERS = ["inner", "close", "acquaintance", "weak", "unknown"];
     $("anSocialTiers").innerHTML = barChart(
       Object.keys(data.tier_counts).map(function (tier) {
-        return { label: tierNames[tier] || tier, value: data.tier_counts[tier], display: String(data.tier_counts[tier]) };
+        return { label: lookup(TIERS, "an.tier_", tier), value: data.tier_counts[tier], display: String(data.tier_counts[tier]) };
       }), { labelWidth: 70 });
     $("anSocialRoles").innerHTML = barChart(
       Object.keys(data.role_counts).map(function (role) {
@@ -584,7 +606,7 @@
   function renderBehavior() {
     var data = state.behavior;
     if (!data || !data.available) {
-      $("anPlaces").innerHTML = note("尚无行为数据。运行仿真后会生成 output/memory/agent_*_locations.json。");
+      $("anPlaces").innerHTML = note(__("an.empty_behavior"));
       $("anModes").innerHTML = "";
       $("anHeatmap").innerHTML = "";
       $("anHours").innerHTML = "";
@@ -609,29 +631,32 @@
     $("anHeatmap").innerHTML = heatmap(
       data.heatmap.periods, data.heatmap.contexts,
       function (period, context) { return cells[period + "||" + context]; },
-      function (period) { return PERIOD_LABELS[period] || period; });
+      periodLabel);
 
     var hours = data.schedule_hours || [];
     $("anHours").innerHTML = hours.some(function (h) { return h.count > 0; })
-      ? lineChart([{ label: "日程", color: "#0e7a58", points: hours.map(function (h) { return h.count; }) }],
-          { yMin: 0, xLabels: hours.map(function (h) { return h.hour + "时"; }) })
-      : note("暂无日程数据");
+      ? lineChart([{ label: __("an.series_schedule"), color: "#0e7a58", points: hours.map(function (h) { return h.count; }) }],
+          { yMin: 0, xLabels: hours.map(function (h) { return __f("an.hour_suffix", { hour: h.hour }); }) })
+      : note(__("an.no_schedule"));
 
     $("anHabits").innerHTML = data.habits.length
-      ? '<table class="an-table"><thead><tr><th>居民</th><th>时段</th><th>情境</th><th>活动</th><th>强度</th></tr></thead><tbody>' +
+      ? '<table class="an-table"><thead><tr>' +
+        ["an.th_resident", "an.th_period", "an.th_context", "an.th_activity", "an.th_strength"]
+          .map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
+        "</tr></thead><tbody>" +
         data.habits.map(function (habit) {
           return "<tr><td>" + esc(habit.name || habit.agent_id) + "</td><td>" +
-            esc(PERIOD_LABELS[habit.period] || habit.period) + "</td><td>" + esc(habit.context) +
+            esc(periodLabel(habit.period)) + "</td><td>" + esc(habit.context) +
             '</td><td class="an-cell-wide">' + esc(habit.activity) + "</td><td>" +
             num(habit.strength, 3) + "</td></tr>";
         }).join("") + "</tbody></table>"
-      : note("暂无习惯数据");
+      : note(__("an.no_habits"));
   }
 
   function renderEvents() {
     var data = state.events;
     if (!data || !data.available) {
-      $("anEventTimeline").innerHTML = note("尚无事件数据。运行仿真后会生成 output/visualization/simulation_trace.json。");
+      $("anEventTimeline").innerHTML = note(__("an.empty_events"));
       $("anEventTypes").innerHTML = "";
       $("anEventImpacts").innerHTML = "";
       return;
@@ -674,7 +699,7 @@
         return '<circle cx="' + xFor(frame.day).toFixed(1) + '" cy="' + y.toFixed(1) +
           '" r="' + (2.5 + 5 * (event.severity || 0)).toFixed(1) + '" fill="' +
           (EVENT_COLORS[event.type] || "#66746c") + '" fill-opacity="0.65"><title>' +
-          esc("Day " + frame.day + " · " + event.name + "（强度 " + num(event.severity, 2) + "）") +
+          esc("Day " + frame.day + " · " + event.name + __f("an.severity_paren", { value: num(event.severity, 2) })) +
           "</title></circle>";
       }).join("");
     }).join("");
@@ -691,8 +716,8 @@
           return '<div class="an-event"><span class="an-event-day">Day ' + esc(frame.day) +
             '</span><span class="an-event-dot" style="background:' +
             (EVENT_COLORS[event.type] || "#66746c") + '"></span><span class="an-event-name">' +
-            esc(event.name) + '</span><span class="an-event-meta">' + esc(event.scope) + " · 强度 " +
-            num(event.severity, 2) + "</span></div>";
+            esc(event.name) + '</span><span class="an-event-meta">' + esc(event.scope) +
+            esc(__f("an.severity_suffix", { value: num(event.severity, 2) })) + "</span></div>";
         }).join("");
       }).join("") + "</div>";
 
@@ -710,7 +735,7 @@
   function showRunStatus() {
     var status = $("anStatus");
     if (!state.overview) return;
-    status.textContent = state.overview.finished ? "已完成的运行" : "运行中 / 部分数据";
+    status.textContent = __(state.overview.finished ? "an.runs_done" : "an.runs_partial");
     status.className = "an-status" + (state.overview.finished ? " is-ok" : " is-busy");
   }
 
@@ -754,21 +779,21 @@
     var stamp = exporter.timestamp(now);
     if (kind === "json") {
       download(base + ".json", new Blob(
-        [JSON.stringify(exporter.buildJson(state, LABELS, stamp), null, 2)],
+        [JSON.stringify(exporter.buildJson(state, labelTables(), stamp), null, 2)],
         { type: "application/json" }));
     } else if (kind === "md") {
       download(base + ".md", new Blob(
-        [exporter.buildMarkdown(state, LABELS, stamp)],
+        [exporter.buildMarkdown(state, labelTables(), stamp)],
         { type: "text/markdown;charset=utf-8" }));
     } else if (kind === "csv") {
-      var files = exporter.buildCsvFiles(state, LABELS);
-      if (!files.length) throw new Error("没有可导出的数据");
+      var files = exporter.buildCsvFiles(state, labelTables());
+      if (!files.length) throw new Error(__("an.nothing_to_export"));
       download(base + "-csv.zip", new Blob(
         [exporter.zipStore(files, now)], { type: "application/zip" }));
     } else {
       var css = await reportCss();
       download(base + ".html", new Blob(
-        [exporter.buildHtmlReport(state, LABELS, stamp, reportBody(), css)],
+        [exporter.buildHtmlReport(state, labelTables(), stamp, reportBody(), css)],
         { type: "text/html;charset=utf-8" }));
     }
   }
@@ -794,12 +819,12 @@
       var status = $("anStatus");
       try {
         await runExport(button.dataset.export);
-        status.textContent = "已导出";
+        status.textContent = __("an.export_done");
         status.className = "an-status is-ok";
         // The chip belongs to the run, so hand it back after the notice.
         setTimeout(showRunStatus, 2500);
       } catch (error) {
-        status.textContent = "导出失败：" + error.message;
+        status.textContent = __f("an.export_failed", { error: error.message });
         status.className = "an-status is-error";
       }
     });
@@ -820,9 +845,9 @@
   }
 
   function runLabel(run) {
-    var parts = [run.kind === "live" ? "当前运行" : (run.label || run.id)];
-    if (run.agent_count) parts.push(run.agent_count + " 人");
-    if (run.sim_days) parts.push(run.sim_days + " 天");
+    var parts = [run.kind === "live" ? __("an.current_run") : (run.label || run.id)];
+    if (run.agent_count) parts.push(__f("an.people_count", { count: run.agent_count }));
+    if (run.sim_days) parts.push(__f("an.days_count", { count: run.sim_days }));
     if (run.last_updated) parts.push(formatStamp(run.last_updated));
     return parts.join(" · ");
   }
@@ -830,7 +855,7 @@
   function renderRunOptions() {
     var select = $("anRunSelect");
     select.innerHTML = "";
-    [["live", "当前运行"], ["archive", "历史运行"], ["scenario", "场景 / 对比运行"]]
+    [["live", __("an.current_run")], ["archive", __("an.runs_history")], ["scenario", __("an.runs_scenario")]]
       .forEach(function (pair) {
         var runs = state.runs.filter(function (run) { return run.kind === pair[0]; });
         if (!runs.length) return;
@@ -854,7 +879,7 @@
     var note = $("anRunNote");
     var run = state.runInfo;
     var missing = run && run.sections
-      ? Object.keys(SECTION_LABELS).filter(function (key) { return !run.sections[key]; })
+      ? SECTION_KEYS.filter(function (key) { return !run.sections[key]; })
       : [];
     if (!run || run.kind === "live" || !missing.length) {
       note.hidden = true;
@@ -862,8 +887,7 @@
       return;
     }
     note.hidden = false;
-    note.textContent = "该运行未归档以下数据，相关面板为空：" +
-      missing.map(function (key) { return SECTION_LABELS[key]; }).join("、") + "。";
+    note.textContent = __f("an.missing_sections", { sections: missing.map(sectionLabel).join("、") });
   }
 
   function selectRun(runId) {
@@ -954,7 +978,7 @@
 
   async function load() {
     var status = $("anStatus");
-    status.textContent = "加载中…";
+    status.textContent = __("an.loading");
     status.className = "an-status is-busy";
     try {
       await loadRuns();
@@ -988,10 +1012,28 @@
 
       showRunStatus();
     } catch (error) {
-      status.textContent = "加载失败：" + error.message;
+      status.textContent = __f("an.load_failed", { error: error.message });
       status.className = "an-status is-error";
     }
   }
+
+  /* Every label, KPI, table header and empty state here is drawn from JS, and
+     the metric dictionaries resolve per call — so a language switch just needs
+     the renderers run again over the payloads already in `state`. No refetch:
+     the data is language-independent. */
+  document.addEventListener("locale-changed", function () {
+    if (!state.overview) return;
+    renderRunOptions();
+    renderOverview();
+    renderStateControls();
+    renderStateCharts();
+    renderEconomy();
+    renderSocial();
+    renderBehavior();
+    renderEvents();
+    showRunStatus();
+    renderRunNote();
+  });
 
   bindPickers();
   bindExport();

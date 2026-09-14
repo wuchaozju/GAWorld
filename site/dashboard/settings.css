@@ -79,6 +79,23 @@
 }
 .set-group[open] > summary::before { transform: rotate(90deg); }
 .set-group > summary:hover { background: rgba(19, 121, 91, 0.06); }
+/* Carries role="heading" for the outline only; it must not become a box. */
+.set-group-heading { display: contents; }
+/* The disclosure had no focus ring of its own — list-style:none removes the
+   marker, and nothing replaced the indicator for keyboard users. */
+.set-group > summary:focus-visible {
+  outline: 2px solid var(--green, #0e7a58);
+  outline-offset: -2px;
+}
+
+/* ---- 分区标题 ---- */
+
+.set-section-title {
+  margin: 0 0 2px;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 18px;
+  color: var(--ink, #17251f);
+}
 .set-group-body {
   margin: 2px 0 10px 12px; padding-left: 12px;
   border-left: 2px solid var(--line, #dde6de);

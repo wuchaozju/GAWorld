@@ -21,8 +21,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const APP = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
+const LOCALE = require("./locales/zh-CN.json");
+const missingKeys = [];
 
-const START = "const HOUSEHOLD_TYPE_ZH = {";
+const START = "const HOUSEHOLD_TYPES = [";
 const END_FN = "function renderFamilyDetail()";
 
 function familyBlock() {
@@ -49,17 +51,34 @@ function boot(family, selectedAgentId) {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  const tr = (_key, fallback) => fallback;
+  /* The card draws every string through __()/__f() now, so supply the real
+     zh-CN locale rather than a stub that echoes keys. The Chinese assertions
+     below keep their meaning, and a typo'd key shows up in missingKeys. */
+  const __ = (key) => {
+    if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {
+      missingKeys.push(key);
+      return key;
+    }
+    return LOCALE[key];
+  };
+  const __f = (key, params) => {
+    let text = __(key);
+    for (const [name, value] of Object.entries(params || {})) {
+      text = text.split(`{${name}}`).join(String(value));
+    }
+    return text;
+  };
   const api = async () => ({});
   const factory = new Function(
     "els",
     "state",
     "escapeHtml",
-    "tr",
+    "__",
+    "__f",
     "api",
     `${familyBlock()}\n return { renderFamilyCard, renderFamilyOverview, renderFamilyDetail };`
   );
-  return { els, api: factory(els, state, escapeHtml, tr, api) };
+  return { els, api: factory(els, state, escapeHtml, __, __f, api) };
 }
 
 const PAYLOAD = {
@@ -148,4 +167,9 @@ test("names are escaped — profiles are operator-editable text", () => {
   assert.ok(!html.includes("<script>"), "member name was not escaped");
   assert.ok(!html.includes("<b>不该加粗"), "brief was not escaped");
   assert.match(html, /&lt;script&gt;/);
+});
+
+test("every locale key the family card asks for exists", () => {
+  // Collected by the __ stub as the tests above render every branch of the card.
+  assert.deepEqual(missingKeys, []);
 });

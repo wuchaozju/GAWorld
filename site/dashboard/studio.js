@@ -5,17 +5,32 @@
 
 "use strict";
 
+/* `en` is the machine name, rendered under the label as a fixed identifier —
+   it is the state variable's name in the CSV, not a translation, so it stays a
+   literal in both locales. Everything else comes from the locale at call time;
+   as literals they froze whatever language was current when this file was
+   evaluated. */
 const STATE_VARS = [
-  { key: "emotion",             cn: "情绪",     en: "emotion",             lo: "消极",   hi: "积极" },
-  { key: "stress",              cn: "压力",     en: "stress",              lo: "无压力", hi: "极高" },
-  { key: "econ_security",       cn: "经济安全感", en: "econ security",     lo: "不安全", hi: "安全" },
-  { key: "city_identity",       cn: "城市认同", en: "city identity",       lo: "疏离",   hi: "认同" },
-  { key: "policy_sensitivity",  cn: "政策敏感度", en: "policy sensitivity", lo: "迟钝",  hi: "敏感" },
-  { key: "platform_dependence", cn: "平台依赖", en: "platform dependence", lo: "多元",   hi: "绑定" },
-  { key: "risk_preference",     cn: "风险偏好", en: "risk preference",     lo: "厌恶",   hi: "偏好" },
-  { key: "voice_propensity",    cn: "公共表达", en: "voice propensity",    lo: "沉默",   hi: "主动" },
-  { key: "mobility_intent",     cn: "流动意愿", en: "mobility intent",     lo: "定居",   hi: "流动" },
+  { key: "emotion",             en: "emotion" },
+  { key: "stress",              en: "stress" },
+  { key: "econ_security",       en: "econ security" },
+  { key: "city_identity",       en: "city identity" },
+  { key: "policy_sensitivity",  en: "policy sensitivity" },
+  { key: "platform_dependence", en: "platform dependence" },
+  { key: "risk_preference",     en: "risk preference" },
+  { key: "voice_propensity",    en: "voice propensity" },
+  { key: "mobility_intent",     en: "mobility intent" },
 ];
+
+const varLabel = (v) => __(`st.name.${v.key}`);
+/* The radar is 200 units wide and holds nine labels around its rim, which is
+   not enough room for a phrase: "经济安全感" already overflowed the viewBox by
+   22 units and "Economic security" by 52. Axis labels are abbreviated by
+   convention, so the chart gets its own one-word set. */
+const varAxisLabel = (v) => __(`st.axis.${v.key}`);
+const machineName = (v) => (getLocale() === "en" ? "" : ` <span class="en">${v.en}</span>`);
+const poleLo = (v) => __(`st.lo.${v.key}`);
+const poleHi = (v) => __(`st.hi.${v.key}`);
 const BEHAVIOR_KEYS = ["mobility_intent", "voice_propensity", "risk_preference", "platform_dependence", "policy_sensitivity"];
 
 const store = {
@@ -39,6 +54,10 @@ const store = {
   memGraph: null, // { svg, nodes } for the inline memory graph
   memGraphBig: null, // { svg, nodes } for the zoomed modal graph
   memPick: null, // index into memGraph.nodes of the node whose body is shown
+  big5: null, // { values, authored, paragraph, consistency, ... } from /api/agents/<id>/big5
+  big5Draft: null, // working copy of the five z scores, edited by the step-2 sliders
+  big5Dirty: false, // sliders moved but not yet written to the seed CSV
+  big5Loading: false, // guards the lazy fetch against retry loops
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -124,12 +143,13 @@ function radarSVG(stateObj, withLabels) {
     if (withLabels) {
       const [lx, ly] = pt(i, R + 15);
       const anchor = Math.abs(lx - cx) < 6 ? "middle" : (lx > cx ? "start" : "end");
-      labels += `<text x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" font-size="8.5" fill="#5c6860" text-anchor="${anchor}">${v.cn}</text>`;
+      labels += `<text x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" font-size="8.5" fill="#5c6860" text-anchor="${anchor}">${esc(varAxisLabel(v))}</text>`;
     }
   });
   const poly = STATE_VARS.map((v, i) => pt(i, R * clamp01(stateObj[v.key])).map((c) => c.toFixed(1)).join(",")).join(" ");
   const dots = STATE_VARS.map((v, i) => { const [x, y] = pt(i, R * clamp01(stateObj[v.key])); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#13795b"/>`; }).join("");
-  return `<svg viewBox="0 0 200 200">${rings}${spokes}<polygon points="${poly}" fill="rgba(19,121,91,0.18)" stroke="#13795b" stroke-width="1.6"/>${dots}${labels}</svg>`;
+  const box = withLabels ? "-26 0 252 200" : "0 0 200 200";
+  return `<svg viewBox="${box}">${rings}${spokes}<polygon points="${poly}" fill="rgba(19,121,91,0.18)" stroke="#13795b" stroke-width="1.6"/>${dots}${labels}</svg>`;
 }
 
 /* ---------- data ---------- */
@@ -156,8 +176,10 @@ function draftFromDetail(d) {
 function blankDraft() {
   const state = {};
   STATE_VARS.forEach((v) => (state[v.key] = v.key === "emotion" ? 0.55 : 0.5));
+  /* i18n-exempt-start: seed values written into the state CSV, not UI text */
   return {
     identity: { id: null, name: "", gender: "女", age: 30, hukou: "本地", residence: "杭州" },
+    /* i18n-exempt-end */
     state,
     profile_text: "",
     narrative: { personality: "", job: "" },
@@ -167,7 +189,7 @@ function blankDraft() {
 async function selectAgent(id) {
   store.creating = false;
   store.currentId = Number(id);
-  $("#saveHint").textContent = "加载中…";
+  $("#saveHint").textContent = __("sd.loading");
   const d = await api(`/api/agents/${id}/detail`);
   store.detail = d;
   store.draft = draftFromDetail(d);
@@ -180,12 +202,18 @@ async function selectAgent(id) {
   store.memPick = null;
   store.familyPreview = null;
   store.familyDraft = null;
-  $("#saveHint").textContent = "已加载 · 自动回填";
+  $("#saveHint").textContent = __("sd.loaded");
   renderSubject();
   renderStep();
   // The family preview is a second request; render once without it so the
   // step is never blank, then again when it lands.
   loadFamilyPreview().then(() => { if (store.step === 5) renderStep(); });
+  // Same pattern for the Big Five card: render step 2 without it rather than
+  // blocking the whole step on a second request, then again when it lands.
+  store.big5 = null;
+  store.big5Draft = null;
+  store.big5Dirty = false;
+  loadBig5().then(() => { if (store.step === 2) renderStep(); });
 }
 
 function startCreate() {
@@ -204,10 +232,10 @@ function startCreate() {
   store.familyDraft = null;
   store.step = 1;
   setActiveStepButton();
-  $("#saveHint").textContent = "新建居民（未保存）";
+  $("#saveHint").textContent = __("sd.new_unsaved");
   renderSubject();
   renderStep();
-  foot("新建模式：填写身份与状态后点“保存”创建", "");
+  foot(__("sd.new_mode_hint"), "");
 }
 
 /* ---------- subject rail ---------- */
@@ -216,8 +244,8 @@ function renderSubject() {
   if (!dr) return;
   const idt = dr.identity;
   setAvatar(store.creating ? null : store.currentId, idt.name);
-  $("#subjectName").textContent = idt.name || (store.creating ? "新居民" : "—");
-  const bits = [store.creating ? "未分配 ID" : `ID ${store.currentId}`, idt.gender, idt.age ? `${idt.age}岁` : "", idt.residence].filter(Boolean);
+  $("#subjectName").textContent = idt.name || (store.creating ? __("sd.new_resident") : "—");
+  const bits = [store.creating ? __("sd.no_id") : `ID ${store.currentId}`, idt.gender, idt.age ? __f("sd.age_years", { n: idt.age }) : "", idt.residence].filter(Boolean);
   $("#subjectMeta").textContent = bits.join(" · ");
   $("#miniRadar").outerHTML = `<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(dr.state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
 }
@@ -236,7 +264,7 @@ function field(label, inputHTML) {
 }
 
 function renderStep() {
-  if (!store.draft) { $("#stepBody").innerHTML = `<p class="section-note">请选择或新建一个居民。</p>`; return; }
+  if (!store.draft) { $("#stepBody").innerHTML = `<p class="section-note">${esc(__("sd.pick_resident"))}</p>`; return; }
   setActiveStepButton();
   const fn = [null, stepIdentity, stepState, stepSkills, stepMemory, stepSocial, stepBehavior, stepReview][store.step];
   $("#stepBody").innerHTML = fn();
@@ -246,32 +274,32 @@ function renderStep() {
 function stepIdentity() {
   const i = store.draft.identity;
   const extra = store.creating
-    ? `<div class="card"><h3>叙事种子（新建）</h3>
-        ${field("职业 / 工作节奏", `<input data-nar="job" value="${esc(store.draft.narrative.job)}" placeholder="如：互联网初级工程师，晚 9-10 点下班">`)}
-        ${field("性格 / 情绪特征", `<textarea data-nar="personality" placeholder="内向理性，绩效期焦虑…">${esc(store.draft.narrative.personality)}</textarea>`)}
+    ? `<div class="card"><h3>${esc(__("sd.seed_title"))}</h3>
+        ${field(__("sd.seed_job"), `<input data-nar="job" value="${esc(store.draft.narrative.job)}" placeholder="${esc(__("sd.seed_job_ph"))}">`)}
+        ${field(__("sd.seed_personality"), `<textarea data-nar="personality" placeholder="${esc(__("sd.seed_personality_ph"))}">${esc(store.draft.narrative.personality)}</textarea>`)}
       </div>`
     : profileCard();
   return `
-    <h2 class="section-title">身份</h2>
-    <p class="section-note">定义这位数字居民是谁。这些字段写入状态 CSV 与 profile。</p>
+    <h2 class="section-title">${esc(__("sd.identity"))}</h2>
+    <p class="section-note">${esc(__("sd.identity_note"))}</p>
     <div class="cols side">
       <div>
         <div class="card">
-          <h3>基础信息</h3>
-          ${field("姓名", `<input data-idt="name" value="${esc(i.name)}">`)}
+          <h3>${esc(__("sd.basics"))}</h3>
+          ${field(__("sd.name"), `<input data-idt="name" value="${esc(i.name)}">`)}
           <div class="grid2">
-            ${field("性别", `<input data-idt="gender" value="${esc(i.gender)}">`)}
-            ${field("年龄", `<input data-idt="age" type="number" min="16" max="90" value="${esc(i.age)}">`)}
+            ${field(__("sd.gender"), `<input data-idt="gender" value="${esc(i.gender)}">`)}
+            ${field(__("sd.age"), `<input data-idt="age" type="number" min="16" max="90" value="${esc(i.age)}">`)}
           </div>
           <div class="grid2">
-            ${field("户籍", `<input data-idt="hukou" value="${esc(i.hukou)}">`)}
-            ${field("居住地", `<input data-idt="residence" value="${esc(i.residence)}">`)}
+            ${field(__("sd.hukou"), `<input data-idt="hukou" value="${esc(i.hukou)}">`)}
+            ${field(__("sd.residence"), `<input data-idt="residence" value="${esc(i.residence)}">`)}
           </div>
         </div>
         ${extra}
       </div>
       <div class="card">
-        <h3>状态速览</h3>
+        <h3>${esc(__("sd.state_glance"))}</h3>
         <div class="viz-wrap">${radarSVG(store.draft.state, true)}</div>
       </div>
     </div>`;
@@ -282,19 +310,19 @@ function stepIdentity() {
 function profileCard() {
   if (!store.profileEditing) {
     return `<div class="card">
-      <h3>叙事 Profile
-        <button type="button" id="editProfileBtn" class="mini-btn">编辑</button></h3>
-      <div class="profile-md md-body" data-empty="尚无 profile 文本——点“编辑”开始撰写。">${renderMarkdown(store.draft.profile_text)}</div>
+      <h3>${esc(__("sd.profile"))}
+        <button type="button" id="editProfileBtn" class="mini-btn">${esc(__("sd.edit"))}</button></h3>
+      <div class="profile-md md-body" data-empty="${esc(__("sd.profile_empty"))}">${renderMarkdown(store.draft.profile_text)}</div>
     </div>`;
   }
   return `<div class="card">
-    <h3>叙事 Profile（Markdown）</h3>
-    <label class="field"><span>确认后写回 profile 文件</span>
+    <h3>${esc(__("sd.profile_md"))}</h3>
+    <label class="field"><span>${esc(__("sd.profile_write_back"))}</span>
       <textarea data-profile-edit style="min-height:220px">${esc(store.profileEdit)}</textarea></label>
     <div class="confirm-bar">
-      <span class="confirm-hint">编辑 Markdown 源码，确认后写入</span>
-      <button type="button" id="cancelProfileBtn" class="button">取消</button>
-      <button type="button" id="confirmProfileBtn" class="button primary">确认修改</button>
+      <span class="confirm-hint">${esc(__("sd.profile_edit_hint"))}</span>
+      <button type="button" id="cancelProfileBtn" class="button">${esc(__("sd.cancel"))}</button>
+      <button type="button" id="confirmProfileBtn" class="button primary">${esc(__("sd.confirm"))}</button>
     </div>
   </div>`;
 }
@@ -302,17 +330,179 @@ function profileCard() {
 async function confirmProfile() {
   if (store.creating || store.currentId == null) return;
   try {
-    foot("保存 Profile…");
+    foot(__("sd.saving_profile"));
     await api(`/api/agents/${store.currentId}/profile`, {
       method: "POST", body: JSON.stringify({ text: store.profileEdit }),
     });
     store.draft.profile_text = store.profileEdit;
     if (store.detail) store.detail.profile_text = store.profileEdit;
     store.profileEditing = false;
-    foot("Profile 已写入", "ok");
+    foot(__("sd.profile_saved"), "ok");
     renderStep();
   } catch (err) {
-    foot("Profile 保存失败：" + err.message, "err");
+    foot(__("sd.profile_save_failed") + err.message, "err");
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Big Five (OCEAN) — a card of its own inside step 2.
+ *
+ * Deliberately NOT mixed into the nine state sliders above it, even though they
+ * share a screen. Keeping OCEAN independent of those nine variables is the
+ * whole point of how the scores were produced: the corpus was sampled first and
+ * written from, with only two literature-backed correlations injected, because
+ * scoring the prose instead just read the state variables back out (openness
+ * correlated 0.90 with mobility_intent). A panel that presents them as one
+ * family invites an operator to undo that by hand.
+ *
+ * These are z scores, not [0,1] — negative is the low pole, not "less of a good
+ * thing" — so the sliders are centred on 0 and labelled with both poles.
+ * ------------------------------------------------------------------------- */
+
+const BIG5_DIMS = ["o", "c", "e", "a", "n"];
+
+/* What each flag from the server means, in the operator's terms. The flags are
+ * arithmetic on the scores against the authoring floor, not an analysis of the
+ * paragraph text — so the copy says what to go and check, never "the paragraph
+ * says X". */
+const BIG5_FLAG_CLS = {
+  rewrite: { flip: "bad", drift: "warn" },
+  now_missing: "warn",
+  now_moot: "warn",
+  unknown: "",
+};
+
+function big5FlagInfo(flag) {
+  if (!flag || flag.state === "ok") return null;
+  const entry = BIG5_FLAG_CLS[flag.state];
+  if (entry === undefined) return null;
+  const variant = typeof entry === "string" ? null : (flag.severity in entry ? flag.severity : "drift");
+  if (variant && !(variant in entry)) return null;
+  const key = variant ? `${flag.state}.${variant}` : flag.state;
+  return {
+    cls: variant ? entry[variant] : entry,
+    label: __(`sd.b5flag.${key}`),
+    hint: __(`sd.b5hint.${key}`),
+  };
+}
+
+async function loadBig5() {
+  if (store.creating || store.currentId == null || store.big5Loading) return;
+  store.big5Loading = true;
+  try {
+    store.big5 = await api(`/api/agents/${store.currentId}/big5`);
+    store.big5Draft = { ...store.big5.values };
+    store.big5Dirty = false;
+  } catch (err) {
+    store.big5 = { error: err.message };
+    store.big5Draft = null;
+  } finally {
+    store.big5Loading = false;
+  }
+}
+
+/* The trait names and pole descriptions travel in the payload in both
+   languages (see BIG5_POLES_EN in dashboard_server.py) rather than as locale
+   keys, because the same wording is shared with scripts/calibrate_big5.py —
+   one table on the server keeps the panel and the calibrator describing the
+   same poles. */
+const big5Table = (data, field) =>
+  (getLocale() === "en" ? data[`${field}_en`] : data[field]) || data[field] || {};
+
+function big5Card() {
+  if (store.creating) {
+    return `<div class="card"><h3>${esc(__("sd.big5"))}</h3>
+      <p class="section-note">${esc(__("sd.big5_unsaved"))}</p></div>`;
+  }
+  const data = store.big5;
+  if (!data) return `<div class="card"><h3>${esc(__("sd.big5"))}</h3><p class="section-note">${esc(__("sd.reading"))}</p></div>`;
+  if (data.error) {
+    return `<div class="card"><h3>${esc(__("sd.big5"))}</h3>
+      <p class="section-note">${esc(__("sd.read_failed"))}${esc(data.error)}</p></div>`;
+  }
+  const draft = store.big5Draft || data.values;
+  const clip = Number(data.clip) || 2.5;
+  const rows = BIG5_DIMS.map((dim) => {
+    const z = Number(draft[dim] || 0);
+    const poles = big5Table(data, "poles")[dim] || ["", ""];
+    const flag = big5FlagInfo((data.consistency || {})[dim]);
+    const mark = flag
+      ? `<span class="b5-flag ${flag.cls}" title="${esc(flag.hint)}">${esc(flag.label)}</span>`
+      : "";
+    const distinct = Math.abs(z) >= Number(data.floor || 0.5);
+    return `
+    <div class="slider-row b5-row" data-b5row="${dim}">
+      <div class="slabel">
+        <span>${esc(big5Table(data, "names")[dim] || dim)} <span class="en">${dim.toUpperCase()}</span>${mark}</span>
+        <span class="val${distinct ? " b5-distinct" : ""}">${z >= 0 ? "+" : ""}${z.toFixed(2)}</span>
+      </div>
+      <div class="b5-track"><input type="range" min="${-clip}" max="${clip}" step="0.05" value="${z}" data-b5="${dim}"></div>
+      <div class="poles b5-poles"><span>${esc(poles[0])}</span><span class="b5-zero-label">0</span><span>${esc(poles[1])}</span></div>
+    </div>`;
+  }).join("");
+
+  const flagged = BIG5_DIMS
+    .map((dim) => [dim, big5FlagInfo((data.consistency || {})[dim])])
+    .filter(([, f]) => f);
+  const banner = flagged.length
+    ? `<div class="b5-banner ${flagged.some(([, f]) => f.cls === "bad") ? "bad" : "warn"}">
+         ${flagged.map(([dim, f]) =>
+           `<div><b>${esc(big5Table(data, "names")[dim] || dim)}</b>${esc(__("sd.colon"))}${esc(f.hint)}</div>`).join("")}
+       </div>`
+    : "";
+
+  const paragraph = data.paragraph
+    ? `<div class="b5-para">${esc(data.paragraph)}</div>`
+    : `<p class="section-note">${esc(__("sd.big5_no_para"))}</p>`;
+
+  return `
+    <div class="card b5-card">
+      <h3>${esc(__("sd.big5"))} <span class="en">Big Five</span>
+        <span class="b5-source">${esc(data.source || "—")}</span></h3>
+      <p class="section-note">${__f("sd.big5_note", { floor: esc(data.floor), file: `<code>${esc(fileBase(data))}</code>` })}</p>
+      ${rows}
+      ${banner}
+      <div class="confirm-bar">
+        <span class="confirm-hint" id="big5Hint">${esc(store.big5Dirty ? __("sd.unconfirmed") : __("sd.matches_saved_scores"))}</span>
+        <button type="button" id="confirmBig5Btn" class="button primary"${store.big5Dirty ? "" : " disabled"}>${esc(__("sd.confirm"))}</button>
+      </div>
+    </div>
+    <div class="card b5-card">
+      <h3>${esc(__("sd.b5_para_title"))}<span class="b5-note-inline">${esc(__("sd.b5_para_manual"))}</span></h3>
+      <p class="section-note">${__("sd.b5_para_note")}</p>
+      ${paragraph}
+      <div class="confirm-bar">
+        <span class="confirm-hint">${esc(__("sd.b5_para_where"))}</span>
+        <button type="button" id="gotoProfileBtn" class="button">${esc(__("sd.b5_para_goto"))}</button>
+      </div>
+    </div>`;
+}
+
+function fileBase(data) {
+  return "data/agents_big5.csv";
+}
+
+function markBig5Dirty() {
+  store.big5Dirty = true;
+  const hint = $("#big5Hint");
+  if (hint) hint.textContent = __("sd.unconfirmed");
+  const btn = $("#confirmBig5Btn");
+  if (btn) btn.disabled = false;
+}
+
+async function confirmBig5() {
+  if (store.currentId == null || !store.big5Draft) return;
+  try {
+    foot(__("sd.saving_big5"));
+    store.big5 = await api(`/api/agents/${store.currentId}/big5`, {
+      method: "POST", body: JSON.stringify({ values: store.big5Draft }),
+    });
+    store.big5Draft = { ...store.big5.values };
+    store.big5Dirty = false;
+    foot(__("sd.big5_saved"), "ok");
+    renderStep();
+  } catch (err) {
+    foot(__("sd.big5_save_failed") + err.message, "err");
   }
 }
 
@@ -320,28 +510,29 @@ function stepState() {
   const st = store.draft.state;
   const rows = STATE_VARS.map((v) => `
     <div class="slider-row" data-var="${v.key}">
-      <div class="slabel"><span>${v.cn} <span class="en">${v.en}</span></span><span class="val">${st[v.key].toFixed(2)}</span></div>
+      <div class="slabel"><span>${esc(varLabel(v))}${machineName(v)}</span><span class="val">${st[v.key].toFixed(2)}</span></div>
       <input type="range" min="0" max="1" step="0.01" value="${st[v.key]}" data-state="${v.key}">
-      <div class="poles"><span>${v.lo}</span><span>${v.hi}</span></div>
+      <div class="poles"><span>${poleLo(v)}</span><span>${poleHi(v)}</span></div>
     </div>`).join("");
   return `
-    <h2 class="section-title">状态 · 性格</h2>
-    <p class="section-note">九个归一化 [0,1] 状态变量——GAWorld 的“性格与内在状态”。拖动即时更新雷达，调整后点“确认修改”写入 CSV 与 profile。</p>
+    <h2 class="section-title">${esc(__("sd.state_title"))}</h2>
+    <p class="section-note">${esc(__("sd.state_note"))}</p>
     <div class="cols side">
       <div class="card">${rows}
         <div class="confirm-bar">
-          <span class="confirm-hint" id="stateHint">${store.stateDirty ? "有未确认的修改" : "与已保存的设定一致"}</span>
-          <button type="button" id="confirmStateBtn" class="button primary"${store.stateDirty ? "" : " disabled"}>确认修改</button>
+          <span class="confirm-hint" id="stateHint">${esc(store.stateDirty ? __("sd.unconfirmed") : __("sd.matches_saved"))}</span>
+          <button type="button" id="confirmStateBtn" class="button primary"${store.stateDirty ? "" : " disabled"}>${esc(__("sd.confirm"))}</button>
         </div>
       </div>
-      <div class="card"><h3>状态雷达</h3><div class="viz-wrap" id="bigRadar">${radarSVG(st, true)}</div></div>
-    </div>`;
+      <div class="card"><h3>${esc(__("sd.state_radar"))}</h3><div class="viz-wrap" id="bigRadar">${radarSVG(st, true)}</div></div>
+    </div>
+    <div class="b5-block">${big5Card()}</div>`;
 }
 
 function markStateDirty() {
   store.stateDirty = true;
   const hint = $("#stateHint");
-  if (hint) hint.textContent = "有未确认的修改";
+  if (hint) hint.textContent = __("sd.unconfirmed");
   const btn = $("#confirmStateBtn");
   if (btn) btn.disabled = false;
 }
@@ -350,16 +541,21 @@ async function confirmState() {
   if (!(await save())) return;
   store.stateDirty = false;
   const hint = $("#stateHint");
-  if (hint) hint.textContent = "已确认并写入";
+  if (hint) hint.textContent = __("sd.confirmed_written");
   const btn = $("#confirmStateBtn");
   if (btn) btn.disabled = true;
 }
 
-const KIND_LABELS = { hobby: "兴趣", skill: "技能" };
-const COG_LABELS = {
-  skill_breadth: "技能广度", deliverable_capacity: "产出能力", growth_level: "成长水平",
-  memory_volume: "记忆积累", external_knowledge: "外部知识",
-};
+/* These four tables hold machine keys only; the text comes from the locale at
+   call time. An unknown key is shown raw rather than replaced by a missing-key
+   name — the simulator may emit a kind or phase this page has not met yet. */
+const KINDS = ["hobby", "skill"];
+const enumLabel = (known, prefix, key) =>
+  known.indexOf(key) >= 0 ? __(prefix + key) : (key || "");
+const COG_KEYS = [
+  "skill_breadth", "deliverable_capacity", "growth_level",
+  "memory_volume", "external_knowledge",
+];
 
 function chips(arr, cls = "") {
   return (arr && arr.length)
@@ -369,15 +565,15 @@ function chips(arr, cls = "") {
 
 function growthRows(growth) {
   const items = (growth && growth.items) || [];
-  if (!items.length) return `<p class="section-note">尚无成长档案——运行仿真后由 gaworld/interests.py 派生。</p>`;
+  if (!items.length) return `<p class="section-note">${esc(__("sd.growth_empty"))}</p>`;
   return items.map((it) => {
     const practiced = it.total_minutes > 0
-      ? `累计 ${it.total_minutes} 分钟 · 连续 ${it.streak_days} 天 · 最近第 ${it.last_practiced_day} 天练习`
-      : "尚未开始练习";
+      ? __f("sd.practiced", { minutes: it.total_minutes, streak: it.streak_days, day: it.last_practiced_day })
+      : __("sd.not_practiced");
     return `<div class="bar-row"><div class="bl">
-        <b>${esc(it.name)} <span class="tag">${KIND_LABELS[it.kind] || esc(it.kind)}</span></b>
+        <b>${esc(it.name)} <span class="tag">${esc(enumLabel(KINDS, "std.kind.", it.kind))}</span></b>
         <small>${esc(it.motivation || it.category || "")}</small>
-        <small class="growth-change">${practiced}</small></div>
+        <small class="growth-change">${esc(practiced)}</small></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round(clamp01(it.level) * 100)}%"></div></div></div>`;
   }).join("");
 }
@@ -389,51 +585,53 @@ function stepSkills() {
   const lib = d.skills || [];
   const cog = d.cognition;
 
-  const capCard = `<div class="card"><h3>能力画像 ${caps && caps.job_label ? `<span class="tag">${esc(caps.job_label)}</span>` : ""}</h3>
+  const capCard = `<div class="card"><h3>${esc(__("sd.caps"))} ${caps && caps.job_label ? `<span class="tag">${esc(caps.job_label)}</span>` : ""}</h3>
     ${caps
-      ? `${chips(caps.skills)}${(caps.deliverables || []).length ? `<p class="section-note">可交付物</p>${chips(caps.deliverables)}` : ""}
+      ? `${chips(caps.skills)}${(caps.deliverables || []).length ? `<p class="section-note">${esc(__("sd.deliverables"))}</p>${chips(caps.deliverables)}` : ""}
          ${caps.notes ? `<p class="section-note">${esc(caps.notes)}</p>` : ""}`
-      : `<p class="section-note">能力画像未生成——运行仿真后从 output/work/capabilities.json 读取。</p>`}</div>`;
-  const privCard = `<div class="card"><h3>私有技能 <span class="tag">${priv.length} 项</span></h3>
+      : `<p class="section-note">${esc(__("sd.caps_empty"))}</p>`}</div>`;
+  const privCard = `<div class="card"><h3>${esc(__("sd.private_skills"))} <span class="tag">${esc(__f("sd.n_items", { n: priv.length }))}</span></h3>
     ${priv.length
-      ? priv.map((s) => `<div class="bar-row"><div class="bl"><b>${esc(s.title)}</b><small>${esc(s.file)} · 经验蒸馏</small></div></div>`).join("")
-      : `<p class="section-note">尚无私有技能——仿真中按经验蒸馏生成。</p>`}</div>`;
-  const libCard = `<div class="card"><h3>全局技能库 <span class="tag">${lib.length} 项</span></h3>
-    ${lib.length ? chips(lib.map((s) => s.title)) : `<p class="section-note">技能库为空（data/skills）。</p>`}</div>`;
-  const cogCard = `<div class="card"><h3>认知指数</h3>
+      ? priv.map((s) => `<div class="bar-row"><div class="bl"><b>${esc(s.title)}</b><small>${esc(s.file)} · ${esc(__("sd.distilled"))}</small></div></div>`).join("")
+      : `<p class="section-note">${esc(__("sd.private_skills_empty"))}</p>`}</div>`;
+  const libCard = `<div class="card"><h3>${esc(__("sd.skill_library"))} <span class="tag">${esc(__f("sd.n_items", { n: lib.length }))}</span></h3>
+    ${lib.length ? chips(lib.map((s) => s.title)) : `<p class="section-note">${esc(__("sd.skill_library_empty"))}</p>`}</div>`;
+  const cogCard = `<div class="card"><h3>${esc(__("sd.cog_index"))}</h3>
     ${cog
       ? `<div class="cog-score">${cog.score}</div>
-         ${Object.keys(COG_LABELS).map((key) => `
-           <div class="bar-row"><div class="bl"><b>${COG_LABELS[key]}</b></div>
+         ${COG_KEYS.map((key) => `
+           <div class="bar-row"><div class="bl"><b>${esc(__("std.cog." + key))}</b></div>
            <div class="bar-track"><div class="bar-fill" style="width:${Math.round(clamp01(cog.components[key]) * 100)}%"></div></div></div>`).join("")}
-         <p class="section-note">由技能 / 成长 / 记忆 / 外部知识派生的透明指数（60–140），非测量智商。</p>`
-      : `<p class="section-note">加载后显示。</p>`}</div>`;
+         <p class="section-note">${esc(__("sd.cog_note"))}</p>`
+      : `<p class="section-note">${esc(__("sd.shown_after_load"))}</p>`}</div>`;
   return `
-    <h2 class="section-title">能力 · 技能</h2>
-    <p class="section-note">能力画像与技能来自仿真产出；兴趣与成长实时读取 agent 成长档案（level / 练习时长 / 连续天数）。</p>
+    <h2 class="section-title">${esc(__("sd.skills_title"))}</h2>
+    <p class="section-note">${esc(__("sd.skills_note"))}</p>
     <div class="cols two">
-      <div>${capCard}<div class="card"><h3>兴趣与成长 <span class="tag">${((d.growth || {}).items || []).length} 项</span></h3>${growthRows(d.growth)}</div></div>
+      <div>${capCard}<div class="card"><h3>${esc(__("sd.growth"))} <span class="tag">${esc(__f("sd.n_items", { n: ((d.growth || {}).items || []).length }))}</span></h3>${growthRows(d.growth)}</div></div>
       <div>${cogCard}${privCard}${libCard}</div>
     </div>`;
 }
 
 /* ---------- memory (step 4) ---------- */
 const MEMORY_GROUPS = [
-  { key: "long", label: "长期记忆", color: "#385866" },
-  { key: "rag", label: "外部知识", color: "#d6a81e" },
-  { key: "habit", label: "习惯", color: "#13795b" },
-  { key: "intent", label: "意图", color: "#17211d" },
-  { key: "sched", label: "日程", color: "#7a8b80" },
+  { key: "long", color: "#385866" },
+  { key: "rag", color: "#d6a81e" },
+  { key: "habit", color: "#13795b" },
+  { key: "intent", color: "#17211d" },
+  { key: "sched", color: "#7a8b80" },
 ];
-const INTENT_LABELS = {
-  priorities: "优先事项", avoidances: "回避", target_social: "社交目标",
-  target_recovery: "恢复目标", growth_focus: "成长焦点",
-};
-const PHASE_LABELS = { morning: "上午", afternoon: "下午", evening: "傍晚", night: "夜间" };
+const memGroupLabel = (key) => __(`sd.mem.${key}`);
+const INTENT_KEYS = [
+  "priorities", "avoidances", "target_social", "target_recovery", "growth_focus",
+];
+const PHASES = ["morning", "afternoon", "evening", "night"];
 
 /** Strip the [额外信息…] tag and the trailing bigram keyword tail. */
 function memoryBody(text) {
+  /* i18n-exempt-start: matches text the simulator writes, not interface copy */
   return String(text || "").replace(/^\[额外信息[^\]]*\]\s*/, "").split("关键词:")[0].trim();
+  /* i18n-exempt-end */
 }
 function preview(text, n = 16) {
   const t = String(text || "").trim();
@@ -450,13 +648,16 @@ function memoryGroups() {
   });
   const habit = (mem.habits || []).map((h) => ({
     title: preview(h.activity || h.key),
-    text: `${PHASE_LABELS[h.phase] || h.phase || ""} · ${h.activity || h.key}\n倾向动作：${h.preferred_action || "—"}\n强度 ${clamp01(h.strength).toFixed(2)}${h.last_updated_day == null ? "" : ` · 第 ${h.last_updated_day} 天更新`}`,
+    text: `${enumLabel(PHASES, "std.phase.", h.phase)} · ${h.activity || h.key}\n`
+      + `${__("sd.habit_action")}${h.preferred_action || "—"}\n`
+      + `${__("sd.habit_strength")} ${clamp01(h.strength).toFixed(2)}`
+      + `${h.last_updated_day == null ? "" : ` · ${__f("sd.updated_day", { day: h.last_updated_day })}`}`,
   }));
   const intent = [];
   Object.keys(mem.intentions || {}).forEach((key) => {
     const value = mem.intentions[key];
     (Array.isArray(value) ? value : [value]).filter(Boolean).forEach((v) => {
-      intent.push({ title: preview(String(v)), text: `${INTENT_LABELS[key] || key}：${v}` });
+      intent.push({ title: preview(String(v)), text: `${enumLabel(INTENT_KEYS, "std.intent.", key)}: ${v}` });
     });
   });
   const sched = (mem.schedule || []).map((s) => ({
@@ -464,7 +665,7 @@ function memoryGroups() {
     text: `${s.time} · ${s.activity}`,
   }));
   const byKey = { long, rag, habit, intent, sched };
-  return MEMORY_GROUPS.map((g) => Object.assign({}, g, { items: byKey[g.key] || [] }));
+  return MEMORY_GROUPS.map((g) => Object.assign({}, g, { label: memGroupLabel(g.key), items: byKey[g.key] || [] }));
 }
 
 /** Radial graph: agent at the centre, one hub per memory kind, items as leaves. */
@@ -473,7 +674,7 @@ function memoryGraphSVG(groups, size, maxLeaves) {
   const active = groups.filter((g) => g.items.length);
   const nodes = [];
   if (!active.length) {
-    return { svg: `<svg viewBox="0 0 ${size} ${size}"><text x="${cx}" y="${cy}" font-size="${size / 20}" fill="#5c6860" text-anchor="middle">尚无记忆</text></svg>`, nodes, hidden: 0 };
+    return { svg: `<svg viewBox="0 0 ${size} ${size}"><text x="${cx}" y="${cy}" font-size="${size / 20}" fill="#5c6860" text-anchor="middle">${esc(__("sd.mem_empty"))}</text></svg>`, nodes, hidden: 0 };
   }
   const hubR = size * 0.23, leafRa = size * 0.36, leafRb = size * 0.44;
   const leafSize = size > 400 ? 5.5 : 3.6;
@@ -511,7 +712,7 @@ function memoryGraphSVG(groups, size, maxLeaves) {
 }
 
 function memoryNodeInfo(node) {
-  if (!node) return `<p class="section-note">点击图谱节点查看该条记忆的完整内容。</p>`;
+  if (!node) return `<p class="section-note">${esc(__("sd.mem_pick_node"))}</p>`;
   return `<span class="chip" style="border-color:${node.color};color:${node.color}">${esc(node.group)}</span>
     <p class="mem-node-text">${esc(node.text)}</p>`;
 }
@@ -534,53 +735,53 @@ function stepMemory() {
     `<div class="mem-row${item.rag ? " is-rag" : ""}"><span class="mem-idx">#${item.index}</span>
       <span class="mem-text">${esc(memoryBody(item.text) || item.text)}</span></div>`).join("");
   const habitRows = (mem.habits || []).map((h) =>
-    `<div class="bar-row"><div class="bl"><b>${esc(h.activity || h.key)} <span class="tag">${PHASE_LABELS[h.phase] || esc(h.phase)}</span></b>
-      <small>${esc(h.preferred_action || "—")}${h.last_updated_day == null ? "" : ` · 第 ${h.last_updated_day} 天更新`}</small></div>
+    `<div class="bar-row"><div class="bl"><b>${esc(h.activity || h.key)} <span class="tag">${esc(enumLabel(PHASES, "std.phase.", h.phase))}</span></b>
+      <small>${esc(h.preferred_action || "—")}${h.last_updated_day == null ? "" : ` · ${esc(__f("sd.updated_day", { day: h.last_updated_day }))}`}</small></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round(clamp01(h.strength) * 100)}%"></div></div></div>`).join("");
   const intentRows = Object.keys(mem.intentions || {}).map((key) => {
     const value = mem.intentions[key];
     const list = (Array.isArray(value) ? value : [value]).filter(Boolean);
     if (!list.length) return "";
-    return `<div class="mem-row"><span class="mem-idx">${esc(INTENT_LABELS[key] || key)}</span>
-      <span class="mem-text">${list.map((v) => esc(String(v))).join("、")}</span></div>`;
+    return `<div class="mem-row"><span class="mem-idx">${esc(enumLabel(INTENT_KEYS, "std.intent.", key))}</span>
+      <span class="mem-text">${list.map((v) => esc(String(v))).join(__("sd.list_sep"))}</span></div>`;
   }).join("");
   const schedRows = (mem.schedule || []).map((s) =>
     `<div class="mem-row"><span class="mem-idx">${esc(s.time)}</span><span class="mem-text">${esc(s.activity)}</span></div>`).join("");
 
   return `
-    <h2 class="section-title">记忆</h2>
-    <p class="section-note">分层记忆：长期记忆 / 习惯 / 意图 / 日程，读自 output/memory，随仿真积累，也可在此手动补写。</p>
+    <h2 class="section-title">${esc(__("sd.mem_title"))}</h2>
+    <p class="section-note">${esc(__("sd.mem_note"))}</p>
     <div class="cols side">
       <div class="card">
         <div class="stat-grid">
-          <div class="stat"><div class="n">${c.long_term}</div><div class="l">长期记忆</div></div>
-          <div class="stat"><div class="n">${c.habits}</div><div class="l">习惯</div></div>
-          <div class="stat"><div class="n">${Object.keys(mem.intentions || {}).length || c.intentions}</div><div class="l">意图</div></div>
-          <div class="stat"><div class="n">${c.schedule}</div><div class="l">日程</div></div>
+          <div class="stat"><div class="n">${c.long_term}</div><div class="l">${esc(memGroupLabel("long"))}</div></div>
+          <div class="stat"><div class="n">${c.habits}</div><div class="l">${esc(memGroupLabel("habit"))}</div></div>
+          <div class="stat"><div class="n">${Object.keys(mem.intentions || {}).length || c.intentions}</div><div class="l">${esc(memGroupLabel("intent"))}</div></div>
+          <div class="stat"><div class="n">${c.schedule}</div><div class="l">${esc(memGroupLabel("sched"))}</div></div>
         </div>
-        <p class="section-note" style="margin-top:14px">${total ? "该居民已有记忆痕迹。" : "尚无记忆——运行仿真后此处填充，或在下方手动添加。"}</p>
+        <p class="section-note" style="margin-top:14px">${esc(total ? __("sd.mem_has_traces") : __("sd.mem_none_yet"))}</p>
       </div>
-      <div class="card"><h3>记忆图谱
-          <button type="button" id="memZoomBtn" class="mini-btn" title="放大查看">⤢ 放大</button></h3>
+      <div class="card"><h3>${esc(__("sd.mem_graph"))}
+          <button type="button" id="memZoomBtn" class="mini-btn" title="${esc(__("sd.zoom_title"))}">⤢ ${esc(__("sd.zoom"))}</button></h3>
         <div class="viz-wrap" id="memGraphBox">${store.memGraph.svg}</div>
-        ${store.memGraph.hidden ? `<p class="section-note">图中每类最多显示 10 个节点，另有 ${store.memGraph.hidden} 个在放大视图中查看。</p>` : ""}
+        ${store.memGraph.hidden ? `<p class="section-note">${esc(__f("sd.mem_hidden", { n: store.memGraph.hidden }))}</p>` : ""}
         <div class="mem-node-info" id="memNodeInfo">${memoryNodeInfo(pick)}</div>
       </div>
     </div>
     <div class="card">
-      <h3>手动添加记忆 / RAG</h3>
-      ${field("类型", `<select id="memKind"><option value="memory">长期记忆</option><option value="rag">外部 RAG 知识</option></select>`)}
-      <label class="field"><span>内容</span>
-        <textarea id="memText" placeholder="例如：上个月在武林街道租房被中介多收了一笔费用，之后对中介很警惕。"></textarea></label>
+      <h3>${esc(__("sd.mem_add_title"))}</h3>
+      ${field(__("sd.kind"), `<select id="memKind"><option value="memory">${esc(memGroupLabel("long"))}</option><option value="rag">${esc(__("sd.rag_kind"))}</option></select>`)}
+      <label class="field"><span>${esc(__("sd.content"))}</span>
+        <textarea id="memText" placeholder="${esc(__("sd.mem_add_ph"))}"></textarea></label>
       <div class="confirm-bar">
-        <span class="confirm-hint">长期记忆直接写入 agent_${store.currentId == null ? "N" : store.currentId}.json；RAG 会加上 [额外信息 | 来源:manual] 前缀，并在向量库已建立时同步索引。</span>
-        <button type="button" id="addMemBtn" class="button primary"${store.creating ? " disabled" : ""}>写入记忆</button>
+        <span class="confirm-hint">${esc(__f("sd.mem_add_hint", { id: store.currentId == null ? "N" : store.currentId }))}</span>
+        <button type="button" id="addMemBtn" class="button primary"${store.creating ? " disabled" : ""}>${esc(__("sd.mem_add_btn"))}</button>
       </div>
     </div>
-    ${memoryListCard("长期记忆", (mem.long_term || []).length, longRows, "尚无长期记忆。")}
-    ${memoryListCard("习惯", (mem.habits || []).length, habitRows, "尚无习惯——仿真中由重复行为固化。")}
-    ${memoryListCard("意图", Object.keys(mem.intentions || {}).length, intentRows, "尚无意图档案。")}
-    ${memoryListCard("日程", (mem.schedule || []).length, schedRows, "尚无日程。")}
+    ${memoryListCard(esc(memGroupLabel("long")), (mem.long_term || []).length, longRows, esc(__("sd.mem_long_empty")))}
+    ${memoryListCard(esc(memGroupLabel("habit")), (mem.habits || []).length, habitRows, esc(__("sd.mem_habit_empty")))}
+    ${memoryListCard(esc(memGroupLabel("intent")), Object.keys(mem.intentions || {}).length, intentRows, esc(__("sd.mem_intent_empty")))}
+    ${memoryListCard(esc(memGroupLabel("sched")), (mem.schedule || []).length, schedRows, esc(__("sd.mem_sched_empty")))}
     ${ragCard(d.rag)}`;
 }
 
@@ -591,8 +792,8 @@ function openMemoryModal() {
   box.className = "mem-modal";
   box.id = "memModal";
   box.innerHTML = `<div class="mem-modal-box">
-      <div class="mem-modal-head"><h3>记忆图谱</h3>
-        <button type="button" class="mini-btn" id="memModalClose" aria-label="关闭">✕</button></div>
+      <div class="mem-modal-head"><h3>${esc(__("sd.mem_graph"))}</h3>
+        <button type="button" class="mini-btn" id="memModalClose" aria-label="${esc(__("sd.close"))}">✕</button></div>
       <div class="mem-modal-body">
         <div class="mem-modal-graph">${built.svg}</div>
         <div class="mem-modal-info" id="memModalInfo">${memoryNodeInfo(null)}</div>
@@ -617,12 +818,12 @@ function closeMemoryModal() {
 }
 
 async function addMemory() {
-  if (store.creating || store.currentId == null) { foot("请先保存居民再添加记忆", "err"); return; }
+  if (store.creating || store.currentId == null) { foot(__("sd.save_first_memory"), "err"); return; }
   const kind = $("#memKind").value;
   const text = ($("#memText").value || "").trim();
-  if (!text) { foot("请输入记忆内容", "err"); return; }
+  if (!text) { foot(__("sd.mem_text_required"), "err"); return; }
   try {
-    foot("写入记忆…");
+    foot(__("sd.saving_memory"));
     const res = await api(`/api/agents/${store.currentId}/memory`, {
       method: "POST", body: JSON.stringify({ kind, text }),
     });
@@ -631,28 +832,31 @@ async function addMemory() {
     store.detail.memory_counts = Object.assign({}, store.detail.memory_counts, { long_term: res.count });
     store.memPick = null;
     renderStep();
-    foot(kind === "rag" ? "已写入外部 RAG 知识" : "已写入长期记忆", "ok");
+    foot(kind === "rag" ? __("sd.rag_written") : __("sd.mem_written"), "ok");
   } catch (err) {
-    foot("写入失败：" + err.message, "err");
+    foot(__("sd.write_failed") + err.message, "err");
   }
 }
 
 function ragCard(rag) {
   const items = (rag && rag.items) || [];
   const body = items.length
+    /* i18n-exempt-start: splits on a tag the simulator writes into the text */
     ? items.slice(0, 8).map((t) => `<p class="rag-item">${esc(t.split("关键词:")[0].trim())}</p>`).join("")
-    : `<p class="section-note">尚无外部注入知识——[额外信息] 记忆由 external_rag 引导或运行时检索写入。</p>`;
-  return `<div class="card"><h3>外部 RAG 知识 <span class="tag">${(rag && rag.count) || 0} 条</span></h3>${body}</div>`;
+    /* i18n-exempt-end */
+    : `<p class="section-note">${esc(__("sd.rag_empty"))}</p>`;
+  return `<div class="card"><h3>${esc(__("sd.rag_kind"))} <span class="tag">${esc(__f("sd.n_entries", { n: (rag && rag.count) || 0 }))}</span></h3>${body}</div>`;
 }
 
-const TIER_LABELS = { inner: "亲密", close: "挚友", acquaintance: "熟人", weak: "弱连接" };
-const ROLE_LABELS = {
-  mother: "母亲", father: "父亲", parent: "父母", sibling: "兄弟姐妹", grandparent: "祖辈", relative: "亲戚",
-  spouse: "配偶", partner: "伴侣", child: "子女", best_friend: "挚友", close_friend: "好友", friend: "朋友",
-  classmate: "同学", coworker: "同事", boss: "上司", subordinate: "下属", mentor: "导师", client: "客户",
-  neighbor: "邻居", online_friend: "网友", acquaintance: "熟人", old_friend: "旧友", former_coworker: "前同事", ex: "前任",
-};
-const roleLabel = (r) => ROLE_LABELS[r] || r || "关系";
+const TIERS = ["inner", "close", "acquaintance", "weak"];
+const ROLES = [
+  "mother", "father", "parent", "sibling", "grandparent", "relative",
+  "spouse", "partner", "child", "best_friend", "close_friend", "friend",
+  "classmate", "coworker", "boss", "subordinate", "mentor", "client",
+  "neighbor", "online_friend", "acquaintance", "old_friend", "former_coworker", "ex",
+];
+const roleLabel = (r) =>
+  ROLES.indexOf(r) >= 0 ? __(`std.role.${r}`) : (r || __("std.role_fallback"));
 
 const TIER_RINGS = [
   { key: "inner", r: 34, cap: 5, c: "#13795b" },
@@ -681,7 +885,7 @@ function dunbarSVG(relations) {
     rings += `<circle cx="130" cy="130" r="${t.r}" fill="none" stroke="${t.c}" stroke-width="1.4"/>`;
   });
   TIER_RINGS.forEach((t) => {
-    labels += `<text x="130" y="${130 - t.r + 12}" font-size="9" fill="#5c6860" text-anchor="middle">${TIER_LABELS[t.key]} · ${counts[t.key]}/${t.cap}</text>`;
+    labels += `<text x="130" y="${130 - t.r + 12}" font-size="9" fill="#5c6860" text-anchor="middle">${esc(__(`std.tier.${t.key}`))} · ${counts[t.key]}/${t.cap}</text>`;
   });
   let people = `<circle cx="130" cy="130" r="6" fill="#17211d"/>`;
   TIER_RINGS.forEach((t) => {
@@ -696,24 +900,24 @@ function dunbarSVG(relations) {
 
 function relationEditorRow(r, idx) {
   const attrs = `data-idx="${idx}"`;
-  const roleOptions = Object.keys(ROLE_LABELS).map((k) =>
-    `<option value="${k}"${r.role === k ? " selected" : ""}>${ROLE_LABELS[k]}</option>`).join("");
-  const unknownRole = r.role && !ROLE_LABELS[r.role]
+  const roleOptions = ROLES.map((k) =>
+    `<option value="${k}"${r.role === k ? " selected" : ""}>${esc(__(`std.role.${k}`))}</option>`).join("");
+  const unknownRole = r.role && ROLES.indexOf(r.role) < 0
     ? `<option value="${esc(r.role)}" selected>${esc(r.role)}</option>` : "";
   const tierOptions = TIER_RINGS.map((t) =>
-    `<option value="${t.key}"${r.tier === t.key ? " selected" : ""}>${TIER_LABELS[t.key]}</option>`).join("");
+    `<option value="${t.key}"${r.tier === t.key ? " selected" : ""}>${esc(__(`std.tier.${t.key}`))}</option>`).join("");
   const bar = (field, label) => `<label class="goal-mini goal-prog"><span>${label} <b class="val">${r[field].toFixed(2)}</b></span>
     <input type="range" min="0" max="1" step="0.01" value="${r[field]}" data-rel-${field} ${attrs}></label>`;
   return `<div class="goal-edit">
     <div class="goal-edit-head">
-      <input class="goal-title-input" data-rel-name ${attrs} value="${esc(r.name)}" placeholder="姓名">
-      <button type="button" class="goal-remove" data-rel-remove ${attrs} title="删除此关系" aria-label="删除">✕</button>
+      <input class="goal-title-input" data-rel-name ${attrs} value="${esc(r.name)}" placeholder="${esc(__("sd.name"))}">
+      <button type="button" class="goal-remove" data-rel-remove ${attrs} title="${esc(__("sd.rel_remove_title"))}" aria-label="${esc(__("sd.remove"))}">✕</button>
     </div>
     <div class="goal-edit-controls">
-      <label class="goal-mini"><span>关系</span><select data-rel-role ${attrs}>${unknownRole}${roleOptions}</select></label>
-      <label class="goal-mini"><span>圈层</span><select data-rel-tier ${attrs}>${tierOptions}</select></label>
-      ${bar("closeness", "亲密度")}
-      ${bar("trust", "信任")}
+      <label class="goal-mini"><span>${esc(__("sd.relation"))}</span><select data-rel-role ${attrs}>${unknownRole}${roleOptions}</select></label>
+      <label class="goal-mini"><span>${esc(__("sd.tier"))}</span><select data-rel-tier ${attrs}>${tierOptions}</select></label>
+      ${bar("closeness", esc(__("sd.closeness")))}
+      ${bar("trust", esc(__("sd.trust")))}
     </div>
   </div>`;
 }
@@ -731,12 +935,23 @@ function relationEditorRow(r, idx) {
  * they were pinned to.
  * ------------------------------------------------------------------------- */
 
-const MARITAL_LABELS = { never: "未婚", married: "已婚", divorced: "离异", widowed: "丧偶" };
-const HH_TYPE_LABELS = {
-  single: "独居", shared: "合租", with_parents: "与父母同住", cohabit: "未婚同居",
-  couple: "夫妻二人", nuclear: "核心家庭", single_parent: "单亲家庭", multigen: "三代同堂",
-};
-const ELDER_ROLE_LABELS = { mother: "母亲", father: "父亲", parent: "父母", grandparent: "祖辈" };
+/* Marital statuses, household types and elder roles reuse the keys the
+   dashboard's family card already defines — same vocabulary, one translation. */
+const MARITALS = ["never", "married", "divorced", "widowed"];
+const HH_TYPES = [
+  "single", "shared", "with_parents", "cohabit",
+  "couple", "nuclear", "single_parent", "multigen",
+];
+const ELDER_ROLES = ["mother", "father", "parent", "grandparent"];
+
+/* Gender is stored as the Chinese literal the roster CSV and the override file
+   use, so the *value* stays put; only the option text comes from the locale. */
+/* i18n-exempt-start: data values, not interface text */
+const MALE = "男";
+const FEMALE = "女";
+/* i18n-exempt-end */
+const GENDERS = [MALE, FEMALE];
+const genderLabel = (g) => (g === MALE ? __("city.gender_male") : g === FEMALE ? __("city.gender_female") : g);
 
 function blankFamilyDraft(override) {
   const src = override && typeof override === "object" ? override : {};
@@ -749,8 +964,8 @@ function blankFamilyDraft(override) {
     partnerRole: (partner && partner.role) || "spouse",
     partnerAgentId: partner && partner.kind === "agent" ? Number(partner.agent_id) : null,
     partnerGhost: partner && partner.kind === "ghost"
-      ? { name: partner.name || "", gender: partner.gender || "女", age: Number(partner.age) || 30 }
-      : { name: "", gender: "女", age: 30 },
+      ? { name: partner.name || "", gender: partner.gender || FEMALE, age: Number(partner.age) || 30 }
+      : { name: "", gender: FEMALE, age: 30 },
     children: Array.isArray(src.children) ? src.children.map(clonePerson) : null,
     elders: Array.isArray(src.elders) ? src.elders.map(clonePerson) : null,
     note: src.note || "",
@@ -759,7 +974,7 @@ function blankFamilyDraft(override) {
 
 function clonePerson(p) {
   return {
-    name: p.name || "", gender: p.gender || "男",
+    name: p.name || "", gender: p.gender || MALE,
     age: Number(p.age) || 0, coresident: p.coresident !== false,
     role: p.role || "",
   };
@@ -800,24 +1015,24 @@ async function loadFamilyPreview() {
 
 function personRow(person, idx, kind) {
   const attrs = `data-fam-kind="${kind}" data-idx="${idx}"`;
-  const genderOpts = ["男", "女"].map((g) =>
-    `<option value="${g}"${person.gender === g ? " selected" : ""}>${g}</option>`).join("");
+  const genderOpts = GENDERS.map((g) =>
+    `<option value="${g}"${person.gender === g ? " selected" : ""}>${esc(genderLabel(g))}</option>`).join("");
   const roleSelect = kind === "elders"
-    ? `<label class="goal-mini"><span>身份</span><select data-fam-role ${attrs}>${
-        Object.keys(ELDER_ROLE_LABELS).map((r) =>
-          `<option value="${r}"${person.role === r ? " selected" : ""}>${ELDER_ROLE_LABELS[r]}</option>`).join("")
+    ? `<label class="goal-mini"><span>${esc(__("sd.person_role"))}</span><select data-fam-role ${attrs}>${
+        ELDER_ROLES.map((r) =>
+          `<option value="${r}"${person.role === r ? " selected" : ""}>${esc(__(`std.role.${r}`))}</option>`).join("")
       }</select></label>`
     : "";
   return `<div class="goal-edit">
     <div class="goal-edit-head">
-      <input class="goal-title-input" data-fam-name ${attrs} value="${esc(person.name)}" placeholder="姓名">
-      <button type="button" class="goal-remove" data-fam-remove ${attrs} title="删除" aria-label="删除">✕</button>
+      <input class="goal-title-input" data-fam-name ${attrs} value="${esc(person.name)}" placeholder="${esc(__("sd.name"))}">
+      <button type="button" class="goal-remove" data-fam-remove ${attrs} title="${esc(__("sd.remove"))}" aria-label="${esc(__("sd.remove"))}">✕</button>
     </div>
     <div class="goal-edit-controls">
-      <label class="goal-mini"><span>性别</span><select data-fam-gender ${attrs}>${genderOpts}</select></label>
-      <label class="goal-mini"><span>年龄</span><input type="number" min="0" max="120" data-fam-age ${attrs} value="${Number(person.age) || 0}"></label>
+      <label class="goal-mini"><span>${esc(__("sd.gender"))}</span><select data-fam-gender ${attrs}>${genderOpts}</select></label>
+      <label class="goal-mini"><span>${esc(__("sd.age"))}</span><input type="number" min="0" max="120" data-fam-age ${attrs} value="${Number(person.age) || 0}"></label>
       ${roleSelect}
-      <label class="goal-mini goal-check"><span>同住</span>
+      <label class="goal-mini goal-check"><span>${esc(__("sd.coresident"))}</span>
         <input type="checkbox" data-fam-coresident ${attrs}${person.coresident ? " checked" : ""}></label>
     </div>
   </div>`;
@@ -827,13 +1042,13 @@ function personGroup(kind, title, hint) {
   const list = store.familyDraft[kind];
   const manual = Array.isArray(list);
   const body = manual
-    ? `${list.map((p, i) => personRow(p, i, kind)).join("") || `<p class="section-note">已固定为「没有」。</p>`}
-       <button type="button" class="goal-add" data-fam-add="${kind}">+ 新增</button>`
+    ? `${list.map((p, i) => personRow(p, i, kind)).join("") || `<p class="section-note">${esc(__("sd.pinned_none"))}</p>`}
+       <button type="button" class="goal-add" data-fam-add="${kind}">+ ${esc(__("sd.add"))}</button>`
     : `<p class="section-note">${esc(hint)}</p>`;
   return `<div class="fam-group">
     <label class="fam-toggle">
       <input type="checkbox" data-fam-manual="${kind}"${manual ? " checked" : ""}>
-      <b>${esc(title)}</b><span class="section-note">${manual ? "手动指定" : "自动生成"}</span>
+      <b>${esc(title)}</b><span class="section-note">${esc(manual ? __("sd.manual") : __("sd.automatic"))}</span>
     </label>
     ${body}
   </div>`;
@@ -841,98 +1056,95 @@ function personGroup(kind, title, hint) {
 
 function familyPartnerBlock(candidates) {
   const d = store.familyDraft;
-  const modes = [
-    ["auto", "自动"], ["none", "无伴侣"], ["agent", "仿真内居民"], ["ghost", "场外人物"],
-  ].map(([v, label]) =>
+  const modes = ["auto", "none", "agent", "ghost"].map((v) =>
     `<label class="fam-radio"><input type="radio" name="famPartnerMode" value="${v}"${
-      d.partnerMode === v ? " checked" : ""}> ${label}</label>`).join("");
-  const roleSel = `<label class="goal-mini"><span>关系</span><select data-fam-partner-role>
-      <option value="spouse"${d.partnerRole === "spouse" ? " selected" : ""}>配偶</option>
-      <option value="partner"${d.partnerRole === "partner" ? " selected" : ""}>同居伴侣</option>
+      d.partnerMode === v ? " checked" : ""}> ${esc(__(`sd.partner_mode.${v}`))}</label>`).join("");
+  const roleSel = `<label class="goal-mini"><span>${esc(__("sd.relation"))}</span><select data-fam-partner-role>
+      <option value="spouse"${d.partnerRole === "spouse" ? " selected" : ""}>${esc(__("family.role.spouse"))}</option>
+      <option value="partner"${d.partnerRole === "partner" ? " selected" : ""}>${esc(__("sd.role_cohabit"))}</option>
     </select></label>`;
   let detail = "";
   if (d.partnerMode === "agent") {
     const opts = (candidates || []).map((c) =>
       `<option value="${c.agent_id}"${Number(d.partnerAgentId) === Number(c.agent_id) ? " selected" : ""}>${
-        esc(c.name)} · ${c.age}岁 · ${esc(c.gender)}${c.residence ? " · " + esc(c.residence) : ""}</option>`).join("");
+        esc(c.name)} · ${esc(__f("sd.age_years", { n: c.age }))} · ${esc(genderLabel(c.gender))}${c.residence ? " · " + esc(c.residence) : ""}</option>`).join("");
     detail = `<div class="goal-edit-controls">
-      <label class="goal-mini"><span>选择居民</span><select data-fam-partner-agent>
-        <option value="">— 请选择 —</option>${opts}</select></label>
+      <label class="goal-mini"><span>${esc(__("sd.pick_agent"))}</span><select data-fam-partner-agent>
+        <option value="">— ${esc(__("sd.please_pick"))} —</option>${opts}</select></label>
       ${roleSel}
     </div>
-    <p class="section-note">双向生效：对方的家庭也会随之改变，两人共享同一个住处；原本和对方配对的居民会自动退回场外配偶。</p>`;
+    <p class="section-note">${esc(__("sd.partner_agent_note"))}</p>`;
   } else if (d.partnerMode === "ghost") {
     detail = `<div class="goal-edit-controls">
-      <label class="goal-mini"><span>姓名</span><input data-fam-partner-name value="${esc(d.partnerGhost.name)}" placeholder="场外配偶姓名"></label>
-      <label class="goal-mini"><span>性别</span><select data-fam-partner-gender>
-        ${["男", "女"].map((g) => `<option value="${g}"${d.partnerGhost.gender === g ? " selected" : ""}>${g}</option>`).join("")}
+      <label class="goal-mini"><span>${esc(__("sd.name"))}</span><input data-fam-partner-name value="${esc(d.partnerGhost.name)}" placeholder="${esc(__("sd.ghost_name_ph"))}"></label>
+      <label class="goal-mini"><span>${esc(__("sd.gender"))}</span><select data-fam-partner-gender>
+        ${GENDERS.map((g) => `<option value="${g}"${d.partnerGhost.gender === g ? " selected" : ""}>${esc(genderLabel(g))}</option>`).join("")}
       </select></label>
-      <label class="goal-mini"><span>年龄</span><input type="number" min="0" max="120" data-fam-partner-age value="${Number(d.partnerGhost.age) || 0}"></label>
+      <label class="goal-mini"><span>${esc(__("sd.age"))}</span><input type="number" min="0" max="120" data-fam-partner-age value="${Number(d.partnerGhost.age) || 0}"></label>
       ${roleSel}
     </div>`;
   } else if (d.partnerMode === "none") {
-    detail = `<p class="section-note">固定为没有伴侣——即使婚姻状态抽样结果是已婚，也不会生成配偶。</p>`;
+    detail = `<p class="section-note">${esc(__("sd.partner_none_note"))}</p>`;
   } else {
-    detail = `<p class="section-note">按婚姻状态与配对规则自动决定。</p>`;
+    detail = `<p class="section-note">${esc(__("sd.partner_auto_note"))}</p>`;
   }
-  return `<div class="fam-group"><b>伴侣</b>
+  return `<div class="fam-group"><b>${esc(__("sd.partner"))}</b>
     <div class="fam-radios">${modes}</div>${detail}</div>`;
 }
 
 function familyCard() {
   if (store.creating) {
-    return `<div class="card"><h3>家庭</h3>
-      <p class="section-note">新建居民保存后，才能编辑家庭。</p></div>`;
+    return `<div class="card"><h3>${esc(__("sd.family"))}</h3>
+      <p class="section-note">${esc(__("sd.family_unsaved"))}</p></div>`;
   }
   const preview = store.familyPreview;
   if (!preview) {
-    return `<div class="card"><h3>家庭</h3><p class="section-note">加载中…</p></div>`;
+    return `<div class="card"><h3>${esc(__("sd.family"))}</h3><p class="section-note">${esc(__("sd.loading"))}</p></div>`;
   }
   if (preview.error) {
-    return `<div class="card"><h3>家庭</h3>
-      <p class="section-note">家庭预览不可用：${esc(preview.error)}</p></div>`;
+    return `<div class="card"><h3>${esc(__("sd.family"))}</h3>
+      <p class="section-note">${esc(__("sd.family_preview_failed"))}${esc(preview.error)}</p></div>`;
   }
   const sel = preview.selected || {};
   const d = store.familyDraft;
-  const statusOpts = [["", "自动（按年龄段抽样）"]].concat(
-    Object.keys(MARITAL_LABELS).map((k) => [k, MARITAL_LABELS[k]])
+  const statusOpts = [["", __("sd.marital_auto")]].concat(
+    MARITALS.map((k) => [k, __(`family.marital.${k}`)])
   ).map(([v, label]) =>
-    `<option value="${v}"${d.marital_status === v ? " selected" : ""}>${label}</option>`).join("");
+    `<option value="${v}"${d.marital_status === v ? " selected" : ""}>${esc(label)}</option>`).join("");
 
-  const tags = `<span class="tag">${esc(MARITAL_LABELS[sel.marital_status] || "?")}</span>
-    <span class="tag">${esc(HH_TYPE_LABELS[sel.household_type] || sel.household_type || "?")}</span>
-    <span class="tag${sel.pinned ? " tag-pinned" : ""}">${sel.pinned ? "已固定" : "自动生成"}</span>`;
+  const tags = `<span class="tag">${esc(MARITALS.indexOf(sel.marital_status) >= 0 ? __(`family.marital.${sel.marital_status}`) : "?")}</span>
+    <span class="tag">${esc(HH_TYPES.indexOf(sel.household_type) >= 0 ? __(`family.type.${sel.household_type}`) : (sel.household_type || "?"))}</span>
+    <span class="tag${sel.pinned ? " tag-pinned" : ""}">${esc(sel.pinned ? __("sd.pinned") : __("sd.automatic"))}</span>`;
 
   const duties = preview.duties || {};
   const dutyList = (arr, label) =>
     (arr && arr.length)
-      ? `<li><b>${label}</b>：${arr.map(esc).join("；")}</li>`
-      : `<li><b>${label}</b>：无</li>`;
+      ? `<li><b>${esc(label)}</b>${esc(__("sd.colon"))}${arr.map(esc).join(__("sd.semicolon"))}</li>`
+      : `<li><b>${esc(label)}</b>${esc(__("sd.colon"))}${esc(__("sd.none"))}</li>`;
 
   const warnings = (preview.warnings || []).length
     ? `<p class="fam-warn">${preview.warnings.map(esc).join("<br>")}</p>` : "";
 
   return `<div class="card">
-    <h3>家庭 <span class="tag">${esc(sel.household_id || "")}</span></h3>
-    <p class="section-note">家庭在每次运行开始时按「配置 → 家庭与户」重新生成。这里的修改保存为
-      <code>data/family_overrides.json</code> 里的覆盖项，跨运行生效，并优先于抽样结果。</p>
+    <h3>${esc(__("sd.family"))} <span class="tag">${esc(sel.household_id || "")}</span></h3>
+    <p class="section-note">${__f("sd.family_note", { file: "<code>data/family_overrides.json</code>" })}</p>
     ${warnings}
     <div class="fam-head">${tags}</div>
-    <p class="fam-brief">${esc(sel.brief || "（无家庭）")}</p>
-    <ul class="fam-duties">${dutyList(duties.weekday, "工作日")}${dutyList(duties.weekend, "周末")}</ul>
+    <p class="fam-brief">${esc(sel.brief || __("sd.no_family"))}</p>
+    <ul class="fam-duties">${dutyList(duties.weekday, __("sd.weekday"))}${dutyList(duties.weekend, __("sd.weekend"))}</ul>
 
-    <div class="fam-group"><b>婚姻状态</b>
+    <div class="fam-group"><b>${esc(__("sd.marital_status"))}</b>
       <div class="goal-edit-controls">
-        <label class="goal-mini"><span>状态</span><select data-fam-status>${statusOpts}</select></label>
+        <label class="goal-mini"><span>${esc(__("sd.status"))}</span><select data-fam-status>${statusOpts}</select></label>
       </div>
     </div>
     ${familyPartnerBlock(preview.candidates)}
-    ${personGroup("children", "子女", "按生育率旋钮自动生成。勾选后可精确指定每个孩子。")}
-    ${personGroup("elders", "同住长辈", "按共居规则自动生成。勾选后可精确指定同住的长辈。")}
+    ${personGroup("children", __("sd.children"), __("sd.children_hint"))}
+    ${personGroup("elders", __("sd.elders"), __("sd.elders_hint"))}
 
     <div class="goals-save">
-      <button type="button" id="resetFamilyBtn" class="button">恢复自动生成</button>
-      <button type="button" id="saveFamilyBtn" class="button primary">保存并预览</button>
+      <button type="button" id="resetFamilyBtn" class="button">${esc(__("sd.family_reset"))}</button>
+      <button type="button" id="saveFamilyBtn" class="button primary">${esc(__("sd.family_save"))}</button>
     </div>
   </div>`;
 }
@@ -940,7 +1152,7 @@ function familyCard() {
 async function saveFamilyOverride(clear) {
   if (store.creating || store.currentId == null) return;
   try {
-    foot(clear ? "恢复自动生成…" : "保存家庭设定…");
+    foot(clear ? __("sd.family_resetting") : __("sd.family_saving"));
     const body = clear
       ? { agent_id: store.currentId, clear: true }
       : { agent_id: store.currentId, override: familyDraftToOverride(store.familyDraft) };
@@ -948,9 +1160,9 @@ async function saveFamilyOverride(clear) {
     store.familyPreview = payload;
     store.familyDraft = blankFamilyDraft(payload.override);
     renderStep();
-    foot(clear ? "已恢复为自动生成，下次运行生效" : "家庭设定已保存，下次运行生效", "ok");
+    foot(clear ? __("sd.family_reset_done") : __("sd.family_save_done"), "ok");
   } catch (err) {
-    foot((clear ? "恢复失败：" : "保存失败：") + err.message, "err");
+    foot((clear ? __("sd.family_reset_failed") : __("sd.save_failed")) + err.message, "err");
   }
 }
 
@@ -990,8 +1202,8 @@ function bindFamilyCard() {
       const kind = el.dataset.famAdd;
       d[kind] = d[kind] || [];
       d[kind].push(kind === "children"
-        ? { name: "", gender: "男", age: 6, coresident: true, role: "child" }
-        : { name: "", gender: "女", age: 68, coresident: true, role: "mother" });
+        ? { name: "", gender: MALE, age: 6, coresident: true, role: "child" }
+        : { name: "", gender: FEMALE, age: 68, coresident: true, role: "mother" });
       renderStep();
     });
   });
@@ -1032,35 +1244,35 @@ function stepSocial() {
   const social = store.detail && store.detail.social;
   const relations = store.socialDraft || [];
   const note = store.creating
-    ? "新建居民保存并运行仿真后生成关系边。"
+    ? __("sd.social_new")
     : (social
-      ? `已加载 ${social.count} 条真实关系边（output/memory），可直接编辑。`
-      : "尚无关系文件——在此新增的关系会创建 agent_" + store.currentId + "_relationships.json。");
+      ? __f("sd.social_loaded", { n: social.count })
+      : __f("sd.social_no_file", { id: store.currentId }));
   const editor = store.creating
-    ? `<p class="section-note">新建模式下暂不能编辑关系。</p>`
+    ? `<p class="section-note">${esc(__("sd.social_new_locked"))}</p>`
     : `${relations.map(relationEditorRow).join("")}
-       <button type="button" class="goal-add" id="addRelBtn">+ 新增关系</button>
-       <div class="goals-save"><button type="button" id="saveRelBtn" class="button primary">保存关系</button></div>`;
+       <button type="button" class="goal-add" id="addRelBtn">+ ${esc(__("sd.rel_add"))}</button>
+       <div class="goals-save"><button type="button" id="saveRelBtn" class="button primary">${esc(__("sd.rel_save"))}</button></div>`;
   return `
-    <h2 class="section-title">社交 · 关系</h2>
-    <p class="section-note">Dunbar 分层社交圈（inner/close/acquaintance/weak）。${note}</p>
+    <h2 class="section-title">${esc(__("sd.social_title"))}</h2>
+    <p class="section-note">${esc(__("sd.social_note"))}${esc(note)}</p>
     <div class="cols side">
-      <div class="card"><h3>关系分层</h3><div class="viz-wrap" id="dunbarViz">${dunbarSVG(relations)}</div></div>
-      <div class="card"><h3>影响倾向</h3>${["voice_propensity", "platform_dependence"].map((key) => {
+      <div class="card"><h3>${esc(__("sd.social_rings"))}</h3><div class="viz-wrap" id="dunbarViz">${dunbarSVG(relations)}</div></div>
+      <div class="card"><h3>${esc(__("sd.social_influence"))}</h3>${["voice_propensity", "platform_dependence"].map((key) => {
         const v = STATE_VARS.find((x) => x.key === key), val = store.draft.state[key];
-        return `<div class="bar-row"><div class="bl"><b>${v.cn}</b><small>${v.lo} → ${v.hi}</small></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val * 100)}%"></div></div></div>`;
-      }).join("")}<p class="section-note" style="margin-top:10px">社交网络密度、同质性等在仿真中演化。</p></div>
+        return `<div class="bar-row"><div class="bl"><b>${esc(varLabel(v))}</b><small>${esc(poleLo(v))} → ${esc(poleHi(v))}</small></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val * 100)}%"></div></div></div>`;
+      }).join("")}<p class="section-note" style="margin-top:10px">${esc(__("sd.social_evolves"))}</p></div>
     </div>
-    <div class="card"><h3>关系与亲密度 <span class="tag">${relations.length}</span></h3>${editor}</div>
+    <div class="card"><h3>${esc(__("sd.social_edit"))} <span class="tag">${relations.length}</span></h3>${editor}</div>
     ${familyCard()}`;
 }
 
 async function saveRelations() {
   if (store.creating || store.currentId == null || !store.socialDraft) return;
   const blank = store.socialDraft.find((r) => !String(r.name || "").trim());
-  if (blank) { foot("请先填写每条关系的姓名", "err"); return; }
+  if (blank) { foot(__("sd.rel_name_required"), "err"); return; }
   try {
-    foot("保存关系…");
+    foot(__("sd.rel_saving"));
     const saved = await api(`/api/agents/${store.currentId}/relationships`, {
       method: "POST",
       body: JSON.stringify({ relations: store.socialDraft, removed: store.socialRemoved }),
@@ -1069,23 +1281,24 @@ async function saveRelations() {
     store.socialDraft = cloneRelations(saved);
     store.socialRemoved = [];
     renderStep();
-    foot("关系已保存到 relationships.json", "ok");
+    foot(__("sd.rel_saved"), "ok");
   } catch (err) {
-    foot("关系保存失败：" + err.message, "err");
+    foot(__("sd.rel_save_failed") + err.message, "err");
   }
 }
 
-const GOAL_STATUS_LABELS = { active: "进行中", completed: "已完成", abandoned: "已放弃", paused: "已暂停" };
-const GOAL_DOMAIN_LABELS = { career: "事业", family: "家庭", health: "健康", wealth: "财富", social: "社交", self: "自我" };
+const GOAL_STATUSES = ["active", "completed", "abandoned", "paused"];
+const GOAL_DOMAINS = ["career", "family", "health", "wealth", "social", "self"];
 // Active-goal caps per tier — mirror DEFAULT_GOALS_CONFIG in gaworld/goals.py
 // (POST /goals normalizes with defaults, so these must match to avoid surprise truncation).
 const GOAL_LIMITS = { life_goals: 2, long_term_goals: 3, short_term_goals: 4 };
 const GOAL_ID_PREFIX = { life_goals: "lg", long_term_goals: "ltg", short_term_goals: "stg" };
 const GOAL_TIERS = [
-  { key: "life_goals", label: "人生方向", domain: true, progress: false },
-  { key: "long_term_goals", label: "长期目标", domain: false, progress: true },
-  { key: "short_term_goals", label: "短期目标", domain: false, progress: true },
+  { key: "life_goals", domain: true, progress: false },
+  { key: "long_term_goals", domain: false, progress: true },
+  { key: "short_term_goals", domain: false, progress: true },
 ];
+const tierLabel = (t) => __(`std.tier.${t.key}`);
 
 function cloneGoals(goals) {
   const src = goals && typeof goals === "object" ? goals : {};
@@ -1110,49 +1323,49 @@ function addGoal(tier) {
 function goalRows(goals) {
   const tiers = ["life_goals", "long_term_goals", "short_term_goals"];
   const hasAny = goals && tiers.some((k) => (goals[k] || []).length);
-  if (!hasAny) return `<p class="section-note">尚无目标档案——运行仿真后由 gaworld/goals.py 从 profile 引导生成，或经 dashboard 编辑写入。</p>`;
+  if (!hasAny) return `<p class="section-note">${esc(__("sd.goals_empty"))}</p>`;
   const life = (goals.life_goals || []).filter((g) => g.status === "active");
-  const lifeHtml = life.length ? `<p class="section-note">人生方向</p>${chips(life.map((g) => g.title))}` : "";
+  const lifeHtml = life.length ? `<p class="section-note">${esc(__("std.tier.life_goals"))}</p>${chips(life.map((g) => g.title))}` : "";
   const tier = (items, label) => {
     if (!(items || []).length) return "";
     const rows = items.map((g) => {
       const pct = Math.round(clamp01(g.progress || 0) * 100);
-      const status = g.status && g.status !== "active" ? ` <span class="tag">${GOAL_STATUS_LABELS[g.status] || esc(g.status)}</span>` : "";
+      const status = g.status && g.status !== "active" ? ` <span class="tag">${esc(GOAL_STATUSES.indexOf(g.status) >= 0 ? __(`std.goal.${g.status}`) : g.status)}</span>` : "";
       const sub = [
-        g.target_day != null ? `目标 Day ${g.target_day}` : (g.horizon_days != null ? `${g.horizon_days} 天视野` : ""),
+        g.target_day != null ? __f("sd.goal_target_day", { day: g.target_day }) : (g.horizon_days != null ? __f("sd.goal_horizon", { n: g.horizon_days }) : ""),
         g.recent_note || "",
       ].filter(Boolean).join(" · ");
       return `<div class="bar-row"><div class="bl"><b>${esc(g.title)}${status}</b><small>${esc(sub)}</small></div>
         <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
     }).join("");
-    return `<p class="section-note">${label}</p>${rows}`;
+    return `<p class="section-note">${esc(label)}</p>${rows}`;
   };
   const lastReview = (goals.review_log || []).slice(-1)[0] || null;
   const reviewHtml = lastReview
-    ? `<p class="section-note growth-change">最近回顾 · Day ${Number(lastReview.day) || 0}：${esc(lastReview.summary || "")}</p>`
+    ? `<p class="section-note growth-change">${esc(__f("sd.goal_review", { day: Number(lastReview.day) || 0 }))}${esc(lastReview.summary || "")}</p>`
     : "";
-  return lifeHtml + tier(goals.long_term_goals, "长期目标") + tier(goals.short_term_goals, "短期目标") + reviewHtml;
+  return lifeHtml + tier(goals.long_term_goals, __("std.tier.long_term_goals")) + tier(goals.short_term_goals, __("std.tier.short_term_goals")) + reviewHtml;
 }
 
 function goalEditorRow(tier, idx, g, meta) {
   const attrs = `data-tier="${tier}" data-idx="${idx}"`;
-  const statusSel = `<label class="goal-mini"><span>状态</span>
-    <select data-goal-status ${attrs}>${Object.keys(GOAL_STATUS_LABELS).map((k) =>
-      `<option value="${k}"${(g.status || "active") === k ? " selected" : ""}>${GOAL_STATUS_LABELS[k]}</option>`).join("")}</select></label>`;
+  const statusSel = `<label class="goal-mini"><span>${esc(__("sd.status"))}</span>
+    <select data-goal-status ${attrs}>${GOAL_STATUSES.map((k) =>
+      `<option value="${k}"${(g.status || "active") === k ? " selected" : ""}>${esc(__(`std.goal.${k}`))}</option>`).join("")}</select></label>`;
   const domainSel = meta.domain
-    ? `<label class="goal-mini"><span>领域</span>
-        <select data-goal-domain ${attrs}>${Object.keys(GOAL_DOMAIN_LABELS).map((k) =>
-          `<option value="${k}"${(g.domain || "self") === k ? " selected" : ""}>${GOAL_DOMAIN_LABELS[k]}</option>`).join("")}</select></label>`
+    ? `<label class="goal-mini"><span>${esc(__("sd.domain"))}</span>
+        <select data-goal-domain ${attrs}>${GOAL_DOMAINS.map((k) =>
+          `<option value="${k}"${(g.domain || "self") === k ? " selected" : ""}>${esc(__(`std.domain.${k}`))}</option>`).join("")}</select></label>`
     : "";
   const pct = Math.round(clamp01(g.progress || 0) * 100);
   const progress = meta.progress
-    ? `<label class="goal-mini goal-prog"><span>进度 <b class="val">${pct}%</b></span>
+    ? `<label class="goal-mini goal-prog"><span>${esc(__("sd.progress"))} <b class="val">${pct}%</b></span>
         <input type="range" min="0" max="100" step="1" value="${pct}" data-goal-progress ${attrs}></label>`
     : "";
   return `<div class="goal-edit">
     <div class="goal-edit-head">
-      <input class="goal-title-input" data-goal-title ${attrs} value="${esc(g.title)}" placeholder="目标标题">
-      <button type="button" class="goal-remove" data-goal-remove ${attrs} title="删除此目标" aria-label="删除">✕</button>
+      <input class="goal-title-input" data-goal-title ${attrs} value="${esc(g.title)}" placeholder="${esc(__("sd.goal_title_ph"))}">
+      <button type="button" class="goal-remove" data-goal-remove ${attrs} title="${esc(__("sd.goal_remove_title"))}" aria-label="${esc(__("sd.remove"))}">✕</button>
     </div>
     <div class="goal-edit-controls">${domainSel}${progress}${statusSel}</div>
   </div>`;
@@ -1164,14 +1377,14 @@ function goalsEditorHtml(goals) {
     const rows = items.map((g, idx) => goalEditorRow(meta.key, idx, g, meta)).join("");
     const activeCount = items.filter((g) => (g.status || "active") === "active").length;
     const atLimit = activeCount >= GOAL_LIMITS[meta.key];
-    const addBtn = `<button type="button" class="goal-add" data-goal-add data-tier="${meta.key}"${atLimit ? ` disabled title="进行中的${meta.label}最多 ${GOAL_LIMITS[meta.key]} 个"` : ""}>+ 新增${meta.label}</button>`;
-    return `<div class="goal-tier"><p class="section-note">${meta.label}</p>${rows}${addBtn}</div>`;
+    const addBtn = `<button type="button" class="goal-add" data-goal-add data-tier="${meta.key}"${atLimit ? ` disabled title="${esc(__f("std.goal_limit", { tier: tierLabel(meta), n: GOAL_LIMITS[meta.key] }))}"` : ""}>${esc(__f("std.goal_add", { tier: tierLabel(meta) }))}</button>`;
+    return `<div class="goal-tier"><p class="section-note">${esc(tierLabel(meta))}</p>${rows}${addBtn}</div>`;
   }).join("");
   const lastReview = (goals.review_log || []).slice(-1)[0] || null;
   const reviewHtml = lastReview
-    ? `<p class="section-note growth-change">最近回顾 · Day ${Number(lastReview.day) || 0}：${esc(lastReview.summary || "")}</p>`
+    ? `<p class="section-note growth-change">${esc(__f("sd.goal_review", { day: Number(lastReview.day) || 0 }))}${esc(lastReview.summary || "")}</p>`
     : "";
-  return `${tiers}${reviewHtml}<div class="goals-save"><button type="button" id="saveGoalsBtn" class="button primary">保存目标</button></div>`;
+  return `${tiers}${reviewHtml}<div class="goals-save"><button type="button" id="saveGoalsBtn" class="button primary">${esc(__("sd.goals_save"))}</button></div>`;
 }
 
 function stepBehavior() {
@@ -1179,43 +1392,29 @@ function stepBehavior() {
   const rows = BEHAVIOR_KEYS.map((key) => {
     const v = STATE_VARS.find((x) => x.key === key);
     return `<div class="slider-row" data-var="${key}">
-      <div class="slabel"><span>${v.cn} <span class="en">${v.en}</span></span><span class="val">${st[key].toFixed(2)}</span></div>
+      <div class="slabel"><span>${esc(varLabel(v))}${machineName(v)}</span><span class="val">${st[key].toFixed(2)}</span></div>
       <input type="range" min="0" max="1" step="0.01" value="${st[key]}" data-state="${key}">
-      <div class="poles"><span>${v.lo}</span><span>${v.hi}</span></div></div>`;
+      <div class="poles"><span>${esc(poleLo(v))}</span><span>${esc(poleHi(v))}</span></div></div>`;
   }).join("");
   return `
-    <h2 class="section-title">行为 · 目标</h2>
-    <p class="section-note">驱动行为选择的状态维度：流动、表达、风险、平台绑定、政策敏感。</p>
+    <h2 class="section-title">${esc(__("sd.behavior_title"))}</h2>
+    <p class="section-note">${esc(__("sd.behavior_note"))}</p>
     <div class="cols side">
-      <div class="card"><h3>行为倾向</h3>${rows}</div>
-      <div class="card"><h3>三层目标 <span class="tag">人生 · 长期 · 短期</span></h3>
+      <div class="card"><h3>${esc(__("sd.behavior_traits"))}</h3>${rows}</div>
+      <div class="card"><h3>${esc(__("sd.goals_three_tier"))} <span class="tag">${esc(__("sd.goals_tier_tags"))}</span></h3>
         ${store.creating
           ? goalRows((store.detail || {}).goals)
           : goalsEditorHtml(store.goalsDraft || cloneGoals(null))}
-        <p class="section-note">${store.creating
-          ? "新建居民保存后，目标将由 gaworld/goals.py 从 profile 引导生成，可再回此编辑。"
-          : "目标可在此直接编辑，「保存目标」写入 goals.json；仿真运行时会每日推进、每周回顾。"}</p>
+        <p class="section-note">${esc(store.creating ? __("sd.goals_new_note") : __("sd.goals_edit_note"))}</p>
       </div>
     </div>`;
 }
 
 /* ---------- finance (step 7) ---------- */
-const FINANCE_ACCOUNTS = [
-  { key: "checking", label: "活期 / 现金" },
-  { key: "savings", label: "存款" },
-  { key: "investment", label: "投资" },
-  { key: "housing_fund", label: "公积金" },
-];
-const FINANCE_AMOUNTS = [
-  { key: "gross_monthly_salary", label: "税前月薪" },
-  { key: "net_monthly_salary", label: "税后月薪" },
-  { key: "monthly_rent", label: "月租" },
-  { key: "debt", label: "负债" },
-];
-const FINANCE_RATES = [
-  { key: "engel_coefficient", label: "恩格尔系数" },
-  { key: "savings_rate", label: "储蓄率" },
-];
+const FINANCE_ACCOUNTS = ["checking", "savings", "investment", "housing_fund"].map((key) => ({ key }));
+const FINANCE_AMOUNTS = ["gross_monthly_salary", "net_monthly_salary", "monthly_rent", "debt"].map((key) => ({ key }));
+const FINANCE_RATES = ["engel_coefficient", "savings_rate"].map((key) => ({ key }));
+const finLabel = (key) => __(`sd.fin.${key}`);
 // Liquid accounts only — mirrors _total_balance in gaworld/economy/finance.py.
 const FINANCE_LIQUID = ["checking", "savings", "investment"];
 
@@ -1235,74 +1434,74 @@ function financeBalance(draft) {
 function financeCard() {
   const fin = store.detail && store.detail.finance_state;
   if (!fin) {
-    return `<div class="card"><h3>财务</h3><p class="section-note">运行仿真后从 output/memory 的 economy 状态生成，届时可在此修改存款等。</p></div>`;
+    return `<div class="card"><h3>${esc(__("sd.finance"))}</h3><p class="section-note">${esc(__("sd.finance_empty"))}</p></div>`;
   }
   if (!fin.editable || !store.financeDraft) {
-    return `<div class="card"><h3>财务快照（run 产出，只读）</h3><div class="review-list">
-        <div><span class="k">余额</span><span class="v">${fin.balance}</span></div>
-        <div><span class="k">净月薪</span><span class="v">${fin.net_monthly_salary}</span></div>
-        <div><span class="k">恩格尔系数</span><span class="v">${fin.engel_coefficient}</span></div>
-        <div><span class="k">储蓄率</span><span class="v">${fin.savings_rate}</span></div></div>
-      <p class="section-note">该居民尚无 agent_${store.currentId}_economy.json 活状态，跑一次仿真后即可编辑。</p></div>`;
+    return `<div class="card"><h3>${esc(__("sd.finance_readonly"))}</h3><div class="review-list">
+        <div><span class="k">${esc(__("sd.fin.balance"))}</span><span class="v">${fin.balance}</span></div>
+        <div><span class="k">${esc(__("sd.fin.net_monthly_salary"))}</span><span class="v">${fin.net_monthly_salary}</span></div>
+        <div><span class="k">${esc(__("sd.fin.engel_coefficient"))}</span><span class="v">${fin.engel_coefficient}</span></div>
+        <div><span class="k">${esc(__("sd.fin.savings_rate"))}</span><span class="v">${fin.savings_rate}</span></div></div>
+      <p class="section-note">${esc(__f("sd.finance_no_state", { id: store.currentId }))}</p></div>`;
   }
   const d = store.financeDraft;
-  const money = (list) => list.map((f) => `<label class="field"><span>${f.label}（${esc(fin.currency)}）</span>
+  const money = (list) => list.map((f) => `<label class="field"><span>${esc(__f("sd.fin_with_currency", { label: finLabel(f.key), currency: fin.currency }))}</span>
     <input type="number" step="0.01" min="0" value="${(f.key in d ? d[f.key] : d.accounts[f.key])}" data-fin="${f.key}"></label>`).join("");
-  const rates = FINANCE_RATES.map((f) => `<label class="field"><span>${f.label} <b class="val">${d[f.key].toFixed(2)}</b></span>
+  const rates = FINANCE_RATES.map((f) => `<label class="field"><span>${esc(finLabel(f.key))} <b class="val">${d[f.key].toFixed(2)}</b></span>
     <input type="range" min="0" max="1" step="0.01" value="${d[f.key]}" data-fin-rate="${f.key}"></label>`).join("");
   return `<div class="card">
-    <h3>财务 <span class="tag">可编辑</span></h3>
-    <p class="section-note">写入 agent_${store.currentId}_economy.json —— 仿真下次以有状态模式启动时读取。余额 = 活期 + 存款 + 投资（不含公积金）。</p>
+    <h3>${esc(__("sd.finance"))} <span class="tag">${esc(__("sd.editable"))}</span></h3>
+    <p class="section-note">${esc(__f("sd.finance_note", { id: store.currentId }))}</p>
     <div class="grid2">${money(FINANCE_ACCOUNTS)}</div>
     <div class="grid2">${money(FINANCE_AMOUNTS)}</div>
     <div class="grid2">${rates}</div>
     <div class="confirm-bar">
-      <span class="confirm-hint">合计余额 <b id="finBalance">${financeBalance(d).toFixed(2)}</b> ${esc(fin.currency)}</span>
-      <button type="button" id="saveFinBtn" class="button primary">保存财务</button>
+      <span class="confirm-hint">${esc(__("sd.fin_total"))} <b id="finBalance">${financeBalance(d).toFixed(2)}</b> ${esc(fin.currency)}</span>
+      <button type="button" id="saveFinBtn" class="button primary">${esc(__("sd.fin_save"))}</button>
     </div></div>`;
 }
 
 async function saveFinance() {
   if (store.creating || store.currentId == null || !store.financeDraft) return;
   try {
-    foot("保存财务…");
+    foot(__("sd.fin_saving"));
     const saved = await api(`/api/agents/${store.currentId}/finance`, {
       method: "POST", body: JSON.stringify(store.financeDraft),
     });
     store.detail.finance_state = saved;
     store.financeDraft = cloneFinance(saved);
     renderStep();
-    foot("财务已保存到 economy 状态", "ok");
+    foot(__("sd.fin_saved"), "ok");
   } catch (err) {
-    foot("财务保存失败：" + err.message, "err");
+    foot(__("sd.fin_save_failed") + err.message, "err");
   }
 }
 
 function stepReview() {
   const i = store.draft.identity, st = store.draft.state;
-  const idRows = [["姓名", i.name], ["性别", i.gender], ["年龄", i.age], ["户籍", i.hukou], ["居住地", i.residence]]
-    .map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`).join("");
-  const stRows = STATE_VARS.map((v) => `<div><span class="k">${v.cn}</span><span class="v">${st[v.key].toFixed(2)}</span></div>`).join("");
+  const idRows = [["sd.name", i.name], ["sd.gender", i.gender], ["sd.age", i.age], ["sd.hukou", i.hukou], ["sd.residence", i.residence]]
+    .map(([k, v]) => `<div><span class="k">${esc(__(k))}</span><span class="v">${esc(v)}</span></div>`).join("");
+  const stRows = STATE_VARS.map((v) => `<div><span class="k">${esc(varLabel(v))}</span><span class="v">${st[v.key].toFixed(2)}</span></div>`).join("");
   const finCard = financeCard();
   return `
-    <h2 class="section-title">复核 · 部署</h2>
-    <p class="section-note">${store.creating ? "确认后创建新居民（写入 CSV + profile）。" : "确认后保存改动并可直接投入仿真。"}</p>
+    <h2 class="section-title">${esc(__("sd.review_title"))}</h2>
+    <p class="section-note">${esc(store.creating ? __("sd.review_create_note") : __("sd.review_save_note"))}</p>
     ${agentCardBlock(store.detail)}
     <div class="cols two">
-      <div class="card"><h3>身份</h3><div class="review-list">${idRows}</div></div>
-      <div class="card"><h3>状态变量</h3><div class="review-list">${stRows}</div></div>
+      <div class="card"><h3>${esc(__("sd.identity"))}</h3><div class="review-list">${idRows}</div></div>
+      <div class="card"><h3>${esc(__("sd.state_vars"))}</h3><div class="review-list">${stRows}</div></div>
     </div>
     ${finCard}
     <div class="card">
-      <h3>采访预览（可选）</h3>
-      <label class="field"><span>问一个问题（调用 LLM，可能较慢）</span>
-        <input id="interviewQ" placeholder="例如：你怎么看最近的落户政策？"></label>
-      <button id="interviewBtn" class="button" ${store.creating ? "disabled" : ""}>开始采访</button>
+      <h3>${esc(__("sd.interview"))}</h3>
+      <label class="field"><span>${esc(__("sd.interview_label"))}</span>
+        <input id="interviewQ" placeholder="${esc(__("sd.interview_ph"))}"></label>
+      <button id="interviewBtn" class="button" ${store.creating ? "disabled" : ""}>${esc(__("sd.interview_start"))}</button>
       <div class="interview-out" id="interviewOut" hidden></div>
     </div>
     <div class="deploy-actions">
-      <button id="saveBtn2" class="button primary">${store.creating ? "创建居民" : "保存改动"}</button>
-      <button id="runBtn2" class="button steel" ${store.creating ? "disabled" : ""}>用此居民运行仿真</button>
+      <button id="saveBtn2" class="button primary">${esc(store.creating ? __("sd.create_resident") : __("sd.save_changes"))}</button>
+      <button id="runBtn2" class="button steel" ${store.creating ? "disabled" : ""}>${esc(__("sd.run_with_resident"))}</button>
     </div>`;
 }
 
@@ -1312,21 +1511,21 @@ function agentCardBlock(detail) {
   const oc = detail.openclaw || {};
   const cog = detail.cognition;
   const ocChip = oc.connected
-    ? `<span class="chip ok">🦞 已连接 OpenClaw</span>`
-    : `<span class="chip">🦞 未连接 OpenClaw</span>`;
+    ? `<span class="chip ok">🦞 ${esc(__("sd.oc_connected"))}</span>`
+    : `<span class="chip">🦞 ${esc(__("sd.oc_disconnected"))}</span>`;
   const ocLine = oc.connected
-    ? `<small class="muted-line">${oc.is_openclaw_agent ? "外部 OpenClaw 智能体" : "与 OpenClaw 智能体互通"} · 集群 ${esc(oc.cluster || "—")} · 发出 ${oc.messages_sent} / 收到 ${oc.messages_received} 条消息</small>`
-    : `<small class="muted-line">未在 relay 中检测到 OpenClaw 往来（scripts/openclaw_bridge.py 可接入）。</small>`;
+    ? `<small class="muted-line">${esc(oc.is_openclaw_agent ? __("sd.oc_external") : __("sd.oc_peer"))} · ${esc(__f("sd.oc_stats", { cluster: oc.cluster || "—", sent: oc.messages_sent, received: oc.messages_received }))}</small>`
+    : `<small class="muted-line">${esc(__("sd.oc_none"))}</small>`;
   return `<div class="card"><h3>Agent Card <span class="tag">${esc(card.schema)}</span></h3>
     <div class="ac-head"><b>${esc(card.name)}</b> <span class="tag">#${esc(card.id)}</span>
       ${card.job_label ? `<span class="tag">${esc(card.job_label)}</span>` : ""}
-      ${ocChip}${cog ? `<span class="chip">认知指数 ${cog.score}</span>` : ""}</div>
+      ${ocChip}${cog ? `<span class="chip">${esc(__("sd.cog_index"))} ${cog.score}</span>` : ""}</div>
     <small class="muted-line">${esc(card.description)}</small>
-    ${card.skills.length ? `<p class="section-note">技能</p>${chips(card.skills)}` : ""}
-    ${card.interests.length ? `<p class="section-note">兴趣</p>${chips(card.interests)}` : ""}
-    ${card.deliverables.length ? `<p class="section-note">可交付物</p>${chips(card.deliverables)}` : ""}
+    ${card.skills.length ? `<p class="section-note">${esc(__("sd.skills"))}</p>${chips(card.skills)}` : ""}
+    ${card.interests.length ? `<p class="section-note">${esc(__("sd.interests"))}</p>${chips(card.interests)}` : ""}
+    ${card.deliverables.length ? `<p class="section-note">${esc(__("sd.deliverables"))}</p>${chips(card.deliverables)}` : ""}
     ${ocLine}
-    <small class="muted-line">API：${esc(card.endpoints.detail)}</small></div>`;
+    <small class="muted-line">API${esc(__("sd.colon"))}${esc(card.endpoints.detail)}</small></div>`;
 }
 
 /* ---------- step event binding ---------- */
@@ -1354,6 +1553,31 @@ function bindStep() {
   const pOk = $("#confirmProfileBtn"); if (pOk) pOk.addEventListener("click", confirmProfile);
   $("#stepBody").querySelectorAll("[data-nar]").forEach((el) => {
     el.addEventListener("input", () => { store.draft.narrative[el.dataset.nar] = el.value; });
+  });
+  $("#stepBody").querySelectorAll("[data-b5]").forEach((el) => {
+    el.addEventListener("input", () => {
+      const dim = el.dataset.b5;
+      const z = Math.max(-2.5, Math.min(2.5, Number(el.value) || 0));
+      if (!store.big5Draft) store.big5Draft = {};
+      store.big5Draft[dim] = z;
+      const row = el.closest(".b5-row");
+      if (row) {
+        const val = row.querySelector(".val");
+        val.textContent = (z >= 0 ? "+" : "") + z.toFixed(2);
+        const floor = Number((store.big5 && store.big5.floor) || 0.5);
+        val.classList.toggle("b5-distinct", Math.abs(z) >= floor);
+      }
+      markBig5Dirty();
+    });
+  });
+  const b5Ok = $("#confirmBig5Btn");
+  if (b5Ok) b5Ok.addEventListener("click", confirmBig5);
+  const b5Goto = $("#gotoProfileBtn");
+  if (b5Goto) b5Goto.addEventListener("click", () => {
+    store.step = 1;
+    store.profileEdit = store.draft.profile_text;
+    store.profileEditing = true;
+    renderStep();
   });
   $("#stepBody").querySelectorAll("[data-state]").forEach((el) => {
     el.addEventListener("input", () => {
@@ -1497,12 +1721,12 @@ async function save() {
   if (!store.draft) return false;
   const i = store.draft.identity;
   try {
-    foot("保存中…");
+    foot(__("sd.saving"));
     if (store.creating) {
       const body = { name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
         state: store.draft.state, job: store.draft.narrative.job, personality: store.draft.narrative.personality };
       const res = await api("/api/agents", { method: "POST", body: JSON.stringify(body) });
-      foot(`已创建居民 #${res.id} ${res.name}`, "ok");
+      foot(__f("sd.created", { id: res.id, name: res.name }), "ok");
       store.creating = false;
       await loadAgents();
       $("#agentSelect").value = String(res.id);
@@ -1514,14 +1738,14 @@ async function save() {
     if (store.detail && store.draft.profile_text && store.draft.profile_text !== store.detail.profile_text) {
       await api(`/api/agents/${store.currentId}/profile`, { method: "POST", body: JSON.stringify({ text: store.draft.profile_text }) });
     }
-    $("#saveHint").textContent = "已保存 ✓";
-    foot("已保存到 CSV / profile", "ok");
+    $("#saveHint").textContent = __("sd.saved_tick");
+    foot(__("sd.saved_csv_profile"), "ok");
     // refresh options label in case name changed
     await loadAgents();
     $("#agentSelect").value = String(store.currentId);
     return true;
   } catch (err) {
-    foot("保存失败：" + err.message, "err");
+    foot(__("sd.save_failed") + err.message, "err");
     return false;
   }
 }
@@ -1529,7 +1753,7 @@ async function save() {
 async function saveGoals() {
   if (store.creating || store.currentId == null || !store.goalsDraft) return;
   try {
-    foot("保存目标…");
+    foot(__("sd.goals_saving"));
     const saved = await api(`/api/agents/${store.currentId}/goals`, {
       method: "POST", body: JSON.stringify(store.goalsDraft),
     });
@@ -1537,30 +1761,30 @@ async function saveGoals() {
     store.detail.goals = saved || {};
     store.goalsDraft = cloneGoals(store.detail.goals);
     renderStep();
-    foot("目标已保存到 goals.json", "ok");
+    foot(__("sd.goals_saved"), "ok");
   } catch (err) {
-    foot("目标保存失败：" + err.message, "err");
+    foot(__("sd.goals_save_failed") + err.message, "err");
   }
 }
 
 async function runSim() {
-  if (store.creating || store.currentId == null) { foot("请先保存居民再运行", "err"); return; }
+  if (store.creating || store.currentId == null) { foot(__("sd.save_first_run"), "err"); return; }
   try {
-    foot("提交运行…");
+    foot(__("sd.run_submitting"));
     await api("/api/run/start", { method: "POST", body: JSON.stringify({ config: { agent_ids: [store.currentId] } }) });
-    foot(`已用居民 #${store.currentId} 启动仿真（在控制台查看日志）`, "ok");
-  } catch (err) { foot("运行失败：" + err.message, "err"); }
+    foot(__f("sd.run_started", { id: store.currentId }), "ok");
+  } catch (err) { foot(__("sd.run_failed") + err.message, "err"); }
 }
 
 async function runInterview() {
   const q = ($("#interviewQ") && $("#interviewQ").value || "").trim();
   const out = $("#interviewOut");
-  if (!q) { foot("请输入采访问题", "err"); return; }
-  out.hidden = false; out.textContent = "采访中（可能需要几十秒）…";
+  if (!q) { foot(__("sd.interview_q_required"), "err"); return; }
+  out.hidden = false; out.textContent = __("sd.interview_running");
   try {
     const res = await api("/api/interview", { method: "POST", body: JSON.stringify({ agent_id: store.currentId, questions: [q] }) });
-    out.textContent = (res.stdout || res.stderr || "无输出").trim();
-  } catch (err) { out.textContent = "采访失败：" + err.message; }
+    out.textContent = (res.stdout || res.stderr || __("sd.no_output")).trim();
+  } catch (err) { out.textContent = __("sd.interview_failed") + err.message; }
 }
 
 /* ---------- wire up ---------- */
@@ -1575,7 +1799,7 @@ function init() {
 
   loadAgents()
     .then(() => store.currentId != null ? selectAgent(store.currentId) : renderStep())
-    .catch((err) => foot("加载失败：" + err.message, "err"));
+    .catch((err) => foot(__("sd.load_failed") + err.message, "err"));
 }
 
 document.addEventListener("DOMContentLoaded", init);

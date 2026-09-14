@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from gaworld.llm.providers import AnthropicProvider, EmptyCompletionError, LLMRouter
+from gaworld.llm.providers import (
+    AnthropicProvider,
+    EmptyCompletionError,
+    LLMRouter,
+    OpenAIProvider,
+)
 
 
 class _StubProvider:
@@ -82,6 +87,45 @@ class TestFallbackChain(unittest.TestCase):
         self.assertEqual(0, a.calls)
         self.assertEqual(1, b.calls)
         self.assertEqual(0, c.calls)
+
+
+class _OverrideStub:
+    """A provider that accepts the per-call overrides and records them."""
+
+    def __init__(self):
+        self.kwargs = None
+
+    def call(self, prompt, system=None, temperature=None):
+        self.kwargs = {"system": system, "temperature": temperature}
+        return "ok"
+
+
+class TestPerCallOverrides(unittest.TestCase):
+    """``system`` / ``temperature`` reach the provider only when requested."""
+
+    def test_overrides_are_forwarded(self):
+        stub = _OverrideStub()
+        router = _make_router({"default": "a"}, {"a": stub})
+        router.call("hi", system="你是顾客", temperature=1.0)
+        self.assertEqual({"system": "你是顾客", "temperature": 1.0}, stub.kwargs)
+
+    def test_fallback_can_be_disabled_to_pin_one_model(self):
+        # An experiment must fail a cell rather than answer it with a
+        # different model than the neighbouring cells.
+        a = _StubProvider("a", fail=True)
+        b = _StubProvider("b")
+        router = _make_router({"default": "a", "fallback": ["b"]}, {"a": a, "b": b})
+        with self.assertRaises(RuntimeError):
+            router.call("hi", allow_fallback=False)
+        self.assertEqual(1, a.calls)
+        self.assertEqual(0, b.calls)
+
+    def test_no_overrides_means_the_prompt_alone(self):
+        # Providers predating the override kwargs must keep working, so an
+        # unset override may not be forwarded as an explicit ``None``.
+        legacy = _StubProvider("legacy")
+        router = _make_router({"default": "a"}, {"a": legacy})
+        self.assertEqual("hello from legacy", router.call("hi"))
 
 
 class _FakeResponse:
@@ -165,6 +209,48 @@ class TestEmptyCompletionIsAnError(unittest.TestCase):
             self.assertEqual("# 报告", provider.call("hi"))
         finally:
             providers.requests.post = original_post
+
+
+class TestOpenAIPayloadOverrides(unittest.TestCase):
+    """The system message and temperature must reach the wire correctly."""
+
+    def _capture(self, provider, **kwargs):
+        import gaworld.llm.providers as providers
+
+        captured = {}
+
+        def _post(*_args, **request_kwargs):
+            captured.update(request_kwargs["json"])
+            return _FakeResponse(
+                {"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]}
+            )
+
+        original_post = providers.requests.post
+        providers.requests.post = _post
+        try:
+            provider.call("hi", **kwargs)
+        finally:
+            providers.requests.post = original_post
+        return captured
+
+    def test_system_message_is_prepended(self):
+        provider = OpenAIProvider("https://example.invalid/v1", "m", api_key="k")
+        payload = self._capture(provider, system="你是顾客")
+        self.assertEqual(
+            [{"role": "system", "content": "你是顾客"}, {"role": "user", "content": "hi"}],
+            payload["messages"],
+        )
+
+    def test_call_temperature_beats_the_provider_default(self):
+        provider = OpenAIProvider("https://example.invalid/v1", "m", api_key="k", temperature=0.2)
+        self.assertEqual(1.0, self._capture(provider, temperature=1.0)["temperature"])
+        self.assertEqual(0.2, self._capture(provider)["temperature"])
+
+    def test_without_a_system_message_the_payload_is_unchanged(self):
+        provider = OpenAIProvider("https://example.invalid/v1", "m", api_key="k")
+        payload = self._capture(provider)
+        self.assertEqual([{"role": "user", "content": "hi"}], payload["messages"])
+        self.assertNotIn("temperature", payload)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,11 @@
 (function () {
   "use strict";
 
+  /* i18n-exempt-start: this catalogue is metadata *about* the repository's
+     Chinese documents. Titles carry an `en` twin and summaries an `en_summary`
+     (both rendered by locale); the Chinese originals, the group identities and
+     the search tags stay as written, because they name and match real
+     Chinese-language files. */
   var DOCS = [
     {
       id: "tutorial",
@@ -17,6 +22,7 @@
       en: "Tutorial",
       group: "快速上手",
       summary: "10 分钟跑通第一次仿真：装依赖、配 LLM、run、看输出在哪。",
+      en_summary: "Get a first simulation running in ten minutes: install, configure an LLM, run, find the output.",
       tags: ["quickstart", "run", "ollama", "openai", "第一次"],
     },
     {
@@ -26,6 +32,7 @@
       en: "Tutorial v2",
       group: "快速上手",
       summary: "最全的一本：长时段快进与月/年尺度长跑、对照实验、群体模拟、外部系统、分析导出全都在里面。",
+      en_summary: "The complete manual: fast-forward and month/year-scale runs, controlled experiments, population simulation, external systems, analytics export.",
       tags: ["手册", "快进", "fast-forward", "月", "年", "长跑", "对照", "analytics"],
     },
     {
@@ -35,6 +42,7 @@
       en: "README",
       group: "快速上手",
       summary: "GAWorld 是什么、能做什么实验、目录怎么组织。",
+      en_summary: "What GAWorld is, what you can experiment on, how the tree is laid out.",
       tags: ["readme", "overview", "简介"],
     },
     {
@@ -44,7 +52,18 @@
       en: "Features",
       group: "功能与玩法",
       summary: "记忆、社交、经济、干预、地图……每个子系统一条，先扫这份再决定看哪篇。",
+      en_summary: "Memory, social, economy, interventions, maps — one line per subsystem; skim this to decide what to read next.",
       tags: ["features", "功能", "总览"],
+    },
+    {
+      id: "city",
+      path: "/docs/CITY_TUTORIAL.md",
+      title: "城市教程",
+      en: "Cities",
+      group: "功能与玩法",
+      summary: "给一个地名造一座城：真实 OSM 地图、环境、居民，以及怎么在多座城市之间切换。",
+      en_summary: "Build a city from a place name: real OSM maps, environment, residents, and switching between cities.",
+      tags: ["city", "城市", "地名", "osm", "造城", "迁入"],
     },
     {
       id: "map-modes",
@@ -53,6 +72,7 @@
       en: "Map Modes",
       group: "功能与玩法",
       summary: "虚拟地图和真实城市地图的区别、各自需要什么数据。",
+      en_summary: "How virtual and real city maps differ, and what data each one needs.",
       tags: ["map", "citymap", "地图", "虚拟", "真实"],
     },
     {
@@ -62,6 +82,7 @@
       en: "Skill System",
       group: "功能与玩法",
       summary: "智能体的技能怎么定义、怎么练、怎么影响行为。",
+      en_summary: "How agent skills are defined, practised, and how they shape behaviour.",
       tags: ["skill", "技能", "成长"],
     },
     {
@@ -71,6 +92,7 @@
       en: "Real Work",
       group: "功能与玩法",
       summary: "让智能体真的去执行工作任务（而不只是描述），怎么开、怎么看结果。",
+      en_summary: "Having agents actually perform work rather than describe it — how to enable it and read the results.",
       tags: ["real work", "工作", "执行"],
     },
     {
@@ -80,6 +102,7 @@
       en: "Group Simulation",
       group: "专题教程",
       summary: "从个体扩到人群：人口构成、群体智能体、规模化跑法。",
+      en_summary: "Scaling from individuals to a population: demographics, group agents, running at size.",
       tags: ["group", "population", "人口", "群体"],
     },
     {
@@ -89,6 +112,7 @@
       en: "Social Network",
       group: "专题教程",
       summary: "关系怎么建立和演化、社交网络图怎么导出和解读。",
+      en_summary: "How relationships form and evolve, and how to export and read the social graph.",
       tags: ["social", "network", "关系", "社交"],
     },
     {
@@ -98,6 +122,7 @@
       en: "External Systems",
       group: "专题教程",
       summary: "接入外部平台/服务，让仿真和外面的系统互相影响。",
+      en_summary: "Wiring in outside platforms and services so the simulation and the real systems affect each other.",
       tags: ["external", "外部系统", "接入"],
     },
     {
@@ -107,6 +132,7 @@
       en: "Parallel Worlds",
       group: "专题教程",
       summary: "同一批人换一件事：多分支反事实实验怎么设计、怎么读分叉图、为什么先跑安慰剂。",
+      en_summary: "Same people, one different event: designing multi-branch counterfactuals, reading the fork diagram, and why to run a placebo first.",
       tags: ["parallel", "counterfactual", "平行世界", "对照", "反事实"],
     },
     {
@@ -116,6 +142,7 @@
       en: "OpenClaw",
       group: "专题教程",
       summary: "把 OpenClaw Agent 接进 GAWorld 社会模拟的使用说明。",
+      en_summary: "Connecting an OpenClaw Agent to the GAWorld social simulation.",
       tags: ["openclaw", "integration", "接入"],
     },
     {
@@ -125,6 +152,7 @@
       en: "FOS Integration",
       group: "专题教程",
       summary: "GAWorld 与 FOS 的数据交换与导出流程（英文）。",
+      en_summary: "Data exchange and export between GAWorld and FOS.",
       tags: ["fos", "export", "integration"],
     },
     {
@@ -134,6 +162,7 @@
       en: "Plugin Authoring",
       group: "开发与扩展",
       summary: "写一个插件挂进微内核：钩子、注册、生命周期和最小示例。",
+      en_summary: "Writing a plugin against the microkernel: hooks, registration, lifecycle, and a minimal example.",
       tags: ["plugin", "插件", "kernel", "扩展"],
     },
     {
@@ -143,6 +172,7 @@
       en: "Project Structure",
       group: "开发与扩展",
       summary: "各个包各管什么、代码该往哪放。",
+      en_summary: "What each package owns and where new code belongs.",
       tags: ["structure", "目录", "架构"],
     },
     {
@@ -152,6 +182,7 @@
       en: "Repository Guidelines",
       group: "开发与扩展",
       summary: "目录组织、命名、测试和提交约定 —— 动手改代码前先看这份。",
+      en_summary: "Layout, naming, testing and commit conventions — read this before changing code.",
       tags: ["contributing", "约定", "测试", "commit"],
     },
     {
@@ -161,6 +192,7 @@
       en: "Changelog",
       group: "开发与扩展",
       summary: "版本之间改了什么。",
+      en_summary: "What changed between versions.",
       tags: ["changelog", "版本", "更新"],
     },
     {
@@ -170,6 +202,7 @@
       en: "Group Agent Design",
       group: "设计文档",
       summary: "群体智能体的建模思路与分阶段实施计划。",
+      en_summary: "The modelling approach for group agents and the phased implementation plan.",
       tags: ["design", "group", "设计"],
     },
     {
@@ -179,6 +212,7 @@
       en: "Family / Household Design",
       group: "设计文档",
       summary: "婚姻状态怎么抽样、家庭怎么影响日程与账目、以及为什么这样接钩子。",
+      en_summary: "How marital status is sampled, how households shape schedules and budgets, and why the hooks are wired this way.",
       tags: ["design", "family", "household", "家庭", "设计"],
     },
     {
@@ -188,6 +222,7 @@
       en: "Social Network Design",
       group: "设计文档",
       summary: "关系模型、影响传播和存储结构的实施设计。",
+      en_summary: "Implementation design for the relationship model, influence propagation and storage.",
       tags: ["design", "social", "设计"],
     },
     {
@@ -197,6 +232,7 @@
       en: "Real Work Design",
       group: "设计文档",
       summary: "工作任务如何被分解、执行和评估的实施设计。",
+      en_summary: "Implementation design for how work is decomposed, executed and assessed.",
       tags: ["design", "real work", "设计"],
     },
     {
@@ -206,11 +242,37 @@
       en: "Big Five Personality Design",
       group: "设计文档",
       summary: "五维人格怎么从性格段落离线标定并冻结、规则/提示词/日记三条通道各改变什么、以及为什么运行期不漂移。",
+      en_summary: "How the five dimensions are calibrated offline from the personality prose and frozen, what each of the rule/prompt/diary channels changes, and why nothing drifts at run time.",
       tags: ["design", "personality", "big five", "ocean", "人格", "设计"],
     },
   ];
+  /* i18n-exempt-end */
 
+  /* i18n-exempt-start: the group name doubles as the grouping identity in
+     `doc.group`, so it has to stay a literal on both sides of this map;
+     groupLabel() is what turns it into display text. */
   var GROUPS = ["快速上手", "功能与玩法", "专题教程", "开发与扩展", "设计文档"];
+  var GROUP_KEYS = {
+    "快速上手": "docs.group_quickstart",
+    "功能与玩法": "docs.group_features",
+    "专题教程": "docs.group_topics",
+    "开发与扩展": "docs.group_dev",
+    "设计文档": "docs.group_design",
+  };
+  /* i18n-exempt-end */
+
+  function groupLabel(group) {
+    var key = GROUP_KEYS[group];
+    return key ? __(key) : group;
+  }
+
+  /* Summaries live beside the entry they describe, matching the title/en pair
+     the catalogue already uses, rather than being scattered into the locale
+     files — they are metadata about a document, not interface chrome. */
+  function summaryOf(doc) {
+    var english = typeof getLocale === "function" && getLocale() === "en";
+    return (english && doc.en_summary) || doc.summary;
+  }
 
   var byId = {};
   var byPath = {};
@@ -282,7 +344,7 @@
   }
 
   function matchDoc(doc, needle) {
-    var haystack = [doc.title, doc.en, doc.summary, doc.group, doc.tags.join(" ")]
+    var haystack = [doc.title, doc.en, doc.summary, doc.en_summary || "", doc.group, doc.tags.join(" ")]
       .join(" ")
       .toLowerCase();
     if (haystack.indexOf(needle) >= 0) return { doc: doc, snippet: "" };
@@ -336,11 +398,11 @@
     metaEl.innerHTML = "";
     var chip = document.createElement("span");
     chip.className = "doc-chip";
-    chip.innerHTML = "共 <b>" + DOCS.length + "</b> 篇文档";
+    chip.innerHTML = __f("docs.count", { count: DOCS.length });
     metaEl.appendChild(chip);
     var source = document.createElement("span");
     source.className = "doc-chip";
-    source.textContent = "直读仓库 docs/";
+    source.textContent = __("docs.source_chip");
     metaEl.appendChild(source);
   }
 
@@ -359,7 +421,7 @@
       var section = document.createElement("div");
       section.className = "doc-group";
       var title = document.createElement("h2");
-      title.textContent = group;
+      title.textContent = groupLabel(group);
       section.appendChild(title);
 
       docs.forEach(function (doc) {
@@ -369,7 +431,7 @@
         item.innerHTML = "<strong>" + doc.title + "</strong><em>" + doc.en + "</em>";
         var note = document.createElement("span");
         note.className = "doc-item-note";
-        note.textContent = shown[doc.id] || doc.summary;
+        note.textContent = shown[doc.id] || summaryOf(doc);
         item.appendChild(note);
         section.appendChild(item);
       });
@@ -379,16 +441,16 @@
     if (!hits.length) {
       var empty = document.createElement("p");
       empty.className = "doc-empty";
-      empty.textContent = fullTextReady ? "没有匹配的文档。" : "正在搜索正文…";
+      empty.textContent = __(fullTextReady ? "docs.no_match" : "docs.searching");
       sideEl.appendChild(empty);
     }
 
     if (!query) {
       hintEl.textContent = "";
     } else if (!fullTextReady) {
-      hintEl.textContent = "正在载入正文…";
+      hintEl.textContent = __("docs.loading_bodies");
     } else {
-      hintEl.textContent = hits.length + " 篇匹配（含正文）";
+      hintEl.textContent = __f("docs.match_count", { count: hits.length });
     }
   }
 
@@ -400,7 +462,7 @@
     if (!items.length) return;
 
     var title = document.createElement("h2");
-    title.textContent = "本页大纲";
+    title.textContent = __("docs.outline");
     tocEl.appendChild(title);
     items.forEach(function (item) {
       var link = document.createElement("a");
@@ -437,8 +499,8 @@
 
   function renderDoc(doc, slug) {
     current = doc;
-    document.title = "GAWorld 文档 · " + doc.title;
-    articleEl.innerHTML = '<p class="doc-loading">正在载入 ' + doc.path + " …</p>";
+    document.title = __f("docs.doc_title", { title: doc.title });
+    articleEl.innerHTML = '<p class="doc-loading">' + __f("docs.loading_doc", { path: doc.path }) + "</p>";
     renderSide();
 
     fetchDoc(doc).then(function (text) {
@@ -447,9 +509,9 @@
       headings = result.headings;
       articleEl.innerHTML =
         '<header class="doc-head">'
-        + '<p class="doc-kicker">' + doc.group + " · " + doc.en + "</p>"
+        + '<p class="doc-kicker">' + groupLabel(doc.group) + " · " + doc.en + "</p>"
         + "<h1>" + doc.title + "</h1>"
-        + '<p class="doc-source">源文件 <a href="' + doc.path + '" target="_blank" rel="noopener">'
+        + '<p class="doc-source">' + __("docs.source_file") + ' <a href="' + doc.path + '" target="_blank" rel="noopener">'
         + doc.path + "</a></p>"
         + "</header>"
         + '<div class="doc-body">' + result.html + "</div>";
@@ -460,8 +522,9 @@
       headings = [];
       renderToc();
       articleEl.innerHTML =
-        '<p class="doc-error">读不到 <code>' + doc.path + "</code>：" + error.message
-        + "<br />文档是直接从仓库读的，确认这个文件还在。</p>";
+        '<p class="doc-error">'
+        + __f("docs.read_failed", { path: doc.path, error: error.message })
+        + "</p>";
     });
   }
 
@@ -495,6 +558,18 @@
 
   window.addEventListener("hashchange", route);
   window.addEventListener("scroll", markTocActive, { passive: true });
+
+  /* Redraw on a language switch: the chrome, the group headings and the
+     summaries all come from JS, and the first paint can land before the locale
+     file does. route() re-renders the open document too, so its kicker and
+     source line follow. */
+  document.addEventListener("locale-changed", function () {
+    renderMeta();
+    // route() short-circuits when the same document is already open, so clear
+    // `current` to make it redraw the article, its kicker and the sidebar.
+    current = null;
+    route();
+  });
 
   renderMeta();
   route();

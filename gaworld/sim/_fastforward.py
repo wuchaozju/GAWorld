@@ -97,7 +97,8 @@ _DEFAULT_PERIOD_BRIEF_MAX_CHARS = 480
 _PERIOD_DELTA_SCALE = {"day": 1.0, "month": 2.0, "year": 3.0}
 # Same idea for the stochastic jitter amplitude.
 _PERIOD_JITTER_SCALE = {"day": 1.0, "month": 1.8, "year": 2.4}
-# Sanity cap on how many unplanned events one brief is asked to carry.
+# Sanity cap on how many unplanned events one brief is asked to carry, for a
+# *single day*. Longer steps scale it — see :func:`event_budget`.
 _MAX_BURSTS = 4
 
 # Randomness shaping. ``randomness`` r ∈ [0,1] scales two effects:
@@ -481,6 +482,42 @@ def _growth_text(agent: dict[str, Any], max_items: int = 4) -> str:
     return "；".join(parts) if parts else "（暂无成长档案）"
 
 
+def _routine_overview_text(agent: dict[str, Any], base_schedule: Any) -> str:
+    """How this person *usually* spends a day — in prose, not a timetable.
+
+    A long step must not be driven by a clock table. Rendering one invited
+    exactly that, and truncating it (``max_items``) made it worse: the list
+    stopped at lunch, so the model was handed "his life is: get up, commute,
+    work, lunch" as the whole picture.
+
+    The profile already carries an authored overview (``daily_life``), which
+    is what "平时概况" means; the schedule is reduced to the two facts that
+    describe a rhythm rather than a plan — when the day starts and ends, and
+    roughly how much of it is work.
+    """
+    parts = []
+    prose = str(agent.get("daily_life", "") or "").strip()
+    if prose:
+        parts.append(_compact_text(prose, max_chars=80))
+    slots = [tuple(slot) for slot in (base_schedule or []) if len(tuple(slot)) == 2]
+    # Fewer than three entries is not a rhythm, it is a fragment: describing
+    # it produced things like "作息大致 07:00 起、07:00 睡".
+    if len(slots) >= 3:
+        wake = slots[0][0]
+        sleep = next(
+            (t for t, act in reversed(slots) if any(k in str(act) for k in ("睡", "就寝"))),
+            slots[-1][0],
+        )
+        work_slots = sum(
+            1 for _, act in slots if any(k in str(act) for k in ("工作", "上班", "通勤", "加班"))
+        )
+        shape = f"作息大致 {wake} 起" + (f"、{sleep} 睡" if sleep != wake else "")
+        if work_slots:
+            shape += f"，一天里约 {work_slots} 个时段与工作/通勤有关"
+        parts.append(shape)
+    return "；".join(parts) if parts else "（无）"
+
+
 def _situation_text(agent: dict[str, Any]) -> str:
     """The person's standing circumstances — the frame a long step needs.
 
@@ -488,16 +525,27 @@ def _situation_text(agent: dict[str, Any]) -> str:
     year is the situation the person is *in*: how old they are, what they do
     for a living, who they live with.
     """
+    from gaworld.events.life import life_stage
+
     bits = []
     age = agent.get("age")
     if isinstance(age, (int, float)) and age:
-        bits.append(f"{int(age)}岁")
+        _key, label, focus = life_stage(agent)
+        # The stage, not just the number: over a long run the age moves and
+        # the framing has to move with it.
+        bits.append(f"{int(age)}岁（{label}：{focus}）")
     for key, label in (("gender", ""), ("job", ""), ("living", "居住：")):
         value = str(agent.get(key, "") or "").strip()
         if value:
             bits.append(f"{label}{value}")
+    # `agent["family"]` is the authored household brief the family plugin
+    # maintains. An earlier version read `agent["household"]`, which nothing
+    # ever sets, so the household silently never reached the prompt.
+    family = str(agent.get("family", "") or "").strip()
+    if family:
+        bits.append(f"家庭：{_compact_text(family, max_chars=60)}")
     household = agent.get("household") or {}
-    if isinstance(household, dict):
+    if not family and isinstance(household, dict):
         htype = str(household.get("type_zh") or household.get("type") or "").strip()
         if htype:
             bits.append(f"家庭：{htype}")
@@ -582,6 +630,7 @@ def _normalize_digest(
     life_move_keys: set[str] | None = None,
     known_tie_keys: set[str] | None = None,
     tie_candidate_keys: set[str] | None = None,
+    max_life_moves: int = 2,
 ) -> dict[str, Any]:
     brief = _compact_text(str(parsed.get("brief", "")).strip(), max_chars=brief_max_chars)
     memory = _compact_text(str(parsed.get("memory", "")).strip(), max_chars=60)
@@ -626,7 +675,8 @@ def _normalize_digest(
         "state_changes": changes,
         "goal_progress": goal_progress,
         "social": social,
-        "life_moves": _normalize_life_moves(parsed.get("life_moves"), life_move_keys or set()),
+        "life_moves": _normalize_life_moves(
+            parsed.get("life_moves"), life_move_keys or set(), max_items=max_life_moves),
         "development": _normalize_development(parsed.get("development")),
         "relationships": _normalize_relationship_moves(
             parsed.get("relationships"), known_tie_keys or set()),
@@ -645,27 +695,53 @@ def _fallback_digest(
     unit: str = "day",
     span_desc: str = "",
 ) -> dict[str, Any]:
-    """Deterministic brief when the LLM is disabled or the call fails."""
-    plan = _schedule_text(base_schedule, max_items=4)
+    """Deterministic brief when the LLM is disabled or the call fails.
+
+    Scale matters here as much as in the prompt. This used to read
+    ``原计划（06:30 起床洗漱；07:00 送儿子去幼儿园；08:00 高峰配送…）被计划外的事打断``
+    for *every* unit, so a fallback at year granularity printed a truncated
+    timetable as the summary of a whole year — the exact "it is still running
+    a daily schedule" failure, coming from the one path that never sees the
+    prompt.
+
+    A day may reasonably be described by its plan. A month or a year is
+    described by its situation: who this person is, what they do, and whether
+    the stretch was steady or turbulent.
+    """
     if unit == "day":
+        plan = _schedule_text(base_schedule, max_items=4)
         label = f"Day {day}"
-        window, span = "这一天", "这一天"
+        if burst:
+            brief = _compact_text(
+                f"原计划（{plan}）被计划外的事打断，这一天过得比平时起伏。",
+                max_chars=brief_max_chars,
+            )
+            memory = f"[{label}] 计划外的事打乱了节奏。"
+        else:
+            brief = _compact_text(
+                f"按计划推进了这一天（{plan}），整体节奏平稳，没有特别的波动。",
+                max_chars=brief_max_chars,
+            )
+            memory = f"[{label}] 平稳，按常规节奏推进。"
     else:
         label = span_desc or f"{_UNIT_ZH.get(unit, '步')} {day}"
-        window = f"这{_UNIT_ZH.get(unit, '段')}"
-        span = "这段时间"
-    if burst:
-        brief = _compact_text(
-            f"原计划（{plan}）被计划外的事打断，{span}过得比平时起伏。",
-            max_chars=brief_max_chars,
-        )
-        memory = f"[{label}] 计划外的事打乱了节奏。"
-    else:
-        brief = _compact_text(
-            f"按计划推进了{window}（{plan}），整体节奏平稳，没有特别的波动。",
-            max_chars=brief_max_chars,
-        )
-        memory = f"[{label}] 平稳，按常规节奏推进。"
+        span_zh = "这一年" if unit == "year" else "这一个月"
+        who = _situation_text(agent)
+        who = "" if who == "（无）" else f"{who}；"
+        if burst:
+            brief = _compact_text(
+                f"{who}{span_zh}没能照旧过完——中间出了些计划外的事，"
+                f"节奏被打断过，整体比平时起伏。（本段为模型不可用时的占位简报）",
+                max_chars=brief_max_chars,
+            )
+            memory = f"[{label}] 计划外的事打乱了节奏。"
+        else:
+            brief = _compact_text(
+                f"{who}{span_zh}大体按原来的样子过完，工作与生活没有明显转折，"
+                f"状态平稳。（本段为模型不可用时的占位简报）",
+                max_chars=brief_max_chars,
+            )
+            memory = f"[{label}] 平稳，没有明显转折。"
     return {
         "brief": brief,
         "memory": memory,
@@ -680,6 +756,9 @@ def _fallback_digest(
         "intentions": {},
         "burst": burst,
         "burst_count": 1 if burst else 0,
+        # Lets the caller tell "this year was quiet" apart from "the model
+        # was unavailable and this text is a placeholder".
+        "fallback": True,
     }
 
 
@@ -727,18 +806,17 @@ _PERIOD_DIGEST_PROMPT = """你是生成式城市模拟中的“长时段整合�
 重要关系（含当前亲密度 0-1）：{relations}
 人生与阶段目标（带[编号]）：{goals}
 外部环境（这段时间的大背景）：{env}
-生活底色（他平时大致怎么过日子，仅供参考，不要逐日展开）：{schedule}
-可选的人生动作（{span_zh}最多发生 1-2 件，多数时候一件都没有）：{life_moves}
+平时概况（他平常大致怎么过日子。这只是背景节奏，**不要复述、更不要逐日展开**）：{schedule}
+可选的人生动作（{span_zh}最多 {move_budget} 件）：{life_moves}
 可能结识的人（只能从这里选，没有合适的就不写）：{tie_candidates}
 {burst_hint}
 请只输出 JSON（不要额外解释）：
 {{
-  "brief": "≤{brief_chars}字，这段时间的整体经历：主线在做什么、有哪些变化与转折、状态与心境的走向",
+  "highlights": ["≤30字，{span_zh}发生的一件重要的事", "..."],
+  "brief": "≤{brief_chars}字，先写上面这些重要的事，再交代平时大致的状态与走向；不要罗列日程",
   "memory": "≤30字，这段时间最值得记住的一条经验或感受",
-  "highlights": ["≤30字的关键事件/里程碑", "..."],
   "state_changes": {{"emotion": 0.0, "stress": 0.0, "econ_security": 0.0, "city_identity": 0.0}},
   "goal_progress": [{{"id": "stg1", "progress": 0.5, "note": "≤15字推进说明"}}],
-  "social": [{{"neighbor": 3, "signal": "positive"}}],
   "life_moves": [{{"key": "job_change", "new_job": "可留空", "note": "≤20字原因"}}],
   "development": [{{"item": "阅读", "weekly_minutes": 120, "note": "≤15字进展"}}],
   "relationships": [{{"neighbor": 3, "closeness_delta": 0.12, "note": "≤15字走向"}}],
@@ -748,10 +826,18 @@ _PERIOD_DIGEST_PROMPT = """你是生成式城市模拟中的“长时段整合�
 
 要求：
 - state_changes 是{span_zh}的**累计**增量（-{max_delta}~{max_delta} 之间），只填确有变化的键；键只能取 {state_keys}。
-- highlights 给 {highlight_hint} 条，按时间先后排列；平淡无事就给 []。
+  {state_focus}
+- highlights 是**这段时间真正值得记住的事**（{highlight_hint}，按时间先后）：
+  转折、里程碑、意外、健康与家庭状况、关系或处境的变化、工作与金钱上的起落、
+  一次旅行或一段新的投入。{density_hint}
+  确实平淡的时期可以少写，但**不要把一整段时间写成什么都没发生**——
+  真实的{span_zh}里总有几件事是这个人回头会提起的。
+- brief 的写法是「重要的事 + 平时概况」：先交代 highlights 里那几件事，
+  再用一两句说明其余时间大致怎么过（忙不忙、心境如何、有没有变化）。
+  **不要写成日程表，也不要按天或按周逐段展开。**
+- {outcome_hint}
 - goal_progress 仅包含这段时间确有推进或受挫的目标，id 用目标里的[编号]，没有则给 []。
-- social 仅列这段时间真正来往过的熟人及其大致基调（positive/negative/neutral），没有则给 []。
-- life_moves 是**这段时间真正发生的人生变动**，key 只能从上面的清单里选，最多 2 件，没有就给 []。
+- life_moves 是**这段时间真正发生的人生变动**，key 只能从上面的清单里选，最多 {move_budget} 件，没有就给 []。
   这些 key 会被模拟器真正执行（换工作会改写职业与收入、失业会中断收入），所以**只在简报里确实写了这件事时才填**；
   清单以外的变化写进 brief 与 highlights 即可，不要硬塞进 life_moves。
 - development 写**这段时间他在成长档案里的项目上实际投入的程度**：`item` 用档案里的名字，
@@ -764,8 +850,37 @@ _PERIOD_DIGEST_PROMPT = """你是生成式城市模拟中的“长时段整合�
   role 从 {tie_roles} 中选；一般 0 个，搬家/换工作/入学这类变动之后才可能有 1-2 个。
 - 不要逐日展开日程。这个尺度上要写的是：发生了什么事、状态怎么变、
   环境与人际怎么推着他走、他自己长成了什么样。
-- 尊重时间尺度：{scale_hint}。基于给定信息推演，不要编造夸张的大事。仅输出 JSON。
+- 尊重时间尺度：{scale_hint}。基于给定信息推演：可以有起伏和意外，
+  但要是**这个人在这种处境下真的可能遇到的事**，不要写成传奇。仅输出 JSON。
 """
+
+#: Which state dimensions actually move at each scale. Emotion and stress
+#: swing week to week; city identity and mobility intent are the slow
+#: variables a year moves and a month essentially cannot. Saying so keeps a
+#: year from reporting a month's mood wobble as its headline change.
+_STATE_FOCUS = {
+    "month": (
+        "这个尺度上主要动的是 emotion / stress / econ_security——"
+        "工作强度、开销、人际摩擦带来的起落；"
+        "city_identity、mobility_intent 这类慢变量一个月里基本不会有明显变化。"
+    ),
+    "year": (
+        "这个尺度上除了 emotion / stress，更要看**慢变量**："
+        "econ_security（收入与积蓄的结构性变化）、city_identity（对这座城市的归属感）、"
+        "mobility_intent（走还是留）、policy_sensitivity。"
+        "一年的意义往往就在这些慢变量上，而不是某个月的心情。"
+    ),
+}
+
+#: What a step of this length is expected to *resolve*, not just start.
+_OUTCOME_HINT = {
+    "month": "如果上一阶段起了个头，这个月要交代它推进到哪一步了。",
+    "year": (
+        "**必须交代结果**：上一阶段（以及这一年里）起过头的事——"
+        "换工作、进修、创业、一段关系、一个目标——到年底是成了、没成、还是还在继续。"
+        "一年只写「开始做了什么」而不写「后来怎么样」，就不是一年的简报。"
+    ),
+}
 
 _SCALE_HINT = {
     "month": "一个月足够让工作、关系或习惯发生可见的变化，但人生轨迹通常不会被改写",
@@ -782,23 +897,45 @@ _SCALE_HINT = {
 _LIFE_MOVE_NOTE_MAX_CHARS = 20
 
 
-def life_move_catalog() -> list[dict[str, str]]:
-    """The coarse-grained action space: what a person can *do* in a step.
+#: Which template scales each step unit may draw on. A month's action space
+#: is short-to-mid range; a year's is mid-to-long. The two overlap but are
+#: not the same menu — offering an identical list to both was what made a
+#: year read like a long month, since one bout of flu is a day's disruption,
+#: not a year's story, while a year's real moves (moving house, going back to
+#: study, starting a business) had no way to be expressed at all.
+LIFE_MOVE_SCALES: dict[str, tuple[str, ...]] = {
+    "month": ("day", "month"),
+    "year": ("month", "year"),
+}
+
+
+def life_move_catalog(unit: str = "year", agent: dict[str, Any] | None = None) -> list[dict[str, str]]:
+    """The coarse-grained action space for a step of ``unit``.
 
     A day's action space is the intra-day activity list (work, shop, rest); a
-    month's or a year's is life moves — change job, fall ill, break up. Read
-    from the life-event templates so the menu and the machinery that applies
-    it can never drift apart.
+    month's or a year's is life moves. Read from the life-event templates so
+    the menu and the machinery that applies it can never drift apart, then
+    filtered by :data:`LIFE_MOVE_SCALES` so each unit gets moves of its own
+    magnitude.
     """
-    from gaworld.events.life import list_life_event_templates
+    from gaworld.events.life import life_move_eligible, list_life_event_templates
 
+    allowed = LIFE_MOVE_SCALES.get(unit, LIFE_MOVE_SCALES["year"])
     catalog: list[dict[str, str]] = []
     for template in list_life_event_templates() or []:
         if not isinstance(template, dict):
             continue
         key = str(template.get("key", "")).strip()
         title = str(template.get("title", "")).strip()
-        if not key or not title:
+        # Untagged templates (a user-added one) stay available everywhere
+        # rather than silently vanishing from the menu.
+        scale = str(template.get("scale", "") or "").strip()
+        if not key or not title or (scale and scale not in allowed):
+            continue
+        # Scale says a year *may* contain a marriage; eligibility says this
+        # person may. Offering the impossible is how an eventful year turns
+        # into a worthless one.
+        if agent is not None and not life_move_eligible(key, agent):
             continue
         catalog.append({
             "key": key,
@@ -940,7 +1077,9 @@ def _normalize_development(raw: Any, max_items: int = 6) -> list[dict[str, Any]]
     return out[:max_items]
 
 
-def _normalize_life_moves(raw: Any, allowed: set[str]) -> list[dict[str, str]]:
+def _normalize_life_moves(
+    raw: Any, allowed: set[str], max_items: int = 2
+) -> list[dict[str, str]]:
     """Whitelist the digest's life moves to keys the simulator can apply."""
     if not isinstance(raw, list):
         return []
@@ -959,7 +1098,38 @@ def _normalize_life_moves(raw: Any, allowed: set[str]) -> list[dict[str, str]]:
         if new_job:
             move["new_job"] = new_job
         moves.append(move)
-    return moves
+    return moves[: max(1, int(max_items))]
+
+
+def event_budget(days: int) -> dict[str, int]:
+    """How much may happen in one step, scaled to how long the step is.
+
+    Every budget here used to be a flat constant sized for a *day*, so a year
+    was allowed no more to happen in it than a fortnight:
+
+    * bursts were capped at 4 while the configured randomness expects ~33 over
+      365 days — the cap, not the setting, decided how eventful a year was;
+    * highlights were capped at 4, life moves at 2, so a year could report at
+      most a handful of notable things.
+
+    That is what made long runs read as empty. The caps are still needed —
+    a brief that lists thirty incidents is a chronicle, not a summary — but
+    they have to grow with the span. Roughly: a month gets a couple of
+    unplanned events and three highlights; a year gets about one a month and
+    up to ten.
+    """
+    span = max(1, int(days))
+    months = span / 30.0
+    return {
+        # ~1 unplanned event per month, floored at 1 so a single day still
+        # behaves exactly as before.
+        "bursts": max(1, min(12, round(months) + 1)),
+        "highlights": max(2, min(10, round(2 + months))),
+        # Life moves are heavy (a job change, an illness); at most ~3 a year.
+        "life_moves": max(1, min(3, 1 + span // 150)),
+        # Structural drivers of the period's environment.
+        "env_events": max(4, min(8, round(3 + months / 2))),
+    }
 
 
 def _draw_burst_count(days: int, randomness: float, rng: Any) -> int:
@@ -979,7 +1149,7 @@ def _draw_burst_count(days: int, randomness: float, rng: Any) -> int:
     whole = int(expected)
     if rng.random() < (expected - whole):
         whole += 1
-    return min(whole, _MAX_BURSTS)
+    return min(whole, event_budget(days)["bursts"])
 
 
 def _run_digest(
@@ -994,6 +1164,7 @@ def _run_digest(
     life_move_keys: set[str] | None = None,
     known_tie_keys: set[str] | None = None,
     tie_candidate_keys: set[str] | None = None,
+    max_life_moves: int = 2,
 ) -> dict[str, Any] | None:
     """One digest call; ``None`` when the response is unusable."""
     try:
@@ -1003,6 +1174,15 @@ def _run_digest(
         resp = ""
     parsed = _parse_json_object(resp)
     if not parsed or not str(parsed.get("brief", "")).strip():
+        # Previously silent. A run whose provider returns unparseable JSON
+        # every step then produces a full set of placeholder briefs that read
+        # like real (dull) periods, which is indistinguishable from a working
+        # run over uneventful years.
+        _LOG.warning(
+            "%s for agent %s produced no usable brief; using the deterministic "
+            "fallback. Response head: %r",
+            task, agent.get("id"), str(resp or "")[:160],
+        )
         return None
     return _normalize_digest(
         parsed,
@@ -1012,6 +1192,7 @@ def _run_digest(
         life_move_keys=life_move_keys,
         known_tie_keys=known_tie_keys,
         tie_candidate_keys=tie_candidate_keys,
+        max_life_moves=max_life_moves,
     )
 
 
@@ -1133,11 +1314,14 @@ def simulate_agent_period(
     burst_count = _draw_burst_count(period.days, randomness, rng or _random)
     span_desc = period.describe(day_desc)
     span_zh = "这一个月" if period.unit == "month" else "这一年"
-    max_memories = 3 if period.unit == "month" else 5
+    # How much may happen in a step of this length — bursts, highlights and
+    # life moves all scale with the span rather than using day-sized caps.
+    budget = event_budget(period.days)
+    max_memories = budget["highlights"]
     # The coarse-grained action space. Only offered for month/year steps: a
     # day's action space is already the intra-day activity list, and changing
     # it there would move the day-unit build off its current behaviour.
-    catalog = life_move_catalog()
+    catalog = life_move_catalog(period.unit, agent)
     life_move_keys = {item["key"] for item in catalog}
     # Social moves are whitelisted the same way: an existing tie can move,
     # and a new tie may only be someone who actually exists in the run.
@@ -1170,7 +1354,7 @@ def simulate_agent_period(
         agent_id=agent.get("id"),
         span_zh=span_zh,
         span_desc=span_desc,
-        schedule=_schedule_text(base_schedule, max_items=4),
+        schedule=_routine_overview_text(agent, base_schedule),
         situation=_situation_text(agent),
         history=_period_history_text(agent),
         state_summary=_state_summary(agent),
@@ -1186,7 +1370,14 @@ def simulate_agent_period(
         brief_chars=brief_max_chars,
         max_delta=round(max_delta, 2),
         state_keys="、".join(LONG_RUN_STATE_KEYS),
-        highlight_hint=f"0-{max_memories - 1}",
+        highlight_hint=f"最多 {max_memories} 条",
+        move_budget=budget["life_moves"],
+        state_focus=_STATE_FOCUS.get(period.unit, ""),
+        outcome_hint=_OUTCOME_HINT.get(period.unit, ""),
+        density_hint=(
+            "一个月里通常有 1-3 件这样的事。" if period.unit == "month"
+            else "一年里通常有 4-8 件这样的事。"
+        ),
         scale_hint=_SCALE_HINT.get(period.unit, ""),
     )
     digest = _run_digest(
@@ -1200,6 +1391,7 @@ def simulate_agent_period(
         life_move_keys=life_move_keys,
         known_tie_keys=known_tie_keys,
         tie_candidate_keys=tie_candidate_keys,
+        max_life_moves=budget["life_moves"],
     )
     if digest is None:
         return _fallback()

@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = ROOT / "site" / "dashboard"
+LOCALE_PATH = DASHBOARD / "locales" / "zh-CN.json"
 CONSOLE = ROOT / "site" / "console"
 
 
@@ -233,8 +234,23 @@ def test_cooperation_page_uses_safe_nodes_and_core_payload():
 
 def test_cooperation_artifact_urls_are_same_origin_and_session_scoped():
     module_path = DASHBOARD / "collaboration.js"
+    locale_json = json.dumps(str(LOCALE_PATH))
     script = f"""
       const assert = require("node:assert/strict");
+      const LOCALE = require({locale_json});
+      globalThis.__ = (key) => {{
+        if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {{
+          throw new Error("missing locale key: " + key);
+        }}
+        return LOCALE[key];
+      }};
+      globalThis.__f = (key, params) => {{
+        let text = globalThis.__(key);
+        for (const [name, value] of Object.entries(params || {{}})) {{
+          text = text.split("{{" + name + "}}").join(String(value));
+        }}
+        return text;
+      }};
       const page = require({json.dumps(str(module_path))});
       const base = "http://127.0.0.1:8000/site/dashboard/collaboration.html";
       const defaultScope =
@@ -389,6 +405,7 @@ def test_cooperation_artifact_urls_are_same_origin_and_session_scoped():
 
 def test_cooperation_session_list_only_applies_latest_request():
     module_path = DASHBOARD / "collaboration.js"
+    locale_json = json.dumps(str(LOCALE_PATH))
     source = module_path.read_text(encoding="utf-8")
     load_source = source[
         source.index("async function loadSessions"):
@@ -396,6 +413,20 @@ def test_cooperation_session_list_only_applies_latest_request():
     ]
     script = f"""
       const assert = require("node:assert/strict");
+      const LOCALE = require({locale_json});
+      globalThis.__ = (key) => {{
+        if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {{
+          throw new Error("missing locale key: " + key);
+        }}
+        return LOCALE[key];
+      }};
+      globalThis.__f = (key, params) => {{
+        let text = globalThis.__(key);
+        for (const [name, value] of Object.entries(params || {{}})) {{
+          text = text.split("{{" + name + "}}").join(String(value));
+        }}
+        return text;
+      }};
       const page = require({json.dumps(str(module_path))});
       assert.equal(page.isLatestRequest(4, 4), true);
       assert.equal(page.isLatestRequest(5, 4), false);
@@ -468,8 +499,23 @@ def test_collaboration_locale_keys_match_in_order():
 
 def test_cooperation_activity_entries_attribute_each_speaker():
     module_path = DASHBOARD / "collaboration.js"
+    locale_json = json.dumps(str(LOCALE_PATH))
     script = f"""
       const assert = require("node:assert/strict");
+      const LOCALE = require({locale_json});
+      globalThis.__ = (key) => {{
+        if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {{
+          throw new Error("missing locale key: " + key);
+        }}
+        return LOCALE[key];
+      }};
+      globalThis.__f = (key, params) => {{
+        let text = globalThis.__(key);
+        for (const [name, value] of Object.entries(params || {{}})) {{
+          text = text.split("{{" + name + "}}").join(String(value));
+        }}
+        return text;
+      }};
       const page = require({json.dumps(str(module_path))});
       const context = {{
         names: {{4: "李明", 5: "陈静"}},

@@ -216,9 +216,16 @@ class TestPeriodDigest(unittest.TestCase):
 
         # r=0 → never, whatever the span.
         self.assertEqual(ff._draw_burst_count(365, 0.0, _r.Random(1)), 0)
-        # A day is at most one burst; a month expects several, capped.
+        # A day is at most one burst.
         self.assertLessEqual(ff._draw_burst_count(1, 1.0, _r.Random(1)), 1)
-        self.assertEqual(ff._draw_burst_count(30, 1.0, _r.Random(1)), ff._MAX_BURSTS)
+        # Longer steps must not be clamped to a day-sized cap: the old flat
+        # `_MAX_BURSTS = 4` let a whole year hold no more than a fortnight,
+        # which is what made long runs read as empty.
+        month = ff._draw_burst_count(30, 1.0, _r.Random(1))
+        year = ff._draw_burst_count(365, 1.0, _r.Random(1))
+        self.assertGreater(year, month)
+        self.assertEqual(ff.event_budget(365)["bursts"], year)
+        self.assertGreater(ff.event_budget(365)["bursts"], 4)
 
     def test_burst_hint_reaches_the_prompt(self):
         prompts = []
@@ -356,15 +363,60 @@ class TestCoarseActionSpace(unittest.TestCase):
                              "randomness": 0}}
 
     def test_catalog_comes_from_the_life_event_templates(self):
+        """Every offered move must be one the simulator can actually apply."""
         from gaworld.events.life import list_life_event_templates
 
-        catalog = ff.life_move_catalog()
-        self.assertEqual(
-            {item["key"] for item in catalog},
-            {t["key"] for t in list_life_event_templates()},
-            "the menu and the machinery that applies it must not drift apart",
-        )
-        self.assertIn("job_change", {item["key"] for item in catalog})
+        known = {t["key"] for t in list_life_event_templates()}
+        for unit in ("month", "year"):
+            offered = {item["key"] for item in ff.life_move_catalog(unit)}
+            self.assertTrue(offered)
+            self.assertTrue(
+                offered <= known,
+                "the menu and the machinery that applies it must not drift apart",
+            )
+
+    def test_a_month_and_a_year_get_different_action_spaces(self):
+        """A year is not a long month.
+
+        Both units used to be handed the identical eight templates, so one
+        bout of flu was as available to a year as to a month, while the moves
+        a year is actually made of — moving house, going back to study,
+        starting a business — did not exist at all.
+        """
+        month = {item["key"] for item in ff.life_move_catalog("month")}
+        year = {item["key"] for item in ff.life_move_catalog("year")}
+        self.assertNotEqual(month, year)
+        # Long-range moves belong to the year, and are new.
+        for key in ("job_change", "relocation", "further_study", "entrepreneurship"):
+            self.assertIn(key, year, f"{key} should be available over a year")
+            self.assertNotIn(key, month, f"{key} is not a month-sized move")
+        # A day-scale disruption is a month's texture, not a year's headline.
+        self.assertIn("illness", month)
+        self.assertNotIn("illness", year)
+        # Mid-range moves are shared by both.
+        self.assertTrue({"promotion", "relationship_break"} <= month & year)
+
+    def test_state_focus_and_outcomes_differ_by_scale(self):
+        """A year's meaning sits in the slow variables, and must resolve."""
+        self.assertIn("慢变量", ff._STATE_FOCUS["year"])
+        self.assertIn("mobility_intent", ff._STATE_FOCUS["year"])
+        self.assertIn("基本不会有明显变化", ff._STATE_FOCUS["month"])
+        self.assertIn("必须交代结果", ff._OUTCOME_HINT["year"])
+
+    def test_an_untagged_template_stays_available(self):
+        """A user-added template must not silently vanish from the menu."""
+        from unittest.mock import patch
+
+        from gaworld.events import life
+
+        extra = dict(life.LIFE_EVENT_TEMPLATES[0])
+        extra.update({"key": "custom_thing", "title": "自定义", "description": "x"})
+        extra.pop("scale", None)
+        with patch.object(life, "LIFE_EVENT_TEMPLATES", [extra]):
+            for unit in ("month", "year"):
+                self.assertEqual(
+                    ["custom_thing"], [i["key"] for i in ff.life_move_catalog(unit)]
+                )
 
     def test_the_menu_reaches_the_period_prompt(self):
         seen = {}
@@ -385,13 +437,17 @@ class TestCoarseActionSpace(unittest.TestCase):
                 "brief": "换了工作",
                 "life_moves": [
                     {"key": "job_change", "new_job": "数据分析师", "note": "想换方向"},
-                    {"key": "moved_to_mars"},          # not a template → dropped
-                    {"key": "job_change"},             # duplicate → dropped
-                    {"key": "illness"},
+                    {"key": "moved_to_mars"},   # not a template → dropped
+                    {"key": "job_change"},      # duplicate → dropped
+                    {"key": "illness"},         # day-scale → not a year's move
+                    {"key": "relocation", "note": "搬到城东"},
                 ],
             }, ensure_ascii=False),
         )
-        self.assertEqual([m["key"] for m in d["life_moves"]], ["job_change", "illness"])
+        self.assertEqual(
+            ["job_change", "relocation"], [m["key"] for m in d["life_moves"]],
+            "unknown, duplicate and out-of-scale keys must all be dropped",
+        )
         self.assertEqual(d["life_moves"][0]["new_job"], "数据分析师")
 
     def test_a_day_step_keeps_its_own_action_space(self):
@@ -510,9 +566,12 @@ class TestLongHorizonFrame(unittest.TestCase):
         prompt = self._prompt_for(self._agent())
         for probe in ("34岁", "软件工程师", "夫妻二人"):
             self.assertIn(probe, prompt, f"{probe} should anchor a long step")
-        # The routine survives only as background colour, explicitly demoted.
-        self.assertIn("生活底色", prompt)
+        # The routine survives only as a prose overview, explicitly demoted,
+        # and never as a clock table.
+        self.assertIn("平时概况", prompt)
         self.assertIn("不要逐日展开", prompt)
+        # Events first, then the general picture.
+        self.assertLess(prompt.index('"highlights"'), prompt.index('"brief"'))
 
     def test_it_sees_the_arc_so_far_not_just_last_week(self):
         prompt = self._prompt_for(self._agent())
@@ -523,6 +582,90 @@ class TestLongHorizonFrame(unittest.TestCase):
         self.assertIn("水平0.30", prompt)      # development needs a baseline
         self.assertIn("亲密度0.72", prompt)    # so does a relationship trajectory
         self.assertIn("周婉清", prompt)
+
+    def test_the_routine_is_prose_not_a_clock_table(self):
+        """"平时概况" means an overview, not a timetable.
+
+        Rendering the schedule as ``07:00 起床；08:00 通勤；…`` invited the
+        model to reason per-slot, and truncating that list made it worse: it
+        stopped at lunch, so a whole year was framed as "gets up, commutes,
+        works, has lunch".
+        """
+        agent = self._agent()
+        agent["daily_life"] = "工作日朝九晚六，通勤一小时"
+        overview = ff._routine_overview_text(agent, [
+            ("07:00", "起床"), ("09:00", "工作"), ("18:00", "下班通勤"), ("23:00", "睡觉"),
+        ])
+        self.assertIn("工作日朝九晚六", overview)   # the authored overview
+        self.assertIn("07:00 起", overview)          # the shape of the day
+        self.assertIn("23:00 睡", overview)
+        self.assertNotIn("；09:00 工作", overview)   # ...but not slot by slot
+
+    def test_a_fragment_of_a_schedule_is_not_described_as_a_rhythm(self):
+        # One entry gave "作息大致 07:00 起、07:00 睡".
+        self.assertEqual("（无）", ff._routine_overview_text({}, [("07:00", "起床")]))
+        self.assertEqual("（无）", ff._routine_overview_text({}, []))
+
+    def test_every_event_budget_grows_with_the_span(self):
+        """Day-sized caps are what made a simulated year feel empty.
+
+        Each of these was a flat constant: bursts 4, highlights 4, life moves
+        2 — so a year was allowed no more to happen in it than a fortnight,
+        no matter what the randomness setting said (at r=0.3 a year *expects*
+        ~33 unplanned events and got 4).
+        """
+        day, month, year = (ff.event_budget(n) for n in (1, 30, 365))
+        for key in ("bursts", "highlights", "life_moves", "env_events"):
+            self.assertLessEqual(day[key], month[key], key)
+            self.assertLess(month[key], year[key], f"a year must hold more than a month: {key}")
+        # A single day keeps its old shape exactly.
+        self.assertEqual(1, day["bursts"])
+        # ...and the caps stay caps: a brief is a summary, not a chronicle.
+        self.assertLessEqual(year["highlights"], 10)
+        self.assertLessEqual(year["life_moves"], 3)
+
+    def test_a_coarse_fallback_brief_is_not_a_timetable(self):
+        """The fallback never sees the prompt, so it needed fixing separately.
+
+        A real year-granularity run printed
+        ``原计划（06:30 起床洗漱；07:00 送儿子去幼儿园；08:00 高峰配送…）被计划外的事打断``
+        as the summary of a whole year: the digest fell back, and the fallback
+        rendered a truncated daily timetable regardless of span.
+        """
+        agent = {"id": 1, "name": "马志勇", "age": 38, "job": "外卖配送员",
+                 "household": {"type_zh": "三口之家"}}
+        schedule = [("06:30", "起床洗漱"), ("07:00", "送儿子去幼儿园"),
+                    ("08:00", "高峰配送"), ("10:30", "路线规划练习")]
+        for unit in ("month", "year"):
+            digest = ff._fallback_digest(
+                agent, day=365, base_schedule=schedule, brief_max_chars=480,
+                burst=True, unit=unit, span_desc="第1年",
+            )
+            brief = digest["brief"]
+            self.assertNotIn("06:30", brief, f"{unit} fallback still lists clock times")
+            self.assertNotIn("原计划", brief)
+            self.assertIn("外卖配送员", brief)   # described by situation instead
+            self.assertTrue(digest["fallback"])
+        # A single day may still be described by its plan.
+        day = ff._fallback_digest(
+            agent, day=1, base_schedule=schedule, brief_max_chars=240, burst=True,
+        )
+        self.assertIn("06:30", day["brief"])
+
+    def test_an_unusable_response_is_reported_not_swallowed(self):
+        """A provider returning junk every step must not look like quiet years."""
+        period = ff.plan_horizon(1, 365, "year", start_date=date(2026, 1, 1))[0]
+        with self.assertLogs("gaworld.sim.fastforward", level="WARNING") as logs:
+            digest = ff.simulate_agent_period(
+                {"id": 1, "name": "A", "age": 30, "state": {"emotion": 0.5},
+                 "memory": [], "social_neighbors": [], "relationships": {}},
+                period=period, base_schedule=[("07:00", "起床")],
+                config={"long_run": {"enabled": True, "brief_llm": True,
+                                     "unit": "year", "randomness": 0}},
+                llm_fn=lambda p, **k: "sorry, I cannot help with that",
+            )
+        self.assertTrue(digest["fallback"])
+        self.assertTrue(any("no usable brief" in line for line in logs.output))
 
     def test_development_is_clamped_to_a_plausible_week(self):
         self.assertEqual([], ff._normalize_development("not a list"))
@@ -616,6 +759,230 @@ class TestSocialInfluence(unittest.TestCase):
         self.assertGreater(tie["decay_rate"], 0.006)
         # A friend is not a colleague.
         self.assertEqual("friend", agent["relationships"]["3"]["role"])
+
+
+class TestLifeStageAndHousehold(unittest.TestCase):
+    """A long run has to move the person, not just the day counter."""
+
+    def test_life_stage_follows_age(self):
+        from gaworld.events.life import life_stage
+
+        self.assertEqual("young_adult", life_stage({"age": 22})[0])
+        self.assertEqual("midlife", life_stage({"age": 40})[0])
+        self.assertEqual("retirement", life_stage({"age": 63})[0])
+        self.assertEqual("elderly", life_stage({"age": 80})[0])
+        # A missing age must not crash a prompt mid-run.
+        self.assertEqual("midlife", life_stage({})[0])
+        self.assertEqual("midlife", life_stage({"age": "abc"})[0])
+
+    def test_the_stage_reaches_the_digest_frame(self):
+        """Ageing with nothing consuming it is just a counter ticking."""
+        young = ff._situation_text({"age": 30, "job": "工程师"})
+        old = ff._situation_text({"age": 63, "job": "工程师"})
+        self.assertIn("青年", young)
+        self.assertIn("退休年龄", old)
+        self.assertNotEqual(young, old)
+
+    def test_household_members_age_and_children_move_out(self):
+        """A five-year-old must not still be five after a decade."""
+        from gaworld.family.plugin import FamilyPlugin
+
+        plugin = FamilyPlugin()
+        record = {"members": [
+            {"key": "c1", "name": "小雨", "role": "child", "age": 16, "coresident": True},
+            {"key": "p1", "name": "母亲", "role": "mother", "age": 68, "coresident": True},
+        ]}
+        agent = {"id": 1, "name": "A"}
+
+        class _Ctx:
+            config = {}
+
+            def agent_ext(self, _agent, _plugin_id):
+                return record
+
+        plugin._record_for = lambda ctx, a: record  # noqa: ARG005
+        hook_ctx = {"sim": _Ctx(), "agents": [agent], "day": 1095,
+                    "period_days": 365 * 3, "daily_logs": {1: ""}}
+        plugin._age_household(hook_ctx)
+
+        self.assertEqual(19, record["members"][0]["age"], "the child did not age")
+        self.assertEqual(71, record["members"][1]["age"], "the parent did not age")
+        # Crossing adulthood is the one composition change ageing alone implies.
+        self.assertFalse(record["members"][0]["coresident"])
+        self.assertTrue(record["members"][1]["coresident"])
+        self.assertIn("成年离家", hook_ctx["daily_logs"][1])
+
+    def test_household_ageing_accumulates_across_short_steps(self):
+        """Short steps must accumulate, not round to zero every time.
+
+        Dividing the span per step would age nobody at month granularity
+        (30/365 rounds to 0), so the remainder is carried between steps.
+        """
+        from gaworld.family.plugin import FamilyPlugin
+
+        plugin = FamilyPlugin()
+        record = {"members": [
+            {"key": "c1", "name": "小雨", "role": "child", "age": 8, "coresident": True},
+        ]}
+        plugin._record_for = lambda ctx, a: record  # noqa: ARG005
+
+        class _Ctx:
+            config = {}
+
+        def _step(n):
+            for i in range(n):
+                plugin._age_household({
+                    "sim": _Ctx(), "agents": [{"id": 1, "name": "A"}],
+                    "day": 30 * (i + 1), "period_days": 30, "daily_logs": {1: ""},
+                })
+
+        _step(12)  # 360 days — genuinely short of a year
+        self.assertEqual(8, record["members"][0]["age"])
+        _step(1)   # 390 days — the carried remainder tips it over
+        self.assertEqual(9, record["members"][0]["age"])
+
+
+class TestFamilyLifecycle(unittest.TestCase):
+    """Marriage, childbirth and bereavement change the household, not the prose."""
+
+    def _record(self):
+        return {"marital_status": "never", "members": [
+            {"key": "p1", "name": "母亲", "role": "mother", "age": 71,
+             "coresident": True, "kind": "ghost"},
+        ]}
+
+    def _agent(self, age=30):
+        return {"id": 1, "name": "李泽宇", "age": age, "gender": "男"}
+
+    def test_household_type_is_derived_from_who_lives_there(self):
+        from gaworld.family.lifecycle import derive_household_type
+
+        self.assertEqual("with_parents", derive_household_type(self._record()))
+        self.assertEqual("single", derive_household_type({"members": []}))
+
+    def test_the_arc_marriage_child_bereavement(self):
+        import random
+
+        from gaworld.family import lifecycle as lc
+
+        rng, record, agent = random.Random(7), self._record(), self._agent()
+        self.assertFalse(lc.can_bear_child(agent, record), "no partner yet")
+
+        self.assertEqual("multigen", lc.marry(record, agent, day=365, rng=rng)["household_type"])
+        self.assertEqual("married", record["marital_status"])
+        self.assertIsNone(lc.marry(record, agent, day=400, rng=rng), "cannot marry twice")
+
+        born = lc.bear_child(record, agent, day=730, rng=rng)
+        self.assertEqual(0, born["member"]["age"])
+
+        lost = lc.bereave(record, agent, day=1095, rng=rng)
+        self.assertEqual("母亲", lost["member"]["name"])
+        # Kept on the record, not deleted: a parent who died is not a parent
+        # who never existed.
+        self.assertTrue(lost["member"]["deceased"])
+        self.assertFalse(lost["member"]["coresident"])
+        self.assertEqual("nuclear", lost["household_type"])
+        self.assertIsNone(lc.bereave(record, agent, day=1200, rng=rng))
+
+    def test_eligibility_has_exactly_one_rule_table(self):
+        """Two tables for one question is how a fix lands on one path only.
+
+        The digest's action menu and the dashboard's candidate ranking both
+        ask "can this person do this?". They used to answer it from separate
+        code — `life_move_eligible` reading the agent, and the candidate
+        `gate` rules reading a context dict — so tightening one left the other
+        wrong.
+        """
+        import inspect
+
+        from gaworld.events import life
+
+        source = inspect.getsource(life.life_move_eligible)
+        self.assertIn("candidate_applies", source)
+        # The adapter must not re-implement any rule of its own.
+        for smell in ("age >=", "age <=", "child_count", "has_partner"):
+            self.assertNotIn(smell, source, f"{smell} looks like a second rule table")
+
+    def test_the_two_callers_agree(self):
+        """Same person, same question, same answer on both paths."""
+        from gaworld.events.candidates import candidate_applies, context_from_agent
+        from gaworld.events.life import life_move_eligible
+
+        people = [
+            {"age": 28, "employment": "employed",
+             "family_facts": {"marital_status": "married", "has_partner": True,
+                              "child_count": 0, "oldest_elder_age": 70}},
+            {"age": 66, "employment": "employed",
+             "family_facts": {"marital_status": "married", "has_partner": True,
+                              "child_count": 2, "oldest_elder_age": None}},
+            {"age": 40, "employment": "retired",
+             "family_facts": {"marital_status": "never", "has_partner": False,
+                              "child_count": 0, "oldest_elder_age": None}},
+        ]
+        for agent in people:
+            ctx = context_from_agent(agent)
+            for key in ("marriage", "childbirth", "bereavement", "retirement", "job_change"):
+                self.assertEqual(
+                    candidate_applies(key, ctx), life_move_eligible(key, agent),
+                    f"{key} disagrees for age {agent['age']}",
+                )
+
+    def test_eligibility_blocks_the_absurd(self):
+        from gaworld.events.life import life_move_eligible
+
+        married = {"has_partner": True, "child_count": 0,
+                   "marital_status": "married", "oldest_elder_age": None}
+        self.assertFalse(life_move_eligible(
+            "childbirth", {"age": 70, "family_facts": married}))
+        self.assertFalse(life_move_eligible(
+            "marriage", {"age": 40, "family_facts": married}))
+        self.assertFalse(life_move_eligible("retirement", {"age": 28}))
+        self.assertTrue(life_move_eligible("retirement", {"age": 63}))
+        # A retiree does not change jobs or get laid off.
+        self.assertFalse(life_move_eligible(
+            "job_change", {"age": 66, "employment": "retired"}))
+        # Nobody to lose -> not offered.
+        self.assertFalse(life_move_eligible(
+            "bereavement", {"age": 40, "family_facts": {
+                "oldest_elder_age": None, "has_partner": False, "child_count": 0}}))
+
+    def test_the_menu_is_filtered_per_person(self):
+        young = {"age": 28, "family_facts": {
+            "has_partner": True, "child_count": 0, "marital_status": "married"}}
+        old = {"age": 66, "employment": "employed", "family_facts": {
+            "has_partner": True, "child_count": 2, "marital_status": "married"}}
+        young_keys = {c["key"] for c in ff.life_move_catalog("year", young)}
+        old_keys = {c["key"] for c in ff.life_move_catalog("year", old)}
+        self.assertIn("childbirth", young_keys)
+        self.assertNotIn("retirement", young_keys)
+        self.assertIn("retirement", old_keys)
+        self.assertNotIn("childbirth", old_keys)
+
+    def test_retirement_is_not_unemployment(self):
+        """A pension is permanent; a layoff is a spell you recover from."""
+        from gaworld.economy.finance import apply_employment_event
+
+        agent = {"id": 1, "name": "A", "age": 61, "job": "工程师", "economy": {
+            "base_hourly_income": 60.0, "accounts": {"checking": 1000.0},
+            "daily_income": 0.0, "lifetime_income": 0.0, "income_skill": 0.5,
+            "shock_log": [],
+        }}
+        change = apply_employment_event(
+            agent, {"template_key": "retirement", "impact_tags": ["employment"]}, {})
+        self.assertEqual("retirement", change["type"])
+        self.assertEqual("已退休", agent["job"])
+        self.assertEqual("retired", agent["employment"])
+        self.assertLess(change["to_hourly"], change["from_hourly"])
+        # No recovery countdown and no remembered job, so the re-hire path
+        # that brings a laid-off agent back can never fire for a retiree.
+        self.assertNotIn("_layoff_days_remaining", agent["economy"])
+        self.assertNotIn("previous_job", agent["economy"])
+
+    def test_the_household_brief_reaches_the_digest_frame(self):
+        """`agent["household"]` is never set; the brief lives in `family`."""
+        text = ff._situation_text(
+            {"age": 34, "job": "工程师", "family": "与妻子和一个上小学的女儿同住"})
+        self.assertIn("与妻子", text)
 
 
 # ---------------------------------------------------------------------------

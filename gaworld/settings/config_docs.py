@@ -144,6 +144,1492 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
 #: injects them — no Python fragment declares them, so :func:`section_index`
 #: cannot place them. They are the weather/news generator settings, and users
 #: look for those under 环境, not in a catch-all bucket.
+
+# ---------------------------------------------------------------------------
+# English twins.
+#
+# Bilingual by table rather than by translation call: the payload carries both
+# languages and the browser picks, so the server never needs to know the
+# reader's locale and the response stays cacheable.
+#
+# A key missing from these tables falls back to the Chinese. That is deliberate
+# and visible in the panel — an English reader sees the Chinese text, which is
+# true ("nobody has written this yet") rather than a machine-shaped guess.
+# ---------------------------------------------------------------------------
+
+#: ``section id -> (title, help)``.
+SECTION_EN: dict[str, tuple[str, str]] = {
+    "simulation": (
+        "Simulation run",
+        "The skeleton of one run: how many days, which residents, how time advances, "
+        "where memory is kept, and how likely a schedule is to be disrupted. Changing "
+        "these sets up a different experiment; the run already going is unaffected.",
+    ),
+    "llm": (
+        "Language models",
+        "Which model the agents think with. `providers` is the list of available "
+        "backends and `routing` decides who actually gets each task. Keys are not "
+        "here — they are under “Environment” below.",
+    ),
+    "environment": (
+        "Environment and perception",
+        "The world residents can perceive: how crowded their location is, what counts "
+        "as an anomaly, where the external environment service gets weather and news, "
+        "and how several machines relay between each other.",
+    ),
+    "news": (
+        "News and active search",
+        "What residents read from outside: the chance of checking the news, how often "
+        "they search the web and with which engine, and how much of the fetched text "
+        "reaches their memory.",
+    ),
+    "intervention": (
+        "Recommendation and intervention",
+        "The layer used for feed experiments: how many items are recommended, the "
+        "suppression thresholds for toxicity and misinformation, and how fast stances "
+        "move. All of it is deterministic — no extra model calls.",
+    ),
+    "human_realism": (
+        "Human realism",
+        "What makes residents behave like people: interests that grow and fade, goals "
+        "in three tiers reviewed on a cycle, habits formed by repetition, and fatigue "
+        "and hunger that interrupt a plan.",
+    ),
+    "economy": (
+        "Economy",
+        "The rules money follows: income tax, social insurance, spending structure, "
+        "investment returns, credit, macro cycles. This changes the rules for the next "
+        "run; to act on the one already going, queue an intervention under "
+        "“External → Money system”.",
+    ),
+    "family": (
+        "Households",
+        "Who is married to whom, who lives with whom, and who they have to look after. "
+        "Marital status is sampled per age band; people in the same household share a "
+        "home, split the costs and affect each other's mood.",
+    ),
+    "personality": (
+        "Big Five",
+        "The five personality dimensions, calibrated offline from each resident's "
+        "personality prose and then frozen. The channels decide what the scores are "
+        "allowed to change: the rules, the prompt, the diary voice.",
+    ),
+    "integrations": (
+        "Extensions and real work",
+        "Where the simulation reaches outward: custom extension hooks, multi-agent "
+        "collaboration sessions, and the real_work subsystem that hands “work” "
+        "activities to a local adapter and gets actual files back.",
+    ),
+}
+
+#: ``LABELS`` twin. Same keys, resolved the same full-path-first way.
+LABELS_EN: dict[str, str] = {
+    "enabled": "Enabled",
+    "output_dir": "Output directory",
+    "cache_path": "Cache file",
+    "timeout": "Timeout (s)",
+    "url": "URL",
+    "base_url": "Base URL",
+    "host": "Listen address",
+    "port": "Port",
+    "seed": "Random seed",
+    "mode": "Mode",
+    "model": "Model",
+    "type": "Type",
+    "api_key": "API key (plaintext)",
+    "api_key_env": "Key env var",
+    "api_key_envs": "Key env var candidates",
+    "max_tokens": "Max tokens",
+    "temperature": "Temperature",
+    "stream": "Streaming",
+    "max_chars": "Max characters",
+    "top_k": "Recall count",
+    "randomness": "Randomness",
+    "max_items": "Item cap",
+    "state_path": "State file",
+    "description": "Description",
+    "every_days": "Interval (days)",
+    "lookback_days": "Look-back days",
+    "min_age_days": "Min age (days)",
+    "max_outputs": "Output cap",
+    "min_episodes": "Min episodes",
+    "floor": "Floor",
+    "daily_rate": "Daily rate",
+    "grace_days": "Grace days",
+    "adopt_chance": "Adoption chance",
+    "retire_after_days": "Retire after idle (days)",
+    "max_new_per_day": "New per day cap",
+    "salience_floor": "Salience floor",
+    "interval_minutes": "Interval (min)",
+    "max_per_day": "Daily cap",
+    "trigger_salience": "Trigger salience",
+    "hint_chars": "Hint length",
+    "agent_ids": "Residents",
+    "sim_days": "Simulation days",
+    "seconds_per_day": "Seconds per day",
+    "simulate_realtime": "Wait in real time",
+    "print_agent_profile": "Print agent profile",
+    "time_step_minutes": "Time step (min)",
+    "time_grid_snap": "Snap to time grid",
+    "long_run": "Long-run fast-forward",
+    "brief_llm": "Briefing LLM",
+    "max_state_delta": "Max state change per step",
+    "brief_max_chars": "Daily briefing char cap",
+    "unit": "Step unit",
+    "period_brief_max_chars": "Period briefing char cap",
+    "hook_chunk_days": "Day-hook catch-up block (days)",
+    "action_space": "Action space generation",
+    "activities_per_call": "Activities asked per call",
+    "personality": "Big Five",
+    "channels": "Active channels",
+    "rules": "Rules channel",
+    "prompt": "Prompt channel",
+    "voice": "Voice channel",
+    "profile_path": "Personality score table",
+    "strength": "Overall strength",
+    "style_fit_amplitude": "Action preference amplitude",
+    "modifier_band": "Multiplicative modifier cap",
+    "residual_ratio": "Individual variance ratio",
+    "render_midpoint": "Write-in threshold",
+    "render_spread": "Threshold transition band",
+    "strong_z": "Strong-description threshold",
+    "max_dims": "Max dimensions per passage",
+    "floor_z": "Do-not-write floor",
+    "emotion_baseline": "Mood baseline",
+    "contagion_weight": "Household contagion strength",
+    "recovery_rate": "Recovery rate",
+    "n_recovery_slope": "Neuroticism · slower recovery",
+    "n_baseline_slope": "Neuroticism · lower baseline",
+    "e_baseline_slope": "Extraversion · higher baseline",
+    "sampling": "Prior sampling",
+    "correlations": "Inter-dimension correlations",
+    "rescale": "Rescale after sampling",
+    "calendar": "Calendar",
+    "start_date": "Start date",
+    "start_weekday": "Start weekday",
+    "weekend_days": "Weekend",
+    "background": "Period background",
+    "csv_path": "Resident state table",
+    "md_path": "Agent profile document",
+    "map_path": "Virtual map",
+    "map_mode": "Map mode",
+    "real_map_path": "Real map data",
+    "stateful": "Keep memory across runs",
+    "memory_dir": "Memory directory",
+    "log_dir": "Log directory",
+    "diary_output_dir": "Diary directory",
+    "environment_output_dir": "Environment output directory",
+    "visualization": "Trace visualisation",
+    "site_path": "Page path",
+    "flush_every_frames": "Flush every N frames",
+    "environment_config_path": "Environment config file",
+    "memory_model_version": "Memory format version",
+    "require_clean_reset_on_memory_model_change": "Force reset on format change",
+    "vector_db_path": "Vector store file",
+    "vector_db_dim": "Vector dimensions",
+    "vector_db_top_k": "Vector recall count",
+    "vector_db_max_chars": "Per-entry char cap",
+    "vector_db_embedding_provider": "Embedding method",
+    "memory": "Memory",
+    "salience_weight": "Salience weighting",
+    "decay_halflife_days": "Decay half-life (days)",
+    "growth_boost": "Growth-related weighting",
+    "growth_boost_strength": "Growth weighting strength",
+    "consolidation": "Consolidation",
+    "decay": "Forgetting",
+    "skill_consolidation": "Skill consolidation",
+    "skills": "Skill library",
+    "global_dir": "Shared skills directory",
+    "inject_into_cognition": "Inject into thinking prompt",
+    "inject_into_work_brief": "Inject into work briefing",
+    "max_per_prompt": "Max injected per prompt",
+    "policy_events": "Preset policy events",
+    "life_events": "Life-event queue",
+    "event_dir": "Event directory",
+    "events_file": "Event file",
+    "severity_state_amplify": "Severity amplification",
+    "reshape": "Same-day schedule rewrite",
+    "severity_threshold": "Severity threshold",
+    "window_minutes": "Effect window (min)",
+    "aftermath": "Event aftermath",
+    "min_severity": "Min severity",
+    "decay_per_day": "Daily decay",
+    "min_residual": "Residual floor",
+    "max_age_days": "Max duration (days)",
+    "state_pressure_scale": "State pressure scale",
+    "routine_change": "Schedule deviation",
+    "base_chance": "Base chance",
+    "event_boost": "Event boost",
+    "policy_boost": "Policy boost",
+    "max_chance": "Chance cap",
+    "severity_pivot": "Severity pivot",
+    "event_trigger_scale": "Event trigger scale",
+    "event_trigger_cap": "Event trigger cap",
+    "daily_planning": "Daily planning",
+    "anchor_minutes": "Anchor granularity (min)",
+    "random_delay_max_minutes": "Max random delay (min)",
+    "autoregressive": "Base on yesterday",
+    "flexible": "Flexible schedule",
+    "min_items": "Min items",
+    "max_items_": "Max items",
+    "max_time_shift_minutes": "Max shift (min)",
+    "min_gap_minutes": "Min gap (min)",
+    "allow_insertions": "Allow new activities",
+    "min_anchor_match": "Anchor match floor",
+    "spontaneity": "Spontaneity",
+    "base_thought_chance": "Base stray-thought chance",
+    "max_thought_chance": "Stray-thought chance cap",
+    "social_boost": "Social boost",
+    "low_self_control_boost": "Low self-control boost",
+    "stress_boost": "Stress boost",
+    "fatigue_boost": "Fatigue boost",
+    "hunger_boost": "Hunger boost",
+    "impulse_activity_chance": "Impulsive action chance",
+    "random_action_chance": "Random action chance",
+    "max_override_bonus": "Override bonus cap",
+    "concurrency": "Concurrency",
+    "day_routine_workers": "Schedule generation workers",
+    "external_rag": "External information injection",
+    "bootstrap": "Cold-start injection",
+    "use_seed_script": "Use the seed script",
+    "only_when_empty": "Only when empty",
+    "profile_items": "Profile items",
+    "web_items": "Web items",
+    "use_web_search": "Use web search",
+    "prefer_cached_news": "Prefer cached news",
+    "max_chars_per_item": "Per-item char cap",
+    "runtime_absorb": "Keep absorbing during the run",
+    "daily_quota_per_agent": "Per-resident daily quota",
+    "local_physical": "Local environment perception",
+    "crowd_busy_ratio": "Busy threshold",
+    "crowd_packed_ratio": "Packed threshold",
+    "inject_into_perception": "Inject into perception context",
+    "crowd_anomaly_ratio": "Anomalous crowding threshold",
+    "crowd_anomaly_jump": "Crowding spike threshold",
+    "anomaly": "Anomaly detection",
+    "intraday_threshold": "Intraday shock threshold",
+    "distributed": "Distributed relay",
+    "cluster": "Cluster name",
+    "node_id": "Node ID",
+    "local_agent_ids": "Local residents",
+    "peer_agent_ids": "Peer residents",
+    "send_probability": "Send probability",
+    "max_outbound_per_step": "Max outbound per step",
+    "max_inbound_per_step": "Max inbound per step",
+    "message_max_chars": "Message char cap",
+    "fail_fast": "Fail fast",
+    "relay": "Relay client",
+    "server": "Relay server",
+    "max_messages": "Message cap",
+    "use_llm": "Generate with an LLM",
+    "news": "News and search",
+    "sources_path": "Source list",
+    "use_cache_first": "Prefer the cache",
+    "daily_chance": "Daily reading chance",
+    "max_reads_per_day": "Max reads per day",
+    "memory_excerpt_chars": "Excerpt length written to memory",
+    "user_agent": "User-Agent",
+    "info_seek": "Active search",
+    "base_daily_chance": "Daily base chance",
+    "max_seeks_per_day": "Max searches per day",
+    "preferred_sites_per_agent": "Preferred sites per resident",
+    "prefer_source_visit_ratio": "Direct source-visit ratio",
+    "engines": "Search engines",
+    "max_results": "Result count",
+    "content_timeout": "Body-text timeout",
+    "content_max_chars": "Body-text char cap",
+    "x_mcp": "X / MCP",
+    "bearer_token_env": "Token env var",
+    "min_interval_seconds": "Min interval (s)",
+    "cooldown_on_429_seconds": "429 cool-down (s)",
+    "cache_ttl_seconds": "Cache TTL (s)",
+    "contextual_keywords": "Contextual keywords",
+    "contextual_max_keywords": "Keyword cap",
+    "event_driven": "Event-driven search",
+    "max_extra_seeks_per_day": "Extra searches per day cap",
+    "stress_threshold": "Stress threshold",
+    "curiosity_threshold": "Curiosity threshold",
+    "trigger_chance_on_event": "Trigger chance",
+    "intervention": "Recommendation and intervention",
+    "recommendation": "Recommendation",
+    "source_weights": "Source weights",
+    "relational": "Acquaintance sources",
+    "personalized": "Personalised sources",
+    "headline": "Headline sources",
+    "exposure_control": "Exposure suppression",
+    "toxicity_threshold": "Toxicity threshold",
+    "misinformation_threshold": "Misinformation threshold",
+    "suppression_factor": "Suppression strength",
+    "stance": "Stance update",
+    "alpha": "Inertia coefficient",
+    "positive_keywords": "Positive terms",
+    "negative_keywords": "Negative terms",
+    "toxicity_keywords": "Toxicity terms",
+    "misinformation_keywords": "Misinformation terms",
+    "objectives": "Objective weights",
+    "cross_viewpoint_weight": "Cross-viewpoint weight",
+    "engagement_weight": "Engagement weight",
+    "toxicity_penalty_weight": "Toxicity penalty weight",
+    "misinformation_penalty_weight": "Misinformation penalty weight",
+    "interests": "Interests and growth",
+    "daily_insert_chance": "Daily new-interest chance",
+    "weekend_boost": "Weekend boost",
+    "progress_minutes_per_step": "Progress per step (min)",
+    "evolution": "Interest turnover",
+    "goals": "Goal system",
+    "review_interval_days": "Review interval (days)",
+    "event_review_severity": "Event-triggered review threshold",
+    "max_life_goals": "Life goal cap",
+    "max_long_term": "Long-term goal cap",
+    "max_short_term": "Short-term goal cap",
+    "max_daily_progress_delta": "Daily progress cap",
+    "review_log_keep": "Review records kept",
+    "relevance_floor": "Relevance floor",
+    "relevance_cap": "Relevance cap",
+    "max_reviews_per_day": "Daily review cap",
+    "human_realism": "Human realism",
+    "max_extra_calls_per_agent_day": "Extra calls per resident per day",
+    "max_episodes_per_agent": "Episodes per resident cap",
+    "daily_consolidation_top_k": "Daily consolidation count",
+    "salience_threshold": "Salience threshold",
+    "decay_half_life_days": "Decay half-life (days)",
+    "recall": "Recall",
+    "base_top_k": "Base recall",
+    "max_top_k": "Recall cap",
+    "planning_top_k": "Recall when planning",
+    "action_top_k": "Recall when acting",
+    "reflection_top_k": "Recall when reflecting",
+    "interview_top_k": "Recall when interviewed",
+    "surface_min_score": "Minimum score to surface",
+    "effect_scale": "Effect scale",
+    "review": "Review",
+    "behavior": "Behaviour dynamics",
+    "habit_learning_rate": "Habit formation rate",
+    "habit_min_occurrences": "Occurrences to become a habit",
+    "inertia_weight": "Inertia weight",
+    "decision_noise": "Decision noise",
+    "fatigue_work_gain": "Fatigue gain from work",
+    "fatigue_sleep_recovery": "Recovery from sleep",
+    "self_control_recovery": "Self-control recovery",
+    "time_pressure_decay": "Time-pressure decay",
+    "commitment_weights": "Commitment weights",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "avoidance_bonus_scale": "Avoidance bonus scale",
+    "need_weights": "Need weights",
+    "energy": "Energy",
+    "hunger": "Hunger",
+    "social_need": "Social",
+    "dynamic_behavior": "Dynamic behaviour",
+    "extensions": "Extension hooks",
+    "strict": "Strict mode",
+    "hooks": "Hook table",
+    "collaboration": "Collaboration sessions",
+    "sessions_dir": "Session directory",
+    "max_concurrent_sessions": "Concurrent session cap",
+    "max_context_events": "Context event cap",
+    "step_retries": "Step retries",
+    "discussion": "Discussion",
+    "default_rounds": "Default rounds",
+    "min_rounds": "Min rounds",
+    "max_rounds": "Max rounds",
+    "real_work": "Real work execution",
+    "queue_path": "Task queue",
+    "artifacts_dir": "Artifacts directory",
+    "capabilities_cache": "Capability cache",
+    "max_concurrent_tasks": "Concurrent task cap",
+    "task_timeout_seconds": "Task timeout (s)",
+    "tick_ingest_limit": "Ingest per tick cap",
+    "adapters": "Adapters",
+    "web_design": "Web design",
+    "code": "Coding",
+    "write_pytest": "Write tests too",
+    "content": "Copywriting",
+    "teaching": "Teaching",
+    "market": "Job market",
+    "seed_path": "Seed file",
+    "store_path": "Store file",
+    "browse_top_k": "Listings browsed",
+    "max_taken_per_agent_per_day": "Jobs taken per resident per day",
+    "browse_probability_base": "Base browsing chance",
+    "expire_after_sim_days": "Expire after (days)",
+    "auto_replenish": "Auto-replenish",
+    "replenish_threshold": "Replenish threshold",
+    "external_hooks": "External hooks",
+    "webhook_url": "Webhook URL",
+    "mcp_server": "MCP service",
+    "llm": "Language models",
+    "providers": "Available backends",
+    "routing": "Task routing",
+    "default": "Default backend",
+    "tasks": "Per-task override",
+    "model_name": "Legacy model name",
+    "ollama_url": "Legacy Ollama URL",
+    "llm_timeout": "Legacy timeout (s)",
+    "authorization_scheme": "Auth scheme",
+    "authorization_retry_schemes": "Auth retry schemes",
+    "include_x_api_key": "Send x-api-key",
+    "economy": "Economy / money system",
+    "currency": "Currency",
+    "tax": "Income tax",
+    "monthly_exemption": "Monthly exemption",
+    "default_special_deduction": "Special deductions",
+    "brackets": "Bracket table [cap, rate, quick deduction]",
+    "social_insurance": "Social insurance (employee share)",
+    "pension_rate": "Pension",
+    "medical_rate": "Medical",
+    "unemployment_rate": "Unemployment",
+    "work_injury_rate": "Work injury",
+    "maternity_rate": "Maternity",
+    "housing_fund_rate": "Housing fund (employee)",
+    "housing_fund_employer_rate": "Housing fund (employer)",
+    "base_cap": "Contribution base cap",
+    "base_floor": "Contribution base floor",
+    "spending": "Spending",
+    "engel_curve": "Engel curve [income, food share, savings rate]",
+    "budget_template": "Budget allocation template",
+    "income_elasticity": "Income elasticity",
+    "daily_variance": "Daily variance",
+    "investment": "Investment",
+    "asset_returns": "Asset returns [mean, volatility]",
+    "portfolio_profiles": "Portfolio profiles",
+    "auto_save_enabled": "Automatic saving",
+    "checking_buffer_months": "Current-account buffer (months)",
+    "market_correlation": "Market common-factor correlation",
+    "credit": "Credit",
+    "credit_limit_months": "Credit limit (months)",
+    "annual_interest_rate": "Annual interest rate",
+    "hardship_liquidity_months": "Hardship liquidity (months)",
+    "min_spend_factor": "Minimum spend factor",
+    "macro": "Macro cycle",
+    "initial_inflation_rate": "Initial inflation rate",
+    "initial_unemployment_rate": "Initial unemployment rate",
+    "cycle_phase_duration_days": "Phase duration range (days)",
+    "phases": "Phase order",
+    "phase_effects": "Per-phase effects",
+    "income_mult": "Income multiplier",
+    "expense_mult": "Spending multiplier",
+    "layoff_risk": "Layoff chance",
+    "raise_chance": "Raise chance",
+    "industry_conditions": "Industry conditions",
+    "expansion": "Expansion",
+    "peak": "Peak",
+    "contraction": "Contraction",
+    "trough": "Trough",
+    "conservative": "Conservative",
+    "moderate": "Moderate",
+    "aggressive": "Aggressive",
+    "shocks": "Shock events",
+    "layoff_base_prob": "Layoff base probability",
+    "raise_base_prob": "Raise base probability",
+    "medical_emergency_prob": "Medical emergency probability",
+    "medical_cost_range": "Medical cost range",
+    "year_end_bonus_enabled": "Year-end bonus",
+    "year_end_bonus_months": "Year-end bonus (months)",
+    "economy.routing": "Payment routing",
+    "merchant_labor_share": "Merchant labour share",
+    "landlord_share": "Landlord share",
+    "landlord_keywords": "Landlord keywords",
+    "friend_loans": "Loans between acquaintances",
+    "max_outstanding_months": "Max outstanding (months)",
+    "lender_buffer_months": "Lender buffer (months)",
+    "willingness_factor": "Lending willingness factor",
+    "sectors": "Sector pool opening balances",
+    "initial_firms_balance": "Firms pool",
+    "initial_government_balance": "Government pool",
+    "initial_bank_balance": "Bank pool",
+    "initial_savings_months_min": "Opening savings floor (months)",
+    "initial_savings_months_max": "Opening savings cap (months)",
+    "inheritance_enabled": "Enable inheritance / family assets",
+    "inheritance_base_probability": "Inheritance base probability",
+    "inheritance_age_peak_low": "Inheritance age peak floor",
+    "inheritance_age_peak_high": "Inheritance age peak cap",
+    "inheritance_ratio_min": "Inheritance multiple floor",
+    "inheritance_ratio_max": "Inheritance multiple cap",
+    "inheritance_hukou_bonus": "Hukou bonus",
+    "hours_per_step": "Hours per step",
+    "work_days_per_month": "Work days per month",
+    "work_hours_per_day": "Work hours per day",
+    "rent_income_ratio": "Rent-to-income ratio",
+    "daily_utilities_cost": "Daily utilities",
+    "base_living_cost_per_hour": "Base living cost per hour",
+    "min_hourly_income": "Minimum hourly income",
+    "income_volatility": "Income volatility",
+    "target_work_hours_per_day": "Target work hours",
+    "asset_safety_days": "Asset safety days",
+    "income_seek_threshold": "Money-seeking threshold",
+    "income_seek_probability_scale": "Money-seeking probability scale",
+    "income_seek_activities": "Money-seeking activity terms",
+    "expense_ranges": "Spending ranges by category",
+    "external_environment": "External environment generator",
+    "max_events_per_tick": "Max events per tick",
+    "generator": "Generation method",
+    "history_days": "Look-back days",
+    "natural": "Natural events",
+    "daily_weather_chance": "Daily weather chance",
+    "extreme_chance": "Extreme weather chance",
+    "weather_states": "Weather states and weights",
+    "extreme_events": "Extreme event pool",
+    "economic": "Economic events",
+    "daily_market_volatility": "Daily market volatility",
+    "daily_market_drift": "Daily market drift",
+    "market_news_threshold_pct": "Market report threshold (%)",
+    "macro_event_chance": "Macro event chance",
+    "macro_events": "Macro event pool",
+    "political": "Policy events",
+    "daily_policy_chance": "Daily policy chance",
+    "technology": "Technology events",
+    "daily_tech_chance": "Daily technology chance",
+    "tech_events": "Technology event pool",
+    "intraday": "Intraday shocks",
+    "natural_shock_chance": "Natural shock chance",
+    "economic_shock_chance": "Economic shock chance",
+    "political_shock_chance": "Policy shock chance",
+    "technology_shock_chance": "Technology shock chance",
+    "environment": "Legacy environment events",
+    "event_chance": "Event chance",
+    "natural_events": "Natural event pool",
+    "social_events": "Social event pool",
+    "external_environment_service": "External environment service (client)",
+    "fallback_to_empty": "Degrade to empty when unavailable",
+    "environment_server": "External environment service (local server)",
+    "family": "Households",
+    "overrides_path": "Hand-pinned households (file)",
+    "marital_status_bands": "Marital status distribution (by age band)",
+    "cohabitation": "Unmarried cohabitation",
+    "age_min": "Start age",
+    "age_max": "End age",
+    "share": "Share",
+    "pairing": "Spouse matching",
+    "prefer_in_sim": "Prefer pairing inside the run",
+    "in_sim_pair_share": "In-run pairing share",
+    "max_age_gap": "Max age gap",
+    "spouse_age_gap_mean": "Mean spouse age gap",
+    "same_district_bonus": "Same-district weighting",
+    "fertility": "Fertility",
+    "p_any_child": "Chance of having children (by age band)",
+    "p_second_child": "Second-child chance",
+    "p_third_child": "Third-child chance",
+    "parent_age_at_first_birth": "Age range at first birth",
+    "coresident_child_max_age": "Max age of a co-resident child",
+    "coresidence": "Co-residence",
+    "with_parents_local": "Local hukou living with parents",
+    "with_parents_migrant": "Migrant hukou living with parents",
+    "shared_rental_share": "Shared-rental share",
+    "multigen_base": "Base three-generation chance",
+    "multigen_with_young_child": "Three-generation chance with a young child",
+    "young_child_max_age": "Young-child age cap",
+    "elder_with_child_age": "Age an elder moves in with a child",
+    "elder_with_child_share": "Elders living with a child share",
+    "duties": "Household duties",
+    "school_age_max": "School-age cap",
+    "preschool_age_max": "Preschool-age cap",
+    "elder_care_age": "Age at which an elder needs care",
+    "family.finance": "Household finances",
+    "pooling_rate": "Partner pooling rate",
+    "child_cost_monthly": "Monthly cost per child",
+    "preschool_extra_monthly": "Extra monthly cost, preschool",
+    "elder_support_monthly": "Elder support (monthly)",
+    "elder_support_min_age": "Age support begins",
+    "coresident_elder_monthly": "Monthly cost, co-resident elder",
+    "shared_rent_discount": "Shared-rent discount",
+    "spouse_bailout_enabled": "Partner covers a cash gap",
+    "dual_income_security_bonus": "Dual-income security bonus",
+    "sole_earner_stress": "Sole-earner stress",
+    "family.events": "Household events",
+    "daily_probability": "Daily event chance per household",
+    "contagion_enabled": "Enable in-household mood contagion",
+    "remote_contagion_weight": "Remote-family contagion strength",
+}
+
+#: ``MANUAL_HELP`` twin, key for key. Anything absent falls back to the
+#: Chinese; the extracted source comments have no English at all, by design
+#: (see :func:`help_en_for`).
+MANUAL_HELP_EN: dict[str, str] = {
+    "agent_ids": (
+        "Which residents take part. A single number N means the first N; a list names exactly "
+        "those. More people means more LLM calls per simulated day."
+    ),
+    "sim_days": (
+        "How many simulated days to run. The day count drives both total cost and total "
+        "wall-clock time."
+    ),
+    "seconds_per_day": (
+        "How many real seconds one simulated day is worth. It only actually waits when “Wait "
+        "in real time” is on; with that off it just sets the pace of the replay animation."
+    ),
+    "simulate_realtime": (
+        "With this on the run waits in real time, like watching a livestream; with it off it "
+        "goes as fast as the CPU and the model allow. Experiments normally leave it off."
+    ),
+    "print_agent_profile": (
+        "Print every resident's profile to the terminal before starting. For debugging — it "
+        "makes the log long."
+    ),
+    "time_step_minutes": (
+        "The granularity of intra-day progress. Blank means advancing only at the times the "
+        "schedule names; 60 means one step per hour — the smaller the step, the more LLM "
+        "calls per day."
+    ),
+    "time_grid_snap": (
+        "Snap everyone's schedule to the grid above. Without it the set of moments is “the "
+        "grid ∪ each person's own times”, which explodes as the population grows; with it the "
+        "count is fixed at 1440/step, which is what makes 100+ residents runnable at all. The "
+        "cost is that intra-day times get moved."
+    ),
+    "long_run": (
+        "Fast-forward: one step becomes one briefing (one call per resident per step), "
+        "skipping the intra-day loop. At 60- or 600-day scale this is mandatory; the cost is "
+        "that intra-day detail disappears entirely. The step can be a day, a month or a year."
+    ),
+    "long_run.enabled": (
+        "Turn on fast-forward. Beyond about 60 days a run will not finish without it."
+    ),
+    "long_run.unit": (
+        "How much time one step covers: day / month / year. `month` means one period briefing "
+        "per month, `year` one per year — a decade is only reachable at coarse granularity "
+        "(10 years × 50 residents: 500 calls by year, 180,000 by day). Simulated days advance "
+        "as usual; only the cognitive granularity changes. Picking month/year **turns "
+        "fast-forward on automatically** (no need to tick `enabled` as well): there is no "
+        "such thing as a monthly intra-day loop, and without the automatic switch the run "
+        "would grind through the whole span day by day."
+    ),
+    "long_run.brief_llm": (
+        "Have a model write the briefing (costly, detailed) or assemble it by rule (no calls, "
+        "dry)."
+    ),
+    "long_run.max_state_delta": (
+        "How much a state variable may move in one fast-forward step. Stops mood jumping from "
+        "0.2 to 0.9 inside a day; month and year steps relax it automatically (×2 / ×3), "
+        "because the change is accumulated over the whole span."
+    ),
+    "long_run.randomness": (
+        "How random the fast-forward is: higher means more frequent shocks and wider state "
+        "swings. 0 = fully deterministic, so the same seed always reproduces. At coarse "
+        "granularity the expected number of shocks scales with the days per step."
+    ),
+    "long_run.brief_max_chars": (
+        "Character cap on each daily briefing; anything over is truncated."
+    ),
+    "long_run.period_brief_max_chars": (
+        "Character cap on a monthly briefing; the yearly one gets 1.5× this."
+    ),
+    "long_run.hook_chunk_days": (
+        "At coarse granularity, how often the day-boundary hooks (economic settlement, "
+        "interest decay, household costs) are caught up. Capped at 30 so one block spans at "
+        "most one month-end settlement — otherwise a year-long run would deduct a single "
+        "day's rent."
+    ),
+    "calendar": (
+        "The simulation calendar: which day it starts, what weekday that is, and which days "
+        "count as the weekend. Weekends change the schedule template and the chance of going "
+        "out."
+    ),
+    "calendar.start_date": "The opening date. `today` uses today's real date.",
+    "calendar.start_weekday": (
+        "What weekday day 1 is. It also decides which later days fall on a weekend."
+    ),
+    "calendar.weekend_days": (
+        "Which days count as the weekend. Weekend schedule templates and activity weights "
+        "differ from weekdays."
+    ),
+    "external_rag": (
+        "The channel that feeds outside material to residents: a batch of background at the "
+        "start, with optional continuous absorption during the run."
+    ),
+    "external_rag.top_k": (
+        "How many pieces of external material a recall may return. Raising it takes prompt "
+        "room away from the resident's own memories."
+    ),
+    "external_rag.bootstrap": (
+        "Give each resident a batch of background material before the run, so they do not all "
+        "look newborn on day one."
+    ),
+    "external_rag.runtime_absorb": (
+        "At each day boundary, fetch a small batch of fresh material relevant to the current "
+        "growth goals. Off by default; turning it on adds network requests."
+    ),
+    "background": (
+        "The period setting of the whole world, present in every thinking prompt. Changing it "
+        "means changing the social environment the residents live in."
+    ),
+    "csv_path": (
+        "The residents' initial state table (nine 0–1 variables). A different path means a "
+        "different set of people."
+    ),
+    "md_path": "The resident profile document. This is the file Agent Studio edits.",
+    "map_path": "The virtual map definition, used only when map_mode = virtual.",
+    "map_mode": (
+        "A procedurally generated grid map (`virtual`) or the real OSM road network (`real`). "
+        "`real` is more faithful but the map data has to be fetched by a script first."
+    ),
+    "real_map_path": (
+        "Path to the real map data bundle, used only when map_mode = real. A missing file "
+        "falls back to the virtual map."
+    ),
+    "stateful": (
+        "Keep memory across runs. With this off every run starts from blank memory, which "
+        "suits a clean controlled experiment."
+    ),
+    "memory_dir": (
+        "Where memory and the vector store land on disk. A different directory is a different "
+        "set of memories; the old one stays."
+    ),
+    "log_dir": "Run log directory.",
+    "diary_output_dir": "Where each resident's daily diary is written.",
+    "environment_output_dir": "Where environment events are written.",
+    "visualization": (
+        "Trace visualisation: whether to record per-frame positions, where to write them, and "
+        "how often to flush."
+    ),
+    "visualization.flush_every_frames": (
+        "How many frames to accumulate before writing. Lower is more live but writes to disk "
+        "more often."
+    ),
+    "environment_config_path": (
+        "Where the environment config file lives. Note: this file overrides CONFIG last, so "
+        "any key it sets cannot be changed from above."
+    ),
+    "memory_model_version": (
+        "The memory format version. A change to it means old memories are incompatible and a "
+        "reset is needed first."
+    ),
+    "require_clean_reset_on_memory_model_change": (
+        "Fail loudly when the memory format changed but nothing was reset, rather than "
+        "forcing old memories through and producing strange results."
+    ),
+    "vector_db_path": (
+        "The memory vector store file. Deleting it wipes all long-term memory."
+    ),
+    "vector_db_dim": (
+        "Vector dimensionality. Changing it invalidates the existing store, which must be "
+        "rebuilt."
+    ),
+    "vector_db_top_k": (
+        "How many memories a retrieval returns. Higher means longer, costlier prompts."
+    ),
+    "vector_db_max_chars": "Character cap on a single memory as it goes into the store.",
+    "vector_db_embedding_provider": (
+        "How text becomes a vector: `hash` is a dependency-free but crude bag-of-words hash; "
+        "`llm` calls the model's embedding API for much better retrieval, at a cost per "
+        "entry."
+    ),
+    "memory": (
+        "Memory mechanics: how a recall is scored, how often memories are consolidated, and "
+        "when forgetting starts."
+    ),
+    "memory.salience_weight": (
+        "Score recalls on “how important was this” and “how long ago” as well as textual "
+        "similarity. Off falls back to pure similarity."
+    ),
+    "memory.decay_halflife_days": (
+        "Half-life of a memory's weight, in days. Lower means only recent things come to "
+        "mind."
+    ),
+    "memory.growth_boost": (
+        "Memories relevant to the current growth goals are ranked higher."
+    ),
+    "memory.consolidation": (
+        "Periodically summarise recent scattered episodes into one long-term memory — the "
+        "“sleep on it” pass."
+    ),
+    "memory.decay": (
+        "Periodically drop memories that have not been recalled in a long time and were not "
+        "important, so the store does not grow without bound."
+    ),
+    "memory.skill_consolidation": (
+        "Periodically settle repeatedly-performed activities into a private skill."
+    ),
+    "skills": (
+        "The skill library: where shared skills are read from, whether to inject them into "
+        "the thinking and work prompts, and how many at a time."
+    ),
+    "policy_events": (
+        "Policy events scheduled in advance. They fire on time, for “with policy / without "
+        "policy” controlled experiments."
+    ),
+    "life_events": (
+        "The per-resident life-event queue. Events can be added from the panel while a run is "
+        "going and are consumed on the next tick."
+    ),
+    "life_events.severity_state_amplify": (
+        "How much an event's severity amplifies its state impact. 0 = the state effect is the "
+        "same however severe the event."
+    ),
+    "life_events.reshape": (
+        "A severe event rewrites the rest of that day's schedule directly, rather than "
+        "rolling once for “change plans?” — otherwise a high-commitment activity always wins "
+        "and someone carries on to the office after a disaster."
+    ),
+    "life_events.aftermath": (
+        "The wake of a severe event persists for several days, decaying daily, and enters "
+        "later plans as a “you have not recovered yet” constraint."
+    ),
+    "routine_change": "How likely a resident is to deviate from their schedule.",
+    "routine_change.enabled": (
+        "Off means everyone follows their schedule exactly, as if wound up."
+    ),
+    "routine_change.base_chance": (
+        "The baseline chance, at each moment, of changing plans when nothing has happened."
+    ),
+    "routine_change.event_boost": (
+        "How much a nearby event raises the chance of changing plans."
+    ),
+    "routine_change.policy_boost": (
+        "How much a policy event raises the chance of changing plans."
+    ),
+    "routine_change.max_chance": (
+        "Cap on the chance of changing plans, so the boosts cannot stack into “certain "
+        "chaos”."
+    ),
+    "routine_change.randomness": (
+        "The overall “how loose is the schedule” knob, 0–1. Higher is more impulsive: "
+        "high-commitment activities are abandoned more readily and there is more aimless "
+        "restlessness. 0 = strictly the tuned defaults. Sleeping hours are unaffected."
+    ),
+    "routine_change.severity_pivot": (
+        "An event only starts pushing toward a change of plans once its severity passes this. "
+        "Anything below counts as 0."
+    ),
+    "daily_planning": "How each morning's schedule is drawn up.",
+    "daily_planning.autoregressive": (
+        "Draft today from what actually happened yesterday, so changes accumulate day by day; "
+        "off returns to a fixed template every morning, which resets the life each day."
+    ),
+    "daily_planning.flexible.min_anchor_match": (
+        "How much of a newly drafted schedule must still sit on the baseline anchors to be "
+        "accepted; otherwise it is rejected back to the baseline. Lower = freer days, but "
+        "also more drift."
+    ),
+    "spontaneity": (
+        "Spontaneity: whether a stray thought arrives and something else gets done on the "
+        "spur of the moment. Stress, fatigue and hunger all push these chances up."
+    ),
+    "concurrency": (
+        "Concurrency. Serial by default so the same seed reproduces; parallel is faster but "
+        "intra-day ordering is no longer strictly consistent."
+    ),
+    "concurrency.day_routine_workers": (
+        "Worker threads during daily schedule generation. Bounded by what the model server "
+        "can take concurrently."
+    ),
+    "llm": (
+        "Multi-backend model configuration: `providers` lists what is available, `routing` "
+        "decides which task goes where."
+    ),
+    "llm.providers": (
+        "The list of available model backends. Keys are injected through environment "
+        "variables, never written here."
+    ),
+    "llm.routing": "How tasks are handed to models.",
+    "llm.routing.default": (
+        "Every task without its own assignment uses this backend. It drives almost all of the "
+        "cost."
+    ),
+    "llm.routing.tasks": (
+        "Assign individual tasks their own backend — for instance sending schedule drafting, "
+        "which is high-volume and does not need to be clever, to a cheap local model."
+    ),
+    "model_name": (
+        "Legacy single-model field, effective only on the old code paths that do not go "
+        "through llm.routing."
+    ),
+    "ollama_url": (
+        "Legacy Ollama URL, effective only on the old code paths that do not go through "
+        "llm.routing."
+    ),
+    "llm_timeout": (
+        "Legacy global timeout (seconds). New code uses each provider's own timeout."
+    ),
+    "local_physical": (
+        "What a resident perceives about where they are: how crowded it is, whether it is "
+        "open. With this off they know nothing about their surroundings."
+    ),
+    "anomaly": (
+        "What counts as an “anomaly”. Ordinary rain and small market moves do not; extreme "
+        "weather, accidents and high-severity events do. This only tunes *how* an anomaly is "
+        "judged — how strongly they react to one is fixed in the behaviour code."
+    ),
+    "distributed": (
+        "Multi-machine runs: which residents this node owns, which the peers have, and how "
+        "messages are relayed. Not needed on a single machine."
+    ),
+    "news.enabled": (
+        "Off means residents read no news at all and the outside world is invisible to them."
+    ),
+    "news.use_cache_first": (
+        "Prefer cached news over going to the network every time. Saves time and quota at the "
+        "cost of freshness."
+    ),
+    "news.daily_chance": "The chance each resident reads the news on a given day.",
+    "news.max_reads_per_day": (
+        "How many items one resident may read per day, so nobody doomscrolls all day."
+    ),
+    "news.info_seek": (
+        "Active search: not only what they happen to see, but what they go looking for. This "
+        "is the bulk of the network requests."
+    ),
+    "news.info_seek.engines": (
+        "Search engines tried in order. `x` needs a token configured; without one it is "
+        "skipped silently."
+    ),
+    "intervention.enabled": (
+        "Off takes the recommendation and intervention layer out entirely — the feed is "
+        "presented as-is."
+    ),
+    "intervention.exposure_control": (
+        "Push down the exposure of toxic and misleading content. The lower the threshold, the "
+        "harder it pushes."
+    ),
+    "intervention.stance.alpha": (
+        "Inertia in stance updates: the closer to 1, the harder a single item is to be "
+        "persuaded by."
+    ),
+    "interests": (
+        "Interests and skill growth: they appear, they get practised, and they regress when "
+        "left alone too long."
+    ),
+    "interests.decay": (
+        "An unpractised interest loses a level. `grace_days` is the reprieve; the more it has "
+        "been practised, the harder it is to forget."
+    ),
+    "interests.evolution": (
+        "The interests themselves turn over: old ones retire and new ones are “caught” from "
+        "friends."
+    ),
+    "goals": (
+        "Three tiers of goal (life / long-term / short-term). It sits upstream of the daily "
+        "schedule — what gets scheduled depends on what the current goals are."
+    ),
+    "goals.review_interval_days": (
+        "How many days between goal reviews. A review calls a model, so a shorter interval "
+        "costs more."
+    ),
+    "goals.event_review_severity": (
+        "An event above this severity triggers an unscheduled review immediately rather than "
+        "waiting for the next cycle."
+    ),
+    "goals.max_reviews_per_day": (
+        "How many periodic reviews may happen per simulated day (event-triggered ones are "
+        "exempt). Anyone over the limit is pushed to the next day, so a large population does "
+        "not all burn money on the same one."
+    ),
+    "human_realism": (
+        "The master switch and parameters for experience accumulation and habit/need "
+        "dynamics."
+    ),
+    "human_realism.llm.max_extra_calls_per_agent_day": (
+        "How many extra model calls per resident per day are allowed in the name of realism. "
+        "This is the cost gate."
+    ),
+    "human_realism.memory.recall": (
+        "How many memories each stage recalls (planning, acting, reflecting, being "
+        "interviewed). Raising them all = longer prompts everywhere."
+    ),
+    "human_realism.behavior.habit_learning_rate": (
+        "How fast habits form. Higher means a few repetitions are enough to set one."
+    ),
+    "human_realism.behavior.habit_min_occurrences": (
+        "How many repetitions in the same context count as a habit. At 1, a one-off accident "
+        "becomes a habit."
+    ),
+    "human_realism.behavior.inertia_weight": (
+        "Inertia weight: higher means a stronger pull to carry on with whatever is already "
+        "underway."
+    ),
+    "human_realism.behavior.decision_noise": (
+        "Decision noise: higher is less predictable, and also less like having a stable "
+        "personality."
+    ),
+    "human_realism.behavior.commitment_weights": (
+        "How hard high / medium / low-commitment activities are to interrupt."
+    ),
+    "human_realism.behavior.need_weights": (
+        "Which of energy, hunger and social need interrupts the current activity most "
+        "readily."
+    ),
+    "dynamic_behavior": (
+        "Spontaneous impulses, chance encounters, need-driven interruptions and "
+        "environment-triggered changes of plan — off makes people look very regimented."
+    ),
+    "extensions": (
+        "Custom extension hooks, written as \"module:function\". With `strict` on, a hook "
+        "that fails to load aborts the run instead of being skipped silently."
+    ),
+    "collaboration": (
+        "Concurrency, context length and retry count for multi-agent sessions (discussions, "
+        "cooperation tasks)."
+    ),
+    "collaboration.max_concurrent_sessions": (
+        "How many collaboration sessions run at once. Each one is burning model calls, so "
+        "this is the cost gate."
+    ),
+    "collaboration.discussion.default_rounds": (
+        "How many rounds a discussion runs by default. Rounds × participants is the total "
+        "call count."
+    ),
+    "real_work": (
+        "Real work execution: hand “work” activities to a local adapter so they actually "
+        "produce code, copy or design files into artifacts_dir."
+    ),
+    "real_work.enabled": (
+        "Off makes “work” just a word on the schedule that produces no files."
+    ),
+    "real_work.max_concurrent_tasks": "How many real tasks execute at once.",
+    "real_work.task_timeout_seconds": (
+        "Timeout for a single task. A stuck task is abandoned after this."
+    ),
+    "real_work.market": "A simulated job market: residents can browse it and take on tasks.",
+    "real_work.external_hooks": (
+        "Forward tasks to an external webhook or MCP service. Blank keeps everything local."
+    ),
+    "economy": (
+        "The full rule set for money. What you change here is the starting condition of the "
+        "next run; to act on the run already going, queue an intervention under “External → "
+        "Money system”."
+    ),
+    "economy.enabled": (
+        "Off means residents have no accounts, draw no wages and spend nothing — the economic "
+        "layer is out entirely."
+    ),
+    "economy.hours_per_step": (
+        "How many working hours one simulated step is worth. It sets both earning and "
+        "spending, so changing it scales the whole economy's tempo proportionally."
+    ),
+    "economy.initial_savings_months_min": (
+        "Opening savings floor, counted in months of spending. Together with the cap it sets "
+        "the starting spread of wealth."
+    ),
+    "economy.initial_savings_months_max": (
+        "Opening savings cap, counted in months of spending."
+    ),
+    "economy.inheritance_enabled": (
+        "Let some residents start with family money. Off puts everyone on the same starting "
+        "line, so any wealth gap has to be produced by the run itself."
+    ),
+    "economy.tax": (
+        "Personal income tax. `brackets` is the rate table, one row per band as [upper bound, "
+        "rate, quick deduction]; the last row's bound is infinite."
+    ),
+    "economy.tax.monthly_exemption": (
+        "The monthly exemption; tax applies to income above it."
+    ),
+    "economy.social_insurance": (
+        "The employee's share of the five insurances and the housing fund. It comes straight "
+        "out of the wage and is the main gap between gross and take-home pay."
+    ),
+    "economy.spending": (
+        "How money is spent. `engel_curve` is the empirical curve where the food share falls "
+        "as income rises, one row per point as [income, food share, savings rate]."
+    ),
+    "economy.investment": (
+        "The investment return model: mean and volatility per asset class, plus conservative "
+        "/ moderate / aggressive portfolio profiles."
+    ),
+    "economy.credit": (
+        "Credit: how much can be borrowed (as a multiple of monthly income) and at what "
+        "annual rate. The higher the rate, the harder it is for a debtor to recover."
+    ),
+    "economy.macro": (
+        "The macro cycle: expansion → peak → contraction → trough. Raise and layoff chances "
+        "differ by phase."
+    ),
+    "economy.macro.initial_inflation_rate": (
+        "The annual inflation rate. Note it acts only on the spending side — wages do not "
+        "follow, so over a long run residents can afford steadily less."
+    ),
+    "economy.macro.initial_unemployment_rate": (
+        "A business-climate indicator; on its own it costs nobody their job. What actually "
+        "drives layoffs is each phase's layoff_risk."
+    ),
+    "economy.shocks": (
+        "Individual-level accidents: layoffs, raises, medical emergencies. The probabilities "
+        "are per resident per period."
+    ),
+    "economy.routing": (
+        "Where a resident's spending goes: the merchant's labour share into the firms pool, "
+        "rent to the landlord, the rest allocated by rule."
+    ),
+    "economy.friend_loans": (
+        "The rules for lending between acquaintances: how many months may be owed, how much "
+        "buffer the lender keeps, and how willing they are to lend."
+    ),
+    "economy.sectors": (
+        "Opening balances of the firms / government / bank pools. Those three plus every "
+        "resident account make up the system's total money, which is conserved under normal "
+        "operation."
+    ),
+    "economy.rent_income_ratio": (
+        "Rent as a share of income — the largest fixed outgoing for most residents."
+    ),
+    "economy.income_seek_threshold": (
+        "How low assets have to fall before a resident starts actively seeking money. Higher "
+        "means they start worrying about money sooner."
+    ),
+    "external_environment": (
+        "The machine that generates weather, markets, policy and technology news each day. "
+        "Those events enter every resident's situation for that day. Note: this entire "
+        "subtree is supplied by data/environment_config.json, which overrides CONFIG last — "
+        "changes made here are overwritten by it."
+    ),
+    "external_environment.generator.mode": (
+        "Have an LLM invent events (more varied, costs money) or draw them by rule from the "
+        "event pools (free, repetitive)."
+    ),
+    "external_environment.natural": (
+        "Weather and extreme weather. Extreme weather is judged an anomaly and can disrupt "
+        "the day's schedule outright."
+    ),
+    "external_environment.economic": (
+        "Market moves and macro news. A move is only reported as news once it passes the "
+        "threshold."
+    ),
+    "external_environment.political": (
+        "Policy events. A policy raises everyone's chance of changing their schedule."
+    ),
+    "external_environment.intraday": (
+        "Intraday shocks: not generated once in the morning but inserted at random through "
+        "the day, which is what most readily interrupts an activity in progress."
+    ),
+    "external_environment_service": (
+        "Take environment events from an external service instead of generating them locally. "
+        "On a multi-machine run this is what lets every node see the same world."
+    ),
+    "external_environment_service.fallback_to_empty": (
+        "When the service is unreachable, carry on as if nothing happened today rather than "
+        "failing the whole run."
+    ),
+    "environment": (
+        "Legacy environment events, kept for compatibility. The current logic is under "
+        "external_environment; with both on, events come from both."
+    ),
+    "family": (
+        "The master switch for households. Off returns to the state before they existed: "
+        "every resident single, with no family in their schedule or their accounts."
+    ),
+    "family.seed": (
+        "A different number resamples the households. Under the same seed a given resident "
+        "gets the same family on every run."
+    ),
+    "family.overrides_path": (
+        "Households pinned by hand under “Agent Studio → Social · Relationships” live in this "
+        "file. Households are regenerated every run, and records in this file win over the "
+        "automatic sampling, so a hand-pinned household is never overwritten. Deleting the "
+        "file restores full automatic generation."
+    ),
+    "family.marital_status_bands": (
+        "The never-married / married / divorced / widowed split within each age band. This "
+        "table decides how many people are still single — to marry the city later, raise "
+        "`never` in the 25–34 band."
+    ),
+    "family.pairing.in_sim_pair_share": (
+        "What share of married residents have another resident on the roster as their spouse "
+        "(rather than someone off-screen). Note: drawing a few dozen people from a city of "
+        "ten million, the real chance of them being married to each other is essentially zero "
+        "— this value is a deliberate trade to keep family interaction inside the simulation, "
+        "not a demographic fact. Set it to 0 for the demographically pure run, where every "
+        "spouse is off-screen."
+    ),
+    "family.pairing.max_age_gap": (
+        "The largest age gap at which two residents can be paired as spouses. Lowering it "
+        "leaves fewer possible pairs, and the rest get off-screen spouses."
+    ),
+    "family.fertility.p_any_child": (
+        "The chance of having at least one child, per age band. Lowering it across the board "
+        "is a low-fertility experiment — fewer children means less school-run in the schedule "
+        "and less childcare cost on the books."
+    ),
+    "family.fertility.coresident_child_max_age": (
+        "A child above this age counts as having moved out: still family, but no longer "
+        "co-resident, and no longer generating childcare duties or costs."
+    ),
+    "family.coresidence.with_parents_local": (
+        "How many never-married residents with local hukou live with their parents. Migrant "
+        "hukou uses the value below; the large gap between the two is deliberate."
+    ),
+    "family.coresidence.multigen_with_young_child": (
+        "The chance an elder moves in to help when there is a preschool-age child. Three "
+        "generations under one roof in a Chinese city is mostly driven by “somebody has to "
+        "watch the child”, not by a free-floating household-type share."
+    ),
+    "family.duties.max_per_day": (
+        "How many household duties may be pushed into the schedule prompt in a day. Raise it "
+        "and the schedule fills with chores; set it to 0 to keep the family relationships but "
+        "leave the schedule alone."
+    ),
+    "family.finance.pooling_rate": (
+        "When a partner is short of cash, the largest share of their own surplus the other "
+        "will put in. It is a transfer between the two accounts and creates no money."
+    ),
+    "family.finance.child_cost_monthly": (
+        "Monthly cost per child (childcare, tuition, sundries). It is split by income among "
+        "the earners in the household and flows through the economy module's normal spending "
+        "path."
+    ),
+    "personality.channels": (
+        "Which routes personality takes to reach a resident; each can be switched off "
+        "separately. `rules` is the deterministic path (action choice, interruption "
+        "thresholds, spending tendency, mood baseline) — no calls and fully reproducible. "
+        "`prompt` adds a sentence or two of situation-relevant behavioural anchoring to the "
+        "decision prompt. `voice` only reaches the diary. They are split into three so the "
+        "question “did the decision change or just the prose?” has an answer — with all three "
+        "on it does not.\n\n`prompt` is off by default, on the evidence of the A4 ablation "
+        "arm (1,632 calls, proposal §15): across 87 paired probe cells, the structured choice "
+        "moved toward the anchor in only 48/87 (the criterion was 52), and the "
+        "reversed-anchor discrimination arm managed 16/30 — neither passed. The reason is not "
+        "that the anchor never reached the model: a classifier-independent text-similarity "
+        "check shows anchored and plain outputs really are less alike than two samples under "
+        "identical conditions (Cohen's d = 0.29), so it was read. It simply did not push the "
+        "choice in a direction the decision loop can see. And getting personality into the "
+        "prompt at all is already done by the corpus rewrite: each resident's “personality "
+        "and behavioural tendencies” passage **is not on this channel and renders whether it "
+        "is on or off**, and an independent scorer can read the scores back out of it (r = "
+        "0.79). The anchor adds one further generic sentence shared by everyone at the same "
+        "pole, repeating a dimension the passage already covers 89.8% of the time, at about "
+        "36 tokens a call. Turn it on to reproduce the A4 control, or to try a stronger "
+        "configuration."
+    ),
+    "action_space.activities_per_call": (
+        "How many activities one action-generation call may ask for. The number is not a "
+        "guess: across 848 real responses a single activity block ran to a median of 193 "
+        "characters and a p75 of 215, while the provider's default 512-token output ceiling "
+        "holds only about 916 — so four activities sit right on the edge (37.5% truncated in "
+        "practice) and six or more never fit. A real day has ten distinct activities, which "
+        "means the unbatched call could never have succeeded: it could only salvage the first "
+        "four, and the retry hit the same wall. Three leaves a margin for a verbose agent. "
+        "Batching is no more expensive than the old behaviour — ten activities over four "
+        "successful calls, against two failures followed by one repair call per activity."
+    ),
+    "personality.profile_path": (
+        "Each resident's five personality scores (z-scores; positive is high, negative is "
+        "low). Calibrated once offline by scripts/calibrate_big5.py from the “personality and "
+        "emotional traits” passage in their profile, then frozen here and only read at run "
+        "time: rescoring on every start would cost money and would stop two runs on the same "
+        "seed from matching. When the file is absent, population-prior sampling is used "
+        "instead."
+    ),
+    "personality.strength": (
+        "The overall strength of the personality switch. It scales every channel together: 0 "
+        "means personality has no effect while the data is still there (useful as a control "
+        "group), above 1 lets personality override the situation."
+    ),
+    "personality.style_fit_amplitude": (
+        "How much weight personality carries in choosing an action. The frame of reference is "
+        "the weights already beside it: growth motivation 0.6, habit inertia about 0.9. Past "
+        "0.9 personality is as strong as habit, which does not match the empirical magnitude "
+        "where personality explains only ten to twenty per cent of behavioural variance. "
+        "After changing it, run scripts/big5_effect_ceiling.py and check the implied "
+        "correlation still lands in 0.10–0.40."
+    ),
+    "personality.modifier_band": (
+        "Bounds on the multiplicative modifier. Modifiers of this kind act on small "
+        "probabilities that compound at every time step (interruption, impulse, chance "
+        "encounter), so the band is deliberately narrow — widening it goes out of control "
+        "after a few dozen steps."
+    ),
+    "personality.residual_ratio": (
+        "How much of a person's individual variation has nothing to do with personality. At "
+        "0, personality and behaviour become an exact mapping and the correlation approaches "
+        "1 over a long enough observation window — at which point what is being measured is "
+        "the number of days, not personality."
+    ),
+    "personality.prompt.render_midpoint": (
+        "How pronounced a dimension has to be before it is written into the prompt. It is not "
+        "a hard threshold: whether it is written is drawn probabilistically, so someone "
+        "exactly at the midpoint is a coin flip and the more extreme they are the more "
+        "certain it becomes. A hard threshold would cut continuous personality into "
+        "high/medium/low and leave a discontinuity at the boundary."
+    ),
+    "personality.prompt.render_spread": (
+        "The width of the transition band for that probability. Narrower approaches a hard "
+        "threshold; wider means even unremarkable people get a few words of description."
+    ),
+    "personality.prompt.floor_z": (
+        "Below this |z| nothing is written, whatever the probability above works out to. Its "
+        "job differs from the write-in threshold: that one decides “how pronounced is worth "
+        "mentioning”, this one decides “does this person have a leaning at all”. It is also "
+        "the line between the prompt channel's two possible roles — at 0.25 the anchor mostly "
+        "repeats dimensions the “personality and behavioural tendencies” passage already "
+        "covers (that passage writes |z| ≥ 0.5), while at 0.5 the anchor only fills the gaps "
+        "the passage left."
+    ),
+    "personality.prompt.max_dims": (
+        "How many personality descriptions one prompt may carry. These prompts already hold a "
+        "dozen-odd pieces of context, and too much personality crowds out the day's actual "
+        "situation — personality overriding situation is the most common distortion."
+    ),
+    "personality.emotion_baseline": (
+        "Give mood a baseline that belongs to the individual. The original contagion only "
+        "pulled people toward their neighbours' average mood with nothing pulling them back "
+        "toward themselves, so over a long run the whole city's mood converged on one number "
+        "and individual variation was erased. Neuroticism cannot do anything until this is "
+        "fixed."
+    ),
+    "personality.emotion_baseline.contagion_weight": (
+        "How fast someone is carried along by the mood around them. It was hardcoded at 0.1; "
+        "lowering it is what lets a personal baseline pull back at all."
+    ),
+    "personality.emotion_baseline.recovery_rate": (
+        "How far each step returns toward one's own mood baseline — the other end of the same "
+        "scale as the contagion strength above. Higher is more emotionally resilient, lower "
+        "is more easily carried along by those nearby."
+    ),
+    "personality.sampling": (
+        "How personality is generated on the spot when there is no calibration file. "
+        "Synthetic populations take this path — their personality descriptions are themselves "
+        "templates assembled from stress and propensity to speak, so scoring them in reverse "
+        "would only recover the state variables and add no information."
+    ),
+    "personality.sampling.correlations": (
+        "The correlations between the five dimensions. They are not orthogonal: neuroticism "
+        "correlates negatively with the other four, and agreeableness / conscientiousness / "
+        "extraversion correlate weakly and positively with each other. Zeroing them all "
+        "manufactures people who do not exist — someone both extremely neurotic and extremely "
+        "emotionally stable, say."
+    ),
+    "personality.sampling.rescale": (
+        "After sampling, pull the population back to mean 0 and standard deviation 1. With "
+        "only fifty-odd people the mean itself wobbles by around 0.14 standard deviations, "
+        "and without the correction a whole city can come out systematically introverted or "
+        "anxious — which would be misread as a finding."
+    ),
+    "family.finance.elder_support_monthly": (
+        "How much is sent each month to an elder who lives elsewhere. It only starts once the "
+        "parents reach the age threshold below."
+    ),
+    "family.events.daily_probability": (
+        "The chance of one household event per household per day (a child's fever, a row, a "
+        "family meal). The event lands on everyone in the household at once."
+    ),
+    "family.events.contagion_weight": (
+        "How strongly co-resident family influence each other's mood and stress. It moves "
+        "people toward each other rather than adding or subtracting out of nowhere: a "
+        "household that is uniformly calm produces no drift at all. Set it to 0 to switch "
+        "contagion off."
+    ),
+    "family.cohabitation": (
+        "The people who are unmarried but living together. They get a “partner” rather than a "
+        "“spouse”, and no children in common."
+    ),
+    "family.cohabitation.share": (
+        "Of the never-married residents in this age range, how many live with a partner."
+    ),
+    "family.pairing": (
+        "How married residents are matched to a spouse. Same-sex partnerships are not "
+        "modelled; anyone who genuinely cannot be matched gets an off-screen spouse rather "
+        "than being returned to single."
+    ),
+    "family.pairing.prefer_in_sim": (
+        "Try to pair residents who are in the run with each other first. Off puts every "
+        "spouse off-screen, so nobody's household contains another person who acts on their "
+        "own."
+    ),
+    "family.pairing.spouse_age_gap_mean": (
+        "How many years older an off-screen spouse is (positive means the husband is older). "
+        "In-run pairing uses the two residents' real ages and is unaffected by this."
+    ),
+    "family.pairing.same_district_bonus": (
+        "The weighting applied when two residents live in the same district. Raising it "
+        "concentrates couples within a district."
+    ),
+    "family.fertility": (
+        "Who has children, how many, and how old they are. These few knobs directly decide "
+        "the school runs in the schedule and the childcare costs on the books."
+    ),
+    "family.fertility.p_second_child": (
+        "The share of households with one child who have a second."
+    ),
+    "family.fertility.p_third_child": (
+        "The share of households with two children who have a third."
+    ),
+    "family.fertility.parent_age_at_first_birth": (
+        "The parents' age range at a first birth. A child's age is derived backwards from "
+        "this, so raising it makes children younger overall."
+    ),
+    "family.coresidence": (
+        "Who lives with whom. Co-residence is the crux: only family who live together share a "
+        "home, generate daily care, and pass moods to each other."
+    ),
+    "family.coresidence.with_parents_migrant": (
+        "The share of never-married residents with migrant hukou who live with their parents. "
+        "Much lower than for local hukou by design."
+    ),
+    "family.coresidence.shared_rental_share": (
+        "Among never-married residents who live neither with parents nor with a partner, how "
+        "many share a rental rather than living alone. Someone in a shared rental at least "
+        "has a flatmate at home."
+    ),
+    "family.coresidence.multigen_base": (
+        "The chance an elder moves in when there is no young child."
+    ),
+    "family.coresidence.young_child_max_age": (
+        "Up to what age a child counts as needing someone watching them all day. It affects "
+        "both the three-generation chance and the childcare cost."
+    ),
+    "family.coresidence.elder_with_child_age": (
+        "The age at which a resident may in turn move in with an adult child."
+    ),
+    "family.coresidence.elder_with_child_share": (
+        "Of the elders who reach that age, how many actually live with an adult child."
+    ),
+    "family.duties": (
+        "How household duties enter the schedule: the school run, homework, elder care, being "
+        "home for dinner. Weekdays and weekends get different duties."
+    ),
+    "family.duties.school_age_max": (
+        "Up to what age a child still needs the school run and help with homework. Above it "
+        "only light duties such as “taking an interest in their schooling” remain."
+    ),
+    "family.duties.preschool_age_max": (
+        "Up to what age a child counts as preschool. Preschool children take the most time "
+        "and the most money, and also raise the chance of an elder moving in to help."
+    ),
+    "family.duties.elder_care_age": (
+        "The age at which a co-resident elder generates real care duties (medication, "
+        "hospital visits) rather than just shared meals."
+    ),
+    "family.finance": (
+        "The household's money: raising children, supporting elders, and partners covering "
+        "each other's shortfalls. Every flow is conserved — nothing is created or destroyed."
+    ),
+    "family.finance.preschool_extra_monthly": (
+        "What a preschool child costs per month on top of the base (nursery, childcare)."
+    ),
+    "family.finance.elder_support_min_age": (
+        "The age at which parents start needing support payments."
+    ),
+    "family.finance.coresident_elder_monthly": (
+        "The monthly cost of a co-resident elder. Lower than support sent away, but not zero."
+    ),
+    "family.finance.shared_rent_discount": (
+        "When several people live together, what percentage of a solo rent one person "
+        "actually bears."
+    ),
+    "family.finance.spouse_bailout_enabled": (
+        "When one partner runs out of cash, the other covers it first rather than letting "
+        "them borrow. Off means the couple's finances are entirely separate."
+    ),
+    "family.finance.dual_income_security_bonus": (
+        "How much economic security a second income in the household adds per day. The number "
+        "is small; it works by accumulated tendency rather than a one-off jolt."
+    ),
+    "family.finance.sole_earner_stress": (
+        "How much stress is added per day by supporting the household alone, scaled by the "
+        "care burden."
+    ),
+    "family.events": (
+        "What happens inside a household, and how a family's moods affect each other."
+    ),
+    "family.events.contagion_enabled": (
+        "Whether the moods and stress of co-resident family affect each other."
+    ),
+    "family.events.remote_contagion_weight": (
+        "The influence of family who live elsewhere (an adult child in another city, an ex). "
+        "An order of magnitude lower than co-resident by default."
+    ),
+}
+
 SECTION_EXTRA_KEYS: dict[str, tuple[str, ...]] = {
     "environment": (
         "external_environment",
@@ -733,12 +2219,35 @@ def help_for(path: str) -> str:
     return source_help().get(path, "")
 
 
+def help_en_for(path: str) -> str:
+    """English help for a dotted config path, or ``""`` when none is written.
+
+    Only the curated table has an English twin. The extracted source comments
+    do not and will not: they are Python comments aimed at whoever maintains
+    the settings modules, and translating them would mean keeping two copies of
+    a code comment in step. An empty string here is the honest answer — the
+    panel falls back to the Chinese, which is the only text that exists.
+    """
+    return MANUAL_HELP_EN.get(path, "")
+
+
 def label_for(path: str) -> str:
     """Chinese label for a dotted config path, falling back to the raw key."""
     if path in LABELS:
         return LABELS[path]
     last = path.rsplit(".", 1)[-1]
     return LABELS.get(last, last)
+
+
+def label_en_for(path: str) -> str:
+    """English label for a dotted config path, or ``""`` when none is written.
+
+    Resolved full-path-first then by last segment, matching :func:`label_for`,
+    so a subtree that overrides a common leaf name keeps its own wording.
+    """
+    if path in LABELS_EN:
+        return LABELS_EN[path]
+    return LABELS_EN.get(path.rsplit(".", 1)[-1], "")
 
 
 def section_index() -> dict[str, str]:
@@ -754,11 +2263,23 @@ def section_index() -> dict[str, str]:
 
 
 def section_meta() -> list[dict[str, str]]:
-    """Ordered section descriptors for the panel's navigation."""
-    return [
-        {"id": section_id, "title": title, "help": help_text}
-        for section_id, _module, _factory, title, help_text in SECTIONS
-    ]
+    """Ordered section descriptors for the panel's navigation.
+
+    Bilingual: every descriptor carries both languages and the client picks.
+    The server stays locale-agnostic, so the payload is cacheable and a
+    language switch in the browser needs no refetch.
+    """
+    out: list[dict[str, str]] = []
+    for section_id, _module, _factory, title, help_text in SECTIONS:
+        english = SECTION_EN.get(section_id, ("", ""))
+        out.append({
+            "id": section_id,
+            "title": title,
+            "help": help_text,
+            "title_en": english[0],
+            "help_en": english[1],
+        })
+    return out
 
 
 __all__ = [

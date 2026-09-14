@@ -20,7 +20,7 @@
       }
     }
   },
-  "sim_days": 731,
+  "sim_days": 365,
   "seconds_per_day": 10,
   "agent_ids": [
     37
@@ -30,7 +30,7 @@
   "long_run": {
     "enabled": true,
     "randomness": 1.0,
-    "unit": "month"
+    "unit": "year"
   },
   "routine_change": {
     "randomness": 1.0

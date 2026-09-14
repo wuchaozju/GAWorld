@@ -66,7 +66,7 @@
     var response = await fetch(path, settings);
     var payload = {};
     try { payload = await response.json(); } catch (_) { payload = {}; }
-    if (!response.ok) throw new Error(payload.error || ("请求失败：" + response.status));
+    if (!response.ok) throw new Error(payload.error || (__("pw.request_failed") + response.status));
     return payload;
   }
 
@@ -102,14 +102,14 @@
 
   function defaultSpec(defaults) {
     var spec = {
-      name: "平行世界实验",
+      name: __("pw.experiment_name"),
       sim_days: defaults.sim_days || 3,
       seed: defaults.seed || 42,
       agent_ids: (defaults.agent_ids || []).join(","),
       llm_provider: defaults.llm_provider || "",
       fast: false,
       max_parallel: defaults.max_parallel || 2,
-      worlds: [newWorld("基准世界", []), newWorld("事件世界", [{
+      worlds: [newWorld(__("pw.world_baseline"), []), newWorld(__("pw.world_event"), [{
         day: 2, time: "09:00", name: "", description: "",
       }])],
     };
@@ -163,20 +163,20 @@
     var providers = (state.overview && state.overview.providers) || [];
     var spec = state.spec;
     el("pwShared").innerHTML = [
-      field("pw-wide", "实验名称", "<input type=\"text\" data-spec=\"name\" value=\"" + esc(spec.name) + "\" />"),
-      field("", "仿真天数", "<input type=\"number\" min=\"1\" data-spec=\"sim_days\" value=\"" + esc(spec.sim_days) + "\" />"),
-      field("", "随机种子", "<input type=\"number\" data-spec=\"seed\" value=\"" + esc(spec.seed) + "\" />"),
-      field("", "并行世界数", "<input type=\"number\" min=\"1\" max=\"4\" data-spec=\"max_parallel\" value=\"" + esc(spec.max_parallel) + "\" />"),
-      field("pw-wide", "参与居民（留空＝按配置）",
+      field("pw-wide", __("pw.field_name"), "<input type=\"text\" data-spec=\"name\" value=\"" + esc(spec.name) + "\" />"),
+      field("", __("pw.field_sim_days"), "<input type=\"number\" min=\"1\" data-spec=\"sim_days\" value=\"" + esc(spec.sim_days) + "\" />"),
+      field("", __("pw.field_seed"), "<input type=\"number\" data-spec=\"seed\" value=\"" + esc(spec.seed) + "\" />"),
+      field("", __("pw.field_parallel"), "<input type=\"number\" min=\"1\" max=\"4\" data-spec=\"max_parallel\" value=\"" + esc(spec.max_parallel) + "\" />"),
+      field("pw-wide", __("pw.field_agents"),
         "<input type=\"text\" data-spec=\"agent_ids\" placeholder=\"1,2,3\" value=\"" + esc(spec.agent_ids) + "\" />"),
-      field("pw-wide", "统一模型",
-        "<select data-spec=\"llm_provider\"><option value=\"\">按当前配置</option>" +
+      field("pw-wide", __("pw.field_provider"),
+        "<select data-spec=\"llm_provider\"><option value=\"\">" + esc(__("pw.provider_default")) + "</option>" +
         providers.map(function (name) {
           return "<option value=\"" + esc(name) + "\"" +
             (name === spec.llm_provider ? " selected" : "") + ">" + esc(name) + "</option>";
         }).join("") + "</select>"),
       "<label class=\"pw-check pw-wide\"><input type=\"checkbox\" data-spec=\"fast\"" +
-      (spec.fast ? " checked" : "") + " /> 快速模式（确定性认知 · 3 人 · 省 LLM 调用）</label>",
+      (spec.fast ? " checked" : "") + " /> " + esc(__("pw.fast_mode")) + "</label>",
     ].join("");
   }
 
@@ -200,21 +200,21 @@
         ? world.events.map(function (event, eventIndex) {
             return eventCard(world.key, event, eventIndex, spec.sim_days);
           }).join("")
-        : "<p class=\"pw-empty\">没有事件 —— 这个世界按原样运行。</p>";
+        : "<p class=\"pw-empty\">" + esc(__("pw.no_events")) + "</p>";
       return [
         "<div class=\"pw-world" + (isBaseline ? " is-baseline" : "") + "\" style=\"--w-color:" + colorFor(index) + "\">",
         "  <div class=\"pw-world-top\">",
         "    <input type=\"text\" data-world=\"" + world.key + "\" data-field=\"label\" value=\"" + esc(world.label) + "\" />",
         "    <div class=\"pw-world-tools\">",
-        "      <button type=\"button\" class=\"pw-icon\" data-copy=\"" + world.key + "\" title=\"复制这个世界\">⧉</button>",
+        "      <button type=\"button\" class=\"pw-icon\" data-copy=\"" + world.key + "\" title=\"" + esc(__("pw.copy_world")) + "\">⧉</button>",
         "      <button type=\"button\" class=\"pw-icon is-danger\" data-remove=\"" + world.key + "\"" +
-                 (spec.worlds.length <= 2 ? " disabled" : "") + " title=\"删除这个世界\">✕</button>",
+                 (spec.worlds.length <= 2 ? " disabled" : "") + " title=\"" + esc(__("pw.delete_world")) + "\">✕</button>",
         "    </div>",
         "  </div>",
         "  <label class=\"pw-baseline-pick\"><input type=\"radio\" name=\"pwBaseline\" data-baseline=\"" +
-             world.key + "\"" + (isBaseline ? " checked" : "") + " /> 作为对照基准</label>",
+             world.key + "\"" + (isBaseline ? " checked" : "") + " /> " + esc(__("pw.as_baseline")) + "</label>",
         "  <div class=\"pw-events\">" + events + "</div>",
-        "  <button type=\"button\" class=\"pw-addevent\" data-addevent=\"" + world.key + "\">+ 加一件事</button>",
+        "  <button type=\"button\" class=\"pw-addevent\" data-addevent=\"" + world.key + "\">" + esc(__("pw.add_event")) + "</button>",
         "</div>",
       ].join("");
     }).join("");
@@ -225,13 +225,13 @@
     return [
       "<div class=\"pw-event\">",
       "  <div class=\"pw-event-row\">",
-      "    <label><span>第几天</span><input type=\"number\" min=\"1\" max=\"" + esc(simDays || 30) +
+      "    <label><span>" + esc(__("pw.event_day")) + "</span><input type=\"number\" min=\"1\" max=\"" + esc(simDays || 30) +
            "\" " + attrs + "\"day\" value=\"" + esc(event.day) + "\" /></label>",
-      "    <label><span>时间</span><input type=\"text\" " + attrs + "\"time\" value=\"" + esc(event.time) + "\" /></label>",
-      "    <label><span>事件名称</span><input type=\"text\" " + attrs + "\"name\" placeholder=\"如：大规模裁员\" value=\"" + esc(event.name) + "\" /></label>",
-      "    <button type=\"button\" class=\"pw-icon is-danger\" data-delevent=\"" + worldKey + ":" + index + "\" title=\"删除事件\">✕</button>",
+      "    <label><span>" + esc(__("pw.event_time")) + "</span><input type=\"text\" " + attrs + "\"time\" value=\"" + esc(event.time) + "\" /></label>",
+      "    <label><span>" + esc(__("pw.event_name")) + "</span><input type=\"text\" " + attrs + "\"name\" placeholder=\"" + esc(__("pw.event_name_ph")) + "\" value=\"" + esc(event.name) + "\" /></label>",
+      "    <button type=\"button\" class=\"pw-icon is-danger\" data-delevent=\"" + worldKey + ":" + index + "\" title=\"" + esc(__("pw.delete_event")) + "\">✕</button>",
       "  </div>",
-      "  <textarea " + attrs + "\"description\" placeholder=\"这件事具体是什么？居民会看到什么？\">" + esc(event.description) + "</textarea>",
+      "  <textarea " + attrs + "\"description\" placeholder=\"" + esc(__("pw.event_desc_ph")) + "\">" + esc(event.description) + "</textarea>",
       "</div>",
     ].join("");
   }
@@ -292,7 +292,7 @@
     } else {
       out.push("<text class=\"pw-axis\" x=\"" + PLOT.left + "\" y=\"" + (height - 8) + "\">0</text>");
       out.push("<text class=\"pw-axis\" x=\"" + (width - PLOT.right) + "\" y=\"" + (height - 8) +
-        "\" text-anchor=\"end\">" + xMax + " 步</text>");
+        "\" text-anchor=\"end\">" + esc(__f("pw.axis_steps", { count: xMax })) + "</text>");
     }
     return out.join("");
   }
@@ -337,7 +337,7 @@
      something. Said so in the panel's help text too. */
   function renderBranch() {
     var report = state.report;
-    if (!report || !report.steps) { return emptyChart("pwBranch", "还没有可比较的世界。运行一次实验，或从右下角载入历史实验。"); }
+    if (!report || !report.steps) { return emptyChart("pwBranch", __("pw.empty_branch")); }
     var width = 760, height = 250;
     var trunkY = height / 2;
     var worlds = visibleWorlds();
@@ -378,7 +378,7 @@
       }).join(" ");
       parts.push("<path class=\"pw-series" + (world.is_baseline ? " is-baseline" : "") +
         "\" d=\"" + d + "\" stroke=\"" + colors[world.id] + "\"><title>" +
-        esc(world.label + "：终局偏离 " + fmt(world.divergence_final)) + "</title></path>");
+        esc(__f("pw.tip_final_divergence", { world: world.label, value: fmt(world.divergence_final) })) + "</title></path>");
 
       // Split marker: where this history actually parted from the baseline.
       if (world.split_step != null) {
@@ -386,7 +386,7 @@
         var sy = points[world.split_step] ? points[world.split_step][1] : trunkY;
         parts.push("<circle class=\"pw-node\" cx=\"" + sx.toFixed(1) + "\" cy=\"" + sy.toFixed(1) +
           "\" r=\"4.5\" fill=\"#fff\" stroke=\"" + colors[world.id] + "\" stroke-width=\"2\"><title>" +
-          esc(world.label + "：第 " + world.split_step + " 步开始分叉") + "</title></circle>");
+          esc(__f("pw.tip_split_at", { world: world.label, step: world.split_step })) + "</title></circle>");
       }
       // The baseline label goes on the left of the trunk; branch labels ride
       // the right end of their own lane. Otherwise every world whose final
@@ -394,7 +394,7 @@
       if (world.is_baseline) {
         parts.push("<text class=\"pw-node-label\" x=\"" + (PLOT.left + 4) + "\" y=\"" +
           (trunkY - 8) + "\" fill=\"" + colors[world.id] + "\">" +
-          esc(world.label) + " · 基准</text>");
+          esc(__f("pw.label_baseline", { world: world.label })) + "</text>");
       } else {
         var last = points[points.length - 1] || [width - PLOT.right, trunkY];
         parts.push("<text class=\"pw-node-label\" x=\"" + (last[0] - 6).toFixed(1) + "\" y=\"" +
@@ -420,7 +420,7 @@
       "\" x2=\"" + (width - PLOT.right) + "\" y2=\"" + trunkY + "\" stroke-dasharray=\"2 4\" />");
 
     el("pwBranch").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"世界分叉图\">" +
+      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_branch")) + "\">" +
       parts.join("") + "</svg>" + replayLinks();
   }
 
@@ -435,7 +435,7 @@
         encodeURIComponent(run) + "\">▶ " + esc(world.label) + "</a>";
     });
     return links.length
-      ? "<div class=\"pw-replays\"><span>逐帧回放：</span>" + links.join("") + "</div>"
+      ? "<div class=\"pw-replays\"><span>" + esc(__("pw.replay_label")) + "</span>" + links.join("") + "</div>"
       : "";
   }
 
@@ -460,11 +460,11 @@
   function renderTrajectory() {
     var report = state.report;
     if (!report || !report.metrics || !report.metrics.length) {
-      return emptyChart("pwTrajectory", "没有状态数据可画。");
+      return emptyChart("pwTrajectory", __("pw.empty_trajectory"));
     }
     var metric = state.metric || report.metrics[0];
     var series = trajectorySeries(metric);
-    if (!series.length) return emptyChart("pwTrajectory", "所选世界都被隐藏了。");
+    if (!series.length) return emptyChart("pwTrajectory", __("pw.all_hidden"));
 
     var width = 760, height = 250;
     var values = [];
@@ -493,7 +493,7 @@
       (height - PLOT.top - PLOT.bottom) + "\" />");
 
     el("pwTrajectory").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"指标走向\">" +
+      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_trajectory")) + "\">" +
       parts.join("") + "</svg>";
     bindHover(el("pwTrajectory"), width, scale, series, metric);
   }
@@ -517,19 +517,25 @@
         cursor.setAttribute("opacity", "0.35");
       }
       var label = report.metric_labels[metric] || metric;
-      var day = report.steps_per_day ? " · 第 " + (Math.floor(step / report.steps_per_day) + 1) + " 天" : "";
+      var day = report.steps_per_day
+        ? __f("pw.readout_day", { day: Math.floor(step / report.steps_per_day) + 1 })
+        : "";
       var bits = series.map(function (item) {
         var value = item.values[step];
         return "<b style=\"color:" + worldColors()[item.world.id] + "\">" + esc(item.world.label) +
           "</b> " + (value == null ? "—" : fmt(value, 3));
       });
       el("pwReadout").innerHTML =
-        "第 " + step + " 步" + day + " · " + esc(label) +
-        (state.relative ? "（与基准之差）" : "") + "：" + bits.join("｜");
+        esc(__f("pw.readout", {
+          step: step,
+          day: day,
+          metric: label,
+          relative: state.relative ? __("pw.relative_suffix") : "",
+        })) + bits.join("｜");
     });
     svg.addEventListener("mouseleave", function () {
       if (cursor) cursor.setAttribute("opacity", "0");
-      el("pwReadout").textContent = "把鼠标移到图上查看某一步的数值。";
+      el("pwReadout").textContent = __("pw.readout_hint");
     });
   }
 
@@ -537,9 +543,9 @@
 
   function renderDivergence() {
     var report = state.report;
-    if (!report || !report.steps) return emptyChart("pwDivergence", "还没有数据。");
+    if (!report || !report.steps) return emptyChart("pwDivergence", __("pw.empty_divergence"));
     var worlds = visibleWorlds().filter(function (world) { return !world.is_baseline; });
-    if (!worlds.length) return emptyChart("pwDivergence", "只剩基准世界，没有可比的偏离。");
+    if (!worlds.length) return emptyChart("pwDivergence", __("pw.only_baseline"));
 
     var width = 760, height = 170;
     var max = report.split_threshold * 2;
@@ -558,8 +564,8 @@
       (width - PLOT.right) + "\" y2=\"" + thresholdY +
       "\" stroke=\"#c04545\" stroke-width=\"1\" stroke-dasharray=\"4 3\" opacity=\".8\" />");
     parts.push("<text class=\"pw-axis\" x=\"" + (width - PLOT.right) + "\" y=\"" +
-      (Number(thresholdY) - 4) + "\" text-anchor=\"end\" fill=\"#c04545\">分叉阈值 " +
-      fmt(report.split_threshold, 2) + "</text>");
+      (Number(thresholdY) - 4) + "\" text-anchor=\"end\" fill=\"#c04545\">" +
+      esc(__f("pw.split_threshold", { value: fmt(report.split_threshold, 2) })) + "</text>");
 
     worlds.forEach(function (world) {
       var curve = (report.divergence && report.divergence[world.id]) || [];
@@ -569,11 +575,11 @@
         parts.push("<circle cx=\"" + scale.x(world.split_step).toFixed(1) + "\" cy=\"" +
           scale.y(curve[world.split_step]).toFixed(1) + "\" r=\"4\" fill=\"#fff\" stroke=\"" +
           colors[world.id] + "\" stroke-width=\"2\"><title>" +
-          esc(world.label + " 第 " + world.split_step + " 步分叉") + "</title></circle>");
+          esc(__f("pw.tip_split_short", { world: world.label, step: world.split_step })) + "</title></circle>");
       }
     });
     el("pwDivergence").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"偏离基准的距离\">" +
+      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_divergence")) + "\">" +
       parts.join("") + "</svg>";
   }
 
@@ -587,7 +593,7 @@
       return "<button type=\"button\" class=\"pw-legend-item" +
         (state.hidden[world.id] ? " is-off" : "") + "\" data-toggle=\"" + esc(world.id) + "\">" +
         "<span class=\"pw-legend-dot\" style=\"background:" + colors[world.id] + "\"></span>" +
-        esc(world.label) + (world.is_baseline ? " · 基准" : "") +
+        esc(world.label) + (world.is_baseline ? esc(__("pw.legend_baseline")) : "") +
         (world.status && world.status !== "done" ? " (" + esc(world.status) + ")" : "") +
         "</button>";
     }).join("");
@@ -596,7 +602,7 @@
   function renderDeltas() {
     var report = state.report;
     var rows = (report && report.deltas) || [];
-    if (!rows.length) { el("pwDeltas").innerHTML = "<p class=\"pw-hint\">还没有可比较的差异。</p>"; return; }
+    if (!rows.length) { el("pwDeltas").innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_deltas")) + "</p>"; return; }
     var labels = {};
     var colors = worldColors();
     report.worlds.forEach(function (world) { labels[world.id] = world.label; });
@@ -614,8 +620,11 @@
           signed(row.delta_mean, 3) + "</td></tr>";
       }).join("");
     el("pwDeltas").innerHTML =
-      "<table><thead><tr><th>世界</th><th>指标</th><th>基准终值</th><th>本世界</th>" +
-      "<th>Δ终值</th><th>Δ均值</th></tr></thead><tbody>" + body + "</tbody></table>";
+      "<table><thead><tr>" +
+      [ "pw.th_world", "pw.th_metric", "pw.th_baseline_final",
+        "pw.th_this_world", "pw.th_delta_final", "pw.th_delta_mean",
+      ].map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
+      "</tr></thead><tbody>" + body + "</tbody></table>";
   }
 
   function renderMovers() {
@@ -625,7 +634,7 @@
     var select = el("pwMoverWorld");
     if (!options.length) {
       select.innerHTML = "";
-      el("pwMovers").innerHTML = "<p class=\"pw-hint\">还没有逐人对比数据。</p>";
+      el("pwMovers").innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_movers")) + "</p>";
       return;
     }
     if (options.indexOf(state.moverWorld) < 0) state.moverWorld = options[0];
@@ -644,7 +653,10 @@
       names[String(agent.id)] = agent.name;
     });
     el("pwMovers").innerHTML =
-      "<table><thead><tr><th>居民</th><th>偏离度</th><th>变化最大的指标</th></tr></thead><tbody>" +
+      "<table><thead><tr>" +
+      [ "pw.th_resident", "pw.th_distance", "pw.th_top_metric",
+      ].map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
+      "</tr></thead><tbody>" +
       rows.map(function (row) {
         var name = names[String(row.agent_id)] || ("Agent " + row.agent_id);
         var pct = ((row.distance / peak) * 100).toFixed(0);
@@ -669,11 +681,11 @@
 
   function renderTopMeta() {
     var report = state.report;
-    if (!report) { el("pwTopMeta").innerHTML = "尚未载入实验"; return; }
+    if (!report) { el("pwTopMeta").innerHTML = esc(__("pw.no_experiment")); return; }
     var lines = (report.summary || []).map(esc);
     el("pwTopMeta").innerHTML =
       "<div><b>" + esc(report.name || report.experiment_id || "") + "</b>" +
-      (report.legacy ? " · 旧版 compare-event" : "") + "</div>" +
+      (report.legacy ? esc(__("pw.legacy_suffix")) : "") + "</div>" +
       "<div>" + esc(report.created_at || "") + "</div>" +
       (lines.length ? "<div style=\"margin-top:4px\">" + lines.join("<br/>") + "</div>" : "");
   }
@@ -691,9 +703,18 @@
 
   // ------------------------------------------------------------- run bar
 
-  var STATUS_TEXT = {
-    pending: "排队中", running: "运行中", done: "完成", error: "失败", stopped: "已停止",
+  var STATUS_KEYS = {
+    pending: "pw.status_pending", running: "pw.status_running", done: "pw.status_done",
+    error: "pw.status_error", stopped: "pw.status_stopped",
   };
+
+  /* Resolved per call rather than baked into a lookup at load time: the table
+     used to hold the Chinese text itself, which froze whatever language was
+     current when this file was evaluated. */
+  function statusText(status) {
+    var key = STATUS_KEYS[status];
+    return key ? __(key) : status;
+  }
 
   function renderRunBar() {
     var job = state.job;
@@ -701,17 +722,17 @@
     var stop = el("pwStop");
     var running = !!(job && job.status === "running");
     run.disabled = running;
-    run.textContent = running ? "运行中…" : "运行平行世界";
+    run.textContent = __(running ? "pw.run_busy" : "pw.run");
     stop.hidden = !running;
 
     if (!job) {
-      el("pwRunState").textContent = "未运行";
+      el("pwRunState").textContent = __("pw.not_running");
       el("pwProgress").innerHTML = state.error
         ? "<div class=\"pw-error\">" + esc(state.error) + "</div>" : "";
       return;
     }
     el("pwRunState").textContent =
-      (STATUS_TEXT[job.status] || job.status) + " · " + Math.round((job.progress || 0) * 100) + "%";
+      statusText(job.status) + " · " + Math.round((job.progress || 0) * 100) + "%";
 
     var worlds = (job.snapshot && job.snapshot.worlds) || [];
     var simDays = (job.snapshot && job.snapshot.sim_days) || 1;
@@ -720,10 +741,10 @@
       return "<div class=\"pw-prow\"><span class=\"pw-plabel\">" + esc(world.label) +
         "</span><span class=\"pw-bar\"><span style=\"width:" + (ratio * 100).toFixed(0) +
         "%;background:" + colorFor(index) + "\"></span></span><span class=\"pw-pstate\">" +
-        esc(STATUS_TEXT[world.status] || world.status) +
+        esc(statusText(world.status)) +
         (world.status === "running" ? " D" + (world.day || 0) : "") + "</span></div>";
     }).join("");
-    var message = job.message ? "<div class=\"pw-prow\"><span class=\"pw-plabel\">进度</span>" +
+    var message = job.message ? "<div class=\"pw-prow\"><span class=\"pw-plabel\">" + esc(__("pw.progress")) + "</span>" +
       "<span class=\"pw-pstate\" style=\"text-align:left;grid-column:2/4\">" + esc(job.message) +
       "</span></div>" : "";
     var error = job.error ? "<div class=\"pw-error\">" + esc(job.error) + "</div>" : "";
@@ -734,12 +755,13 @@
   function renderHistory() {
     var items = (state.overview && state.overview.experiments) || [];
     el("pwHistory").innerHTML =
-      "<option value=\"\">载入历史实验…</option>" +
+      "<option value=\"\">" + esc(__("pw.load_history")) + "</option>" +
       items.map(function (item) {
         return "<option value=\"" + esc(item.root) + "\"" +
           (item.root === state.experiment ? " selected" : "") + ">" +
-          esc(item.name || item.id) + " · " + item.worlds + " 个世界" +
-          (item.legacy ? "（旧）" : "") + (item.has_data ? "" : "（无数据）") + "</option>";
+          esc(item.name || item.id) + esc(__f("pw.world_count", { count: item.worlds })) +
+          (item.legacy ? esc(__("pw.legacy_tag")) : "") +
+          (item.has_data ? "" : esc(__("pw.no_data_tag"))) + "</option>";
       }).join("");
   }
 
@@ -857,7 +879,7 @@
     if (copyKey) {
       var source = findWorld(copyKey);
       if (source && state.spec.worlds.length < 8) {
-        state.spec.worlds.push(newWorld(source.label + " 副本", source.events));
+        state.spec.worlds.push(newWorld(source.label + __("pw.copy_suffix"), source.events));
         renderWorlds();
       }
       return;
@@ -906,7 +928,7 @@
 
     el("pwAddWorld").addEventListener("click", function () {
       if (state.spec.worlds.length >= 8) return;
-      state.spec.worlds.push(newWorld("世界 " + (state.spec.worlds.length + 1), [{
+      state.spec.worlds.push(newWorld(__f("pw.world_n", { n: state.spec.worlds.length + 1 }), [{
         day: 2, time: "09:00", name: "", description: "",
       }]));
       renderWorlds();
@@ -958,6 +980,46 @@
       renderRunBar();
     });
     if (state.job && state.job.status === "running") startPolling();
+  }
+
+  /* Everything on this page is drawn from JS, so the language switch has to
+     redraw it — and the first paint can land before the locale JSON does, in
+     which case __() has been echoing keys back and the same redraw fixes it.
+     The spec holds two world labels that were themselves translated at
+     creation, so those are re-translated only while they are untouched
+     defaults; a name the user typed is theirs to keep. */
+  function onLocaleChanged(previous) {
+    if (state.spec) {
+      var defaults = {};
+      defaults[previous.baseline] = "pw.world_baseline";
+      defaults[previous.event] = "pw.world_event";
+      defaults[previous.name] = "pw.experiment_name";
+      if (defaults[state.spec.name]) state.spec.name = __(defaults[state.spec.name]);
+      state.spec.worlds.forEach(function (world) {
+        if (defaults[world.label]) world.label = __(defaults[world.label]);
+      });
+    }
+    renderDesign();
+    renderHistory();
+    renderRunBar();
+    renderObserve();
+  }
+
+  if (typeof document !== "undefined") {
+    var lastLabels = {
+      baseline: typeof __ === "function" ? __("pw.world_baseline") : "",
+      event: typeof __ === "function" ? __("pw.world_event") : "",
+      name: typeof __ === "function" ? __("pw.experiment_name") : "",
+    };
+    document.addEventListener("locale-changed", function () {
+      var previous = lastLabels;
+      lastLabels = {
+        baseline: __("pw.world_baseline"),
+        event: __("pw.world_event"),
+        name: __("pw.experiment_name"),
+      };
+      onLocaleChanged(previous);
+    });
   }
 
   if (typeof module !== "undefined" && module.exports) {

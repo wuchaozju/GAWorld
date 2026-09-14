@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "slug": "绍兴柯桥",
+  "name": "柯桥区",
+  "display_name": "柯桥区, 绍兴市, 浙江省, 中国",
+  "created_at": "2026-09-11T08:14:27+00:00",
+  "place": {
+    "query": "绍兴柯桥",
+    "name": "柯桥区",
+    "display_name": "柯桥区, 绍兴市, 浙江省, 中国",
+    "lat": 30.0847959,
+    "lng": 120.4908065,
+    "bbox": [
+      29.9547959,
+      120.36080650000001,
+      30.2147959,
+      120.6208065
+    ],
+    "kind": "city",
+    "scale": "large",
+    "country": "中国",
+    "country_code": "cn",
+    "population": null,
+    "source": "nominatim",
+    "osm_id": 3316525,
+    "osm_type": "relation"
+  },
+  "scale": "large",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 30.084796,
+      "lng": 120.490807,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.010381686
+    },
+    "nodes": 174
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 80,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-11T08:14:27+00:00",
+      "action": "map.virtual",
+      "scale": "large",
+      "seed": 1926647855
+    },
+    {
+      "at": "2026-09-11T08:44:34+00:00",
+      "action": "map.real",
+      "nodes": 174,
+      "bbox": [
+        29.9547959,
+        120.36080650000001,
+        30.2147959,
+        120.6208065
+      ]
+    },
+    {
+      "at": "2026-09-11T08:44:34+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-11T08:44:34+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim"
+    },
+    {
+      "at": "2026-09-11T08:44:34+00:00",
+      "action": "population.add",
+      "added": 80,
+      "total": 80,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    }
+  ],
+  "updated_at": "2026-09-11T08:44:34+00:00"
+}

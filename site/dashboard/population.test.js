@@ -189,6 +189,26 @@ global.fetch = function (url) {
   });
 };
 
+/* The wizard draws its text through __()/__f() now, so supply the real zh-CN
+   locale rather than a stub that echoes keys: the Chinese assertions below keep
+   their meaning, and a typo'd key lands in missingKeys. */
+var LOCALE = require(require("path").join(__dirname, "locales", "zh-CN.json"));
+var missingKeys = [];
+global.__ = function (key) {
+  if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {
+    missingKeys.push(key);
+    return key;
+  }
+  return LOCALE[key];
+};
+global.__f = function (key, params) {
+  var text = global.__(key);
+  Object.keys(params || {}).forEach(function (name) {
+    text = text.split("{" + name + "}").join(String(params[name]));
+  });
+  return text;
+};
+
 require(path.join(HERE, "population.js"));
 
 /* ----------------------------------------------------------------- checks */
@@ -224,6 +244,9 @@ realSetTimeout(function () {
     ["reachable range is explained", issues.indexOf("可行范围") >= 0],
     ["header lists localized cohort axes", meta.indexOf("年龄段") >= 0],
     ["summary tells the user where to generate", summary.indexOf("第 2 步") >= 0 || els.popSummary.innerHTML.indexOf("第 2 步") >= 0],
+    ["every locale key the wizard asks for exists",
+      missingKeys.length === 0 || !process.stdout.write(
+        "    missing: " + missingKeys.join(", ") + "\n")],
   ];
 
   /* Step 2 with a population in hand: the generated agents must be

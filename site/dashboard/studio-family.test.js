@@ -20,9 +20,22 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const STUDIO = fs.readFileSync(path.join(__dirname, "studio.js"), "utf8");
+const ZH = require(path.join(__dirname, "locales", "zh-CN.json"));
 
-const START = "const MARITAL_LABELS = {";
+const START = "const MARITALS = [";
 const END = "async function saveFamilyOverride";
+
+/* Every key the editor asks for is collected so a deleted or renamed entry
+   fails here rather than rendering the key name at the operator. */
+const missingKeys = new Set();
+function lookup(key) {
+  if (!(key in ZH)) { missingKeys.add(key); return key; }
+  return ZH[key];
+}
+function format(key, params) {
+  return String(lookup(key)).replace(/\{(\w+)\}/g, (whole, name) =>
+    (params && name in params ? String(params[name]) : whole));
+}
 
 function familyBlock() {
   const start = STUDIO.indexOf(START);
@@ -51,9 +64,11 @@ function boot(overrides, preview) {
     "esc",
     "api",
     "$",
+    "__",
+    "__f",
     `${familyBlock()}\n return { blankFamilyDraft, familyDraftToOverride, familyCard };`
   );
-  const mod = factory(store, esc, api, $);
+  const mod = factory(store, esc, api, $, lookup, format);
   store.familyDraft = mod.blankFamilyDraft(overrides);
   return { store, mod };
 }
@@ -158,6 +173,15 @@ test("a conflicting pin is surfaced, not swallowed", () => {
   assert.match(mod.familyCard(), /后来的那条会被忽略/);
 });
 
+test("the gender option keeps its data value and translates only the text", () => {
+  const { mod } = boot({ children: [{ name: "蒋荷", gender: "女", age: 2 }] }, PREVIEW);
+  const html = mod.familyCard();
+  // The CSV and the override file both store the Chinese literal, so the value
+  // must survive; only the visible option text comes from the locale.
+  assert.match(html, /<option value="女"[^>]* selected>/);
+  assert.match(html, /<option value="男"/);
+});
+
 test("operator-typed names are escaped", () => {
   const hostile = {
     children: [
@@ -172,4 +196,20 @@ test("operator-typed names are escaped", () => {
   assert.ok(!html.includes("<img src=x"), "child name was not escaped");
   assert.ok(!html.includes("<b>不该加粗"), "brief was not escaped");
   assert.match(html, /&lt;img src=x/);
+});
+
+test("every locale key the family editor asks for exists", () => {
+  // Run the whole surface first so the set is populated by every branch.
+  ["auto", "none", "agent", "ghost"].forEach((mode) => {
+    const override = mode === "auto" ? null
+      : mode === "none" ? { partner: null }
+      : mode === "agent" ? { partner: { kind: "agent", agent_id: 16, role: "spouse" } }
+      : { partner: { kind: "ghost", name: "周敏", gender: "女", age: 41, role: "spouse" } };
+    boot(override, PREVIEW).mod.familyCard();
+  });
+  boot({ children: [], elders: [{ name: "李兰", gender: "女", age: 70, role: "mother" }] }, PREVIEW)
+    .mod.familyCard();
+  boot(null, null).mod.familyCard();
+  boot(null, { error: "boom" }).mod.familyCard();
+  assert.deepEqual([...missingKeys].sort(), [], "missing locale keys");
 });

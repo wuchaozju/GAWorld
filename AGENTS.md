@@ -56,8 +56,18 @@ GAWorld/
 - Interview an agent:
   - `python generative_city_sim.py interview --agent-id 31 --question "Question"`
   - `python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt`
-- Generate a new city map:
+- Generate a new city map (single, in-place):
   - `python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"`
+- Create a whole city from a place name (map + environment + agents, as a reusable bundle):
+  - `python -m gaworld.city create "绍兴柯桥" --size 200` — geocodes the name, pulls the real
+    OpenStreetMap road network, falls back to a procedural map when that is unavailable
+  - `python -m gaworld.city create "柳溪村" --offline --scale tiny` — no network at all
+  - `python -m gaworld.city add-agents <city> --size 200` / `add-agent <city> --name … --age …`
+    / `migrate <city> --agent-id 31`
+  - `python -m gaworld.city list` / `show <city>` / `use <city>` / `delete <city> --yes`
+  - Cities live in `data/cities/<slug>/`; `use` writes `{"city": slug}` into
+    `dashboard_config.json`, which repoints `map_path` / `csv_path` / `md_path`, the
+    environment events and the background prompt at that bundle.
 
 There is no build step beyond installing Python dependencies.
 

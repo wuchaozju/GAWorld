@@ -5,14 +5,25 @@ GAWorld's city map supports two interchangeable modes. Both build the **same**
 location inference, and the visualizer all work identically — the only
 difference is where the geography comes from.
 
+> Looking to set up a **different city** rather than understand the two modes?
+> Go to the [city tutorial](CITY_TUTORIAL.md) — `python -m gaworld.city create "<place name>"`
+> builds a bundle in either mode for you and wires the config up. This page is the
+> layer underneath that.
+
 | | `virtual` (default) | `real` |
 |---|---|---|
-| Source | Procedural spec `data/citymap.md` | Real Hangzhou OSM bundle `data/hangzhou_real.geojson` |
+| Source | Procedural spec `data/citymap.md` | Real OSM bundle, e.g. `data/hangzhou_real.geojson` |
 | Coordinates | Synthetic grid → projected to fake lat/lng around Hangzhou | True WGS-84 lat/lng from OpenStreetMap |
 | Nodes | Hand-authored hubs + generated blocks | Real districts (街道), metro stations, hospitals, universities, malls, parks, government |
 | Roads | Generated MST + loops | Hierarchical network synthesized over real node positions |
-| Metro / river | Sample lines + Qiantang stub | Real Hangzhou metro lines + real Qiantang river polyline |
-| Offline / reproducible | Yes | Yes (bundle is committed) |
+| Metro / river | Declared lines, or none | Real metro lines + real river polyline |
+| Offline / reproducible | Yes | Yes (bundle is a committed file) |
+
+> **Metro defaults changed.** A spec that uses `@` directives now declares its
+> transit explicitly: no `@metro` line means the place genuinely has none. This
+> stops a generated village from inheriting a subway and skewing
+> `choose_transport_mode` and fares. Legacy specs with *no* `@` directives at all
+> (e.g. `data/testcitymap.md`) still fall back to the sample lines.
 
 ## Switching modes
 
@@ -46,6 +57,19 @@ building) to match the simulation's abstraction level. It rotates across public
 Overpass mirrors and backs off on rate limits; metro reconstruction is
 best-effort and non-fatal.
 
+For **any other place**, use the city layer instead of this Hangzhou-specific
+script — it geocodes the name, derives the bbox, writes the projection anchor,
+and falls back to a procedural map when OSM is unreachable:
+
+```bash
+python -m gaworld.city create "绍兴柯桥"    # → data/cities/绍兴柯桥/map.geojson
+```
+
+Its Overpass client (`gaworld/city/osm.py`) is the generalised version of this
+script: it pins whichever mirror answered last and caps the whole fetch with a
+wall-clock deadline, because `urlopen`'s timeout is per socket operation and a
+trickling mirror otherwise runs far past it.
+
 ## Bundle format
 
 A GeoJSON `FeatureCollection` (same schema as `city_map.export_geojson`, plus a
@@ -58,10 +82,40 @@ few properties). `load_real_city_map` parses:
 - **LineString** `properties.kind="river"` → the river: `name`, `width_km`.
 - **LineString** `properties.kind="road"` → an explicit road edge
   (`source`/`target` node names). Omitted edges are auto-generated.
+- `meta.city` → the city's name, used in the LLM prompt header.
+- `meta.origin` → **the projection anchor** (see below). Optional; omitting it
+  keeps the historical Hangzhou projection.
 
 Any bundle in this format works, so the real-map mode is not Hangzhou-specific —
 point the fetcher (or a hand-authored GeoJSON) at another city and it loads the
-same way.
+same way. `python -m gaworld.city create "<place name>"` does exactly this and
+writes the anchor for you.
+
+## The projection anchor (`meta.origin`)
+
+The module constants in `gaworld/world/city_map.py` are calibrated for Hangzhou
+(~30°N), where one degree of longitude is ~96 km. Longitude degrees shrink as
+`cos(latitude)`, so reusing those constants elsewhere distorts **east-west**
+distances — at Paris (48.86°N) they come out **31% too large**, which feeds
+straight into travel time and fares.
+
+A bundle can therefore carry its own anchor:
+
+```json
+{
+  "meta": {
+    "city": "柯桥区",
+    "origin": {
+      "lat": 30.084796, "lng": 120.490807,
+      "lat_per_km": 0.009009009, "lng_per_km": 0.010381686
+    }
+  }
+}
+```
+
+`lng_per_km` is `1 / (111.32 · cos(lat))`. Both the forward and inverse
+projections honour it, so a node's recomputed lat/lng still round-trips to its
+true value. Bundles without `meta.origin` are unaffected.
 
 ## Rendering in the viewer
 

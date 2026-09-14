@@ -24,6 +24,18 @@ var HERE = __dirname;
  * the response survives JSON.parse. */
 var OVERVIEW = {
   generated_at: "2026-08-01 08:00:00",
+  /* Field labels arrive from the server now (overview().labels), resolved
+     through gaworld.settings.config_docs and carrying both languages — this
+     file used to keep its own 195-entry copy. The fixture mirrors that
+     contract, so the assertion below still tests a real rendered label. */
+  labels: {
+    economy: { zh: "经济 / 货币系统", en: "Economy / money system" },
+    monthly_exemption: { zh: "月起征点", en: "Monthly exemption" },
+    tax: { zh: "个人所得税", en: "Income tax" },
+    macro: { zh: "宏观周期", en: "Macro cycle" },
+    initial_inflation_rate: { zh: "初始通胀率", en: "Initial inflation rate" },
+    brackets: { zh: "税率表 [上限, 税率, 速算扣除]", en: "Bracket table [cap, rate, quick deduction]" },
+  },
   currency: {
     config: {
       economy: {
@@ -161,6 +173,26 @@ global.fetch = function () {
   });
 };
 
+/* The panel draws every string through __()/__f() now, so supply the real
+   zh-CN locale rather than a stub that echoes keys: the Chinese assertions
+   below keep their meaning, and a typo'd key lands in missingKeys. */
+var LOCALE = require(path.join(HERE, "locales", "zh-CN.json"));
+var missingKeys = [];
+global.__ = function (key) {
+  if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {
+    missingKeys.push(key);
+    return key;
+  }
+  return LOCALE[key];
+};
+global.__f = function (key, params) {
+  var text = global.__(key);
+  Object.keys(params || {}).forEach(function (name) {
+    text = text.split("{" + name + "}").join(String(params[name]));
+  });
+  return text;
+};
+
 require(path.join(HERE, "external.js"));
 
 /* ----------------------------------------------------------------- checks */
@@ -194,6 +226,9 @@ setTimeout(function () {
     ["lists fall back to a JSON textarea", edit.indexOf('data-kind="json"') >= 0],
     ["known keys carry Chinese labels", edit.indexOf("月起征点") >= 0],
     ["unbounded tax bracket is preserved for editing", edit.indexOf("Infinity") >= 0],
+    ["every locale key the panel asks for exists",
+      missingKeys.length === 0 || !process.stdout.write(
+        "    missing: " + missingKeys.join(", ") + "\n")],
     ["save starts disabled with nothing dirty", edit.indexOf("disabled") >= 0],
     ["header states the observation time", meta.indexOf("2026-08-01 08:00:00") >= 0],
 

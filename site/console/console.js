@@ -8,6 +8,7 @@
   var TABS = [
     { id: "dashboard", src: "/dashboard" },
     { id: "simviz", src: "/site/simviz/index.html" },
+    { id: "city", src: "/site/dashboard/city.html" },
     { id: "worlds", src: "/site/dashboard/worlds.html" },
     { id: "analytics", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },

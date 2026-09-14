@@ -597,19 +597,31 @@ class PanelWiringTests(unittest.TestCase):
         self.assertIn("/api/settings/llm/test", source)
         self.assertIn("function draftPayload()", source)
 
+    def _locale_keys(self, locale):
+        return json.loads(self._read("site", "dashboard", "locales", f"{locale}.json"))
+
     def test_the_panel_never_offers_a_plaintext_key_box(self):
         # dashboard_config.json is tracked; a key typed here would land in git.
+        # The field asks for the *name* of an environment variable, and there is
+        # no api_key input at all.
         source = self._read("site", "dashboard", "settings.js")
-        self.assertIn('field("api_key_env", "密钥环境变量"', source)
+        self.assertIn('field("api_key_env", __("set.field_key_env")', source)
         self.assertNotIn('data-draft="api_key"', source)
 
     def test_every_field_gets_a_tooltip_even_without_curated_text(self):
         # The fallback (path / type / default / source) is what makes the
         # "每一项都有说明" promise true for the ~400 leaves nobody has written
-        # prose for.
+        # prose for. These used to assert on the Chinese literals; the panel now
+        # renders through __(), so assert the wiring *and* that the keys resolve
+        # in both locales — a typo'd key would otherwise paint its own name.
         source = self._read("site", "dashboard", "settings.js")
-        self.assertIn('lines.push("路径：" + path)', source)
-        self.assertIn('lines.push("当前来自："', source)
+        self.assertIn('lines.push(__("set.help_path") + path)', source)
+        self.assertIn('lines.push(__("set.help_source")', source)
+        for locale in ("zh-CN", "en"):
+            keys = self._locale_keys(locale)
+            for key in ("set.help_path", "set.help_type", "set.help_default",
+                        "set.help_source", "set.field_key_env"):
+                self.assertIn(key, keys, f"{locale} is missing {key}")
 
 
 if __name__ == "__main__":

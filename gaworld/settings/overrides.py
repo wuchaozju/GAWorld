@@ -86,5 +86,13 @@ def apply_runtime_overrides(config: dict[str, Any]) -> dict[str, Any]:
     deep_update(config, load_json_override("dashboard_config.json"))
     deep_update(config, overrides)
     deep_update(config, load_environment_config(config.get("environment_config_path")))
+    # A selected city bundle (config["city"]) supplies its own map, environment
+    # and background. It is applied *after* the global environment-config file,
+    # which is a default rather than a per-city intent — otherwise a city in a
+    # continental climate would inherit the global file's subtropical events.
+    # GAWORLD_CONFIG_OVERRIDES still runs last and has the final word.
+    from gaworld.city.config import apply_city
+
+    apply_city(config)
     deep_update(config, overrides)
     return config

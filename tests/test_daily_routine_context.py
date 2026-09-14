@@ -220,13 +220,38 @@ class TestGenerateDailyRoutinePromptComposition(unittest.TestCase):
         captured = {}
 
         def fake_llm(prompt, task=None, agent_id=None):
-            captured["prompt"] = prompt
+            # setdefault, not assignment: ``generate_daily_routine`` makes a
+            # *second* call to the weekend rewriter when the simulated Day 3
+            # happens to fall on a Saturday or Sunday, and overwriting here
+            # handed the assertions that prompt instead of the one under test.
+            #
+            # The sim calendar starts from the real date by default, so Day 3
+            # is a weekend on two days out of every seven — which is exactly
+            # how often this pair went red. It read as flakiness and was twice
+            # misdiagnosed (as RNG order, then as leftover state under
+            # output/); it is neither, it is the calendar.
+            captured.setdefault("prompt", prompt)
             return '[{"time":"07:00","activity":"起床"},{"time":"23:00","activity":"睡觉"}]'
 
         with patch.object(sim, "call_llm", side_effect=fake_llm), \
              patch("gaworld.sim._prompt.list_life_events", return_value=[]):
             sim.generate_daily_routine(agent, base_schedule, day=3)
         return captured.get("prompt", "")
+
+    def test_capture_is_the_routine_prompt_on_every_weekday(self):
+        """The prompt under test must not depend on what day it is run.
+
+        Both a weekday Day 3 and a weekend Day 3 have to yield the daily-routine
+        prompt, not the weekend rewriter's.
+        """
+        import datetime
+
+        for start in (datetime.date(2026, 9, 7), datetime.date(2026, 9, 10)):
+            with self.subTest(start=start.strftime("%a")):
+                with patch.object(sim, "SIM_START_DATE", start):
+                    prompt = self._capture_prompt_for_agent(_make_agent())
+                self.assertNotIn("周末个性化日程改写器", prompt)
+                self.assertIn("当前身心状态", prompt)
 
     def test_prompt_contains_all_new_sections(self):
         agent = _make_agent()

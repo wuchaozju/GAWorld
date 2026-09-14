@@ -1,0 +1,83 @@
+/* GAWorld page shell — the header / step rail / panel / footer chrome shared by
+ * the secondary console pages (city, docs, external, population, settings,
+ * worlds) and by Agent Studio.
+ *
+ * Extracted from studio.css, which those six pages used to load in full for
+ * the 15 classes they actually use out of its 121. Load order is
+ * styles.css → page-shell.css → <page>.css, and Studio adds studio.css last.
+ *
+ * The class names are still `.studio-*` because renaming them means touching
+ * every page's markup and JS; the names are historical, the ownership is not.
+ */
+
+.studio-shell {
+  width: min(1680px, calc(100vw - 28px));
+  margin: 0 auto;
+  padding: 16px 0 28px;
+}
+
+/* ---- Top bar ---- */
+.studio-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 22px;
+  border: 1px solid var(--line);
+  background: linear-gradient(110deg, rgba(255, 255, 252, 0.96), rgba(226, 239, 230, 0.9));
+  box-shadow: var(--shadow);
+}
+.brand { display: flex; align-items: center; gap: 16px; }
+.brand-mark {
+  width: 46px; height: 46px; flex: none;
+  display: grid; place-items: center;
+  background: var(--ink); color: var(--paper);
+  font-family: Georgia, serif; font-weight: 700; font-size: 20px;
+  border-radius: 10px;
+}
+.brand-copy h1 { font-family: Georgia, "Noto Serif SC", serif; font-size: 28px; margin-top: 4px; }
+.brand-copy .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+/* ---- Step rail ---- */
+.step {
+  flex: 1 1 auto; min-width: 118px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 14px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  font-weight: 600; font-size: 13px; white-space: nowrap; transition: all .12s ease;
+}
+.step:hover { color: var(--ink); background: rgba(19, 121, 91, 0.06); }
+.step .num {
+  width: 22px; height: 22px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px;
+  border: 1px solid var(--line); color: var(--muted); background: #fff;
+}
+.step.is-active { color: var(--ink); border-color: var(--green); background: rgba(19, 121, 91, 0.09); }
+.step.is-active .num { background: var(--green); color: #fff; border-color: var(--green); }
+.step.is-done .num { background: var(--ink); color: #fff; border-color: var(--ink); }
+/* The step rail is the primary navigation on six pages and had no focus
+   indicator at all — .button's ring lives in styles.css and never applied
+   here, because a step is not a .button. */
+.step:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* ---- Panel ---- */
+.panel {
+  border: 1px solid var(--line); background: var(--panel);
+  box-shadow: var(--shadow); border-radius: 12px; padding: 18px;
+}
+
+/* ---- buttons (extra tones layered on base .button) ---- */
+.button.steel { background: var(--steel); color: #fff; border-color: var(--steel); }
+.button.ghost { background: transparent; }
+.button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---- footer ---- */
+.studio-foot {
+  display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
+  margin-top: 14px; padding: 12px 20px; font-size: 12px; color: var(--muted);
+  border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+}
+.studio-foot b { color: var(--ink); font-weight: 700; }

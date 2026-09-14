@@ -1,20 +1,4 @@
-:root {
-  --paper: #eef3ee;
-  --card: #ffffff;
-  --ink: #1a2420;
-  --muted: #66746c;
-  --line: #dde6de;
-  --green: #0e7a58;
-  --green-deep: #0a4a37;
-  --green-soft: #e3f2ea;
-  --red: #c04545;
-  --amber: #d6a81e;
-  --steel: #3c5a68;
-  --radius: 14px;
-  --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px rgba(20, 32, 27, 0.05), 0 4px 16px rgba(20, 32, 27, 0.06);
-  --shadow-lg: 0 12px 36px rgba(10, 74, 55, 0.18);
-}
+@import url("/site/tokens.css");
 
 * { box-sizing: border-box; }
 
@@ -59,7 +43,7 @@ button, input, select, textarea { font: inherit; }
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/video/public/gaworld-graphical-abstract.png") right center / cover no-repeat;
+  background: url("/site/assets/gaworld-graphical-abstract.png") right center / cover no-repeat;
   opacity: 0.14;
   -webkit-mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
   mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
@@ -147,7 +131,9 @@ p { color: var(--muted); line-height: 1.7; }
   gap: 12px 22px;
   align-items: end;
 }
-.toolbar-actions { flex: 0 0 auto; align-self: end; }
+/* Shrinkable: the row's max-content is ~1000px, and pinning it with
+   flex-shrink: 0 pushed that width onto the whole page on a phone. */
+.toolbar-actions { flex: 0 1 auto; min-width: 0; align-self: end; }
 /* 定时运行: the time field and its button read as one control. */
 .schedule-run { display: flex; gap: 8px; align-items: center; }
 .schedule-run input { width: auto; }
@@ -265,7 +251,11 @@ input[type="range"] { accent-color: var(--green); min-height: auto; border: none
 .workspace-masonry > .panel { break-inside: avoid; margin: 0 0 16px; }
 .section-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 12px; }
 .head-actions { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.field-label { display: inline-flex; align-items: center; }
+/* inline-flex on one line pushed the "?" to the far edge of the grid cell as
+   soon as the label wrapped — visible on the English labels ("Simulation
+   years", "Seconds per Day"), where the icon detached from its text. Wrapping
+   keeps it tucked against the last line instead. */
+.field-label { display: inline-flex; align-items: center; flex-wrap: wrap; }
 .agent-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .dashboard-avatar-wrap {
   width: 56px;
@@ -388,6 +378,38 @@ body.is-running .map-panel { border-color: rgba(14, 122, 88, 0.55); box-shadow: 
 .event-title-input { margin: 10px 0 8px; }
 .event-list { min-height: 180px; max-height: 300px; }
 
+/* State-aware candidate tags: one click fires that event on the selected
+   resident, and the set is re-ranked as their state moves. */
+.candidate-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.candidate-agent { margin-left: auto; color: var(--steel); font-size: 12px; }
+.candidate-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.candidate-empty { color: var(--muted); font-size: 13px; font-weight: 600; }
+.candidate-tag {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.candidate-tag:hover { border-color: var(--green); background: var(--green-soft); }
+.candidate-tag:disabled { opacity: 0.5; cursor: default; }
+.candidate-tag[data-weight="mid"] { border-color: rgba(214, 168, 30, 0.55); }
+.candidate-tag[data-weight="high"] { border-color: rgba(192, 69, 69, 0.55); color: var(--red); }
+.candidate-tag[data-weight="high"]:hover { border-color: var(--red); background: rgba(192, 69, 69, 0.08); }
+
 .memory-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -427,6 +449,9 @@ body.is-running .map-panel { border-color: rgba(14, 122, 88, 0.55); box-shadow: 
   background: #fbfdfb;
   font-size: 13px;
   line-height: 1.6;
+  /* Memory lines quote URLs and search queries verbatim; one unbroken link is
+     enough to widen the whole page. Inherited, so it covers every child. */
+  overflow-wrap: anywhere;
 }
 .memory-view .mem-empty { color: var(--muted); font-size: 12.5px; }
 .memory-view .mem-block + .mem-block { margin-top: 14px; }
@@ -816,13 +841,46 @@ body.is-running .map-panel { border-color: rgba(14, 122, 88, 0.55); box-shadow: 
   .hero h1 { font-size: 26px; }
   .panel { padding: 13px; }
   .workspace-masonry { columns: 1; }
-  .memory-grid, .event-grid { grid-template-columns: 1fr; }
+  /* minmax(0, …) throughout, never a bare 1fr: a bare 1fr floors the column
+     at its min-content, and one wide memory card then widens the whole page. */
+  .memory-grid, .event-grid { grid-template-columns: minmax(0, 1fr); }
   .family-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .timeline { grid-template-columns: 1fr; }
+  .timeline { grid-template-columns: minmax(0, 1fr); }
   .toolbar-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .toolbar-sliders { grid-template-columns: 1fr; }
+  .toolbar-sliders { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* The language switcher now lives in the console shell top bar
    (site/console/console.css). */
+
+/* ------------------------------------------------------- focus fallback */
+/* 143 interactive elements across the console (docs' 50 nav links, analytics'
+   30 metric chips, the dashboard's candidate tags and collapse toggles, …) had
+   no focus rule of their own and fell back to the UA ring. That ring is
+   visible, so this is about consistency rather than a missing indicator: one
+   green ring everywhere instead of two different ones.
+   :where() has zero specificity, so every existing focus style still wins —
+   .button's box-shadow ring, the input ring, .help-tip's outline, and
+   .collaboration-member-chip's are all untouched. */
+:where(a[href], button, [role="button"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------- reduced motion */
+/* The running indicator pulses forever and the busy buttons spin forever;
+   both are exactly what this setting exists to stop. State stays legible
+   without the movement — .status-badge.running keeps its dot and colour, and
+   a busy button keeps its ring, it just no longer rotates. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .status-badge.running::before { animation: none; opacity: 1; transform: none; }
+  .button.busy::after { animation: none; }
+  .toast { transform: none; }
+}
 

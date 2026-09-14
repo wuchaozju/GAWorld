@@ -63,6 +63,7 @@ Across days, the simulator accumulates:
 - Interest and skill-growth system: per-agent hobbies, planned skills, practice time, growth progress, and schedule/work-choice influence — with power-law learning gains, streak momentum, milestone events, day-end forgetting decay, four-phase interest development, and social interest contagion
 - Reusable Skill library: Markdown-based global and per-agent private skills, auto-distilled from experience and injected into cognition and work briefs
 - Real-work task system: agents browse a mock job market and produce real artifacts (HTML, Python, articles, lesson plans, research notes) matched to their job and skills
+- Create a city from a place name: real OSM geography with a procedural fallback, derived environment and background, multiple cities side by side
 - City map generation and route playback
 - Visualization trace export
 - Agent interview CLI
@@ -121,7 +122,7 @@ code.
 - `gaworld/core/`: typed `Agent` dataclass adapter and concurrent `parallel_map` runner
 - `gaworld/llm/providers.py`: provider wrappers (Ollama / OpenAI-compatible / Anthropic-compatible) and the `LLM_ROUTER` dispatcher
 - `gaworld/memory/store.py`: agent memory, vector DB, schedule/action/location caches, log persistence
-- `gaworld/world/city_map.py`: graph, routes, transport costs, weather/rush-hour effects, category-based spatial queries
+- `gaworld/world/city_map.py`: graph, routes, transport costs, weather/rush-hour effects, category-based spatial queries, per-city projection anchors
 - `gaworld/world/local_physical.py`: per-node occupancy / opening-hours snapshots, crowd-surge anomaly detection, perception injection
 - `gaworld/memory/spatial_preferences.py`: learned location-avoidance preferences with recency decay and redirection
 - `gaworld/skills/`: reusable Skill library (registry, Markdown schemas, prompt injection, experience-to-skill consolidation)
@@ -139,17 +140,19 @@ code.
 - `gaworld/work/`: real-work task system (runtime, worker pool, queue, market, router, adapters)
 - `gaworld/population/`: parameterised population synthesis — `schema` (knob contract + feasibility precheck), `synth` (IPF + conditional sampling + income rank-transform), `network` (households, workplaces, homophily social graph), `report` (validation gate + review charts), `writer` (state CSV + profile Markdown + manifest)
 - `gaworld/group/`: cohort (group) simulation — `cohort` (partition, centroid **and** dispersion, mean-zero network coupling), `cohort_day` (one LLM call per cohort per day), `materialize` (focal / event / tail / audit selection, audit residual), `driver` (day loop + cost accounting), `metrics` + `validate` (the L1–L4 gate), `plugin` (observational cohort telemetry)
-- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio) and `external_systems_api` (External Systems)
+- `gaworld/city/`: create a whole city from a place name — `geocode` (Nominatim → coordinates, bbox, scale), `osm` (Overpass fetch with mirror pinning and a wall-clock deadline), `procedural` (name-seeded fallback map), `environment` (climate- and scale-derived events + background), `bundle` (on-disk layout, manifest, registry), `agents` (bulk synthesis, single append, migration), `config` (point the simulator at a bundle)
+- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities) and `external_systems_api` (External Systems)
 - `gaworld/io/`: HTTP guard with retry/backoff and HTML extraction
 - `gaworld/sim/`: extracted simulator sub-modules — `_utils`, `agents_loader`, `_schedule`, `_location`, `_cognition`, `_rag`, `_diary` (more slices coming as the legacy file shrinks)
 - `simulation_visualizer.py`, `avatar_generator.py`, `generate_agent_rag_seed.py`, `analyze_wellbeing.py`: standalone CLI tools (not imported by the runtime)
 - `data/hangzhou_agents_state_init.csv`: seed state values
 - `data/hangzhou_profiles_with_names.md`: agent profiles
-- `data/citymap.md`: city map data
+- `data/citymap.md`: default city map data
+- `data/cities/<slug>/`: city bundles created by `python -m gaworld.city` (manifest + map + environment + population)
 - `scripts/`: launch and developer utilities
 - `docs/`: tutorials, integration notes, design docs, refactor history (`REFACTOR_PLAN.md`, `REFACTOR_BASELINE.md`, `PROJECT_STRUCTURE.md`)
 - `gaworld/parallel/`: parallel-world experiments — `spec` (world/event validation + per-world isolation overrides), `runner` (forks N worlds through a small pool, tracks progress), `analysis` (per-step divergence, split points, per-agent movers)
-- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + External Systems `external.html` + Parallel Worlds `worlds.html`)
+- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + Cities `city.html` + External Systems `external.html` + Parallel Worlds `worlds.html`)
 - `site/simviz/`: playback viewer
 - `output/`: generated artifacts
 
@@ -313,7 +316,38 @@ also carry a `config` patch instead of (or alongside) events, which is how you m
 rather than an incident. The same experiments are designed and read interactively in the console's
 **平行世界 / Parallel Worlds** tab. Full walkthrough: [Parallel Worlds Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese).
 
-Generate a city map:
+### Cities
+
+Build a whole simulable city from a place name: the name is geocoded, the real OpenStreetMap road
+network and landmarks are pulled for its bounding box, and a map, an environment and a background
+prompt are derived from them. When OSM has nothing usable — a hamlet, a fictional name, no network —
+the city is generated procedurally and **deterministically from the name**, so the same name always
+gives the same city. Each city is a self-contained bundle under `data/cities/<slug>/`, so they never
+overwrite one another. Full walkthrough: [City Tutorial](./docs/CITY_TUTORIAL.md) (in Chinese).
+
+```bash
+# Geocode + real OSM map, with 200 synthesised residents
+python -m gaworld.city create "绍兴柯桥" --size 200
+
+# No network, or a place that does not exist
+python -m gaworld.city create "柳溪村" --offline --scale tiny
+
+# Add agents: in bulk, one at a time, or by moving an existing one in
+python -m gaworld.city add-agents 绍兴柯桥 --size 200
+python -m gaworld.city add-agent  绍兴柯桥 --name 林素 --age 34 --job "社区医生"
+python -m gaworld.city migrate    绍兴柯桥 --agent-id 31
+
+# Point the simulator at it (takes effect on the next run)
+python -m gaworld.city use 绍兴柯桥
+```
+
+Selecting a city repoints `map_path` / `csv_path` / `md_path` / `map_mode`, the environment event
+pools and the `background` prompt at that bundle — without the last one, agents in a new city keep
+reasoning as though they were still in Hangzhou. The same operations are available in the console's
+**城市 / Cities** tab.
+
+The older single-map generator is still there for when you just want a different map and do not care
+which real place it corresponds to:
 
 ```bash
 python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"

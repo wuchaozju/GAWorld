@@ -145,12 +145,16 @@ class OllamaProvider:
         self.timeout = timeout
         self.attempts = attempts
 
-    def call(self, prompt):
+    def call(self, prompt, system=None, temperature=None):
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": True,
         }
+        if system:
+            payload["system"] = system
+        if temperature is not None:
+            payload["options"] = {"temperature": float(temperature)}
 
         def _do() -> str:
             try:
@@ -212,19 +216,27 @@ class OpenAIProvider:
         self.temperature = temperature
         self.attempts = attempts
 
-    def call(self, prompt):
+    def call(self, prompt, system=None, temperature=None):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
         payload = {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
         }
         if self.max_tokens is not None:
             payload["max_tokens"] = self.max_tokens
-        if self.temperature is not None:
-            payload["temperature"] = self.temperature
+        # A per-call temperature wins over the provider default: an experiment
+        # that needs T=1 sampling must not be silently pinned to the config's
+        # T=0.2, which would collapse the draw-to-draw variation it measures.
+        effective_temperature = self.temperature if temperature is None else temperature
+        if effective_temperature is not None:
+            payload["temperature"] = float(effective_temperature)
 
         def _do_streaming() -> str:
             stream_payload = dict(payload, stream=True)
@@ -397,7 +409,7 @@ class AnthropicProvider:
             if str(item or "").strip()
         ]
 
-    def call(self, prompt):
+    def call(self, prompt, system=None, temperature=None):
         if not self.api_key:
             env_names = ", ".join(self.api_key_envs) or "ANTHROPIC_API_KEY"
             raise ValueError(f"Anthropic provider API key not found. Set one of: {env_names}")
@@ -406,8 +418,11 @@ class AnthropicProvider:
             "max_tokens": self.max_tokens,
             "messages": [{"role": "user", "content": prompt}],
         }
-        if self.system:
-            payload["system"] = self.system
+        effective_system = system or self.system
+        if effective_system:
+            payload["system"] = effective_system
+        if temperature is not None:
+            payload["temperature"] = float(temperature)
 
         return _retrying(
             lambda: self._call_once(payload),
@@ -668,10 +683,35 @@ class LLMRouter:
                     chain.append(name)
         return chain
 
-    def call(self, prompt, task=None, agent_id=None, provider=None):
+    def call(
+        self,
+        prompt,
+        task=None,
+        agent_id=None,
+        provider=None,
+        system=None,
+        temperature=None,
+        allow_fallback=True,
+    ):
         chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
+        if not allow_fallback:
+            # Falling back to a different model is the right default for a
+            # simulation — a finished run beats a crashed one. It is the
+            # wrong default for an experiment: cells answered by different
+            # models turn a between-arm comparison into a between-model
+            # one, silently, and nothing downstream can detect it.
+            chain = chain[:1]
         if not chain or chain[0] not in self.providers:
             raise ValueError(f"Provider '{chain[0] if chain else ''}' not found in config.")
+
+        # Only forward the overrides the caller actually set. Passing
+        # ``system=None`` unconditionally would break any provider-shaped
+        # object whose ``call`` still takes the prompt alone.
+        overrides: dict[str, Any] = {}
+        if system is not None:
+            overrides["system"] = system
+        if temperature is not None:
+            overrides["temperature"] = temperature
 
         call_id = uuid.uuid4().hex[:8]
         prompt_chars = len(prompt or "")
@@ -680,7 +720,7 @@ class LLMRouter:
         for index, provider_name in enumerate(chain):
             started = time.perf_counter()
             try:
-                result = self.providers[provider_name].call(prompt)
+                result = self.providers[provider_name].call(prompt, **overrides)
                 if not str(result or "").strip():
                     raise _empty_completion(provider_name)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
@@ -754,7 +794,24 @@ def available_providers():
     return out
 
 
-def call_llm(prompt, task=None, agent_id=None, provider=None):
+def resolve_provider(task=None, agent_id=None, provider=None) -> str:
+    """Name of the provider a call with these arguments would hit first.
+
+    Lets a caller record *which model actually answered* alongside the
+    answer, so model provenance survives into the artifact.
+    """
+    return LLM_ROUTER._resolve_chain(task=task, agent_id=agent_id, provider=provider)[0]
+
+
+def call_llm(
+    prompt,
+    task=None,
+    agent_id=None,
+    provider=None,
+    system=None,
+    temperature=None,
+    allow_fallback=True,
+):
     """Public helper for model calls used across the simulator.
 
     Each invocation:
@@ -762,8 +819,26 @@ def call_llm(prompt, task=None, agent_id=None, provider=None):
     * runs through retry / backoff for transient errors,
     * is logged with provider, task, agent, prompt size, and latency,
     * raises the original :class:`requests` exception on hard failure.
+
+    ``system`` and ``temperature`` are per-call overrides. Both default to
+    ``None`` = "use the provider's configured behaviour", so existing
+    callsites are unaffected. They exist for prompt-design experiments,
+    where the system message *is* the treatment and the sampling
+    temperature is part of the protocol rather than a deployment setting.
+
+    ``allow_fallback=False`` pins the call to a single model: an
+    experiment would rather lose a cell than have it answered by a
+    different model than its neighbours.
     """
-    return LLM_ROUTER.call(prompt, task=task, agent_id=agent_id, provider=provider)
+    return LLM_ROUTER.call(
+        prompt,
+        task=task,
+        agent_id=agent_id,
+        provider=provider,
+        system=system,
+        temperature=temperature,
+        allow_fallback=allow_fallback,
+    )
 
 
 # ---------------------------------------------------------------------

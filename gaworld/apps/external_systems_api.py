@@ -411,6 +411,38 @@ def _section_config(cfg: dict[str, Any], section: str) -> dict[str, Any]:
     return {key: cfg.get(key) for key in CONFIG_SECTIONS[section] if key in cfg}
 
 
+def _field_labels(*trees: Any) -> dict[str, dict[str, str]]:
+    """``key -> {zh, en}`` for every leaf and branch name in ``trees``.
+
+    The labels come from :mod:`gaworld.settings.config_docs`, which is the same
+    table the 配置 panel uses and is already bilingual. This page used to keep
+    its own 195-entry copy, 182 of which were byte-identical to that table — a
+    second source of truth for the same strings, and one that would silently
+    miss any knob added after it was written. Both languages travel together so
+    the browser can switch without refetching.
+    """
+    from gaworld.settings import config_docs
+
+    labels: dict[str, dict[str, str]] = {}
+
+    def visit(node: Any) -> None:
+        if not isinstance(node, dict):
+            return
+        for key, value in node.items():
+            name = str(key)
+            if name not in labels:
+                zh = config_docs.label_for(name)
+                en = config_docs.label_en_for(name)
+                # label_for falls back to the raw key; nothing to send then.
+                if zh != name or en:
+                    labels[name] = {"zh": zh, "en": en or zh}
+            visit(value)
+
+    for tree in trees:
+        visit(tree)
+    return labels
+
+
 def overview() -> dict[str, Any]:
     cfg = _effective_config()
     services_config = _section_config(cfg, "services")
@@ -418,14 +450,17 @@ def overview() -> dict[str, Any]:
     if isinstance(llm, dict) and isinstance(llm.get("routing"), dict):
         # Providers carry API keys; only the routing table is editable here.
         services_config["llm"] = {"routing": llm["routing"]}
+    currency_config = _section_config(cfg, "currency")
+    environment_config = _section_config(cfg, "environment")
     return {
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "labels": _field_labels(currency_config, environment_config, services_config),
         "currency": {
-            "config": _section_config(cfg, "currency"),
+            "config": currency_config,
             "runtime": currency_runtime(),
         },
         "environment": {
-            "config": _section_config(cfg, "environment"),
+            "config": environment_config,
             "runtime": environment_runtime(),
         },
         "services": {

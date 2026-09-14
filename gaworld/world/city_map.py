@@ -14,6 +14,26 @@ KM_PER_GRID_Y = 0.72
 LAT_PER_KM = 1.0 / 111.0
 LNG_PER_KM = 1.0 / 96.0
 
+
+def _origin_params(origin=None):
+    """Resolve a projection anchor to ``(lat0, lng0, lat_per_km, lng_per_km)``.
+
+    The module constants are calibrated for Hangzhou (~30°N), where a degree of
+    longitude is ~96 km.  A city elsewhere ships its own anchor in its real-map
+    bundle (``meta.origin``) so east-west distances stay true at its latitude;
+    ``None`` keeps the historical Hangzhou projection."""
+    if not origin:
+        return BASE_LAT, BASE_LNG, LAT_PER_KM, LNG_PER_KM
+    try:
+        return (
+            float(origin.get("lat", BASE_LAT)),
+            float(origin.get("lng", BASE_LNG)),
+            float(origin.get("lat_per_km") or LAT_PER_KM),
+            float(origin.get("lng_per_km") or LNG_PER_KM),
+        )
+    except (AttributeError, TypeError, ValueError):
+        return BASE_LAT, BASE_LNG, LAT_PER_KM, LNG_PER_KM
+
 TRANSPORT_MODES = {
     "walk":  {"speed_kmh": 4.8,  "fixed_min": 0},
     "bike":  {"speed_kmh": 13.0, "fixed_min": 1},
@@ -209,6 +229,10 @@ def _parse_map_file(map_path):
         "metro_lines": [],
         "river": None,
         "interiors": {},
+        # True once the file uses any "@" directive. Such a spec declares its
+        # transit explicitly, so an absent @metro means "no metro" rather than
+        # "fall back to the defaults" — see _build_city_map.
+        "has_directives": False,
     }
     if not os.path.exists(map_path):
         return parsed
@@ -222,6 +246,7 @@ def _parse_map_file(map_path):
             if not line:
                 continue
             if line.startswith("@"):  # explicit city-spec directives
+                parsed["has_directives"] = True
                 if line.startswith("@node:"):
                     head, attrs = _parse_directive_parts(line[len("@node:"):].strip())
                     name = _slug(head)
@@ -319,6 +344,7 @@ def load_city_map(map_path):
         explicit_metro=parsed.get("metro_lines", []),
         explicit_river=parsed.get("river"),
         explicit_interiors=parsed.get("interiors", {}),
+        declares_directives=parsed.get("has_directives", False),
     )
 
 
@@ -334,7 +360,7 @@ def load_city_map_text(map_path):
 
 
 def _build_city_map(hubs, explicit_nodes=None, explicit_roads=None, explicit_metro=None,
-                    explicit_river=None, explicit_interiors=None):
+                    explicit_river=None, explicit_interiors=None, declares_directives=False):
     explicit_nodes = explicit_nodes or {}
     explicit_roads = explicit_roads or []
     explicit_metro = explicit_metro or []
@@ -462,7 +488,17 @@ def _build_city_map(hubs, explicit_nodes=None, explicit_roads=None, explicit_met
     road_edges.extend(_normalize_explicit_roads(nodes, explicit_roads))
     road_edges = _dedupe_edges(road_edges)
 
-    metro_lines = _normalize_metro_lines(nodes, explicit_metro or DEFAULT_METRO_LINES)
+    # A directive-based spec states its transit explicitly, so no @metro line
+    # means the place genuinely has none — a generated village must not inherit
+    # a subway, which would otherwise skew transport-mode choice and fares.
+    # Legacy directive-free maps keep falling back to the defaults.
+    if explicit_metro:
+        metro_source = explicit_metro
+    elif declares_directives:
+        metro_source = []
+    else:
+        metro_source = DEFAULT_METRO_LINES
+    metro_lines = _normalize_metro_lines(nodes, metro_source)
     bridges = _detect_bridges(nodes, road_edges, river)
     tile_map = _build_tile_map(nodes, road_edges, river=river, metro_lines=metro_lines, bridges=bridges)
     city_map = {
@@ -502,17 +538,19 @@ def _parse_hours_to_min(value, default):
         return default
 
 
-def _make_node_from_spec(name, spec, default_kind, default_district, default_x, default_y, default_parent=""):
+def _make_node_from_spec(name, spec, default_kind, default_district, default_x, default_y, default_parent="",
+                         origin=None):
     spec = spec or {}
     kind = spec.get("kind", default_kind)
     district = spec.get("district", default_district)
     grid_x = float(spec.get("x", default_x))
     grid_y = float(spec.get("y", default_y))
     parent = _slug(spec.get("parent", default_parent)) if spec.get("parent", default_parent) else ""
+    base_lat, base_lng, lat_per_km, lng_per_km = _origin_params(origin)
     x_km = grid_x * KM_PER_GRID_X
     y_km = grid_y * KM_PER_GRID_Y
-    lat = BASE_LAT + y_km * LAT_PER_KM
-    lng = BASE_LNG + x_km * LNG_PER_KM
+    lat = base_lat + y_km * lat_per_km
+    lng = base_lng + x_km * lng_per_km
     label = _slug(name)
     category = spec.get("category", infer_category(label))
 
@@ -1882,14 +1920,15 @@ CATEGORY_LABEL_ZH = {
 }
 
 
-def _lnglat_to_grid(lng, lat):
+def _lnglat_to_grid(lng, lat, origin=None):
     """Inverse of the grid→lat/lng projection: map real WGS84 to grid units.
 
     The forward projection lives in ``_make_node_from_spec`` /
     ``_grid_to_lnglat``; keeping this its exact inverse means a real node's
     recomputed lat/lng round-trips back to (within rounding) its true value."""
-    x_km = (float(lng) - BASE_LNG) / LNG_PER_KM
-    y_km = (float(lat) - BASE_LAT) / LAT_PER_KM
+    base_lat, base_lng, lat_per_km, lng_per_km = _origin_params(origin)
+    x_km = (float(lng) - base_lng) / lng_per_km
+    y_km = (float(lat) - base_lat) / lat_per_km
     return x_km / KM_PER_GRID_X, y_km / KM_PER_GRID_Y
 
 
@@ -1921,7 +1960,7 @@ def _real_road_network(nodes):
     return _dedupe_edges(edges)
 
 
-def _real_river_from_lnglat(nodes, river_spec):
+def _real_river_from_lnglat(nodes, river_spec, origin=None):
     """Build a normalized river dict from real (lng, lat) points.
 
     ``city_map`` stores ``river.path`` as 0..1 fractions of the map bounds (see
@@ -1934,7 +1973,7 @@ def _real_river_from_lnglat(nodes, river_spec):
     span_y = max(1e-6, bounds["max_y"] - bounds["min_y"])
     path = []
     for lng, lat in river_spec["lnglat"]:
-        gx, gy = _lnglat_to_grid(lng, lat)
+        gx, gy = _lnglat_to_grid(lng, lat, origin)
         path.append((
             round((gx - bounds["min_x"]) / span_x, 4),
             round((gy - bounds["min_y"]) / span_y, 4),
@@ -1951,7 +1990,8 @@ def _real_river_from_lnglat(nodes, river_spec):
     }
 
 
-def _build_real_city_map(node_specs, roads=None, metro_lines=None, river_spec=None):
+def _build_real_city_map(node_specs, roads=None, metro_lines=None, river_spec=None, origin=None,
+                         city=None):
     """Assemble a full ``city_map`` from real-geo node/road/metro/river specs.
 
     Each node spec carries real grid coords (from ``_lnglat_to_grid``) plus an
@@ -1966,6 +2006,7 @@ def _build_real_city_map(node_specs, roads=None, metro_lines=None, river_spec=No
             default_x=spec.get("x", 0.0),
             default_y=spec.get("y", 0.0),
             default_parent=spec.get("parent", ""),
+            origin=origin,
         )
         nodes.setdefault(node["id"], node)  # first occurrence wins (OSM dupes)
 
@@ -1975,7 +2016,7 @@ def _build_real_city_map(node_specs, roads=None, metro_lines=None, river_spec=No
     road_edges = _dedupe_edges(road_edges)
 
     metro = _normalize_metro_lines(nodes, metro_lines or [])
-    river = _real_river_from_lnglat(nodes, river_spec)
+    river = _real_river_from_lnglat(nodes, river_spec, origin)
     bridges = _detect_bridges(nodes, road_edges, river)
     tile_map = _build_tile_map(nodes, road_edges, river=river, metro_lines=metro, bridges=bridges)
     city_map = {
@@ -1988,14 +2029,15 @@ def _build_real_city_map(node_specs, roads=None, metro_lines=None, river_spec=No
         "bounds": _compute_bounds(nodes),
         "scale": {"km_per_grid_x": KM_PER_GRID_X, "km_per_grid_y": KM_PER_GRID_Y},
         "interiors": {},
-        "meta": {"mode": "real", "source": "OpenStreetMap"},
+        "meta": {"mode": "real", "source": "OpenStreetMap", "city": city or "",
+                 "origin": dict(origin) if origin else None},
     }
     _attach_derived(city_map)
     return city_map
 
 
 def _parse_real_bundle(data):
-    """Parse a real-map bundle into (node_specs, roads, metro_lines, river_spec).
+    """Parse a real-map bundle into (node_specs, roads, metro_lines, river_spec, origin).
 
     Accepts a GeoJSON ``FeatureCollection`` (same schema as ``export_geojson``,
     with a few extra properties) or a plain ``{"nodes", "metro_lines",
@@ -2003,11 +2045,13 @@ def _parse_real_bundle(data):
     LineStrings become the respective overlays."""
     node_specs, roads, metro_lines, river_spec = [], [], [], None
 
+    origin = (data.get("meta") or {}).get("origin") if isinstance(data, dict) else None
+
     def _node_from_lnglat(lng, lat, props):
         name = _slug(props.get("name") or props.get("id"))
         if not name or lng is None or lat is None:
             return None
-        gx, gy = _lnglat_to_grid(lng, lat)
+        gx, gy = _lnglat_to_grid(lng, lat, origin)
         return {
             "name": name, "x": gx, "y": gy,
             "kind": props.get("kind", "place"),
@@ -2064,7 +2108,7 @@ def _parse_real_bundle(data):
             river_spec = {"name": _slug(river.get("name") or DEFAULT_RIVER["name"]),
                           "lnglat": [(c[0], c[1]) for c in river["lnglat"] if len(c) >= 2],
                           "width_km": river.get("width_km")}
-    return node_specs, roads, metro_lines, river_spec
+    return node_specs, roads, metro_lines, river_spec, origin
 
 
 def load_real_city_map(path):
@@ -2081,9 +2125,10 @@ def load_real_city_map(path):
         )
     with open(resolved, "r", encoding="utf-8") as f:
         data = json.load(f)
-    node_specs, roads, metro_lines, river_spec = _parse_real_bundle(data)
+    node_specs, roads, metro_lines, river_spec, origin = _parse_real_bundle(data)
     return _build_real_city_map(node_specs, roads=roads, metro_lines=metro_lines,
-                                river_spec=river_spec)
+                                river_spec=river_spec, origin=origin,
+                                city=(data.get("meta") or {}).get("city"))
 
 
 def real_city_map_text(city_map):
@@ -2095,7 +2140,8 @@ def real_city_map_text(city_map):
     by_cat = defaultdict(list)
     for node in nodes.values():
         by_cat[node.get("category", "mixed")].append(node.get("name"))
-    lines = ["# 真实杭州地图 (OpenStreetMap)"]
+    city_label = str((city_map.get("meta") or {}).get("city") or "").strip()
+    lines = [f"# 真实{city_label}地图 (OpenStreetMap)" if city_label else "# 真实地图 (OpenStreetMap)"]
     for cat, names in sorted(by_cat.items(), key=lambda kv: -len(kv[1])):
         label = CATEGORY_LABEL_ZH.get(cat, cat)
         sample = "、".join(names[:8])

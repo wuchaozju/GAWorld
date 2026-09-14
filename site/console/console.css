@@ -1,13 +1,4 @@
-:root {
-  --paper: #eef3ee;
-  --card: #ffffff;
-  --ink: #1a2420;
-  --muted: #66746c;
-  --line: #dde6de;
-  --green: #0e7a58;
-  --green-deep: #0a4a37;
-  --steel: #3c5a68;
-}
+@import url("/site/tokens.css");
 
 * { box-sizing: border-box; }
 

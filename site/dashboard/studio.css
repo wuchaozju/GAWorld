@@ -1,58 +1,20 @@
-/* GAWorld Agent Studio — builds on the base dashboard tokens in styles.css */
+/* GAWorld Agent Studio — the Studio-only layer.
+ *
+ * The header / step / panel / footer chrome this file used to carry is now in
+ * page-shell.css, which Studio and the six secondary pages both load; only
+ * rules nothing outside Studio uses belong here. Load order:
+ * styles.css → page-shell.css → studio.css.
+ */
 
-.studio-body { }
-.studio-shell {
-  width: min(1680px, calc(100vw - 28px));
-  margin: 0 auto;
-  padding: 16px 0 28px;
-}
-
-/* ---- Top bar ---- */
-.studio-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px 22px;
-  border: 1px solid var(--line);
-  background: linear-gradient(110deg, rgba(255, 255, 252, 0.96), rgba(226, 239, 230, 0.9));
-  box-shadow: var(--shadow);
-}
-.brand { display: flex; align-items: center; gap: 16px; }
-.brand-mark {
-  width: 46px; height: 46px; flex: none;
-  display: grid; place-items: center;
-  background: var(--ink); color: var(--paper);
-  font-family: Georgia, serif; font-weight: 700; font-size: 20px;
-  border-radius: 10px;
-}
-.brand-copy h1 { font-family: Georgia, "Noto Serif SC", serif; font-size: 28px; margin-top: 4px; }
-.brand-copy .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .top-actions { display: flex; gap: 10px; align-items: center; }
 
-/* ---- Step rail ---- */
+/* ---- Step rail (the container; the .step items live in page-shell.css) ---- */
 .step-rail {
   display: flex; gap: 6px; margin-top: 14px;
   padding: 8px; border: 1px solid var(--line);
   background: var(--panel); box-shadow: var(--shadow);
   overflow-x: auto;
 }
-.step {
-  flex: 1 1 auto; min-width: 118px;
-  display: flex; align-items: center; gap: 9px;
-  padding: 10px 14px; border: 1px solid transparent; border-radius: 8px;
-  background: transparent; color: var(--muted); cursor: pointer;
-  font-weight: 600; font-size: 13px; white-space: nowrap; transition: all .12s ease;
-}
-.step:hover { color: var(--ink); background: rgba(19, 121, 91, 0.06); }
-.step .num {
-  width: 22px; height: 22px; flex: none; border-radius: 50%;
-  display: grid; place-items: center; font-size: 12px;
-  border: 1px solid var(--line); color: var(--muted); background: #fff;
-}
-.step.is-active { color: var(--ink); border-color: var(--green); background: rgba(19, 121, 91, 0.09); }
-.step.is-active .num { background: var(--green); color: #fff; border-color: var(--green); }
-.step.is-done .num { background: var(--ink); color: #fff; border-color: var(--ink); }
 
 /* ---- Main grid ---- */
 .studio-grid {
@@ -60,11 +22,6 @@
   gap: 14px; margin-top: 14px; align-items: start;
 }
 @media (max-width: 900px) { .studio-grid { grid-template-columns: 1fr; } }
-
-.panel {
-  border: 1px solid var(--line); background: var(--panel);
-  box-shadow: var(--shadow); border-radius: 12px; padding: 18px;
-}
 
 /* ---- Subject rail ---- */
 .subject { position: sticky; top: 12px; }
@@ -256,18 +213,7 @@ label.field, .field-row { margin-bottom: 12px; }
   font-size: 12.5px; line-height: 1.55;
 }
 
-/* ---- buttons (extra tones layered on base .button) ---- */
-.button.steel { background: var(--steel); color: #fff; border-color: var(--steel); }
-.button.ghost { background: transparent; }
-.button:disabled { opacity: .5; cursor: not-allowed; }
-
-/* ---- footer ---- */
-.studio-foot {
-  display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
-  margin-top: 14px; padding: 12px 20px; font-size: 12px; color: var(--muted);
-  border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
-}
-.studio-foot b { color: var(--ink); font-weight: 700; }
+/* ---- footer message (the .studio-foot bar lives in page-shell.css) ---- */
 .foot-msg { margin-left: auto; font-weight: 600; }
 .foot-msg.ok { color: var(--green); }
 .foot-msg.err { color: var(--red); }
@@ -310,4 +256,74 @@ label.field, .field-row { margin-bottom: 12px; }
 .goal-mini input[type="number"] {
   border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px;
   font: inherit; font-size: 12px; width: 74px; background: #fff; color: var(--ink);
+}
+
+/* --- Big Five card (step 2) ------------------------------------------------
+ * A block of its own below the state sliders, not beside them: the two are
+ * independent by construction and the layout should not suggest otherwise. */
+.b5-block { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+@media (max-width: 900px) { .b5-block { grid-template-columns: 1fr; } }
+
+.b5-card h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.b5-source {
+  margin-left: auto; font-size: 11px; font-weight: 500; letter-spacing: .02em;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--chip-bg, rgba(127, 127, 127, .14)); color: var(--muted, #6b7280);
+}
+.b5-note-inline { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--muted, #6b7280); }
+
+/* z scores are signed: the whole meaning of the number is distance from the
+ * population mean, so the zero point has to be visible. A native range input
+ * fills from its left edge, which reads as "how much of it" — right for the
+ * [0,1] state variables above, wrong here. The tick and the centre label under
+ * it restore the origin without fighting the UA's track rendering. */
+.b5-track { position: relative; }
+.b5-track::before {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 1px; height: 16px; margin-left: -0.5px; transform: translateY(-50%);
+  background: var(--muted, #9ca3af); opacity: .55; pointer-events: none;
+}
+.b5-poles { position: relative; }
+.b5-zero-label {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-variant-numeric: tabular-nums; opacity: .7;
+}
+.b5-row input[type="range"] { accent-color: var(--accent, #4f7cff); width: 100%; }
+/* Below the authoring floor the dimension is not distinctive for this person
+ * and the paragraph does not describe it, so it is de-emphasised rather than
+ * shown in the same active green the [0,1] sliders use — otherwise "not
+ * distinctive" and "distinctive" read as two equally-lit states. Crossing the
+ * floor lights the number up, while dragging, not only after saving. */
+/* Specificity matches `.slider-row .slabel .val` above, which sets the green
+ * used by the [0,1] sliders; a two-class selector would lose to it. */
+.slider-row.b5-row .slabel .val { font-variant-numeric: tabular-nums; color: var(--muted, #6b7280); font-weight: 500; }
+.slider-row.b5-row .slabel .val.b5-distinct { color: var(--accent, #4f7cff); font-weight: 700; }
+
+.b5-flag {
+  font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px;
+  border: 1px solid currentColor; cursor: help;
+}
+.b5-flag.warn { color: #b45309; }
+.b5-flag.bad { color: #b91c1c; }
+
+.b5-banner {
+  margin: 10px 0 4px; padding: 10px 12px; border-radius: 8px; font-size: 12px;
+  line-height: 1.65; border: 1px solid;
+}
+.b5-banner.warn { border-color: rgba(180, 83, 9, .35); background: rgba(180, 83, 9, .07); color: #92400e; }
+.b5-banner.bad { border-color: rgba(185, 28, 28, .38); background: rgba(185, 28, 28, .07); color: #991b1b; }
+.b5-banner div + div { margin-top: 4px; }
+
+.b5-para {
+  font-size: 13px; line-height: 1.9; white-space: pre-wrap;
+  padding: 12px 14px; border-radius: 8px;
+  background: var(--sunken, rgba(127, 127, 127, .06));
+  border-left: 3px solid var(--accent, #4f7cff);
+}
+
+@media (prefers-color-scheme: dark) {
+  .b5-flag.warn { color: #fbbf24; }
+  .b5-flag.bad { color: #f87171; }
+  .b5-banner.warn { color: #fcd34d; }
+  .b5-banner.bad { color: #fca5a5; }
 }

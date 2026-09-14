@@ -956,12 +956,19 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
 # here once the event fires for an agent).
 
 #: Life-event template keys handled below.
-EMPLOYMENT_EVENT_KEYS = ("job_change", "unemployment")
+EMPLOYMENT_EVENT_KEYS = ("job_change", "unemployment", "retirement")
 
 #: Job text an agent carries while unemployed. Deliberately matches the
 #: 失业/待业 keywords in JOB_INCOME_BANDS and NON_EMPLOYED_JOBS, so the income
 #: band and every downstream keyword read agree on the state.
 UNEMPLOYED_JOB_TEXT = "待业中"
+
+#: Job text an agent carries once retired, and the share of their previous
+#: earnings the pension replaces. Retirement is *not* unemployment: there is
+#: no recovery countdown and no re-hire, because the income drop is permanent
+#: and the person is not looking for work.
+RETIRED_JOB_TEXT = "已退休"
+PENSION_REPLACEMENT_RATE = 0.45
 
 
 def is_employment_event(event):
@@ -1035,15 +1042,24 @@ def apply_employment_event(agent, event, config=None, day=None):
         return None
     cfg = _get_cfg({"config": config or {}})
     old_job = str(agent.get("job", "")).strip()
-    unemployed = str(event.get("template_key", "")) == "unemployment"
-    new_job = UNEMPLOYED_JOB_TEXT if unemployed else (
-        str(event.get("new_job", "")).strip() or _pick_new_job(old_job))
+    template_key = str(event.get("template_key", ""))
+    unemployed = template_key == "unemployment"
+    retired = template_key == "retirement"
+    if retired:
+        new_job = RETIRED_JOB_TEXT
+    elif unemployed:
+        new_job = UNEMPLOYED_JOB_TEXT
+    else:
+        new_job = str(event.get("new_job", "")).strip() or _pick_new_job(old_job)
 
     agent["job"] = new_job
-    agent["employment"] = "unemployed" if unemployed else "employed"
+    agent["employment"] = (
+        "retired" if retired else ("unemployed" if unemployed else "employed")
+    )
 
     record = {
-        "type": "unemployment" if unemployed else "job_change",
+        "type": "retirement" if retired else (
+            "unemployment" if unemployed else "job_change"),
         "from_job": old_job,
         "to_job": new_job,
     }
@@ -1054,7 +1070,19 @@ def apply_employment_event(agent, event, config=None, day=None):
         return record
 
     old_hourly = _to_float(econ.get("base_hourly_income", 0.0), 0.0)
-    if unemployed:
+    if retired:
+        # A pension, not a spell of unemployment: no countdown, no
+        # `previous_job`, so `_rehire_after_unemployment` can never put a
+        # retiree back to work.
+        rate = _to_float(cfg.get("pension_replacement_rate", PENSION_REPLACEMENT_RATE),
+                         PENSION_REPLACEMENT_RATE)
+        new_hourly = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0),
+                         old_hourly * rate)
+        econ.pop("_layoff_days_remaining", None)
+        econ.pop("previous_job", None)
+        econ["retired"] = True
+        record["replacement_rate"] = round(rate, 3)
+    elif unemployed:
         cut = _rng.uniform(0.5, 0.85)
         new_hourly = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0),
                          old_hourly * (1.0 - cut))

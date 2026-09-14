@@ -77,6 +77,7 @@ class LifeEventsPlugin(Plugin):
         ctx.bus.on("on_day_start", self._inject_ghost_events)
         ctx.bus.on("on_day_start", self._decay_aftermath)
         ctx.bus.on("on_time_tick", self._drain_tick, priority=10)
+        self._bus = ctx.bus
         ctx.bus.on("life.step", self._apply_step)
         ctx.bus.on("life.step", self._advance_age, priority=20)
         ctx.bus.on("env.events.compose", self._agent_events)
@@ -201,6 +202,8 @@ class LifeEventsPlugin(Plugin):
         for event in agent_life_events:
             self._push_aftermath(agent, event, hook_ctx.get("day"), sim.config)
             self._apply_job_change(agent, event, hook_ctx)
+            self._notify_applied(
+                sim, agent, event, hook_ctx.get("day"), hook_ctx.get("daily_logs"))
         return [self._as_env_event(event) for event in agent_life_events]
 
     # -- fast-forward: the whole tick path, once per step -------------------
@@ -230,11 +233,22 @@ class LifeEventsPlugin(Plugin):
             years, carried = divmod(carried, 365.0)
             agent["_age_days"] = carried
             if years:
+                before_stage = self._impl.life_stage(agent)[1]
                 agent["age"] = age + int(years)
+                after_stage = self._impl.life_stage(agent)[1]
                 text = (
                     f"[Birthday Day {hook_ctx.get('day')}] "
                     f"{agent.get('name', agent['id'])}: {age} → {agent['age']} 岁\n"
                 )
+                if after_stage != before_stage:
+                    # A stage change is the visible consequence of ageing —
+                    # without it a decade of birthdays reads as a counter
+                    # ticking with nothing downstream noticing.
+                    text += (
+                        f"[LifeStage Day {hook_ctx.get('day')}] "
+                        f"{agent.get('name', agent['id'])}: "
+                        f"{before_stage} → {after_stage}\n"
+                    )
                 daily_logs = hook_ctx.get("daily_logs")
                 if daily_logs is not None:
                     daily_logs[agent["id"]] += text
@@ -281,6 +295,7 @@ class LifeEventsPlugin(Plugin):
             for event in events:
                 self._push_aftermath(agent, event, day, sim.config)
                 self._apply_job_change(agent, event, step_ctx)
+                self._notify_applied(sim, agent, event, day, daily_logs)
             # Reuse the tick handler verbatim so severity scaling and the
             # `[0,1]` clipping cannot drift between the two paths.
             self._apply_state_effects({"agent": agent, "step": {"life_events": events}})
@@ -311,6 +326,29 @@ class LifeEventsPlugin(Plugin):
             except (ValueError, TypeError) as exc:  # noqa: PERF203 - per-move guard
                 _LOG.warning("could not build life event for move %s: %s", key, exc)
         return events
+
+    def _notify_applied(self, sim, agent, event, day, daily_logs):
+        """Announce an applied life event so other subsystems can react.
+
+        Employment is handled in here because the economy owns income, but a
+        marriage or a bereavement belongs to the family module. Rather than
+        importing it, the event is published and whoever cares subscribes —
+        the same trust boundary every other cross-subsystem effect uses.
+        """
+        bus = getattr(self, "_bus", None)
+        if bus is None:
+            return
+        # NB: the payload key is `life_event`, not `event` — `EventBus.emit`
+        # names its first parameter `event`, so `event=` collides with it and
+        # the bus swallows the TypeError as a handler failure.
+        bus.emit(
+            "life.event.applied",
+            sim=sim,
+            agent=agent,
+            life_event=event,
+            day=day,
+            daily_logs=daily_logs,
+        )
 
     def _apply_job_change(self, agent, event, hook_ctx):
         """Let a 换工作/失业 event rewrite the agent's job and income.

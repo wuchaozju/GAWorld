@@ -381,11 +381,26 @@ class FrontendWiringTests(unittest.TestCase):
 
     def test_the_editor_explains_that_edits_apply_to_the_next_run(self):
         """Households are re-derived every run; an editor that does not say so
-        invites the operator to expect a live change and conclude it is broken."""
+        invites the operator to expect a live change and conclude it is broken.
+
+        The copy itself lives in the locale files now, so this checks the card
+        renders that note *and* that neither language has lost the point of it.
+        """
         studio = _read("studio.js")
         block = studio[studio.index("function familyCard()"):studio.index("async function saveFamilyOverride")]
-        self.assertIn("每次运行开始时", block)
+        self.assertIn("sd.family_note", block)
         self.assertIn("family_overrides.json", block)
+
+        locales = {}
+        for name in ("zh-CN", "en"):
+            with open(os.path.join(DASHBOARD, "locales", f"{name}.json"), encoding="utf-8") as fh:
+                locales[name] = json.load(fh)["sd.family_note"]
+        self.assertIn("每次运行开始时", locales["zh-CN"])
+        self.assertIn("every run", locales["en"])
+        for text in locales.values():
+            # The note interpolates the file name, so the placeholder is what
+            # has to survive here.
+            self.assertIn("{file}", text)
 
     def test_the_design_doc_is_listed_in_the_docs_panel(self):
         docs = _read("docs.js")

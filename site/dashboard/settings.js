@@ -15,38 +15,56 @@
 (function () {
   "use strict";
 
+  /* These tables hold locale *keys*, not text. They are module-level, so any
+     literal in them would freeze whatever language was current when this file
+     was evaluated — and the locale JSON has not even arrived by then. */
   var META_TABS = [
-    { id: "__env", title: "环境变量", help: "密钥和运行时开关。只显示有没有配、配的是哪一个（密钥打码），不在网页里回显或修改 —— 请直接编辑仓库根目录的 .env 文件。" },
-    { id: "__files", title: "配置文件", help: "覆盖层的原文：dashboard_config.json 是这个面板写入的地方，environment_config.json 在覆盖链的最后一环。" },
+    { id: "__env", titleKey: "set.tab_env", helpKey: "set.tab_env_help" },
+    { id: "__files", titleKey: "set.tab_files", helpKey: "set.tab_files_help" },
   ];
 
-  var SOURCE_LABEL = {
-    "default": "代码默认值",
-    dashboard: "dashboard_config.json（本面板写入）",
-    env: "环境变量 GAWORLD_CONFIG_OVERRIDES",
-    env_file: "data/environment_config.json",
+  var SOURCE_LABEL_KEYS = {
+    "default": "set.src_default",
+    dashboard: "set.src_dashboard",
+    env: "set.src_env",
   };
 
-  var SOURCE_SHORT = { dashboard: "已改", env: "环境变量", env_file: "环境文件" };
+  var SOURCE_SHORT_KEYS = {
+    dashboard: "set.src_short_dashboard",
+    env: "set.src_short_env",
+    env_file: "set.src_short_env_file",
+  };
+
+  /* data/environment_config.json is a path, not prose, so it has no key. */
+  function sourceLabel(source) {
+    var key = SOURCE_LABEL_KEYS[source];
+    if (key) return __(key);
+    return source === "env_file" ? "data/environment_config.json" : source;
+  }
+
+  function sourceShort(source) {
+    var key = SOURCE_SHORT_KEYS[source];
+    return key ? __(key) : source;
+  }
 
   var PROVIDER_TYPES = {
     ollama: {
-      label: "本地 Ollama",
+      labelKey: "set.pt_ollama",
       endpoint: "http://localhost:11434/api/generate",
       needsKey: false,
-      note: "本地 Ollama 服务。地址填到 /api/generate 为止，模型名要和 ollama list 里的完全一致。",
+      noteKey: "set.pt_ollama_note",
     },
     openai: {
-      label: "OpenAI 兼容接口",
+      labelKey: "set.pt_openai",
       endpoint: "https://api.openai.com/v1",
       needsKey: true,
-      note: "任何 OpenAI 兼容的接口都走这一类：官方 OpenAI、vLLM、LM Studio、omlx 等。地址填到 /v1 为止，不含 /chat/completions。",
+      noteKey: "set.pt_openai_note",
     },
     anthropic: {
-      label: "Anthropic 兼容接口",
+      labelKey: "set.pt_anthropic",
       endpoint: "https://api.anthropic.com",
       needsKey: true,
-      note: "Anthropic Messages 接口，MiniMax 的 anthropic 端点也走这一类。地址不含 /v1/messages，代码会自己拼。",
+      noteKey: "set.pt_anthropic_note",
     },
   };
 
@@ -94,16 +112,16 @@
   }
 
   function typeName(value) {
-    if (value === null) return "空值 null";
-    if (Array.isArray(value)) return "列表 (" + value.length + " 项)";
-    if (typeof value === "object") return "分组";
-    if (typeof value === "boolean") return "开关";
-    if (typeof value === "number") return "数字";
-    return "文本";
+    if (value === null) return __("set.type_null");
+    if (Array.isArray(value)) return __f("set.type_list", { count: value.length });
+    if (typeof value === "object") return __("set.type_group");
+    if (typeof value === "boolean") return __("set.type_bool");
+    if (typeof value === "number") return __("set.type_number");
+    return __("set.type_text");
   }
 
   function preview(value) {
-    if (value === undefined) return "（无默认值）";
+    if (value === undefined) return __("set.no_default");
     if (value === null) return "null";
     if (typeof value === "string") return value.length > 60 ? value.slice(0, 59) + "…" : value;
     var text;
@@ -119,9 +137,36 @@
     return (state.data && state.data.docs && state.data.docs[path]) || {};
   }
 
+  /* The server sends both languages per field (label / label_en, help /
+     help_en) and leaves the choice here, so switching language needs no
+     refetch. A missing *_en means nobody has written the English — the ~600
+     extracted source comments never will, since they are Python comments for
+     whoever maintains the settings modules. Falling back to the Chinese shows
+     the only text that exists, which beats a blank tooltip. */
+  function english() {
+    return typeof getLocale === "function" && getLocale() === "en";
+  }
+
+  function pickLang(zh, en) {
+    return (english() && en) || zh || "";
+  }
+
   function labelFor(path) {
     var doc = docFor(path);
-    return doc.label || path.split(".").pop();
+    return pickLang(doc.label, doc.label_en) || path.split(".").pop();
+  }
+
+  function helpFor(path) {
+    var doc = docFor(path);
+    return pickLang(doc.help, doc.help_en);
+  }
+
+  function sectionTitle(section) {
+    return pickLang(section.title, section.title_en);
+  }
+
+  function sectionHelp(section) {
+    return pickLang(section.help, section.help_en);
   }
 
   function sourceFor(path) {
@@ -148,23 +193,23 @@
 
   /** 每一项都有说明：人写的在前，「路径/类型/默认/来源」永远兜底。 */
   function helpText(path, value) {
-    var doc = docFor(path);
     var lines = [];
-    if (doc.help) lines.push(doc.help);
+    var curated = helpFor(path);
+    if (curated) lines.push(curated);
     var source = sourceFor(path);
-    lines.push("路径：" + path);
-    lines.push("类型：" + typeName(value));
+    lines.push(__("set.help_path") + path);
+    lines.push(__("set.help_type") + typeName(value));
     if (!value || typeof value !== "object" || Array.isArray(value)) {
-      lines.push("默认：" + preview(defaultFor(path)));
+      lines.push(__("set.help_default") + preview(defaultFor(path)));
     }
-    lines.push("当前来自：" + (SOURCE_LABEL[source] || source));
+    lines.push(__("set.help_source") + sourceLabel(source));
     if (source === "env_file") {
-      lines.push("⚠ 这一项由 data/environment_config.json 最后覆盖，在本面板改它不会生效。");
+      lines.push(__("set.warn_env_file"));
     } else if (source === "env") {
-      lines.push("⚠ 这一项由环境变量 GAWORLD_CONFIG_OVERRIDES 覆盖，优先级高于本面板。");
+      lines.push(__("set.warn_env"));
     }
     if (isReadOnly(path)) {
-      lines.push("🔒 只读：模型后端里含有明文密钥，不在网页里编辑。");
+      lines.push(__("set.warn_readonly"));
     }
     return lines.join("\n");
   }
@@ -188,7 +233,7 @@
         return res
           .json()
           .catch(function () {
-            throw new Error("服务端返回的不是 JSON（HTTP " + res.status + "）");
+            throw new Error(__f("set.not_json", { status: res.status }));
           })
           .then(function (payload) {
             if (!res.ok) throw new Error(payload.error || "HTTP " + res.status);
@@ -237,10 +282,10 @@
   function badges(path) {
     var source = sourceFor(path);
     if (source === "default") return "";
-    var out = '<span class="set-badge is-' + source + '">' + esc(SOURCE_SHORT[source] || source) + "</span>";
+    var out = '<span class="set-badge is-' + source + '">' + esc(sourceShort(source)) + "</span>";
     if (source === "dashboard") {
       out += '<button type="button" class="set-revert" data-revert="' + esc(path) +
-        '" title="把这一项从 dashboard_config.json 里删掉，恢复代码默认值">↺</button>';
+        '" title="' + esc(__("set.revert_title")) + '">↺</button>';
     }
     return out;
   }
@@ -258,7 +303,7 @@
     if (stale) list.unshift(current);
     return list.map(function (name) {
       return '<option value="' + esc(name) + '"' + (name === current ? " selected" : "") + ">" +
-        esc(name) + (stale && name === current ? "（清单里没有这个后端）" : "") + "</option>";
+        esc(name) + (stale && name === current ? esc(__("set.provider_missing")) : "") + "</option>";
     }).join("");
   }
 
@@ -266,7 +311,10 @@
   function matches(path) {
     if (!state.query) return true;
     var doc = docFor(path);
-    var hay = (path + " " + (doc.label || "") + " " + (doc.help || "")).toLowerCase();
+    /* Search both languages regardless of the current one: someone reading
+       the English panel may well remember the Chinese label, and vice versa. */
+    var hay = [path, doc.label, doc.label_en, doc.help, doc.help_en]
+      .filter(Boolean).join(" ").toLowerCase();
     return hay.indexOf(state.query) >= 0;
   }
 
@@ -295,8 +343,17 @@
         return renderNode(childKey, value[childKey], pathKey(path, childKey), depth + 1);
       }).join("");
       var open = depth === 0 || !!state.query || state.onlyOverridden;
+      // Wrap the group name in a heading so the nineteen collapsible groups
+      // show up in the document outline. The role goes on an inner span, not
+      // on <summary> itself — that would override summary's own disclosure
+      // role and cost the expand/collapse semantics. display:contents keeps
+      // the extra element out of the layout.
+      var level = Math.min(depth + 3, 6);
       return '<details class="set-group depth-' + depth + '"' + (open ? " open" : "") + ">" +
-        "<summary>" + labelCell(path, value) + "</summary>" +
+        "<summary>" +
+        '<span class="set-group-heading" role="heading" aria-level="' + level + '">' +
+        labelCell(path, value) + "</span>" +
+        "</summary>" +
         '<div class="set-group-body">' + body + "</div></details>";
     }
 
@@ -335,7 +392,7 @@
     var raw = currentValue(path, value);
     var json = typeof raw === "string" && state.invalid[path] ? raw : JSON.stringify(raw);
     return '<label class="' + fieldClass(path) + '">' + labelCell(path, value) +
-      (state.invalid[path] ? '<b class="set-warn">JSON 无法解析</b>' : "") +
+      (state.invalid[path] ? '<b class="set-warn">' + esc(__("set.json_invalid")) + "</b>" : "") +
       '<textarea data-kind="json"' + attrs + ">" + esc(json) + "</textarea></label>";
   }
 
@@ -351,27 +408,28 @@
 
   function probeHtml(probe) {
     if (!probe) return "";
-    if (probe.busy) return '<span class="llm-result is-busy">正在调用…</span>';
+    if (probe.busy) return '<span class="llm-result is-busy">' + esc(__("set.probe_busy")) + "</span>";
     if (probe.ok) {
-      return '<span class="llm-result is-ok">✓ 通了 · ' + probe.latency_ms + " ms" +
-        (probe.sample ? " · 回答：" + esc(probe.sample) : "") + "</span>";
+      return '<span class="llm-result is-ok">' + esc(probe.sample
+        ? __f("set.probe_ok_sample", { ms: probe.latency_ms, sample: probe.sample })
+        : __f("set.probe_ok", { ms: probe.latency_ms })) + "</span>";
     }
-    return '<span class="llm-result is-bad">✗ ' + esc(probe.error || "调用失败") + "</span>";
+    return '<span class="llm-result is-bad">✗ ' + esc(probe.error || __("set.probe_failed")) + "</span>";
   }
 
   function renderPicker() {
     var path = "llm.routing.default";
     var value = String(currentValue(path, at(state.data.tree, path) || ""));
     var options = choicesFor(path) || [];
-    var help = "所有没有单独指定的任务都用这个后端，它决定了绝大部分成本。" +
-      "选完要点右下角「保存配置」才会写进 dashboard_config.json，并在下一次启动仿真时生效。" +
-      "个别任务想用别的后端，去下面的 llm → routing → tasks。";
+    var help = __("set.pick_help");
     return '<div class="llm-card llm-pick">' +
-      '<h3>用哪个大模型<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
+      "<h3>" + esc(__("set.pick_title")) +
+        '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
       '<label class="' + fieldClass(path) + '">' +
-      '<span class="set-label">默认后端<code class="set-path">' + esc(path) + "</code>" + badges(path) + "</span>" +
+      '<span class="set-label">' + esc(__("set.pick_default")) +
+        '<code class="set-path">' + esc(path) + "</code>" + badges(path) + "</span>" +
       '<select data-kind="text" data-path="' + esc(path) + '">' + optionsHtml(options, value) + "</select></label>" +
-      '<p class="set-hint">改动会进入右侧「待保存的修改」，点「保存配置」生效。</p></div>';
+      '<p class="set-hint">' + esc(__("set.pick_hint")) + "</p></div>";
   }
 
   function renderProviderList() {
@@ -380,36 +438,40 @@
         item.type,
         item.model,
         item.endpoint,
-        item.timeout ? "超时 " + item.timeout + "s" : "",
+        item.timeout ? __f("set.timeout_meta", { seconds: item.timeout }) : "",
       ].filter(Boolean).map(esc).join(" · ");
       var key = "";
       if (item.needs_key) {
         key = item.key_ready
-          ? '<span class="llm-key is-ok">密钥已就绪</span>'
-          : '<span class="llm-key is-bad">缺密钥：' +
-            esc(item.api_key_envs.join("、") || "未指定环境变量") + "</span>";
+          ? '<span class="llm-key is-ok">' + esc(__("set.key_ready")) + "</span>"
+          : '<span class="llm-key is-bad">' + esc(__f("set.key_missing", {
+              envs: item.api_key_envs.join("、") || __("set.key_env_unset"),
+            })) + "</span>";
       }
       return '<div class="llm-row' + (item.is_default ? " is-default" : "") + '">' +
         '<div class="llm-row-head"><b>' + esc(item.name) + "</b>" +
-        (item.is_default ? '<span class="set-badge is-dashboard">默认</span>' : "") +
-        (item.editable ? '<span class="set-badge is-dashboard">本面板添加</span>' : "") +
+        (item.is_default
+          ? '<span class="set-badge is-dashboard">' + esc(__("set.badge_default")) + "</span>" : "") +
+        (item.editable
+          ? '<span class="set-badge is-dashboard">' + esc(__("set.badge_added_here")) + "</span>" : "") +
         key + "</div>" +
         '<div class="llm-row-meta">' + meta + "</div>" +
         '<div class="llm-row-actions">' +
-        '<button type="button" class="button subtle" data-test-provider="' + esc(item.name) + '">测试连通性</button>' +
+        '<button type="button" class="button subtle" data-test-provider="' + esc(item.name) + '">' +
+          esc(__("set.test_connection")) + "</button>" +
         (item.editable
           ? '<button type="button" class="button subtle" data-drop-provider="' + esc(item.name) +
-            '" title="把它从 dashboard_config.json 里删掉">删除</button>'
+            '" title="' + esc(__("set.drop_provider_title")) + '">' + esc(__("set.drop_provider")) + "</button>"
           : "") +
         '<span class="llm-slot" data-result="' + esc(item.name) + '">' +
         probeHtml(state.probes[item.name]) + "</span></div></div>";
     }).join("");
-    var help = "「测试连通性」会真的向这个后端发一次极短的生成请求 —— 只有真发一次才分得清" +
-      "「连得上」和「连得上但模型没拉下来 / 密钥被拒 / 只吐思考不吐正文」。它不改任何配置。";
+    var help = __("set.provider_list_help");
     return '<div class="llm-card">' +
-      "<h3>已配置的后端 <span class=\"set-count\">" + providerRows().length + "</span>" +
+      "<h3>" + esc(__("set.provider_list_title")) +
+      ' <span class="set-count">' + providerRows().length + "</span>" +
       '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
-      (rows || '<p class="set-hint">还没有任何后端。</p>') + "</div>";
+      (rows || '<p class="set-hint">' + esc(__("set.no_providers")) + "</p>") + "</div>";
   }
 
   function renderAddForm() {
@@ -417,7 +479,7 @@
     var spec = PROVIDER_TYPES[draft.type] || PROVIDER_TYPES.ollama;
     var types = Object.keys(PROVIDER_TYPES).map(function (id) {
       return '<option value="' + id + '"' + (id === draft.type ? " selected" : "") + ">" +
-        esc(PROVIDER_TYPES[id].label) + "（" + id + "）</option>";
+        esc(__(PROVIDER_TYPES[id].labelKey)) + "（" + id + "）</option>";
     }).join("");
     function field(key, label, placeholder, help) {
       return '<label class="llm-field"><span>' + esc(label) +
@@ -426,33 +488,30 @@
         '" placeholder="' + esc(placeholder) + '" /></label>';
     }
     return '<div class="llm-form">' +
-      '<label class="llm-field"><span>类型<span class="help-tip" data-help="' + esc(spec.note) +
+      '<label class="llm-field"><span>' + esc(__("set.field_type")) + '<span class="help-tip" data-help="' + esc(__(spec.noteKey)) +
       '"></span></span><select data-draft="type">' + types + "</select></label>" +
-      field("name", "名称", "例如 my_local_qwen",
-        "在配置里引用这个后端时用的名字，也是上面下拉里显示的名字。只能用字母、数字、下划线、短横线。") +
-      field("model", "模型名", draft.type === "ollama" ? "qwen3.5:9b" : "gpt-5.4",
-        "后端自己认识的模型标识，必须和服务端完全一致。写错了「测试连通性」会直接告诉你。") +
-      field("endpoint", "接口地址", spec.endpoint,
-        "留空就用默认地址：" + spec.endpoint) +
+      field("name", __("set.field_name"), __("set.field_name_ph"), __("set.field_name_help")) +
+      field("model", __("set.field_model"), draft.type === "ollama" ? "qwen3.5:9b" : "gpt-5.4",
+        __("set.field_model_help")) +
+      field("endpoint", __("set.field_endpoint"), spec.endpoint,
+        __f("set.field_endpoint_help", { endpoint: spec.endpoint })) +
       (spec.needsKey
-        ? field("api_key_env", "密钥环境变量", "MY_PROVIDER_API_KEY",
-            "填环境变量的「名字」，不是密钥本身。dashboard_config.json 会进版本库，" +
-            "所以这里不接受明文密钥。把值写进仓库根目录的 .env，重启仿真进程后即可生效；" +
-            "「环境变量」页签能看到它有没有被读到。")
+        ? field("api_key_env", __("set.field_key_env"), "MY_PROVIDER_API_KEY",
+            __("set.field_key_env_help"))
         : "") +
-      field("timeout", "超时（秒）", spec.needsKey ? "120" : "600",
-        "单次调用等多久。本地模型慢，通常要 600；云端 120 足够。留空用代码默认值。") +
+      field("timeout", __("set.field_timeout"), spec.needsKey ? "120" : "600",
+        __("set.field_timeout_help")) +
       '<div class="llm-form-actions">' +
-      '<button type="button" class="button subtle" id="llmDraftTest">先测一下</button>' +
-      '<button type="button" class="button primary" id="llmDraftSave">添加</button>' +
+      '<button type="button" class="button subtle" id="llmDraftTest">' + esc(__("set.draft_test")) + "</button>" +
+      '<button type="button" class="button primary" id="llmDraftSave">' + esc(__("set.draft_save")) + "</button>" +
       '<span class="llm-slot" id="llmDraftResult">' + probeHtml(state.probes.__draft) + "</span></div></div>";
   }
 
   function renderAddCard() {
-    var help = "新后端会写进 dashboard_config.json 的 llm.providers 里，立刻出现在上面的下拉中，" +
-      "并在下一次启动仿真时可用。密钥只收环境变量名，不收明文。";
+    var help = __("set.add_card_help");
     return '<div class="llm-card">' +
-      '<h3>添加本地或云端模型<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
+      "<h3>" + esc(__("set.add_card_title")) +
+        '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
       '<div id="llmAddBox">' + renderAddForm() + "</div></div>";
   }
 
@@ -469,12 +528,14 @@
       return renderNode(key, tree[key], key, 0);
     }).join("");
     if (!body) {
-      if (head) return '<p class="set-section-help">' + esc(section.help) + "</p>" + head;
+      if (head) return '<p class="set-section-help">' + esc(sectionHelp(section)) + "</p>" + head;
       return '<p class="set-hint">' +
-        (state.query ? "这一分区里没有匹配「" + esc(state.query) + "」的配置项。" : "这一分区里没有可显示的配置项。") +
+        esc(state.query
+          ? __f("set.section_no_match", { query: state.query })
+          : __("set.section_empty")) +
         "</p>";
     }
-    return '<p class="set-section-help">' + esc(section.help) + "</p>" + head + body;
+    return '<p class="set-section-help">' + esc(sectionHelp(section)) + "</p>" + head + body;
   }
 
   /** 搜索时跨分区平铺，因为想调「通胀」的人不该先知道它属于哪个分区。 */
@@ -485,10 +546,10 @@
         return renderNode(key, tree[key], key, 0);
       }).join("");
       if (!body) return "";
-      return '<div class="set-search-group"><h3>' + esc(section.title) + "</h3>" + body + "</div>";
+      return '<div class="set-search-group"><h3>' + esc(sectionTitle(section)) + "</h3>" + body + "</div>";
     }).join("");
     if (!blocks) {
-      return '<p class="set-hint">没有匹配「' + esc(state.query) + "」的配置项。</p>";
+      return '<p class="set-hint">' + esc(__f("set.search_no_match", { query: state.query })) + "</p>";
     }
     return blocks;
   }
@@ -498,34 +559,34 @@
     var groups = {};
     var order = [];
     env.vars.forEach(function (item) {
-      var name = item.group || "其他";
+      var name = item.group || __("set.env_group_other");
       if (!groups[name]) { groups[name] = []; order.push(name); }
       groups[name].push(item);
     });
     var rows = order.map(function (name) {
       var items = groups[name].map(function (item) {
         var help = [
-          item.help || "（.env.example 里没有为它写说明）",
-          "变量名：" + item.name,
-          item.set ? "状态：已设置" : "状态：未设置",
-          item.secret ? "这是一个密钥，只显示打码后的头尾，用来确认「装进去的是哪一把钥匙」。" :
-            "非密钥，显示完整值。",
-          "要修改请编辑仓库根目录的 .env 文件，然后重启仿真进程。",
+          item.help || __("set.env_no_doc"),
+          __f("set.env_var_name", { name: item.name }),
+          __(item.set ? "set.env_state_set" : "set.env_state_unset"),
+          __(item.secret ? "set.env_is_secret" : "set.env_not_secret"),
+          __("set.env_edit_note"),
         ].join("\n");
         return '<div class="set-env-row' + (item.set ? " is-set" : "") + '">' +
           '<code class="set-env-name">' + esc(item.name) + "</code>" +
           '<span class="help-tip" data-help="' + esc(help) + '"></span>' +
-          '<span class="set-env-state">' + (item.set ? "已设置" : "未设置") + "</span>" +
+          '<span class="set-env-state">' + esc(__(item.set ? "set.env_set" : "set.env_unset")) + "</span>" +
           '<span class="set-env-value">' + (item.value ? esc(item.value) : "—") + "</span>" +
           '<span class="set-env-help">' + esc(item.help || "") + "</span></div>";
       }).join("");
       return '<div class="set-env-group"><h3>' + esc(name) + "</h3>" + items + "</div>";
     }).join("");
-    return '<p class="set-section-help">这些变量在进程启动时由 <code>gaworld.env_loader</code> 从 ' +
-      '<code>.env</code> 读进来。本面板<strong>只读</strong>：密钥打码显示，改动请直接编辑文件。' +
-      "改完要重启仿真进程才生效。</p>" +
-      '<p class="set-envfile">.env 文件：<code>' + esc(env.env_file) + "</code> · " +
-      (env.env_file_exists ? "存在" : '<b class="set-warn">不存在</b>') + "</p>" + rows;
+    return '<p class="set-section-help">' + __("set.env_intro") + "</p>" +
+      '<p class="set-envfile">' + esc(__("set.env_file_label")) +
+      "<code>" + esc(env.env_file) + "</code> · " +
+      (env.env_file_exists
+        ? esc(__("set.exists"))
+        : '<b class="set-warn">' + esc(__("set.not_exists")) + "</b>") + "</p>" + rows;
   }
 
   function renderFiles() {
@@ -534,18 +595,18 @@
       return '<div class="set-file"><h3>' + esc(title) +
         '<span class="help-tip" data-help="' + esc(note) + '"></span></h3>' +
         '<p class="set-filepath"><code>' + esc(info.path) + "</code> · " +
-        (info.exists ? "存在" : "不存在") + "</p>" +
-        '<pre class="codebox">' + esc(info.text || "（空）") + "</pre></div>";
+        esc(__(info.exists ? "set.exists" : "set.not_exists")) + "</p>" +
+        '<pre class="codebox">' + esc(info.text || __("set.file_empty")) + "</pre></div>";
     }
     return block(
       "dashboard",
       "dashboard_config.json",
-      "本面板保存的就是这个文件。它在代码默认值之上做一次深合并；「恢复默认」等于把对应的键从这里删掉，而不是把默认值写回去 —— 写回去会把它钉死，以后改代码默认值就不生效了。",
+      __("set.file_dashboard_note"),
       files.dashboard_config
     ) + block(
       "environment",
       "data/environment_config.json",
-      "环境生成器的配置。它在覆盖链的最后一环应用，所以它写了的键，在 dashboard_config.json 或环境变量里改都会被它盖掉。只允许 environment / external_environment / external_environment_service / environment_server 四个键。",
+      __("set.file_env_note"),
       files.environment_config
     );
   }
@@ -568,38 +629,73 @@
           return "<li" + (state.invalid[path] ? ' class="is-bad"' : "") + ">" +
             '<code>' + esc(path) + "</code>" +
             "<span>" + esc(preview(state.dirty[path])) + "</span>" +
-            '<button type="button" class="set-undo" data-undo="' + esc(path) + '" title="撤销这一项的修改">×</button>' +
+            '<button type="button" class="set-undo" data-undo="' + esc(path) + '" title="' + esc(__("set.undo_title")) + '">×</button>' +
             "</li>";
         }).join("") + "</ul>"
-      : '<p class="set-hint">还没有改动。改过的项会列在这里，确认无误再保存。</p>';
+      : '<p class="set-hint">' + esc(__("set.no_pending")) + "</p>";
 
     return '<div class="set-card">' +
-      "<h3>待保存的修改 <span class=\"set-count\">" + paths.length + "</span>" +
-      '<span class="help-tip" data-help="改动先留在浏览器里，点「保存配置」才会写进 dashboard_config.json。保存只影响下一次启动的仿真，不会打断正在跑的那一轮。"></span></h3>' +
+      "<h3>" + esc(__("set.pending_title")) +
+      ' <span class="set-count">' + paths.length + "</span>" +
+      '<span class="help-tip" data-help="' + esc(__("set.pending_help")) + '"></span></h3>' +
       pending + "</div>" +
       '<div class="set-card">' +
-      '<h3>当前覆盖情况<span class="help-tip" data-help="有多少项的实际取值不等于代码里的默认值，以及它们分别来自哪一层。被 environment_config.json 或环境变量盖住的项，在本面板改是不生效的。"></span></h3>' +
-      '<p class="set-stat"><b>' + overridden.length + "</b> 项被覆盖，其中 <b>" + shadowed.length +
-      "</b> 项来自本面板改不动的层。</p>" +
-      '<button type="button" class="button subtle set-wide" id="setShowOverridden">只看被改过的</button>' +
-      '<button type="button" class="button danger set-wide" id="setResetAll">清空全部覆盖</button>' +
-      '<p class="set-hint">「清空全部覆盖」会把 dashboard_config.json 清空，所有项回到代码默认值。环境变量和 environment_config.json 不受影响。</p>' +
+      "<h3>" + esc(__("set.overrides_title")) +
+      '<span class="help-tip" data-help="' + esc(__("set.overrides_help")) + '"></span></h3>' +
+      '<p class="set-stat">' + __f("set.overrides_stat", {
+        overridden: overridden.length, shadowed: shadowed.length,
+      }) + "</p>" +
+      '<button type="button" class="button subtle set-wide" id="setShowOverridden">' +
+        esc(__("set.show_overridden")) + "</button>" +
+      '<button type="button" class="button danger set-wide" id="setResetAll">' +
+        esc(__("set.reset_all")) + "</button>" +
+      '<p class="set-hint">' + esc(__("set.reset_all_hint")) + "</p>" +
       "</div>";
   }
 
   /* ---------------------------------------------------------------- 渲染 */
 
+  /* The server's sections arrive with `title`/`help` already; the meta tabs
+     carry keys, so resolve them here and every consumer keeps working. */
   function tabs() {
-    return state.data.sections.concat(META_TABS);
+    return state.data.sections.concat(META_TABS.map(function (tab) {
+      return { id: tab.id, title: __(tab.titleKey), help: __(tab.helpKey) };
+    }));
+  }
+
+  /* A tab is either a server section (bilingual fields) or a meta tab (already
+     resolved above), so go through the same picker either way. */
+  function tabTitle(tab) {
+    return sectionTitle(tab);
+  }
+
+  function tabHelp(tab) {
+    return sectionHelp(tab);
+  }
+
+  /** Title of whatever the main column is currently showing. */
+  function currentTabTitle() {
+    if (state.query) return __f("set.search_results", { query: state.query });
+    var found = null;
+    tabs().forEach(function (tab) {
+      if (tab.id === state.tab) found = tab;
+    });
+    return found ? tabTitle(found) : __("set.fallback_title");
   }
 
   function renderTabs() {
     var html = tabs().map(function (tab) {
       var count = tab.keys ? countOverridden(tab) : 0;
-      return '<button class="step' + (tab.id === state.tab ? " is-active" : "") + '" data-tab="' + esc(tab.id) + '">' +
-        esc(tab.title) +
+      var active = tab.id === state.tab;
+      // `.is-active` was the only marker, so which of the twelve sections you
+      // were in was visible but not programmatically exposed. aria-current
+      // rather than role="tab": these buttons have no arrow-key roving, and a
+      // half-built tablist misleads more than plain buttons do.
+      return '<button class="step' + (active ? " is-active" : "") + '" data-tab="' + esc(tab.id) + '"' +
+        (active ? ' aria-current="true"' : "") + ' aria-controls="setBody">' +
+        esc(tabTitle(tab)) +
         (count ? '<em class="set-tabcount">' + count + "</em>" : "") +
-        '<span class="help-tip" data-help="' + esc(tab.help) + '"></span></button>';
+        '<span class="help-tip" data-help="' + esc(tabHelp(tab)) + '"></span></button>';
     }).join("");
     $("setTabs").innerHTML = html;
   }
@@ -630,15 +726,21 @@
       state.data.sections.forEach(function (item) {
         if (item.id === state.tab) section = item;
       });
-      body = section ? renderSection(section) : '<p class="set-hint">未知分区。</p>';
+      body = section ? renderSection(section) : '<p class="set-hint">' + esc(__("set.unknown_section")) + "</p>";
     }
-    $("setBody").innerHTML = body;
+    // Name the panel. Without this the main column — 600-odd controls — had no
+    // heading of its own: the page went h1 straight to the sidebar's h3, so a
+    // screen reader had nothing to jump to and no way to tell which section's
+    // settings it was reading.
+    $("setBody").innerHTML = '<h2 class="set-section-title">' + esc(currentTabTitle()) + "</h2>" + body;
     $("setSide").innerHTML = renderSide();
 
     var sources = state.data.sources || {};
     $("setTopMeta").innerHTML =
-      '<span class="set-chip">配置项 <b>' + countLeaves(state.data.tree) + "</b></span>" +
-      '<span class="set-chip">已覆盖 <b>' + Object.keys(sources).length + "</b></span>";
+      '<span class="set-chip">' + esc(__("set.chip_items")) +
+        " <b>" + countLeaves(state.data.tree) + "</b></span>" +
+      '<span class="set-chip">' + esc(__("set.chip_overridden")) +
+        " <b>" + Object.keys(sources).length + "</b></span>";
 
     syncFooter();
     if (window.HelpTips) window.HelpTips.scan($("setBody").parentNode);
@@ -658,7 +760,7 @@
     var bad = Object.keys(state.invalid).length;
     $("setSave").disabled = state.busy || !count || !!bad;
     $("setDiscard").disabled = state.busy || !count;
-    $("setSave").textContent = count ? "保存配置（" + count + "）" : "保存配置";
+    $("setSave").textContent = count ? __f("set.save_n", { count: count }) : __("set.save");
   }
 
   /* ------------------------------------------------------------- 事件绑定 */
@@ -741,16 +843,20 @@
 
   function save() {
     if (Object.keys(state.invalid).length) {
-      status("有 JSON 填错了，先改对再保存。", "bad");
+      status(__("set.fix_json_first"), "bad");
       return;
     }
     var count = dirtyPaths().length;
     api("POST", "/api/settings/save", { config: buildPatch() }).then(function (payload) {
       var notes = [];
-      if (payload.saved) notes.push("已保存 " + (payload.applied || []).length + " 项");
-      else notes.push("没有任何改动被写入");
-      if (payload.dropped && payload.dropped.length) notes.push("丢弃 " + payload.dropped.length + " 项（类型不符或不存在）");
-      if (payload.blocked && payload.blocked.length) notes.push("拒绝 " + payload.blocked.join("、") + "（只读）");
+      if (payload.saved) notes.push(__f("set.saved_n", { count: (payload.applied || []).length }));
+      else notes.push(__("set.saved_none"));
+      if (payload.dropped && payload.dropped.length) {
+        notes.push(__f("set.dropped_n", { count: payload.dropped.length }));
+      }
+      if (payload.blocked && payload.blocked.length) {
+        notes.push(__f("set.blocked_n", { names: payload.blocked.join("、") }));
+      }
       // 写进去了、却仍然不是生效值的那些项：被后面的覆盖层盖住了。这正是本面板
       // 想消除的那种「保存成功但什么都没变」，所以要在保存后当场说出来，不能只
       // 指望用户去 hover。
@@ -759,13 +865,14 @@
         return source && source !== "dashboard";
       });
       absorb(payload);
-      status(notes.join("；") + "。改动在下一次启动仿真时生效。", payload.saved ? "ok" : "warn");
+      status(notes.join("；") + __("set.applies_next_run"), payload.saved ? "ok" : "warn");
       if (shadowed.length) {
-        status("已写入，但这 " + shadowed.length + " 项仍不会生效 —— 它们被更靠后的覆盖层盖住了：" +
-          shadowed.join("、") + "。请改对应的 data/environment_config.json 或环境变量。", "warn");
+        status(__f("set.saved_but_shadowed", {
+          count: shadowed.length, paths: shadowed.join("、"),
+        }), "warn");
       }
       if (!payload.saved && count) {
-        status("提交的 " + count + " 项都没能写入：" + (payload.dropped || []).join("、"), "bad");
+        status(__f("set.none_written", { count: count, paths: (payload.dropped || []).join("、") }), "bad");
       }
     }).catch(function () {});
   }
@@ -773,15 +880,17 @@
   function revert(path) {
     api("POST", "/api/settings/reset", { paths: [path] }).then(function (payload) {
       absorb(payload);
-      status(payload.removed.length ? "已恢复默认：" + payload.removed.join("、") : "这一项本来就不在覆盖文件里。", "ok");
+      status(payload.removed.length
+        ? __f("set.restored_defaults", { paths: payload.removed.join("、") })
+        : __("set.not_overridden"), "ok");
     }).catch(function () {});
   }
 
   function resetAll() {
-    if (!window.confirm("将清空 dashboard_config.json 里的全部覆盖，所有配置回到代码默认值。\n环境变量和 environment_config.json 不受影响。\n\n继续？")) return;
+    if (!window.confirm(__("set.confirm_reset_all"))) return;
     api("POST", "/api/settings/reset-all", {}).then(function (payload) {
       absorb(payload);
-      status("已清空 " + payload.removed.length + " 项覆盖。", "ok");
+      status(__f("set.cleared_n", { count: payload.removed.length }), "ok");
     }).catch(function () {});
   }
 
@@ -794,13 +903,17 @@
   }
 
   function probe(key, payload) {
-    var label = key === "__draft" ? "待添加的后端" : "后端「" + key + "」";
+    var label = key === "__draft"
+      ? __("set.probe_draft_label")
+      : __f("set.probe_provider_label", { name: key });
     state.probes[key] = { busy: true };
     paintProbe(key);
     api("POST", "/api/settings/llm/test", payload).then(function (result) {
       state.probes[key] = result;
       paintProbe(key);
-      status(result.ok ? label + "：连通，用时 " + result.latency_ms + " ms。" : label + "：没连上，看那一行的红字。",
+      status(result.ok
+        ? __f("set.probe_reached", { label: label, ms: result.latency_ms })
+        : __f("set.probe_unreachable", { label: label }),
         result.ok ? "ok" : "bad");
     }).catch(function (err) {
       state.probes[key] = { ok: false, error: String((err && err.message) || err) };
@@ -825,24 +938,25 @@
       state.draft = { type: state.draft.type, name: "", endpoint: "", model: "", api_key_env: "", timeout: "" };
       delete state.probes.__draft;
       absorb(result);
-      status("已添加后端「" + result.name + "」。它已经写进 dashboard_config.json，" +
-        "可以在上面的下拉里选它，也可以点它那一行的「测试连通性」。", "ok");
+      status(__f("set.provider_added", { name: result.name }), "ok");
     }).catch(function () {});
   }
 
   function dropProvider(name) {
-    if (!window.confirm("将把后端「" + name + "」从 dashboard_config.json 里删掉。\n\n继续？")) return;
+    if (!window.confirm(__f("set.confirm_drop_provider", { name: name }))) return;
     // 复用通用的 reset：删一个覆盖项本来就是「把这个路径从覆盖文件里剪掉」。
     api("POST", "/api/settings/reset", { paths: ["llm.providers." + name] }).then(function (result) {
       delete state.probes[name];
       absorb(result);
-      status(result.removed.length ? "已删除后端「" + name + "」。" : "这个后端不在覆盖文件里，删不掉。",
+      status(result.removed.length
+        ? __f("set.provider_dropped", { name: name })
+        : __("set.provider_not_overridden"),
         result.removed.length ? "ok" : "warn");
     }).catch(function () {});
   }
 
   function load() {
-    status("正在读取配置…");
+    status(__("set.loading"));
     api("GET", "/api/settings/overview").then(function (payload) {
       if (!state.tab) state.tab = (payload.sections[0] || {}).id || "__env";
       absorb(payload);
@@ -946,7 +1060,17 @@
     state.dirty = {};
     state.invalid = {};
     render();
-    status("已放弃未保存的修改。");
+    status(__("set.discarded"));
+  });
+
+  /* Redraw on a language switch. render() rebuilds the tab strip, the main
+     column and the sidebar, and syncFooter() relabels the save button; the
+     600-odd field labels and help texts come from the server with the section
+     payload, so they are not this file's to translate. Pending edits live in
+     state.dirty and survive the redraw. */
+  document.addEventListener("locale-changed", function () {
+    if (!state.data) return;
+    render();
   });
 
   load();

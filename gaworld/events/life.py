@@ -17,6 +17,7 @@ DEFAULT_LIFE_EVENT_CONFIG = {
 LIFE_EVENT_TEMPLATES = [
     {
         "key": "illness",
+        "scale": "day",
         "title": "突然生病",
         "description": "身体突然不适，出现发热、乏力或疼痛，需要重新安排当天计划。",
         "severity": 0.70,
@@ -30,6 +31,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "lottery",
+        "scale": "month",
         "title": "意外中奖",
         "description": "意外中了一笔奖金，短期内对金钱、风险和未来计划产生强烈影响。",
         "severity": 0.80,
@@ -43,6 +45,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "framed",
+        "scale": "month",
         "title": "被人陷害",
         "description": "被卷入一场误会或恶意指控，需要解释、求助或处理声誉风险。",
         "severity": 0.86,
@@ -56,6 +59,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "promotion",
+        "scale": "month",
         "title": "升职机会",
         "description": "获得一个重要的升职、项目负责或职业跃迁机会，需要投入更多精力。",
         "severity": 0.64,
@@ -69,6 +73,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "family_emergency",
+        "scale": "day",
         "title": "家中急事",
         "description": "家人突然需要帮助，当前安排被迫让位给家庭责任。",
         "severity": 0.75,
@@ -82,6 +87,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "job_change",
+        "scale": "year",
         "title": "换工作",
         "description": "离开原岗位换到一份新工作，收入水平、通勤和日常节奏都要重新适应。",
         "severity": 0.66,
@@ -95,6 +101,7 @@ LIFE_EVENT_TEMPLATES = [
     },
     {
         "key": "unemployment",
+        "scale": "year",
         "title": "失业",
         "description": "失去工作，收入中断，接下来的时间主要用于找工作和压缩开支。",
         "severity": 0.88,
@@ -107,7 +114,127 @@ LIFE_EVENT_TEMPLATES = [
         },
     },
     {
+        "key": "relocation",
+        "scale": "year",
+        "title": "搬家",
+        "description": "换到城市里另一个片区居住，通勤、熟悉的街区和日常动线都要重建。",
+        "severity": 0.6,
+        "impact_tags": ["housing", "routine", "mobility", "community"],
+        "state_effects": {
+            "city_identity": -0.10,
+            "mobility_intent": -0.12,
+            "stress": 0.08,
+            "emotion": 0.03,
+        },
+    },
+    {
+        "key": "further_study",
+        "scale": "year",
+        "title": "进修深造",
+        "description": "投入一段长期学习——读学位、考证或系统性转技能，挤占其他时间。",
+        "severity": 0.55,
+        "impact_tags": ["career", "growth", "time_pressure"],
+        "state_effects": {
+            "time_pressure": 0.12,
+            "stress": 0.08,
+            "econ_security": -0.05,
+            "emotion": 0.04,
+        },
+    },
+    {
+        "key": "entrepreneurship",
+        "scale": "year",
+        "title": "开始创业",
+        "description": "离开雇佣岗位自己做事，收入从稳定变成不确定，投入和风险同时抬高。",
+        "severity": 0.8,
+        # `employment` routes this through apply_employment_event, so the job
+        # text and income band really change rather than only the mood.
+        "impact_tags": ["career", "employment", "money", "risk"],
+        "state_effects": {
+            "econ_security": -0.18,
+            "stress": 0.15,
+            "emotion": 0.05,
+            "risk_preference": 0.08,
+        },
+    },
+    {
+        "key": "chronic_condition",
+        "scale": "year",
+        "title": "长期健康问题",
+        "description": "查出或逐渐形成一个需要长期管理的健康问题，作息、开销和精力都要重新安排。",
+        "severity": 0.72,
+        "impact_tags": ["health", "routine", "money"],
+        "state_effects": {
+            "stress": 0.14,
+            "emotion": -0.10,
+            "econ_security": -0.08,
+            "fatigue_debt": 0.10,
+        },
+    },
+    {
+        "key": "marriage",
+        "scale": "year",
+        "title": "结婚",
+        "description": "与伴侣登记结婚，家庭结构、开支和日常安排都要重新组织。",
+        "severity": 0.72,
+        "impact_tags": ["family", "relationship", "money"],
+        "state_effects": {
+            "emotion": 0.14,
+            "stress": 0.08,
+            "social_need": -0.12,
+            "econ_security": -0.06,
+        },
+    },
+    {
+        "key": "childbirth",
+        "scale": "year",
+        "title": "迎来新生儿",
+        "description": "家里添了孩子，睡眠、开销和全部日常节奏围着新成员重排。",
+        "severity": 0.85,
+        "impact_tags": ["family", "obligation", "routine", "money"],
+        "state_effects": {
+            "emotion": 0.12,
+            "stress": 0.16,
+            "fatigue_debt": 0.14,
+            "econ_security": -0.10,
+        },
+    },
+    {
+        "key": "bereavement",
+        "scale": "year",
+        "title": "亲人离世",
+        "description": "一位重要的家人去世，情绪、家庭责任和日常安排一起被打断。",
+        "severity": 0.92,
+        "impact_tags": ["family", "emotion", "obligation"],
+        "state_effects": {
+            "emotion": -0.24,
+            "stress": 0.18,
+            "social_need": 0.10,
+            "self_control": -0.08,
+        },
+    },
+    {
+        "key": "retirement",
+        "scale": "year",
+        "title": "退休",
+        "description": "正式退出职场，收入结构、时间安排和社交圈同时换了一套。",
+        "severity": 0.7,
+        # Routed to `apply_employment_event` by *key* (EMPLOYMENT_EVENT_KEYS),
+        # deliberately not by the `employment` tag: that tag means "this is a
+        # job change", and retirement is not one — it has no new employer, no
+        # recovery and no way back. Keeping it untagged preserves the
+        # invariant `tests/test_life_event_candidates.py` pins down.
+        "impact_tags": ["career", "routine", "money"],
+        "state_effects": {
+            "time_pressure": -0.18,
+            "stress": -0.08,
+            "econ_security": -0.08,
+            "social_need": 0.10,
+        },
+    },
+    {
         "key": "relationship_break",
+        "scale": "month",
         "title": "关系破裂",
         "description": "与重要朋友、伴侣或同事发生严重冲突，信任感和日常节奏受到冲击。",
         "severity": 0.78,
@@ -145,6 +272,65 @@ STATE_EFFECT_KEYS = {
     "cross_viewpoint_exposure",
     "intervention_reward",
 }
+
+
+#: Life stages, as (min_age, key, label, what this stage is usually about).
+#: Ordered oldest-first so the first match wins.
+LIFE_STAGES: tuple[tuple[int, str, str, str], ...] = (
+    (75, "elderly", "高龄", "健康与照护是主线，生活半径收窄，与子女和老友的联系变得重要"),
+    (60, "retirement", "退休年龄", "从岗位上退下来或准备退下来，重心转向健康、家庭与闲暇"),
+    (50, "late_career", "中年后期", "事业定型，开始考虑养老与父母的照护，健康问题开始出现"),
+    (35, "midlife", "中年", "工作与家庭双线负荷最重，上有老下有小，变动的代价变高"),
+    (25, "early_career", "青年", "职业与关系逐步定型，成家、买房、攒钱这类长期决定集中在这一段"),
+    (18, "young_adult", "青年初期", "刚进入社会或还在读书，流动性最高，什么都还没定下来"),
+    (0, "minor", "未成年", "以学业和家庭为中心"),
+)
+
+
+def life_stage(agent):
+    """Which stage of life this person is in, from their current age.
+
+    Age now advances over long runs, but nothing consumed the change: a
+    resident could go from 34 to 64 while every prompt still framed them as a
+    mid-career adult. A stage is the cheapest honest way to let the rest of
+    the simulation notice — it is derived, never stored, so it can never drift
+    out of sync with ``age``.
+
+    Returns ``(key, label, focus)``; an agent with no usable age gets the
+    mid-life default rather than nothing, matching how the economy treats a
+    missing age.
+    """
+    try:
+        age = int(float(agent.get("age", 0) or 0)) if isinstance(agent, dict) else 0
+    except (TypeError, ValueError):
+        age = 0
+    if age <= 0:
+        return ("midlife", "中年", LIFE_STAGES[3][3])
+    for floor, key, label, focus in LIFE_STAGES:
+        if age >= floor:
+            return (key, label, focus)
+    return ("minor", "未成年", LIFE_STAGES[-1][3])
+
+
+def life_move_eligible(template_key, agent):
+    """Can this particular person plausibly do this, right now?
+
+    Scale filtering says a year may contain a marriage; this says *this*
+    resident may. Without it the menu offers childbirth to a 70-year-old and
+    retirement to a 28-year-old, and a model asked for eventful years will
+    take them.
+
+    The rules themselves live in :mod:`gaworld.events.candidates`, next to the
+    candidate pool the dashboard ranks with. There used to be a second copy
+    here, reading the agent directly — two tables for one question, which is
+    how an eligibility bug gets fixed on one path and left on the other. This
+    is now a thin adapter over the shared gates.
+    """
+    from gaworld.events.candidates import candidate_applies, context_from_agent
+
+    if not isinstance(agent, dict):
+        return True
+    return candidate_applies(str(template_key or ""), context_from_agent(agent))
 
 
 def life_event_config(config=None):

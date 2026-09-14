@@ -1,16 +1,19 @@
+@import url("/site/tokens.css");
+
 :root {
-  --paper: #edf0e7;
+  /* Deliberately darker than the house --line (#dde6de): the borders here
+     carry the editorial column grid and have to read at 1px. Converging this
+     one is a visible change, so it stays an explicit override; the six other
+     values this file used to shadow (--paper/--ink/--muted/--green/
+     --green-deep/--steel) were eyedropper drift and now come from tokens.css. */
+  --line: #cbd4ca;
+
+  /* Roles only this page's layout needs. */
   --paper-bright: #fbfaf2;
   --paper-deep: #dfe5d9;
-  --ink: #18241f;
-  --muted: #69756e;
-  --green: #176b4f;
-  --green-deep: #0d3e31;
   --green-pale: #d5e7db;
-  --steel: #496876;
   --steel-deep: #263f4a;
   --steel-pale: #dce6e8;
-  --line: #cbd4ca;
   --danger: #9d493e;
   --shadow: 0 18px 48px rgba(25, 48, 38, 0.12);
 }

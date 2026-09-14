@@ -14,10 +14,26 @@ const assert = require("node:assert/strict");
 
 const exporter = require("./analytics-export.js");
 
+/* The exporter takes its translator through `labels` (it reaches for no
+   globals), so hand it the real zh-CN locale. That keeps the Chinese
+   assertions below meaningful and turns this into a check that every key the
+   report asks for actually exists — a typo'd key would surface as a raw
+   "ax.something" in the output. */
+const LOCALE = require("./locales/zh-CN.json");
+const missingKeys = [];
+
 const LABELS = {
   metric: { emotion: "情绪", stress: "压力" },
   econ: { balance: "总资产", income: "收入" },
   period: { morning: "上午" },
+  lang: "zh-CN",
+  t: (key) => {
+    if (!Object.prototype.hasOwnProperty.call(LOCALE, key)) {
+      missingKeys.push(key);
+      return key;
+    }
+    return LOCALE[key];
+  },
 };
 
 const STAMP = "2026-07-31 09:30:00";
@@ -291,4 +307,10 @@ test("stamps are filename-safe and human-readable", () => {
   const when = new Date(2026, 6, 3, 9, 5, 7);
   assert.equal(exporter.timestamp(when), "2026-07-03 09:05:07");
   assert.equal(exporter.fileStamp(when), "20260703-0905");
+});
+
+test("every locale key the report asks for exists", () => {
+  // Populated by the LABELS.t stub above as the builders run. The tests before
+  // this one exercise all four formats, so by now the tally is complete.
+  assert.deepEqual(missingKeys, []);
 });

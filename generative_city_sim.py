@@ -3991,6 +3991,7 @@ def run_simulation():
         )
 
         _ff_rand = _ff_randomness(CONFIG)  # full config; randomness_level unwraps long_run
+        _ff_fallbacks = []
         _ff_delta_cap = _ff_max_state_delta(period.unit, CONFIG)
         _ff_jitter = _ff_jitter_scale(period.unit)
         _ff_empty_brief = "（平稳的一天）" if period.unit == "day" else "（这段时间平稳度过）"
@@ -4003,6 +4004,10 @@ def run_simulation():
             burst = bool(digest.get("burst"))
             # Mark burst steps so the brief block and log read as eventful.
             brief_disp = ("⚡ " + brief) if (burst and brief) else brief
+            if digest.get("fallback"):
+                # A placeholder must not read like a real, quiet period.
+                brief_disp = "⚠️ [占位·模型未产出] " + brief_disp
+                _ff_fallbacks.append(str(agent.get("name", agent_id)))
             agent_briefs.append((agent.get("name", str(agent_id)), brief_disp))
 
             # 1) approximate state deltas + randomness-driven volatility jitter
@@ -4142,6 +4147,12 @@ def run_simulation():
         if day_env_events:
             world_line = "；".join(
                 _format_external_env_event(ev) for ev in day_env_events[:2]
+            )
+        if _ff_fallbacks:
+            print(
+                f"⚠️ {period.title}：{len(_ff_fallbacks)}/{len(agents)} 位居民的简报来自"
+                f"确定性占位（模型未产出可用结果）——{'、'.join(_ff_fallbacks[:5])}"
+                f"{'…' if len(_ff_fallbacks) > 5 else ''}。检查 provider 与日志。"
             )
         brief_block = _ff_render_brief(
             period, agent_briefs, world_line=world_line, day_desc=day_desc

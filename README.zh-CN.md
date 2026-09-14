@@ -84,6 +84,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 兴趣爱好与技能成长系统：为每个智能体生成兴趣、计划发展的技能、练习时间、成长进度，并影响日程、行动、工作和生活选择——含幂律学习曲线、连击动量、里程碑事件、日终遗忘衰减、兴趣发展四阶段与社交兴趣传染
 - 可复用 Skill 库：基于 Markdown 的全局 / 私有技能，可从经历自动提炼，并注入认知与工作 brief
 - 真实工作任务系统：智能体在 mock 工作市场浏览、接单，按职业与技能产出真实产物（HTML、Python、文章、教案、研究笔记）
+- 从地名新建城市：真实 OSM 地图 / 程序化兜底、环境与背景推导、多城市共存与切换
 - 城市地图生成与轨迹回放
 - 可视化 trace 导出
 - 单智能体采访 CLI
@@ -124,6 +125,7 @@ GAWorld/
 │   ├── skills/                    # 可复用 Skill 库（registry、Markdown schema、提示注入、经验提炼）
 │   ├── social/network.py          # 社交网络（衰减、Dunbar 分层、ghost 事件）
 │   ├── work/                      # 工作任务系统（queue、market、router、adapters）
+│   ├── city/                      # 从地名造城（地理编码、OSM 抓取、程序化兜底、城市包）
 │   ├── world/city_map.py          # 城市地图（图结构、路线、出行成本、空间查询）
 │   ├── world/local_physical.py    # 局部物理感知（占用 / 营业快照、人流骤增异常、感知注入）
 │   ├── hooks.py                   # 生命周期钩子（HookBus）
@@ -133,6 +135,7 @@ GAWorld/
 ├── legacy/                        # 旧版 flat 模块（已弃用，不参与构建）
 │   └── README.md                  # 旧模块 → 新位置对照表
 ├── data/                          # 数据资产（agents CSV、profiles MD、citymap MD）
+│   └── cities/<slug>/             # 城市包（清单 + 地图 + 环境 + 人口）
 ├── scripts/                       # 辅助脚本（generate_citymap 等）
 ├── tests/                         # 测试套件（pytest，全部使用 gaworld.* import）
 ├── docs/                          # 设计文档、重构记录
@@ -152,9 +155,10 @@ GAWorld/
 - `gaworld/work/`：real-work 任务系统（runtime、worker pool、queue、market）
 - `gaworld/population/`：参数化人口合成——`schema`（旋钮契约 + 可行性预检）、`synth`（IPF + 条件采样 + 收入秩变换）、`network`（家庭、工作单位、同质性社交图）、`report`（校验门 + 复核图表）、`writer`（状态 CSV + profile MD + manifest）
 - `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（观测型 cohort 遥测）
-- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及两个面板后端 `population_api`（Population Studio）与 `external_systems_api`（外部系统观测台）
+- `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）
+- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及三个面板后端 `population_api`（Population Studio）、`city_api`（城市）与 `external_systems_api`（外部系统观测台）
 - `gaworld/parallel/`：平行世界实验——`spec`（世界/事件校验 + 各世界磁盘隔离的配置覆盖）、`runner`（用小型进程池分叉 N 个世界并跟踪进度）、`analysis`（逐步偏离度、分叉点、逐人影响）
-- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 外部系统 `external.html` + 平行世界 `worlds.html`）
+- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 外部系统 `external.html` + 平行世界 `worlds.html`）
 - `site/simviz/`：轨迹回放页面
 - `output/`：生成结果
 
@@ -316,7 +320,35 @@ python generative_city_sim.py parallel-worlds --spec worlds.json --seed 42 --fas
 同一套实验可以在控制台的 **平行世界** 标签页里交互式地设计与查看。
 完整教程（面板导览、读图方法、剂量反应实验、安慰剂对照、API 速查）见[平行世界教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)。
 
-生成城市地图：
+### 城市
+
+给一个真实地名，造出一整座可仿真的城市：地名经地理编码取得坐标与范围，抓取该范围的
+真实 OpenStreetMap 路网与地标，再据此生成地图、环境事件与 background 提示词。
+OSM 上没有可用数据时——小村庄、虚构地名、或者干脆没有网络——会按地名**确定性**地
+程序化生成，同一个地名永远得到同一座城。每座城市是 `data/cities/<slug>/` 下的独立
+包，互不覆盖。完整教程见[城市教程](./docs/CITY_TUTORIAL.md)。
+
+```bash
+# 地理编码 + 真实 OSM 地图，顺带生成 200 名居民
+python -m gaworld.city create "绍兴柯桥" --size 200
+
+# 没有网络，或者地名是虚构的
+python -m gaworld.city create "柳溪村" --offline --scale tiny
+
+# 加智能体：批量合成、追加单个、把已有的迁进来
+python -m gaworld.city add-agents 绍兴柯桥 --size 200
+python -m gaworld.city add-agent  绍兴柯桥 --name 林素 --age 34 --job "社区医生"
+python -m gaworld.city migrate    绍兴柯桥 --agent-id 31
+
+# 让仿真用这座城（下次运行生效）
+python -m gaworld.city use 绍兴柯桥
+```
+
+选中某座城市后，`map_path` / `csv_path` / `md_path` / `map_mode`、环境事件表与
+`background` 提示词会整体指向该城市包——最后这项不换掉的话，新城市里的智能体
+会一边住在柯桥、一边以为自己还在杭州。同样的操作也在控制台的 **城市** 标签页里。
+
+只想换张地图、不在乎它对应哪个真实地方，旧的单地图生成器仍然可用：
 
 ```bash
 python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"

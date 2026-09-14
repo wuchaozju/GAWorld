@@ -1,0 +1,2883 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "柯桥区",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 30.084796,
+   "lng": 120.490807,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.010381686
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5198165,
+     29.9590337
+    ]
+   },
+   "properties": {
+    "name": "兰亭街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4705915,
+     29.9609659
+    ]
+   },
+   "properties": {
+    "name": "漓渚镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5285811,
+     29.9599265
+    ]
+   },
+   "properties": {
+    "name": "联合村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5055032,
+     29.9954915
+    ]
+   },
+   "properties": {
+    "name": "福全街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5389655,
+     29.9690502
+    ]
+   },
+   "properties": {
+    "name": "金庄村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.538007,
+     29.9631454
+    ]
+   },
+   "properties": {
+    "name": "黄贤村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5225725,
+     29.9550071
+    ]
+   },
+   "properties": {
+    "name": "娄宫村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5206571,
+     29.9605267
+    ]
+   },
+   "properties": {
+    "name": "下溇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4933051,
+     30.1394965
+    ]
+   },
+   "properties": {
+    "name": "安昌街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5244149,
+     30.0597229
+    ]
+   },
+   "properties": {
+    "name": "东浦街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5139413,
+     30.1393002
+    ]
+   },
+   "properties": {
+    "name": "齐贤街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5889436,
+     30.1975256
+    ]
+   },
+   "properties": {
+    "name": "益农镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5989284,
+     30.0914928
+    ]
+   },
+   "properties": {
+    "name": "斗门街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6049759,
+     30.0239755
+    ]
+   },
+   "properties": {
+    "name": "东湖街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4849115,
+     30.112119
+    ]
+   },
+   "properties": {
+    "name": "华舍街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3646166,
+     30.1493598
+    ]
+   },
+   "properties": {
+    "name": "杨汛桥街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4187046,
+     30.0691264
+    ]
+   },
+   "properties": {
+    "name": "湖塘街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4536785,
+     30.1928059
+    ]
+   },
+   "properties": {
+    "name": "瓜沥镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3859279,
+     30.1694001
+    ]
+   },
+   "properties": {
+    "name": "衙前镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3925914,
+     30.1291001
+    ]
+   },
+   "properties": {
+    "name": "钱清街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4894546,
+     30.0753857
+    ]
+   },
+   "properties": {
+    "name": "柯桥街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4856377,
+     30.0553102
+    ]
+   },
+   "properties": {
+    "name": "柯岩街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5603383,
+     30.0491825
+    ]
+   },
+   "properties": {
+    "name": "灵芝街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5579388,
+     30.0130286
+    ]
+   },
+   "properties": {
+    "name": "北海街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5872845,
+     30.0072136
+    ]
+   },
+   "properties": {
+    "name": "府山街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.58481,
+     29.9913074
+    ]
+   },
+   "properties": {
+    "name": "塔山街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6015354,
+     29.9984433
+    ]
+   },
+   "properties": {
+    "name": "迪荡街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6145843,
+     29.9833496
+    ]
+   },
+   "properties": {
+    "name": "稽山街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5780443,
+     29.9796537
+    ]
+   },
+   "properties": {
+    "name": "城南街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6016445,
+     30.0896302
+    ]
+   },
+   "properties": {
+    "name": "袍江新区",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.366237,
+     30.2122121
+    ]
+   },
+   "properties": {
+    "name": "建盈村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3726625,
+     30.1911152
+    ]
+   },
+   "properties": {
+    "name": "万安村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3722452,
+     30.1898467
+    ]
+   },
+   "properties": {
+    "name": "陈家园村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3718804,
+     30.1771966
+    ]
+   },
+   "properties": {
+    "name": "新塘头村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3608941,
+     30.1805541
+    ]
+   },
+   "properties": {
+    "name": "芝兰村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5228813,
+     30.1990972
+    ]
+   },
+   "properties": {
+    "name": "八里桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5357638,
+     30.2145123
+    ]
+   },
+   "properties": {
+    "name": "镇中村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5318049,
+     30.1954323
+    ]
+   },
+   "properties": {
+    "name": "世安桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4507566,
+     30.1653887
+    ]
+   },
+   "properties": {
+    "name": "低田畈村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4526361,
+     30.18136
+    ]
+   },
+   "properties": {
+    "name": "明朗村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4540314,
+     30.1873779
+    ]
+   },
+   "properties": {
+    "name": "友谊村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4452135,
+     30.2020258
+    ]
+   },
+   "properties": {
+    "name": "横埂头村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4572065,
+     30.2101117
+    ]
+   },
+   "properties": {
+    "name": "运西村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3785833,
+     30.1646134
+    ]
+   },
+   "properties": {
+    "name": "衙前村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3866635,
+     30.1636419
+    ]
+   },
+   "properties": {
+    "name": "项漾村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3693676,
+     30.1694829
+    ]
+   },
+   "properties": {
+    "name": "吟龙村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.370612,
+     30.1762395
+    ]
+   },
+   "properties": {
+    "name": "新桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3824725,
+     30.1770566
+    ]
+   },
+   "properties": {
+    "name": "八大村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3956385,
+     30.1790708
+    ]
+   },
+   "properties": {
+    "name": "沿塘村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3924466,
+     30.191098
+    ]
+   },
+   "properties": {
+    "name": "甘露亭村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4021204,
+     30.1882842
+    ]
+   },
+   "properties": {
+    "name": "民丰河村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4115899,
+     30.1947537
+    ]
+   },
+   "properties": {
+    "name": "群谊村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4268957,
+     30.1928779
+    ]
+   },
+   "properties": {
+    "name": "工农村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4167968,
+     30.1641863
+    ]
+   },
+   "properties": {
+    "name": "山南富村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4373801,
+     30.1602604
+    ]
+   },
+   "properties": {
+    "name": "长巷村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.528813,
+     29.9601555
+    ]
+   },
+   "properties": {
+    "name": "大夫诊所",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6144199,
+     30.0051672
+    ]
+   },
+   "properties": {
+    "name": "绍兴悦程",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.517165,
+     29.9577587
+    ]
+   },
+   "properties": {
+    "name": "兰亭镇人民医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5244038,
+     29.9905196
+    ]
+   },
+   "properties": {
+    "name": "福全镇人民医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5431771,
+     30.0079386
+    ]
+   },
+   "properties": {
+    "name": "绍兴市第七人民医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5888524,
+     30.0245783
+    ]
+   },
+   "properties": {
+    "name": "绍兴市人民医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4738207,
+     30.0410892
+    ]
+   },
+   "properties": {
+    "name": "绍兴市柯桥区妇幼保健院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3743734,
+     30.1645641
+    ]
+   },
+   "properties": {
+    "name": "恒福骨伤科手外科医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3791427,
+     30.1661715
+    ]
+   },
+   "properties": {
+    "name": "康泰老年病医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3864627,
+     30.1663502
+    ]
+   },
+   "properties": {
+    "name": "衙前镇卫生院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3718668,
+     30.1780748
+    ]
+   },
+   "properties": {
+    "name": "新塘头社区卫生服务站",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4036495,
+     30.1916694
+    ]
+   },
+   "properties": {
+    "name": "杭州萧山大园医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3869624,
+     30.2006182
+    ]
+   },
+   "properties": {
+    "name": "萧山区瓜沥镇国庆社区卫生服务站",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3942221,
+     30.195954
+    ]
+   },
+   "properties": {
+    "name": "杭州市萧山区瓜沥镇坎山卫生院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3989519,
+     30.2005896
+    ]
+   },
+   "properties": {
+    "name": "杭州萧山邻家联合医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4325767,
+     30.1470362
+    ]
+   },
+   "properties": {
+    "name": "大义社区卫生站",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4476384,
+     30.1739129
+    ]
+   },
+   "properties": {
+    "name": "瓜沥镇社区卫生服务中心",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4542998,
+     30.1762285
+    ]
+   },
+   "properties": {
+    "name": "杭州市萧山区第二人民医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4115949,
+     30.1769892
+    ]
+   },
+   "properties": {
+    "name": "凤升社区卫生服务站",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.430527,
+     30.1919014
+    ]
+   },
+   "properties": {
+    "name": "萧山区坎山镇工农社区卫生服务站",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4693218,
+     30.1849588
+    ]
+   },
+   "properties": {
+    "name": "杭州萧山永信医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4603334,
+     30.1814519
+    ]
+   },
+   "properties": {
+    "name": "杭州萧山邻家红友桥路诊所",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5385902,
+     29.9626525
+    ]
+   },
+   "properties": {
+    "name": "供销超市黄贤店",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4643989,
+     30.0649979
+    ]
+   },
+   "properties": {
+    "name": "柯岩家具城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4650616,
+     30.0645552
+    ]
+   },
+   "properties": {
+    "name": "永进综合农贸市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4699936,
+     30.0739557
+    ]
+   },
+   "properties": {
+    "name": "绍兴名优特柯桥购物中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4697441,
+     30.0787689
+    ]
+   },
+   "properties": {
+    "name": "柯桥彩洁蔬菜经营部",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4098371,
+     30.0471419
+    ]
+   },
+   "properties": {
+    "name": "陌坞村农产品自产自销点",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4868755,
+     30.0675886
+    ]
+   },
+   "properties": {
+    "name": "柯桥区顺达综合市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4766245,
+     30.0814296
+    ]
+   },
+   "properties": {
+    "name": "金凤凰家纺城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4775084,
+     30.0745307
+    ]
+   },
+   "properties": {
+    "name": "共富街美食城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4879752,
+     30.0882679
+    ]
+   },
+   "properties": {
+    "name": "聚银时代",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4881281,
+     30.088609
+    ]
+   },
+   "properties": {
+    "name": "银泰百货",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.513601,
+     30.0831411
+    ]
+   },
+   "properties": {
+    "name": "瑞兴农贸市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5477461,
+     30.0145591
+    ]
+   },
+   "properties": {
+    "name": "绍兴冠城商业广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5762094,
+     30.0089764
+    ]
+   },
+   "properties": {
+    "name": "八佰伴购物中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5786601,
+     30.0026984
+    ]
+   },
+   "properties": {
+    "name": "绍兴国金大悦城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5581296,
+     30.0368037
+    ]
+   },
+   "properties": {
+    "name": "龙湖绍兴镜湖天街",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5428747,
+     29.9892098
+    ]
+   },
+   "properties": {
+    "name": "泓盛广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5750813,
+     30.0484025
+    ]
+   },
+   "properties": {
+    "name": "绍兴苏宁广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6083756,
+     30.034722
+    ]
+   },
+   "properties": {
+    "name": "绍兴旭辉Cmall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5853098,
+     30.0527371
+    ]
+   },
+   "properties": {
+    "name": "镜湖中新广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.60788,
+     30.0815727
+    ]
+   },
+   "properties": {
+    "name": "永利购物中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6101162,
+     29.9661734
+    ]
+   },
+   "properties": {
+    "name": "大禹陵",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.597627,
+     29.9679576
+    ]
+   },
+   "properties": {
+    "name": "会稽山旅游度假区",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5695072,
+     30.0101117
+    ]
+   },
+   "properties": {
+    "name": "谢公桥",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5766398,
+     30.0030403
+    ]
+   },
+   "properties": {
+    "name": "古轩亭口",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5816703,
+     29.9940238
+    ]
+   },
+   "properties": {
+    "name": "三味书屋",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5727249,
+     30.002841
+    ]
+   },
+   "properties": {
+    "name": "姚家台门",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5810491,
+     30.0100751
+    ]
+   },
+   "properties": {
+    "name": "团结台门",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5812987,
+     30.0100791
+    ]
+   },
+   "properties": {
+    "name": "和睦台门",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5814744,
+     29.9945558
+    ]
+   },
+   "properties": {
+    "name": "仁里",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5262034,
+     29.9591378
+    ]
+   },
+   "properties": {
+    "name": "联合公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5451105,
+     29.9746131
+    ]
+   },
+   "properties": {
+    "name": "百镇广场",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5393701,
+     29.9694421
+    ]
+   },
+   "properties": {
+    "name": "金庄公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5751834,
+     30.00556
+    ]
+   },
+   "properties": {
+    "name": "城市广场",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5867426,
+     29.9877424
+    ]
+   },
+   "properties": {
+    "name": "罗门公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5869623,
+     29.9971792
+    ]
+   },
+   "properties": {
+    "name": "绍兴儿童公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5824198,
+     30.012949
+    ]
+   },
+   "properties": {
+    "name": "蕺山公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5775898,
+     29.9696045
+    ]
+   },
+   "properties": {
+    "name": "名人广场",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5758442,
+     29.991766
+    ]
+   },
+   "properties": {
+    "name": "塔山园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5691657,
+     30.0025656
+    ]
+   },
+   "properties": {
+    "name": "府山公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5935357,
+     30.0093782
+    ]
+   },
+   "properties": {
+    "name": "西施山遗址公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6198536,
+     30.0784209
+    ]
+   },
+   "properties": {
+    "name": "袍江文化体育广场",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5890574,
+     29.9841767
+    ]
+   },
+   "properties": {
+    "name": "稽山公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6165884,
+     29.9910217
+    ]
+   },
+   "properties": {
+    "name": "生态广场",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5012308,
+     30.0687646
+    ]
+   },
+   "properties": {
+    "name": "瓜渚湖东岸公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.498708,
+     30.0765397
+    ]
+   },
+   "properties": {
+    "name": "瓜渚湖北岸公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4913946,
+     30.0692592
+    ]
+   },
+   "properties": {
+    "name": "瓜渚湖西岸公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5197409,
+     29.9590393
+    ]
+   },
+   "properties": {
+    "name": "兰亭镇人民政府",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4846445,
+     30.0539125
+    ]
+   },
+   "properties": {
+    "name": "鲁镇社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4860423,
+     30.0536441
+    ]
+   },
+   "properties": {
+    "name": "柯桥区柯岩街道基层智治中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4724143,
+     30.0370777
+    ]
+   },
+   "properties": {
+    "name": "高尔夫社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4539259,
+     30.0354616
+    ]
+   },
+   "properties": {
+    "name": "州山社区综合服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.453836,
+     30.0356288
+    ]
+   },
+   "properties": {
+    "name": "州山居党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4782173,
+     30.0573785
+    ]
+   },
+   "properties": {
+    "name": "独山社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4715829,
+     30.0655633
+    ]
+   },
+   "properties": {
+    "name": "柯岩街道红旗社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.45763,
+     30.024926
+    ]
+   },
+   "properties": {
+    "name": "河塔村党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4680692,
+     30.0637323
+    ]
+   },
+   "properties": {
+    "name": "鉴水社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4755592,
+     30.076235
+    ]
+   },
+   "properties": {
+    "name": "百福园社区党群服务中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4854888,
+     30.0716218
+    ]
+   },
+   "properties": {
+    "name": "中国税务",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4067931,
+     30.1243892
+    ]
+   },
+   "properties": {
+    "name": "钱清",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.389499,
+     30.1261686
+    ]
+   },
+   "properties": {
+    "name": "前梅",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4219408,
+     30.1198442
+    ]
+   },
+   "properties": {
+    "name": "西沙路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4364589,
+     30.1125877
+    ]
+   },
+   "properties": {
+    "name": "临杭大道",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5738477,
+     29.9663414
+    ]
+   },
+   "properties": {
+    "name": "凤凰山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5763361,
+     29.9787646
+    ]
+   },
+   "properties": {
+    "name": "城南大道",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5764704,
+     29.9941764
+    ]
+   },
+   "properties": {
+    "name": "鲁迅故里",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5771893,
+     30.015738
+    ]
+   },
+   "properties": {
+    "name": "火车站",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5784632,
+     30.0261806
+    ]
+   },
+   "properties": {
+    "name": "大滩",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5774478,
+     30.039548
+    ]
+   },
+   "properties": {
+    "name": "凤林",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5725913,
+     30.0526194
+    ]
+   },
+   "properties": {
+    "name": "梅山广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5658495,
+     30.0589438
+    ]
+   },
+   "properties": {
+    "name": "奥体中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5496075,
+     30.0554968
+    ]
+   },
+   "properties": {
+    "name": "张墅",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5355346,
+     30.0609372
+    ]
+   },
+   "properties": {
+    "name": "黄酒小镇",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5174432,
+     30.0711519
+    ]
+   },
+   "properties": {
+    "name": "镜水路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5048291,
+     30.0767978
+    ]
+   },
+   "properties": {
+    "name": "瓜渚湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4912393,
+     30.0818132
+    ]
+   },
+   "properties": {
+    "name": "明珠广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3909129,
+     30.2001162
+    ]
+   },
+   "properties": {
+    "name": "坎山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5857218,
+     30.05227
+    ]
+   },
+   "properties": {
+    "name": "后墅路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6076822,
+     30.0522403
+    ]
+   },
+   "properties": {
+    "name": "袍中路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5972913,
+     30.0520755
+    ]
+   },
+   "properties": {
+    "name": "袍谷",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5549017,
+     30.0468911
+    ]
+   },
+   "properties": {
+    "name": "人民医院总院",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5339592,
+     30.0905757
+    ]
+   },
+   "properties": {
+    "name": "大庆寺",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.53386,
+     30.0811902
+    ]
+   },
+   "properties": {
+    "name": "湖西",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5339082,
+     30.0698331
+    ]
+   },
+   "properties": {
+    "name": "绍兴一中",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5319795,
+     30.1013649
+    ]
+   },
+   "properties": {
+    "name": "绍兴北站",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5133071,
+     30.1033369
+    ]
+   },
+   "properties": {
+    "name": "会展中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5391258,
+     30.050396
+    ]
+   },
+   "properties": {
+    "name": "东浦",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5378988,
+     30.0420888
+    ]
+   },
+   "properties": {
+    "name": "大树江",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.528129,
+     30.0208751
+    ]
+   },
+   "properties": {
+    "name": "青甸湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5373193,
+     30.0097545
+    ]
+   },
+   "properties": {
+    "name": "陆游故里",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5480183,
+     30.0084368
+    ]
+   },
+   "properties": {
+    "name": "二环西路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5568962,
+     30.0072132
+    ]
+   },
+   "properties": {
+    "name": "胜利西路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5665236,
+     30.0069737
+    ]
+   },
+   "properties": {
+    "name": "府山西路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5896616,
+     30.0066544
+    ]
+   },
+   "properties": {
+    "name": "世茂广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5958124,
+     30.0066838
+    ]
+   },
+   "properties": {
+    "name": "世茂天际",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.6033995,
+     29.9961173
+    ]
+   },
+   "properties": {
+    "name": "平江路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.614167,
+     29.9957746
+    ]
+   },
+   "properties": {
+    "name": "人民东路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.5738477,
+      29.9663414
+     ],
+     [
+      120.5763361,
+      29.9787646
+     ],
+     [
+      120.5764704,
+      29.9941764
+     ],
+     [
+      120.5751834,
+      30.00556
+     ],
+     [
+      120.5771893,
+      30.015738
+     ],
+     [
+      120.5784632,
+      30.0261806
+     ],
+     [
+      120.5774478,
+      30.039548
+     ],
+     [
+      120.5725913,
+      30.0526194
+     ],
+     [
+      120.5658495,
+      30.0589438
+     ],
+     [
+      120.5496075,
+      30.0554968
+     ],
+     [
+      120.5355346,
+      30.0609372
+     ],
+     [
+      120.5174432,
+      30.0711519
+     ],
+     [
+      120.5048291,
+      30.0767978
+     ],
+     [
+      120.4912393,
+      30.0818132
+     ],
+     [
+      120.4364589,
+      30.1125877
+     ],
+     [
+      120.4219408,
+      30.1198442
+     ],
+     [
+      120.4067931,
+      30.1243892
+     ],
+     [
+      120.389499,
+      30.1261686
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "1号线",
+    "color": "#c5003e",
+    "stops": [
+     "凤凰山",
+     "城南大道",
+     "鲁迅故里",
+     "城市广场",
+     "火车站",
+     "大滩",
+     "凤林",
+     "梅山广场",
+     "奥体中心",
+     "张墅",
+     "黄酒小镇",
+     "镜水路",
+     "瓜渚湖",
+     "明珠广场",
+     "临杭大道",
+     "西沙路",
+     "钱清",
+     "前梅"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.5549017,
+      30.0468911
+     ],
+     [
+      120.5725913,
+      30.0526194
+     ],
+     [
+      120.5857218,
+      30.05227
+     ],
+     [
+      120.5972913,
+      30.0520755
+     ],
+     [
+      120.6076822,
+      30.0522403
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "2号线",
+    "color": "#307FE2",
+    "stops": [
+     "人民医院总院",
+     "梅山广场",
+     "后墅路",
+     "袍谷",
+     "袍中路"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.3573927,
+      30.068756
+     ],
+     [
+      120.3601652,
+      30.0726208
+     ],
+     [
+      120.362547,
+      30.0831318
+     ],
+     [
+      120.3643683,
+      30.0375781
+     ],
+     [
+      120.3650691,
+      30.0416258
+     ],
+     [
+      120.3662847,
+      30.0343586
+     ],
+     [
+      120.3708914,
+      30.0334681
+     ],
+     [
+      120.3752339,
+      30.032184
+     ],
+     [
+      120.3785062,
+      30.0289771
+     ],
+     [
+      120.3828553,
+      30.0905776
+     ],
+     [
+      120.384686,
+      30.0208213
+     ],
+     [
+      120.3856623,
+      30.0183131
+     ],
+     [
+      120.3871483,
+      30.0174944
+     ],
+     [
+      120.3873803,
+      30.0137354
+     ],
+     [
+      120.3878013,
+      30.0968712
+     ],
+     [
+      120.3887733,
+      30.0928211
+     ],
+     [
+      120.3903816,
+      30.0926088
+     ],
+     [
+      120.3915135,
+      30.1006398
+     ],
+     [
+      120.3923035,
+      30.0059035
+     ],
+     [
+      120.3945619,
+      30.0044495
+     ],
+     [
+      120.3957836,
+      30.1028767
+     ],
+     [
+      120.3969757,
+      30.098061
+     ],
+     [
+      120.3977094,
+      30.0003641
+     ],
+     [
+      120.3983156,
+      30.1041948
+     ],
+     [
+      120.3990452,
+      30.1001479
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "river",
+    "name": "九曲河",
+    "width_km": 0.8
+   }
+  }
+ ]
+}

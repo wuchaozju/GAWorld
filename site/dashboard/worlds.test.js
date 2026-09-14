@@ -152,6 +152,26 @@ global.document = {
 global.setInterval = function () { return 0; };
 global.clearInterval = function () {};
 
+/* The panel draws every string through __() now, so the test supplies the real
+   zh-CN locale rather than a stub that echoes keys. That makes the assertions
+   below keep their meaning, and it turns this into a check that every key the
+   panel asks for actually exists — a typo'd key would surface as a raw
+   "pw.something" in the rendered HTML and trip the checks. */
+var LOCALE = require(path.join(HERE, "locales", "zh-CN.json"));
+var missingKeys = [];
+global.__ = function (key) {
+  if (Object.prototype.hasOwnProperty.call(LOCALE, key)) return LOCALE[key];
+  missingKeys.push(key);
+  return key;
+};
+global.__f = function (key, params) {
+  var text = global.__(key);
+  Object.keys(params || {}).forEach(function (name) {
+    text = text.split("{" + name + "}").join(String(params[name]));
+  });
+  return text;
+};
+
 var requested = [];
 global.fetch = function (url) {
   requested.push(String(url));
@@ -235,6 +255,11 @@ setTimeout(function () {
     ["the escaped label still reads correctly", all.indexOf("重度管制") >= 0],
     ["nothing leaks undefined or NaN",
       all.indexOf("undefined") < 0 && all.indexOf("NaN") < 0],
+
+    // --- i18n ---
+    ["every locale key the panel asks for exists",
+      missingKeys.length === 0 || !process.stdout.write("    missing: " + missingKeys.join(", ") + "\n")],
+    ["no untranslated key leaked into the markup", !/\bpw\.[a-z_]+\b/.test(all)],
   ];
 
   var failed = 0;

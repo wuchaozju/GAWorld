@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="city.page_title">GAWorld · 城市</title>
+  <meta name="description" data-i18n-content="city.meta_description" content="GAWorld 城市创建与智能体管理" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/city.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="city.kicker">GAWorld 城市</p>
+          <h1 data-i18n="city.headline">给一个地名，造一座城</h1>
+          <p class="sub" data-i18n="city.sub">
+            输入真实地名 → 自动获取地理坐标与 OpenStreetMap 路网 → 生成地图与环境 → 往城里添加智能体。
+            地名查不到或没有网络时，会按地名确定性地程序化生成。
+          </p>
+        </div>
+      </div>
+      <div class="city-topmeta" id="cityTopMeta"></div>
+    </header>
+
+    <section class="studio-main city-main">
+      <div class="city-col">
+        <div class="city-card">
+          <h3 data-i18n="city.create_title">新建城市</h3>
+          <form id="cityCreateForm" class="city-form">
+            <label class="city-field">
+              <span data-i18n="city.field_name">地名</span>
+              <input type="text" id="cityName" required data-i18n-placeholder="city.name_ph" placeholder="绍兴柯桥 / Kyoto / 柳溪村" />
+            </label>
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_scale">规模</span>
+                <select id="cityScale">
+                  <option value="" data-i18n="city.scale_auto">自动判断</option>
+                </select>
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_size">初始人口</span>
+                <input type="number" id="citySize" min="0" step="10" value="0" />
+              </label>
+            </div>
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_preset">人口模板</span>
+                <select id="cityPreset"></select>
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_seed">随机种子</span>
+                <input type="number" id="citySeed" data-i18n-placeholder="city.seed_ph" placeholder="留空 = 按地名" />
+              </label>
+            </div>
+            <label class="city-check">
+              <input type="checkbox" id="cityOffline" />
+              <span data-i18n="city.field_offline">离线模式（跳过联网查询，纯程序化生成）</span>
+            </label>
+            <button class="btn primary" type="submit" id="cityCreateBtn" data-i18n="city.create_btn">创建城市</button>
+            <p class="city-note" data-i18n="city.create_note">
+              联网创建需要访问 Nominatim 与 Overpass，通常 20–60 秒。
+            </p>
+          </form>
+          <div id="cityCreateStatus" class="city-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="city-card">
+          <h3 data-i18n="city.list_title">已有城市</h3>
+          <div id="cityList" class="city-list">
+            <p class="city-hint" data-i18n="city.loading">正在加载…</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="city-col city-side">
+        <div class="city-card" id="cityDetailCard" hidden>
+          <h3 data-i18n="city.detail_title">城市详情</h3>
+          <div id="cityDetail" class="city-detail"></div>
+
+          <h4 data-i18n="city.add_population_title">批量添加居民</h4>
+          <form id="cityPopForm" class="city-form">
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_size">人数</span>
+                <input type="number" id="popSize" min="1" step="10" value="100" required />
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_preset">人口模板</span>
+                <select id="popPreset"></select>
+              </label>
+            </div>
+            <label class="city-check">
+              <input type="checkbox" id="popReplace" />
+              <span data-i18n="city.field_replace">替换现有居民（默认追加）</span>
+            </label>
+            <button class="btn" type="submit" data-i18n="city.add_population_btn">生成居民</button>
+          </form>
+
+          <h4 data-i18n="city.add_agent_title">添加单个智能体</h4>
+          <form id="cityAgentForm" class="city-form">
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_agent_name">姓名</span>
+                <input type="text" id="agentName" required />
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_age">年龄</span>
+                <input type="number" id="agentAge" min="0" max="110" required />
+              </label>
+            </div>
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_gender">性别</span>
+                <select id="agentGender">
+                  <option value="女" data-i18n="city.gender_female">女</option>
+                  <option value="男" data-i18n="city.gender_male">男</option>
+                </select>
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_job">职业</span>
+                <input type="text" id="agentJob" data-i18n-placeholder="city.job_ph" placeholder="社区医生" />
+              </label>
+            </div>
+            <button class="btn" type="submit" data-i18n="city.add_agent_btn">添加智能体</button>
+          </form>
+
+          <h4 data-i18n="city.migrate_title">迁入已有智能体</h4>
+          <form id="cityMigrateForm" class="city-form">
+            <div class="city-row">
+              <label class="city-field">
+                <span data-i18n="city.field_agent_id">来源 Agent ID</span>
+                <input type="number" id="migrateId" min="1" required />
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_from_city">来源城市</span>
+                <select id="migrateFrom">
+                  <option value="" data-i18n="city.from_default">默认数据集</option>
+                </select>
+              </label>
+            </div>
+            <label class="city-check">
+              <input type="checkbox" id="migrateRehome" checked />
+              <span data-i18n="city.field_rehome">重新分配住所到本城</span>
+            </label>
+            <button class="btn" type="submit" data-i18n="city.migrate_btn">迁入</button>
+          </form>
+
+          <div id="cityActionStatus" class="city-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="city-card" id="cityEmptyHint">
+          <p class="city-hint" data-i18n="city.select_hint">从左侧选择一座城市，查看详情并添加智能体。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/city.js"></script>
+</body>
+</html>

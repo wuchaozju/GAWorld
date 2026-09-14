@@ -4,6 +4,10 @@ const state = {
   selectedAgentId: null,
   lifeEventTemplates: [],
   lifeEvents: [],
+  // State-aware event tags for the selected agent, plus the server's digest of
+  // the state they were ranked from — the poll only repaints when that moves.
+  lifeEventCandidates: null,
+  lifeEventCandidateKey: "",
   trace: null,
   traceGeneratedAt: null,
   memoryPayload: null,
@@ -93,6 +97,8 @@ const els = {
   addLifeEventBtn: document.getElementById("addLifeEventBtn"),
   reloadLifeEventsBtn: document.getElementById("reloadLifeEventsBtn"),
   lifeEventListBox: document.getElementById("lifeEventListBox"),
+  lifeEventCandidates: document.getElementById("lifeEventCandidates"),
+  lifeEventCandidateAgent: document.getElementById("lifeEventCandidateAgent"),
   fosHintInput: document.getElementById("fosHintInput"),
   fosEnglishCheckbox: document.getElementById("fosEnglishCheckbox"),
   fosExportBtn: document.getElementById("fosExportBtn"),
@@ -121,7 +127,8 @@ const els = {
 // the shared CityMapView module, used identically by the simviz replay tab.
 const mapView = new CityMapView(els.mapCanvas, {
   getSelectedAgentId: () => state.selectedAgentId,
-  emptyText: "等待轨迹数据…",
+  // Deferred: this runs at module scope, before the locale file lands.
+  emptyText: () => __("trace.waiting_data"),
 });
 
 function traceAgentMap() {
@@ -402,7 +409,7 @@ function refreshAgentOptionLabels() {
     const agent = state.agents.find((item) => Number(item.id) === Number(option.value));
     if (!agent) return;
     const inSim = configured.has(Number(agent.id));
-    option.textContent = `${inSim ? "▶ " : ""}${String(agent.id).padStart(2, "0")} · ${agent.name}${inSim ? "（仿真中）" : ""}`;
+    option.textContent = `${inSim ? "▶ " : ""}${String(agent.id).padStart(2, "0")} · ${agent.name}${inSim ? __("agent.in_sim_suffix") : ""}`;
   });
   updateToggleSimBtn();
   renderSimRoster();
@@ -460,6 +467,7 @@ async function selectAgent(agentId) {
   try {
     await loadProfile();
     await loadMemory();
+    await loadLifeEventCandidates(true);
   } catch (error) {
     message(error.message, "error");
   }
@@ -468,7 +476,7 @@ async function selectAgent(agentId) {
 function updateToggleSimBtn() {
   if (!els.toggleSimBtn) return;
   const inSim = configuredIdSet().has(Number(state.selectedAgentId));
-  els.toggleSimBtn.textContent = inSim ? "✓ 仿真中 · 点击移出" : "加入仿真";
+  els.toggleSimBtn.textContent = __(inSim ? "btn.leave_sim" : "btn.join_sim");
   els.toggleSimBtn.classList.toggle("primary", inSim);
 }
 
@@ -480,7 +488,10 @@ function toggleSelectedAgentInSim() {
   else ids.add(id);
   els.agentIdsInput.value = Array.from(ids).sort((a, b) => a - b).join(",");
   refreshAgentOptionLabels();
-  message(`Agent ${id} 已${ids.has(id) ? "加入" : "移出"}仿真名单，点击「保存配置」或「运行仿真」生效`);
+  message(__f("agent.roster_changed", {
+    id,
+    action: __(ids.has(id) ? "agent.roster_added" : "agent.roster_removed"),
+  }));
 }
 
 async function loadAgents() {
@@ -582,6 +593,76 @@ async function addLifeEvent() {
   state.lifeEvents = result.events || [];
   renderLifeEvents();
   message(__("life_event.queued"));
+  await loadLifeEventCandidates(true).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// State-aware candidate tags. The server ranks a catalogue of life events
+// against the selected agent's current situation and returns the ones that
+// apply; clicking one fires it on that agent at the next time step. The set is
+// re-ranked as the agent's state moves, so it is a live read of what could
+// plausibly happen to this person now — not a fixed menu.
+// ---------------------------------------------------------------------------
+
+const LIFE_EVENT_CANDIDATE_LIMIT = 16;
+
+function renderLifeEventCandidates() {
+  const payload = state.lifeEventCandidates;
+  const box = els.lifeEventCandidates;
+  if (!box) return;
+  box.textContent = "";
+  const candidates = (payload && payload.candidates) || [];
+  els.lifeEventCandidateAgent.textContent = payload && payload.agent_name
+    ? `#${payload.agent_id} ${payload.agent_name}`
+    : "";
+  if (!candidates.length) {
+    const empty = document.createElement("span");
+    empty.className = "candidate-empty";
+    empty.textContent = __("life_event.candidates_empty");
+    box.appendChild(empty);
+    return;
+  }
+  candidates.forEach((candidate) => {
+    const tag = document.createElement("button");
+    tag.type = "button";
+    tag.className = "candidate-tag";
+    tag.dataset.key = candidate.key;
+    // Severity drives the tint, so a 离婚 tag reads heavier than a 老友重逢 one.
+    tag.dataset.weight = candidate.severity >= 0.8 ? "high" : (candidate.severity >= 0.6 ? "mid" : "low");
+    tag.textContent = candidate.title;
+    tag.title = `${candidate.description}\n${__f("life_event.severity_label", {value: Number(candidate.severity || 0).toFixed(2)})}`;
+    box.appendChild(tag);
+  });
+}
+
+async function loadLifeEventCandidates(force = false) {
+  if (!state.selectedAgentId) return;
+  const payload = await api(
+    `/api/life-events/candidates?agent_id=${encodeURIComponent(state.selectedAgentId)}&limit=${LIFE_EVENT_CANDIDATE_LIMIT}`
+  );
+  const key = `${payload.agent_id}:${payload.signature}`;
+  const changed = force || key !== state.lifeEventCandidateKey;
+  state.lifeEventCandidates = payload;
+  state.lifeEventCandidateKey = key;
+  if (changed) renderLifeEventCandidates();
+}
+
+async function triggerLifeEventCandidate(candidateKey) {
+  const payload = state.lifeEventCandidates;
+  const candidate = ((payload && payload.candidates) || []).find((item) => item.key === candidateKey);
+  if (!candidate || !payload) return;
+  const result = await api("/api/life-events", {
+    method: "POST",
+    body: JSON.stringify({
+      candidate_key: candidate.key,
+      agent_ids: String(payload.agent_id),
+      schedule_mode: "immediate",
+    }),
+  });
+  state.lifeEvents = result.events || [];
+  renderLifeEvents();
+  message(__f("life_event.candidate_queued", {title: candidate.title, agent: payload.agent_name}));
+  await loadLifeEventCandidates(true);
 }
 
 function renderMarkdown(md) {
@@ -630,38 +711,30 @@ function renderProfileView() {
 // silently disagree with the run whenever the config changed since it started.
 // ---------------------------------------------------------------------------
 
-const HOUSEHOLD_TYPE_ZH = {
-  single: "独居",
-  shared: "合租",
-  with_parents: "与父母同住",
-  cohabit: "未婚同居",
-  couple: "夫妻二人",
-  nuclear: "核心家庭",
-  single_parent: "单亲家庭",
-  multigen: "三代同堂",
-};
+/* Household types, marital statuses and family roles: the machine key is the
+   identity, the text comes from the locale at call time. These used to hold
+   the Chinese directly, which froze whatever language was current when this
+   file was evaluated — and the locale JSON has not loaded by then. */
+const HOUSEHOLD_TYPES = [
+  "single", "shared", "with_parents", "cohabit",
+  "couple", "nuclear", "single_parent", "multigen",
+];
 
-const MARITAL_STATUS_ZH = {
-  never: "未婚",
-  married: "已婚",
-  divorced: "离异",
-  widowed: "丧偶",
-};
+const MARITAL_STATUSES = ["never", "married", "divorced", "widowed"];
 
-const FAMILY_ROLE_ZH = {
-  spouse: "配偶",
-  partner: "伴侣",
-  child: "子女",
-  father: "父亲",
-  mother: "母亲",
-  parent: "父母",
-  sibling: "兄弟姐妹",
-  ex: "前任",
-  roommate: "室友",
-};
+const FAMILY_ROLES = [
+  "spouse", "partner", "child", "father", "mother",
+  "parent", "sibling", "ex", "roommate",
+];
+
+/* An unknown key is shown raw rather than replaced by a missing-key name:
+   the simulator may emit a type this dashboard has not been taught yet. */
+function enumLabel(known, prefix, key) {
+  return known.indexOf(key) >= 0 ? __(prefix + key) : (key || "");
+}
 
 function familyTypeLabel(key) {
-  return HOUSEHOLD_TYPE_ZH[key] || key || "?";
+  return enumLabel(HOUSEHOLD_TYPES, "family.type.", key) || "?";
 }
 
 async function loadFamily() {
@@ -700,14 +773,14 @@ function renderFamilyOverview() {
      </div>`;
 
   const stats = [
-    stat(tr("family.stat.households", "户"), summary.households || (data.households || []).length,
-      "本次运行里一共有多少个住在一起的家庭单元"),
-    stat(tr("family.stat.couples", "仿真内夫妻"), summary.in_sim_couples || 0,
-      "配偶同样是本次运行里的居民，两人会真的在家里碰面、互相影响"),
-    stat(tr("family.stat.with_children", "有子女"), summary.with_children || 0,
-      "有孩子的居民人数。孩子会占用日程，也会花钱"),
-    stat(tr("family.stat.single", "单身"), people ? `${single}/${people}` : single,
-      "婚姻状态为未婚的居民占比"),
+    stat(__("family.stat.households"), summary.households || (data.households || []).length,
+      __("family.stat.households_hint")),
+    stat(__("family.stat.couples"), summary.in_sim_couples || 0,
+      __("family.stat.couples_hint")),
+    stat(__("family.stat.with_children"), summary.with_children || 0,
+      __("family.stat.with_children_hint")),
+    stat(__("family.stat.single"), people ? `${single}/${people}` : single,
+      __("family.stat.single_hint")),
   ].join("");
 
   const total = Object.values(types).reduce((sum, n) => sum + Number(n || 0), 0);
@@ -718,7 +791,7 @@ function renderFamilyOverview() {
           const count = Number(types[key] || 0);
           const pct = ((count / total) * 100).toFixed(1);
           return `<span class="family-bar-seg" data-seg="${index % 6}" style="width:${pct}%"
-                        title="${escapeHtml(familyTypeLabel(key))} ${count} 户（${pct}%）"></span>`;
+                        title="${escapeHtml(__f("family.bar_tooltip", {type: familyTypeLabel(key), count, pct}))}"></span>`;
         })
         .join("")
     : "";
@@ -739,15 +812,15 @@ function renderFamilyOverview() {
 }
 
 function familyMemberChip(member) {
-  const role = FAMILY_ROLE_ZH[member.role] || member.role || "";
+  const role = enumLabel(FAMILY_ROLES, "family.role.", member.role);
   const age = Number(member.age || 0);
-  const where = member.coresident ? "同住" : "不同住";
+  const where = __(member.coresident ? "family.coresident_yes" : "family.coresident_no");
   const inSim = member.kind === "agent";
   return `<li class="family-member${member.coresident ? " is-coresident" : ""}">
       <span class="family-member-role">${escapeHtml(role)}</span>
       <span class="family-member-name">${escapeHtml(member.name || "")}</span>
-      <span class="family-member-meta">${age ? age + "岁 · " : ""}${escapeHtml(where)}${
-        inSim ? " · 也在本次仿真中" : ""
+      <span class="family-member-meta">${age ? escapeHtml(__f("family.member_age", {age})) : ""}${escapeHtml(where)}${
+        inSim ? escapeHtml(__("family.member_in_sim")) : ""
       }</span>
     </li>`;
 }
@@ -763,7 +836,7 @@ function renderFamilyDetail() {
   const row = (data.agents || []).find((item) => Number(item.agent_id) === agentId);
   if (!row) {
     els.familyDetail.innerHTML = `<p class="family-note">${escapeHtml(
-      tr("family.not_in_run", "这位居民没有参与上一轮运行，因此没有家庭记录。")
+      __("family.not_in_run")
     )}</p>`;
     return;
   }
@@ -775,13 +848,13 @@ function renderFamilyDetail() {
 
   const tags =
     `<span class="family-tag">${escapeHtml(
-      MARITAL_STATUS_ZH[row.marital_status] || row.marital_status || "?"
+      enumLabel(MARITAL_STATUSES, "family.marital.", row.marital_status) || "?"
     )}</span>` +
     `<span class="family-tag">${escapeHtml(familyTypeLabel(row.household_type))}</span>` +
     (Number(row.care_load) > 0
-      ? `<span class="family-tag subtle" title="照护负担：孩子和老人占掉的精力，0 到 1">照护负担 ${Number(
-          row.care_load
-        ).toFixed(2)}</span>`
+      ? `<span class="family-tag subtle" title="${escapeHtml(__("family.care_load_hint"))}">${escapeHtml(
+          __f("family.care_load", {value: Number(row.care_load).toFixed(2)})
+        )}</span>`
       : "");
 
   const group = (title, list) =>
@@ -792,20 +865,20 @@ function renderFamilyDetail() {
 
   const money =
     finance && (finance.dependant_cost || finance.partner_transfer)
-      ? `<p class="family-note">本轮累计：养育与赡养支出 <b>¥${Number(
-          finance.dependant_cost || 0
-        ).toFixed(2)}</b>${
-          finance.partner_transfer
-            ? `，伴侣之间互相补贴 <b>¥${Number(finance.partner_transfer).toFixed(2)}</b>`
-            : ""
-        }（共 ${Number(finance.days || 0)} 天）。</p>`
+      ? `<p class="family-note">${__f("family.money", {
+          dependant: Number(finance.dependant_cost || 0).toFixed(2),
+          transfer: finance.partner_transfer
+            ? __f("family.money_transfer", {amount: Number(finance.partner_transfer).toFixed(2)})
+            : "",
+          days: Number(finance.days || 0),
+        })}</p>`
       : "";
 
   els.familyDetail.innerHTML =
     `<div class="family-head-row"><strong>${escapeHtml(row.name || "")}</strong>${tags}</div>` +
     (row.brief ? `<p class="family-brief">${escapeHtml(row.brief)}</p>` : "") +
-    group(tr("family.coresident", "住在一起"), coresident) +
-    group(tr("family.elsewhere", "不同住的家人"), elsewhere) +
+    group(__("family.coresident"), coresident) +
+    group(__("family.elsewhere"), elsewhere) +
     money;
 }
 
@@ -834,12 +907,6 @@ async function loadMemory() {
 function escapeHtml(value) {
   return String(value == null ? "" : value)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-// Translate with an explicit fallback, since __() echoes unknown keys back.
-function tr(key, fallback) {
-  const text = __(key);
-  return text === key ? fallback : text;
 }
 
 function textOf(value) {
@@ -887,7 +954,7 @@ function renderMemory() {
 function renderLongTermMemory(memory) {
   const items = Array.isArray(memory) ? memory : [];
   if (!items.length) {
-    els.memoryView.innerHTML = emptyHtml(tr("memory.no_long_term", "暂无长期记忆。"));
+    els.memoryView.innerHTML = emptyHtml(__("memory.no_long_term"));
     return;
   }
   els.memoryView.innerHTML = items.map((entry) => {
@@ -913,17 +980,15 @@ function scheduleEntries(schedule) {
   return [];
 }
 
-const INTENTION_LABELS = {
-  priorities: "优先事项",
-  avoidances: "回避",
-  growth_focus: "成长方向",
-  target_social: "社交目标",
-  target_recovery: "恢复目标",
-};
+/* Same as above: membership, not text. The order is the display order. */
+const INTENTION_KEYS = [
+  "priorities", "avoidances", "growth_focus", "target_social", "target_recovery",
+];
 
-const EMPLOYMENT_RECORD_LABELS = {
-  job_change: "换工作", unemployment: "失业", rehired: "复职",
-};
+/* Which record types have a translated name. The table used to hold the
+   Chinese text as well; the locale files now own every one of these, so
+   keeping a second copy here only risked the two drifting apart. */
+const EMPLOYMENT_RECORD_TYPES = ["job_change", "unemployment", "rehired"];
 
 // The profile markdown carries the Day-1 job, which is exactly what stops
 // being true once a 换工作/失业 event fires — so the live job comes from the
@@ -934,27 +999,28 @@ function employmentHtml(employment) {
   if (!job) return "";
   const unemployed = info.status === "unemployed";
   const statusChip = `<span class="mem-chip${unemployed ? " warn" : ""}">`
-    + `${escapeHtml(unemployed ? tr("memory.employment_unemployed", "待业")
-      : tr("memory.employment_employed", "在职"))}</span>`;
+    + `${escapeHtml(unemployed ? __("memory.employment_unemployed")
+      : __("memory.employment_employed"))}</span>`;
 
-  let html = memRow(tr("memory.employment_job", "当前职业"), escapeHtml(job) + statusChip);
+  let html = memRow(__("memory.employment_job"), escapeHtml(job) + statusChip);
   const hourly = Number(info.hourly_income) || 0;
   if (hourly > 0) {
-    html += memRow(tr("memory.employment_hourly", "时薪"), escapeHtml(hourly.toFixed(2)));
+    html += memRow(__("memory.employment_hourly"), escapeHtml(hourly.toFixed(2)));
   }
   const recovery = Number(info.recovery_days) || 0;
   if (unemployed && recovery > 0) {
     const previous = textOf(info.previous_job);
     html += memRow(
-      tr("memory.employment_recovery", "复职倒计时"),
+      __("memory.employment_recovery"),
       escapeHtml(__f("memory.employment_days", {days: recovery})
         + (previous ? ` · ${previous}` : "")));
   }
 
   const history = Array.isArray(info.history) ? info.history : [];
   html += history.slice().reverse().map((row) => {
-    const fallback = EMPLOYMENT_RECORD_LABELS[row.type];
-    const label = fallback ? tr(`memory.employment.${row.type}`, fallback) : textOf(row.type);
+    const label = EMPLOYMENT_RECORD_TYPES.indexOf(row.type) >= 0
+      ? __(`memory.employment.${row.type}`)
+      : textOf(row.type);
     const move = `${textOf(row.from_job) || "—"} → ${textOf(row.to_job)}`;
     const pay = (row.from_hourly == null || row.to_hourly == null) ? ""
       : `（${Number(row.from_hourly).toFixed(2)} → ${Number(row.to_hourly).toFixed(2)}）`;
@@ -984,26 +1050,26 @@ function renderStateMemory(payload) {
       const day = habit.last_updated_day;
       return `<div class="mem-item">${memChips(context, "neutral")}`
         + `<p>${escapeHtml(textOf(habit.preferred_action))}</p>`
-        + `<div class="mem-row"><span class="mem-label">${escapeHtml(tr("memory.habit_strength", "强度"))}</span>`
+        + `<div class="mem-row"><span class="mem-label">${escapeHtml(__("memory.habit_strength"))}</span>`
         + `<span class="mem-value">${memBar(habit.strength)}`
-        + (day == null ? "" : `<span class="mem-strength">· ${escapeHtml(tr("memory.habit_updated", "更新于 Day"))} ${escapeHtml(day)}</span>`)
+        + (day == null ? "" : `<span class="mem-strength">· ${escapeHtml(__("memory.habit_updated"))} ${escapeHtml(day)}</span>`)
         + `</span></div></div>`;
     }).join("")
     : "";
 
   const intentions = (payload.intentions && typeof payload.intentions === "object") ? payload.intentions : {};
   const intentionRows = Object.entries(intentions).map(([key, value]) => {
-    const label = INTENTION_LABELS[key] ? tr(`memory.intent.${key}`, INTENTION_LABELS[key]) : key;
+    const label = INTENTION_KEYS.indexOf(key) >= 0 ? __(`memory.intent.${key}`) : key;
     if (Array.isArray(value)) return memRow(label, memChips(value, key === "avoidances" ? "warn" : ""));
     const text = textOf(value);
     return text ? memRow(label, escapeHtml(text)) : "";
   }).join("");
 
-  const html = memBlock(tr("memory.block_employment", "职业"), employmentHtml(payload.employment))
-    + memBlock(tr("memory.block_schedule", "日程"), scheduleHtml)
-    + memBlock(tr("memory.block_habits", "习惯"), habitsHtml)
-    + memBlock(tr("memory.block_intentions", "意图"), intentionRows);
-  els.stateMemoryView.innerHTML = html || emptyHtml(tr("memory.no_state", "暂无日程 / 习惯 / 意图。"));
+  const html = memBlock(__("memory.block_employment"), employmentHtml(payload.employment))
+    + memBlock(__("memory.block_schedule"), scheduleHtml)
+    + memBlock(__("memory.block_habits"), habitsHtml)
+    + memBlock(__("memory.block_intentions"), intentionRows);
+  els.stateMemoryView.innerHTML = html || emptyHtml(__("memory.no_state"));
 }
 
 // The episodes endpoint returns a byte tail of a JSONL file, so the first line
@@ -1021,17 +1087,13 @@ function parseEpisodes(text) {
   return out;
 }
 
-const PLAN_LABELS = {
-  goal: "目标", constraint: "顾虑", urge: "冲动", plan: "打算", expected_outcome: "预期",
-};
-const REFLECTION_LABELS = {
-  result: "结果", feeling: "感受", lesson: "教训", next_bias: "后续倾向",
-};
+const PLAN_FIELDS = ["goal", "constraint", "urge", "plan", "expected_outcome"];
+const REFLECTION_FIELDS = ["result", "feeling", "lesson", "next_bias"];
 
-function structRows(struct, labels) {
+function structRows(struct, known, prefix) {
   if (!struct || typeof struct !== "object") return "";
   return Object.entries(struct)
-    .map(([key, value]) => memRow(labels[key] || key, escapeHtml(textOf(value))))
+    .map(([key, value]) => memRow(enumLabel(known, prefix, key), escapeHtml(textOf(value))))
     .join("");
 }
 
@@ -1071,18 +1133,18 @@ function renderEpisodes(tailText) {
       + (ep.location ? `<span class="mem-chip neutral">${escapeHtml(textOf(ep.location))}</span>` : "")
       + (valence == null ? "" : `<span class="mem-chip ${valence >= 0 ? "up" : "down"}">${valence >= 0 ? "+" : "−"}${Math.abs(valence).toFixed(2)}</span>`)
       + `</summary>`;
-    const body = memRow(tr("memory.ep.scheduled", "计划"), escapeHtml(textOf(ep.scheduled_activity)))
-      + memRow(tr("memory.ep.action", "行动"), escapeHtml(textOf(ep.action)))
-      + memRow(tr("memory.ep.travel", "移动"), travelHtml(ep.travel))
-      + memRow(tr("memory.ep.env_events", "环境事件"), memChips(ep.env_events, "warn"))
-      + memRow(tr("memory.ep.life_events", "人生事件"), memChips(ep.life_events, "warn"))
-      + memRow(tr("memory.ep.partners", "社交对象"), memChips(ep.social_partners, "neutral"))
-      + memRow(tr("memory.ep.perception", "感知"), escapeHtml(textOf(ep.perception)))
-      + structRows(ep.plan_struct, PLAN_LABELS)
-      + memRow(tr("memory.ep.outcome", "结果"), escapeHtml(textOf(ep.outcome)))
-      + structRows(ep.reflection_struct, REFLECTION_LABELS)
-      + memRow(tr("memory.ep.delta", "状态变化"), deltaChips(ep.delta))
-      + memRow(tr("memory.ep.tags", "标签"), memChips(ep.tags, "neutral"));
+    const body = memRow(__("memory.ep.scheduled"), escapeHtml(textOf(ep.scheduled_activity)))
+      + memRow(__("memory.ep.action"), escapeHtml(textOf(ep.action)))
+      + memRow(__("memory.ep.travel"), travelHtml(ep.travel))
+      + memRow(__("memory.ep.env_events"), memChips(ep.env_events, "warn"))
+      + memRow(__("memory.ep.life_events"), memChips(ep.life_events, "warn"))
+      + memRow(__("memory.ep.partners"), memChips(ep.social_partners, "neutral"))
+      + memRow(__("memory.ep.perception"), escapeHtml(textOf(ep.perception)))
+      + structRows(ep.plan_struct, PLAN_FIELDS, "memory.plan.")
+      + memRow(__("memory.ep.outcome"), escapeHtml(textOf(ep.outcome)))
+      + structRows(ep.reflection_struct, REFLECTION_FIELDS, "memory.reflect.")
+      + memRow(__("memory.ep.delta"), deltaChips(ep.delta))
+      + memRow(__("memory.ep.tags"), memChips(ep.tags, "neutral"));
     return `<details class="ep-card">${summary}<div class="ep-body">${body}</div></details>`;
   }).join("");
 }
@@ -1151,7 +1213,7 @@ function memoryRawSources() {
     },
     {
       key: "all",
-      label: tr("raw.all", "全部（含 goals）"),
+      label: __("raw.all"),
       format: "JSON",
       filename: `agent_${id}_memory_payload.json`,
       mime: "application/json;charset=utf-8",
@@ -1171,7 +1233,7 @@ function renderRawModal() {
     + `${source.key === state.rawSourceKey ? " active" : ""}" data-raw-tab="${source.key}">`
     + `${escapeHtml(source.label)}</button>`).join("");
   const active = currentRawSource();
-  els.rawModalBody.textContent = active.text || tr("raw.empty", "（无内容）");
+  els.rawModalBody.textContent = active.text || __("raw.empty");
   const chars = (active.text || "").length;
   els.rawModalMeta.textContent = `${active.filename} · ${active.format} · ${chars.toLocaleString()} chars`;
   els.rawDownloadBtn.disabled = !chars;
@@ -1180,7 +1242,7 @@ function renderRawModal() {
 
 function openRawModal(sourceKey) {
   if (!state.memoryPayload) {
-    message(tr("raw.no_data", "请先选择居民并加载记忆。"), "error");
+    message(__("raw.no_data"), "error");
     return;
   }
   if (sourceKey) state.rawSourceKey = sourceKey;
@@ -1204,14 +1266,14 @@ function downloadText(filename, text, mime) {
 }
 
 async function runSimulation(reset = false) {
-  message(reset ? "正在重置并启动仿真..." : __("sim.starting"));
+  message(__(reset ? "sim.resetting" : "sim.starting"));
   const payload = { reset, config: configPayloadFromForm() };
   await api("/api/run/start", { method: "POST", body: JSON.stringify(payload) });
   // A new run truncates the log file, so the offset we hold no longer maps to
   // anything — drop it and let the next poll reload from the top.
   resetRunLog();
   state.follow = true;
-  message("仿真已启动，地图将实时跟随最新帧");
+  message(__("sim.started_following"));
   await refreshStatus();
 }
 
@@ -1220,7 +1282,7 @@ async function runSimulation(reset = false) {
 async function scheduleSimulation() {
   const at = els.scheduleAtInput.value;
   if (!at) {
-    message(tr("sim.schedule_pick_time", "请先选择开始运行的时间。"), "error");
+    message(__("sim.schedule_pick_time"), "error");
     return;
   }
   const payload = { at, reset: false, config: configPayloadFromForm() };
@@ -1231,13 +1293,13 @@ async function scheduleSimulation() {
 
 async function cancelScheduledSimulation() {
   await api("/api/run/schedule/cancel", { method: "POST", body: "{}" });
-  message(tr("sim.schedule_cancelled", "已取消定时运行"));
+  message(__("sim.schedule_cancelled"));
   await refreshStatus();
 }
 
 async function stopSimulation() {
   await api("/api/run/stop", { method: "POST", body: "{}" });
-  message("已停止仿真");
+  message(__("sim.stopped"));
   await refreshStatus();
 }
 
@@ -1403,20 +1465,41 @@ function renderTrace() {
     } else {
       drawEmptyMap();
     }
-    if (state.trace) els.traceStatus.textContent = "轨迹已初始化 · 0 帧";
+    if (state.trace) els.traceStatus.textContent = __("trace.initialized");
     return;
   }
   renderSelectedAgentAvatar();
   els.frameTitle.textContent = `Day ${frame.day} · ${frame.time}`;
   const finished = state.trace.meta && state.trace.meta.finished;
   const liveCount = frames.length - (Array.isArray(state.trace.frames) ? state.trace.frames.length : 0);
-  els.traceStatus.textContent = `${frames.length} 帧${liveCount > 0 ? `（含 ${liveCount} 实时帧）` : ""} · ${finished ? "已完成" : "写入中"}`;
+  // Was a hardcoded Chinese template literal, so this badge stayed Chinese in
+  // English mode. trace.status / trace.frames / trace.completed / trace.writing
+  // already existed in both locales — this call site simply bypassed them.
+  const live = liveCount > 0 ? __f("trace.live_frames", { count: liveCount }) : "";
+  els.traceStatus.textContent =
+    __f("trace.frames", { count: frames.length }) + live +
+    " · " + __(finished ? "trace.completed" : "trace.writing");
   els.timelineSlider.max = String(Math.max(0, frames.length - 1));
   els.timelineSlider.value = String(state.frameIndex);
-  els.timelineLabel.textContent = `${frame.date || ""} ${frame.weekday || ""} ${frame.time || ""}`.trim();
+  els.timelineLabel.textContent = `${frame.date || ""} ${frameWeekday(frame)} ${frame.time || ""}`.trim();
   if (els.followLatestInput) els.followLatestInput.checked = state.follow;
   els.latestFrameBox.textContent = JSON.stringify(frame, null, 2);
   drawMap(frames.slice(0, state.frameIndex + 1));
+}
+
+/** The frame's weekday, in the reader's language.
+ *
+ * The backend ships `weekday` already written out in Chinese ("周二"), so the
+ * timeline label read "2043-02-17 周二" in English mode. The date itself is
+ * locale-neutral, so derive the weekday from it and keep the server's string
+ * only as a fallback for frames that carry no date.
+ */
+function frameWeekday(frame) {
+  if (!frame.date) return frame.weekday || "";
+  const parsed = new Date(frame.date);
+  if (isNaN(parsed.getTime())) return frame.weekday || "";
+  const locale = typeof window.getLocale === "function" ? window.getLocale() : "zh-CN";
+  return parsed.toLocaleDateString(locale, { weekday: "short" });
 }
 
 function drawEmptyMap() {
@@ -1461,7 +1544,7 @@ async function interview() {
   els.interviewOutput.textContent = __("interview.running");
   const questions = els.interviewQuestions.value.split("\n").map((line) => line.trim()).filter(Boolean);
   if (!questions.length) {
-    els.interviewOutput.textContent = "请先在上方输入至少一个问题（每行一个）。";
+    els.interviewOutput.textContent = __("interview.need_question");
     return;
   }
   const payload = {
@@ -1470,10 +1553,10 @@ async function interview() {
     questions,
   };
   const startedAt = Date.now();
-  els.interviewOutput.textContent = "采访运行中... 0s";
+  els.interviewOutput.textContent = __f("interview.running", {seconds: 0});
   const timer = window.setInterval(() => {
     const elapsed = Math.round((Date.now() - startedAt) / 1000);
-    els.interviewOutput.textContent = `采访运行中... ${elapsed}s（LLM 生成通常需要 1-3 分钟）`;
+    els.interviewOutput.textContent = __f("interview.running_hint", {seconds: elapsed});
   }, 1000);
   try {
     const result = await api("/api/interview", { method: "POST", body: JSON.stringify(payload) });
@@ -1481,6 +1564,30 @@ async function interview() {
   } finally {
     window.clearInterval(timer);
   }
+}
+
+let collapsibleSeq = 0;
+
+/** Name a panel's collapse button after the panel it collapses.
+ *
+ * The label was hardcoded Chinese, so English readers heard "折叠 / 展开"; and
+ * nine identically-named buttons gave a screen-reader user no way to tell
+ * which panel each one belonged to. Re-run on locale-changed, since __()
+ * echoes the key back until the locale file lands.
+ */
+function labelCollapseToggle(chevron, head) {
+  const title = head.querySelector("h2");
+  const name = (title && title.textContent.trim()) || "";
+  const label = __("btn.collapse_panel");
+  chevron.setAttribute("aria-label", name ? `${label}: ${name}` : label);
+}
+
+function relabelCollapseToggles() {
+  document.querySelectorAll(".panel.collapsible").forEach((panel) => {
+    const head = panel.querySelector(".section-head");
+    const chevron = head && head.querySelector(".collapse-toggle");
+    if (chevron) labelCollapseToggle(chevron, head);
+  });
 }
 
 function initCollapsibles() {
@@ -1491,7 +1598,10 @@ function initCollapsibles() {
     const chevron = document.createElement("button");
     chevron.type = "button";
     chevron.className = "collapse-toggle";
-    chevron.setAttribute("aria-label", "折叠 / 展开");
+    labelCollapseToggle(chevron, head);
+    // The button controls the panel, so say which element that is.
+    if (!panel.id) panel.id = `panel-${++collapsibleSeq}`;
+    chevron.setAttribute("aria-controls", panel.id);
     const host = head.querySelector(".head-actions") || head;
     host.appendChild(chevron);
     const sync = () => chevron.setAttribute("aria-expanded", String(!panel.classList.contains("is-collapsed")));
@@ -1530,14 +1640,14 @@ function bindEvents() {
   els.stopBtn.addEventListener("click", withBusy(els.stopBtn, stopSimulation));
   els.reloadTraceBtn.addEventListener("click", withBusy(els.reloadTraceBtn, async () => {
     await loadTrace(true);
-    message("轨迹已刷新");
+    message(__("msg.trace_refreshed"));
   }));
   els.reloadStatusBtn.addEventListener("click", withBusy(els.reloadStatusBtn, async () => {
     // An explicit refresh reloads the whole log, so a panel that missed polls
     // (or a log rotated behind our back) recovers.
     resetRunLog();
     await refreshStatus();
-    message("运行状态已刷新");
+    message(__("msg.status_refreshed"));
   }));
   els.exportRunLogBtn.addEventListener("click", exportRunLog);
   els.agentSelect.addEventListener("change", () => selectAgent(els.agentSelect.value));
@@ -1557,18 +1667,18 @@ function bindEvents() {
   if (els.toggleSimBtn) els.toggleSimBtn.addEventListener("click", toggleSelectedAgentInSim);
   els.refreshAgentBtn.addEventListener("click", withBusy(els.refreshAgentBtn, async () => {
     await loadProfile();
-    message("Profile 已刷新");
+    message(__("msg.profile_refreshed"));
   }));
   if (els.refreshFamilyBtn) {
     els.refreshFamilyBtn.addEventListener("click", withBusy(els.refreshFamilyBtn, async () => {
       await loadFamily();
-      message("家庭结构已刷新");
+      message(__("msg.family_refreshed"));
     }));
   }
   els.reloadMemoryBtn.addEventListener("click", withBusy(els.reloadMemoryBtn, async () => {
     await loadMemory();
     if (!els.rawModal.hidden) renderRawModal();
-    message("记忆已刷新");
+    message(__("msg.memory_refreshed"));
   }));
   els.rawMemoryBtn.addEventListener("click", () => openRawModal(state.rawSourceKey));
   document.querySelectorAll("[data-raw-open]").forEach((btn) => {
@@ -1589,17 +1699,17 @@ function bindEvents() {
     const source = currentRawSource();
     if (!source.text) return;
     navigator.clipboard.writeText(source.text)
-      .then(() => message(tr("raw.copied", "已复制原始内容")))
-      .catch(() => message(tr("raw.copy_failed", "复制失败"), "error"));
+      .then(() => message(__("raw.copied")))
+      .catch(() => message(__("raw.copy_failed"), "error"));
   });
   els.rawDownloadBtn.addEventListener("click", () => {
     const source = currentRawSource();
     if (!source.text) return;
     downloadText(source.filename, source.text, source.mime);
-    message(`${source.filename} ${tr("raw.downloaded", "已下载")}`);
+    message(`${source.filename} ${__("raw.downloaded")}`);
   });
   els.interviewBtn.addEventListener("click", withBusy(els.interviewBtn, () => interview().catch((error) => {
-    els.interviewOutput.textContent = `采访失败：${error.message}`;
+    els.interviewOutput.textContent = __f("interview.failed", {error: error.message});
   })));
   els.lifeEventTemplateSelect.addEventListener("change", () => {
     els.lifeEventTitleInput.value = "";
@@ -1609,13 +1719,21 @@ function bindEvents() {
   els.useSelectedAgentBtn.addEventListener("click", () => {
     if (state.selectedAgentId) {
       els.lifeEventAgentInput.value = String(state.selectedAgentId);
-      message(`人生事件目标已设为 Agent ${state.selectedAgentId}`);
+      message(__f("msg.life_event_target_set", {id: state.selectedAgentId}));
     }
   });
   els.addLifeEventBtn.addEventListener("click", withBusy(els.addLifeEventBtn, addLifeEvent));
+  if (els.lifeEventCandidates) {
+    els.lifeEventCandidates.addEventListener("click", (event) => {
+      const tag = event.target.closest(".candidate-tag");
+      if (!tag || tag.disabled) return;
+      withBusy(tag, () => triggerLifeEventCandidate(tag.dataset.key))();
+    });
+  }
   els.reloadLifeEventsBtn.addEventListener("click", withBusy(els.reloadLifeEventsBtn, async () => {
     await loadLifeEvents();
-    message("人生事件已刷新");
+    await loadLifeEventCandidates(true);
+    message(__("msg.life_events_refreshed"));
   }));
   els.fosExportBtn.addEventListener("click", () => fosExport().catch((error) => message(error.message, "error")));
   els.fosCopyBtn.addEventListener("click", () => {
@@ -1667,19 +1785,20 @@ async function init() {
   setupMapInteractions();
   drawEmptyMap();
   const steps = [
-    ["配置", loadConfig],
-    ["人物列表", loadAgents],
-    ["人生事件", loadLifeEvents],
-    ["Profile", loadProfile],
-    ["家庭", loadFamily],
-    ["记忆", loadMemory],
-    ["运行状态", refreshStatus],
+    ["load.config", loadConfig],
+    ["load.agents", loadAgents],
+    ["load.life_events", loadLifeEvents],
+    ["load.candidates", () => loadLifeEventCandidates(true)],
+    ["load.profile", loadProfile],
+    ["load.family", loadFamily],
+    ["load.memory", loadMemory],
+    ["load.run_status", refreshStatus],
   ];
-  for (const [label, step] of steps) {
+  for (const [labelKey, step] of steps) {
     try {
       await step();
     } catch (error) {
-      message(`${label}加载失败: ${error.message}`, "error");
+      message(__f("load.failed", { label: __(labelKey), error: error.message }), "error");
     }
   }
   await loadTrace(false);
@@ -1687,6 +1806,7 @@ async function init() {
     refreshStatus().catch(() => {});
     loadTrace(false).catch(() => {});
     loadLifeEvents().catch(() => {});
+    loadLifeEventCandidates().catch(() => {});
   }, 2500);
 }
 
@@ -1694,6 +1814,9 @@ async function init() {
 // the memory views (whose labels are baked in at render time) from the cached
 // payload — no refetch needed.
 document.addEventListener("locale-changed", function () {
+  // Panel titles are translated by the i18n pass, so the buttons named after
+  // them have to follow.
+  relabelCollapseToggles();
   if (!state.memoryPayload) return;
   renderMemory();
   if (!els.rawModal.hidden) renderRawModal();
@@ -1704,6 +1827,7 @@ window.addEventListener("locale-changed", function () {
   refreshStatus().catch(() => {});
   loadTrace(false).catch(() => {});
   loadLifeEvents().catch(() => {});
+  renderLifeEventCandidates();
   loadMemory().then(() => { if (!els.rawModal.hidden) renderRawModal(); }).catch(() => {});
   renderTrace();
 });

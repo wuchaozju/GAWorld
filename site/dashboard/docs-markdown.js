@@ -52,7 +52,9 @@
   function slugify(text) {
     return plainText(text)
       .toLowerCase()
+      /* i18n-exempt-start: a character class, not a string */
       .replace(/[^\w一-鿿\- ]+/g, "")
+      /* i18n-exempt-end */
       // 一个空格换一个连字符，不合并：GitHub 去掉标点后留下的空位也会各算一个，
       // `跑 10 / 60 天` 的锚点里就是连着两个连字符。
       .replace(/\s/g, "-");

@@ -15,6 +15,13 @@
 (function (global) {
   "use strict";
 
+  /* i18n.js is loaded before this file on every page that uses it, but the
+     locale JSON arrives asynchronously — so these resolve at call time, never
+     at load time, and fall back to the key if the globals are absent. */
+  const t = (key) => (typeof global.__ === "function" ? global.__(key) : key);
+  const tf = (key, params) =>
+    (typeof global.__f === "function" ? global.__f(key, params) : key);
+
   const tileColors = {
     ".": "#e5ece4", "#": "#7d8c82", "=": "#f3cf63", "~": "#7fb3be",
     "*": "#82a661", "r": "#d8d7c3", "c": "#d6a81e", "e": "#8db0c2",
@@ -26,7 +33,9 @@
   const agentColors = ["#13795b", "#b73e3e", "#385866", "#d6a81e", "#6e5f97", "#1f8a9b", "#8a5b30"];
 
   // Famous Hangzhou landmarks are labelled first; others fill in as you zoom.
+  /* i18n-exempt-start: matches place names in the map data, not interface text */
   const FAMOUS_LANDMARKS = /西湖|武林|龙翔桥|城站|火车东站|杭州东|钱江|市民中心|灵隐|西溪|浙江大学|浙大|黄龙|湘湖|奥体|良渚|之江|萧山国际机场|机场/;
+  /* i18n-exempt-end */
 
   function roundRect(c, x, y, w, h, r) {
     c.beginPath();
@@ -57,7 +66,10 @@
       this.ctx = canvas.getContext("2d");
       this.avatarBase = opts.avatarBase || "/output/visualization/";
       this.getSelectedAgentId = opts.getSelectedAgentId || (() => null);
-      this.emptyText = opts.emptyText || "等待轨迹数据…";
+      // May be a function: the locale file loads after this constructor runs,
+      // so a caller translating the string has to defer it to render time or
+      // it paints the untranslated key. The default defers for the same reason.
+      this.emptyText = opts.emptyText || (() => t("map.waiting_data"));
       this.trailFrames = opts.trailFrames || 96;
       this.trace = null;
       this.framesUpTo = [];
@@ -91,7 +103,8 @@
       c.fillStyle = "#385866";
       c.font = '22px "Noto Sans SC", "Microsoft YaHei", Georgia, sans-serif';
       c.textBaseline = "alphabetic";
-      c.fillText(text || this.emptyText, 40, 56);
+      const fallback = typeof this.emptyText === "function" ? this.emptyText() : this.emptyText;
+      c.fillText(text || fallback, 40, 56);
     }
 
     // ---- coordinate model -------------------------------------------------
@@ -340,7 +353,7 @@
       c.font = '11px "Noto Sans SC", "Microsoft YaHei", sans-serif';
       c.textBaseline = "bottom";
       c.fillStyle = "rgba(23,33,29,0.55)";
-      c.fillText(`滚轮缩放 · 拖拽平移 · 双击复位 · ${Math.round(this.view.zoom * 100)}%`, 12, this.canvas.height - 10);
+      c.fillText(tf("map.hint", { zoom: Math.round(this.view.zoom * 100) }), 12, this.canvas.height - 10);
     }
 
     // ---- interactions (zoom / pan) ---------------------------------------
@@ -418,9 +431,9 @@
         return b;
       };
       const cx = () => this.canvas.width / 2, cy = () => this.canvas.height / 2;
-      wrap.appendChild(mk("+", "放大", () => this.zoomAt(cx(), cy(), 1.25)));
-      wrap.appendChild(mk("−", "缩小", () => this.zoomAt(cx(), cy(), 1 / 1.25)));
-      wrap.appendChild(mk("↻", "复位", () => this.resetView()));
+      wrap.appendChild(mk("+", t("map.zoom_in"), () => this.zoomAt(cx(), cy(), 1.25)));
+      wrap.appendChild(mk("−", t("map.zoom_out"), () => this.zoomAt(cx(), cy(), 1 / 1.25)));
+      wrap.appendChild(mk("↻", t("map.reset_view"), () => this.resetView()));
       parent.appendChild(wrap);
     }
   }
