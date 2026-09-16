@@ -16,6 +16,7 @@
 - [3. 绑定：邀请码与令牌](#3-绑定邀请码与令牌)
 - [4. 三条消费通道](#4-三条消费通道)
 - [5. 在仿真里启用孪生](#5-在仿真里启用孪生)
+- [5b. 手机上有什么](#5b-手机上有什么)
 - [6. 离线画像标定](#6-离线画像标定)
 - [7. API 速查](#7-api-速查)
 - [8. 参数速查](#8-参数速查)
@@ -192,6 +193,30 @@ perceive → [twin_perceive] → interrupts → plan → …
 
 ---
 
+## 5b. 手机上有什么
+
+| 区域 | 内容 |
+|---|---|
+| 形象卡 | 头像（随行为切换姿态动画）、同步状态、当前行为与地点 |
+| 上报 | 十个行为标签 + 备注 + 上报；「和刚才一样」一键重复上一次的标签 |
+| 今日上报 | 当天每条上报，下拉改标签、✕ 删除（会二次确认，手机上删了撤不回来） |
+| 智能体的今天 | 它写的日记、状态条、当前三层目标 |
+| 今日轨迹 | canvas 折线 + 「回放」按时间轴重放当天路径 |
+
+**自动记录位置**是一个可选开关，每 10 分钟采样一次，**只在页面可见时生效**。
+
+> iOS 上的 PWA 拿不到真正的后台定位，这是平台限制不是实现问题。
+> 别按"装上就能自动记录一整天"来设计流程——要连续轨迹只有原生 App 或让页面常驻前台两条路。
+
+**拿不到定位时**会弹出可搜索的地点列表让你手动选。选中的地点是以**坐标**发出去的，
+服务端照常跑吸附与 `out_of_map` 判定——客户端从来没有直接指定节点 id 的权力。
+也可以选「仅上报行为」，那条上报会被标成 `out_of_map`，位置不同步但行为照常记录。
+
+首次打开会先看到一页介绍（现实与仿真两条同步轨迹的动画 + 三步说明），
+点「开始」进入邀请码输入。只出现一次，标记在 `localStorage` 的 `gaworld.twin.introSeen`。
+
+---
+
 ## 6. 离线画像标定
 
 ```bash
@@ -216,12 +241,34 @@ python3 scripts/twin_calibrate.py 1 --approve --out output/twin/calibration.json
 |---|---|---|
 | `/api/twin/auth` | POST | `{"code": "..."}` 换令牌 |
 | `/api/twin/report` | POST | 请求体**永远是数组**，长度 1 为常规上报，更长为离线补传 |
+| `/api/twin/amend` | POST | `{target, op, patch}` 更正或删除一条已有上报 |
 | `/api/twin/snapshot` | GET | 最新上报 + `fresh` 新鲜度 |
 | `/api/twin/profile` | GET | 头像 SVG、标签、可选行为词表 |
 | `/api/twin/trail` | GET | 今日轨迹点，支持 `?since_ts=` |
+| `/api/twin/reports` | GET | 上报历史（已折叠修订），最新在前 |
+| `/api/twin/life` | GET | 智能体的日记、状态变量、当前目标 |
+| `/api/twin/places` | GET | 可选地点，支持 `?q=` 搜索与 `?limit=` |
 
 上报体的 `report_id` 由客户端生成，是**幂等键**：同一个 id 传两次只落一行。
 离线补传因此可以放心重发。
+
+### 更正与删除：追加，不是原地改
+
+`reports.jsonl` 只追加，`report_id` 是幂等键，所以更正是**引用旧记录的新记录**：
+
+```json
+{"report_id":"<新 uuid>","kind":"amend","target":"<原 report_id>","op":"delete"}
+{"report_id":"<新 uuid>","kind":"amend","target":"<原 report_id>",
+ "op":"update","patch":{"action_tag":"meal","note":"改成吃饭"}}
+```
+
+读取时折叠，所以镜像 stage、感知注入、轨迹、标定脚本全都自动看到更正后的数据。
+
+> **位置不可改，只能删。** `patch` 只接受 `action_tag` 与 `note`。位置是传感器测出来的，
+> 允许改会把标定语料从「谁在哪」的记录变成「谁声称自己在哪」。报错了就删掉重报。
+>
+> 另外：删除是墓碑标记，原始行仍留在 `reports.jsonl` 里。对研究工具这是对的（审计链完整），
+> 但它**不等于**个保法/GDPR 意义上的删除，对外不能这么描述。
 
 ---
 
@@ -237,6 +284,29 @@ python3 scripts/twin_calibrate.py 1 --approve --out output/twin/calibration.json
 | `snapshot_ttl_minutes` | `30` | 超过则镜像停用、前端显示「未同步」 |
 | `max_snap_km` | `3.0` | 超过则判定 `out_of_map` |
 
+### 选了城市，路径会整体搬家
+
+上表的默认值只在**没选城市**时成立。一旦在控制台选了城市，所有运行产物路径会一起
+重定向到 `output/cities/<slug>/` 下（`gaworld/city/config.py` 的 `RUN_PATHS`）：
+
+```
+twin.root         → output/cities/wuzhen/twin
+diary_output_dir  → output/cities/wuzhen/diaries
+memory_dir        → output/cities/wuzhen/memory
+state_output_dir  → output/cities/wuzhen/state
+```
+
+孪生服务是独立进程，但它 `from gaworld.settings import CONFIG`，而城市补丁是在
+`apply_runtime_overrides()` 里应用的，所以**它会自动跟着走**，不需要额外配置。
+
+想确认当前落在哪，跑一句：
+
+```bash
+python3 -c "from gaworld.settings import CONFIG; print(CONFIG['twin']['root'])"
+```
+
+> 如果你选了城市却去 `output/twin/` 找上报数据，会找到一个空目录——数据在城市目录下。
+
 > `max_snap_km` 默认 3 公里偏松——它意味着你可能被归到两公里外的地点。
 > 拿到真实 GPS 轨迹后建议收紧。
 
@@ -248,8 +318,9 @@ python3 scripts/twin_calibrate.py 1 --approve --out output/twin/calibration.json
 
 1. **尚未在真机上验证。** 所有验证都是无头浏览器 + curl。定位授权弹窗、
    iOS Safari 在独立模式下的 IndexedDB 行为、安装流程，都需要真机 + HTTPS 才能确认。
-2. **没有 GPS 时只上报行为。** 当前回落是发送零坐标，服务端会判定 `out_of_map`
-   并跳过位置——行为仍然记录。spec 里设想的「手动选点」尚未实现。
+2. **地图节点名是英文，手动选点的搜索框对中文基本无效。** 实际节点叫
+   `Riverside Park`、`Central Parking Lot`，所以搜「咖啡」返回空，搜 `park` 才有结果。
+   要么给节点补中文名，要么改成按类别分组而不是靠搜索。
 3. **地图只覆盖杭州。** 出差期间位置孪生实际停摆，只有行为注入还在工作。
 4. **manifest 没有图标**，安装后用的是系统默认。
 5. **Service Worker 缓存需手动失效**：改动 `site/mobile/` 下任何 shell 文件后，
@@ -267,7 +338,7 @@ python3 scripts/twin_calibrate.py 1 --approve --out output/twin/calibration.json
 - 实施计划：[数据层与服务](./superpowers/plans/2026-08-08-twin-data-spine-and-server.md)
   ｜[仿真接入](./superpowers/plans/2026-08-08-twin-simulation-integration.md)
   ｜[手机端](./superpowers/plans/2026-08-08-twin-mobile-pwa.md)
-- 测试：`tests/test_twin_*.py`（64 项）、`site/mobile/core.test.js`（17 项）
+- 测试：`tests/test_twin_*.py`（94 项）、`site/mobile/core.test.js`（29 项）
 
 其中 `tests/test_twin_e2e.py` 是唯一一个真正跑 `run_simulation` 的：stage 的单元测试
 用的是手搭的 step 字典和替身 `move`，即便流水线接入坏了也照样通过。它跑真实仿真并断言
