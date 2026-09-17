@@ -1,0 +1,16 @@
+[Unit]
+Description=GAWorld public HTTP gateway
+After=network.target gaworld-dashboard.service gaworld-agent-relay.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/GAWorld
+EnvironmentFile=%h/.config/gaworld/public-gateway.env
+ExecStart=/usr/bin/caddy run --config %h/.config/gaworld/Caddyfile --adapter caddyfile
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

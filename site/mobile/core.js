@@ -70,9 +70,23 @@
     });
   }
 
+  function hasFiniteGrid(point) {
+    return !!(point && point.grid
+      && Number.isFinite(point.grid.x) && Number.isFinite(point.grid.y));
+  }
+
+  function drawableTrailPoints(points) {
+    return (points || []).filter(function (point) {
+      if (!hasFiniteGrid(point)) { return false; }
+      // Older APIs lack has_location; keep their conservative map-only view.
+      return typeof point.has_location === "boolean"
+        ? point.has_location : !point.out_of_map;
+    });
+  }
+
   function trailBounds(points) {
     const list = (points || []).filter(function (p) {
-      return p && p.grid && typeof p.grid.x === "number";
+      return hasFiniteGrid(p);
     });
     if (!list.length) {
       return {minX: 0, maxX: 1, minY: 0, maxY: 1};
@@ -210,6 +224,7 @@
     TAG_LABELS: TAG_LABELS,
     buildReport: buildReport,
     dropSynced: dropSynced,
+    drawableTrailPoints: drawableTrailPoints,
     trailBounds: trailBounds,
     projectPoint: projectPoint,
     visiblePoints: visiblePoints,

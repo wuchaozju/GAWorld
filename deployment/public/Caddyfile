@@ -1,0 +1,30 @@
+{
+	admin off
+	auto_https off
+}
+
+:8780 {
+	@mobile path /m /m/ /site/mobile /site/mobile/* /api/twin/*
+	handle @mobile {
+		reverse_proxy 127.0.0.1:8767
+	}
+
+	handle_path /agent-relay/* {
+		@relay path /health /register /directory /message/send /message/poll /social/snapshot /agents/profiles /agents/profile/*
+		handle @relay {
+			reverse_proxy 127.0.0.1:8877
+		}
+		respond "Not found" 404
+	}
+
+	handle {
+		basic_auth {
+			gaworld {$GAWORLD_PUBLIC_PASSWORD_HASH}
+		}
+		@app path / /console /console/ /dashboard /dashboard/ /board /board/ /site/* /api/* /output/* /video/public/* /docs/*
+		handle @app {
+			reverse_proxy 127.0.0.1:8766
+		}
+		respond "Not found" 404
+	}
+}

@@ -6,6 +6,8 @@ import unittest
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
+from pathlib import Path
+from unittest.mock import patch
 
 from gaworld.apps import twin_server
 from gaworld.twin import binding
@@ -175,6 +177,46 @@ class TestTwinServer(unittest.TestCase):
             with self.subTest(path=path):
                 status, _ = _request(f"{self.base}{path}", {}, token=self._token())
                 self.assertEqual(status, 404)
+
+    def test_mobile_assets_are_available(self):
+        for path in ("/site/mobile/", "/site/mobile/app.js", "/site/mobile/styles.css",
+                     "/site/mobile/core.js", "/site/mobile/sw.js",
+                     "/site/mobile/manifest.webmanifest"):
+            for method in ("GET", "HEAD"):
+                with self.subTest(path=path, method=method):
+                    request = urllib.request.Request(self.base + path, method=method)
+                    with urllib.request.urlopen(request) as response:
+                        self.assertEqual(response.status, 200)
+                        body = response.read()
+                        self.assertEqual(bool(body), method == "GET")
+
+    def test_repository_files_and_traversal_are_not_public(self):
+        for path in ("/AGENTS.md", "/.git/config", "/data/twin_bindings.json",
+                     "/output/twin/", "/site/", "/site/mobile/core.test.js",
+                     "/site/mobile/../../AGENTS.md",
+                     "/site/mobile/%2e%2e/%2e%2e/AGENTS.md"):
+            for method in ("GET", "HEAD"):
+                with self.subTest(path=path, method=method):
+                    request = urllib.request.Request(self.base + path, method=method)
+                    with self.assertRaises(urllib.error.HTTPError) as error:
+                        urllib.request.urlopen(request)
+                    self.assertEqual(error.exception.code, 404)
+                    error.exception.close()
+
+    def test_mobile_asset_symlinks_cannot_escape_bundle(self):
+        root = Path(self._tmp.name)
+        mobile = root / "site/mobile"
+        mobile.mkdir(parents=True)
+        secret = root / "private.txt"
+        secret.write_text("private", encoding="utf-8")
+        (mobile / "app.js").symlink_to(secret)
+        with patch.object(twin_server, "REPO_ROOT", str(root)):
+            for method in ("GET", "HEAD"):
+                request = urllib.request.Request(self.base + "/site/mobile/app.js", method=method)
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(request)
+                self.assertEqual(error.exception.code, 404)
+                error.exception.close()
 
 
 if __name__ == "__main__":

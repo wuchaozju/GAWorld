@@ -127,6 +127,22 @@ class TestTwinBackend(unittest.TestCase):
         self.assertEqual(point["action_tag"], "work")
         self.assertEqual(point["node_id"], "office")
 
+    def test_trail_keeps_real_positions_outside_simulation_map(self):
+        self.backend.submit(self.token, [_raw("outside", x_km=40.0)])
+        point = self.backend.trail(self.token)["points"][0]
+        self.assertTrue(point["has_location"])
+        self.assertTrue(point["out_of_map"])
+        self.assertIsNone(point["node_id"])
+
+    def test_activity_only_report_is_not_a_trail_position(self):
+        report = _raw("activity-only")
+        report["loc"] = {"lat": 0, "lng": 0, "source": "manual"}
+        self.backend.submit(self.token, [report])
+        point = self.backend.trail(self.token)["points"][0]
+        self.assertFalse(point["has_location"])
+        self.assertTrue(point["out_of_map"])
+        self.assertEqual(len(self.backend.reports(self.token)["reports"]), 1)
+
     def test_amend_can_delete_the_callers_own_report(self):
         self.backend.submit(self.token, [_raw("a")])
         result = self.backend.amend(self.token, "a", "delete", amend_id="m1")

@@ -1,0 +1,15 @@
+[Unit]
+Description=GAWorld mobile digital twin
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/GAWorld-twin
+ExecStart=%h/GAWorld/.venv-deploy/bin/python -u -m gaworld.apps.twin_server --host 0.0.0.0 --port 8767
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
