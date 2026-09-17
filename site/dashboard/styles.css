@@ -43,7 +43,7 @@ button, input, select, textarea { font: inherit; }
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/site/assets/gaworld-graphical-abstract.png") right center / cover no-repeat;
+  background: url("/video/public/gaworld-graphical-abstract.png") right center / cover no-repeat;
   opacity: 0.14;
   -webkit-mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
   mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
@@ -883,4 +883,3 @@ body.is-running .map-panel { border-color: rgba(14, 122, 88, 0.55); box-shadow: 
   .button.busy::after { animation: none; }
   .toast { transform: none; }
 }
-

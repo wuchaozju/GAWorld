@@ -4,6 +4,7 @@
 }
 
 :8780 {
+    redir /agent-relay /agent-relay/health 308
 	@mobile path /m /m/ /site/mobile /site/mobile/* /api/twin/*
 	handle @mobile {
 		reverse_proxy 127.0.0.1:8767
