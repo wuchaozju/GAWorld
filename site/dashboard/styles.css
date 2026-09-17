@@ -21,6 +21,7 @@ button, input, select, textarea { font: inherit; }
   margin: 0 auto;
   padding: 20px 0 40px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -135,7 +136,7 @@ p { color: var(--muted); line-height: 1.7; }
    flex-shrink: 0 pushed that width onto the whole page on a phone. */
 .toolbar-actions { flex: 0 1 auto; min-width: 0; align-self: end; }
 /* 定时运行: the time field and its button read as one control. */
-.schedule-run { display: flex; gap: 8px; align-items: center; }
+.schedule-run { display: flex; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
 .schedule-run input { width: auto; min-width: 0; flex: 1; }
 .schedule-run .button { flex-shrink: 0; white-space: nowrap; }
 
