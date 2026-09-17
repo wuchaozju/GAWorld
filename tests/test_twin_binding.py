@@ -67,6 +67,58 @@ class TestTwinBinding(unittest.TestCase):
         self.assertEqual(binding.resolve_token(token_a, path=self.path), 7)
         self.assertEqual(binding.resolve_token(token_b, path=self.path), 8)
 
+    def test_an_unbound_code_yields_a_token_with_no_agent(self):
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        status = binding.token_status(token, path=self.path)
+        self.assertTrue(status["valid"])
+        self.assertIsNone(status["agent_id"])
+
+    def test_token_status_tells_invalid_apart_from_unbound(self):
+        # The caller must distinguish a 401 from a prompt-to-choose.
+        self.assertEqual(
+            binding.token_status("nope", path=self.path),
+            {"valid": False, "agent_id": None},
+        )
+
+    def test_binding_a_token_points_it_at_an_agent(self):
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        self.assertTrue(binding.bind_token(token, 12, path=self.path))
+        self.assertEqual(binding.resolve_token(token, path=self.path), 12)
+
+    def test_binding_can_be_changed(self):
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        binding.bind_token(token, 12, path=self.path)
+        binding.bind_token(token, 13, path=self.path)
+        self.assertEqual(binding.resolve_token(token, path=self.path), 13)
+
+    def test_binding_an_invalid_token_fails(self):
+        self.assertFalse(binding.bind_token("nope", 12, path=self.path))
+
+    def test_claimed_agent_ids_lists_taken_agents(self):
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        binding.bind_token(token, 12, path=self.path)
+        self.assertEqual(binding.claimed_agent_ids(path=self.path), {12})
+
+    def test_claimed_agent_ids_can_exclude_the_asking_token(self):
+        # Otherwise the picker would hide the agent you are already twinning.
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        binding.bind_token(token, 12, path=self.path)
+        self.assertEqual(
+            binding.claimed_agent_ids(path=self.path, exclude_token=token), set()
+        )
+
+    def test_revoked_codes_release_their_claim(self):
+        code = binding.issue_code(path=self.path)
+        token = binding.redeem_code(code, path=self.path)
+        binding.bind_token(token, 12, path=self.path)
+        binding.revoke_code(code, path=self.path)
+        self.assertEqual(binding.claimed_agent_ids(path=self.path), set())
+
     def test_label_for_token(self):
         code = binding.issue_code(agent_id=7, label="cw", path=self.path)
         token = binding.redeem_code(code, path=self.path)

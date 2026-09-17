@@ -198,11 +198,34 @@
     return (Number(nowTs) - Number(lastSampleTs)) >= Number(intervalMinutes) * 60;
   }
 
+  /* Wording matters here: the old copy said the position "would not sync",
+   * which read as the location being thrown away. It never was — the
+   * coordinate is recorded either way. What actually happens is that it
+   * matches no map node, so the agent is marked as being away. */
   function outOfMapNotice(report) {
     if (report && report.out_of_map) {
-      return "当前位置在地图覆盖范围之外，位置不会同步到智能体";
+      const place = String(report.place || "").trim();
+      return place
+        ? "已记录你在「" + place + "」的真实位置。这里不在仿真地图内，智能体会显示为异地。"
+        : "已记录你的真实位置。这里不在仿真地图内，智能体会显示为异地。";
     }
     return "";
+  }
+
+  /* What to show as "where you are" — a map node when one matched, otherwise
+   * the offline place name, otherwise the raw coordinate. Never blank, and
+   * never the word "unknown": the position is known in every one of these
+   * cases, only its match to the simulated city differs. */
+  function locationLabel(report) {
+    if (!report) { return ""; }
+    if (!report.out_of_map && report.node_id) { return report.node_id; }
+    const place = String(report.place || "").trim();
+    if (place) { return "异地（" + place + "）"; }
+    const loc = report.loc || {};
+    if (typeof loc.lat === "number" && typeof loc.lng === "number") {
+      return "异地（" + loc.lat.toFixed(2) + ", " + loc.lng.toFixed(2) + "）";
+    }
+    return "异地";
   }
 
   return {
@@ -221,5 +244,6 @@
     shouldAutoSample: shouldAutoSample,
     syncLabel: syncLabel,
     outOfMapNotice: outOfMapNotice,
+    locationLabel: locationLabel,
   };
 }));

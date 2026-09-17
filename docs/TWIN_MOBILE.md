@@ -44,7 +44,7 @@
 
 `dashboard_server` 接受**无鉴权**的 `POST /api/config`（改全局配置）与 `POST /api/run/start`
 （拉起仿真子进程）。把它绑到 `0.0.0.0`，等于把改配置和起进程的能力开放给任何扫到端口的人。
-所以它**永远留在 `127.0.0.1:8766`**，公网上只放 `twin_server` 的五个端点。
+所以它**永远留在 `127.0.0.1:8766`**，公网上只放 `twin_server` 那一组孪生端点（见第 7 节）。
 
 `tests/test_twin_server.py::test_dashboard_endpoints_are_not_reachable` 守着这条线：
 在 twin 服务上 `POST /api/config` 必须是 404。
@@ -53,11 +53,15 @@
 
 ## 1. 五分钟跑通（本机）
 
-**第一步，签发一个邀请码**（`1` 是要绑定的 agent id）：
+**第一步，签发一个邀请码**：
 
 ```bash
-python3 -m gaworld.apps.twin_server --issue-code 1 --label "我"
+python3 -m gaworld.apps.twin_server --issue-code --label "我"     # 不指定，手机上自己挑
+python3 -m gaworld.apps.twin_server --issue-code 1 --label "我"   # 或直接指定 agent 1
 ```
+
+不带 agent id 就是**未绑定邀请码**：兑换后手机上会先出现一个名单，
+让使用者自己挑孪生哪一位。想把某个特定 agent 交给某个特定的人时，再用第二种。
 
 输出一串短码，例如 `52t8-ylFmr0b`。这串码只出现这一次——服务端只存它的哈希。
 
@@ -143,9 +147,20 @@ C 刻意不自动写 profile：让采集数据静默改写实验对象，会让�
 **上报过期怎么办**：超过 `snapshot_ttl_minutes`（默认 30）没有新上报，镜像通道停止覆盖，
 agent 回到自主行为，手机端显示「未同步」，而不是把几小时前的位置当作当前位置继续展示。
 
-**人不在地图范围怎么办**：地图锚在杭州。落点离所有节点都超过 `max_snap_km`（默认 3 公里）时，
-标记 `out_of_map`，**镜像通道跳过位置覆盖**，但行为仍然照常注入。不会把人硬拽到地图边缘假装成功——
-伪造的位置会同时污染镜像与标定数据。
+**人不在地图范围怎么办**：`out_of_map` 的含义是「**没有匹配到地图节点**」，不是「位置无效」。
+
+真实经纬度**永远照常记录**，也照常画在轨迹图上。落点离所有节点都超过 `max_snap_km`
+（默认 3 公里）时：
+
+- `node_id` 为空，`place` 给出离线推断的地名（如「北京」）
+- 镜像通道把 agent 的位置写成 `异地（北京）`，而**不是**留在原地假装它还在城里
+- 绝不吸附到最近节点——伪造的位置会同时污染镜像与标定数据
+
+> 地名是**完全离线**算出来的：先看坐标是否落在你已建过的城市 bundle 的 bbox 里，
+> 否则查一张内置的省级中心表，都不命中就直接给经纬度。
+> **不走任何反向地理编码 API**——那等于把用户的精确位置发给第三方，
+> 与「位置数据只发到你自己的服务器」这条承诺直接冲突。
+> 代价是精度只到省级（加上你自己建过的城市），这是标注「异地」够用的分辨率。
 
 ---
 
@@ -197,6 +212,7 @@ perceive → [twin_perceive] → interrupts → plan → …
 
 | 区域 | 内容 |
 |---|---|
+| 选择孪生对象 | 首次兑换未绑定邀请码时出现，列出当前城市全部居民，标注哪些在仿真中、哪些已被别的设备占用；主界面底部的「换一个智能体」可随时更换 |
 | 形象卡 | 头像（随行为切换姿态动画）、同步状态、当前行为与地点 |
 | 上报 | 十个行为标签 + 备注 + 上报；「和刚才一样」一键重复上一次的标签 |
 | 今日上报 | 当天每条上报，下拉改标签、✕ 删除（会二次确认，手机上删了撤不回来） |
@@ -248,6 +264,12 @@ python3 scripts/twin_calibrate.py 1 --approve --out output/twin/calibration.json
 | `/api/twin/reports` | GET | 上报历史（已折叠修订），最新在前 |
 | `/api/twin/life` | GET | 智能体的日记、状态变量、当前目标 |
 | `/api/twin/places` | GET | 可选地点，支持 `?q=` 搜索与 `?limit=` |
+| `/api/twin/agents` | GET | 可选的智能体名单，标注「仿真中」与「已占用」 |
+| `/api/twin/bind` | POST | `{agent_id}` 选择或更换孪生对象 |
+
+**未选择孪生对象时，其它端点返回 409 而不是 401。** 令牌有效但还没挑人，
+手机应该弹名单，而不是把用户踢回邀请码页面。`agent_id` 仍然只从令牌解析——
+`/bind` 是唯一接受客户端传 agent_id 的地方，它把选择写进令牌记录。
 
 上报体的 `report_id` 由客户端生成，是**幂等键**：同一个 id 传两次只落一行。
 离线补传因此可以放心重发。
@@ -321,11 +343,14 @@ python3 -c "from gaworld.settings import CONFIG; print(CONFIG['twin']['root'])"
 2. **地图节点名是英文，手动选点的搜索框对中文基本无效。** 实际节点叫
    `Riverside Park`、`Central Parking Lot`，所以搜「咖啡」返回空，搜 `park` 才有结果。
    要么给节点补中文名，要么改成按类别分组而不是靠搜索。
-3. **地图只覆盖杭州。** 出差期间位置孪生实际停摆，只有行为注入还在工作。
-4. **manifest 没有图标**，安装后用的是系统默认。
-5. **Service Worker 缓存需手动失效**：改动 `site/mobile/` 下任何 shell 文件后，
+3. **换绑不会搬走历史数据。** 上报日志只追加、按 agent 分目录，所以换成另一位之后，
+   之前的上报仍留在原来那位名下。换回去就又能看到。
+4. **地名只到省级。** 出差到北京会显示「异地（北京）」，不会精确到区或街道——
+   这是为了不把位置发给第三方反查服务而付出的代价。
+5. **manifest 没有图标**，安装后用的是系统默认。
+6. **Service Worker 缓存需手动失效**：改动 `site/mobile/` 下任何 shell 文件后，
    必须同步提升 `sw.js` 里的 `CACHE_NAME`，否则老用户拿到的是旧包。
-6. **Service Worker 注册尚未在真实浏览器中成功过。** 内嵌预览环境会拒绝注册
+7. **Service Worker 注册尚未在真实浏览器中成功过。** 内嵌预览环境会拒绝注册
    （`An unknown error occurred when fetching the script`），而 `sw.js` 本身
    200 且 MIME 正确。`app.js` 对注册失败做了静默降级，所以应用照常可用，
    只是没有离线外壳——这一条同样要靠真机确认。
@@ -338,7 +363,7 @@ python3 -c "from gaworld.settings import CONFIG; print(CONFIG['twin']['root'])"
 - 实施计划：[数据层与服务](./superpowers/plans/2026-08-08-twin-data-spine-and-server.md)
   ｜[仿真接入](./superpowers/plans/2026-08-08-twin-simulation-integration.md)
   ｜[手机端](./superpowers/plans/2026-08-08-twin-mobile-pwa.md)
-- 测试：`tests/test_twin_*.py`（94 项）、`site/mobile/core.test.js`（29 项）
+- 测试：`tests/test_twin_*.py`（123 项）、`site/mobile/core.test.js`（34 项）
 
 其中 `tests/test_twin_e2e.py` 是唯一一个真正跑 `run_simulation` 的：stage 的单元测试
 用的是手搭的 step 字典和替身 `move`，即便流水线接入坏了也照样通过。它跑真实仿真并断言

@@ -227,3 +227,40 @@ test("outOfMapNotice appears only for an out-of-map report", () => {
   assert.equal(core.outOfMapNotice({out_of_map: false}), "");
   assert.equal(core.outOfMapNotice(null), "");
 });
+
+
+test("outOfMapNotice says the position was recorded, not discarded", () => {
+  const notice = core.outOfMapNotice({out_of_map: true, place: "北京"});
+  assert.ok(notice.includes("已记录"));
+  assert.ok(notice.includes("北京"));
+  assert.ok(!notice.includes("不会同步"));
+});
+
+
+test("locationLabel prefers a matched map node", () => {
+  assert.equal(
+    core.locationLabel({out_of_map: false, node_id: "office"}), "office"
+  );
+});
+
+
+test("locationLabel names an away position instead of calling it unknown", () => {
+  assert.equal(
+    core.locationLabel({out_of_map: true, node_id: null, place: "北京"}),
+    "异地（北京）"
+  );
+});
+
+
+test("locationLabel falls back to coordinates when there is no place name", () => {
+  const label = core.locationLabel({
+    out_of_map: true, node_id: null, place: "",
+    loc: {lat: 51.5011, lng: -0.1246},
+  });
+  assert.equal(label, "异地（51.50, -0.12）");
+});
+
+
+test("locationLabel never returns blank for a real report", () => {
+  assert.equal(core.locationLabel({out_of_map: true, node_id: null}), "异地");
+});

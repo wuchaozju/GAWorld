@@ -59,6 +59,15 @@
       <p id="authError" class="error" role="alert"></p>
     </section>
 
+    <!-- Agent picker: shown when the token has not chosen an agent yet. -->
+    <section id="agentGate" class="card" hidden>
+      <h1>选择你的智能体</h1>
+      <p class="muted">这台手机上报的位置与行为，会驱动你选的这一位。</p>
+      <input id="agentSearch" type="text" placeholder="搜索姓名" aria-label="搜索智能体" />
+      <p id="agentError" class="error" role="alert"></p>
+      <div id="agentList" class="place-list"></div>
+    </section>
+
     <section id="main" hidden>
       <header class="card avatar-card">
         <div id="avatar" class="avatar" aria-label="智能体形象"></div>
@@ -110,6 +119,11 @@
         <h2>今日轨迹</h2>
         <canvas id="trail" width="600" height="400" aria-label="今日轨迹"></canvas>
         <button id="replayButton" type="button">回放</button>
+      </section>
+
+      <section class="card">
+        <button id="switchAgent" type="button">换一个智能体</button>
+        <p class="muted">已上报的数据会留在当前这位名下，不会跟着搬走。</p>
       </section>
     </section>
   </main>

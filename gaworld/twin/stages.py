@@ -27,6 +27,11 @@ from gaworld.twin import store
 
 PLUGIN_ID = "twin"
 
+#: Marks a location that is real but outside the simulated city. Downstream
+#: code that resolves map nodes must tolerate it — it is deliberately not a
+#: node id, because the agent genuinely is not at one.
+AWAY_PREFIX = "异地"
+
 # Reported tag -> the activity label the simulation uses.
 TAG_ACTIVITY = {
     "commute": "通勤",
@@ -119,9 +124,16 @@ def twin_mirror(agent, step, sim, now_ts=None):
     note = str(snapshot.get("note", "")).strip()
     action = f"{activity}（现实：{tag}）" if not note else f"{activity}（现实：{tag}／{note}）"
 
-    # Out-of-map fixes carry no usable node, so location is left alone. The
-    # activity is still real, so it still mirrors.
-    location = snapshot.get("node_id") if not snapshot.get("out_of_map") else None
+    # A fix outside the mapped city is still a real position. Rather than
+    # leaving the agent where the simulation last put it — which would quietly
+    # assert it is in town when it is not — mark it as away, naming the place
+    # when we can. Never snap to a nearest node: that would fabricate a
+    # location and poison the calibration corpus.
+    if snapshot.get("out_of_map"):
+        place = str(snapshot.get("place") or "").strip()
+        location = AWAY_PREFIX + (f"（{place}）" if place else "")
+    else:
+        location = snapshot.get("node_id")
 
     controller = _ensure_intervention(sim)
     if controller is not None:
@@ -171,7 +183,11 @@ def twin_perceive(agent, step, sim):
     for record in fresh:
         tag = str(record.get("action_tag", "other"))
         activity = TAG_ACTIVITY.get(tag, TAG_ACTIVITY["other"])
-        where = record.get("node_id") or "地图之外"
+        if record.get("node_id"):
+            where = record["node_id"]
+        else:
+            place = str(record.get("place") or "").strip()
+            where = AWAY_PREFIX + (f"（{place}）" if place else "")
         note = str(record.get("note", "")).strip()
         lines.append(f"你在现实中于【{where}】{activity}" + (f"：{note}" if note else ""))
 

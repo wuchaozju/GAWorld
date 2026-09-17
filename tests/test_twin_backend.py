@@ -46,9 +46,20 @@ class TestTwinBackend(unittest.TestCase):
             diary_dir=os.path.join(self._tmp.name, "diaries"),
             state_dir=os.path.join(self._tmp.name, "state"),
             memory_dir=os.path.join(self._tmp.name, "memory"),
+            city_places=[],
+            roster_path=self._write_roster(),
+            simulated_ids=(1, 2, 7),
         )
+
         self.code = binding.issue_code(agent_id=7, label="cw", path=self.bindings)
         self.token = binding.redeem_code(self.code, path=self.bindings)
+
+    def _write_roster(self):
+        path = os.path.join(self._tmp.name, "agents.csv")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("id,name,age,job\n")
+            handle.write("1,甲,30,工程师\n2,乙,41,教师\n3,丙,25,学生\n7,cw,33,研究员\n8,丁,50,司机\n")
+        return path
 
     def tearDown(self):
         self._tmp.cleanup()
@@ -91,12 +102,39 @@ class TestTwinBackend(unittest.TestCase):
         # And the write must have landed on agent 8 instead.
         self.assertIsNotNone(self.backend.snapshot(other_token)["report"])
 
-    def test_out_of_map_report_is_stored_and_flagged(self):
+    def test_out_of_map_report_keeps_the_real_coordinate(self):
+        # out_of_map means "matched no map node", NOT "position unknown".
+        # The true fix must survive intact for calibration and for the trail.
+        lng, lat = _lnglat_at_km(40.0, 0.0)
         result = self.backend.submit(self.token, [_raw("a", x_km=40.0)])
         self.assertTrue(result["ok"])
         stored = self.backend.snapshot(self.token)["report"]
         self.assertTrue(stored["out_of_map"])
         self.assertIsNone(stored["node_id"])
+        self.assertAlmostEqual(stored["loc"]["lat"], lat, places=4)
+        self.assertAlmostEqual(stored["loc"]["lng"], lng, places=4)
+        self.assertIsNotNone(stored["grid"])
+
+    def test_out_of_map_report_is_given_an_offline_place_name(self):
+        # Beijing: far outside the fake map, but nameable without a network call.
+        beijing = {
+            "report_id": "bj", "ts": 1000, "tz_offset": 480,
+            "loc": {"lat": 39.90, "lng": 116.41, "acc_m": 10, "source": "gps"},
+            "action_tag": "rest", "note": "",
+        }
+        self.backend.submit(self.token, [beijing])
+        stored = self.backend.snapshot(self.token)["report"]
+        self.assertTrue(stored["out_of_map"])
+        self.assertEqual(stored["place"], "北京")
+
+    def test_trail_includes_out_of_map_points(self):
+        # The phone must be able to draw where you actually were, even when
+        # that is nowhere near the simulated city.
+        self.backend.submit(self.token, [_raw("a", x_km=40.0)])
+        points = self.backend.trail(self.token)["points"]
+        self.assertEqual(len(points), 1)
+        self.assertTrue(points[0]["out_of_map"])
+        self.assertIsNotNone(points[0]["loc"])
 
     def test_snapshot_reports_freshness(self):
         self.backend.submit(self.token, [_raw("a", ts=1000)])
@@ -184,6 +222,61 @@ class TestTwinBackend(unittest.TestCase):
     def test_places_can_be_filtered_by_name(self):
         places = self.backend.places(self.token, query="off")["places"]
         self.assertEqual([p["id"] for p in places], ["office"])
+
+    def test_an_unbound_token_is_told_to_choose_rather_than_rejected(self):
+        # 409, not 401: the phone should show a picker, not bounce the user
+        # back to the invite-code screen.
+        code = binding.issue_code(path=self.bindings)
+        token = binding.redeem_code(code, path=self.bindings)
+        result = self.backend.snapshot(token)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], 409)
+
+    def test_agents_lists_the_roster_with_simulated_and_taken_flags(self):
+        code = binding.issue_code(path=self.bindings)
+        token = binding.redeem_code(code, path=self.bindings)
+        result = self.backend.agents(token)
+        self.assertTrue(result["ok"])
+        by_id = {a["id"]: a for a in result["agents"]}
+        self.assertEqual(by_id[1]["name"], "甲")
+        self.assertTrue(by_id[1]["simulated"])
+        self.assertFalse(by_id[3]["simulated"])
+        # Agent 7 is twinned by this test case's own token.
+        self.assertTrue(by_id[7]["taken"])
+
+    def test_agents_does_not_mark_your_own_agent_as_taken(self):
+        result = self.backend.agents(self.token)
+        by_id = {a["id"]: a for a in result["agents"]}
+        self.assertFalse(by_id[7]["taken"])
+        self.assertEqual(result["current"], 7)
+
+    def test_bind_points_an_unbound_token_at_an_agent(self):
+        code = binding.issue_code(path=self.bindings)
+        token = binding.redeem_code(code, path=self.bindings)
+        result = self.backend.bind(token, 3)
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["simulated"])
+        self.assertEqual(self.backend.snapshot(token)["agent_id"], 3)
+
+    def test_bind_refuses_an_agent_another_token_already_twins(self):
+        code = binding.issue_code(path=self.bindings)
+        token = binding.redeem_code(code, path=self.bindings)
+        result = self.backend.bind(token, 7)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], 409)
+
+    def test_bind_refuses_an_unknown_agent(self):
+        result = self.backend.bind(self.token, 999)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], 404)
+
+    def test_rebinding_leaves_old_reports_with_the_old_agent(self):
+        # The log is append-only, so switching agents cannot move history.
+        self.backend.submit(self.token, [_raw("a")])
+        self.backend.bind(self.token, 3)
+        self.assertEqual(self.backend.reports(self.token)["reports"], [])
+        self.backend.bind(self.token, 7)
+        self.assertEqual(len(self.backend.reports(self.token)["reports"]), 1)
 
     def test_every_read_operation_rejects_an_invalid_token(self):
         for call in (self.backend.snapshot, self.backend.profile, self.backend.trail,
