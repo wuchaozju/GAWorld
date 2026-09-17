@@ -314,6 +314,7 @@ LABELS_EN: dict[str, str] = {
     "map_path": "Virtual map",
     "map_mode": "Map mode",
     "real_map_path": "Real map data",
+    "run_output_dir": "Run output root",
     "stateful": "Keep memory across runs",
     "memory_dir": "Memory directory",
     "log_dir": "Log directory",
@@ -871,6 +872,11 @@ MANUAL_HELP_EN: dict[str, str] = {
     "stateful": (
         "Keep memory across runs. With this off every run starts from blank memory, which "
         "suits a clean controlled experiment."
+    ),
+    "run_output_dir": (
+        "Root of the run artifact tree — memory, logs, diaries, charts, the economy ledger. "
+        "Selecting a city repoints this at output/cities/<slug>/, so two cities never share "
+        "one memory store or one world clock."
     ),
     "memory_dir": (
         "Where memory and the vector store land on disk. A different directory is a different "
@@ -1677,6 +1683,7 @@ MANUAL_HELP: dict[str, str] = {
     "map_mode": "用程序生成的网格地图（virtual），还是真实杭州的 OSM 路网（real）。real 更真实，但需要先跑脚本把地图数据抓下来。",
     "real_map_path": "真实地图数据包路径，仅在 map_mode = real 时使用。缺文件会退回虚拟地图。",
     "stateful": "跨轮次保留记忆。关掉后每次运行都从空白记忆开始，适合做干净的对照实验。",
+    "run_output_dir": "运行产物的根目录——记忆、日志、日记、图表、经济账本都在它下面。选了城市会自动指向 output/cities/<slug>/，两座城市因此不共用一套记忆、也不共用一个世界时钟。",
     "memory_dir": "记忆与向量库的落盘目录。换目录等于换一套记忆，旧的还在。",
     "log_dir": "运行日志目录。",
     "diary_output_dir": "每位居民每天的日记输出目录。",
@@ -1909,6 +1916,7 @@ LABELS: dict[str, str] = {
     "calendar": "日历", "start_date": "开局日期", "start_weekday": "开局星期", "weekend_days": "周末",
     "background": "时代背景", "csv_path": "居民状态表", "md_path": "人物设定文档",
     "map_path": "虚拟地图", "map_mode": "地图模式", "real_map_path": "真实地图数据",
+    "run_output_dir": "运行产物根目录",
     "stateful": "跨轮保留记忆", "memory_dir": "记忆目录", "log_dir": "日志目录",
     "diary_output_dir": "日记目录", "environment_output_dir": "环境输出目录",
     "visualization": "轨迹可视化", "site_path": "页面路径", "flush_every_frames": "刷盘帧间隔",

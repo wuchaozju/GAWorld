@@ -85,6 +85,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 可复用 Skill 库：基于 Markdown 的全局 / 私有技能，可从经历自动提炼，并注入认知与工作 brief
 - 真实工作任务系统：智能体在 mock 工作市场浏览、接单，按职业与技能产出真实产物（HTML、Python、文章、教案、研究笔记）
 - 从地名新建城市：真实 OSM 地图 / 程序化兜底、环境与背景推导、多城市共存与切换
+- 城市知识库：每座城市带一份联网搜集的产业与就业画像和滚动的本地新闻缓存，经四条通道影响居民——认知提示词、技能成长选择、分行业收入、以及每位居民的可检索记忆。城市发展旅游业，居民就更可能去学导游，且这一行收入更高
 - 城市地图生成与轨迹回放
 - 可视化 trace 导出
 - 单智能体采访 CLI
@@ -155,7 +156,7 @@ GAWorld/
 - `gaworld/work/`：real-work 任务系统（runtime、worker pool、queue、market）
 - `gaworld/population/`：参数化人口合成——`schema`（旋钮契约 + 可行性预检）、`synth`（IPF + 条件采样 + 收入秩变换）、`network`（家庭、工作单位、同质性社交图）、`report`（校验门 + 复核图表）、`writer`（状态 CSV + profile MD + manifest）
 - `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（观测型 cohort 遥测）
-- `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）
+- `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）、`knowledge`（联网搜集的产业与就业画像，带分层兜底）、`news`（按真实时间抓取、按仿真时间投喂的本地新闻）、`context`（城市知识影响居民的四条通道统一出口）
 - `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及三个面板后端 `population_api`（Population Studio）、`city_api`（城市）与 `external_systems_api`（外部系统观测台）
 - `gaworld/parallel/`：平行世界实验——`spec`（世界/事件校验 + 各世界磁盘隔离的配置覆盖）、`runner`（用小型进程池分叉 N 个世界并跟踪进度）、`analysis`（逐步偏离度、分叉点、逐人影响）
 - `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 外部系统 `external.html` + 平行世界 `worlds.html`）
@@ -344,6 +345,7 @@ python -m gaworld.city migrate    绍兴柯桥 --agent-id 31
 python -m gaworld.city use 绍兴柯桥
 ```
 
+主控制台的运行控件里有「城市」下拉，可以直接选好城市再运行。
 选中某座城市后，`map_path` / `csv_path` / `md_path` / `map_mode`、环境事件表与
 `background` 提示词会整体指向该城市包——最后这项不换掉的话，新城市里的智能体
 会一边住在柯桥、一边以为自己还在杭州。同样的操作也在控制台的 **城市** 标签页里。
@@ -534,6 +536,58 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 安慰剂的偏离度就是噪声底噪，真实效应必须明显高过它。
 
 完整教程见 [平行世界教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)。
+
+## 手机端数字孪生
+
+把手机连到跑着的 GAWorld 服务，上报你的真实位置与行为，让一个智能体照着你的一天生活，
+再从手机上看它的形象、心情、日记和今日轨迹。
+
+本机跑起来只要两条命令：
+
+```bash
+python3 -m gaworld.apps.twin_server --issue-code 1 --label "我"   # 打印一个邀请码
+python3 -m gaworld.apps.twin_server --port 8767                   # 在 / 提供手机端页面
+```
+
+浏览器打开 `http://127.0.0.1:8767/`，输入邀请码即可。但**要用真手机访问就必须有 HTTPS**——
+浏览器的定位 API 在非 HTTPS 且非 localhost 的页面上直接不可用：
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8767
+```
+
+让上报的数据真正驱动智能体，只需开启开关并插入两个流水线 stage，**不用改任何代码**；
+把它们删掉就是一组干净的对照实验：
+
+```python
+CONFIG["twin"]["enabled"] = True
+CONFIG["pipeline"]["agent_step"] = [
+    "prepare", "perceive", "gaworld.twin.stages:twin_perceive", "interrupts",
+    "plan", "adjust_activity", "move", "select_action",
+    "gaworld.twin.stages:twin_mirror", "reflect", "update_state",
+    "broadcast", "memorize", "record",
+]
+```
+
+| 方法 | 端点 | 用途 |
+|------|------|------|
+| POST | `/api/twin/auth` | 邀请码换令牌 |
+| POST | `/api/twin/report` | 上报（永远是数组，离线补传时长度大于 1） |
+| POST | `/api/twin/amend` | 更正或删除一条已有上报 |
+| GET | `/api/twin/snapshot` · `/trail` · `/life` · `/reports` · `/places` | 当前状态、今日轨迹、日记/心情/目标、上报历史、可选地点 |
+
+⚠️ **它是独立进程、独立端口，这一点不是洁癖。** `dashboard_server` 接受无鉴权的
+`POST /api/config` 与 `/api/run/start`，把它暴露到公网等于把改配置和起进程的能力交给任何扫到端口的人。
+隧道只指向 8767，永远不要指向 8766。
+
+选了城市之后，孪生数据会跟着搬到 `output/cities/<slug>/twin/`——孪生服务虽是独立进程，
+但读的是同一份 CONFIG，所以会自动跟随，不用额外配置。
+
+⚠️ 当前定位是**研究与演示**：邀请码制、无注册体系、没有个人信息合规流程。
+位置历史属于敏感个人信息，要给研究对象以外的人用，必须先补齐这一块。
+
+完整教程（内网穿透、三条消费通道、画像标定、已知限制）见
+[手机端数字孪生](./docs/TWIN_MOBILE.md)。
 
 ## 配置说明
 
@@ -991,6 +1045,7 @@ LLM 调用之前完成决策。
 - [外部系统 — 教程](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md)（货币系统、外部环境、对外服务的观察与编辑，以及运行时干预）
 - [平行世界 — 教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)（多分支反事实实验：设计实验、读分叉与偏离图、剂量反应设计，以及为什么要先跑安慰剂世界）
 - [大五人格（OCEAN）— 设计](./docs/proposals/2026-08-20-big-five-personality.md)（三条独立通道、效应量与共线性两道合入门、离线特质标定）
+- [手机端数字孪生](./docs/TWIN_MOBILE.md)（通过 HTTPS 隧道让手机连上、邀请码绑定、镜像/感知/标定三条通道，以及为什么孪生服务必须与控制台分进程）
 - [项目结构](./docs/PROJECT_STRUCTURE.md)
 - [仓库规范](./AGENTS.md)
 - [更新日志](./CHANGELOG.md)

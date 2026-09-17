@@ -181,9 +181,12 @@ class TestRunSimulationSmoke(unittest.TestCase):
             f"expected per-step task in {seen}",
         )
 
-        # Per-agent log files should exist.
-        log_dir = os.path.join(self.tmp.name, "output", "logs")
-        self.assertTrue(os.path.isdir(log_dir), "output/logs not created")
+        # Per-agent log files should exist, wherever the config points them —
+        # a selected city moves the whole run tree under output/cities/<slug>/.
+        from gaworld.settings import CONFIG
+
+        log_dir = os.path.join(self.tmp.name, CONFIG.get("log_dir", "output/logs"))
+        self.assertTrue(os.path.isdir(log_dir), f"{log_dir} not created")
         for aid in (4, 5):
             log_path = os.path.join(log_dir, f"agent_{aid}.log")
             self.assertTrue(os.path.exists(log_path), f"missing {log_path}")

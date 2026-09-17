@@ -469,7 +469,33 @@ def _config_summary():
         },
         "visualization": cfg.get("visualization", {}),
         "dashboard_config": _dashboard_config(),
+        "city": _dashboard_config().get("city", ""),
+        "cities": _city_choices(),
     }
+
+
+def _city_choices():
+    """Cities the run toolbar can switch between, cheapest-possible summary.
+
+    Population is included because ``agent_ids`` is per-city: picking a city
+    with fewer residents than the configured ids silently yields a run with
+    nobody in it, and the operator needs to see the count to catch that.
+    """
+    try:
+        from gaworld.city.bundle import list_cities
+
+        return [
+            {
+                "slug": bundle.slug,
+                "display_name": bundle.display_name,
+                "population": bundle.population_count,
+                "map_mode": bundle.map_mode,
+            }
+            for bundle in list_cities()
+        ]
+    except Exception as exc:  # the toolbar must load even if a bundle is broken
+        _LOG.warning("city list unavailable: %s", exc)
+        return []
 
 
 def _sanitize_config_patch(payload):
@@ -556,7 +582,28 @@ def _sanitize_config_patch(payload):
         routing = llm.get("routing", {})
         if isinstance(routing, dict):
             patch.setdefault("llm", {})["routing"] = routing
+    if "city" in payload:
+        patch["city"] = _validated_city(payload["city"])
     return patch
+
+
+def _validated_city(value):
+    """Resolve a city reference to its slug; "" means the default world.
+
+    An unresolvable slug is rejected loudly. Writing it through would leave the
+    config pointing at a city that does not exist, and ``apply_city`` degrades
+    silently to the default world — so the run would quietly happen somewhere
+    other than where the operator asked.
+    """
+    ref = str(value or "").strip()
+    if not ref:
+        return ""
+    from gaworld.city.bundle import CityNotFoundError, resolve_city
+
+    try:
+        return resolve_city(ref).slug
+    except CityNotFoundError as exc:
+        raise ValueError(f"未知城市 {ref!r}：{exc}") from exc
 
 
 def _save_config_patch(payload):
@@ -1751,12 +1798,59 @@ def _run_status(log_offset=None):
     }
 
 
+def _check_agent_ids_against_city():
+    """Fail fast when the configured agent_ids do not exist in the chosen city.
+
+    ``agent_ids`` is per-city, so switching to a smaller city leaves ids that
+    point at nobody. ``build_agent`` resolves them with ``.iloc[0]`` on an empty
+    match, which surfaces minutes later as a bare pandas IndexError in the run
+    log — long after the operator has stopped watching. Checking here turns that
+    into a sentence they can act on.
+    """
+    config = _effective_config()
+    ref = str(config.get("city") or "").strip()
+    if not ref:
+        return
+    wanted = _coerce_int_list(config.get("agent_ids", []))
+    if not wanted:
+        return
+    try:
+        from gaworld.city.bundle import resolve_city
+
+        bundle = resolve_city(ref)
+    except Exception:
+        return  # a broken bundle is apply_city's problem, not this check's
+    available = bundle.population_count
+    if available <= 0:
+        raise ValueError(
+            f"城市「{bundle.display_name}」还没有居民，无法运行。"
+            f"先到「城市」页签生成居民，或用 python -m gaworld.city add-agents {bundle.slug} --size 200"
+        )
+    missing = [item for item in wanted if item > available]
+    if missing:
+        raise ValueError(
+            f"城市「{bundle.display_name}」只有 {available} 位居民，"
+            f"但 Agent IDs 里有 {missing}。请改成 1–{available} 之间的编号。"
+        )
+
+
+def _coerce_int_list(values):
+    out = []
+    for item in values or []:
+        try:
+            out.append(int(item))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _start_simulation(payload):
     proc = RUN_STATE.get("process")
     if proc and proc.poll() is None:
         raise RuntimeError("Simulation is already running")
     if isinstance(payload.get("config"), dict):
         _save_config_patch(payload["config"])
+    _check_agent_ids_against_city()
     os.makedirs(os.path.dirname(RUN_LOG_PATH), exist_ok=True)
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
@@ -2091,11 +2185,12 @@ def _life_event_candidates_payload(agent_id, limit=None):
 def _resolve_output_dir(output_dir: str | None) -> str:
     """Resolve the output directory path.
 
-    If ``output_dir`` is empty or None, default to ``output/`` under REPO_ROOT.
+    If ``output_dir`` is empty or None, default to the current run root under
+    REPO_ROOT — ``output/``, or ``output/cities/<slug>/`` with a city selected.
     If it's a relative path, resolve it against REPO_ROOT.
     """
     if not output_dir:
-        return os.path.join(REPO_ROOT, "output")
+        return os.path.join(REPO_ROOT, _effective_config().get("run_output_dir", "output"))
     p = Path(output_dir)
     if p.is_absolute():
         return str(p)
@@ -2110,7 +2205,10 @@ def _live_analytics_paths():
     """Where the current run writes the artifacts Analytics reads."""
     config = _effective_config()
     return {
-        "output_dir": os.path.join(REPO_ROOT, "output"),
+        # Not a literal "output": a selected city moves the whole run tree to
+        # `output/cities/<slug>/`, and Analytics reads `state/` and `economy/`
+        # relative to this root.
+        "output_dir": os.path.join(REPO_ROOT, config.get("run_output_dir", "output")),
         "memory_dir": os.path.join(REPO_ROOT, config.get("memory_dir", "output/memory")),
         "visualization_dir": os.path.join(
             REPO_ROOT, config.get("visualization", {}).get("output_dir", "output/visualization")
@@ -2325,6 +2423,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = settings_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/city"):
+            from gaworld.apps import city_api
+
+            payload, status = city_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path == "/api/config":
             return self._json_response(_config_summary())
         if path == "/api/agents":
@@ -2466,6 +2569,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import settings_api
 
             body, status = settings_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/city"):
+            from gaworld.apps import city_api
+
+            body, status = city_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path == "/api/config":
             return self._json_response(_save_config_patch(payload))

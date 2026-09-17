@@ -25,8 +25,15 @@
     <section class="toolbar panel">
       <div class="toolbar-fields">
         <label>
-          <span class="field-label"><span data-i18n="agent.ids">Agent IDs</span><span class="help-tip" data-i18n-help="agent.ids_hint" data-help="参与仿真的居民编号，逗号分隔（如 1,2,3）；若只填单个数字 N，则表示取前 N 位居民。"></span></span>
-          <input id="agentIdsInput" data-i18n-placeholder="agent.ids_placeholder" placeholder="1,2,3" />
+          <span class="field-label"><span data-i18n="sim.city">城市</span><span class="help-tip" data-i18n-help="sim.city_hint" data-help="本次仿真发生在哪座城市：决定地图、环境事件、背景设定和居民名册。「默认世界」为 data/ 下的原始杭州数据。城市在「城市」页签创建。切换城市会同时换掉居民名册，Agent IDs 要落在新城市的人数范围内。"></span></span>
+          <select id="citySelect"></select>
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="agent.ids">Agent IDs</span><span class="help-tip" data-i18n-help="agent.ids_hint" data-help="参与仿真的居民编号，逗号分隔（如 1,2,3）；若只填单个数字 N，则表示取前 N 位居民。编号是每座城市各自从 1 开始的。"></span></span>
+          <!-- The placeholder is owned by app.js (updateCityHint), not by
+               data-i18n-placeholder: it shows the selected city's actual id
+               range, and the i18n pass loads asynchronously, so the two race. -->
+          <input id="agentIdsInput" placeholder="1,2,3" />
         </label>
         <label>
           <span class="field-label"><span id="simSpanLabel" data-i18n="sim.days">仿真天数</span><span id="simSpanHelp" class="help-tip" data-i18n-help="sim.days_hint" data-help="本次仿真持续的天数。"></span></span>

@@ -42,6 +42,8 @@ DEFAULT_EVOLUTION = {
     "retire_after_days": 14,
     "adopt_chance": 0.35,
     "max_new_per_day": 1,
+    # Career adoption from local labour demand, as a fraction of adopt_chance.
+    "opportunity_factor": 0.5,
 }
 
 _PROMPT_TEMPLATE = """你是一个仿真社会的兴趣与技能成长建模助手。
@@ -54,7 +56,7 @@ profile:
 性格：{personality}
 日常生活：{daily_life}
 价值观：{values}
-
+{city_hint}
 只输出 JSON：
 {{
   "items": [
@@ -79,7 +81,10 @@ profile:
 1) items 总数不超过 {max_items}，至少包含 1 个 hobby 和 1 个 skill。
 2) 不要编造极端具体经历；基于职业、性格、生活习惯做合理推断。
 3) activity_templates 要能自然影响日常安排，例如“练习摄影”“阅读专业书”“跑步训练”。
-4) 仅输出 JSON，不要解释。"""
+4) 若给出了"所在城市"信息，可据此推断一到两项与本地产业或紧缺岗位相关的 skill
+   （例如城市正发展旅游业，居民可能学习导游或酒店服务）；但要符合此人的职业与性格，
+   不要让每个人都去学同样的东西。
+5) 仅输出 JSON，不要解释。"""
 
 
 @dataclass
@@ -158,12 +163,20 @@ class GrowthProfile:
 LlmFn = Callable[[str], str]
 
 
-def profile_signature(agent: dict[str, Any]) -> str:
+def profile_signature(agent: dict[str, Any], city_signature: str = "") -> str:
+    """Cache key for a derived growth profile.
+
+    *city_signature* must be included whenever the city steers the derivation
+    (see ``derive_growth_profile``): the same resident in a textile town and in
+    a tourism town should not share one cached set of skills, and without this
+    the second city's influence would silently never appear.
+    """
     parts = [
         str(agent.get("job", "")),
         str(agent.get("personality", "")),
         str(agent.get("daily_life", "")),
         str(agent.get("values", "")),
+        str(city_signature or ""),
     ]
     return hashlib.md5("\x01".join(parts).encode("utf-8")).hexdigest()
 
@@ -248,14 +261,16 @@ def derive_growth_profile(
     llm: LlmFn,
     cache: Optional[dict[int, GrowthProfile]] = None,
     max_items: int = DEFAULT_MAX_ITEMS,
+    city_hint: str = "",
+    city_signature: str = "",
 ) -> GrowthProfile:
     agent_id = int(agent.get("id", 0) or 0)
-    source_hash = profile_signature(agent)
+    source_hash = profile_signature(agent, city_signature)
     if cache is not None:
         cached = cache.get(agent_id)
         if cached is not None and cached.source_hash == source_hash and cached.items:
             return _limit_profile(cached, max_items=max_items)
-    prompt = _build_prompt(agent, max_items=max_items)
+    prompt = _build_prompt(agent, max_items=max_items, city_hint=city_hint)
     try:
         raw = llm(prompt)
     except Exception as exc:  # noqa: BLE001 - LLM failures should not stop simulation.
@@ -278,6 +293,8 @@ def bootstrap_growth_profiles(
     llm: LlmFn,
     max_items: int = DEFAULT_MAX_ITEMS,
     stateful: bool = True,
+    city_hint: str = "",
+    city_signature: str = "",
 ) -> dict[int, GrowthProfile]:
     cache = load_growth_cache(cache_path)
     out: dict[int, GrowthProfile] = {}
@@ -287,11 +304,15 @@ def bootstrap_growth_profiles(
             continue
         stored = load_agent_growth_profile(agent_id, memory_dir) if stateful else {}
         stored_profile = GrowthProfile.from_dict(stored) if stored else None
-        if stored_profile and stored_profile.source_hash == profile_signature(agent) and stored_profile.items:
+        signature = profile_signature(agent, city_signature)
+        if stored_profile and stored_profile.source_hash == signature and stored_profile.items:
             profile = _limit_profile(stored_profile, max_items=max_items)
             cache[agent_id] = profile
         else:
-            profile = derive_growth_profile(agent, llm=llm, cache=cache, max_items=max_items)
+            profile = derive_growth_profile(
+                agent, llm=llm, cache=cache, max_items=max_items,
+                city_hint=city_hint, city_signature=city_signature,
+            )
             if stateful:
                 save_agent_growth_profile(agent_id, profile, memory_dir)
         agent["growth_profile"] = profile.to_dict()
@@ -470,6 +491,7 @@ def evolve_growth_profile(
     day: int,
     *,
     social_candidates: Iterable[str] = (),
+    opportunity_candidates: Iterable[str] = (),
     config: dict[str, Any] | None = None,
     max_items: int = DEFAULT_MAX_ITEMS,
     rng: Optional[Any] = None,
@@ -479,6 +501,11 @@ def evolve_growth_profile(
 
     ``social_candidates`` are growth-item names observed on the day's
     social partners (assembled by the caller). Pure rules, no LLM.
+
+    ``opportunity_candidates`` are skills the *city* is short of. They adopt
+    through a separate path because the framing differs: picking up 导游 because
+    the local government is pushing tourism is a career move — a ``skill``
+    filed under 职业 — not a hobby caught from a friend.
     """
     import random as _random
 
@@ -533,10 +560,41 @@ def evolve_growth_profile(
         )
         existing.add(cleaned)
         changes["adopted"].append(cleaned)
+
+    # Career-motivated adoption from local labour demand. Rarer than social
+    # contagion by default (adopt_chance * opportunity_factor): a city's
+    # economy nudges people over months, it does not restaff itself overnight.
+    opportunity_chance = adopt_chance * _clamp(cfg.get("opportunity_factor", 0.5))
+    for name in opportunity_candidates:
+        if len(changes["adopted"]) >= max_new or len(gp.items) >= max(1, int(max_items)):
+            break
+        cleaned = _clean_text(name, max_chars=24)
+        if not cleaned or cleaned in existing:
+            continue
+        if rng.random() > opportunity_chance:
+            continue
+        gp.items.append(
+            GrowthItem(
+                name=cleaned,
+                kind=KIND_SKILL,
+                category="职业",
+                motivation="本地这一行机会变多，想学来增加就业选择",
+                level=0.05,
+                priority=0.55,
+                weekly_target_minutes=90,
+                preferred_time_blocks=["evening", "weekend"],
+                activity_templates=[f"学习{cleaned}", f"了解{cleaned}相关课程"],
+                career_link=True,
+                sociality=0.3,
+                last_practiced_day=day,
+            )
+        )
+        existing.add(cleaned)
+        changes["adopted"].append(cleaned)
     return gp.to_dict(), changes
 
 
-def _build_prompt(agent: dict[str, Any], max_items: int) -> str:
+def _build_prompt(agent: dict[str, Any], max_items: int, city_hint: str = "") -> str:
     return _PROMPT_TEMPLATE.format(
         max_items=max(1, int(max_items)),
         name=agent.get("name", ""),
@@ -545,6 +603,7 @@ def _build_prompt(agent: dict[str, Any], max_items: int) -> str:
         personality=agent.get("personality", ""),
         daily_life=agent.get("daily_life", ""),
         values=agent.get("values", ""),
+        city_hint=f"所在城市：{city_hint}\n" if city_hint else "",
     )
 
 

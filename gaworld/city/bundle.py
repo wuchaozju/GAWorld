@@ -32,6 +32,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 #: Where bundles live, relative to the project root.
 CITIES_DIRNAME = "data/cities"
 
+#: Where a city's *runs* land, relative to the project root — memory, logs,
+#: diaries, charts, the economy ledger. Deliberately outside the bundle: a
+#: bundle is the city's definition and should stay copyable between machines
+#: without dragging along somebody's twenty years of accumulated agent memory.
+#: ``gaworld.city.config`` owns the mapping of individual config keys into it.
+RUNS_DIRNAME = "output/cities"
+
 MANIFEST_NAME = "city.json"
 SCHEMA_VERSION = "1.0"
 
@@ -40,6 +47,8 @@ SCHEMA_VERSION = "1.0"
 VIRTUAL_MAP_NAME = "citymap.md"
 REAL_MAP_NAME = "map.geojson"
 ENVIRONMENT_NAME = "environment.json"
+KNOWLEDGE_NAME = "knowledge.json"
+NEWS_NAME = "news.json"
 STATE_CSV_NAME = "agents.csv"
 PROFILES_MD_NAME = "profiles.md"
 
@@ -52,6 +61,12 @@ def city_root(root: Path | str | None = None) -> Path:
     """Absolute path of the cities directory."""
     base = Path(root) if root is not None else PROJECT_ROOT
     return base / CITIES_DIRNAME
+
+
+def runs_root(root: Path | str | None = None) -> Path:
+    """Absolute path of the directory holding every city's run artifacts."""
+    base = Path(root) if root is not None else PROJECT_ROOT
+    return base / RUNS_DIRNAME
 
 
 def slugify(name: str) -> str:
@@ -115,6 +130,16 @@ class CityBundle:
     @property
     def environment_path(self) -> Path:
         return self.directory / ENVIRONMENT_NAME
+
+    @property
+    def knowledge_path(self) -> Path:
+        """The city's economic / social profile (industries, priorities…)."""
+        return self.directory / KNOWLEDGE_NAME
+
+    @property
+    def news_path(self) -> Path:
+        """Recent local news, refreshed on real-world time, not sim time."""
+        return self.directory / NEWS_NAME
 
     @property
     def state_csv_path(self) -> Path:
@@ -274,7 +299,13 @@ def resolve_city(ref: str, root: Path | str | None = None) -> CityBundle:
 
 
 def delete_city(ref: str, root: Path | str | None = None) -> Path:
-    """Remove a bundle directory entirely. Returns the path that was removed."""
+    """Remove a bundle directory entirely. Returns the path that was removed.
+
+    The city's run artifacts go with it. Leaving them behind would make a city
+    recreated under the same name silently inherit the deleted one's memory and
+    world clock — the same cross-city bleed that per-city run roots exist to
+    stop, just deferred.
+    """
     bundle = resolve_city(ref, root)
     directory = bundle.directory.resolve()
     base = city_root(root).resolve()
@@ -283,11 +314,16 @@ def delete_city(ref: str, root: Path | str | None = None) -> Path:
     if base not in directory.parents:
         raise ValueError(f"refusing to delete {directory}: not inside {base}")
     shutil.rmtree(directory)
+    runs_base = runs_root(root).resolve()
+    run_dir = (runs_base / bundle.slug).resolve()
+    if runs_base in run_dir.parents and run_dir.is_dir():
+        shutil.rmtree(run_dir)
     return directory
 
 
 __all__ = [
     "CITIES_DIRNAME",
+    "RUNS_DIRNAME",
     "CityBundle",
     "CityNotFoundError",
     "city_root",
@@ -296,5 +332,6 @@ __all__ = [
     "load_bundle",
     "new_manifest",
     "resolve_city",
+    "runs_root",
     "slugify",
 ]

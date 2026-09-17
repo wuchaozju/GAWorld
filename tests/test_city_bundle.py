@@ -176,5 +176,138 @@ class CityConfigTest(unittest.TestCase):
         self.assertEqual(city_overrides("", self.root), {})
 
 
+class CityRunRootTest(unittest.TestCase):
+    """Selecting a city moves the whole run tree under ``output/cities/<slug>/``.
+
+    Memory, logs and the vector store are keyed by agent id alone and
+    ``sim_state.json`` holds one world clock, so sharing a run tree means two
+    cities' ``#1`` share one set of files and one calendar.
+    """
+
+    def test_every_runtime_path_moves_under_the_city(self):
+        from gaworld.city.config import RUN_PATHS, run_overrides
+
+        patch = run_overrides("wuzhen")
+        self.assertEqual(patch["run_output_dir"], "output/cities/wuzhen")
+        self.assertEqual(patch["memory_dir"], "output/cities/wuzhen/memory")
+        self.assertEqual(patch["log_dir"], "output/cities/wuzhen/logs")
+        self.assertEqual(
+            patch["vector_db_path"], "output/cities/wuzhen/memory/vector_db.sqlite"
+        )
+        # Nested sections are patched in place, not flattened.
+        self.assertEqual(patch["economy"]["output_dir"], "output/cities/wuzhen/economy")
+        self.assertEqual(
+            patch["visualization"]["output_dir"], "output/cities/wuzhen/visualization"
+        )
+        self.assertEqual(
+            patch["collaboration"]["sessions_dir"],
+            "output/cities/wuzhen/collaboration/sessions",
+        )
+        # Nothing in the table is silently dropped on the way into the patch.
+        leaves = 0
+        for value in patch.values():
+            leaves += len(value) if isinstance(value, dict) else 1
+        self.assertEqual(leaves, len(RUN_PATHS))
+
+    def test_two_cities_never_share_a_path(self):
+        from gaworld.city.config import run_overrides
+
+        a, b = run_overrides("wuzhen"), run_overrides("绍兴柯桥")
+        self.assertEqual(set(a), set(b))
+        for key, value in a.items():
+            if isinstance(value, dict):
+                for leaf, path in value.items():
+                    self.assertNotEqual(path, b[key][leaf])
+            else:
+                self.assertNotEqual(value, b[key])
+
+    def test_no_city_selected_keeps_the_default_output_tree(self):
+        from gaworld.city.config import city_overrides
+
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(city_overrides("", Path(tmp)), {})
+
+    def test_the_run_layout_mirrors_the_default_output_tree(self):
+        # Analytics joins `state/` and `economy/` onto a run root, and
+        # replay_runs globs `output/*/visualization` for traces. Both read the
+        # *names* below, so a city's tree has to be laid out exactly like the
+        # default one — renaming a leaf here breaks them without any error.
+        from gaworld.city.config import RUN_PATHS
+
+        for path, leaf in RUN_PATHS.items():
+            if not leaf:
+                continue
+            default = self._default_for(path)
+            self.assertEqual(
+                default,
+                f"output/{leaf}",
+                f"{path}: run-root layout has drifted from the default tree",
+            )
+
+    def _default_for(self, path):
+        """The stock (no city selected) value of a dotted config path."""
+        from gaworld.settings import build_default_config
+
+        node = build_default_config()
+        for part in path.split("."):
+            self.assertIsInstance(node, dict, f"{path}: not a config path")
+            self.assertIn(part, node, f"{path}: no longer in the defaults")
+            node = node[part]
+        return node
+
+
+class DeleteTakesRunStateTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def _make(self, slug):
+        bundle = CityBundle(
+            directory=city_root(self.root) / slug,
+            manifest=new_manifest(
+                slug=slug,
+                name=slug,
+                display_name=slug,
+                place=offline_place(slug).to_dict(),
+                scale="small",
+            ),
+        )
+        bundle.save()
+        return bundle
+
+    def test_deleting_a_city_also_drops_its_run_state(self):
+        from gaworld.city.bundle import runs_root
+
+        bundle = self._make("doomed")
+        run_dir = runs_root(self.root) / "doomed"
+        (run_dir / "memory").mkdir(parents=True)
+        (run_dir / "memory" / "sim_state.json").write_text("{}", encoding="utf-8")
+
+        delete_city("doomed", self.root)
+
+        self.assertFalse(bundle.directory.exists())
+        # Left behind, a city recreated under the same name would inherit the
+        # deleted one's memory and world clock.
+        self.assertFalse(run_dir.exists())
+
+    def test_a_city_with_no_run_state_yet_deletes_cleanly(self):
+        bundle = self._make("unrun")
+        delete_city("unrun", self.root)
+        self.assertFalse(bundle.directory.exists())
+
+    def test_a_refused_delete_leaves_run_state_alone(self):
+        from gaworld.city.bundle import runs_root
+
+        outside = self.root / "elsewhere"
+        outside.mkdir()
+        (outside / "city.json").write_text(json.dumps({"slug": "x"}), encoding="utf-8")
+        run_dir = runs_root(self.root) / "x"
+        run_dir.mkdir(parents=True)
+        with self.assertRaises(ValueError):
+            delete_city(str(outside), self.root)
+        self.assertTrue(run_dir.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

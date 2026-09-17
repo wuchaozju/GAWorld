@@ -44,7 +44,9 @@
               </label>
               <label class="city-field">
                 <span data-i18n="city.field_size">初始人口</span>
-                <input type="number" id="citySize" min="0" step="10" value="0" />
+                <!-- step=1 for the same reason as popSize: step=10 rejects any
+                     number that is not a multiple of 10 (55, 137, …). -->
+                <input type="number" id="citySize" min="0" max="5000" step="1" value="0" />
               </label>
             </div>
             <div class="city-row">
@@ -69,6 +71,39 @@
           <div id="cityCreateStatus" class="city-status" role="status" aria-live="polite"></div>
         </div>
 
+        <!-- The map lives in the wide column, not beside the detail panel: a
+             77-node city is unreadable at the 380px side-column width. -->
+        <div class="city-card" id="cityMapCard" hidden>
+          <h3><span data-i18n="city.map_title">城市地图</span> <span class="city-map-name" id="cityMapName"></span></h3>
+          <div class="city-map-wrap">
+            <canvas id="cityMapCanvas" width="1000" height="680"></canvas>
+            <div class="city-map-overlay" id="cityMapOverlay" hidden></div>
+          </div>
+          <!-- Zoom buttons, wheel-zoom, drag-pan and dblclick-reset are mounted
+               by CityMapView itself; duplicating them here would give the panel
+               two sets of controls. -->
+          <div class="city-map-meta" id="cityMapMeta"></div>
+        </div>
+
+        <div class="city-card" id="cityKnowledgeCard" hidden>
+          <h3><span data-i18n="city.knowledge_title">城市知识库</span>
+            <span class="city-map-name" id="cityKnowledgeSource"></span></h3>
+          <p class="city-note" data-i18n="city.knowledge_note">
+            城市的产业与就业状况。它会进入认知提示词、影响居民学什么技能、
+            影响本地各行业的收入，并写入每位居民的检索记忆。
+          </p>
+          <div id="cityKnowledge" class="city-knowledge"></div>
+          <div class="city-detail-actions">
+            <button type="button" class="btn" id="cityKnowledgeRebuild"
+                    data-i18n="city.knowledge_rebuild">联网重建</button>
+            <button type="button" class="btn ghost" id="cityKnowledgeOffline"
+                    data-i18n="city.knowledge_offline">按地图估算</button>
+            <button type="button" class="btn ghost" id="cityNewsRefresh"
+                    data-i18n="city.news_refresh">抓取最新新闻</button>
+          </div>
+          <div id="cityKnowledgeStatus" class="city-status" role="status" aria-live="polite"></div>
+        </div>
+
         <div class="city-card">
           <h3 data-i18n="city.list_title">已有城市</h3>
           <div id="cityList" class="city-list">
@@ -82,12 +117,21 @@
           <h3 data-i18n="city.detail_title">城市详情</h3>
           <div id="cityDetail" class="city-detail"></div>
 
+
           <h4 data-i18n="city.add_population_title">批量添加居民</h4>
           <form id="cityPopForm" class="city-form">
             <div class="city-row">
               <label class="city-field">
-                <span data-i18n="city.field_size">人数</span>
-                <input type="number" id="popSize" min="1" step="10" value="100" required />
+                <!-- Its own key, not city.field_size: that one reads
+                     "初始人口", which is wrong here — this form appends to an
+                     existing city rather than seeding a new one. -->
+                <span data-i18n="city.field_add_size">新增人数</span>
+                <!-- step MUST stay 1: the step base is `min`, so min=1 step=10
+                     would make 1,11,21… the only valid values and the browser
+                     would reject 100 — including this very default. Out-of-range
+                     sizes are clamped server-side and reported via
+                     city.pop_clamped, so the widget need not police them. -->
+                <input type="number" id="popSize" min="1" max="5000" step="1" value="100" required />
               </label>
               <label class="city-field">
                 <span data-i18n="city.field_preset">人口模板</span>
@@ -159,6 +203,9 @@
     </section>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
+  <!-- The same renderer the console map panel and the simviz replay use, so a
+       city previewed here looks exactly like it will when it runs. -->
+  <script src="/site/dashboard/citymap-view.js"></script>
   <script src="/site/dashboard/city.js"></script>
 </body>
 </html>

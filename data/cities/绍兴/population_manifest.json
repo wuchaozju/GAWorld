@@ -1,0 +1,722 @@
+{
+  "size": 100,
+  "achieved": {
+    "median_age": {
+      "target": 34.0,
+      "achieved": 29.5,
+      "delta": -4.5
+    },
+    "share_under_18": {
+      "target": 0.14,
+      "achieved": 0.16,
+      "delta": 0.02
+    },
+    "share_over_65": {
+      "target": 0.12,
+      "achieved": 0.13,
+      "delta": 0.01
+    },
+    "migrant_share": {
+      "target": 0.55,
+      "achieved": 0.55,
+      "delta": 0.0
+    },
+    "employment_rate": {
+      "target": 0.74,
+      "achieved": 0.7042,
+      "delta": -0.0358
+    },
+    "tertiary_rate": {
+      "target": 0.52,
+      "achieved": 0.5357,
+      "delta": 0.0157
+    },
+    "income_median": {
+      "target": 11000.0,
+      "achieved": 11002.32,
+      "delta": 2.32
+    },
+    "income_gini": {
+      "target": 0.46,
+      "achieved": 0.441,
+      "delta": -0.019
+    },
+    "household_mean_size": {
+      "target": 2.3,
+      "achieved": 2.3256,
+      "delta": 0.0256
+    },
+    "share_single_person": {
+      "target": 0.32,
+      "achieved": 0.3256,
+      "delta": 0.0056
+    },
+    "share_multigen": {
+      "target": 0.18,
+      "achieved": 0.186,
+      "delta": 0.006
+    },
+    "share_shared_rental": {
+      "target": 0.22,
+      "achieved": 0.2093,
+      "delta": -0.0107
+    },
+    "mean_degree": {
+      "target": 12.0,
+      "achieved": 12.0,
+      "delta": 0.0
+    }
+  },
+  "achieved_industry_mix": {
+    "tech": {
+      "target": 0.3,
+      "achieved": 0.32,
+      "delta": 0.02
+    },
+    "finance": {
+      "target": 0.14,
+      "achieved": 0.12,
+      "delta": -0.02
+    },
+    "medical": {
+      "target": 0.07,
+      "achieved": 0.04,
+      "delta": -0.03
+    },
+    "education": {
+      "target": 0.09,
+      "achieved": 0.04,
+      "delta": -0.05
+    },
+    "service": {
+      "target": 0.28,
+      "achieved": 0.36,
+      "delta": 0.08
+    },
+    "trade": {
+      "target": 0.12,
+      "achieved": 0.12,
+      "delta": 0.0
+    }
+  },
+  "fit": {
+    "ipf": {
+      "iterations": 2,
+      "max_marginal_deviation": 0.003567872116869597,
+      "converged": true,
+      "tolerance": 0.005,
+      "targets": {
+        "age": [
+          0.14,
+          0.3824999999999999,
+          0.21860950861030942,
+          0.13889049138969065,
+          0.12
+        ],
+        "sex": [
+          0.5098039215686274,
+          0.4901960784313726
+        ],
+        "education": [
+          0.13310400000000003,
+          0.18795200000000004,
+          0.23174400000000003,
+          0.15204800000000004,
+          0.23254400000000003,
+          0.06260800000000002
+        ],
+        "employment": [
+          [
+            0.0,
+            0.0,
+            0.13999999999999999
+          ],
+          [
+            0.28304999999999986,
+            0.019124999999999993,
+            0.08032499999999997
+          ],
+          [
+            0.16177103637162893,
+            0.01093047543051547,
+            0.045907996808164986
+          ],
+          [
+            0.10277896362837105,
+            0.006944524569484531,
+            0.029167003191835027
+          ],
+          [
+            0.014399999999999996,
+            0.0,
+            0.10559999999999997
+          ]
+        ],
+        "industry": [
+          0.16859999999999994,
+          0.07867999999999999,
+          0.03933999999999999,
+          0.050579999999999986,
+          0.15735999999999997,
+          0.06743999999999997,
+          0.43800000000000017
+        ]
+      },
+      "achieved": {
+        "age": [
+          0.14000000000000004,
+          0.38229666945709717,
+          0.21864192049871808,
+          0.13898951009205335,
+          0.12007189995213141
+        ],
+        "sex": [
+          0.5098039215686274,
+          0.4901960784313727
+        ],
+        "education": [
+          0.13623761645811747,
+          0.19054999972538877,
+          0.23221259460077034,
+          0.15045435487571884,
+          0.22897612788313043,
+          0.06156930645687417
+        ],
+        "employment": [
+          [
+            0.0,
+            0.0,
+            0.14000000000000004
+          ],
+          [
+            0.28284666945709713,
+            0.019125000000000003,
+            0.080325
+          ],
+          [
+            0.1618034482600376,
+            0.010930475430515476,
+            0.04590799680816499
+          ],
+          [
+            0.1028779823307338,
+            0.006944524569484534,
+            0.029167003191835038
+          ],
+          [
+            0.014471899952131393,
+            0.0,
+            0.10560000000000001
+          ]
+        ],
+        "industry": [
+          0.16860000000000006,
+          0.07868,
+          0.03933999999999999,
+          0.05057999999999997,
+          0.15735999999999997,
+          0.06743999999999997,
+          0.4380000000000001
+        ]
+      },
+      "labels": {
+        "age": [
+          "0-17",
+          "18-34",
+          "35-54",
+          "55-64",
+          "65+"
+        ],
+        "sex": [
+          "男",
+          "女"
+        ],
+        "education": [
+          "小学及以下",
+          "初中",
+          "高中/中专",
+          "大专",
+          "本科",
+          "硕士及以上"
+        ],
+        "employment": [
+          "employed",
+          "unemployed",
+          "not_in_labor_force"
+        ],
+        "industry": [
+          "tech",
+          "finance",
+          "medical",
+          "education",
+          "service",
+          "trade",
+          "none"
+        ]
+      }
+    },
+    "age_band_shares": {
+      "0-17": 0.14,
+      "18-34": 0.3824999999999999,
+      "35-54": 0.21860950861030942,
+      "55-64": 0.13889049138969065,
+      "65+": 0.12
+    },
+    "median_age": {
+      "target": 34.0,
+      "achieved": 34.0
+    },
+    "lognormal_sigma": 0.819394169028161
+  },
+  "charts": {
+    "age_pyramid": [
+      {
+        "age_from": 5,
+        "age_to": 9,
+        "male": 3,
+        "female": 4
+      },
+      {
+        "age_from": 10,
+        "age_to": 14,
+        "male": 2,
+        "female": 4
+      },
+      {
+        "age_from": 15,
+        "age_to": 19,
+        "male": 5,
+        "female": 1
+      },
+      {
+        "age_from": 20,
+        "age_to": 24,
+        "male": 6,
+        "female": 11
+      },
+      {
+        "age_from": 25,
+        "age_to": 29,
+        "male": 10,
+        "female": 4
+      },
+      {
+        "age_from": 30,
+        "age_to": 34,
+        "male": 3,
+        "female": 3
+      },
+      {
+        "age_from": 35,
+        "age_to": 39,
+        "male": 6,
+        "female": 3
+      },
+      {
+        "age_from": 40,
+        "age_to": 44,
+        "male": 3,
+        "female": 3
+      },
+      {
+        "age_from": 45,
+        "age_to": 49,
+        "male": 0,
+        "female": 1
+      },
+      {
+        "age_from": 50,
+        "age_to": 54,
+        "male": 4,
+        "female": 3
+      },
+      {
+        "age_from": 55,
+        "age_to": 59,
+        "male": 1,
+        "female": 1
+      },
+      {
+        "age_from": 60,
+        "age_to": 64,
+        "male": 3,
+        "female": 3
+      },
+      {
+        "age_from": 65,
+        "age_to": 69,
+        "male": 1,
+        "female": 0
+      },
+      {
+        "age_from": 70,
+        "age_to": 74,
+        "male": 1,
+        "female": 2
+      },
+      {
+        "age_from": 75,
+        "age_to": 79,
+        "male": 2,
+        "female": 0
+      },
+      {
+        "age_from": 80,
+        "age_to": 84,
+        "male": 2,
+        "female": 1
+      },
+      {
+        "age_from": 85,
+        "age_to": 89,
+        "male": 0,
+        "female": 2
+      },
+      {
+        "age_from": 90,
+        "age_to": 94,
+        "male": 1,
+        "female": 1
+      }
+    ],
+    "lorenz": [
+      {
+        "population_share": 0.0,
+        "income_share": 0.0
+      },
+      {
+        "population_share": 0.05,
+        "income_share": 0.0051
+      },
+      {
+        "population_share": 0.1,
+        "income_share": 0.0178
+      },
+      {
+        "population_share": 0.15,
+        "income_share": 0.0347
+      },
+      {
+        "population_share": 0.2,
+        "income_share": 0.0481
+      },
+      {
+        "population_share": 0.25,
+        "income_share": 0.0632
+      },
+      {
+        "population_share": 0.3,
+        "income_share": 0.0889
+      },
+      {
+        "population_share": 0.35,
+        "income_share": 0.1186
+      },
+      {
+        "population_share": 0.4,
+        "income_share": 0.1407
+      },
+      {
+        "population_share": 0.45,
+        "income_share": 0.1648
+      },
+      {
+        "population_share": 0.5,
+        "income_share": 0.2048
+      },
+      {
+        "population_share": 0.55,
+        "income_share": 0.2501
+      },
+      {
+        "population_share": 0.6,
+        "income_share": 0.2836
+      },
+      {
+        "population_share": 0.65,
+        "income_share": 0.3201
+      },
+      {
+        "population_share": 0.7,
+        "income_share": 0.3812
+      },
+      {
+        "population_share": 0.75,
+        "income_share": 0.4516
+      },
+      {
+        "population_share": 0.8,
+        "income_share": 0.5051
+      },
+      {
+        "population_share": 0.85,
+        "income_share": 0.5652
+      },
+      {
+        "population_share": 0.9,
+        "income_share": 0.6729
+      },
+      {
+        "population_share": 0.95,
+        "income_share": 0.8176
+      },
+      {
+        "population_share": 1.0,
+        "income_share": 1.0
+      }
+    ],
+    "household_sizes": [
+      {
+        "size": 1,
+        "count": 14
+      },
+      {
+        "size": 2,
+        "count": 12
+      },
+      {
+        "size": 3,
+        "count": 11
+      },
+      {
+        "size": 4,
+        "count": 3
+      },
+      {
+        "size": 5,
+        "count": 1
+      },
+      {
+        "size": 6,
+        "count": 2
+      }
+    ],
+    "household_types": {
+      "nuclear": 5,
+      "multigen": 8,
+      "single_parent": 1,
+      "couple": 6,
+      "shared_rental": 9,
+      "single": 14
+    },
+    "education": {
+      "小学及以下": 10,
+      "初中": 20,
+      "高中/中专": 25,
+      "大专": 16,
+      "本科": 26,
+      "硕士及以上": 3
+    },
+    "age_bands": {
+      "0-17": 16,
+      "18-34": 40,
+      "35-54": 23,
+      "55-64": 8,
+      "65+": 13
+    },
+    "state_distribution": {
+      "emotion": {
+        "target_mean": 0.58,
+        "mean": 0.5965,
+        "sd": 0.1075,
+        "p10": 0.4657,
+        "p25": 0.5289,
+        "p50": 0.5965,
+        "p75": 0.656,
+        "p90": 0.7215
+      },
+      "stress": {
+        "target_mean": 0.55,
+        "mean": 0.5643,
+        "sd": 0.1024,
+        "p10": 0.4203,
+        "p25": 0.5154,
+        "p50": 0.5611,
+        "p75": 0.622,
+        "p90": 0.6955
+      },
+      "econ_security": {
+        "target_mean": 0.52,
+        "mean": 0.4712,
+        "sd": 0.1548,
+        "p10": 0.2697,
+        "p25": 0.3676,
+        "p50": 0.4761,
+        "p75": 0.5572,
+        "p90": 0.6541
+      },
+      "city_identity": {
+        "target_mean": 0.55,
+        "mean": 0.4351,
+        "sd": 0.1446,
+        "p10": 0.2612,
+        "p25": 0.3378,
+        "p50": 0.4189,
+        "p75": 0.5331,
+        "p90": 0.6406
+      },
+      "policy_sensitivity": {
+        "target_mean": 0.5,
+        "mean": 0.481,
+        "sd": 0.1307,
+        "p10": 0.3053,
+        "p25": 0.3831,
+        "p50": 0.4772,
+        "p75": 0.5711,
+        "p90": 0.647
+      },
+      "platform_dependence": {
+        "target_mean": 0.5,
+        "mean": 0.5184,
+        "sd": 0.1557,
+        "p10": 0.2986,
+        "p25": 0.4363,
+        "p50": 0.5241,
+        "p75": 0.6068,
+        "p90": 0.7026
+      },
+      "risk_preference": {
+        "target_mean": 0.45,
+        "mean": 0.4546,
+        "sd": 0.1245,
+        "p10": 0.2972,
+        "p25": 0.3595,
+        "p50": 0.4562,
+        "p75": 0.5342,
+        "p90": 0.6274
+      },
+      "voice_propensity": {
+        "target_mean": 0.45,
+        "mean": 0.4578,
+        "sd": 0.1333,
+        "p10": 0.3154,
+        "p25": 0.3751,
+        "p50": 0.4522,
+        "p75": 0.5472,
+        "p90": 0.6235
+      },
+      "mobility_intent": {
+        "target_mean": 0.45,
+        "mean": 0.5527,
+        "sd": 0.1958,
+        "p10": 0.26,
+        "p25": 0.4171,
+        "p50": 0.598,
+        "p75": 0.6895,
+        "p90": 0.8022
+      }
+    }
+  },
+  "network": {
+    "nodes": 100,
+    "edges": 600,
+    "mean_degree": 12.0,
+    "max_degree": 21,
+    "isolated": 0,
+    "clustering": 0.20943449910942166,
+    "random_clustering": 0.12,
+    "mean_path_length": 2.149158249158249,
+    "random_path_length": 1.8532568160582539,
+    "small_world_sigma": 1.5049919859876204,
+    "largest_component_share": 1.0,
+    "degree_histogram": [
+      {
+        "degree": 5,
+        "count": 1
+      },
+      {
+        "degree": 6,
+        "count": 2
+      },
+      {
+        "degree": 7,
+        "count": 6
+      },
+      {
+        "degree": 8,
+        "count": 1
+      },
+      {
+        "degree": 9,
+        "count": 18
+      },
+      {
+        "degree": 10,
+        "count": 10
+      },
+      {
+        "degree": 11,
+        "count": 13
+      },
+      {
+        "degree": 12,
+        "count": 6
+      },
+      {
+        "degree": 13,
+        "count": 10
+      },
+      {
+        "degree": 14,
+        "count": 12
+      },
+      {
+        "degree": 15,
+        "count": 5
+      },
+      {
+        "degree": 16,
+        "count": 4
+      },
+      {
+        "degree": 17,
+        "count": 4
+      },
+      {
+        "degree": 18,
+        "count": 4
+      },
+      {
+        "degree": 19,
+        "count": 2
+      },
+      {
+        "degree": 20,
+        "count": 1
+      },
+      {
+        "degree": 21,
+        "count": 1
+      }
+    ]
+  },
+  "workplaces": {
+    "count": 15,
+    "size_histogram": [
+      {
+        "size": 1,
+        "count": 1
+      },
+      {
+        "size": 2,
+        "count": 8
+      },
+      {
+        "size": 3,
+        "count": 1
+      },
+      {
+        "size": 4,
+        "count": 3
+      },
+      {
+        "size": 8,
+        "count": 1
+      },
+      {
+        "size": 10,
+        "count": 1
+      }
+    ]
+  }
+}

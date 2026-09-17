@@ -135,6 +135,20 @@ def load_agent_memory(agent_id):
     return data if isinstance(data, list) else []
 
 
+def known_agent_ids():
+    """Agent ids that have memory persisted in ``MEMORY_DIR`` — i.e. have run."""
+    try:
+        names = os.listdir(MEMORY_DIR)
+    except OSError:
+        return []
+    ids = []
+    for name in names:
+        match = re.fullmatch(r"agent_(\d+)\.json", name)
+        if match:
+            ids.append(int(match.group(1)))
+    return sorted(ids)
+
+
 def save_agent_memory(agent):
     os.makedirs(MEMORY_DIR, exist_ok=True)
     with open(_memory_path(agent["id"]), "w", encoding="utf-8") as f:

@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "slug": "绍兴",
+  "name": "绍兴市",
+  "display_name": "绍兴市, 浙江省, 中国",
+  "created_at": "2026-09-15T16:47:23+00:00",
+  "place": {
+    "query": "绍兴",
+    "name": "绍兴市",
+    "display_name": "绍兴市, 浙江省, 中国",
+    "lat": 29.9992425,
+    "lng": 120.576854,
+    "bbox": [
+      29.869242500000002,
+      120.446854,
+      30.1292425,
+      120.70685399999999
+    ],
+    "kind": "city",
+    "scale": "large",
+    "country": "中国",
+    "country_code": "cn",
+    "population": 4912239,
+    "source": "nominatim",
+    "osm_id": 3316522,
+    "osm_type": "relation"
+  },
+  "scale": "large",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 29.999243,
+      "lng": 120.576854,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.010372725
+    },
+    "nodes": 77
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 100,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-15T16:47:23+00:00",
+      "action": "map.virtual",
+      "scale": "large",
+      "seed": 1594383148
+    },
+    {
+      "at": "2026-09-15T16:52:19+00:00",
+      "action": "map.real",
+      "nodes": 77,
+      "bbox": [
+        29.869242500000002,
+        120.446854,
+        30.1292425,
+        120.70685399999999
+      ]
+    },
+    {
+      "at": "2026-09-15T16:52:19+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-15T16:52:19+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim"
+    },
+    {
+      "at": "2026-09-15T16:52:19+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_tier1_district",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-16T12:58:59+00:00",
+      "action": "knowledge",
+      "source": "map",
+      "industries": [
+        "教育"
+      ]
+    },
+    {
+      "at": "2026-09-16T12:59:42+00:00",
+      "action": "knowledge",
+      "source": "stub",
+      "industries": []
+    }
+  ],
+  "updated_at": "2026-09-16T12:59:42+00:00"
+}

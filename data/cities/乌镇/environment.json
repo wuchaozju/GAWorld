@@ -1,0 +1,34 @@
+{
+  "city": "乌镇",
+  "climate": "temperate",
+  "background": "中国·乌镇。小镇，温带气候。当地经济与就业结构与其规模相称，居民对物价、就业与公共服务的变化较为敏感；社会秩序稳定。",
+  "environment": {
+    "enabled": true,
+    "event_chance": 0.6,
+    "max_events_per_tick": 2,
+    "natural_events": [
+      "阴雨天气，气温偏低",
+      "强冷空气南下，降温明显",
+      "早晨霜冻，道路结冰",
+      "大风降温，体感寒冷",
+      "空气质量良好，适宜出行"
+    ],
+    "social_events": [
+      "集市开集，镇中心人流增加",
+      "村口道路施工，绕行通行",
+      "社区义诊活动",
+      "农产品收购价格波动",
+      "乡镇文化演出"
+    ]
+  },
+  "external_environment": {
+    "enabled": true,
+    "seed": 3594709176,
+    "max_events_per_tick": 3,
+    "generator": {
+      "mode": "llm",
+      "history_days": 3,
+      "description": "中国的乌镇，小镇，温带气候，季节性天气变化明显；当地经济与就业结构随规模而定，居民对物价、就业与公共服务变化敏感。"
+    }
+  }
+}

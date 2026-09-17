@@ -119,6 +119,7 @@ from gaworld.personality import personality_line
 from gaworld.events.life import life_event_dir
 from gaworld.memory.store import (
     append_agent_log,
+    known_agent_ids,
     load_agent_actions,
     load_agent_locations,
     load_agent_location_action_bias,
@@ -253,8 +254,51 @@ def reset_simulation():
             _clear_dir(output_dir)
     save_sim_state({
         "last_day": 0,
+        "agent_last_day": {},
         "memory_model_version": MEMORY_MODEL_VERSION,
     })
+
+
+def _agent_last_day_map(sim_state):
+    """Per-agent day cursors, migrating state files written before they existed."""
+    per_agent = sim_state.get("agent_last_day")
+    if isinstance(per_agent, dict):
+        return {str(key): value for key, value in per_agent.items()}
+    global_last = sim_state.get("last_day", 0)
+    if not isinstance(global_last, int) or global_last <= 0:
+        return {}
+    # Old state file: every agent with memory on disk ran up to the one global
+    # cursor, so seed them all with it and let per-agent tracking take over.
+    return {str(aid): global_last for aid in known_agent_ids()}
+
+
+def _resume_start_day(agent_day_cursor, agent_ids):
+    """Sim day this run resumes on, counted only over ``agent_ids``.
+
+    ``last_day`` is a single world-wide cursor, so an agent that had never run
+    used to inherit however many years other agents had accumulated — a brand
+    new resident woke up in 2047 instead of on the configured start date. Only
+    the agents in this run count: if none of them has ever run, the calendar
+    starts over at Day 1.
+    """
+    days = []
+    for aid in agent_ids:
+        value = agent_day_cursor.get(str(aid))
+        if isinstance(value, int) and value > 0:
+            days.append(value)
+    return max(days) + 1 if days else 1
+
+
+def _persist_sim_day(day, agent_day_cursor, agent_ids):
+    """Record ``day`` as lived by ``agent_ids``, then write the sim state."""
+    for aid in agent_ids:
+        agent_day_cursor[str(aid)] = day
+    save_sim_state({
+        "last_day": day,
+        "agent_last_day": agent_day_cursor,
+        "memory_model_version": MEMORY_MODEL_VERSION,
+    })
+
 
 def visualize_social_network(
     agents,
@@ -416,6 +460,62 @@ MAP_MODE = str(CONFIG.get("map_mode", "virtual")).lower()
 REAL_MAP_PATH = CONFIG.get("real_map_path", "data/hangzhou_real.geojson")
 PRINT_AGENT_PROFILE = CONFIG.get("print_agent_profile", False)
 BACKGROUND = CONFIG.get("background", "")
+
+
+def _load_city_context(config):
+    """The selected city's knowledge base, or an empty context without one."""
+    from gaworld.city.context import load_context
+
+    return load_context(config)
+
+
+#: Last sim-day on which a city-news refresh was attempted. The fetch itself is
+#: gated on *real* elapsed time inside ``news.refresh``; this only stops us
+#: re-entering that check on every tick of the same day.
+_CITY_NEWS_LAST_DAY = [-1]
+
+
+def _refresh_city_news(context, day):
+    """Pull fresh local news if the real-time TTL has expired.
+
+    Called once per sim-day. Because the TTL is wall-clock, a 365-day run inside
+    one afternoon performs a handful of fetches, not 365 — see gaworld/city/news.py.
+    """
+    cfg = CONFIG.get("city_news", {}) or {}
+    if not context.slug or not cfg.get("enabled", True):
+        return
+    if _CITY_NEWS_LAST_DAY[0] == int(day or 0):
+        return
+    _CITY_NEWS_LAST_DAY[0] = int(day or 0)
+    try:
+        from gaworld.city.bundle import resolve_city
+        from gaworld.city.context import clear_cache
+        from gaworld.city.create import default_search
+        from gaworld.city.news import DEFAULT_TTL_HOURS, is_stale, refresh
+
+        bundle = resolve_city(context.slug)
+        if not is_stale(context.news, ttl_hours=float(cfg.get("ttl_hours", DEFAULT_TTL_HOURS))):
+            return
+        refresh(
+            bundle.news_path, bundle.name, search_fn=default_search,
+            ttl_hours=float(cfg.get("ttl_hours", DEFAULT_TTL_HOURS)),
+        )
+        clear_cache()
+        from gaworld.city.context import load_context
+
+        context.news = load_context(CONFIG).news
+    except Exception as exc:  # noqa: BLE001 - news is enrichment, never critical
+        _LOG.warning("city news refresh failed: %s", exc)
+
+
+def _city_news_block(context, day):
+    """This sim-day's slice of the city's local headlines (may be empty)."""
+    from gaworld.city.news import for_sim_day, prompt_block
+
+    _refresh_city_news(context, day)
+    items = for_sim_day(context.news, int(day or 0))
+    text = prompt_block(items)
+    return f"近期本地消息：{text}" if text else ""
 MEMORY_MODEL_VERSION = int(CONFIG.get("memory_model_version", 1))
 REQUIRE_CLEAN_RESET_ON_MEMORY_MODEL_CHANGE = bool(
     CONFIG.get("require_clean_reset_on_memory_model_change", False)
@@ -2710,13 +2810,15 @@ def run_simulation():
     if PRINT_AGENT_PROFILE:
         print_agent_profiles([a["id"] for a in agents])
     start_day = 1
+    agent_day_cursor = {}
     if STATEFUL:
         sim_state = load_sim_state()
         _enforce_memory_model_compat(sim_state)
-        # Resume day count for persistent simulations.
-        last_day = sim_state.get("last_day", 0)
-        if isinstance(last_day, int) and last_day >= 0:
-            start_day = last_day + 1
+        # Resume day count for persistent simulations, per agent: agents that
+        # have never run start the calendar at Day 1 rather than inheriting
+        # someone else's elapsed years.
+        agent_day_cursor = _agent_last_day_map(sim_state)
+        start_day = _resume_start_day(agent_day_cursor, AGENT_IDS)
     if STATEFUL:
         for agent in agents:
             agent["memory"] = load_agent_memory(agent["id"])
@@ -2791,6 +2893,12 @@ def run_simulation():
         except OSError:
             pass
     background_text = str(BACKGROUND).strip()
+    # The selected city's industry profile rides along on the background so every
+    # cognition prompt knows what kind of place this is. Empty without a city.
+    _city_context = _load_city_context(CONFIG)
+    _city_block = _city_context.profile.prompt_block()
+    if _city_block:
+        background_text = f"{background_text} {_city_block}".strip()
     news_sources = load_news_sources(NEWS_SOURCES_PATH) if NEWS_ENABLED else []
     news_cache = []
     if NEWS_ENABLED:
@@ -2802,7 +2910,16 @@ def run_simulation():
         print(f"ℹ️ 未找到新闻源列表或列表为空：{NEWS_SOURCES_PATH}，将主要使用 Web 搜索。")
     if NEWS_ENABLED and not news_cache and NEWS_USE_CACHE_FIRST:
         print(f"ℹ️ 新闻缓存为空或未找到：{NEWS_CACHE_PATH}，将实时抓取网页。")
+    # City knowledge goes into every resident's external-info store, so it is
+    # retrieved by the RAG path that already exists rather than needing a
+    # parallel city-level query. Seeded independently of external_rag.bootstrap:
+    # knowing what your own city does for a living is not optional enrichment.
+    _city_chunks = _city_context.rag_chunks()
     for agent in agents:
+        for chunk in _city_chunks:
+            _store_external_info_for_agent(
+                agent, chunk, timestamp=None, source="city_knowledge", persist=STATEFUL
+            )
         seeded = _bootstrap_agent_external_rag(
             agent,
             news_cache=news_cache,
@@ -2810,6 +2927,8 @@ def run_simulation():
         )
         if seeded:
             print(f"🧱 {agent['name']} 初始化 RAG 条目：{len(seeded)}")
+    if _city_chunks:
+        print(f"🏙️ 城市知识已写入 {len(agents)} 位居民的 RAG：{len(_city_chunks)} 条/人")
 
     # ----- PHASE 2: Build social network + initialise per-agent edges and weights -----
     social_net = build_social_network(agents)
@@ -4330,10 +4449,7 @@ def run_simulation():
                 period, day_context, day_desc, daily_logs, day_env_events, day_env_context
             )
             if STATEFUL:
-                save_sim_state({
-                    "last_day": day,
-                    "memory_model_version": MEMORY_MODEL_VERSION,
-                })
+                _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
             continue
         llm_budget_by_agent = {}
         daily_schedules = {}
@@ -4507,7 +4623,11 @@ def run_simulation():
                     },
                 )
             if background_text:
-                env_context = f"背景：{background_text} 当前环境事件：{env_context}"
+                # Local headlines rotate per sim-day (the cache itself refreshes
+                # on real time), so a long run keeps meeting new stories.
+                _news_block = _city_news_block(_city_context, day)
+                _bg = f"{background_text} {_news_block}".strip() if _news_block else background_text
+                env_context = f"背景：{_bg} 当前环境事件：{env_context}"
             hook_bus.emit(
                 "on_time_tick",
                 day=day,
@@ -4766,10 +4886,7 @@ def run_simulation():
             extension_state=extension_state,
         )
         if STATEFUL:
-            save_sim_state({
-                "last_day": day,
-                "memory_model_version": MEMORY_MODEL_VERSION,
-            })
+            _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
 
     print("\n✅ 模拟完成")
     if visualizer is not None:

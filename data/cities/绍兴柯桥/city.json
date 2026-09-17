@@ -81,7 +81,17 @@
       "preset": "cn_county_town",
       "seed": 42,
       "replace": false
+    },
+    {
+      "at": "2026-09-16T12:59:42+00:00",
+      "action": "knowledge",
+      "source": "map",
+      "industries": [
+        "交通物流",
+        "文旅休闲",
+        "医疗健康"
+      ]
     }
   ],
-  "updated_at": "2026-09-11T08:44:34+00:00"
+  "updated_at": "2026-09-16T12:59:42+00:00"
 }

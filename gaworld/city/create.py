@@ -23,6 +23,7 @@ from gaworld.city import bundle as bundle_mod
 from gaworld.city.bundle import CityBundle, city_root, new_manifest, slugify
 from gaworld.city.environment import build_environment
 from gaworld.city.geocode import GeocodeError, Place, geocode, offline_place
+from gaworld.city.knowledge import CityProfile, build_from_map, build_from_web, map_category_counts
 from gaworld.city.osm import OSMError, fetch_bundle
 from gaworld.city.procedural import generate_citymap, seed_from_name
 from gaworld.logging_setup import get_logger
@@ -78,6 +79,51 @@ def resolve_place(
     return place
 
 
+def default_search(query: str) -> list[dict[str, str]]:
+    """Web search for the city layer, reusing the simulator's own engines."""
+    from gaworld.settings import CONFIG
+    from gaworld.sim._news import web_search
+
+    _engine, results = web_search(query, config=(CONFIG.get("news", {}) or {}))
+    return results
+
+
+def default_llm(prompt: str) -> str:
+    from gaworld.llm.providers import call_llm
+
+    return call_llm(prompt, task="city_knowledge")
+
+
+def build_knowledge(
+    city: CityBundle,
+    place: Place,
+    *,
+    offline: bool = False,
+    search_fn: Callable[[str], list[dict[str, str]]] | None = None,
+    llm_fn: Callable[[str], str] | None = None,
+) -> CityProfile:
+    """Research the city, degrading to map statistics then to a bare stub."""
+    name = place.name or city.name
+    if not offline:
+        try:
+            researched = build_from_web(
+                name, search_fn=search_fn or default_search, llm_fn=llm_fn or default_llm
+            )
+        except Exception as exc:  # noqa: BLE001 - knowledge must never block creation
+            _LOG.warning("city knowledge research failed for %s: %s", name, exc)
+            researched = None
+        if researched is not None:
+            return researched
+
+    counts: dict[str, int] = {}
+    if city.real_map_path.exists():
+        try:
+            counts = map_category_counts(json.loads(city.real_map_path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            counts = {}
+    return build_from_map(name, counts)
+
+
 def create_city(
     name: str,
     *,
@@ -88,6 +134,8 @@ def create_city(
     root: Path | str | None = None,
     geocode_fn: Callable[..., Place] | None = None,
     overpass: Callable[[str, int], dict[str, Any]] | None = None,
+    search_fn: Callable[[str], list[dict[str, str]]] | None = None,
+    llm_fn: Callable[[str], str] | None = None,
     seed: int | None = None,
 ) -> CityBundle:
     """Create a city bundle for *name* and return it.
@@ -172,6 +220,21 @@ def create_city(
         encoding="utf-8",
     )
     city.record("environment", climate=build_environment(place)["climate"])
+
+    # 4. Knowledge base — what the city *is* economically. Best effort, and
+    #    never fatal: a city with no industry profile still simulates fine, it
+    #    just does not steer its residents' careers.
+    profile = build_knowledge(
+        city, place, offline=offline, search_fn=search_fn, llm_fn=llm_fn
+    )
+    city.knowledge_path.write_text(
+        json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    city.record(
+        "knowledge",
+        source=profile.source,
+        industries=[i.name for i in profile.top_industries()],
+    )
 
     city.record("create", offline=offline, source=place.source)
     city.save()

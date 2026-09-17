@@ -64,10 +64,14 @@ class TestInterestsPlugin(unittest.TestCase):
         agents = [{"id": 1, "name": "甲"}]
         calls = {}
 
-        def fake_bootstrap(agents_arg, *, cache_path, memory_dir, llm, max_items, stateful):
+        def fake_bootstrap(
+            agents_arg, *, cache_path, memory_dir, llm, max_items, stateful,
+            city_hint="", city_signature="",
+        ):
             calls.update(
                 agents=agents_arg, cache_path=cache_path, memory_dir=memory_dir,
                 max_items=max_items, stateful=stateful,
+                city_hint=city_hint, city_signature=city_signature,
             )
 
         with patch("gaworld.interests.bootstrap_growth_profiles", fake_bootstrap), \
@@ -78,6 +82,10 @@ class TestInterestsPlugin(unittest.TestCase):
         self.assertEqual(calls["cache_path"], "output/custom.json")
         self.assertEqual(calls["max_items"], 4)
         self.assertTrue(calls["stateful"])
+        # No city selected in this context, so the city channel stays inert and
+        # derivation is byte-identical to the pre-city-knowledge behaviour.
+        self.assertEqual(calls["city_hint"], "")
+        self.assertEqual(calls["city_signature"], "")
 
     def test_episode_compose_fills_growth_keys(self):
         ctx = _make_ctx({"enabled": True})

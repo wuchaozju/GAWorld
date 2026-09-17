@@ -52,6 +52,19 @@ class InterestsPlugin(Plugin):
         ctx.bus.on("growth.step", self._grow_from_step)
         ctx.bus.on("on_day_end", self._day_end_evolution, priority=10)
 
+    # -- helpers -------------------------------------------------------------
+
+    @staticmethod
+    def _city_context(sim):
+        """The selected city's knowledge, or an empty context.
+
+        Never raises: without a city (or with a broken bundle) growth
+        derivation must behave exactly as it did before this feature.
+        """
+        from gaworld.city.context import load_context
+
+        return load_context(sim.config)
+
     # -- hooks ---------------------------------------------------------------
 
     def _bootstrap(self, hook_ctx):
@@ -61,6 +74,7 @@ class InterestsPlugin(Plugin):
             for agent in agents:
                 agent["growth_profile"] = {}
             return
+        city = self._city_context(sim)
         self._impl.bootstrap_growth_profiles(
             agents,
             cache_path=self._cfg.get(
@@ -70,6 +84,8 @@ class InterestsPlugin(Plugin):
             llm=lambda prompt: sim.llm(prompt, task="growth_profile", agent_id=None),
             max_items=self._max_items,
             stateful=bool(sim.config.get("stateful", False)),
+            city_hint=city.growth_hint(),
+            city_signature=city.signature(),
         )
         for agent in agents:
             context = self._impl.format_growth_context(
@@ -175,6 +191,10 @@ class InterestsPlugin(Plugin):
         decay_cfg = dict(self._cfg.get("decay", {}) or {})
         evolution_cfg = dict(self._cfg.get("evolution", {}) or {})
         stateful = bool(sim.config.get("stateful", False))
+        # Same list for everyone today — it describes the city, not the person.
+        # Which residents actually take it up is the per-agent dice roll inside
+        # evolve_growth_profile.
+        opportunity_candidates = self._city_context(sim).profile.labor_demand
         for agent in agents:
             profile = agent.get("growth_profile")
             if not profile:
@@ -204,6 +224,7 @@ class InterestsPlugin(Plugin):
                 profile,
                 day,
                 social_candidates=candidates,
+                opportunity_candidates=opportunity_candidates,
                 config=evolution_cfg,
                 max_items=self._max_items,
             )

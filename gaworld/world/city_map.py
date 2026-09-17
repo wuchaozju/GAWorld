@@ -783,7 +783,11 @@ def _compute_bounds(nodes):
 
 
 def _river_polyline(bounds, river):
-    points = river.get("path") or DEFAULT_RIVER["path"]
+    # An *explicitly empty* path means "this map has no river" and must survive;
+    # only a missing key falls back to the sample. `or` would collapse the two.
+    points = river.get("path")
+    if points is None:
+        points = DEFAULT_RIVER["path"]
     out = []
     for px, py in points:
         x = bounds["min_x"] + float(px) * (bounds["max_x"] - bounds["min_x"])
@@ -1967,7 +1971,11 @@ def _real_river_from_lnglat(nodes, river_spec, origin=None):
     ``_river_polyline``); we convert real coordinates to grid units, then to
     those fractions using the same bounds every other builder derives."""
     if not river_spec or not river_spec.get("lnglat"):
-        return dict(DEFAULT_RIVER)
+        # A *real* map with no river in its bundle has no river. Substituting
+        # the sample Qiantang here would paint ~16% of the tiles as water,
+        # invent bridges over it, and tell the LLM the city has a river it has
+        # never had. The virtual map keeps its default (it is invented anyway).
+        return {"name": "", "path": [], "width": 0.0}
     bounds = _compute_bounds(nodes)
     span_x = max(1e-6, bounds["max_x"] - bounds["min_x"])
     span_y = max(1e-6, bounds["max_y"] - bounds["min_y"])

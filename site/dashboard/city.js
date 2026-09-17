@@ -16,6 +16,9 @@
     selected: "",
     detail: null,
     busy: false,
+    mapView: null,
+    mapToken: 0,
+    knowledge: null,
   };
 
   function el(id) { return document.getElementById(id); }
@@ -75,8 +78,20 @@
     });
     // The server sorts presets alphabetically, which would otherwise leave
     // "aging_community" selected by default rather than the general-purpose one.
-    if (current && values.indexOf(current) !== -1) select.value = current;
-    else if (preferred && values.indexOf(preferred) !== -1) select.value = preferred;
+    var chosen = null;
+    if (current && values.indexOf(current) !== -1) chosen = current;
+    else if (preferred && values.indexOf(preferred) !== -1) chosen = preferred;
+    if (chosen == null) return;
+    select.value = chosen;
+    // Set the `selected` ATTRIBUTE too, not just the property: form.reset()
+    // (which the create form runs on success) restores each select to the
+    // option carrying that attribute, and with none set it silently falls back
+    // to the first option — i.e. the next city would quietly be generated with
+    // "aging_community" instead of the preset the operator last chose.
+    for (var i = 0; i < select.options.length; i += 1) {
+      if (select.options[i].value === chosen) select.options[i].setAttribute("selected", "selected");
+      else select.options[i].removeAttribute("selected");
+    }
   }
 
   // ------------------------------------------------------------- rendering
@@ -174,6 +189,167 @@
     );
   }
 
+  // ------------------------------------------------------------------- map
+
+  /* The preview reuses CityMapView — the renderer the console map panel and
+     the simviz replay already use — so a city looks here exactly as it will
+     when it runs. It expects a "trace"; a map with no agents and no frames is
+     a legitimate one, so we hand it `{map}` and render zero frames. */
+  function ensureMapView() {
+    if (state.mapView) return state.mapView;
+    var canvas = el("cityMapCanvas");
+    if (!canvas || typeof window.CityMapView !== "function") return null;
+    state.mapView = new window.CityMapView(canvas, {
+      getSelectedAgentId: function () { return null; },
+      emptyText: function () { return __("city.map_empty"); },
+    });
+    return state.mapView;
+  }
+
+  function setMapOverlay(message) {
+    var overlay = el("cityMapOverlay");
+    if (!overlay) return;
+    overlay.hidden = !message;
+    overlay.textContent = message || "";
+  }
+
+  async function loadMap(slug) {
+    var view = ensureMapView();
+    if (!view) return;
+    // Selecting cities faster than they load would let an earlier response
+    // paint over a later one; only the newest token is allowed to render.
+    var token = (state.mapToken += 1);
+
+    var card = el("cityMapCard");
+    if (!slug) {
+      if (card) card.hidden = true;
+      view.setTrace(null);
+      view.render([]);
+      setMapOverlay("");
+      status(el("cityMapMeta"), "");
+      return;
+    }
+    if (card) card.hidden = false;
+    var nameNode = el("cityMapName");
+    if (nameNode) nameNode.textContent = state.detail ? state.detail.name : "";
+
+    setMapOverlay(__("city.map_loading"));
+    try {
+      var payload = await api("/api/city/map?city=" + encodeURIComponent(slug));
+      if (token !== state.mapToken) return;
+      view.setTrace({ map: payload.map, agents: [], meta: {} });
+      view.render([]);
+      setMapOverlay("");
+      var meta = payload.meta || {};
+      var bits = [
+        __(meta.mode === "real" ? "city.map_real" : "city.map_procedural"),
+        meta.nodes + " " + __("city.map_nodes"),
+        meta.edges + " " + __("city.map_edges"),
+      ];
+      if (meta.river) bits.push(meta.river);
+      if ((meta.metro_lines || []).length) {
+        bits.push(__("city.map_metro") + " " + meta.metro_lines.join("/"));
+      }
+      status(el("cityMapMeta"), bits.join(" · "));
+    } catch (err) {
+      if (token !== state.mapToken) return;
+      view.setTrace(null);
+      view.render([]);
+      setMapOverlay(err.message);
+      status(el("cityMapMeta"), "");
+    }
+  }
+
+  // ------------------------------------------------------- knowledge base
+
+  function renderKnowledge(payload) {
+    var card = el("cityKnowledgeCard");
+    var node = el("cityKnowledge");
+    if (!card || !node) return;
+    card.hidden = false;
+    state.knowledge = payload;
+
+    var profile = (payload && payload.profile) || {};
+    el("cityKnowledgeSource").textContent = payload && payload.empty
+      ? __("city.knowledge_none")
+      : __("city.knowledge_source_" + (profile.source || "stub"));
+
+    if (!payload || payload.empty) {
+      node.innerHTML = '<p class="city-hint">' + esc(__("city.knowledge_empty")) + "</p>";
+      return;
+    }
+
+    var arrows = { growing: "↑", declining: "↓", stable: "·" };
+    var rows = (profile.industries || []).map(function (industry) {
+      return (
+        '<li><span class="city-ind-trend is-' + esc(industry.trend) + '">' +
+          esc(arrows[industry.trend] || "·") + "</span>" +
+        "<b>" + esc(industry.name) + "</b>" +
+        '<span class="city-ind-weight">' + Math.round((industry.weight || 0) * 100) + "%</span>" +
+        '<span class="city-ind-note">' + esc(industry.note || "") + "</span></li>"
+      );
+    }).join("");
+
+    var channels = (payload && payload.channels) || {};
+    var economy = Object.keys(channels.economy || {}).sort().map(function (key) {
+      return key + " " + channels.economy[key];
+    }).join("  ");
+
+    var meta = [];
+    if (profile.summary) meta.push("<p>" + esc(profile.summary) + "</p>");
+    if ((profile.priorities || []).length) {
+      meta.push("<p><em>" + esc(__("city.knowledge_priorities")) + "</em>" +
+                esc(profile.priorities.join("、")) + "</p>");
+    }
+    if ((profile.labor_demand || []).length) {
+      meta.push("<p><em>" + esc(__("city.knowledge_demand")) + "</em>" +
+                esc(profile.labor_demand.join("、")) + "</p>");
+    }
+    if (economy) {
+      meta.push("<p><em>" + esc(__("city.knowledge_income")) + "</em>" + esc(economy) + "</p>");
+    }
+    var sources = (profile.sources || []).slice(0, 4).map(function (s) {
+      return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' +
+             esc(s.title || s.url) + "</a>";
+    }).join(" · ");
+    if (sources) meta.push('<p class="city-knowledge-sources">' + sources + "</p>");
+
+    node.innerHTML = (rows ? '<ul class="city-industries">' + rows + "</ul>" : "") + meta.join("");
+  }
+
+  async function loadKnowledge(slug) {
+    var card = el("cityKnowledgeCard");
+    if (!slug) {
+      if (card) card.hidden = true;
+      return;
+    }
+    try {
+      renderKnowledge(await api("/api/city/knowledge?city=" + encodeURIComponent(slug)));
+    } catch (err) {
+      if (card) card.hidden = false;
+      el("cityKnowledge").innerHTML = '<p class="city-hint">' + esc(err.message) + "</p>";
+    }
+  }
+
+  function knowledgeAction(path, body, busyKey) {
+    return async function () {
+      if (state.busy || !state.detail) return;
+      var node = el("cityKnowledgeStatus");
+      setBusy(true);
+      status(node, __(busyKey), "busy");
+      try {
+        var result = await post(path, Object.assign({ city: state.detail.slug }, body || {}));
+        if (result.profile) renderKnowledge(result);
+        else await loadKnowledge(state.detail.slug);
+        status(node, __("city.knowledge_done"), "ok");
+      } catch (err) {
+        status(node, err.message, "error");
+      } finally {
+        setBusy(false);
+      }
+    };
+  }
+
   function render() {
     renderTopMeta();
     renderList();
@@ -194,6 +370,10 @@
     state.selected = slug;
     state.detail = slug ? await api("/api/city/detail?city=" + encodeURIComponent(slug)) : null;
     render();
+    // Not awaited: the detail card and its forms are usable immediately, and
+    // building a real map server-side takes a moment.
+    loadMap(slug);
+    loadKnowledge(slug);
   }
 
   function numberOrNull(id) {
@@ -306,6 +486,12 @@
 
   function bind() {
     el("cityCreateForm").addEventListener("submit", onCreate);
+    el("cityKnowledgeRebuild").addEventListener(
+      "click", knowledgeAction("/api/city/knowledge", {}, "city.knowledge_building"));
+    el("cityKnowledgeOffline").addEventListener(
+      "click", knowledgeAction("/api/city/knowledge", { offline: true }, "city.knowledge_building"));
+    el("cityNewsRefresh").addEventListener(
+      "click", knowledgeAction("/api/city/news", { force: true }, "city.news_fetching"));
 
     el("cityList").addEventListener("click", function (event) {
       var item = event.target.closest(".city-item");
