@@ -29,8 +29,12 @@ from pathlib import Path
 
 from gaworld.city.agents import AgentError, add_agent, add_population, migrate_agent
 from gaworld.city.bundle import CityNotFoundError, delete_city, list_cities, resolve_city
-from gaworld.city.create import CityCreationError, create_city
-from gaworld.city.geocode import SCALE_BBOX_HALF_DEG
+from gaworld.city.create import CityCreationError, build_knowledge, create_city, default_search
+from gaworld.city.geocode import SCALE_BBOX_HALF_DEG, Place
+from gaworld.city.knowledge import CityProfile
+from gaworld.city.news import DEFAULT_TTL_HOURS
+from gaworld.city.news import load as news_load
+from gaworld.city.news import refresh as news_refresh
 from gaworld.population.schema import PRESETS
 
 DEFAULT_SOURCE_CSV = "data/hangzhou_agents_state_init.csv"
@@ -88,6 +92,17 @@ def _build_parser() -> argparse.ArgumentParser:
     move.add_argument("--from-md", default=DEFAULT_SOURCE_MD)
     move.add_argument("--from-city", help="Source city slug; overrides --from-csv/--from-md")
     move.add_argument("--keep-residence", action="store_true", help="Do not re-home onto this city")
+
+    know = sub.add_parser("knowledge", help="Show or rebuild a city's knowledge base")
+    know.add_argument("city")
+    know.add_argument("--rebuild", action="store_true", help="Research the city again")
+    know.add_argument("--offline", action="store_true", help="Rebuild from map statistics only")
+
+    news_cmd = sub.add_parser("news", help="Show or refresh a city's local news")
+    news_cmd.add_argument("city")
+    news_cmd.add_argument("--refresh", action="store_true", help="Fetch now if the cache is stale")
+    news_cmd.add_argument("--force", action="store_true", help="Fetch even if the cache is fresh")
+    news_cmd.add_argument("--ttl-hours", type=float, default=DEFAULT_TTL_HOURS)
 
     use = sub.add_parser("use", help="Point dashboard_config.json at a city")
     use.add_argument("city")
@@ -196,6 +211,60 @@ def _cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_knowledge(args: argparse.Namespace) -> int:
+    city = resolve_city(args.city)
+    if args.rebuild:
+        place = Place(**{**(city.manifest.get("place") or {}), "bbox": tuple(
+            (city.manifest.get("place") or {}).get("bbox") or (0, 0, 0, 0))})
+        profile = build_knowledge(city, place, offline=args.offline)
+        city.knowledge_path.write_text(
+            json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        city.record("knowledge", source=profile.source,
+                    industries=[i.name for i in profile.top_industries()])
+        city.save()
+        print(f"✓ rebuilt ({profile.source})")
+    else:
+        profile = CityProfile.from_dict(
+            json.loads(city.knowledge_path.read_text(encoding="utf-8"))
+            if city.knowledge_path.exists() else {}
+        )
+    if profile.is_empty:
+        print(f"{city.slug}: no knowledge yet — run with --rebuild")
+        return 0
+    print(f"{city.display_name}  [{profile.source}]")
+    if profile.summary:
+        print(f"  {profile.summary}")
+    for industry in sorted(profile.industries, key=lambda i: -i.weight):
+        arrow = {"growing": "↑", "declining": "↓", "stable": "·"}[industry.trend]
+        print(f"  {arrow} {industry.name:<10} {industry.weight:>5.0%}  {industry.note}")
+    if profile.priorities:
+        print("  发展重点: " + "、".join(profile.priorities))
+    if profile.labor_demand:
+        print("  本地紧缺: " + "、".join(profile.labor_demand))
+    conditions = profile.industry_conditions()
+    if conditions:
+        print("  收入系数: " + "  ".join(f"{k}={v}" for k, v in sorted(conditions.items())))
+    for source in profile.sources[:5]:
+        print(f"  · {source.get('title', '')} {source.get('url', '')}")
+    return 0
+
+
+def _cmd_news(args: argparse.Namespace) -> int:
+    city = resolve_city(args.city)
+    if args.refresh or args.force:
+        cache = news_refresh(
+            city.news_path, city.name, search_fn=default_search,
+            ttl_hours=args.ttl_hours, force=args.force,
+        )
+    else:
+        cache = news_load(city.news_path)
+    print(f"{city.display_name}: {len(cache.items)} 条，最后抓取 {cache.last_fetch or '从未'}")
+    for item in cache.items[-10:]:
+        print(f"  · {item.title}")
+    return 0
+
+
 def _cmd_use(args: argparse.Namespace) -> int:
     config: dict = {}
     if DASHBOARD_CONFIG.exists():
@@ -229,6 +298,8 @@ _COMMANDS = {
     "add-agents": _cmd_add_agents,
     "add-agent": _cmd_add_agent,
     "migrate": _cmd_migrate,
+    "knowledge": _cmd_knowledge,
+    "news": _cmd_news,
     "use": _cmd_use,
     "delete": _cmd_delete,
 }

@@ -37,6 +37,7 @@ const state = {
 };
 
 const els = {
+  citySelect: document.getElementById("citySelect"),
   agentIdsInput: document.getElementById("agentIdsInput"),
   simDaysInput: document.getElementById("simDaysInput"),
   secondsPerDayInput: document.getElementById("secondsPerDayInput"),
@@ -326,6 +327,7 @@ function configPayloadFromForm() {
   const defaultProvider = els.defaultProviderSelect.value;
   const scheduleProvider = els.scheduleProviderSelect.value || defaultProvider;
   return {
+    city: els.citySelect ? els.citySelect.value : "",
     agent_ids: els.agentIdsInput.value,
     // The horizon field is expressed in the step unit; the server does the
     // calendar math (leap years, 28/31-day months) and derives sim_days.
@@ -350,9 +352,66 @@ function configPayloadFromForm() {
   };
 }
 
+// The run happens in whichever city is selected here. A city that has no
+// residents yet cannot be run at all, so it is labelled and disabled rather
+// than offered and then rejected by the server.
+function renderCityChoices(cities, selected) {
+  const select = els.citySelect;
+  if (!select) return;
+  select.innerHTML = "";
+
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = __("sim.city_default");
+  select.appendChild(blank);
+
+  cities.forEach((city) => {
+    const option = document.createElement("option");
+    option.value = city.slug;
+    const map = city.map_mode === "real" ? __("sim.city_real") : __("sim.city_procedural");
+    option.textContent = `${city.display_name} · ${city.population} ${__("sim.city_agents")} · ${map}`;
+    if (!city.population) {
+      option.disabled = true;
+      option.textContent += ` (${__("sim.city_empty")})`;
+    }
+    select.appendChild(option);
+  });
+
+  const match = cities.some((city) => city.slug === selected && city.population);
+  select.value = match ? selected : "";
+  // Mirror onto the attribute: a later form.reset() restores the option
+  // carrying `selected`, and with none set it would silently snap back to
+  // "默认世界" — i.e. the next run would happen in a different city.
+  for (let i = 0; i < select.options.length; i += 1) {
+    if (select.options[i].value === select.value) select.options[i].setAttribute("selected", "selected");
+    else select.options[i].removeAttribute("selected");
+  }
+  updateCityHint();
+}
+
+// Agent IDs are per-city, so switching cities can strand ids that point at
+// nobody. Surface the ceiling as you change the selection instead of letting
+// the run fail on the server.
+function updateCityHint() {
+  const select = els.citySelect;
+  if (!select || !state.config) return;
+  const city = (state.config.cities || []).find((item) => item.slug === select.value);
+  const max = city ? city.population : null;
+  if (max) {
+    els.agentIdsInput.placeholder = `1-${max}`;
+    // __f interpolates every {max}; String.replace with a string pattern would
+    // only substitute the first and leave a literal "{max}" in the tooltip.
+    els.agentIdsInput.title = __f("sim.city_ids_hint", { max: max });
+  } else {
+    els.agentIdsInput.placeholder = __("agent.ids_placeholder");
+    els.agentIdsInput.title = "";
+  }
+}
+
 async function loadConfig() {
   state.config = await api("/api/config");
   const cfg = state.config;
+  renderCityChoices(cfg.cities || [], cfg.city || "");
   els.agentIdsInput.value = (cfg.agent_ids || []).join(",");
   const span = cfg.sim_span || { unit: "day", count: cfg.sim_days || 1 };
   els.simDaysInput.value = span.count || 1;
@@ -1630,6 +1689,13 @@ function initFrameJson() {
 function bindEvents() {
   initCollapsibles();
   initFrameJson();
+  if (els.citySelect) els.citySelect.addEventListener("change", updateCityHint);
+  // applyTranslations() rewrites the Agent IDs placeholder from
+  // data-i18n-placeholder, and the console's cross-frame locale sync fires it
+  // *after* loadConfig — so re-assert the per-city range once it has run.
+  document.addEventListener("locale-changed", () => {
+    if (state.config) renderCityChoices(state.config.cities || [], els.citySelect.value);
+  });
   els.stepUnitSelect.addEventListener("change", onStepUnitChanged);
   els.fastForwardInput.addEventListener("change", onFastForwardChanged);
   els.saveConfigBtn.addEventListener("click", withBusy(els.saveConfigBtn, saveConfig));

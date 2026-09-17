@@ -114,6 +114,8 @@ def make_handler(backend):
                 return self._reply(
                     backend.trail(self._token(), since_ts=float(since) if since else None)
                 )
+            if path == "/api/twin/agents":
+                return self._reply(backend.agents(self._token()))
             if path == "/api/twin/life":
                 return self._reply(backend.life(self._token()))
             if path == "/api/twin/reports":
@@ -151,6 +153,9 @@ def make_handler(backend):
                 return self._reply(backend.authenticate(code))
             if path == "/api/twin/report":
                 return self._reply(backend.submit(self._token(), body))
+            if path == "/api/twin/bind":
+                payload = body if isinstance(body, dict) else {}
+                return self._reply(backend.bind(self._token(), payload.get("agent_id")))
             if path == "/api/twin/amend":
                 payload = body if isinstance(body, dict) else {}
                 return self._reply(backend.amend(
@@ -190,6 +195,10 @@ def build_backend(config=None):
         diary_dir=base.get("diary_output_dir", "output/diaries"),
         state_dir=base.get("state_output_dir", "output/state"),
         memory_dir=base.get("memory_dir", "output/memory"),
+        # The picker reads the simulator's own seed CSV, so it always offers
+        # exactly the residents of the selected city.
+        roster_path=base.get("csv_path", ""),
+        simulated_ids=base.get("agent_ids", ()),
     )
 
 
@@ -213,8 +222,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Serve the GAWorld mobile twin API")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8767)
-    parser.add_argument("--issue-code", type=int, metavar="AGENT_ID",
-                        help="print a new invite code for AGENT_ID and exit")
+    parser.add_argument("--issue-code", nargs="?", type=int, const=-1,
+                        metavar="AGENT_ID",
+                        help="print a new invite code and exit; with no AGENT_ID "
+                             "the code is unbound and the phone picks the agent")
     parser.add_argument("--label", default="", help="display label for --issue-code")
     args = parser.parse_args()
 
@@ -222,8 +233,11 @@ if __name__ == "__main__":
         from gaworld.twin import binding
 
         cfg = CONFIG.get("twin") or {}
+        # `--issue-code` with no value lands as the -1 sentinel: an unbound
+        # code, redeemed by a phone that then picks its own agent.
+        agent_id = None if args.issue_code == -1 else args.issue_code
         code = binding.issue_code(
-            agent_id=args.issue_code,
+            agent_id=agent_id,
             label=args.label,
             path=cfg.get("bindings_path", "data/twin_bindings.json"),
         )

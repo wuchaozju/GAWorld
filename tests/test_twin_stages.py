@@ -52,7 +52,8 @@ class _Ctx:
         return agent.setdefault("ext", {}).setdefault(str(plugin_id), {})
 
 
-def _report(report_id, ts, node_id="office", tag="work", note="", out_of_map=False):
+def _report(report_id, ts, node_id="office", tag="work", note="",
+            out_of_map=False, place=""):
     return {
         "report_id": report_id,
         "ts": ts,
@@ -62,6 +63,7 @@ def _report(report_id, ts, node_id="office", tag="work", note="", out_of_map=Fal
         "node_id": node_id,
         "snap_km": 0.2,
         "out_of_map": out_of_map,
+        "place": place,
         "action_tag": tag,
         "note": note,
     }
@@ -117,15 +119,42 @@ class TestTwinMirror(_TwinStageCase):
         self.assertEqual(self.agent["locations"]["current"], "家")
         self.assertEqual(step["_act"], "看书")
 
-    def test_mirror_skips_an_out_of_map_report_but_still_mirrors_the_action(self):
-        store.append_reports(7, [_report("a", 1000, node_id=None, out_of_map=True)], root=self.root)
+    def test_out_of_map_marks_the_agent_as_away_with_the_place_name(self):
+        # A fix outside the mapped city is still a real position. Leaving the
+        # agent in town would quietly assert something false.
+        store.append_reports(
+            7,
+            [_report("a", 1000, node_id=None, out_of_map=True, place="北京")],
+            root=self.root,
+        )
         step = self._fresh_step()
         stages.twin_mirror(self.agent, step, self.ctx, now_ts=1000 + 60)
 
-        # Location is NOT fabricated when the user is outside map coverage...
-        self.assertEqual(self.agent["locations"]["current"], "家")
-        # ...but the reported activity is still real and still mirrors.
+        self.assertEqual(self.agent["locations"]["current"], "异地（北京）")
+        self.assertEqual(step["_location"], "异地（北京）")
         self.assertIn("work", step["_act"])
+
+    def test_out_of_map_without_a_place_name_still_marks_away(self):
+        store.append_reports(
+            7,
+            [_report("a", 1000, node_id=None, out_of_map=True, place="")],
+            root=self.root,
+        )
+        step = self._fresh_step()
+        stages.twin_mirror(self.agent, step, self.ctx, now_ts=1000 + 60)
+        self.assertEqual(self.agent["locations"]["current"], "异地")
+
+    def test_out_of_map_never_snaps_to_a_nearest_node(self):
+        # Fabricating a node would poison the calibration corpus.
+        store.append_reports(
+            7,
+            [_report("a", 1000, node_id=None, out_of_map=True, place="北京")],
+            root=self.root,
+        )
+        step = self._fresh_step()
+        stages.twin_mirror(self.agent, step, self.ctx, now_ts=1000 + 60)
+        self.assertNotEqual(step["_location"], "office")
+        self.assertTrue(step["_location"].startswith("异地"))
 
     def test_mirror_does_nothing_for_an_agent_with_no_twin(self):
         step = self._fresh_step()

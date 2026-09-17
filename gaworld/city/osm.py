@@ -18,6 +18,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Any, Callable
 
 from gaworld.logging_setup import get_logger
@@ -25,10 +27,16 @@ from gaworld.logging_setup import get_logger
 _LOG = get_logger("gaworld.city.osm")
 
 # Rotate across public mirrors to survive rate-limiting (429) / timeouts (504).
+# Ordered by observed reliability, NOT arbitrarily: the main instance is the one
+# that actually answers from most networks, while the other two frequently hang
+# until the socket timeout rather than refusing fast. A dead mirror in front
+# costs DEFAULT_TIMEOUT on the very first query of every fetch, before
+# ``_preferred_mirror`` has anything to stick to — which is the difference
+# between a city in ~40s and one in ~4min that then falls back to procedural.
 OVERPASS_URLS = [
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
 USER_AGENT = "GAWorld-sim/1.0 (research; https://github.com/wuchaozju/GAWorld)"
 
@@ -93,6 +101,38 @@ def _mirror_order() -> list[str]:
     return list(OVERPASS_URLS)
 
 
+def _request_once(url: str, data: bytes, timeout: int) -> dict[str, Any]:
+    """One Overpass request, bounded by *timeout* in **wall-clock** seconds.
+
+    ``urlopen``'s own timeout applies per socket operation, so a mirror that
+    trickles the body back keeps resetting it and a single ``read()`` can run
+    for many minutes — we have measured 13 against a nominal 45s. Running the
+    request on a worker thread and refusing to wait past the budget is what
+    actually bounds it. The abandoned thread is a daemon and its socket still
+    carries the same timeout, so it dies on its own shortly after.
+    """
+    result: dict[str, Any] = {}
+
+    def work() -> None:
+        request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            result["payload"] = json.loads(response.read().decode("utf-8"))
+
+    # Deliberately NOT a `with` block: ThreadPoolExecutor.__exit__ calls
+    # shutdown(wait=True), which would block on the very thread we are trying to
+    # walk away from and reinstate the unbounded wait this function exists to
+    # prevent.
+    pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="overpass")
+    future = pool.submit(work)
+    try:
+        future.result(timeout=timeout)
+    except FuturesTimeout as exc:
+        raise TimeoutError(f"no response within {timeout}s") from exc
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+    return result.get("payload", {})
+
+
 def _default_overpass(query: str, timeout: int = DEFAULT_TIMEOUT) -> dict[str, Any]:
     global _preferred_mirror
 
@@ -105,9 +145,7 @@ def _default_overpass(query: str, timeout: int = DEFAULT_TIMEOUT) -> dict[str, A
         mirrors = mirrors[:1]
     for index, url in enumerate(mirrors):
         try:
-            request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+            payload = _request_once(url, data, timeout)
             # A rate-limited/overloaded mirror can return HTTP 200 with an empty
             # body and a "remark" instead of an error — treat that as retryable.
             if payload.get("remark") and not payload.get("elements"):

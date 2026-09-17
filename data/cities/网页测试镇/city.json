@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "slug": "网页测试镇",
+  "name": "网页测试镇",
+  "display_name": "网页测试镇",
+  "created_at": "2026-09-15T15:16:08+00:00",
+  "place": {
+    "query": "网页测试镇",
+    "name": "网页测试镇",
+    "display_name": "网页测试镇",
+    "lat": 30.2741,
+    "lng": 120.1551,
+    "bbox": [
+      30.2391,
+      120.11457308194262,
+      30.3091,
+      120.19562691805739
+    ],
+    "kind": "unknown",
+    "scale": "small",
+    "country": "",
+    "country_code": "",
+    "population": null,
+    "source": "offline",
+    "osm_id": null,
+    "osm_type": ""
+  },
+  "scale": "small",
+  "map": {
+    "mode": "virtual",
+    "virtual": "citymap.md"
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 0
+  },
+  "history": [
+    {
+      "at": "2026-09-15T15:16:08+00:00",
+      "action": "map.virtual",
+      "scale": "small",
+      "seed": 465997184
+    },
+    {
+      "at": "2026-09-15T15:16:08+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-15T15:16:08+00:00",
+      "action": "create",
+      "offline": true,
+      "source": "offline"
+    }
+  ],
+  "updated_at": "2026-09-15T15:16:08+00:00"
+}

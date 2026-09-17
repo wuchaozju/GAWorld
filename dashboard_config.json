@@ -23,16 +23,17 @@
   "sim_days": 365,
   "seconds_per_day": 10,
   "agent_ids": [
-    37
+    2
   ],
   "simulate_realtime": true,
   "time_step_minutes": null,
   "long_run": {
-    "enabled": true,
+    "enabled": false,
     "randomness": 1.0,
     "unit": "year"
   },
   "routine_change": {
     "randomness": 1.0
-  }
+  },
+  "city": "wuzhen"
 }

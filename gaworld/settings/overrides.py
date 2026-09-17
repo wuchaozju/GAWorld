@@ -83,7 +83,12 @@ def load_environment_config(path: str | None) -> dict[str, Any]:
 
 def apply_runtime_overrides(config: dict[str, Any]) -> dict[str, Any]:
     overrides = load_env_override()
-    deep_update(config, load_json_override("dashboard_config.json"))
+    # dashboard_config.json is the panel's live scratch file, not a committed
+    # setting. GAWORLD_IGNORE_LOCAL_CONFIG lets the test suite opt out of it so
+    # a city or horizon someone picked in the dashboard cannot silently become
+    # the configuration under test. See tests/conftest.py.
+    if os.environ.get("GAWORLD_IGNORE_LOCAL_CONFIG", "").strip() in ("", "0"):
+        deep_update(config, load_json_override("dashboard_config.json"))
     deep_update(config, overrides)
     deep_update(config, load_environment_config(config.get("environment_config_path")))
     # A selected city bundle (config["city"]) supplies its own map, environment

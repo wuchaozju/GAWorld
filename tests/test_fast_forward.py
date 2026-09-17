@@ -295,8 +295,15 @@ class TestFastForwardE2E(unittest.TestCase):
         # One digest per agent per day.
         self.assertEqual(mock.call_count("fast_forward_day"), 2 * 3)
 
-        # Per-agent logs carry the per-day fast-forward brief marker.
-        log_dir = os.path.join(self.tmp.name, "output", "logs")
+        # Per-agent logs carry the per-day fast-forward brief marker. Read the
+        # dirs off the config: a selected city moves the whole run tree under
+        # output/cities/<slug>/.
+        from gaworld.settings import CONFIG
+
+        log_dir = os.path.join(self.tmp.name, CONFIG.get("log_dir", "output/logs"))
+        diary_dir = os.path.join(
+            self.tmp.name, CONFIG.get("diary_output_dir", "output/diaries")
+        )
         for aid in (4, 5):
             with open(os.path.join(log_dir, f"agent_{aid}.log"), encoding="utf-8") as fh:
                 text = fh.read()
@@ -305,9 +312,7 @@ class TestFastForwardE2E(unittest.TestCase):
         # A diary file per agent per day.
         for aid in (4, 5):
             for day in (1, 2, 3):
-                path = os.path.join(
-                    self.tmp.name, "output", "diaries", f"agent_{aid}", f"day_{day:03d}.md"
-                )
+                path = os.path.join(diary_dir, f"agent_{aid}", f"day_{day:03d}.md")
                 self.assertTrue(os.path.exists(path), f"missing diary {path}")
 
 

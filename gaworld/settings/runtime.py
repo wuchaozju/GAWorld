@@ -92,6 +92,14 @@ def simulation_settings() -> dict[str, Any]:
             "runtime_absorb": False,
             "daily_quota_per_agent": 1,
         },
+        # Local news for the selected city (gaworld/city/news.py). Only does
+        # anything when `city` is set, so it is opt-in by construction. The TTL
+        # is REAL hours, not sim days: a 365-day run finishing in an afternoon
+        # performs a handful of fetches rather than 365.
+        "city_news": {
+            "enabled": True,
+            "ttl_hours": 6.0,
+        },
         # Simulation background (time/city/societal status prompt)
         "background": "2025年冬季，中国·杭州。经济发展中等偏稳，青年就业压力上升，生活成本偏高；社会秩序稳定但政策与舆论压力较高。",
         # Data sources
@@ -119,12 +127,22 @@ def simulation_settings() -> dict[str, Any]:
             # out of map rather than snapped to the nearest edge node.
             "max_snap_km": 3.0,
         },
+        # Root of the run artifact tree. Selecting a city repoints this (and
+        # every path below it) at `output/cities/<slug>/`, so two cities never
+        # share one memory store or one world clock.
+        "run_output_dir": "output",
         # Memory / logs
         "stateful": True,
         "memory_dir": "output/memory",
         "log_dir": "output/logs",
         "diary_output_dir": "output/diaries",
         "environment_output_dir": "output/environment",
+        # Declared rather than left to the fallbacks inlined at each read site:
+        # a city's run root has to repoint them, and an undeclared key cannot be
+        # repointed or shown in the settings panel. Values match those fallbacks.
+        "state_output_dir": "output/state",
+        "network_output_dir": "output/network",
+        "agent_import_output_dir": "output/imported_agents",
         "visualization": {
             "enabled": True,
             "output_dir": "output/visualization",

@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "slug": "青石镇",
+  "name": "青石镇",
+  "display_name": "青石镇",
+  "created_at": "2026-09-15T15:16:34+00:00",
+  "place": {
+    "query": "青石镇",
+    "name": "青石镇",
+    "display_name": "青石镇",
+    "lat": 30.2741,
+    "lng": 120.1551,
+    "bbox": [
+      30.2041,
+      120.07404616388523,
+      30.3441,
+      120.23615383611478
+    ],
+    "kind": "unknown",
+    "scale": "medium",
+    "country": "",
+    "country_code": "",
+    "population": null,
+    "source": "offline",
+    "osm_id": null,
+    "osm_type": ""
+  },
+  "scale": "medium",
+  "map": {
+    "mode": "virtual",
+    "virtual": "citymap.md"
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 40,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-15T15:16:34+00:00",
+      "action": "map.virtual",
+      "scale": "medium",
+      "seed": 4071322738
+    },
+    {
+      "at": "2026-09-15T15:16:34+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-15T15:16:34+00:00",
+      "action": "create",
+      "offline": true,
+      "source": "offline"
+    },
+    {
+      "at": "2026-09-15T15:16:34+00:00",
+      "action": "population.add",
+      "added": 40,
+      "total": 40,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    }
+  ],
+  "updated_at": "2026-09-15T15:16:34+00:00"
+}

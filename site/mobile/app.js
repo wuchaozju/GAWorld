@@ -23,6 +23,7 @@
   let trailPoints = [];
   let lastAutoSampleTs = null;
   let pendingManualReport = null;
+  let lastAgentList = {};
 
   const el = function (id) { return document.getElementById(id); };
 
@@ -112,7 +113,7 @@
     el("avatar").setAttribute("data-state", report ? report.action_tag : "rest");
     el("currentState").textContent = report
       ? (core.TAG_LABELS[report.action_tag] || report.action_tag)
-        + " · " + (report.node_id || "地图之外")
+        + " · " + core.locationLabel(report)
       : "还没有上报过";
 
     const notice = core.outOfMapNotice(report);
@@ -252,7 +253,7 @@
       });
       const where = document.createElement("div");
       where.className = "where";
-      where.textContent = (report.node_id || "地图之外")
+      where.textContent = core.locationLabel(report)
         + (report.note ? " · " + report.note : "");
       what.appendChild(select);
       what.appendChild(where);
@@ -315,6 +316,10 @@
         const trail = results[1];
         if (snapshot.status === 401 || trail.status === 401) {
           return signOut();
+        }
+        /* 409 = valid token, no agent chosen yet (a rebind can land here too). */
+        if (snapshot.status === 409) {
+          return showAgentGate();
         }
         renderSnapshot(snapshot.data);
         trailPoints = core.drawableTrailPoints(trail.data.points);
@@ -488,7 +493,83 @@
 
   function showAuthGate() {
     el("intro").hidden = true;
+    el("agentGate").hidden = true;
+    el("main").hidden = true;
     el("authGate").hidden = false;
+  }
+
+  /* -- agent selection ------------------------------------------------- */
+
+  function renderAgents(data) {
+    const listEl = el("agentList");
+    listEl.innerHTML = "";
+    const needle = el("agentSearch").value.trim().toLowerCase();
+
+    (data.agents || []).forEach(function (agent) {
+      if (needle && agent.name.toLowerCase().indexOf(needle) === -1
+          && String(agent.id).indexOf(needle) === -1) {
+        return;
+      }
+      const button = document.createElement("button");
+      button.type = "button";
+      /* An agent another phone already twins is shown but not selectable:
+       * hiding it entirely would make the roster look wrong to someone who
+       * knows that resident exists. */
+      button.disabled = !!agent.taken && agent.id !== data.current;
+
+      const name = document.createElement("span");
+      name.textContent = agent.name
+        + (agent.job ? " · " + agent.job : "")
+        + (agent.id === data.current ? "（当前）" : "");
+
+      const note = document.createElement("span");
+      note.className = "dist";
+      if (button.disabled) {
+        note.textContent = "已被占用";
+      } else if (!agent.simulated) {
+        /* Reports still record, but nothing steps this agent, so it will
+         * never mirror. Say so before the choice, not after. */
+        note.textContent = "未在仿真中";
+      } else {
+        note.textContent = "#" + agent.id;
+      }
+
+      button.appendChild(name);
+      button.appendChild(note);
+      button.addEventListener("click", function () {
+        api("/api/twin/bind", {method: "POST", body: {agent_id: agent.id}})
+          .then(function (result) {
+            if (result.status !== 200) {
+              /* Silently doing nothing on a rejected bind made the tap look
+               * broken. Refresh so the roster reflects reality, then say why
+               * — showAgentGate clears the message, so order matters. */
+              showAgentGate();
+              el("agentError").textContent = result.status === 409
+                ? "这一位已经被另一台设备孪生了。"
+                : ((result.data && result.data.error) || "选择失败，请重试。");
+              return;
+            }
+            el("agentError").textContent = "";
+            el("agentGate").hidden = true;
+            start();
+          });
+      });
+      listEl.appendChild(button);
+    });
+  }
+
+  function showAgentGate() {
+    el("intro").hidden = true;
+    el("authGate").hidden = true;
+    el("main").hidden = true;
+    el("agentGate").hidden = false;
+    el("agentSearch").value = "";
+    el("agentError").textContent = "";
+    api("/api/twin/agents").then(function (result) {
+      if (result.status === 401) { return signOut(); }
+      lastAgentList = result.data || {};
+      renderAgents(lastAgentList);
+    });
   }
 
   function dismissIntro() {
@@ -517,7 +598,12 @@
         }
         token = result.data.token;
         localStorage.setItem(TOKEN_KEY, token);
-        start();
+        /* An unbound invite code means the user picks their own agent. */
+        if (result.data.agent_id === null || result.data.agent_id === undefined) {
+          showAgentGate();
+        } else {
+          start();
+        }
       })
       .catch(function () {
         el("authError").textContent = "无法连接服务器";
@@ -531,6 +617,10 @@
     renderTagGrid();
     api("/api/twin/profile").then(function (result) {
       if (result.status === 401) { return signOut(); }
+      if (result.status === 409) { return showAgentGate(); }
+      /* Any other non-200 must not fall through: writing the label anyway
+       * rendered a literal "Agent undefined" in the header. */
+      if (result.status !== 200) { return; }
       el("avatar").innerHTML = result.data.avatar_svg || "";
       el("agentLabel").textContent = result.data.label
         || ("Agent " + result.data.agent_id);
@@ -558,6 +648,10 @@
       sendReport({latitude: 0, longitude: 0, accuracy: 0}, {manual: true});
     });
     el("placeSearch").addEventListener("input", searchPlaces);
+    el("agentSearch").addEventListener("input", function () {
+      renderAgents(lastAgentList);
+    });
+    el("switchAgent").addEventListener("click", showAgentGate);
     el("autoSample").addEventListener("change", function () {
       localStorage.setItem(AUTO_KEY, el("autoSample").checked ? "1" : "0");
     });

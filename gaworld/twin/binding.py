@@ -56,15 +56,20 @@ def _find_code(data, code_hash):
     return None
 
 
-def issue_code(agent_id, label="", path=DEFAULT_PATH):
-    """Create an invite code bound to ``agent_id``. Returns the plaintext code."""
+def issue_code(agent_id=None, label="", path=DEFAULT_PATH):
+    """Create an invite code. Returns the plaintext code.
+
+    ``agent_id=None`` issues an *unbound* code: whoever redeems it picks which
+    agent to twin from the phone. Passing an id pre-binds it, which is still
+    the right choice when handing a specific agent to a specific person.
+    """
     code = secrets.token_urlsafe(9)
     with _LOCK:
         data = _load(path)
         data["codes"].append(
             {
                 "code_hash": _hash(code),
-                "agent_id": int(agent_id),
+                "agent_id": None if agent_id is None else int(agent_id),
                 "label": str(label),
                 "revoked": False,
             }
@@ -81,15 +86,81 @@ def redeem_code(code, path=DEFAULT_PATH):
         if record is None or record.get("revoked"):
             return None
         token = secrets.token_urlsafe(32)
+        agent_id = record.get("agent_id")
         data["tokens"].append(
             {
                 "token_hash": _hash(token),
                 "code_hash": record["code_hash"],
-                "agent_id": int(record["agent_id"]),
+                "agent_id": None if agent_id is None else int(agent_id),
             }
         )
         _save(data, path)
         return token
+
+
+def claimed_agent_ids(path=DEFAULT_PATH, exclude_token=None):
+    """Agent ids already twinned by some live token.
+
+    Two phones writing reports into one agent would interleave two people's
+    days into a single record, so the picker hides agents already taken.
+    """
+    exclude_hash = _hash(exclude_token) if exclude_token else None
+    with _LOCK:
+        data = _load(path)
+        claimed = set()
+        for record in data["tokens"]:
+            if record.get("agent_id") is None:
+                continue
+            if exclude_hash and record.get("token_hash") == exclude_hash:
+                continue
+            code = _find_code(data, record.get("code_hash"))
+            if code is None or code.get("revoked"):
+                continue
+            claimed.add(int(record["agent_id"]))
+        return claimed
+
+
+def bind_token(token, agent_id, path=DEFAULT_PATH):
+    """Point a token at an agent. Returns True on success.
+
+    This is the ONLY place an agent id is accepted from a client, and it is
+    written into the token record — so every data operation still resolves the
+    agent from the token rather than trusting a request body.
+    """
+    with _LOCK:
+        data = _load(path)
+        record = _token_record(data, token)
+        if record is None:
+            return False
+        code = _find_code(data, record.get("code_hash"))
+        if code is None or code.get("revoked"):
+            return False
+        record["agent_id"] = int(agent_id)
+        _save(data, path)
+        return True
+
+
+def token_status(token, path=DEFAULT_PATH):
+    """``{"valid": bool, "agent_id": int | None}``.
+
+    Separates "this token is not real" from "this token has not picked an
+    agent yet" — the caller needs to tell a 401 from a prompt-to-choose.
+    """
+    if not token:
+        return {"valid": False, "agent_id": None}
+    with _LOCK:
+        data = _load(path)
+        record = _token_record(data, token)
+        if record is None:
+            return {"valid": False, "agent_id": None}
+        code = _find_code(data, record.get("code_hash"))
+        if code is None or code.get("revoked"):
+            return {"valid": False, "agent_id": None}
+        agent_id = record.get("agent_id")
+        return {
+            "valid": True,
+            "agent_id": None if agent_id is None else int(agent_id),
+        }
 
 
 def _token_record(data, token):
@@ -101,7 +172,11 @@ def _token_record(data, token):
 
 
 def resolve_token(token, path=DEFAULT_PATH):
-    """Return the bound ``agent_id``, or ``None`` when invalid or revoked."""
+    """Return the bound ``agent_id``, or ``None``.
+
+    ``None`` covers both "invalid/revoked" and "valid but has not picked an
+    agent yet"; call :func:`token_status` when those must be told apart.
+    """
     if not token:
         return None
     with _LOCK:
@@ -114,7 +189,8 @@ def resolve_token(token, path=DEFAULT_PATH):
         # revocation would not actually cut off access.
         if code is None or code.get("revoked"):
             return None
-        return int(record["agent_id"])
+        agent_id = record.get("agent_id")
+        return None if agent_id is None else int(agent_id)
 
 
 def label_for_token(token, path=DEFAULT_PATH):

@@ -33,6 +33,12 @@ DASHBOARD_CONFIG = PROJECT_ROOT / "dashboard_config.json"
 #: to kick off a 50k-person generation that will wedge the server for minutes.
 MAX_POPULATION_PER_REQUEST = 5000
 
+#: Built map payloads, keyed by (path, mtime). Building one costs ~0.3s — cheap
+#: once, wasteful on every pan of the preview or every re-select of the same
+#: city. Keyed on mtime so regenerating a city invalidates it automatically.
+_MAP_CACHE: dict[tuple[str, float], dict[str, Any]] = {}
+_MAP_CACHE_LIMIT = 8
+
 
 def _selected_city() -> str:
     if not DASHBOARD_CONFIG.exists():
@@ -64,6 +70,137 @@ def detail(ref: str) -> dict[str, Any]:
         "history": bundle.manifest.get("history", []),
         "paths": bundle.paths_for_config(),
     }
+
+
+def city_map(ref: str) -> dict[str, Any]:
+    """The rendered map payload for one city, for the panel's preview canvas.
+
+    Returns whichever map the bundle actually runs on — the real OSM one when
+    it has it, the procedural spec otherwise — so the preview never shows a
+    different city than the simulation would use.
+    """
+    from gaworld.world.city_map import (
+        build_visualization_payload,
+        load_city_map,
+        load_real_city_map,
+    )
+
+    bundle = resolve_city(ref)
+    mode = bundle.map_mode
+    source = bundle.real_map_path if mode == "real" else bundle.virtual_map_path
+    if not source.exists():
+        raise CityNotFoundError(f"城市「{bundle.display_name}」没有地图文件（{source.name}）")
+
+    key = (str(source), source.stat().st_mtime)
+    payload = _MAP_CACHE.get(key)
+    if payload is None:
+        built = load_real_city_map(str(source)) if mode == "real" else load_city_map(str(source))
+        payload = build_visualization_payload(built)
+        # The GeoJSON export roughly doubles the response and the canvas
+        # renderer does not read it — the panel is a preview, not an export.
+        payload.pop("geojson", None)
+        if len(_MAP_CACHE) >= _MAP_CACHE_LIMIT:
+            _MAP_CACHE.clear()
+        _MAP_CACHE[key] = payload
+
+    nodes = payload.get("nodes") or []
+    return {
+        "city": bundle.summary(),
+        "map": payload,
+        "meta": {
+            "mode": mode,
+            "source": source.name,
+            "nodes": len(nodes),
+            "edges": len(payload.get("edges") or []),
+            "metro_lines": [line.get("name") for line in payload.get("metro_lines") or []],
+            "river": (payload.get("river") or {}).get("name", ""),
+        },
+    }
+
+
+def knowledge(ref: str) -> dict[str, Any]:
+    """The city's economic profile plus the four channels it drives."""
+    from gaworld.city.context import CityContext
+    from gaworld.city.knowledge import CityProfile
+
+    bundle = resolve_city(ref)
+    raw: dict[str, Any] = {}
+    if bundle.knowledge_path.exists():
+        try:
+            raw = json.loads(bundle.knowledge_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raw = {}
+    profile = CityProfile.from_dict(raw)
+    context = CityContext(slug=bundle.slug, name=profile.name or bundle.name, profile=profile)
+    return {
+        "city": bundle.summary(),
+        "profile": profile.to_dict(),
+        "empty": profile.is_empty,
+        # What the profile actually does, so the panel can show effect not just data.
+        "channels": {
+            "prompt": context.prompt_block(),
+            "growth": context.growth_hint(),
+            "economy": profile.industry_conditions(),
+            "rag": context.rag_chunks(),
+        },
+    }
+
+
+def rebuild_knowledge(payload: dict[str, Any]) -> dict[str, Any]:
+    from gaworld.city.create import build_knowledge
+    from gaworld.city.context import clear_cache
+    from gaworld.city.geocode import Place
+
+    bundle = resolve_city(str(payload.get("city") or ""))
+    place_raw = dict(bundle.manifest.get("place") or {})
+    place_raw["bbox"] = tuple(place_raw.get("bbox") or (0.0, 0.0, 0.0, 0.0))
+    try:
+        place = Place(**place_raw)
+    except TypeError as exc:
+        raise CityCreationError(f"城市清单缺少地点信息：{exc}") from exc
+
+    profile = build_knowledge(bundle, place, offline=bool(payload.get("offline", False)))
+    bundle.knowledge_path.write_text(
+        json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    bundle.record(
+        "knowledge", source=profile.source, industries=[i.name for i in profile.top_industries()]
+    )
+    bundle.save()
+    clear_cache()
+    return knowledge(bundle.slug)
+
+
+def city_news(ref: str) -> dict[str, Any]:
+    from gaworld.city.news import load as news_load
+
+    bundle = resolve_city(ref)
+    cache = news_load(bundle.news_path)
+    return {
+        "city": bundle.summary(),
+        "last_fetch": cache.last_fetch,
+        "items": [
+            {"title": i.title, "excerpt": i.excerpt, "url": i.url, "fetched_at": i.fetched_at}
+            for i in reversed(cache.items)
+        ][:30],
+    }
+
+
+def refresh_news(payload: dict[str, Any]) -> dict[str, Any]:
+    from gaworld.city.context import clear_cache
+    from gaworld.city.create import default_search
+    from gaworld.city.news import DEFAULT_TTL_HOURS, refresh
+
+    bundle = resolve_city(str(payload.get("city") or ""))
+    refresh(
+        bundle.news_path,
+        bundle.name,
+        search_fn=default_search,
+        ttl_hours=float(payload.get("ttl_hours") or DEFAULT_TTL_HOURS),
+        force=bool(payload.get("force", False)),
+    )
+    clear_cache()
+    return city_news(bundle.slug)
 
 
 def create(payload: dict[str, Any]) -> dict[str, Any]:
@@ -210,6 +347,21 @@ def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
             if not ref:
                 return {"error": "city is required"}, 400
             return detail(ref), 200
+        if path in ("/api/city/map", "/api/city/map/"):
+            ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
+            if not ref:
+                return {"error": "city is required"}, 400
+            return city_map(ref), 200
+        if path in ("/api/city/knowledge", "/api/city/knowledge/"):
+            ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
+            if not ref:
+                return {"error": "city is required"}, 400
+            return knowledge(ref), 200
+        if path in ("/api/city/news", "/api/city/news/"):
+            ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
+            if not ref:
+                return {"error": "city is required"}, 400
+            return city_news(ref), 200
     except CityNotFoundError as exc:
         return {"error": str(exc)}, 404
     except Exception as exc:  # a panel read must never take the dashboard down
@@ -223,6 +375,8 @@ _POST_ROUTES = {
     "/api/city/population": populate,
     "/api/city/agent": add_one,
     "/api/city/migrate": migrate,
+    "/api/city/knowledge": rebuild_knowledge,
+    "/api/city/news": refresh_news,
     "/api/city/select": select,
     "/api/city/delete": remove,
 }
@@ -244,4 +398,4 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": f"操作失败：{exc}"}, 500
 
 
-__all__ = ["handle_get", "handle_post", "overview"]
+__all__ = ["city_map", "city_news", "handle_get", "handle_post", "knowledge", "overview"]

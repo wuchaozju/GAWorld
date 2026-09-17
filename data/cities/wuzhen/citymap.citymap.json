@@ -1,0 +1,2191 @@
+{
+  "nodes": {
+    "Hill Block": {
+      "id": "Hill Block",
+      "name": "Hill Block",
+      "label": "Hill Block",
+      "kind": "hub",
+      "district": "Hill Block",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 2.5,
+      "grid_y": 3.2,
+      "x_km": 2.125,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.177235,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "West Block": {
+      "id": "West Block",
+      "name": "West Block",
+      "label": "West Block",
+      "kind": "hub",
+      "district": "West Block",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 5.6,
+      "grid_y": 3.2,
+      "x_km": 4.76,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.204683,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Lake Block": {
+      "id": "Lake Block",
+      "name": "Lake Block",
+      "label": "Lake Block",
+      "kind": "hub",
+      "district": "Lake Block",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 8.7,
+      "grid_y": 3.2,
+      "x_km": 7.395,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.232131,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "East Block": {
+      "id": "East Block",
+      "name": "East Block",
+      "label": "East Block",
+      "kind": "hub",
+      "district": "East Block",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 11.8,
+      "grid_y": 3.2,
+      "x_km": 10.03,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.259579,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Night Market": {
+      "id": "Night Market",
+      "name": "Night Market",
+      "label": "Night Market",
+      "kind": "hub",
+      "district": "Night Market",
+      "category": "commerce",
+      "parent": "",
+      "grid_x": 2.5,
+      "grid_y": 5.8,
+      "x_km": 2.125,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.177235,
+      "capacity": 900,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.977,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Central Station": {
+      "id": "Central Station",
+      "name": "Central Station",
+      "label": "Central Station",
+      "kind": "hub",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "",
+      "grid_x": 5.6,
+      "grid_y": 5.8,
+      "x_km": 4.76,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.204683,
+      "capacity": 3000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.805,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Industrial Park": {
+      "id": "Industrial Park",
+      "name": "Industrial Park",
+      "label": "Industrial Park",
+      "kind": "hub",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "",
+      "grid_x": 8.7,
+      "grid_y": 5.8,
+      "x_km": 7.395,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.232131,
+      "capacity": 1200,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.46,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Stadium": {
+      "id": "Stadium",
+      "name": "Stadium",
+      "label": "Stadium",
+      "kind": "hub",
+      "district": "Stadium",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 11.8,
+      "grid_y": 5.8,
+      "x_km": 10.03,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.259579,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Waterfront": {
+      "id": "Waterfront",
+      "name": "Waterfront",
+      "label": "Waterfront",
+      "kind": "hub",
+      "district": "Waterfront",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 2.5,
+      "grid_y": 8.4,
+      "x_km": 2.125,
+      "y_km": 6.048,
+      "lat": 30.328586,
+      "lng": 120.177235,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Building H-01": {
+      "id": "Building H-01",
+      "name": "Building H-01",
+      "label": "Building H-01",
+      "kind": "place",
+      "district": "Hill Block",
+      "category": "residential",
+      "parent": "Hill Block",
+      "grid_x": 2.5,
+      "grid_y": 2.81,
+      "x_km": 2.125,
+      "y_km": 2.023,
+      "lat": 30.292327,
+      "lng": 120.177235,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building H-02": {
+      "id": "Building H-02",
+      "name": "Building H-02",
+      "label": "Building H-02",
+      "kind": "place",
+      "district": "Hill Block",
+      "category": "residential",
+      "parent": "Hill Block",
+      "grid_x": 2.11,
+      "grid_y": 3.2,
+      "x_km": 1.793,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.173782,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building H-03": {
+      "id": "Building H-03",
+      "name": "Building H-03",
+      "label": "Building H-03",
+      "kind": "place",
+      "district": "Hill Block",
+      "category": "residential",
+      "parent": "Hill Block",
+      "grid_x": 2.89,
+      "grid_y": 3.2,
+      "x_km": 2.457,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.180689,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Neighborhood Clinic": {
+      "id": "Neighborhood Clinic",
+      "name": "Neighborhood Clinic",
+      "label": "Neighborhood Clinic",
+      "kind": "place",
+      "district": "East Block",
+      "category": "medical",
+      "parent": "East Block",
+      "grid_x": 12.19,
+      "grid_y": 3.2,
+      "x_km": 10.362,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.263032,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Pocket Park": {
+      "id": "Pocket Park",
+      "name": "Pocket Park",
+      "label": "Pocket Park",
+      "kind": "place",
+      "district": "East Block",
+      "category": "leisure",
+      "parent": "East Block",
+      "grid_x": 11.8,
+      "grid_y": 3.59,
+      "x_km": 10.03,
+      "y_km": 2.585,
+      "lat": 30.297386,
+      "lng": 120.259579,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Building W-01": {
+      "id": "Building W-01",
+      "name": "Building W-01",
+      "label": "Building W-01",
+      "kind": "place",
+      "district": "West Block",
+      "category": "residential",
+      "parent": "West Block",
+      "grid_x": 5.6,
+      "grid_y": 2.81,
+      "x_km": 4.76,
+      "y_km": 2.023,
+      "lat": 30.292327,
+      "lng": 120.204683,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building W-02": {
+      "id": "Building W-02",
+      "name": "Building W-02",
+      "label": "Building W-02",
+      "kind": "place",
+      "district": "West Block",
+      "category": "residential",
+      "parent": "West Block",
+      "grid_x": 5.21,
+      "grid_y": 3.2,
+      "x_km": 4.428,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.20123,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building L-01": {
+      "id": "Building L-01",
+      "name": "Building L-01",
+      "label": "Building L-01",
+      "kind": "place",
+      "district": "Lake Block",
+      "category": "residential",
+      "parent": "Lake Block",
+      "grid_x": 8.7,
+      "grid_y": 2.81,
+      "x_km": 7.395,
+      "y_km": 2.023,
+      "lat": 30.292327,
+      "lng": 120.232131,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building L-02": {
+      "id": "Building L-02",
+      "name": "Building L-02",
+      "label": "Building L-02",
+      "kind": "place",
+      "district": "Lake Block",
+      "category": "residential",
+      "parent": "Lake Block",
+      "grid_x": 8.31,
+      "grid_y": 3.2,
+      "x_km": 7.063,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.228678,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building L-03": {
+      "id": "Building L-03",
+      "name": "Building L-03",
+      "label": "Building L-03",
+      "kind": "place",
+      "district": "Lake Block",
+      "category": "residential",
+      "parent": "Lake Block",
+      "grid_x": 9.09,
+      "grid_y": 3.2,
+      "x_km": 7.726,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.235584,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building E-01": {
+      "id": "Building E-01",
+      "name": "Building E-01",
+      "label": "Building E-01",
+      "kind": "place",
+      "district": "East Block",
+      "category": "residential",
+      "parent": "East Block",
+      "grid_x": 11.8,
+      "grid_y": 2.81,
+      "x_km": 10.03,
+      "y_km": 2.023,
+      "lat": 30.292327,
+      "lng": 120.259579,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building E-02": {
+      "id": "Building E-02",
+      "name": "Building E-02",
+      "label": "Building E-02",
+      "kind": "place",
+      "district": "East Block",
+      "category": "residential",
+      "parent": "East Block",
+      "grid_x": 11.41,
+      "grid_y": 3.2,
+      "x_km": 9.698,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.256126,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Food Street": {
+      "id": "Food Street",
+      "name": "Food Street",
+      "label": "Food Street",
+      "kind": "place",
+      "district": "Night Market",
+      "category": "mixed",
+      "parent": "Night Market",
+      "grid_x": 2.5,
+      "grid_y": 5.41,
+      "x_km": 2.125,
+      "y_km": 3.895,
+      "lat": 30.309192,
+      "lng": 120.177235,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Open Air Bazaar": {
+      "id": "Open Air Bazaar",
+      "name": "Open Air Bazaar",
+      "label": "Open Air Bazaar",
+      "kind": "place",
+      "district": "Night Market",
+      "category": "mixed",
+      "parent": "Night Market",
+      "grid_x": 2.11,
+      "grid_y": 5.8,
+      "x_km": 1.793,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.173782,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Corner Mart": {
+      "id": "Corner Mart",
+      "name": "Corner Mart",
+      "label": "Corner Mart",
+      "kind": "place",
+      "district": "Night Market",
+      "category": "commerce",
+      "parent": "Night Market",
+      "grid_x": 2.89,
+      "grid_y": 5.8,
+      "x_km": 2.457,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.180689,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Cinema Alley": {
+      "id": "Cinema Alley",
+      "name": "Cinema Alley",
+      "label": "Cinema Alley",
+      "kind": "place",
+      "district": "Night Market",
+      "category": "commerce",
+      "parent": "Night Market",
+      "grid_x": 2.5,
+      "grid_y": 6.19,
+      "x_km": 2.125,
+      "y_km": 4.457,
+      "lat": 30.314251,
+      "lng": 120.177235,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "High Speed Rail Terminal": {
+      "id": "High Speed Rail Terminal",
+      "name": "High Speed Rail Terminal",
+      "label": "High Speed Rail Terminal",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 5.6,
+      "grid_y": 5.41,
+      "x_km": 4.76,
+      "y_km": 3.895,
+      "lat": 30.309192,
+      "lng": 120.204683,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Metro Concourse": {
+      "id": "Metro Concourse",
+      "name": "Metro Concourse",
+      "label": "Metro Concourse",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 5.21,
+      "grid_y": 5.8,
+      "x_km": 4.428,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.20123,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Taxi Loop": {
+      "id": "Taxi Loop",
+      "name": "Taxi Loop",
+      "label": "Taxi Loop",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 5.99,
+      "grid_y": 5.8,
+      "x_km": 5.091,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.208136,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Intercity Bus Terminal": {
+      "id": "Intercity Bus Terminal",
+      "name": "Intercity Bus Terminal",
+      "label": "Intercity Bus Terminal",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 5.6,
+      "grid_y": 6.19,
+      "x_km": 4.76,
+      "y_km": 4.457,
+      "lat": 30.314251,
+      "lng": 120.204683,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Manufacturing Zone A": {
+      "id": "Manufacturing Zone A",
+      "name": "Manufacturing Zone A",
+      "label": "Manufacturing Zone A",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 8.7,
+      "grid_y": 5.41,
+      "x_km": 7.395,
+      "y_km": 3.895,
+      "lat": 30.309192,
+      "lng": 120.232131,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Manufacturing Zone B": {
+      "id": "Manufacturing Zone B",
+      "name": "Manufacturing Zone B",
+      "label": "Manufacturing Zone B",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 8.31,
+      "grid_y": 5.8,
+      "x_km": 7.063,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.228678,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Logistics Yard": {
+      "id": "Logistics Yard",
+      "name": "Logistics Yard",
+      "label": "Logistics Yard",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 9.09,
+      "grid_y": 5.8,
+      "x_km": 7.726,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.235584,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Power Substation": {
+      "id": "Power Substation",
+      "name": "Power Substation",
+      "label": "Power Substation",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 8.7,
+      "grid_y": 6.19,
+      "x_km": 7.395,
+      "y_km": 4.457,
+      "lat": 30.314251,
+      "lng": 120.232131,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Freight Depot": {
+      "id": "Freight Depot",
+      "name": "Freight Depot",
+      "label": "Freight Depot",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 8.31,
+      "grid_y": 5.41,
+      "x_km": 7.063,
+      "y_km": 3.895,
+      "lat": 30.309192,
+      "lng": 120.228678,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Stadium Plaza": {
+      "id": "Stadium Plaza",
+      "name": "Stadium Plaza",
+      "label": "Stadium Plaza",
+      "kind": "place",
+      "district": "Stadium",
+      "category": "commerce",
+      "parent": "Stadium",
+      "grid_x": 11.8,
+      "grid_y": 5.41,
+      "x_km": 10.03,
+      "y_km": 3.895,
+      "lat": 30.309192,
+      "lng": 120.259579,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Aquatic Center": {
+      "id": "Aquatic Center",
+      "name": "Aquatic Center",
+      "label": "Aquatic Center",
+      "kind": "place",
+      "district": "Stadium",
+      "category": "leisure",
+      "parent": "Stadium",
+      "grid_x": 11.41,
+      "grid_y": 5.8,
+      "x_km": 9.698,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.256126,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Training Grounds": {
+      "id": "Training Grounds",
+      "name": "Training Grounds",
+      "label": "Training Grounds",
+      "kind": "place",
+      "district": "Stadium",
+      "category": "leisure",
+      "parent": "Stadium",
+      "grid_x": 12.19,
+      "grid_y": 5.8,
+      "x_km": 10.362,
+      "y_km": 4.176,
+      "lat": 30.311722,
+      "lng": 120.263032,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Sports Clinic": {
+      "id": "Sports Clinic",
+      "name": "Sports Clinic",
+      "label": "Sports Clinic",
+      "kind": "place",
+      "district": "Stadium",
+      "category": "medical",
+      "parent": "Stadium",
+      "grid_x": 11.8,
+      "grid_y": 6.19,
+      "x_km": 10.03,
+      "y_km": 4.457,
+      "lat": 30.314251,
+      "lng": 120.259579,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Riverside Port": {
+      "id": "Riverside Port",
+      "name": "Riverside Port",
+      "label": "Riverside Port",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 2.5,
+      "grid_y": 8.01,
+      "x_km": 2.125,
+      "y_km": 5.767,
+      "lat": 30.326057,
+      "lng": 120.177235,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Marina Pier": {
+      "id": "Marina Pier",
+      "name": "Marina Pier",
+      "label": "Marina Pier",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 2.11,
+      "grid_y": 8.4,
+      "x_km": 1.793,
+      "y_km": 6.048,
+      "lat": 30.328586,
+      "lng": 120.173782,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverfront Promenade": {
+      "id": "Riverfront Promenade",
+      "name": "Riverfront Promenade",
+      "label": "Riverfront Promenade",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "leisure",
+      "parent": "Waterfront",
+      "grid_x": 2.89,
+      "grid_y": 8.4,
+      "x_km": 2.457,
+      "y_km": 6.048,
+      "lat": 30.328586,
+      "lng": 120.180689,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Boathouse": {
+      "id": "Boathouse",
+      "name": "Boathouse",
+      "label": "Boathouse",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 2.5,
+      "grid_y": 8.79,
+      "x_km": 2.125,
+      "y_km": 6.329,
+      "lat": 30.331116,
+      "lng": 120.177235,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    }
+  },
+  "edges": [
+    {
+      "source": "Building H-01",
+      "target": "Hill Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building H-02",
+      "target": "Hill Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building H-02",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building H-01",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Hill Block",
+      "target": "Neighborhood Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hill Block",
+      "target": "Building H-03",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building W-01",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building W-02",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Pocket Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Neighborhood Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building L-01",
+      "target": "Lake Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building L-02",
+      "target": "Lake Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building L-02",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building L-01",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Lake Block",
+      "target": "Neighborhood Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Lake Block",
+      "target": "Building L-03",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building E-01",
+      "target": "East Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building E-02",
+      "target": "East Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Pocket Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Neighborhood Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Food Street",
+      "target": "Night Market",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Open Air Bazaar",
+      "target": "Night Market",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Night Market",
+      "target": "Cinema Alley",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Night Market",
+      "target": "Corner Mart",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "High Speed Rail Terminal",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Metro Concourse",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Intercity Bus Terminal",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Taxi Loop",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Manufacturing Zone A",
+      "target": "Industrial Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Manufacturing Zone B",
+      "target": "Industrial Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone B",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone A",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Power Substation",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Logistics Yard",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Stadium Plaza",
+      "target": "Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Aquatic Center",
+      "target": "Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Stadium",
+      "target": "Sports Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Stadium",
+      "target": "Training Grounds",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Port",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Marina Pier",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Boathouse",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Riverfront Promenade",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Night Market",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hill Block",
+      "target": "Night Market",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Lake Block",
+      "target": "Industrial Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hill Block",
+      "target": "West Block",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Lake Block",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Lake Block",
+      "target": "East Block",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Night Market",
+      "target": "Central Station",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Industrial Park",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Night Market",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Stadium",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Stadium",
+      "target": "Waterfront",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Hill Block",
+      "road_type": "collector",
+      "bridge": false
+    }
+  ],
+  "metro_lines": [],
+  "river": {
+    "name": "乌镇镇 River",
+    "path": [
+      [
+        0.05,
+        0.24
+      ],
+      [
+        0.18,
+        0.3
+      ],
+      [
+        0.38,
+        0.27
+      ],
+      [
+        0.56,
+        0.33
+      ],
+      [
+        0.78,
+        0.28
+      ],
+      [
+        0.95,
+        0.35
+      ]
+    ],
+    "width": 0.08
+  },
+  "bridges": [
+    {
+      "source": "Building H-01",
+      "target": "Hill Block",
+      "mid_x": 2.5,
+      "mid_y": 3.005
+    },
+    {
+      "source": "Building H-02",
+      "target": "Hill Block",
+      "mid_x": 2.305,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building H-02",
+      "mid_x": 6.955,
+      "mid_y": 3.395
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building H-01",
+      "mid_x": 7.15,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Hill Block",
+      "target": "Neighborhood Clinic",
+      "mid_x": 7.345,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Hill Block",
+      "target": "Building H-03",
+      "mid_x": 2.695,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Building W-01",
+      "target": "West Block",
+      "mid_x": 5.6,
+      "mid_y": 3.005
+    },
+    {
+      "source": "Building W-02",
+      "target": "West Block",
+      "mid_x": 5.405,
+      "mid_y": 3.2
+    },
+    {
+      "source": "West Block",
+      "target": "Pocket Park",
+      "mid_x": 8.7,
+      "mid_y": 3.395
+    },
+    {
+      "source": "West Block",
+      "target": "Neighborhood Clinic",
+      "mid_x": 8.895,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Building L-02",
+      "target": "Lake Block",
+      "mid_x": 8.505,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building L-02",
+      "mid_x": 10.055,
+      "mid_y": 3.395
+    },
+    {
+      "source": "Pocket Park",
+      "target": "Building L-01",
+      "mid_x": 10.25,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Lake Block",
+      "target": "Neighborhood Clinic",
+      "mid_x": 10.445,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Lake Block",
+      "target": "Building L-03",
+      "mid_x": 8.895,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Building E-01",
+      "target": "East Block",
+      "mid_x": 11.8,
+      "mid_y": 3.005
+    },
+    {
+      "source": "Building E-02",
+      "target": "East Block",
+      "mid_x": 11.605,
+      "mid_y": 3.2
+    },
+    {
+      "source": "East Block",
+      "target": "Pocket Park",
+      "mid_x": 11.8,
+      "mid_y": 3.395
+    },
+    {
+      "source": "East Block",
+      "target": "Neighborhood Clinic",
+      "mid_x": 11.995,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Hill Block",
+      "target": "Night Market",
+      "mid_x": 2.5,
+      "mid_y": 4.5
+    },
+    {
+      "source": "West Block",
+      "target": "Central Station",
+      "mid_x": 5.6,
+      "mid_y": 4.5
+    },
+    {
+      "source": "Lake Block",
+      "target": "Industrial Park",
+      "mid_x": 8.7,
+      "mid_y": 4.5
+    },
+    {
+      "source": "East Block",
+      "target": "Stadium",
+      "mid_x": 11.8,
+      "mid_y": 4.5
+    },
+    {
+      "source": "Hill Block",
+      "target": "West Block",
+      "mid_x": 4.05,
+      "mid_y": 3.2
+    },
+    {
+      "source": "West Block",
+      "target": "Lake Block",
+      "mid_x": 7.15,
+      "mid_y": 3.2
+    },
+    {
+      "source": "Lake Block",
+      "target": "East Block",
+      "mid_x": 10.25,
+      "mid_y": 3.2
+    },
+    {
+      "source": "East Block",
+      "target": "Night Market",
+      "mid_x": 7.15,
+      "mid_y": 4.5
+    }
+  ],
+  "tile_map": {
+    "width": 160,
+    "height": 112,
+    "terrain": [
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "......~~~~~.....................................................................................................................................................",
+      "....~~~~~~~~~~...........r...................................r....................................r...................................r.........................",
+      "..~~~~~~~~~~~~~~~.......rrr.................................rrr..................................rrr.................................rrr........................",
+      ".~~~~~~~~~~~~~~~~~~~...rrrrr...............................rrrrr................................rrrrr...............................rrrrr.......................",
+      ".~~~~~~~~~~~~~~~~~~~~~~rrCLLLLLL....................~~~~~~~~~~~~~~.............................rrrCLLr.............................rrrCrrr......................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~rr....LLLLLLLLLL~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........................rrCrrLLLL..............~~~~~~~~~~...rrCrr.......................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.r..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..................r..rrCrr.r..LLLL...~~~~~~~~~~~~~~~~~~~~rrCrr.m.....................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............rrrrrrCrrrrr..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~rmmm....................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........rrrrrrrCr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~mm...................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AAAAAAA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..............",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~....",
+      ".~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...",
+      "..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.",
+      "...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.",
+      ".....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "........~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "............~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "...............~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "..................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".....................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...........C...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "........................~~~~~~~~~~~~~~~~~....................C.......~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".........................C.~~~~..............................C...........~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".........................C...................................C..........AAAA..~~~~~~~~~~~~~~~~~~~~~~~~~~~~............................~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".........................C...................................C.......AAA..........~~~~~~~~~~~~~~~~~~..................................C..~~~~~~~~~~~~~~~~~~~~~~.",
+      ".........................C...................................C...AAAA.................~~~~~~~~....C...................................C......~~~~~~~~~~~~~~~~~..",
+      ".........................C...................................AAAA.................................C...................................C.........~~~~~~~~~~~~~...",
+      ".........................C...............................AAAAC....................................C...................................C.............~~~~~~~.....",
+      ".........................C............................AAA....C...............................i....C...................................C.........................",
+      "........................dCd.......................AAAA......tCt.............................iii..iCi.................................cCc........................",
+      ".......................ddCdd..................AAAA.........ttCtt...........................iiiiiiiCii...............................ccCcc.......................",
+      "......................dddCddd.............AAAA............tttCttt.........................iiiLLLLLCiii.............................cccCccc......................",
+      ".......................ddCdd...........AAA.................ttCtt...........................iiLiiiiCii...............................ccCcc.......................",
+      ".....................d.cdCdc..c....AAAA..................t.ttCtt..t.........................iLi.iiCii.i..........................l..lcCcl.l.....................",
+      "....................dddccCcccccAAAA.....................tttttCtttttt........................iLiiiiCiiiii........................llllllClllll....................",
+      "...................dddddcCcAAAAcc......................ttttttCttttttt......................iiLiiiiCiiiiii......................lllllllCllllll...................",
+      "..................dddCCCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCClll..................",
+      "...................dddddcCccccccc......................ttttttCttttttt......................iiiiiiiCiiiiii......................llAAAAlCllllll...................",
+      "....................dddccCcccccc........................tttttCtttttt........................iiiiiiCiiiii.....................AAAAllllmCmllll....................",
+      ".....................d.ccCcc..c..........................t.ttCtt..t..........................i..iiCii.i..................AAAA....l..mmCmm.l.....................",
+      "......................cccCccc.............................tttCttt..............................iiiCiii...............AAAA..........mmmCmmm......................",
+      ".......................ccCcc...............................ttttt................................iiiii............AAAA...............mmmmm.......................",
+      "........................cCc.................................ttt..................................iii.........AAAA....................mmm........................",
+      ".........................C...................................t....................................i......AAAA.........................m.........................",
+      ".........................C...........................................................................AAAA.......................................................",
+      ".........................C........................................................................AAA...........................................................",
+      ".........................C....................................................................AAAA..............................................................",
+      ".........................C................................................................AAAA..................................................................",
+      ".........................C............................................................AAAA......................................................................",
+      ".........................C........................................................AAAA..........................................................................",
+      ".........................C....................................................AAAA..............................................................................",
+      ".........................C................................................AAAA..................................................................................",
+      ".........................C............................................AAAA......................................................................................",
+      ".........................C........................................AAAA..........................................................................................",
+      ".........................C....................................AAAA..............................................................................................",
+      ".........................C.................................AAA..................................................................................................",
+      ".........................C.............................AAAA.....................................................................................................",
+      ".........................C.........................AAAA.........................................................................................................",
+      "........................dCd....................AAAA.............................................................................................................",
+      ".......................ddCdd...............AAAA.................................................................................................................",
+      "......................dddCddd..........AAAA.....................................................................................................................",
+      ".....................d.ddCdd..l....AAAA.........................................................................................................................",
+      "....................dddldCdllllAAAA.............................................................................................................................",
+      "...................dddddlClAAAAll...............................................................................................................................",
+      "..................dddCCCCAACCCClll..............................................................................................................................",
+      "...................dddddlClllllll...............................................................................................................................",
+      "....................dddllCllllll................................................................................................................................",
+      ".....................d.ldCdl..l.................................................................................................................................",
+      ".......................ddCdd....................................................................................................................................",
+      "......................dddCddd...................................................................................................................................",
+      ".......................ddddd....................................................................................................................................",
+      "........................ddd.....................................................................................................................................",
+      ".........................d......................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************"
+    ],
+    "bounds": {
+      "min_x": 0.30999999999999983,
+      "min_y": 0.81,
+      "max_x": 13.99,
+      "max_y": 10.79
+    },
+    "river_path": [
+      [
+        8,
+        27
+      ],
+      [
+        29,
+        33
+      ],
+      [
+        60,
+        30
+      ],
+      [
+        89,
+        37
+      ],
+      [
+        124,
+        31
+      ],
+      [
+        151,
+        39
+      ]
+    ],
+    "metro_segments": [],
+    "bridge_tiles": [
+      {
+        "x": 25,
+        "y": 24,
+        "source": "Building H-01",
+        "target": "Hill Block"
+      },
+      {
+        "x": 23,
+        "y": 27,
+        "source": "Building H-02",
+        "target": "Hill Block"
+      },
+      {
+        "x": 77,
+        "y": 29,
+        "source": "Pocket Park",
+        "target": "Building H-02"
+      },
+      {
+        "x": 80,
+        "y": 27,
+        "source": "Pocket Park",
+        "target": "Building H-01"
+      },
+      {
+        "x": 82,
+        "y": 27,
+        "source": "Hill Block",
+        "target": "Neighborhood Clinic"
+      },
+      {
+        "x": 28,
+        "y": 27,
+        "source": "Hill Block",
+        "target": "Building H-03"
+      },
+      {
+        "x": 61,
+        "y": 24,
+        "source": "Building W-01",
+        "target": "West Block"
+      },
+      {
+        "x": 59,
+        "y": 27,
+        "source": "Building W-02",
+        "target": "West Block"
+      },
+      {
+        "x": 98,
+        "y": 29,
+        "source": "West Block",
+        "target": "Pocket Park"
+      },
+      {
+        "x": 100,
+        "y": 27,
+        "source": "West Block",
+        "target": "Neighborhood Clinic"
+      },
+      {
+        "x": 95,
+        "y": 27,
+        "source": "Building L-02",
+        "target": "Lake Block"
+      },
+      {
+        "x": 113,
+        "y": 29,
+        "source": "Pocket Park",
+        "target": "Building L-02"
+      },
+      {
+        "x": 116,
+        "y": 27,
+        "source": "Pocket Park",
+        "target": "Building L-01"
+      },
+      {
+        "x": 118,
+        "y": 27,
+        "source": "Lake Block",
+        "target": "Neighborhood Clinic"
+      },
+      {
+        "x": 100,
+        "y": 27,
+        "source": "Lake Block",
+        "target": "Building L-03"
+      },
+      {
+        "x": 134,
+        "y": 24,
+        "source": "Building E-01",
+        "target": "East Block"
+      },
+      {
+        "x": 131,
+        "y": 27,
+        "source": "Building E-02",
+        "target": "East Block"
+      },
+      {
+        "x": 134,
+        "y": 29,
+        "source": "East Block",
+        "target": "Pocket Park"
+      },
+      {
+        "x": 136,
+        "y": 27,
+        "source": "East Block",
+        "target": "Neighborhood Clinic"
+      },
+      {
+        "x": 25,
+        "y": 41,
+        "source": "Hill Block",
+        "target": "Night Market"
+      },
+      {
+        "x": 61,
+        "y": 41,
+        "source": "West Block",
+        "target": "Central Station"
+      },
+      {
+        "x": 98,
+        "y": 41,
+        "source": "Lake Block",
+        "target": "Industrial Park"
+      },
+      {
+        "x": 134,
+        "y": 41,
+        "source": "East Block",
+        "target": "Stadium"
+      },
+      {
+        "x": 43,
+        "y": 27,
+        "source": "Hill Block",
+        "target": "West Block"
+      },
+      {
+        "x": 80,
+        "y": 27,
+        "source": "West Block",
+        "target": "Lake Block"
+      },
+      {
+        "x": 116,
+        "y": 27,
+        "source": "Lake Block",
+        "target": "East Block"
+      },
+      {
+        "x": 80,
+        "y": 41,
+        "source": "East Block",
+        "target": "Night Market"
+      }
+    ]
+  },
+  "bounds": {
+    "min_x": 0.30999999999999983,
+    "min_y": 0.81,
+    "max_x": 13.99,
+    "max_y": 10.79
+  },
+  "scale": {
+    "km_per_grid_x": 0.85,
+    "km_per_grid_y": 0.72
+  },
+  "interiors": {
+    "Building H-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        }
+      ]
+    },
+    "Building H-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B",
+            "3C"
+          ]
+        }
+      ]
+    },
+    "Building H-03": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B"
+          ]
+        }
+      ]
+    },
+    "Building W-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        }
+      ]
+    },
+    "Building W-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        }
+      ]
+    },
+    "Building L-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B",
+            "3C"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B",
+            "4C"
+          ]
+        }
+      ]
+    },
+    "Building L-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B"
+          ]
+        }
+      ]
+    },
+    "Building L-03": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        }
+      ]
+    },
+    "Building E-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B",
+            "3C"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B",
+            "4C"
+          ]
+        }
+      ]
+    },
+    "Building E-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B"
+          ]
+        }
+      ]
+    }
+  },
+  "runtime": {
+    "edge_congestion": {},
+    "node_occupancy": {},
+    "time_min": null
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "柯桥区",
+  "summary": "柯桥区的产业构成按地图场所分布估算，未接入外部资料。",
+  "industries": [
+    {
+      "name": "交通物流",
+      "weight": 0.3193,
+      "trend": "stable",
+      "note": "按地图上的场所数量估算"
+    },
+    {
+      "name": "文旅休闲",
+      "weight": 0.2185,
+      "trend": "stable",
+      "note": "按地图上的场所数量估算"
+    },
+    {
+      "name": "医疗健康",
+      "weight": 0.1849,
+      "trend": "stable",
+      "note": "按地图上的场所数量估算"
+    },
+    {
+      "name": "商贸零售",
+      "weight": 0.1765,
+      "trend": "stable",
+      "note": "按地图上的场所数量估算"
+    },
+    {
+      "name": "公共服务",
+      "weight": 0.1008,
+      "trend": "stable",
+      "note": "按地图上的场所数量估算"
+    }
+  ],
+  "priorities": [],
+  "labor_demand": [],
+  "sources": [],
+  "source": "map",
+  "built_at": "2026-09-16T12:59:42+00:00",
+  "schema_version": "1.0"
+}

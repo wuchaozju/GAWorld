@@ -64,6 +64,7 @@ Across days, the simulator accumulates:
 - Reusable Skill library: Markdown-based global and per-agent private skills, auto-distilled from experience and injected into cognition and work briefs
 - Real-work task system: agents browse a mock job market and produce real artifacts (HTML, Python, articles, lesson plans, research notes) matched to their job and skills
 - Create a city from a place name: real OSM geography with a procedural fallback, derived environment and background, multiple cities side by side
+- City knowledge base: each city carries a researched industry/labour profile and a rolling local-news cache, which reach agents through four channels — cognition prompts, skill-growth choices, per-industry pay, and each resident's retrievable memory. A city developing tourism makes its residents more likely to learn hospitality, and pays better for it
 - City map generation and route playback
 - Visualization trace export
 - Agent interview CLI
@@ -140,7 +141,7 @@ code.
 - `gaworld/work/`: real-work task system (runtime, worker pool, queue, market, router, adapters)
 - `gaworld/population/`: parameterised population synthesis — `schema` (knob contract + feasibility precheck), `synth` (IPF + conditional sampling + income rank-transform), `network` (households, workplaces, homophily social graph), `report` (validation gate + review charts), `writer` (state CSV + profile Markdown + manifest)
 - `gaworld/group/`: cohort (group) simulation — `cohort` (partition, centroid **and** dispersion, mean-zero network coupling), `cohort_day` (one LLM call per cohort per day), `materialize` (focal / event / tail / audit selection, audit residual), `driver` (day loop + cost accounting), `metrics` + `validate` (the L1–L4 gate), `plugin` (observational cohort telemetry)
-- `gaworld/city/`: create a whole city from a place name — `geocode` (Nominatim → coordinates, bbox, scale), `osm` (Overpass fetch with mirror pinning and a wall-clock deadline), `procedural` (name-seeded fallback map), `environment` (climate- and scale-derived events + background), `bundle` (on-disk layout, manifest, registry), `agents` (bulk synthesis, single append, migration), `config` (point the simulator at a bundle)
+- `gaworld/city/`: create a whole city from a place name — `geocode` (Nominatim → coordinates, bbox, scale), `osm` (Overpass fetch with mirror pinning and a wall-clock deadline), `procedural` (name-seeded fallback map), `environment` (climate- and scale-derived events + background), `bundle` (on-disk layout, manifest, registry), `agents` (bulk synthesis, single append, migration), `config` (point the simulator at a bundle), `knowledge` (researched industry/labour profile with grounded fallbacks), `news` (local-news cache gated on real time, served on sim time), `context` (the four channels through which city knowledge reaches agents)
 - `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities) and `external_systems_api` (External Systems)
 - `gaworld/io/`: HTTP guard with retry/backoff and HTML extraction
 - `gaworld/sim/`: extracted simulator sub-modules — `_utils`, `agents_loader`, `_schedule`, `_location`, `_cognition`, `_rag`, `_diary` (more slices coming as the legacy file shrinks)
@@ -341,8 +342,9 @@ python -m gaworld.city migrate    绍兴柯桥 --agent-id 31
 python -m gaworld.city use 绍兴柯桥
 ```
 
-Selecting a city repoints `map_path` / `csv_path` / `md_path` / `map_mode`, the environment event
-pools and the `background` prompt at that bundle — without the last one, agents in a new city keep
+The run toolbar on the main console carries a **City** dropdown, so a run can be pointed at a city
+without leaving the page. Selecting a city repoints `map_path` / `csv_path` / `md_path` / `map_mode`,
+the environment event pools and the `background` prompt at that bundle — without the last one, agents in a new city keep
 reasoning as though they were still in Hangzhou. The same operations are available in the console's
 **城市 / Cities** tab.
 
@@ -553,6 +555,60 @@ configured worlds do not produce identical histories; the placebo's divergence i
 floor, and a real effect has to clear it.
 
 Full walkthrough: [Parallel Worlds Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese).
+
+## Mobile Digital Twin
+
+Connect a phone to a running GAWorld server, report your real location and activity, and have one
+agent live your day as a digital twin — then watch its avatar, mood, diary and trail from the phone.
+
+Two commands to run it locally:
+
+```bash
+python3 -m gaworld.apps.twin_server --issue-code 1 --label "me"   # prints an invite code
+python3 -m gaworld.apps.twin_server --port 8767                    # serves the client at /
+```
+
+Open `http://127.0.0.1:8767/` and enter the code. To reach it **from an actual phone** you need
+HTTPS — the browser Geolocation API refuses to run on a non-HTTPS, non-localhost origin:
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8767
+```
+
+Let the reported data drive an agent by enabling the twin and inserting two pipeline stages — no
+code changes, and removing them again is a clean experimental control:
+
+```python
+CONFIG["twin"]["enabled"] = True
+CONFIG["pipeline"]["agent_step"] = [
+    "prepare", "perceive", "gaworld.twin.stages:twin_perceive", "interrupts",
+    "plan", "adjust_activity", "move", "select_action",
+    "gaworld.twin.stages:twin_mirror", "reflect", "update_state",
+    "broadcast", "memorize", "record",
+]
+```
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/twin/auth` | exchange an invite code for a bearer token |
+| POST | `/api/twin/report` | submit reports (always a JSON array; batched for offline catch-up) |
+| POST | `/api/twin/amend` | correct or delete an earlier report |
+| GET | `/api/twin/snapshot` · `/trail` · `/life` · `/reports` · `/places` | current state, today's path, the agent's diary/mood/goals, history, map nodes |
+
+⚠️ **This runs as its own process on its own port, and that is not optional.** `dashboard_server`
+accepts unauthenticated POSTs to `/api/config` and `/api/run/start`; exposing it publicly would hand
+config-write and process-spawn to anyone who scans the port. Tunnel only 8767, never 8766.
+
+With a city selected, twin data moves to `output/cities/<slug>/twin/` along with every other run
+artifact. The twin server is a separate process but reads the same CONFIG, so it follows
+automatically — no extra configuration.
+
+⚠️ Positioning is **research and demo**: invite codes, no registration, no personal-information
+compliance workflow. Location history is sensitive personal data — close that gap before any real
+user touches it.
+
+Full walkthrough (tunnel setup, the three consumption channels, calibration, known limits):
+[Mobile Digital Twin](./docs/TWIN_MOBILE.md) (in Chinese).
 
 ## Configuration
 
@@ -1015,6 +1071,7 @@ Generated artifacts are written under `output/`, including:
 - [External Systems — Tutorial](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md) (in Chinese; observing and editing the money system, the external environment and outward services, plus runtime intervention)
 - [Parallel Worlds — Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese; multi-branch counterfactuals — designing an experiment, reading the divergence charts, dose-response designs, and why to run a placebo world first)
 - [Big Five (OCEAN) Personality — Design](./docs/proposals/2026-08-20-big-five-personality.md) (the three independent channels, the effect-size and collinearity merge gates, and the offline trait calibration pass)
+- [Mobile Digital Twin](./docs/TWIN_MOBILE.md) (in Chinese; running the phone client over an HTTPS tunnel, invite-code binding, the mirror / perception / calibration channels, and why the twin server is a separate process from the dashboard)
 - [Project Structure](./docs/PROJECT_STRUCTURE.md)
 - [Repository Guidelines](./AGENTS.md)
 - [Changelog](./CHANGELOG.md)

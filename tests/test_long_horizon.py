@@ -1222,8 +1222,19 @@ class TestLongHorizonE2E(unittest.TestCase):
             f"tick-loop tasks should be absent in fast-forward mode: {seen}",
         )
 
+    def _run_path(self, key, default, *parts):
+        """A run artifact path, read off the config rather than assumed.
+
+        A selected city moves the whole run tree under ``output/cities/<slug>/``,
+        so hardcoding ``output/logs`` here would make these tests depend on
+        whichever city the developer's dashboard_config.json happens to name.
+        """
+        from gaworld.settings import CONFIG
+
+        return os.path.join(self.tmp.name, CONFIG.get(key, default), *parts)
+
     def _agent_log(self, agent_id):
-        path = os.path.join(self.tmp.name, "output", "logs", f"agent_{agent_id}.log")
+        path = self._run_path("log_dir", "output/logs", f"agent_{agent_id}.log")
         with open(path, encoding="utf-8") as fh:
             return fh.read()
 
@@ -1245,9 +1256,9 @@ class TestLongHorizonE2E(unittest.TestCase):
         self.assertEqual(len(end_days), 3)
         for aid in (4, 5):
             for end_day in end_days:
-                path = os.path.join(
-                    self.tmp.name, "output", "diaries", f"agent_{aid}",
-                    f"day_{end_day:03d}.md",
+                path = self._run_path(
+                    "diary_output_dir", "output/diaries",
+                    f"agent_{aid}", f"day_{end_day:03d}.md",
                 )
                 self.assertTrue(os.path.exists(path), f"missing diary {path}")
 
