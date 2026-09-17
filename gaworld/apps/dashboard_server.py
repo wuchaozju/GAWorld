@@ -206,12 +206,14 @@ def _effective_config():
     """
     from gaworld.settings.defaults import build_default_config
     from gaworld.settings.overrides import load_env_override, load_environment_config
+    from gaworld.city.config import apply_city
 
     cfg = build_default_config()
     env_override = load_env_override()
     _deep_update(cfg, _dashboard_config())
     _deep_update(cfg, env_override)
     _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
+    apply_city(cfg, root=REPO_ROOT)
     _deep_update(cfg, env_override)
     return cfg
 

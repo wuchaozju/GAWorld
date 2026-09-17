@@ -58,6 +58,10 @@ Relay 路径前缀由网关去掉；Nginx 不要再次剥离前缀。
   轨迹读取改由 API 按当前 visualization.output_dir 取数据，支持城市配置。
 - 自动部署修复：显式虚拟环境 Python 路径不再 `.resolve()`，避免跳到系统
   Python 后触发 externally-managed-environment，导致拉代码后服务未重启。
+- 实际运行发现 `_effective_config()` 遗漏城市配置层：补齐城市目录解析，
+  保留环境变量最高优先级。否则仿真成功写入城市目录，控制台仍显示空白。
+- 手机服务固定既有上报/绑定目录，避免 Dashboard 切换城市或升级配置层后
+  读到另一个空目录。升级前做数据备份；旧代码改动保留在服务器 Git stash。
 
 `main` 与 Dev 双方均有独有历史，试合并出现 16 个冲突文件：
 `README.md`、`README.zh-CN.md`、`config.py`、`dashboard_config.json`、
@@ -77,16 +81,26 @@ main 含有自己的功能，不应强行用 Dev 覆盖。本次不宣称 main �
 
 | 检查 | 已确认结果 |
 | --- | --- |
-| 合并代码完整 pytest | 1993 passed，1 skipped，249 subtests passed |
+| 合并代码完整 pytest | 1994 passed，1 skipped，249 subtests passed |
 | 手机前端逻辑测试 | 37 passed |
 | 全部前端测试入口 `node --test site/**/*.test.js` | 107 passed |
 | 隔离预发布六个浏览器页面 | 控制台、总入口、Studio、配置、城市、协作均无脚本异常/HTTP 失败 |
 | 统一 HTTPS 网关 API | config、agents、run/status、todos 返回 JSON |
 | 统一 HTTPS Relay | health、注册、发送、轮询，确认消息实际到达 |
+| 隔离环境实际 LLM 运行 | Ollama `qwen3:4b-instruct-2507-q4_K_M`，1 Agent / 1 天，退出码 0 |
+| 实际结果可视化 | 长时快进模式生成 1 帧、1 Agent，finished=true；390/1440px 像素检查通过 |
+| 原手机公网轨迹 | 原邀请码可登录，位置标记/连线/回放在 390/1440px 正常 |
 
 pytest 的 1 个 skip 是翻译键排序检查；306 个 warning 主要是测试绘图缺中文字体。
 这些结果不等于所有 LLM 后端、所有插件、多 Agent 长时间运行已验收。
 每次正式发布应记录实际运行的模型、数据范围、输出产物与退出码。
+
+实际运行验收使用独立目录 `/home/ft/GAWorld-release-final`，新闻联网与生产
+Relay 已关闭后完成。首次尝试曾连接默认 Relay，已停止该进程；未发送测试对话。
+最终运行产物位于 `output/cities/wuzhen/`，不是正式环境的数据。
+快进模式只有每日帧，这次结果不能证明分钟级行走、多 Agent 长期并行均已通过。
+LLM 运行从内网预发布 API 发起；公网验证覆盖的是路由、页面/API 和 Relay 消息，
+不是把这次内网仿真冒充为所有公网仿真场景验收。
 
 ## 运维位置
 
@@ -96,6 +110,9 @@ pytest 的 1 个 skip 是翻译键排序检查；306 个 warning 主要是测试
 - Twin 独立目录：`/home/ft/GAWorld-twin`，保留现有上报和绑定。
 - 不要为更新 Python 应用而重启 HTTPS 隧道。
 - Relay 当前是开放注册测试环境，正式用于私密交互前需增加认证/访问限制。
+- 自动部署 watcher 已恢复，但服务器到 GitHub 偶发连接超时/TLS 错误，失败会
+  在后续轮询重试；不能保证每次 push 后立即更新。用 `runtime/services/deployed-rev`
+  与 GitHub 提交号核对实际部署版本，而不是只看 Git 工作目录的 HEAD。
 
 旧记录 [2026-09-16 部署说明](TWIN_DEPLOYMENT_2026-09-16.md) 是当日快照；
 其中“未 push”、旧基线和 v4 缓存不代表本次交付后的状态。

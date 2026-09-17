@@ -1875,6 +1875,7 @@ document.addEventListener("locale-changed", function () {
   // Panel titles are translated by the i18n pass, so the buttons named after
   // them have to follow.
   relabelCollapseToggles();
+  refreshAgentOptionLabels();
   if (!state.memoryPayload) return;
   renderMemory();
   if (!els.rawModal.hidden) renderRawModal();

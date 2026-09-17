@@ -77,3 +77,15 @@ def test_shared_tokens_cover_dashboard_and_console():
         css = (root / "site" / name).read_text(encoding="utf-8")
         defined = set(re.findall(r"(--[a-z-]+)\s*:", tokens + css))
         assert set(re.findall(r"var\((--[a-z-]+)", css)) <= defined
+
+
+def test_dashboard_resolves_the_selected_city_before_final_env_override(monkeypatch):
+    monkeypatch.setattr(ds, "_dashboard_config", lambda: {"city": "wuzhen"})
+    monkeypatch.delenv("GAWORLD_CONFIG_OVERRIDES", raising=False)
+    cfg = ds._effective_config()
+    assert cfg["visualization"]["output_dir"] == "output/cities/wuzhen/visualization"
+    assert cfg["memory_dir"] == "output/cities/wuzhen/memory"
+    monkeypatch.setenv("GAWORLD_CONFIG_OVERRIDES", json.dumps({
+        "visualization": {"output_dir": "output/private-smoke/visualization"},
+    }))
+    assert ds._effective_config()["visualization"]["output_dir"] == "output/private-smoke/visualization"
