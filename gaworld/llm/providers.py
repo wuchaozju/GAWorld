@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import uuid
 from collections.abc import Callable
@@ -11,6 +12,57 @@ from gaworld.settings import CONFIG
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.llm")
+
+
+# ---------------------------------------------------------------------
+# Image input
+# ---------------------------------------------------------------------
+#
+# An image reaches a provider as ``{"media_type": "image/png", "data":
+# "<base64>"}`` — the one shape all three wire formats can be built from,
+# rather than each caller learning OpenAI's data URL, Anthropic's source
+# block and Ollama's bare-base64 array.
+#
+# Whether the routed model can actually *see* it is a separate question, and
+# one only the config knows: an OpenAI-compatible endpoint accepts image
+# parts for any model and fails at inference time if the weights are
+# text-only. So a provider entry may declare ``"vision": true|false``, and
+# absent that declaration we fall back to the model-name heuristic below.
+# Callers that need to degrade gracefully (the group interview does) ask
+# :func:`provider_supports_images` *before* attaching anything.
+
+#: Model-name fragments that indicate image input. Deliberately a heuristic
+#: with an explicit override: new vision models appear faster than this list
+#: can be maintained, and being wrong here should be fixable from config
+#: rather than by editing code.
+_VISION_MODEL_RE = re.compile(
+    r"(gpt-4o|gpt-4\.1|gpt-4-turbo|gpt-4-vision|gpt-5|o[34]\b|claude|gemini"
+    r"|llava|bakllava|moondream|minicpm-v|pixtral|internvl|glm-4v|step-1v"
+    r"|gemma3|gemma4|[-_]vl\b|vision)",
+    re.IGNORECASE,
+)
+
+
+def _model_looks_multimodal(model: Any) -> bool:
+    return bool(_VISION_MODEL_RE.search(str(model or "")))
+
+
+def _data_url(image: dict[str, Any]) -> str:
+    media_type = str(image.get("media_type") or "image/png")
+    return f"data:{media_type};base64,{image.get('data') or ''}"
+
+
+def _clean_images(images: Any) -> list[dict[str, Any]]:
+    """Keep only well-formed ``{media_type, data}`` entries."""
+    cleaned: list[dict[str, Any]] = []
+    for item in images or []:
+        if not isinstance(item, dict):
+            continue
+        data = str(item.get("data") or "").strip()
+        if not data:
+            continue
+        cleaned.append({"media_type": str(item.get("media_type") or "image/png"), "data": data})
+    return cleaned
 
 
 # ---------------------------------------------------------------------
@@ -139,18 +191,29 @@ def _retrying(
 class OllamaProvider:
     """Simple wrapper for Ollama-compatible text generation."""
 
-    def __init__(self, url, model, timeout=600, attempts=3):
+    def __init__(self, url, model, timeout=600, attempts=3, vision=None):
         self.url = url
         self.model = model
         self.timeout = timeout
         self.attempts = attempts
+        self.vision = vision
 
-    def call(self, prompt, system=None, temperature=None):
+    @property
+    def supports_images(self) -> bool:
+        if self.vision is not None:
+            return bool(self.vision)
+        return _model_looks_multimodal(self.model)
+
+    def call(self, prompt, system=None, temperature=None, images=None):
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": True,
         }
+        # Ollama's /api/generate takes bare base64 strings, no data URL.
+        cleaned = _clean_images(images)
+        if cleaned:
+            payload["images"] = [item["data"] for item in cleaned]
         if system:
             payload["system"] = system
         if temperature is not None:
@@ -205,6 +268,7 @@ class OpenAIProvider:
         max_tokens=None,
         temperature=None,
         attempts=3,
+        vision=None,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -215,8 +279,15 @@ class OpenAIProvider:
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.attempts = attempts
+        self.vision = vision
 
-    def call(self, prompt, system=None, temperature=None):
+    @property
+    def supports_images(self) -> bool:
+        if self.vision is not None:
+            return bool(self.vision)
+        return _model_looks_multimodal(self.model)
+
+    def call(self, prompt, system=None, temperature=None, images=None):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -224,7 +295,25 @@ class OpenAIProvider:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+        cleaned = _clean_images(images)
+        if cleaned:
+            # Multi-part content. The text part stays first: the prompt is
+            # what carries the persona and the answer-format contract, and
+            # models weight the leading part of the turn more heavily.
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        *(
+                            {"type": "image_url", "image_url": {"url": _data_url(item)}}
+                            for item in cleaned
+                        ),
+                    ],
+                }
+            )
+        else:
+            messages.append({"role": "user", "content": prompt})
         payload = {
             "model": self.model,
             "messages": messages,
@@ -377,8 +466,10 @@ class AnthropicProvider:
         include_x_api_key=True,
         authorization_retry_schemes=None,
         attempts=3,
+        vision=None,
     ):
         self.attempts = attempts
+        self.vision = vision
         self.base_url = base_url.rstrip("/")
         self.model = model
         env_names = list(api_key_envs or [])
@@ -409,14 +500,41 @@ class AnthropicProvider:
             if str(item or "").strip()
         ]
 
-    def call(self, prompt, system=None, temperature=None):
+    @property
+    def supports_images(self) -> bool:
+        if self.vision is not None:
+            return bool(self.vision)
+        return _model_looks_multimodal(self.model)
+
+    def call(self, prompt, system=None, temperature=None, images=None):
         if not self.api_key:
             env_names = ", ".join(self.api_key_envs) or "ANTHROPIC_API_KEY"
             raise ValueError(f"Anthropic provider API key not found. Set one of: {env_names}")
+        cleaned = _clean_images(images)
+        if cleaned:
+            # Anthropic puts images *before* the text that asks about them;
+            # the API docs call this out as measurably better for
+            # image-question turns.
+            content: Any = [
+                *(
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": item["media_type"],
+                            "data": item["data"],
+                        },
+                    }
+                    for item in cleaned
+                ),
+                {"type": "text", "text": prompt},
+            ]
+        else:
+            content = prompt
         payload = {
             "model": self.model,
             "max_tokens": self.max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": content}],
         }
         effective_system = system or self.system
         if effective_system:
@@ -531,6 +649,7 @@ def build_provider(cfg: dict[str, Any], *, attempts: int = 3):
             # produces ReadTimeout mid-run.
             timeout=cfg.get("timeout", 600),
             attempts=attempts,
+            vision=cfg.get("vision"),
         )
     if p_type == "openai":
         return OpenAIProvider(
@@ -543,6 +662,7 @@ def build_provider(cfg: dict[str, Any], *, attempts: int = 3):
             max_tokens=cfg.get("max_tokens"),
             temperature=cfg.get("temperature"),
             attempts=attempts,
+            vision=cfg.get("vision"),
         )
     if p_type in ("claude", "anthropic"):
         return AnthropicProvider(
@@ -561,6 +681,7 @@ def build_provider(cfg: dict[str, Any], *, attempts: int = 3):
             include_x_api_key=cfg.get("include_x_api_key", True),
             authorization_retry_schemes=cfg.get("authorization_retry_schemes"),
             attempts=attempts,
+            vision=cfg.get("vision"),
         )
     return None
 
@@ -692,6 +813,7 @@ class LLMRouter:
         system=None,
         temperature=None,
         allow_fallback=True,
+        images=None,
     ):
         chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
         if not allow_fallback:
@@ -712,6 +834,9 @@ class LLMRouter:
             overrides["system"] = system
         if temperature is not None:
             overrides["temperature"] = temperature
+        cleaned_images = _clean_images(images)
+        if cleaned_images:
+            overrides["images"] = cleaned_images
 
         call_id = uuid.uuid4().hex[:8]
         prompt_chars = len(prompt or "")
@@ -803,6 +928,19 @@ def resolve_provider(task=None, agent_id=None, provider=None) -> str:
     return LLM_ROUTER._resolve_chain(task=task, agent_id=agent_id, provider=provider)[0]
 
 
+def provider_supports_images(task=None, agent_id=None, provider=None) -> bool:
+    """Whether the provider this call would route to accepts image input.
+
+    Asked *before* attaching an image so a caller can degrade deliberately —
+    swapping the picture for its caption and saying so — instead of sending
+    an image part to a text-only model and getting an opaque 400 back, or
+    worse, an answer that quietly ignored it.
+    """
+    name = resolve_provider(task=task, agent_id=agent_id, provider=provider)
+    backend = LLM_ROUTER.providers.get(name)
+    return bool(getattr(backend, "supports_images", False))
+
+
 def call_llm(
     prompt,
     task=None,
@@ -811,6 +949,7 @@ def call_llm(
     system=None,
     temperature=None,
     allow_fallback=True,
+    images=None,
 ):
     """Public helper for model calls used across the simulator.
 
@@ -829,6 +968,11 @@ def call_llm(
     ``allow_fallback=False`` pins the call to a single model: an
     experiment would rather lose a cell than have it answered by a
     different model than its neighbours.
+
+    ``images`` is a list of ``{"media_type": ..., "data": "<base64>"}``
+    entries, forwarded only when non-empty so provider-shaped test doubles
+    whose ``call`` takes the prompt alone keep working. Check
+    :func:`provider_supports_images` first — this function does not.
     """
     return LLM_ROUTER.call(
         prompt,
@@ -838,6 +982,7 @@ def call_llm(
         system=system,
         temperature=temperature,
         allow_fallback=allow_fallback,
+        images=images,
     )
 
 

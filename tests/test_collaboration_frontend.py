@@ -232,6 +232,20 @@ def test_cooperation_page_uses_safe_nodes_and_core_payload():
     assert re.search(r"\.textContent\s*=", source)
 
 
+def test_cooperation_artifacts_offer_a_download_action():
+    source = (DASHBOARD / "collaboration.js").read_text(encoding="utf-8")
+
+    assert re.search(r"save\.download\s*=\s*name", source)
+    assert 'save.href = safeUrl' in source
+    assert 't("cl.artifact_download")' in source
+
+    for locale in ("zh-CN.json", "en.json"):
+        keys = json.loads(
+            (DASHBOARD / "locales" / locale).read_text(encoding="utf-8")
+        )
+        assert "cl.artifact_download" in keys, locale
+
+
 def test_cooperation_artifact_urls_are_same_origin_and_session_scoped():
     module_path = DASHBOARD / "collaboration.js"
     locale_json = json.dumps(str(LOCALE_PATH))

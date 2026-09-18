@@ -722,7 +722,7 @@ select,
 
 .artifact-item {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 9px;
   align-items: center;
   padding: 11px;
@@ -748,6 +748,17 @@ select,
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.artifact-item a.artifact-download {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  color: var(--steel);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
 }
 
 .empty-state {

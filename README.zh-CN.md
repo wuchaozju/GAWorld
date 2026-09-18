@@ -89,6 +89,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 城市地图生成与轨迹回放
 - 可视化 trace 导出
 - 单智能体采访 CLI
+- 群体采访：一次问一群受访者同一套问题——个体居民**和** cohort 群体智能体，一场会话里**可跨城市**。问题带题型（开放题／选择题／是非题），选择题与是非题的回答会被解析回选项标签并**统计**，而不是留成一堆散文；每个问题还可以附**图片**（真作为 vision content block 发给 OpenAI／Anthropic／Ollama；路由到的模型看不了图时降级为图片说明，并在回答上留下明确标记）或**网址**（在父进程里抓一次，所有受访者读到同一份正文）。受访者逐题作答，每一题的提问都回放他自己前面的问答，且可以继续追问新一轮——这份连续性只存在于会话记录里，不写入智能体记忆，所以采访不会改变被采访的人口。结果给出每个选项的两种计数（受访者数与代表人数，一个 8 人的 cohort 算 8 人）、按城市／年龄段／性别／户籍／片区的交叉分布（只画真的分化了样本的维度），以及一份可下载、自带出处的完整 Markdown 文档，含每个人的原话和**哪些没成功**。以后台任务运行，按城市一个子进程。见 [`docs/GROUP_INTERVIEW_TUTORIAL.md`](./docs/GROUP_INTERVIEW_TUTORIAL.md)
 - 本地 dashboard：配置编辑、profile 编辑、运行控制、记忆查看、访谈
 - Agent Studio：面向单个智能体的 7 步可视化构建/查看器——身份、九个 [0,1] 状态变量（可编辑雷达）、技能、分层记忆、Dunbar 社交圈、行为拨盘、复核/部署；改动写回状态 CSV 与 profile Markdown，并可创建新智能体
 - 参数化人口合成：把面板级旋钮（规模、年龄金字塔、就业率、收入基尼、家庭结构、社交图形态）变成一座完整的小镇——IPF 拟合联合分布（含结构性零）、最大余数法整数化让边缘精确命中、收入用秩变换使中位数与基尼严格成立同时仍与教育/行业相关、儿童优先建户、幂律规模的工作单位。产出与现有格式完全一致的状态 CSV + profile Markdown，`build_agent` 无需改动
@@ -248,6 +249,12 @@ python generative_city_sim.py reset
 ```bash
 python generative_city_sim.py interview --agent-id 31 --question "你今天为什么这样行动？"
 python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt
+```
+
+群体采访（面板在 `/site/dashboard/survey.html`；也可以直接跑某一座城市那一份）：
+
+```bash
+python -m gaworld.interview --spec round.json --out answers.json
 ```
 
 从社交内容创建新智能体：

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="survey.page_title">GAWorld · 群体采访</title>
+  <meta name="description" data-i18n-content="survey.meta_description" content="GAWorld 群体采访：跨城市选一群智能体问同一个问题，统计选择题与是非题结果，导出完整 Markdown 文档" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/survey.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="survey.kicker">GAWorld 群体采访</p>
+          <h1 data-i18n="survey.headline">问一群人同一个问题</h1>
+          <p class="sub" data-i18n="survey.sub">
+            跨城市挑受访者（个体居民或群体智能体）→ 出题（开放题／选择题／是非题，可附图片和网址）
+            → 看统计与分组分布 → 追问 → 下载完整文档。
+          </p>
+        </div>
+      </div>
+      <div class="sv-topmeta" id="svTopMeta"></div>
+    </header>
+
+    <nav class="studio-steps" id="svSteps">
+      <button class="step is-active" data-step="1" data-i18n-title="survey.step1_hint" title="跨城市挑选受访者：个体居民，或代表整群人的群体智能体"><span class="num">1</span><span data-i18n="survey.step1">选受访者</span></button>
+      <button class="step" data-step="2" data-i18n-title="survey.step2_hint" title="写问题，选题型，可给问题附上图片或网址"><span class="num">2</span><span data-i18n="survey.step2">出题</span></button>
+      <button class="step" data-step="3" data-i18n-title="survey.step3_hint" title="汇总摘要、选项统计、按城市/年龄/户籍的分布，以及每个人的原话"><span class="num">3</span><span data-i18n="survey.step3">看结果</span></button>
+    </nav>
+
+    <section class="studio-main">
+      <div class="sv-panel" id="svPanel">
+        <div class="sv-card"><p class="sv-hint" data-i18n="survey.loading">正在加载…</p></div>
+      </div>
+      <aside class="sv-side">
+        <div class="sv-side-card">
+          <h3><span data-i18n="survey.basket">已选受访者</span> <span class="sv-q" data-i18n-title="survey.basket_hint" title="一位群体智能体代表它整群成员发言，比逐个采访便宜得多，代价是拿不到个人原话。">?</span></h3>
+          <div id="svBasket" class="sv-basket"></div>
+        </div>
+        <div class="sv-side-card">
+          <h3><span data-i18n="survey.cost">这次要问多少</span> <span class="sv-q" data-i18n-title="survey.cost_hint" title="每个受访者的每个问题都是一次模型调用——连续记忆就是这么来的：他回答第 4 问时看得见自己第 1 问的回答。">?</span></h3>
+          <div id="svCost" class="sv-cost"></div>
+        </div>
+        <div class="sv-side-card">
+          <h3 data-i18n="survey.history">历史采访</h3>
+          <div id="svHistory" class="sv-history"></div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="studio-foot">
+      <div class="sv-progress" id="svProgress"></div>
+      <div class="sv-actions">
+        <button class="btn ghost" id="svPrev" data-i18n="survey.prev">← 上一步</button>
+        <button class="btn ghost" id="svNext" data-i18n="survey.next">下一步 →</button>
+      </div>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/survey-charts.js"></script>
+  <script src="/site/dashboard/survey.js"></script>
+</body>
+</html>

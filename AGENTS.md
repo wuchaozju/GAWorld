@@ -16,9 +16,11 @@ GAWorld/
 │   ├── env/                  # 环境系统（system.py）
 │   ├── events/               # 生命事件（life.py + plugin.py）
 │   ├── family/               # 家庭与户（assign/overrides/ties/duties/finance/events + plugin.py）
+│   ├── interview/            # 群体采访（schema/roster/prompt/runner/aggregate/report/store/session；__main__ 为按城市的子进程）
 │   ├── io/                   # IO 工具（avatar.py, http_guard.py, web_scrape.py）
 │   ├── llm/                  # LLM 提供商（providers.py）
 │   ├── memory/               # 记忆系统（store, experience, consolidation, decay, …）
+│   ├── persona/              # 真人蒸馏（research/distill/render/store：姓名或网址 → 居民 + 思维框架）
 │   ├── personality/          # 大五人格 OCEAN 特质（traits/anchors + plugin.py，默认开启）
 │   ├── policy/               # 干预策略（intervention.py + plugin.py）
 │   ├── settings/             # 配置（CONFIG, defaults, overrides）
@@ -56,6 +58,16 @@ GAWorld/
 - Interview an agent:
   - `python generative_city_sim.py interview --agent-id 31 --question "Question"`
   - `python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt`
+- Interview a crowd (群体采访): the dashboard panel at `/site/dashboard/survey.html`, backed by
+  `/api/interview/*`. One round is split into one child process per city:
+  - `python -m gaworld.interview --spec round.json --out answers.json`
+  - Sessions land in `output/interviews/<session_id>/`; docs in `docs/GROUP_INTERVIEW_TUTORIAL.md`
+- Build a resident from a real person (真人蒸馏): Agent Studio → **＋ 从真人蒸馏**, backed by
+  `/api/persona/*`. A name or a URL is searched, read and distilled into a sourced portrait
+  (identity + state + Big Five + mental models / heuristics / expression DNA / limits):
+  - Portraits land in `output/personas/<slug>/` (`persona.json`, `research.md`, `SKILL.md`)
+  - Distilling writes only there; **deploying** is the separate, reviewed step that writes the
+    seed CSV and the profile Markdown. Docs in `docs/PERSONA_DISTILL_TUTORIAL.md`
 - Generate a new city map (single, in-place):
   - `python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"`
 - Create a whole city from a place name (map + environment + agents, as a reusable bundle):

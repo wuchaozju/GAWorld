@@ -2408,6 +2408,18 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = family_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        # Trailing slash on purpose: the single-agent `POST /api/interview`
+        # below is a different, older endpoint and must not be shadowed.
+        if path.startswith("/api/interview/"):
+            from gaworld.apps import interview_api
+
+            payload, status = interview_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/persona/"):
+            from gaworld.apps import persona_api
+
+            payload, status = persona_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path.startswith("/api/external-systems"):
             from gaworld.apps import external_systems_api
 
@@ -2554,6 +2566,18 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import family_api
 
             body, status = family_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        # Trailing slash: `/api/interview` alone stays the single-agent
+        # endpoint handled further down.
+        if path.startswith("/api/interview/"):
+            from gaworld.apps import interview_api
+
+            body, status = interview_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/persona/"):
+            from gaworld.apps import persona_api
+
+            body, status = persona_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path.startswith("/api/external-systems"):
             from gaworld.apps import external_systems_api

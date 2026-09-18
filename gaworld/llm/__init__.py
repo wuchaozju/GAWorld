@@ -21,6 +21,7 @@ from gaworld.llm.providers import (  # noqa: F401 — re-export
     OllamaProvider,
     OpenAIProvider,
     call_llm,
+    provider_supports_images,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "OllamaProvider",
     "OpenAIProvider",
     "call_llm",
+    "provider_supports_images",
 ]

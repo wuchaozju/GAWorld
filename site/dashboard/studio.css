@@ -327,3 +327,79 @@ label.field, .field-row { margin-bottom: 12px; }
   .b5-banner.warn { color: #fcd34d; }
   .b5-banner.bad { color: #fca5a5; }
 }
+
+/* ---- 真人蒸馏 modal (persona.js / persona-view.js) ----
+   Same shell as .mem-modal above; the inside is a two-column review page
+   rather than a graph, so it gets its own grid instead of reusing that one. */
+.pd-modal {
+  position: fixed; inset: 0; z-index: 45; display: grid; place-items: center;
+  background: rgba(23, 33, 29, 0.5); padding: 20px;
+}
+.pd-box {
+  width: min(1100px, 100%); max-height: 92vh; overflow: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-lg); padding: 18px;
+}
+.pd-head-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.pd-head-bar h3 { font-family: Georgia, "Noto Serif SC", serif; font-size: 18px; }
+.pd-head-bar .mini-btn { float: none; }
+.pd-note { font-size: 12px; line-height: 1.7; color: var(--muted); margin-bottom: 12px; }
+.pd-form { display: flex; gap: 8px; margin-bottom: 10px; }
+.pd-form input {
+  flex: 1 1 auto; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: 8px; font: inherit; background: #fff;
+}
+.pd-progress { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.pd-bar { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(127, 127, 127, .18); overflow: hidden; }
+.pd-bar span { display: block; height: 100%; background: #13795b; transition: width .3s ease; }
+.pd-progress.bad .pd-bar span { background: #b91c1c; }
+.pd-msg { font-size: 12px; margin: 4px 0 10px; }
+.pd-msg.ok { color: #13795b; }
+.pd-msg.err { color: #b91c1c; }
+
+.pd-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .pd-body { grid-template-columns: 1fr; } }
+.pd-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; background: #fff; }
+.pd-card h3 { font-family: Georgia, "Noto Serif SC", serif; font-size: 17px; margin-bottom: 2px; }
+.pd-card h4 { font-size: 12.5px; letter-spacing: .04em; color: var(--muted); margin: 12px 0 6px; }
+.pd-card h4:first-child { margin-top: 0; }
+.pd-card ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.75; }
+.pd-card p { font-size: 13px; line-height: 1.75; }
+.pd-basics { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.pd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pd-table th {
+  text-align: left; vertical-align: top; width: 92px; padding: 5px 8px 5px 0;
+  color: var(--muted); font-weight: 500; white-space: nowrap;
+}
+.pd-table td { padding: 5px 0; line-height: 1.7; }
+
+/* Provenance is rendered beside the claims, never folded away — a decisive
+   profile built from two snippets has to look like one. */
+.pd-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pd-chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+.pd-chip.ok { color: #13795b; border-color: rgba(19, 121, 91, .4); background: rgba(19, 121, 91, .07); }
+.pd-chip.warn { color: #92400e; border-color: rgba(180, 83, 9, .35); background: rgba(180, 83, 9, .07); }
+.pd-chip.bad { color: #991b1b; border-color: rgba(185, 28, 28, .38); background: rgba(185, 28, 28, .07); }
+.pd-evidence, .pd-kind { font-size: 11px; color: var(--muted); }
+.pd-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+.pd-warn { font-size: 12px; color: #92400e; margin-top: 8px; }
+.pd-evi, .pd-limit { font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+.pd-eg { font-size: 11.5px; color: var(--muted); margin-left: 6px; }
+.pd-models > li { margin-bottom: 8px; }
+.pd-sources { list-style: none; padding-left: 0; }
+.pd-sources li { margin-bottom: 6px; word-break: break-all; }
+
+.pd-archive { list-style: none; padding-left: 0; font-size: 13px; }
+.pd-archive li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.pd-open {
+  border: none; background: none; padding: 0; font: inherit; color: #13795b;
+  cursor: pointer; text-decoration: underline;
+}
+.pd-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+@media (prefers-color-scheme: dark) {
+  .pd-box, .pd-card, .pd-form input { background: var(--panel, #1a1f1c); }
+  .pd-msg.ok, .pd-open { color: #6ee7b7; }
+  .pd-msg.err { color: #fca5a5; }
+  .pd-warn { color: #fcd34d; }
+}

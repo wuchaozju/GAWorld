@@ -13,6 +13,7 @@
     { id: "analytics", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },
     { id: "population", src: "/site/dashboard/population.html" },
+    { id: "survey", src: "/site/dashboard/survey.html" },
     { id: "collaboration", src: "/site/dashboard/collaboration.html" },
     { id: "external", src: "/site/dashboard/external.html" },
     { id: "settings", src: "/site/dashboard/settings.html" },

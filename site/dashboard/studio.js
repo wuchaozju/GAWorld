@@ -58,6 +58,7 @@ const store = {
   big5Draft: null, // working copy of the five z scores, edited by the step-2 sliders
   big5Dirty: false, // sliders moved but not yet written to the seed CSV
   big5Loading: false, // guards the lazy fetch against retry loops
+  personaSlug: null, // set when the draft came out of 真人蒸馏 (see save())
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -218,6 +219,7 @@ async function selectAgent(id) {
 
 function startCreate() {
   store.creating = true;
+  store.personaSlug = null;
   store.currentId = null;
   store.detail = null;
   store.draft = blankDraft();
@@ -1715,6 +1717,23 @@ function bindFinanceStep() {
   const saveFin = $("#saveFinBtn"); if (saveFin) saveFin.addEventListener("click", saveFinance);
 }
 
+/* ---------- 真人蒸馏 ---------- */
+/* The panel lives in persona.js and owns its own modal; it hands the finished
+ * persona over through this one event so the draft stays owned by the store.
+ * The slug is remembered because saving it has to go through the persona
+ * endpoint — see save(). */
+function applyPersona(persona) {
+  const filled = window.GAWorldPersonaView.draftFromPersona(persona);
+  startCreate();
+  store.draft.identity = { ...store.draft.identity, ...filled.identity };
+  store.draft.state = { ...store.draft.state, ...filled.state };
+  store.draft.narrative = filled.narrative;
+  store.personaSlug = filled.slug || null;
+  renderSubject();
+  renderStep();
+  foot(__f("sd.persona_filled", { name: filled.identity.name }), "ok");
+}
+
 /* ---------- actions ---------- */
 /** Persist identity + state (and profile text). Returns true when it stuck. */
 async function save() {
@@ -1725,12 +1744,21 @@ async function save() {
     if (store.creating) {
       const body = { name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
         state: store.draft.state, job: store.draft.narrative.job, personality: store.draft.narrative.personality };
-      const res = await api("/api/agents", { method: "POST", body: JSON.stringify(body) });
-      foot(__f("sd.created", { id: res.id, name: res.name }), "ok");
+      /* A distilled draft is created through /api/persona/deploy instead: it
+       * writes the same identity and state, plus the distilled thinking
+       * framework into the profile and the OCEAN seeds into the Big Five CSV,
+       * neither of which POST /api/agents knows anything about. */
+      const res = store.personaSlug
+        ? await api("/api/persona/deploy", { method: "POST", body: JSON.stringify({
+            slug: store.personaSlug, identity: body, state: store.draft.state }) })
+        : await api("/api/agents", { method: "POST", body: JSON.stringify(body) });
+      const newId = res.id != null ? res.id : res.agent_id;
+      foot(__f("sd.created", { id: newId, name: res.name }), "ok");
       store.creating = false;
+      store.personaSlug = null;
       await loadAgents();
-      $("#agentSelect").value = String(res.id);
-      await selectAgent(res.id);
+      $("#agentSelect").value = String(newId);
+      await selectAgent(newId);
       return true;
     }
     await api(`/api/agents/${store.currentId}/state`, { method: "POST", body: JSON.stringify({
@@ -1796,6 +1824,12 @@ function init() {
   $("#newAgentBtn").addEventListener("click", startCreate);
   $("#saveBtn").addEventListener("click", save);
   $("#runBtn").addEventListener("click", runSim);
+  document.addEventListener("persona:fill", (ev) => applyPersona(ev.detail));
+  // Deploying straight from the panel skips the form, so the list it was
+  // opened over is now one resident short of the truth.
+  document.addEventListener("persona:deployed", (ev) => {
+    loadAgents().then(() => selectAgent(ev.detail.agent_id)).catch((err) => foot(err.message, "err"));
+  });
 
   loadAgents()
     .then(() => store.currentId != null ? selectAgent(store.currentId) : renderStep())

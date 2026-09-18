@@ -148,6 +148,11 @@ addopts = [
     "-ra",
     "--strict-markers",
 ]
+markers = [
+    # Tests that spawn real child processes or import the whole simulator per
+    # case. They run by default; `-m "not slow"` skips them for a fast loop.
+    "slow: spawns subprocesses or imports the full simulator",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:matplotlib.*",
     "ignore::DeprecationWarning:pandas.*",

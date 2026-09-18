@@ -68,6 +68,7 @@ Across days, the simulator accumulates:
 - City map generation and route playback
 - Visualization trace export
 - Agent interview CLI
+- Group interview: ask one question set to many respondents at once — individual residents *and* cohort group agents, **across cities** in one session. Questions are typed (open / multiple-choice / yes-no) so choice and yes-no answers are parsed back into option labels and tallied rather than left as prose, and each question may carry an **image** (real vision content blocks for OpenAI / Anthropic / Ollama, degraded to a caption with an explicit note when the routed model cannot see) or a **URL** (fetched once in the parent, so every respondent reads the same extract). Respondents answer question by question with their own prior answers replayed into each prompt, and a session can be extended with follow-up rounds — continuity that lives in the session transcript and never writes into agent memory, so surveying the population does not change it. Results come with per-option counts reported both per respondent and per person represented (a cohort of 8 counts as 8), cross-tabs by city / age band / gender / hukou / district that are only drawn for axes which actually split the sample, and a downloadable self-contained Markdown document carrying every answer verbatim plus what did *not* work. Runs as a background job, one child process per city. See [`docs/GROUP_INTERVIEW_TUTORIAL.md`](./docs/GROUP_INTERVIEW_TUTORIAL.md)
 - Local dashboard for config editing, profile editing, run control, memory inspection, and interview
 - Agent Studio: a 7-step visual builder/inspector for a single agent — identity, the nine [0,1] state variables (editable radar), skills, tiered memory, Dunbar social circles, behavior dials, and review/deploy; writes back to the state CSV and profile Markdown and can create new agents
 - Parameterised population synthesis: turn panel-level knobs (size, age pyramid, employment, income Gini, household structure, social-graph shape) into a full town — IPF-fitted joint attributes with structural zeros, exact marginals via largest-remainder integerisation, a rank-transform so the requested income median and Gini hold while income still correlates with education and industry, child-first household formation, and power-law workplaces. Outputs the state CSV + profile Markdown formats the simulator already reads, so `build_agent` needs no changes
@@ -242,6 +243,13 @@ Interview an agent:
 ```bash
 python generative_city_sim.py interview --agent-id 31 --question "Why did you choose this action today?"
 python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt
+```
+
+Interview a whole crowd (the 群体采访 panel at `/site/dashboard/survey.html`, or one city's
+share of a round directly):
+
+```bash
+python -m gaworld.interview --spec round.json --out answers.json
 ```
 
 Create an agent from social content:

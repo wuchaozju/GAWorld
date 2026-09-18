@@ -716,6 +716,7 @@
           window.location.href,
           state.session.artifact_base_url,
         );
+        const name = artifactName(artifact);
         let label;
         if (safeUrl) {
           label = document.createElement("a");
@@ -725,8 +726,19 @@
         } else {
           label = document.createElement("span");
         }
-        label.textContent = artifactName(artifact);
+        label.textContent = name;
         item.appendChild(label);
+        if (safeUrl) {
+          // The name link previews the file in a tab; markdown deliverables are
+          // usually wanted on disk, so keep a second action that saves them.
+          const save = document.createElement("a");
+          save.className = "artifact-download";
+          save.href = safeUrl;
+          save.download = name;
+          save.rel = "noopener";
+          save.textContent = t("cl.artifact_download");
+          item.appendChild(save);
+        }
         els.artifactList.appendChild(item);
       });
     }

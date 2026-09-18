@@ -1,0 +1,459 @@
+/* 群体采访 — layered on styles.css + page-shell.css, only what they lack.
+   Hand-written SVG charts, no chart library: site/dashboard has no build step
+   and a CDN chart dependency would cost the dashboard its offline usability.
+
+   `.btn` has no base rule anywhere in site/dashboard (population.css and
+   city.css only style modifiers of it), so it is defined here scoped under
+   this page's own containers rather than added globally — a global `.btn`
+   would silently restyle five other panels. */
+
+.sv-topmeta {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  text-align: right;
+  line-height: 1.9;
+}
+
+.sv-meta-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 999px;
+  background: var(--card, #fff);
+  font-size: 12px;
+  /* Without this the pill collapses to one character per line as soon as the
+     header column narrows — which it does on any phone. */
+  white-space: nowrap;
+}
+
+.sv-meta-pill.is-live {
+  border-color: var(--green, #13795b);
+  color: var(--green, #13795b);
+}
+
+.studio-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+.sv-panel { min-width: 0; display: grid; gap: 16px; }
+
+.sv-side {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+}
+
+.sv-side-card,
+.sv-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 12px;
+}
+
+.sv-side-card { padding: 14px; }
+.sv-card { padding: 16px 18px; }
+
+.sv-side-card h3 { margin: 0 0 8px; font-size: 14px; }
+.sv-card > h3 { margin: 0 0 4px; font-size: 17px; }
+.sv-card h4 { margin: 18px 0 8px; font-size: 14px; }
+
+.sv-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  line-height: 1.6;
+}
+
+.sv-warn { color: #b3541e; font-size: 12px; line-height: 1.6; }
+
+.sv-q {
+  display: inline-grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--line, #e5e7eb);
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+  cursor: help;
+}
+
+/* ---- buttons (scoped; see header note) ---- */
+
+.sv-card .btn,
+.sv-side-card .btn,
+.sv-actions .btn {
+  padding: 7px 13px;
+  border: 1px solid var(--green, #13795b);
+  border-radius: 8px;
+  background: var(--green, #13795b);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .12s ease;
+}
+
+.sv-card .btn:hover:not(:disabled),
+.sv-side-card .btn:hover:not(:disabled),
+.sv-actions .btn:hover:not(:disabled) { filter: brightness(1.07); }
+
+.sv-card .btn.ghost,
+.sv-side-card .btn.ghost,
+.sv-actions .btn.ghost {
+  background: transparent;
+  color: var(--ink, #14201b);
+  border-color: var(--line, #e5e7eb);
+}
+
+.sv-card .btn.tiny,
+.sv-side-card .btn.tiny { padding: 3px 8px; font-size: 12px; font-weight: 500; }
+
+.sv-card .btn:disabled,
+.sv-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.sv-card .btn:focus-visible,
+.sv-side-card .btn:focus-visible,
+.sv-actions .btn:focus-visible {
+  outline: 2px solid var(--green, #13795b);
+  outline-offset: 2px;
+}
+
+/* ---- fields ---- */
+
+.sv-field { display: grid; gap: 4px; font-size: 12px; color: var(--muted, #6b7280); }
+.sv-field.wide { margin-bottom: 10px; }
+
+.sv-field input,
+.sv-field select,
+.sv-field textarea,
+.sv-question textarea,
+.sv-option-row input,
+.sv-attach input,
+.sv-attach-add input {
+  padding: 7px 9px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink, #14201b);
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sv-filters {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 12px;
+  margin: 10px 0 12px;
+}
+
+.sv-axes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line, #e5e7eb);
+}
+
+.sv-axes-label { font-size: 12px; color: var(--muted, #6b7280); }
+
+.sv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  /* Without this the grid track squeezes "年龄段" into a vertical stack of
+     single characters. */
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---- step 1: pickers ---- */
+
+.sv-city { margin-bottom: 20px; }
+
+.sv-city h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.sv-tag {
+  padding: 1px 7px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 999px;
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sv-city-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+
+.sv-subhead {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+}
+
+.sv-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+
+.sv-cohorts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+}
+
+.sv-person,
+.sv-cohort {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-areas: "box name" ". meta" ". job";
+  gap: 1px 7px;
+  padding: 7px 9px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color .12s ease, background .12s ease;
+}
+
+.sv-person input,
+.sv-cohort input { grid-area: box; margin: 2px 0 0; }
+.sv-person-name { grid-area: name; font-weight: 600; }
+.sv-person-meta { grid-area: meta; font-size: 11px; color: var(--muted, #6b7280); }
+.sv-person-job {
+  grid-area: job;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sv-cohort { background: rgba(19, 121, 91, 0.04); }
+
+.sv-person.is-on,
+.sv-cohort.is-on {
+  border-color: var(--green, #13795b);
+  background: rgba(19, 121, 91, 0.09);
+}
+
+/* ---- step 2: question editor ---- */
+
+.sv-questions { display: grid; gap: 12px; margin: 14px 0; }
+
+.sv-question {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.sv-question-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sv-question-head h4 { margin: 0; font-size: 13px; flex: none; }
+.sv-kinds { display: flex; gap: 4px; flex: 1 1 auto; }
+
+.sv-options { margin-top: 8px; display: grid; gap: 6px; }
+
+.sv-option-row { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 6px; }
+
+.sv-option-foot { display: flex; align-items: center; gap: 10px; }
+
+.sv-attachments { margin-top: 10px; display: grid; gap: 6px; }
+
+.sv-attach {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 8px;
+  border: 1px dashed var(--line, #e5e7eb);
+  border-radius: 8px;
+}
+
+.sv-attach-head { font-size: 12px; color: var(--muted, #6b7280); word-break: break-all; }
+
+.sv-attach-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.sv-upload { text-align: center; }
+
+.sv-question-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* ---- step 3: results ---- */
+
+.sv-result-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sv-result-actions { display: flex; gap: 8px; }
+
+.sv-results { display: grid; gap: 16px; margin-top: 8px; }
+
+.sv-result {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.sv-result-head { display: flex; align-items: baseline; gap: 10px; }
+.sv-result-head h4 { margin: 0; font-size: 14px; }
+
+.sv-summary { margin: 8px 0 10px; font-size: 13px; line-height: 1.75; }
+.sv-summary.is-empty { color: var(--muted, #6b7280); font-size: 12px; }
+
+.sv-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+
+.sv-key { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.sv-key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+.sv-chart { width: 100%; max-width: 420px; height: auto; display: block; }
+.sv-chart .sv-bar-label { font-size: 11px; fill: var(--ink, #14201b); }
+.sv-chart .sv-bar-value { font-size: 10px; fill: var(--muted, #6b7280); }
+
+.sv-coverage { margin: 4px 0 0; font-size: 12px; color: var(--muted, #6b7280); }
+
+.sv-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line, #e5e7eb);
+}
+
+.sv-breakdown h5 { margin: 0 0 4px; font-size: 12px; color: var(--muted, #6b7280); }
+
+.sv-transcripts { display: grid; gap: 6px; }
+
+.sv-transcript {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+
+.sv-transcript summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sv-transcript.is-error summary { color: #b3541e; }
+
+.sv-qa { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--line, #e5e7eb); }
+.sv-qa-q { margin: 0; font-size: 12px; color: var(--muted, #6b7280); }
+.sv-qa-a { margin: 3px 0 0; font-size: 13px; line-height: 1.7; }
+
+/* ---- side rail ---- */
+
+.sv-basket { display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+
+.sv-basket-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.sv-basket-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sv-cost-list { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.9; }
+.sv-cost-list b { font-size: 14px; }
+
+.sv-history { display: grid; gap: 6px; }
+.sv-history-row { display: grid; gap: 1px; }
+.sv-history-row .btn { text-align: left; }
+
+/* ---- footer progress ---- */
+
+.sv-progress { flex: 1 1 auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.sv-bar {
+  flex: none;
+  width: 200px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line, #e5e7eb);
+  overflow: hidden;
+}
+
+.sv-bar i { display: block; height: 100%; background: var(--green, #13795b); transition: width .2s ease; }
+.sv-bar.is-error i { background: #b3541e; }
+
+.sv-bar-text {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sv-actions { display: flex; gap: 8px; }
+
+@media (max-width: 960px) {
+  .studio-main { grid-template-columns: minmax(0, 1fr); }
+  .sv-side { position: static; }
+  .sv-filters { grid-template-columns: minmax(0, 1fr); }
+  /* `.studio-top` (page-shell.css) is a flex row of brand + meta. On a phone
+     the two fight over the width and the headline ends up one word per line,
+     so stack them and let the pills flow. Scoped to this page: page-shell is
+     shared with five other panels. */
+  .studio-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .sv-topmeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    text-align: left;
+  }
+  .sv-meta-pill { margin-left: 0; }
+  .sv-question-head { flex-wrap: wrap; }
+  .sv-attach-add { grid-template-columns: minmax(0, 1fr); }
+  .sv-breakdowns { grid-template-columns: minmax(0, 1fr); }
+}
