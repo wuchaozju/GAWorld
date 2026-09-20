@@ -1,0 +1,34 @@
+{
+  "city": "柯桥区",
+  "climate": "subtropical",
+  "background": "中国·柯桥区。大城市，亚热带气候。当地经济与就业结构与其规模相称，居民对物价、就业与公共服务的变化较为敏感；社会秩序稳定。",
+  "environment": {
+    "enabled": true,
+    "event_chance": 0.6,
+    "max_events_per_tick": 2,
+    "natural_events": [
+      "午后有小雨，路面湿滑",
+      "冷空气到达，气温明显下降",
+      "清晨有大雾，能见度低",
+      "高温橙色预警",
+      "梅雨持续，空气潮湿"
+    ],
+    "social_events": [
+      "主干道交通拥堵",
+      "地铁运营延误",
+      "城市马拉松导致道路封闭",
+      "大型演出，周边人流密集",
+      "商圈促销活动，客流激增"
+    ]
+  },
+  "external_environment": {
+    "enabled": true,
+    "seed": 1926647855,
+    "max_events_per_tick": 3,
+    "generator": {
+      "mode": "llm",
+      "history_days": 3,
+      "description": "中国的柯桥区，大城市，亚热带气候，季节性天气变化明显；当地经济与就业结构随规模而定，居民对物价、就业与公共服务变化敏感。"
+    }
+  }
+}

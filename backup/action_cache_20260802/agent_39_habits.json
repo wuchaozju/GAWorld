@@ -1,0 +1,99 @@
+{
+  "morning|public|找地方避雨": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  },
+  "morning|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 2,
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.23191040000000002,
+    "last_updated_day": 4
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 1
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  },
+  "afternoon|public|找地方避雨": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  },
+  "evening|public|找地方避雨": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "night|public|改去其他开门的地方": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  },
+  "morning|public|前往武林街道": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 4
+  },
+  "afternoon|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 4
+  },
+  "afternoon|public|下午工作": {
+    "action_counts": {
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 4
+  },
+  "evening|public|下班": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 4
+  },
+  "evening|public|关注本地动态": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 4
+  },
+  "night|public|关注本地动态": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 4
+  }
+}

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#11151c" />
+  <title>GAWorld · 我的孪生</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app">
+    <!-- First-run explainer. Shown before the auth gate, once. -->
+    <section id="intro" hidden>
+      <div class="card intro-hero">
+        <svg class="hero" viewBox="0 0 320 150" role="img"
+             aria-label="示意动画：你在现实中移动，智能体在仿真中同步移动">
+          <text x="14" y="18" class="hero-label">现实</text>
+          <text x="14" y="144" class="hero-label">仿真</text>
+
+          <!-- The same route, drawn twice: reality on top, simulation below. -->
+          <line x1="40" y1="42" x2="280" y2="42" class="hero-route" />
+          <line x1="40" y1="110" x2="280" y2="110" class="hero-route" />
+          <g class="hero-stops">
+            <circle cx="40" cy="42" r="3.5" /><circle cx="160" cy="42" r="3.5" />
+            <circle cx="280" cy="42" r="3.5" /><circle cx="40" cy="110" r="3.5" />
+            <circle cx="160" cy="110" r="3.5" /><circle cx="280" cy="110" r="3.5" />
+          </g>
+
+          <!-- One group, so the mirroring is inherent rather than choreographed:
+               the agent cannot drift out of step with you. -->
+          <g class="hero-convoy">
+            <circle cx="40" cy="42" r="8" class="hero-you" />
+            <line x1="40" y1="54" x2="40" y2="98" class="hero-link" />
+            <circle cx="40" cy="110" r="8" class="hero-agent" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="card">
+        <h1>把你自己接进仿真</h1>
+        <ol class="intro-steps">
+          <li><b>上报</b><span>选一个行为，一次点击带上位置</span></li>
+          <li><b>孪生</b><span>智能体照着你的现实生活走</span></li>
+          <li><b>观察</b><span>看它的形象、状态与今日轨迹</span></li>
+        </ol>
+        <button id="introStart" type="button" class="primary">开始</button>
+        <p class="muted">需要一个邀请码。位置数据只发到你自己的服务器。</p>
+      </div>
+    </section>
+
+    <!-- Gate: shown until a token exists in localStorage. -->
+    <section id="authGate" class="card" hidden>
+      <h1>连接到 GAWorld</h1>
+      <p class="muted">输入邀请码，把这台手机绑定到你的智能体。</p>
+      <input id="codeInput" type="text" inputmode="text" autocomplete="off"
+             placeholder="邀请码" aria-label="邀请码" />
+      <button id="codeSubmit" type="button">连接</button>
+      <p id="authError" class="error" role="alert"></p>
+    </section>
+
+    <!-- Agent picker: shown when the token has not chosen an agent yet. -->
+    <section id="agentGate" class="card" hidden>
+      <h1>选择你的智能体</h1>
+      <p class="muted">这台手机上报的位置与行为，会驱动你选的这一位。</p>
+      <input id="agentSearch" type="text" placeholder="搜索姓名" aria-label="搜索智能体" />
+      <p id="agentError" class="error" role="alert"></p>
+      <div id="agentList" class="place-list"></div>
+    </section>
+
+    <section id="main" hidden>
+      <header class="card avatar-card">
+        <div id="avatar" class="avatar" aria-label="智能体形象"></div>
+        <div class="avatar-meta">
+          <h1 id="agentLabel">—</h1>
+          <p><span id="syncState" class="badge">—</span></p>
+          <p id="currentState" class="muted">—</p>
+        </div>
+      </header>
+
+      <p id="notice" class="notice" role="status" hidden></p>
+
+      <section class="card">
+        <h2>你在做什么？</h2>
+        <button id="repeatButton" type="button" class="repeat" hidden></button>
+        <div id="tagGrid" class="tag-grid"></div>
+        <input id="noteInput" type="text" placeholder="备注（可选）" aria-label="备注" />
+        <button id="reportButton" type="button" class="primary">上报</button>
+        <p id="queueState" class="muted"></p>
+        <label class="auto-row">
+          <input id="autoSample" type="checkbox" />
+          <span>打开期间每 10 分钟自动记录位置</span>
+        </label>
+        <p class="muted">关掉页面后无法继续记录，这是手机浏览器的限制。</p>
+      </section>
+
+      <!-- Manual picker: shown when geolocation is denied or unavailable. -->
+      <section id="placePicker" class="card" hidden>
+        <h2>手动选择位置</h2>
+        <p class="muted">拿不到定位。选一个地点，或直接上报行为。</p>
+        <input id="placeSearch" type="text" placeholder="搜索地点" aria-label="搜索地点" />
+        <div id="placeList" class="place-list"></div>
+        <button id="placeCancel" type="button">仅上报行为</button>
+      </section>
+
+      <section class="card">
+        <h2>智能体的今天</h2>
+        <p id="lifeDiary" class="diary">还没有日记。</p>
+        <div id="lifeState" class="bars"></div>
+        <ul id="lifeGoals" class="goals"></ul>
+      </section>
+
+      <section class="card">
+        <h2>今日上报</h2>
+        <div id="historyList" class="history"></div>
+      </section>
+
+      <section class="card">
+        <h2>今日轨迹</h2>
+        <p id="trailSummary" class="muted" role="status"></p>
+        <canvas id="trail" width="600" height="400" aria-label="今日轨迹"></canvas>
+        <button id="replayButton" type="button">回放</button>
+      </section>
+
+      <section class="card">
+        <button id="switchAgent" type="button">换一个智能体</button>
+        <p class="muted">已上报的数据会留在当前这位名下，不会跟着搬走。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="core.js?v=5"></script>
+  <script src="app.js?v=5"></script>
+</body>
+</html>

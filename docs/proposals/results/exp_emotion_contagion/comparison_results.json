@@ -1,0 +1,18 @@
+{
+  "control": {
+    "error": "State file not found",
+    "path": "/Users/cw/dev/GAWorld/docs/proposals/results/exp_emotion_contagion/control/state/agent_state_history.csv"
+  },
+  "treatment_happy": {
+    "error": "State file not found",
+    "path": "/Users/cw/dev/GAWorld/docs/proposals/results/exp_emotion_contagion/treatment_happy/state/agent_state_history.csv"
+  },
+  "treatment_sad": {
+    "error": "State file not found",
+    "path": "/Users/cw/dev/GAWorld/docs/proposals/results/exp_emotion_contagion/treatment_sad/state/agent_state_history.csv"
+  },
+  "treatment_sparse": {
+    "error": "State file not found",
+    "path": "/Users/cw/dev/GAWorld/docs/proposals/results/exp_emotion_contagion/treatment_sparse/state/agent_state_history.csv"
+  }
+}

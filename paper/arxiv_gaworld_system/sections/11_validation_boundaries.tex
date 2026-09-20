@@ -1,0 +1,115 @@
+\section{Validation Boundaries}
+\label{sec:validation-boundaries}
+
+An artificial society is not validated by the realism of a transcript, by one
+aggregate match, or by successful execution.  GAWorld separates five claim
+levels: individual consistency, macro correspondence, emergent dynamics,
+counterfactual response, and reproducibility.  Evidence at one level does not
+compensate for absence at another.  This layered view follows established
+agent-based-modeling practice in distinguishing implementation verification,
+empirical validation, and the intended domain of use
+\citep{grimm2006odd,windrum2007empirical,fagiolo2007critical}.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Claim--evidence matrix for the audited GAWorld snapshot.  ``Current
+support'' states the strongest defensible claim, not an aspirational goal.}
+\label{tab:claim-evidence}
+\begin{tabular}{@{}p{0.17\linewidth}p{0.28\linewidth}p{0.25\linewidth}p{0.22\linewidth}@{}}
+\toprule
+Claim level & Evidence required & Current support & Not established \\
+\midrule
+Individual consistency & Repeated independent elicitations; longitudinal and perturbation tests; external or held-out criteria & Persistent profiles, memories, diaries, interviews, and one completed two-phase arm are inspectable & Human fidelity, stable identity across models/seeds, or a memory-treatment effect \\
+Macro correspondence & Pre-specified external targets; calibrated population; uncertainty and out-of-sample tests & State/economy pipelines can produce aggregates; benchmark fixtures test analysis code & Population representativeness, calibrated macro fit, forecasting, or real-city prediction \\
+Emergent dynamics & Multiple seeds and scales; mechanism ablations; network/temporal diagnostics; robust qualitative patterns & Social and network mechanisms emit inspectable state; failures are archived & Polarization, contagion, homophily, or other stable emergent laws \\
+Counterfactual response & Replicated randomized arms; verified intervention path; placebo and negative controls; uncertainty & Four paired event/baseline trees demonstrate comparison mechanics & Causal policy effects, sign stability, transportability, or welfare recommendations \\
+Reproducibility & Immutable code/config/data/model snapshots; deterministic components; repeated reruns and failure accounting & Hashed result files, seeds/configs in some runs, file-backed traces, and a diagnostic harness & Bitwise replay of hosted LLM calls or complete end-to-end reproduction of every archive \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Individual Consistency}
+
+GAWorld implements the prerequisites for a consistency study: named persistent
+agents, structured state, episodic files, recall, reflection, and longitudinal
+logs.  These mechanisms allow within-agent questions such as whether a stated
+preference survives intervening events or whether an interview answer is
+traceable to stored experience.  The current memory case does not answer those
+questions comparatively because three of four arms lack phase 2 and the only
+complete arm contains one agent.  Generated behavioral coherence is also not
+equivalent to correspondence with a real person.  A stronger evaluation would
+repeat standardized probes before and after controlled memory perturbations,
+separate temporal persistence from prompt sensitivity, and compare against
+held-out observations where consent and provenance permit.
+
+\subsection{Macro Correspondence}
+
+Aggregating simulated variables is an implemented capability; calling the
+aggregate realistic requires a separate calibration argument.  The audited
+economy trace has five agents and one seed, while the benchmark scorecard is a
+synthetic diagnostic fixture.  Neither represents a target population or
+supports out-of-sample prediction.  Future macro validation should document
+the sampling frame, map each simulated construct to an external measurement,
+reserve targets for testing rather than calibration, and report uncertainty
+across seeds and plausible parameterizations.  Agreement on a few marginal
+means would remain insufficient if joint distributions, temporal patterns, or
+subgroup errors failed.
+
+\subsection{Emergence and Mechanism}
+
+An emergent claim requires a pattern that is not merely written into a prompt
+or initial condition and that recurs under controlled variation.  The present
+archive does not meet that standard: the network study records no interactions,
+the emotion study has no state files, and the polarization arms have unequal
+record counts.  The existence of social-network, exposure, and affect fields
+therefore establishes instrumentation, not a social law.  Appropriate tests
+would vary population size and topology, ablate candidate mechanisms, quantify
+between-seed variability, and trace a macro pattern back to micro-level events.
+Where a field remains identically zero, the first question is whether the
+mechanism and detector were active, not why society produced no effect.
+
+\subsection{Counterfactual Validity}
+
+The matched-run interface is a useful scaffold for counterfactual experiments,
+but the archived policy differences are single contrasts produced by an
+LLM-mediated dynamical system.  A common seed does not guarantee common latent
+randomness after prompts diverge, and a policy description does not guarantee
+that an economic or mobility mechanism changed.  Before interpreting a
+difference, researchers should verify the intervention's path from event to
+structural state, replicate both arms over seeds, pre-register target metrics,
+and include placebo events or negative-control outcomes
+\citep{lipsitch2010negative}.  External policy conclusions additionally require
+a defensible mapping to the population and institutions of interest.  GAWorld
+currently supports constructing and auditing such a study, not replacing it.
+
+\subsection{Reproducibility as a Non-Compensatory Gate}
+
+The artifact hashes used in this paper bind each numerical statement to an
+audited byte sequence.  They do not bind the archive to a clean released
+runtime: the audit began from a dirty working tree, and hosted providers may
+change behavior independently of code, seed, or sampling parameters.  Missing
+state files and interrupted arms further show that successful completion must
+be recorded per treatment.  Consequently, a result that cannot be reconstructed
+from code, configuration, inputs, model identity, and complete outputs should
+not be promoted because it looks plausible or matches an external statistic.
+
+For future releases, the minimum reproducibility unit should contain the exact
+code revision plus a patch or clean tag, environment lockfile, initial
+profiles and maps, provider/model identifiers, prompt and sampling settings,
+random seeds, per-arm status, logs, and raw and derived artifacts.  Hosted-model
+studies should estimate replay variability rather than promise bitwise
+determinism.  The diagnostic benchmark can then serve as a regression gate:
+fixtures test parsers and scoring logic, while separately labeled simulation
+runs test whether scientific evidence has actually been produced.
+
+\subsection{Intended Use}
+
+At its present evidence level, GAWorld is best used for mechanism prototyping,
+trace inspection, hypothesis generation, controlled software experiments, and
+the design of more rigorous artificial-society studies.  The archive does not
+support deploying GAWorld as a substitute population, forecasting real social
+outcomes, ranking policies, or making decisions about identifiable people.
+Those are not merely stronger wordings of the same result; they are different
+claims requiring external data, identification, uncertainty quantification,
+and governance that the current artifacts do not provide.

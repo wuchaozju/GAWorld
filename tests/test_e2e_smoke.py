@@ -63,26 +63,16 @@ class TestRunSimulationSmoke(unittest.TestCase):
         self.original_cwd = os.getcwd()
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         # Copy the fixture data the simulator needs into the temp dir.
-        for name in (
-            "hangzhou_agents_state_init.csv",
-            "hangzhou_profiles_with_names.md",
-            "citymap.md",
-        ):
-            src = os.path.join(repo_root, name)
-            if os.path.exists(src):
-                shutil.copy(src, os.path.join(self.tmp.name, name))
-        # Some simulators read news_source.md / news_cache.json — copy
-        # them if they exist; the simulator falls back gracefully if not.
-        for name in ("news_source.md", "news_cache.json"):
-            src = os.path.join(repo_root, name)
-            if os.path.exists(src):
-                shutil.copy(src, os.path.join(self.tmp.name, name))
+        data_src = os.path.join(repo_root, "data")
+        data_dst = os.path.join(self.tmp.name, "data")
+        if os.path.isdir(data_src):
+            shutil.copytree(data_src, data_dst)
         os.chdir(self.tmp.name)
         self.addCleanup(os.chdir, self.original_cwd)
 
     def _patch_config(self) -> None:
         """Override CONFIG to keep the run short and deterministic."""
-        from config import CONFIG
+        from gaworld.settings import CONFIG
 
         # Snapshot keys we'll mutate so cleanup can restore them.
         originals: dict[str, object] = {}
@@ -164,6 +154,11 @@ class TestRunSimulationSmoke(unittest.TestCase):
         sim.HUMAN_REALISM_ENABLED = False
         sim.VISUALIZATION_ENABLED = False
         sim.LIFE_EVENTS_ENABLED = False
+        # This smoke exercises the fine-grained tick loop; force off the
+        # long-run fast-forward mode in case a local dashboard_config.json
+        # enabled it (that path skips the per-tick planning/reflection tasks
+        # this test asserts on).
+        sim.LONG_RUN_ENABLED = False
 
         with install() as mock:
             try:
@@ -186,9 +181,12 @@ class TestRunSimulationSmoke(unittest.TestCase):
             f"expected per-step task in {seen}",
         )
 
-        # Per-agent log files should exist.
-        log_dir = os.path.join(self.tmp.name, "output", "logs")
-        self.assertTrue(os.path.isdir(log_dir), "output/logs not created")
+        # Per-agent log files should exist, wherever the config points them —
+        # a selected city moves the whole run tree under output/cities/<slug>/.
+        from gaworld.settings import CONFIG
+
+        log_dir = os.path.join(self.tmp.name, CONFIG.get("log_dir", "output/logs"))
+        self.assertTrue(os.path.isdir(log_dir), f"{log_dir} not created")
         for aid in (4, 5):
             log_path = os.path.join(log_dir, f"agent_{aid}.log")
             self.assertTrue(os.path.exists(log_path), f"missing {log_path}")

@@ -1,0 +1,95 @@
+\section{Research Interfaces and Deployment Modes}
+\label{sec:interfaces-deployment}
+
+GAWorld exposes the same persistent society through several interfaces, each
+optimized for a different stage of research.  These interfaces are intentionally
+thin over repository state and runtime commands: they improve inspection and
+operation, but do not constitute independent simulation engines.
+
+\subsection{Command Line and Interactive Inspection}
+
+The command-line interface is the most direct research surface.  In addition to
+\texttt{run}, \texttt{reset}, and \texttt{compare-event}, it can restrict the
+simulation horizon, import external retrieval material, create an agent from
+provided social-media text, serve visualization artifacts, and start local
+services.  The \texttt{interview} command rebuilds a selected agent from the
+configured population, restores its memory when statefulness is enabled, seeds
+retrieval from that memory, and answers one or more researcher-supplied
+questions.  Interviews are therefore probes of a stored agent state under a
+new elicitation context; they are not independent measurements of the human
+profile on which an agent may have been based.
+
+LLM access is mediated by a provider router.  Current adapters cover local
+Ollama, OpenAI-compatible, and Anthropic-style endpoints, while routing rules can
+select providers by task or agent and can specify ordered fallbacks.  Calls are
+logged with provider, task, agent, prompt size, latency, and fallback position.
+This abstraction makes deployment adaptable to local or hosted models, but it
+does not make providers behaviorally interchangeable.  A model or routing
+change is an experimental change and should be recorded as such.
+
+\subsection{Dashboard and Agent Studio}
+
+The local Dashboard serves a static web client together with HTTP endpoints for
+configuration, agent lists, profiles, state, memory, life events, simulation
+start/stop status, trace metadata, and interviews.  It supports configuring
+provider routing and initiating a run while exposing the resulting files to a
+researcher.  Agent Studio extends this surface with an agent-centric view: it
+can inspect and edit profiles and normalized state variables, show memory and
+growth summaries, inspect skills and relationships, and launch an interview.
+These tools make persistent state legible without requiring an analyst to read
+every JSON or CSV file directly.
+
+The web interface should not be conflated with the kernel's
+\texttt{Controller}.  The latter validates structured movement and exposes
+named, audited runtime interventions.  The Dashboard's primary run and mutation
+paths still use HTTP handlers and CLI subprocess management rather than routing
+all operations through that API.
+
+\subsection{Trace Replay and External Environment Service}
+
+The simulator's visualizer records a simulation trace and latest frame,
+including agent positions, activities, events, and presentation assets.
+\texttt{site/simviz} replays these artifacts in a browser and provides spatial
+and temporal inspection distinct from aggregate plots.  Replay is valuable for
+finding implausible schedules, stalled movement, or mismatches between an event
+and an agent response.  It remains a view of what was recorded: omitted state
+cannot be recovered from the animation, and visual plausibility is not a
+validation criterion.
+
+An optional external-environment server separates shared world evolution from
+the main process.  Its HTTP API starts simulation days, advances time ticks,
+returns environmental events and context, and persists engine state plus
+day/tick caches.  It can use the configured LLM for environment generation or a
+rule-based fallback.  This service boundary supports controlled reuse of a
+world backend and makes environment state independently inspectable; the local
+in-process environment remains a supported runtime path.
+
+\subsection{Relay-Based Distributed Communication}
+
+GAWorld also implements an opt-in distributed communication mode.  Simulation
+nodes register local agents with an HTTP relay, discover agents in the same
+cluster, poll bounded inbound messages, and send bounded outbound messages.
+The relay persists its directory and retained message state, while the
+simulation converts received messages into context for local cognition.  The
+CLI can host the relay directly, and the Agent Studio can expose detected relay
+activity.
+
+This mechanism is best understood as a communication bridge, not as evidence
+of scalable distributed simulation.  The current implementation does not
+provide distributed clock synchronization, partitioned world-state ownership,
+transactional consistency, fault-tolerant consensus, or published throughput
+and scaling measurements.  It enables agents hosted by different processes or
+machines to exchange messages through a shared service; claims about speedup,
+population scale, or consistency under failure require separate evaluation.
+
+\subsection{Deployment Boundaries}
+
+The default services use Python threaded HTTP servers and file-backed state,
+which keeps local research deployment transparent and easy to inspect.  Hosted
+LLM credentials are supplied through environment variables rather than embedded
+in profiles or manuscript artifacts.  Researchers exposing Dashboard,
+environment, or relay services beyond a trusted machine must add production
+authentication, transport security, access control, rate limiting, and data
+governance appropriate to the profiles and generated content in use.  GAWorld's
+current interfaces are research tooling; their existence should not be read as
+a production-security or large-scale-operations claim.

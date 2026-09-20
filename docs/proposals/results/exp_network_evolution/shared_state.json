@@ -1,0 +1,7 @@
+{
+  "experiment": "exp_network_evolution",
+  "treatment": "natural_evolution",
+  "status": "approved",
+  "timestamp": "2026-05-24T19:00:00Z",
+  "notes": "Paper completed with analysis_summary.json and network_evolution_paper.md"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "GAWorld 数字孪生",
+  "short_name": "GAWorld",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#11151c",
+  "theme_color": "#11151c",
+  "lang": "zh-CN",
+  "icons": []
+}

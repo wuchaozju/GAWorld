@@ -1,0 +1,123 @@
+\section{Persistent and Situated Agent Lifecycle}
+\label{sec:agent-lifecycle}
+
+GAWorld represents an agent as a continuing participant in a shared simulation,
+not as an isolated chat session.  The representation separates relatively
+stable profile material, mutable runtime state, and artifacts accumulated over
+simulated time.  Figure~\ref{fig:agent-lifecycle} shows the connected per-tick
+control path.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{agent_lifecycle.pdf}
+  \caption{The configured default agent-step pipeline.  The first and last
+  stages are structural boundaries; intermediate stages may be omitted or
+  replaced through configuration.  Domain inputs also arrive through direct
+  calls and event-bus contribution points, so the diagram is a control-flow
+  account rather than a claim that every subsystem is a plugin.}
+  \label{fig:agent-lifecycle}
+\end{figure}
+
+\subsection{Profile seeds and mutable state}
+
+At construction time, a tabular seed row supplies the identifier,
+demographic fields, and initial scalar state, while a Markdown profile supplies
+descriptive material such as occupation, personality, daily life, and values.
+The current builder merges these sources into a dictionary containing
+\texttt{id}, profile fields, \texttt{state}, an in-memory \texttt{memory}
+list, and \texttt{social\_neighbors}; it then initializes location against the
+city map.  The core state includes affective, socioeconomic, identity,
+behavioral, and information-exposure variables.  Additional mechanisms may
+add namespaced or compatibility fields during setup and execution.
+
+The class \texttt{gaworld.core.agent.Agent} is a typed adapter over this
+dictionary.  It provides properties for identifier, name, state, memory,
+schedule, location, and attached skill identifiers, while dictionary access
+delegates to the same backing object.  \texttt{view\_as\_agent} therefore
+introduces no copy, and \texttt{ensure\_agent\_dict} allows a typed caller to
+hand the record back to older helpers.  This is important for incremental
+migration, but it is not a fully typed agent schema: many runtime call sites
+still consume dictionaries, and arbitrary mechanism-specific fields can still
+be added.
+
+Persistence extends beyond the in-memory record.  Depending on enabled
+features, per-agent directories hold episodic entries, diaries, schedules,
+vector-indexed recall material, environmental preferences, and other
+mechanism-owned records.  On a stateful restart, stored memory is loaded into
+the agent and can seed retrieval.  The file boundary makes inputs to later
+decisions inspectable, although it also means that reproducibility depends on
+capturing configuration, external model behavior, and the complete artifact
+directory rather than only the seed CSV.
+
+\subsection{The default per-tick path}
+
+The cognition loop is implemented as an ordered \texttt{StagePipeline}.  A
+stage receives an agent, a shared per-step dictionary, and the
+\texttt{SimContext}.  Hook-visible values retain names such as
+\texttt{activity}, \texttt{action}, \texttt{outcome}, and
+\texttt{reflection}; intermediate values use underscore-prefixed keys.  The
+default path contains the following twelve stages:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+  \item \textbf{prepare} establishes tick-local inputs and emits the pre-step
+  boundary;
+  \item \textbf{perceive} combines local environment, social, policy, memory,
+  and contributed perception sections;
+  \item \textbf{interrupts} considers events that can alter the scheduled
+  course;
+  \item \textbf{plan} forms the agent's immediate intention in the current
+  context;
+  \item \textbf{adjust\_activity} reconciles that plan with scheduled and
+  interrupted activity;
+  \item \textbf{move} resolves travel and updates location where applicable;
+  \item \textbf{select\_action} chooses an action from the available action
+  space;
+  \item \textbf{reflect} produces an interpretation of action and outcome;
+  \item \textbf{update\_state} applies state and relationship effects;
+  \item \textbf{broadcast} exposes eligible communication to other agents or
+  a distributed relay;
+  \item \textbf{memorize} constructs and stores the tick's experience; and
+  \item \textbf{record} appends established logs, state history, and visual
+  trace material.
+\end{enumerate}
+
+Before the pipeline runs, the outer loop advances the shared Clock, updates the
+environment and local occupancy, polls distributed messages when enabled, and
+may perform configured information seeking.  After it returns, the runtime
+emits \texttt{on\_agent\_post\_step}, allowing mechanisms such as the
+intervention plugin to compute their own metrics.  Day-start and day-end
+events bracket the tick loop, and memory consolidation is invoked at the end
+of a day.  Consequently, the twelve stages are the agent-step spine, not the
+entire simulation lifecycle.
+
+\subsection{Contribution points and compatibility calls}
+
+The EventBus lets a mechanism observe an event, contribute zero or more items,
+or filter a value in priority order.  Perception composition is a concrete
+example: local context can be assembled by established code while plugins add
+bounded text sections without owning the full prompt.  Post-step and day-end
+events similarly let policy, economy, skills, or interests react at defined
+boundaries.  Observer failures are logged and isolated unless strict mode is
+enabled; stage failures instead propagate because a missing control-flow stage
+could silently corrupt state.
+
+Not all inputs use this bus.  Memory recall, environment evolution, and social
+network operations retain direct paths within or around the pipeline.  The
+Controller now validates structured movement requests and exposes audited
+runtime interventions, but it does not mediate every selected action.
+Likewise, \texttt{record} writes established artifacts in addition to the
+kernel Recorder.  The lifecycle is therefore connected and configurable while
+retaining compatibility paths beyond the plugin boundary.
+
+\subsection{Configuration and ablation semantics}
+
+The stage order is read from \texttt{CONFIG["pipeline"]["agent\_step"]}.
+Entries may name built-in stages or importable callables; a custom callable can
+also receive a display name.  Unresolvable entries are skipped with a warning,
+and an empty resolved pipeline is rejected.  Downstream built-ins generally
+read absent step values defensively, which supports mechanism ablations, but
+\texttt{prepare} and \texttt{record} are intended as structural boundaries.
+Changing order or removing a stage can change semantics and artifact
+completeness.  The configuration surface therefore enables controlled system
+experiments; it does not guarantee that every permutation is meaningful or
+behavior-preserving.

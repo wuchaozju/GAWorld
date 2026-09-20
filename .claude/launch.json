@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "gaworld.apps.dashboard_server", "--port", "8766"],
+      "port": 8766
+    },
+    {
+      "name": "dashboard-external",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "gaworld.apps.dashboard_server", "--port", "8778"],
+      "port": 8778
+    }
+  ]
+}

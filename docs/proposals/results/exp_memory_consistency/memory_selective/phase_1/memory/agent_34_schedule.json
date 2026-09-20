@@ -1,0 +1,38 @@
+[
+  {
+    "time": "07:30",
+    "activity": "晨练"
+  },
+  {
+    "time": "08:30",
+    "activity": "吃早饭"
+  },
+  {
+    "time": "10:00",
+    "activity": "买菜"
+  },
+  {
+    "time": "11:30",
+    "activity": "午饭"
+  },
+  {
+    "time": "13:00",
+    "activity": "午休"
+  },
+  {
+    "time": "16:00",
+    "activity": "散步"
+  },
+  {
+    "time": "18:00",
+    "activity": "晚饭"
+  },
+  {
+    "time": "20:00",
+    "activity": "个人时间"
+  },
+  {
+    "time": "22:30",
+    "activity": "睡前"
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "home": "Building C-01",
+  "workplace": "Central Block",
+  "current": "C-02",
+  "destination": "C-02",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 4,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverside Bank Branch",
+    "C-01 (Village Center)",
+    "C-02"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": true,
+  "arrival_time": "08:01",
+  "frequent_places": {
+    "East Pocket Park": 1,
+    "Training Grounds": 1,
+    "Picnic Area": 2,
+    "Building C-01": 2,
+    "Playground": 1,
+    "Willow Grove Park": 1,
+    "Aquatic Center": 1,
+    "Riverside Bank Branch": 1,
+    "C-02": 1
+  },
+  "preferred_modes": {
+    "e-bike": 7,
+    "metro": 2,
+    "walk": 1,
+    "bike": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.28,
+  "travel_distance_km": 0.504,
+  "depart_time": "07:57"
+}

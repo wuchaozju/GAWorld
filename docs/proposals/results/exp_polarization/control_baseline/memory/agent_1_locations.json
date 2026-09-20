@@ -1,0 +1,47 @@
+{
+  "home": "Building C-01",
+  "workplace": "Riverside Bank Branch",
+  "current": "Finance Plaza",
+  "destination": "Finance Plaza",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 4,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Financial District",
+    "Finance Plaza"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "14:27",
+  "frequent_places": {
+    "Riverwalk": 1,
+    "C-02": 2,
+    "Building C-01": 2,
+    "Basketball Court": 1,
+    "Hangzhou Riverside Community Center": 2,
+    "C-01 (Village Center)": 1,
+    "Riverside Bank Branch": 2,
+    "Central Parking Lot": 1,
+    "Riverside Cinema": 1,
+    "Riverside Night Market": 1,
+    "Willow Grove Park": 1,
+    "City Hall": 1,
+    "Financial District": 1,
+    "Finance Plaza": 1
+  },
+  "preferred_modes": {
+    "bike": 8,
+    "e-bike": 8,
+    "metro": 2
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 6.1899999999999995,
+  "travel_distance_km": 0.614,
+  "depart_time": "14:23"
+}

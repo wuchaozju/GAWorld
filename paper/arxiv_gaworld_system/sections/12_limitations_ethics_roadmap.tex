@@ -1,0 +1,145 @@
+\section{Limitations, Ethics, and Roadmap}
+\label{sec:limitations-ethics-roadmap}
+
+GAWorld makes a broad set of mechanisms available in one runtime, but breadth
+does not imply scientific validity or engineering completeness.  We separate
+limitations of the current artifact archive, limitations of the system
+implementation, and limitations inherent in representing social life through
+LLM agents.  The resulting roadmap likewise separates engineering work that
+improves the instrument from research work needed to justify substantive
+claims.
+
+\subsection{Evidence and reproducibility limitations}
+
+The archived experiments are incomplete and heterogeneous.  Several contain a
+single seed or one agent, treatment horizons differ, some mechanisms produced
+identically zero fields, and some intended arms lack outcome files entirely.
+The evidence ledger can make those conditions visible, but it cannot recover
+missing treatments or provide statistical power after the fact.  The existing
+cases therefore illustrate trace production, comparison mechanics, and
+failure visibility rather than stable behavioral effects.  Claims about
+individual consistency, macro correspondence, emergence, or counterfactual
+response require purpose-built evaluation beyond the archive summarized here.
+
+Reproducibility is also limited by model and provider dependence.  A seed does
+not freeze a hosted model, its serving stack, safety filters, or routing
+behavior.  Provider fallback may change the model used within a run; library,
+prompt, or parser versions can change subsequent state; and concurrency can
+alter call order.  Local models improve control but do not eliminate hardware,
+runtime, and numerical variation.  Consequently, meaningful replication
+requires more than source code and a seed: it requires resolved configuration,
+prompt and sampling settings, provider and model identifiers, dependency
+versions, active plugins, warnings, per-arm completion status, and raw
+artifacts.  Hosted-model studies should measure replay variability rather than
+promise bitwise determinism.
+
+Runtime and monetary cost constrain the studies that can be performed.  A
+persistent society may invoke generation, embedding, retrieval, reflection,
+environment, and consolidation paths repeatedly across agents and ticks.
+Model caching, rule-based fallbacks, configurable stages, and local providers
+can reduce calls, but each changes experimental conditions.  Cost pressure can
+also encourage small populations and short horizons that are inadequate for
+emergence or uncertainty analysis.  Future evaluations should report call
+counts, latency, failures, model routes, and estimated cost alongside simulated
+scale and horizon.
+
+\subsection{Architecture and data limitations}
+
+The K1--K5 microkernel migration is complete for its defined scope, including
+nine built-in plugins, movement validation, and audited standard interventions.
+Compatibility paths nevertheless remain: memory, environment, and social
+logic are not wholly plugin-owned, the Controller does not mediate every
+action, and the Recorder is not the sole provenance stream.  Shared
+dictionaries and the context escape hatch weaken schema enforcement and
+ownership boundaries.
+Third-party plugins run in process and should not be treated as sandboxed.  A
+configured extension point therefore does not guarantee mechanism isolation,
+security, or semantic equivalence under replacement.
+
+The artifact layer has corresponding schema plurality.  Agent logs, long-form
+state CSVs, environment timelines, memory stores, visualization traces,
+economy audits, and plugin outputs use different schemas and sometimes
+different notions of step or time.  This plurality preserves domain-specific
+detail, but cross-subsystem analysis requires explicit joins and can silently
+misread cardinality or missingness.  The discrepancy identified in the
+economy case between report wording and raw CSV cardinality illustrates this
+risk.  Until a versioned provenance schema and manifest bind clocks, entities,
+mechanisms, and derivations, replay and analysis must remain artifact-aware.
+
+Input profiles are another boundary.  They may be sparse, stylized,
+synthetic, or assembled from data whose completeness and provenance vary.
+Rich generated backstories do not repair missing observations; they can turn
+uncertainty into plausible detail.  Profile coverage, source, consent,
+transformation, and missingness should be documented, and downstream readers
+should distinguish supplied attributes from model-generated elaboration.
+
+\subsection{Ethical boundaries and affected communities}
+
+Synthetic agents can create an illusion of access to perspectives that were
+never actually observed.  Language models may reproduce stereotypes, suppress
+within-group heterogeneity, and make marginalized identities appear more
+uniform or legible than they are \citep{wang2025flatten}.  Conditioning a model
+on demographic labels or a short profile does not confer lived experience,
+community membership, consent, or authority.  Even when aggregate outputs
+resemble survey responses in one setting, LLM agents should not be treated as
+drop-in replacements for human participants \citep{dillion2023replace}.
+
+GAWorld therefore must not substitute for engagement with people affected by
+a research question or policy.  It cannot determine community priorities,
+adjudicate contested values, estimate acceptable harms, or legitimate a
+decision about housing, health, employment, policing, mobility, or information
+governance.  For consequential applications, affected communities should help
+define the question, categories, outcomes, unacceptable uses, and release
+conditions; domain experts and empirical data are needed to evaluate whether
+the modeled mechanisms correspond to the institutions at issue.  Simulation
+may support deliberation or identify assumptions to test, but it cannot replace
+participation, due process, or accountable public decision-making.
+
+Profiles, memories, interviews, and generated social ties can also expose or
+infer sensitive information.  Researchers should minimize collection, obtain
+appropriate consent and permissions, separate identifiers from research
+artifacts, restrict access, define retention and deletion policies, and assess
+whether releasing prompts or traces could re-identify a source.  Dashboard,
+relay, and environment services are local research tooling rather than
+production-secure deployments; exposing them requires authentication,
+encryption, authorization, audit, and abuse controls.  Generated claims about
+real people should not be presented as observations, and simulated agents
+should not be used to rank, target, or make decisions about identifiable
+individuals.
+
+\subsection{Engineering roadmap}
+
+The engineering roadmap is to make current boundaries enforceable and current
+artifacts easier to reconstruct.  Priorities are: (1) extend typed Controller
+validation beyond movement where governance is required; (2) migrate remaining domain mechanisms incrementally behind declared
+dependencies without changing their semantics silently; (3) replace shared
+dictionary conventions with versioned schemas and explicit state ownership;
+(4) unify trace identifiers and clock semantics through a manifest-backed
+provenance layer while retaining domain-specific payloads; (5) capture model,
+provider, prompt, fallback, dependency, and plugin resolution in every run;
+and (6) add conformance, failure-injection, migration, security, and replay
+tests.  These changes would improve composability and auditability.  They would
+not, by themselves, validate an artificial society.
+
+\subsection{Research roadmap}
+
+The research roadmap begins only after the execution unit is reproducible.
+For individual consistency, standardized repeated probes and controlled memory
+perturbations should be evaluated against held-out criteria where consent and
+provenance permit.  For macro correspondence, researchers should define a
+sampling frame, map simulated constructs to external measures, separate
+calibration from testing, and quantify subgroup error and uncertainty.  Claims
+of emergence require multiple seeds, scales, topologies, and mechanism
+ablations, with macro patterns traced to micro events.  Counterfactual studies
+require verified intervention paths, replicated arms, pre-specified outcomes,
+placebos or negative controls, and an explicit account of transportability.
+Provider and prompt sensitivity should be treated as experimental factors, not
+hidden implementation noise.
+
+Finally, future studies should evaluate not only whether a simulated pattern
+is reproducible, but also whether the representation and intended use are
+appropriate.  Participatory problem formulation, impact assessment, and
+documentation of excluded perspectives belong beside technical validation.
+GAWorld's near-term role is therefore to make artificial-society hypotheses,
+mechanisms, traces, and failures easier to construct and inspect---not to turn
+generated populations into unearned evidence about society.

@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "slug": "乌镇",
+  "name": "乌镇",
+  "display_name": "乌镇, 榆林市, 陕西省, 中国",
+  "created_at": "2026-09-15T15:18:25+00:00",
+  "place": {
+    "query": "乌镇",
+    "name": "乌镇",
+    "display_name": "乌镇, 榆林市, 陕西省, 中国",
+    "lat": 37.9343432,
+    "lng": 110.361158,
+    "bbox": [
+      37.899343200000004,
+      110.326158,
+      37.9693432,
+      110.396158
+    ],
+    "kind": "town",
+    "scale": "small",
+    "country": "中国",
+    "country_code": "cn",
+    "population": null,
+    "source": "nominatim",
+    "osm_id": 4539661238,
+    "osm_type": "node"
+  },
+  "scale": "small",
+  "map": {
+    "mode": "virtual",
+    "virtual": "citymap.md"
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 0
+  },
+  "history": [
+    {
+      "at": "2026-09-15T15:18:25+00:00",
+      "action": "map.virtual",
+      "scale": "small",
+      "seed": 3594709176
+    },
+    {
+      "at": "2026-09-15T15:22:03+00:00",
+      "action": "map.real.skipped",
+      "reason": "only 1 usable OSM nodes in bbox (37.899343200000004, 110.326158, 37.9693432, 110.396158) (need 8) — too sparse for a real map"
+    },
+    {
+      "at": "2026-09-15T15:22:03+00:00",
+      "action": "environment",
+      "climate": "temperate"
+    },
+    {
+      "at": "2026-09-15T15:22:03+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim"
+    }
+  ],
+  "updated_at": "2026-09-15T15:22:03+00:00"
+}

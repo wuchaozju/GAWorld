@@ -1,0 +1,18 @@
+{
+  "priorities": [
+    "维持日常节奏",
+    "保证身体状态",
+    "发展专业进修",
+    "发展运动"
+  ],
+  "avoidances": [
+    "长时间无效分心"
+  ],
+  "target_social": "保持适度社交",
+  "target_recovery": "确保休息与进食节奏",
+  "growth_focus": [
+    "专业进修",
+    "运动"
+  ],
+  "day": 2
+}

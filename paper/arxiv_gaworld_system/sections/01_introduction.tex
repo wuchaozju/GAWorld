@@ -1,0 +1,98 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Large language models (LLMs) make it possible to construct agents that
+interpret natural-language situations, maintain plans, and generate socially
+legible action.  This has renewed interest in generative agents and in using
+LLMs to simulate individual or collective behavior
+\citep{park2023generative,park2024grounded,argyle2023outofone}.  A convincing
+conversation, however, is not yet an artificial society.  Society-level
+research requires agents to persist across simulated time, act from locations
+and relationships in a shared world, encounter consequences of earlier
+actions, and leave evidence from which a researcher can reconstruct what
+happened.  It also requires mechanisms outside the language model---time,
+space, exposure, institutions, resource constraints, and interventions---to
+remain explicit enough to inspect and vary.
+
+These requirements create a systems problem.  Persistence cannot reside only
+in a model context window: profiles, state, episodic experience, relationships,
+and schedules must survive across ticks and runs.  Situatedness cannot be
+reduced to scenery in a prompt: movement, co-location, local conditions, and
+social ties must constrain later computation.  Experimental control requires
+scenario configuration and intervention points that are distinct from the
+agent's generated narrative.  Finally, scientific use requires provenance
+below a polished transcript or aggregate plot.  A researcher should be able to
+ask which mechanism produced a state change, whether every treatment
+completed, and which model and configuration generated an archived trace.
+
+GAWorld addresses this problem as research infrastructure for building
+persistent and situated LLM agent societies.  It connects a continuing agent
+lifecycle---profile, perception, memory and recall, planning and action,
+reflection, state update, and storage---to an urban and societal substrate.
+That substrate includes a city graph and local physical conditions, social
+relationships and life events, economic state, work, information exposure,
+and scheduled interventions.  A simulation clock and event boundaries connect
+individual cognition to day-level and society-level evolution.  The resulting
+unit of study is not an isolated model response but a configured run whose
+local decisions, shared events, persistent state, and derived comparisons can
+be inspected together.
+
+The system is also an account of incremental research-software
+modularization.  GAWorld began with tightly connected domain paths and is being
+migrated toward a small execution kernel, configurable cognition stages, an
+event bus, and lifecycle-managed plugins.  The current implementation contains
+working examples of these boundaries while retaining direct calls, shared
+dictionaries, subsystem-owned files, and hook-based compatibility paths.  We
+document that mixed state rather than presenting an aspirational architecture
+as complete.  This distinction is important for reuse and for science: a
+mechanism that is configurable is not necessarily isolated, and an extension
+that writes a metric is not necessarily on the causal path of an agent action.
+
+This paper makes four contributions:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{A persistent and situated agent lifecycle.}  We describe how
+  GAWorld joins relatively stable profiles, mutable structured state,
+  file-backed memory, intentions, habits, relationships, interests, and skills
+  to a configurable per-tick cognition pipeline and a shared simulation clock.
+  The design makes continuity and context inspectable without treating them as
+  evidence of psychological fidelity.
+
+  \item \textbf{A composable urban-society substrate.}  We show how city,
+  environment, social-network, economic, work, policy, and information
+  mechanisms contribute to a common run.  Explicit coupling and provenance
+  support experiments that cross individual and aggregate levels while making
+  clear where calibration and mechanism validation remain necessary.
+
+  \item \textbf{An extensible execution and research architecture.}  We
+  present the configured stage pipeline, simulation context, event bus, plugin
+  registry, controller and recorder skeletons, compatibility paths, and the
+  command-line, dashboard, interview, replay, and relay interfaces built around
+  them.  A migration-state audit separates wired services, partial
+  integrations, and planned boundaries.
+
+  \item \textbf{An inspectable experimentation workflow with bounded evidence.}
+  We connect scenario configuration, matched-run comparison, structured
+  artifacts, and GAWorld-Bench to an evidence ledger.  Existing memory,
+  policy, information, and economy--wellbeing archives demonstrate what the
+  system can record and expose; incomplete and diagnostic artifacts are
+  reported alongside them rather than converted into claims of social
+  validity.
+\end{enumerate}
+
+GAWorld is not presented as a digital twin, a representative synthetic
+population, or a forecasting system.  Its current artifacts do not establish
+that generated agents reproduce particular people, that aggregate trajectories
+match a real city, or that a simulated intervention estimates a real policy
+effect.  We instead treat the system as a scientific instrument whose outputs
+must be evaluated at multiple levels and whose reproducibility is a prerequisite
+for substantive interpretation.  This framing places software architecture,
+experimental design, and validity boundaries in the same account.
+
+The remainder of the paper proceeds from this distinction.  We first state
+the design goals and position GAWorld relative to generative-agent,
+language-agent, social-evaluation, and agent-based-modeling research.  We then
+describe the agent lifecycle, execution architecture, memory and cognition,
+and societal substrate.  Subsequent sections cover experiment and deployment
+interfaces, audit the existing capability cases, and state the validation,
+ethical, and development boundaries that govern intended use.

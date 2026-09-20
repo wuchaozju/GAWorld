@@ -1,0 +1,85 @@
+{
+  "night|work|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.23191040000000002,
+    "last_updated_day": 1
+  },
+  "night|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|work|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2,
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.219561984,
+    "last_updated_day": 1
+  },
+  "morning|public|通勤": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "按原节奏继续当前安排": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.222633984,
+    "last_updated_day": 1
+  },
+  "morning|work|前往Riverside Bus Station": {
+    "action_counts": {
+      "乘坐walk移动": 5
+    },
+    "preferred_action": "乘坐walk移动",
+    "strength": 0.40682662912,
+    "last_updated_day": 1
+  },
+  "afternoon|work|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 3,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.27572502528000004,
+    "last_updated_day": 1
+  },
+  "afternoon|public|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 3,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.28162326528,
+    "last_updated_day": 1
+  },
+  "evening|work|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.15217459200000003,
+    "last_updated_day": 1
+  },
+  "evening|public|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.222633984,
+    "last_updated_day": 1
+  }
+}

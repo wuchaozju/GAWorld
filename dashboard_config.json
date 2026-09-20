@@ -1,89 +1,39 @@
 {
-  "sim_days": 7,
-  "seconds_per_day": 3,
-  "stateful": false,
-  "simulate_realtime": false,
-  "log_mode": "normal",
-  "personal_twin": {
-    "enabled": true,
-    "local_first": true,
-    "private_memory_policy": "local_only",
-    "share_social_summaries": true,
-    "daily_self_update": true,
-    "what_if_enabled": false
-  },
-  "human_realism": {
-    "enabled": true,
-    "llm": {
-      "max_extra_calls_per_agent_day": 2
-    },
-    "memory": {
-      "max_episodes_per_agent": 5000,
-      "daily_consolidation_top_k": 12,
-      "salience_threshold": 0.35,
-      "recall": {
-        "window_days": 7,
-        "top_k": 5
-      },
-      "review": {
-        "enabled": true
-      }
-    },
-    "behavior": {
-      "enabled": true,
-      "step_reminisce_chance": 0.05,
-      "step_planning_overlay": true
-    }
-  },
-  "dynamic_behavior": {
-    "enabled": true
-  },
-  "ab_experiment": {
-    "enabled": false
-  },
-  "real_work": {
-    "enabled": false
-  },
-  "economy": {
-    "enabled": true,
-    "currency": "CNY",
-    "output_dir": "output/economy"
-  },
-  "distributed": {
-    "enabled": false
-  },
-  "news": {
-    "enabled": false
-  },
-  "intervention": {
-    "enabled": false
-  },
-  "visualization": {
-    "enabled": false
-  },
-  "life_events": {
-    "enabled": false
-  },
-  "openclaw": {
-    "enabled": false
-  },
   "llm": {
+    "routing": {
+      "tasks": {
+        "schedule": "MiniMax-M3"
+      },
+      "default": "MiniMax-M3"
+    },
     "providers": {
-      "ollama_qwen": {
+      "gemma4-12b": {
         "type": "ollama",
         "url": "http://localhost:11434/api/generate",
-        "model": "qwen3:4b-instruct-2507-q4_K_M",
+        "model": "gemma4:12b",
         "timeout": 600
-      }
-    },
-    "routing": {
-      "default": "ollama_qwen",
-      "tasks": {
-        "schedule": "ollama_qwen"
+      },
+      "MiniMax-M3": {
+        "type": "anthropic",
+        "base_url": "https://api.minimaxi.com/anthropic",
+        "model": "MiniMax-M3"
       }
     }
   },
+  "sim_days": 365,
+  "seconds_per_day": 10,
   "agent_ids": [
-    1
-  ]
+    2
+  ],
+  "simulate_realtime": true,
+  "time_step_minutes": null,
+  "long_run": {
+    "enabled": false,
+    "randomness": 1.0,
+    "unit": "year"
+  },
+  "routine_change": {
+    "randomness": 1.0
+  },
+  "city": "wuzhen"
 }

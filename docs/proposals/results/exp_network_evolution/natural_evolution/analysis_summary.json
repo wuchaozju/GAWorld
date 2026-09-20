@@ -1,0 +1,199 @@
+{
+  "experiment": "natural_evolution",
+  "days": 14,
+  "seed": 42,
+  "timestamp": "2026-05-24T11:20:18.707081",
+  "network_stats": {
+    "nodes": 5,
+    "edges": 2,
+    "density": 0.2,
+    "degree_distribution": {
+      "1": 1,
+      "2": 1,
+      "4": 1,
+      "5": 1
+    }
+  },
+  "top_interactions": [
+    {
+      "source": 1,
+      "target": 2,
+      "weight": 1
+    },
+    {
+      "source": 4,
+      "target": 5,
+      "weight": 1
+    }
+  ],
+  "homophily_evidence": {
+    "note": "Logs contain only initial state. No agent-agent interaction events recorded. Network inferred from co-location at same building (home or work). Traits from growth profiles.",
+    "trait_pairs": [
+      {
+        "pair": "李泽宇-许曼婷",
+        "shared_traits": [
+          "阅读",
+          "沟通表达"
+        ],
+        "count": 2
+      },
+      {
+        "pair": "周婉清-陈一航",
+        "shared_traits": [
+          "编程技能"
+        ],
+        "count": 1
+      },
+      {
+        "pair": "李泽宇-王思远",
+        "shared_traits": [
+          "阅读"
+        ],
+        "count": 1
+      },
+      {
+        "pair": "李泽宇-陈一航",
+        "shared_traits": [
+          "阅读"
+        ],
+        "count": 1
+      },
+      {
+        "pair": "王思远-陈一航",
+        "shared_traits": [
+          "阅读"
+        ],
+        "count": 1
+      }
+    ],
+    "shared_building": {
+      "Riverside Bank Branch": [
+        "周婉清",
+        "李泽宇"
+      ],
+      "Building C-01": [
+        "周婉清",
+        "李泽宇"
+      ],
+      "Riverside Tower": [
+        "陈一航",
+        "许曼婷"
+      ],
+      "Building C-02": [
+        "陈一航",
+        "许曼婷"
+      ]
+    }
+  },
+  "daily_interaction_counts": [
+    {
+      "day": 1,
+      "total_interactions": 0
+    },
+    {
+      "day": 2,
+      "total_interactions": 0
+    },
+    {
+      "day": 3,
+      "total_interactions": 0
+    },
+    {
+      "day": 4,
+      "total_interactions": 0
+    },
+    {
+      "day": 5,
+      "total_interactions": 0
+    },
+    {
+      "day": 6,
+      "total_interactions": 0
+    },
+    {
+      "day": 7,
+      "total_interactions": 0
+    },
+    {
+      "day": 8,
+      "total_interactions": 0
+    },
+    {
+      "day": 9,
+      "total_interactions": 0
+    },
+    {
+      "day": 10,
+      "total_interactions": 0
+    },
+    {
+      "day": 11,
+      "total_interactions": 0
+    },
+    {
+      "day": 12,
+      "total_interactions": 0
+    },
+    {
+      "day": 13,
+      "total_interactions": 0
+    },
+    {
+      "day": 14,
+      "total_interactions": 0
+    }
+  ],
+  "agent_info": {
+    "1": {
+      "name": "周婉清",
+      "home": "Building C-01",
+      "work": "Riverside Bank Branch",
+      "current": "Student Canteen",
+      "traits": [
+        "编程技能",
+        "运动"
+      ]
+    },
+    "2": {
+      "name": "李泽宇",
+      "home": "Building C-01",
+      "work": "Riverside Bank Branch",
+      "current": "C-01 (Village Center)",
+      "traits": [
+        "阅读",
+        "沟通表达"
+      ]
+    },
+    "3": {
+      "name": "王思远",
+      "home": "Building S-01",
+      "work": "Little River Daycare",
+      "current": "Building S-01",
+      "traits": [
+        "阅读",
+        "研究学习"
+      ]
+    },
+    "4": {
+      "name": "陈一航",
+      "home": "Building C-02",
+      "work": "Riverside Tower",
+      "current": "Bridge Rd",
+      "traits": [
+        "编程技能",
+        "阅读"
+      ]
+    },
+    "5": {
+      "name": "许曼婷",
+      "home": "Building C-02",
+      "work": "Riverside Tower",
+      "current": "Civic Square",
+      "traits": [
+        "阅读",
+        "沟通表达"
+      ]
+    }
+  },
+  "data_note": "Logs contain only initial state (growth profiles + location init). No agent-agent interaction events recorded. Network inferred from co-location at same building."
+}

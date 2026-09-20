@@ -1,0 +1,6447 @@
+{
+  "nodes": {
+    "C-01 (Village Center)": {
+      "id": "C-01 (Village Center)",
+      "name": "C-01 (Village Center)",
+      "label": "C-01 (Village Center)",
+      "kind": "hub",
+      "district": "C-01 (Village Center)",
+      "category": "mixed",
+      "parent": "",
+      "grid_x": 2.057,
+      "grid_y": 3.275,
+      "x_km": 1.749,
+      "y_km": 2.358,
+      "lat": 30.295343,
+      "lng": 120.173314,
+      "capacity": 450,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.575,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Park": {
+      "id": "Riverside Park",
+      "name": "Riverside Park",
+      "label": "Riverside Park",
+      "kind": "hub",
+      "district": "Riverside Park",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 7.463,
+      "grid_y": 3.468,
+      "x_km": 6.343,
+      "y_km": 2.497,
+      "lat": 30.296597,
+      "lng": 120.221175,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Riverside Community Hospital": {
+      "id": "Riverside Community Hospital",
+      "name": "Riverside Community Hospital",
+      "label": "Riverside Community Hospital",
+      "kind": "hub",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "",
+      "grid_x": 12.558,
+      "grid_y": 4.28,
+      "x_km": 10.674,
+      "y_km": 3.082,
+      "lat": 30.301861,
+      "lng": 120.266288,
+      "capacity": 750,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.69,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Riverside Bus Station": {
+      "id": "Riverside Bus Station",
+      "name": "Riverside Bus Station",
+      "label": "Riverside Bus Station",
+      "kind": "hub",
+      "district": "Transit Core",
+      "category": "transit",
+      "parent": "",
+      "grid_x": 5.2,
+      "grid_y": 2.8,
+      "x_km": 4.42,
+      "y_km": 2.016,
+      "lat": 30.292262,
+      "lng": 120.201142,
+      "capacity": 3000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.805,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Hangzhou Tech Labs": {
+      "id": "Hangzhou Tech Labs",
+      "name": "Hangzhou Tech Labs",
+      "label": "Hangzhou Tech Labs",
+      "kind": "hub",
+      "district": "Hangzhou Tech Labs",
+      "category": "mixed",
+      "parent": "",
+      "grid_x": 22.645,
+      "grid_y": 3.004,
+      "x_km": 19.248,
+      "y_km": 2.163,
+      "lat": 30.293584,
+      "lng": 120.355601,
+      "capacity": 450,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.575,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Night Market": {
+      "id": "Riverside Night Market",
+      "name": "Riverside Night Market",
+      "label": "Riverside Night Market",
+      "kind": "hub",
+      "district": "Riverside Night Market",
+      "category": "commerce",
+      "parent": "",
+      "grid_x": 2.024,
+      "grid_y": 7.983,
+      "x_km": 1.721,
+      "y_km": 5.747,
+      "lat": 30.325879,
+      "lng": 120.173023,
+      "capacity": 900,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.977,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Willow Grove Park": {
+      "id": "Willow Grove Park",
+      "name": "Willow Grove Park",
+      "label": "Willow Grove Park",
+      "kind": "hub",
+      "district": "Willow Grove Park",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 7.322,
+      "grid_y": 7.544,
+      "x_km": 6.224,
+      "y_km": 5.432,
+      "lat": 30.323034,
+      "lng": 120.219928,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "North Block": {
+      "id": "North Block",
+      "name": "North Block",
+      "label": "North Block",
+      "kind": "hub",
+      "district": "North Residential",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 2.8,
+      "grid_y": 3.2,
+      "x_km": 2.38,
+      "y_km": 2.304,
+      "lat": 30.294857,
+      "lng": 120.179892,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Central Block": {
+      "id": "Central Block",
+      "name": "Central Block",
+      "label": "Central Block",
+      "kind": "hub",
+      "district": "Central Residential",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 5.8,
+      "grid_y": 4.5,
+      "x_km": 4.93,
+      "y_km": 3.24,
+      "lat": 30.303289,
+      "lng": 120.206454,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "South Block": {
+      "id": "South Block",
+      "name": "South Block",
+      "label": "South Block",
+      "kind": "hub",
+      "district": "South Residential",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 6.2,
+      "grid_y": 7.3,
+      "x_km": 5.27,
+      "y_km": 5.256,
+      "lat": 30.321451,
+      "lng": 120.209996,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "East Block": {
+      "id": "East Block",
+      "name": "East Block",
+      "label": "East Block",
+      "kind": "hub",
+      "district": "East Residential",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 9.4,
+      "grid_y": 4.8,
+      "x_km": 7.99,
+      "y_km": 3.456,
+      "lat": 30.305235,
+      "lng": 120.238329,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "West Block": {
+      "id": "West Block",
+      "name": "West Block",
+      "label": "West Block",
+      "kind": "hub",
+      "district": "West Residential",
+      "category": "residential",
+      "parent": "",
+      "grid_x": 2.4,
+      "grid_y": 6.0,
+      "x_km": 2.04,
+      "y_km": 4.32,
+      "lat": 30.313019,
+      "lng": 120.17635,
+      "capacity": 600,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.69,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "University District": {
+      "id": "University District",
+      "name": "University District",
+      "label": "University District",
+      "kind": "hub",
+      "district": "University District",
+      "category": "education",
+      "parent": "",
+      "grid_x": 10.8,
+      "grid_y": 2.9,
+      "x_km": 9.18,
+      "y_km": 2.088,
+      "lat": 30.292911,
+      "lng": 120.250725,
+      "capacity": 1800,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.632,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Old Town": {
+      "id": "Old Town",
+      "name": "Old Town",
+      "label": "Old Town",
+      "kind": "hub",
+      "district": "Old Town",
+      "category": "mixed",
+      "parent": "",
+      "grid_x": 17.966,
+      "grid_y": 11.978,
+      "x_km": 15.271,
+      "y_km": 8.624,
+      "lat": 30.351792,
+      "lng": 120.314177,
+      "capacity": 450,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.575,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Financial District": {
+      "id": "Financial District",
+      "name": "Financial District",
+      "label": "Financial District",
+      "kind": "hub",
+      "district": "CBD",
+      "category": "commerce",
+      "parent": "",
+      "grid_x": 8.7,
+      "grid_y": 6.1,
+      "x_km": 7.395,
+      "y_km": 4.392,
+      "lat": 30.313668,
+      "lng": 120.232131,
+      "capacity": 900,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.977,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Industrial Park": {
+      "id": "Industrial Park",
+      "name": "Industrial Park",
+      "label": "Industrial Park",
+      "kind": "hub",
+      "district": "Industry Belt",
+      "category": "industry",
+      "parent": "",
+      "grid_x": 12.8,
+      "grid_y": 7.5,
+      "x_km": 10.88,
+      "y_km": 5.4,
+      "lat": 30.322749,
+      "lng": 120.268433,
+      "capacity": 1200,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.46,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Logistics Hub": {
+      "id": "Logistics Hub",
+      "name": "Logistics Hub",
+      "label": "Logistics Hub",
+      "kind": "hub",
+      "district": "Logistics Belt",
+      "category": "industry",
+      "parent": "",
+      "grid_x": 12.2,
+      "grid_y": 5.4,
+      "x_km": 10.37,
+      "y_km": 3.888,
+      "lat": 30.309127,
+      "lng": 120.263121,
+      "capacity": 1200,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.46,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Riverside Stadium": {
+      "id": "Riverside Stadium",
+      "name": "Riverside Stadium",
+      "label": "Riverside Stadium",
+      "kind": "hub",
+      "district": "River Sports Zone",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 9.9,
+      "grid_y": 7.3,
+      "x_km": 8.415,
+      "y_km": 5.256,
+      "lat": 30.321451,
+      "lng": 120.242756,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "City Hall": {
+      "id": "City Hall",
+      "name": "City Hall",
+      "label": "City Hall",
+      "kind": "hub",
+      "district": "Civic Center",
+      "category": "government",
+      "parent": "",
+      "grid_x": 7.1,
+      "grid_y": 5.1,
+      "x_km": 6.035,
+      "y_km": 3.672,
+      "lat": 30.307181,
+      "lng": 120.217965,
+      "capacity": 450,
+      "open_min": 510,
+      "close_min": 1050,
+      "popularity": 0.3,
+      "density": 0.575,
+      "style": {
+        "color": "#b08ad4",
+        "icon": "landmark",
+        "radius": 3
+      }
+    },
+    "Central Station": {
+      "id": "Central Station",
+      "name": "Central Station",
+      "label": "Central Station",
+      "kind": "hub",
+      "district": "Transit Core",
+      "category": "transit",
+      "parent": "",
+      "grid_x": 7.8,
+      "grid_y": 3.4,
+      "x_km": 6.63,
+      "y_km": 2.448,
+      "lat": 30.296154,
+      "lng": 120.224163,
+      "capacity": 3000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.805,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Airport District": {
+      "id": "Airport District",
+      "name": "Airport District",
+      "label": "Airport District",
+      "kind": "hub",
+      "district": "Airport Corridor",
+      "category": "transit",
+      "parent": "",
+      "grid_x": 14.2,
+      "grid_y": 3.1,
+      "x_km": 12.07,
+      "y_km": 2.232,
+      "lat": 30.294208,
+      "lng": 120.280829,
+      "capacity": 3000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.805,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Waterfront": {
+      "id": "Waterfront",
+      "name": "Waterfront",
+      "label": "Waterfront",
+      "kind": "hub",
+      "district": "Waterfront",
+      "category": "leisure",
+      "parent": "",
+      "grid_x": 11.8,
+      "grid_y": 1.8,
+      "x_km": 10.03,
+      "y_km": 1.296,
+      "lat": 30.285776,
+      "lng": 120.259579,
+      "capacity": 1050,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.402,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Hillside District": {
+      "id": "Hillside District",
+      "name": "Hillside District",
+      "label": "Hillside District",
+      "kind": "hub",
+      "district": "Hillside District",
+      "category": "mixed",
+      "parent": "",
+      "grid_x": 12.932,
+      "grid_y": 20.43,
+      "x_km": 10.992,
+      "y_km": 14.709,
+      "lat": 30.406617,
+      "lng": 120.269602,
+      "capacity": 450,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.575,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Greenbelt Corridor": {
+      "id": "Greenbelt Corridor",
+      "name": "Greenbelt Corridor",
+      "label": "Greenbelt Corridor",
+      "kind": "hub",
+      "district": "Greenbelt Corridor",
+      "category": "mixed",
+      "parent": "",
+      "grid_x": 17.703,
+      "grid_y": 21.871,
+      "x_km": 15.048,
+      "y_km": 15.747,
+      "lat": 30.415965,
+      "lng": 120.311847,
+      "capacity": 450,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.575,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "C-02": {
+      "id": "C-02",
+      "name": "C-02",
+      "label": "C-02",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "mixed",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 2.057,
+      "grid_y": 2.925,
+      "x_km": 1.748,
+      "y_km": 2.106,
+      "lat": 30.293073,
+      "lng": 120.173313,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Public Library": {
+      "id": "Riverside Public Library",
+      "name": "Riverside Public Library",
+      "label": "Riverside Public Library",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "education",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 1.707,
+      "grid_y": 3.275,
+      "x_km": 1.451,
+      "y_km": 2.358,
+      "lat": 30.295343,
+      "lng": 120.170214,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Hangzhou Riverside Community Center": {
+      "id": "Hangzhou Riverside Community Center",
+      "name": "Hangzhou Riverside Community Center",
+      "label": "Hangzhou Riverside Community Center",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "mixed",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 2.407,
+      "grid_y": 3.275,
+      "x_km": 2.046,
+      "y_km": 2.358,
+      "lat": 30.295343,
+      "lng": 120.176412,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Bank Branch": {
+      "id": "Riverside Bank Branch",
+      "name": "Riverside Bank Branch",
+      "label": "Riverside Bank Branch",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "commerce",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 2.057,
+      "grid_y": 3.625,
+      "x_km": 1.748,
+      "y_km": 2.61,
+      "lat": 30.297614,
+      "lng": 120.173313,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Central Parking Lot": {
+      "id": "Central Parking Lot",
+      "name": "Central Parking Lot",
+      "label": "Central Parking Lot",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "transit",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 1.707,
+      "grid_y": 2.925,
+      "x_km": 1.451,
+      "y_km": 2.106,
+      "lat": 30.293073,
+      "lng": 120.170214,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Market St": {
+      "id": "Market St",
+      "name": "Market St",
+      "label": "Market St",
+      "kind": "place",
+      "district": "Riverside Night Market",
+      "category": "commerce",
+      "parent": "Riverside Night Market",
+      "grid_x": 2.024,
+      "grid_y": 8.333,
+      "x_km": 1.72,
+      "y_km": 6.0,
+      "lat": 30.328152,
+      "lng": 120.173021,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "East Loop": {
+      "id": "East Loop",
+      "name": "East Loop",
+      "label": "East Loop",
+      "kind": "place",
+      "district": "C-01 (Village Center)",
+      "category": "transit",
+      "parent": "C-01 (Village Center)",
+      "grid_x": 1.707,
+      "grid_y": 3.625,
+      "x_km": 1.451,
+      "y_km": 2.61,
+      "lat": 30.297614,
+      "lng": 120.170214,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Riverwalk": {
+      "id": "Riverwalk",
+      "name": "Riverwalk",
+      "label": "Riverwalk",
+      "kind": "place",
+      "district": "Riverside Park",
+      "category": "mixed",
+      "parent": "Riverside Park",
+      "grid_x": 7.463,
+      "grid_y": 3.118,
+      "x_km": 6.344,
+      "y_km": 2.245,
+      "lat": 30.294325,
+      "lng": 120.221179,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Playground": {
+      "id": "Playground",
+      "name": "Playground",
+      "label": "Playground",
+      "kind": "place",
+      "district": "Riverside Park",
+      "category": "leisure",
+      "parent": "Riverside Park",
+      "grid_x": 7.113,
+      "grid_y": 3.468,
+      "x_km": 6.046,
+      "y_km": 2.497,
+      "lat": 30.296595,
+      "lng": 120.21808,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Fitness Area": {
+      "id": "Fitness Area",
+      "name": "Fitness Area",
+      "label": "Fitness Area",
+      "kind": "place",
+      "district": "Riverside Park",
+      "category": "leisure",
+      "parent": "Riverside Park",
+      "grid_x": 7.813,
+      "grid_y": 3.468,
+      "x_km": 6.641,
+      "y_km": 2.497,
+      "lat": 30.296595,
+      "lng": 120.224278,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Riverside Cinema": {
+      "id": "Riverside Cinema",
+      "name": "Riverside Cinema",
+      "label": "Riverside Cinema",
+      "kind": "place",
+      "district": "Riverside Night Market",
+      "category": "commerce",
+      "parent": "Riverside Night Market",
+      "grid_x": 1.674,
+      "grid_y": 7.983,
+      "x_km": 1.423,
+      "y_km": 5.748,
+      "lat": 30.325882,
+      "lng": 120.169922,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Riverside Ave": {
+      "id": "Riverside Ave",
+      "name": "Riverside Ave",
+      "label": "Riverside Ave",
+      "kind": "place",
+      "district": "Riverside Park",
+      "category": "transit",
+      "parent": "Riverside Park",
+      "grid_x": 7.813,
+      "grid_y": 3.118,
+      "x_km": 6.641,
+      "y_km": 2.245,
+      "lat": 30.294325,
+      "lng": 120.224278,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Bridge Rd": {
+      "id": "Bridge Rd",
+      "name": "Bridge Rd",
+      "label": "Bridge Rd",
+      "kind": "place",
+      "district": "Riverside Park",
+      "category": "transit",
+      "parent": "Riverside Park",
+      "grid_x": 7.113,
+      "grid_y": 3.818,
+      "x_km": 6.046,
+      "y_km": 2.749,
+      "lat": 30.298865,
+      "lng": 120.21808,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Emergency Department": {
+      "id": "Emergency Department",
+      "name": "Emergency Department",
+      "label": "Emergency Department",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.558,
+      "grid_y": 3.93,
+      "x_km": 10.674,
+      "y_km": 2.83,
+      "lat": 30.299592,
+      "lng": 120.266291,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Pediatrics Department": {
+      "id": "Pediatrics Department",
+      "name": "Pediatrics Department",
+      "label": "Pediatrics Department",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.208,
+      "grid_y": 4.28,
+      "x_km": 10.377,
+      "y_km": 3.082,
+      "lat": 30.301862,
+      "lng": 120.263192,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Cardiology Department": {
+      "id": "Cardiology Department",
+      "name": "Cardiology Department",
+      "label": "Cardiology Department",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.908,
+      "grid_y": 4.28,
+      "x_km": 10.972,
+      "y_km": 3.082,
+      "lat": 30.301862,
+      "lng": 120.26939,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Imaging Department": {
+      "id": "Imaging Department",
+      "name": "Imaging Department",
+      "label": "Imaging Department",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.558,
+      "grid_y": 4.63,
+      "x_km": 10.674,
+      "y_km": 3.334,
+      "lat": 30.304132,
+      "lng": 120.266291,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Northside Family Clinic": {
+      "id": "Northside Family Clinic",
+      "name": "Northside Family Clinic",
+      "label": "Northside Family Clinic",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "residential",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.208,
+      "grid_y": 3.93,
+      "x_km": 10.377,
+      "y_km": 2.83,
+      "lat": 30.299592,
+      "lng": 120.263192,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Willow Pharmacy": {
+      "id": "Willow Pharmacy",
+      "name": "Willow Pharmacy",
+      "label": "Willow Pharmacy",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "medical",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.908,
+      "grid_y": 3.93,
+      "x_km": 10.972,
+      "y_km": 2.83,
+      "lat": 30.299592,
+      "lng": 120.26939,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Willow Rd": {
+      "id": "Willow Rd",
+      "name": "Willow Rd",
+      "label": "Willow Rd",
+      "kind": "place",
+      "district": "Riverside Community Hospital",
+      "category": "transit",
+      "parent": "Riverside Community Hospital",
+      "grid_x": 12.208,
+      "grid_y": 4.63,
+      "x_km": 10.377,
+      "y_km": 3.334,
+      "lat": 30.304132,
+      "lng": 120.263192,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Riverside Post Office": {
+      "id": "Riverside Post Office",
+      "name": "Riverside Post Office",
+      "label": "Riverside Post Office",
+      "kind": "place",
+      "district": "Riverside Bus Station",
+      "category": "mixed",
+      "parent": "Riverside Bus Station",
+      "grid_x": 5.2,
+      "grid_y": 2.45,
+      "x_km": 4.42,
+      "y_km": 1.764,
+      "lat": 30.289992,
+      "lng": 120.201142,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Police Station": {
+      "id": "Riverside Police Station",
+      "name": "Riverside Police Station",
+      "label": "Riverside Police Station",
+      "kind": "place",
+      "district": "Riverside Bus Station",
+      "category": "transit",
+      "parent": "Riverside Bus Station",
+      "grid_x": 4.85,
+      "grid_y": 2.8,
+      "x_km": 4.123,
+      "y_km": 2.016,
+      "lat": 30.292262,
+      "lng": 120.198043,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Riverside Fire Station": {
+      "id": "Riverside Fire Station",
+      "name": "Riverside Fire Station",
+      "label": "Riverside Fire Station",
+      "kind": "place",
+      "district": "Riverside Bus Station",
+      "category": "transit",
+      "parent": "Riverside Bus Station",
+      "grid_x": 5.55,
+      "grid_y": 2.8,
+      "x_km": 4.717,
+      "y_km": 2.016,
+      "lat": 30.292262,
+      "lng": 120.204241,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Corner Mart": {
+      "id": "Corner Mart",
+      "name": "Corner Mart",
+      "label": "Corner Mart",
+      "kind": "place",
+      "district": "Riverside Night Market",
+      "category": "commerce",
+      "parent": "Riverside Night Market",
+      "grid_x": 2.374,
+      "grid_y": 7.983,
+      "x_km": 2.018,
+      "y_km": 5.748,
+      "lat": 30.325882,
+      "lng": 120.17612,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "West Loop": {
+      "id": "West Loop",
+      "name": "West Loop",
+      "label": "West Loop",
+      "kind": "place",
+      "district": "Riverside Bus Station",
+      "category": "transit",
+      "parent": "Riverside Bus Station",
+      "grid_x": 4.85,
+      "grid_y": 2.45,
+      "x_km": 4.123,
+      "y_km": 1.764,
+      "lat": 30.289992,
+      "lng": 120.198043,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "RnD Center": {
+      "id": "RnD Center",
+      "name": "RnD Center",
+      "label": "RnD Center",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "mixed",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 22.645,
+      "grid_y": 2.254,
+      "x_km": 19.248,
+      "y_km": 1.623,
+      "lat": 30.288721,
+      "lng": 120.355603,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Admin Office": {
+      "id": "Admin Office",
+      "name": "Admin Office",
+      "label": "Admin Office",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "mixed",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 21.895,
+      "grid_y": 3.004,
+      "x_km": 18.611,
+      "y_km": 2.163,
+      "lat": 30.293585,
+      "lng": 120.348962,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Logistics": {
+      "id": "Riverside Logistics",
+      "name": "Riverside Logistics",
+      "label": "Riverside Logistics",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "industry",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 23.395,
+      "grid_y": 3.004,
+      "x_km": 19.886,
+      "y_km": 2.163,
+      "lat": 30.293585,
+      "lng": 120.362243,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Warehouse A": {
+      "id": "Warehouse A",
+      "name": "Warehouse A",
+      "label": "Warehouse A",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "industry",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 22.645,
+      "grid_y": 3.754,
+      "x_km": 19.248,
+      "y_km": 2.703,
+      "lat": 30.29845,
+      "lng": 120.355603,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Warehouse B": {
+      "id": "Warehouse B",
+      "name": "Warehouse B",
+      "label": "Warehouse B",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "industry",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 21.895,
+      "grid_y": 2.254,
+      "x_km": 18.611,
+      "y_km": 1.623,
+      "lat": 30.288721,
+      "lng": 120.348962,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Bridge Construction Co.": {
+      "id": "Bridge Construction Co.",
+      "name": "Bridge Construction Co.",
+      "label": "Bridge Construction Co.",
+      "kind": "place",
+      "district": "Hangzhou Tech Labs",
+      "category": "mixed",
+      "parent": "Hangzhou Tech Labs",
+      "grid_x": 23.395,
+      "grid_y": 2.254,
+      "x_km": 19.886,
+      "y_km": 1.623,
+      "lat": 30.288721,
+      "lng": 120.362243,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Supermart": {
+      "id": "Riverside Supermart",
+      "name": "Riverside Supermart",
+      "label": "Riverside Supermart",
+      "kind": "place",
+      "district": "Riverside Night Market",
+      "category": "mixed",
+      "parent": "Riverside Night Market",
+      "grid_x": 2.024,
+      "grid_y": 7.633,
+      "x_km": 1.72,
+      "y_km": 5.496,
+      "lat": 30.323611,
+      "lng": 120.173021,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Basketball Court": {
+      "id": "Basketball Court",
+      "name": "Basketball Court",
+      "label": "Basketball Court",
+      "kind": "place",
+      "district": "Willow Grove Park",
+      "category": "mixed",
+      "parent": "Willow Grove Park",
+      "grid_x": 7.497,
+      "grid_y": 7.369,
+      "x_km": 6.372,
+      "y_km": 5.306,
+      "lat": 30.321899,
+      "lng": 120.22148,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Picnic Area": {
+      "id": "Picnic Area",
+      "name": "Picnic Area",
+      "label": "Picnic Area",
+      "kind": "place",
+      "district": "Willow Grove Park",
+      "category": "leisure",
+      "parent": "Willow Grove Park",
+      "grid_x": 7.147,
+      "grid_y": 7.719,
+      "x_km": 6.075,
+      "y_km": 5.558,
+      "lat": 30.324169,
+      "lng": 120.218381,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "East Pocket Park": {
+      "id": "East Pocket Park",
+      "name": "East Pocket Park",
+      "label": "East Pocket Park",
+      "kind": "place",
+      "district": "East Block",
+      "category": "leisure",
+      "parent": "East Block",
+      "grid_x": 9.4,
+      "grid_y": 5.15,
+      "x_km": 7.99,
+      "y_km": 3.708,
+      "lat": 30.307505,
+      "lng": 120.238329,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Building N-01": {
+      "id": "Building N-01",
+      "name": "Building N-01",
+      "label": "Building N-01",
+      "kind": "place",
+      "district": "North Block",
+      "category": "residential",
+      "parent": "North Block",
+      "grid_x": 2.975,
+      "grid_y": 3.025,
+      "x_km": 2.529,
+      "y_km": 2.178,
+      "lat": 30.293722,
+      "lng": 120.181441,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building N-02": {
+      "id": "Building N-02",
+      "name": "Building N-02",
+      "label": "Building N-02",
+      "kind": "place",
+      "district": "North Block",
+      "category": "residential",
+      "parent": "North Block",
+      "grid_x": 2.625,
+      "grid_y": 3.375,
+      "x_km": 2.231,
+      "y_km": 2.43,
+      "lat": 30.295992,
+      "lng": 120.178342,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Riverside Primary School": {
+      "id": "Riverside Primary School",
+      "name": "Riverside Primary School",
+      "label": "Riverside Primary School",
+      "kind": "place",
+      "district": "North Block",
+      "category": "education",
+      "parent": "North Block",
+      "grid_x": 2.975,
+      "grid_y": 3.375,
+      "x_km": 2.529,
+      "y_km": 2.43,
+      "lat": 30.295992,
+      "lng": 120.181441,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Building C-01": {
+      "id": "Building C-01",
+      "name": "Building C-01",
+      "label": "Building C-01",
+      "kind": "place",
+      "district": "Central Block",
+      "category": "residential",
+      "parent": "Central Block",
+      "grid_x": 5.8,
+      "grid_y": 4.15,
+      "x_km": 4.93,
+      "y_km": 2.988,
+      "lat": 30.301019,
+      "lng": 120.206454,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building C-02": {
+      "id": "Building C-02",
+      "name": "Building C-02",
+      "label": "Building C-02",
+      "kind": "place",
+      "district": "Central Block",
+      "category": "residential",
+      "parent": "Central Block",
+      "grid_x": 5.45,
+      "grid_y": 4.5,
+      "x_km": 4.633,
+      "y_km": 3.24,
+      "lat": 30.303289,
+      "lng": 120.203355,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Riverside Middle School": {
+      "id": "Riverside Middle School",
+      "name": "Riverside Middle School",
+      "label": "Riverside Middle School",
+      "kind": "place",
+      "district": "Central Block",
+      "category": "education",
+      "parent": "Central Block",
+      "grid_x": 6.15,
+      "grid_y": 4.5,
+      "x_km": 5.227,
+      "y_km": 3.24,
+      "lat": 30.303289,
+      "lng": 120.209553,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Little River Daycare": {
+      "id": "Little River Daycare",
+      "name": "Little River Daycare",
+      "label": "Little River Daycare",
+      "kind": "place",
+      "district": "Central Block",
+      "category": "education",
+      "parent": "Central Block",
+      "grid_x": 5.8,
+      "grid_y": 4.85,
+      "x_km": 4.93,
+      "y_km": 3.492,
+      "lat": 30.305559,
+      "lng": 120.206454,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Building S-01": {
+      "id": "Building S-01",
+      "name": "Building S-01",
+      "label": "Building S-01",
+      "kind": "place",
+      "district": "South Block",
+      "category": "residential",
+      "parent": "South Block",
+      "grid_x": 6.375,
+      "grid_y": 7.125,
+      "x_km": 5.419,
+      "y_km": 5.13,
+      "lat": 30.320316,
+      "lng": 120.211545,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building S-02": {
+      "id": "Building S-02",
+      "name": "Building S-02",
+      "label": "Building S-02",
+      "kind": "place",
+      "district": "South Block",
+      "category": "residential",
+      "parent": "South Block",
+      "grid_x": 6.025,
+      "grid_y": 7.475,
+      "x_km": 5.121,
+      "y_km": 5.382,
+      "lat": 30.322586,
+      "lng": 120.208446,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Willow Design Studio": {
+      "id": "Willow Design Studio",
+      "name": "Willow Design Studio",
+      "label": "Willow Design Studio",
+      "kind": "place",
+      "district": "South Block",
+      "category": "mixed",
+      "parent": "South Block",
+      "grid_x": 6.375,
+      "grid_y": 7.475,
+      "x_km": 5.419,
+      "y_km": 5.382,
+      "lat": 30.322586,
+      "lng": 120.211545,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Building E-01": {
+      "id": "Building E-01",
+      "name": "Building E-01",
+      "label": "Building E-01",
+      "kind": "place",
+      "district": "East Block",
+      "category": "residential",
+      "parent": "East Block",
+      "grid_x": 9.4,
+      "grid_y": 4.45,
+      "x_km": 7.99,
+      "y_km": 3.204,
+      "lat": 30.302965,
+      "lng": 120.238329,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building E-02": {
+      "id": "Building E-02",
+      "name": "Building E-02",
+      "label": "Building E-02",
+      "kind": "place",
+      "district": "East Block",
+      "category": "residential",
+      "parent": "East Block",
+      "grid_x": 9.05,
+      "grid_y": 4.8,
+      "x_km": 7.693,
+      "y_km": 3.456,
+      "lat": 30.305235,
+      "lng": 120.23523,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "East Community Clinic": {
+      "id": "East Community Clinic",
+      "name": "East Community Clinic",
+      "label": "East Community Clinic",
+      "kind": "place",
+      "district": "East Block",
+      "category": "medical",
+      "parent": "East Block",
+      "grid_x": 9.75,
+      "grid_y": 4.8,
+      "x_km": 8.287,
+      "y_km": 3.456,
+      "lat": 30.305235,
+      "lng": 120.241428,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Building W-01": {
+      "id": "Building W-01",
+      "name": "Building W-01",
+      "label": "Building W-01",
+      "kind": "place",
+      "district": "West Block",
+      "category": "residential",
+      "parent": "West Block",
+      "grid_x": 2.4,
+      "grid_y": 5.65,
+      "x_km": 2.04,
+      "y_km": 4.068,
+      "lat": 30.310749,
+      "lng": 120.17635,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Building W-02": {
+      "id": "Building W-02",
+      "name": "Building W-02",
+      "label": "Building W-02",
+      "kind": "place",
+      "district": "West Block",
+      "category": "residential",
+      "parent": "West Block",
+      "grid_x": 2.05,
+      "grid_y": 6.0,
+      "x_km": 1.742,
+      "y_km": 4.32,
+      "lat": 30.313019,
+      "lng": 120.173251,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Westside Community Center": {
+      "id": "Westside Community Center",
+      "name": "Westside Community Center",
+      "label": "Westside Community Center",
+      "kind": "place",
+      "district": "West Block",
+      "category": "mixed",
+      "parent": "West Block",
+      "grid_x": 2.75,
+      "grid_y": 6.0,
+      "x_km": 2.337,
+      "y_km": 4.32,
+      "lat": 30.313019,
+      "lng": 120.179449,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Westside Playground": {
+      "id": "Westside Playground",
+      "name": "Westside Playground",
+      "label": "Westside Playground",
+      "kind": "place",
+      "district": "West Block",
+      "category": "leisure",
+      "parent": "West Block",
+      "grid_x": 2.4,
+      "grid_y": 6.35,
+      "x_km": 2.04,
+      "y_km": 4.572,
+      "lat": 30.315289,
+      "lng": 120.17635,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Riverside University Gate": {
+      "id": "Riverside University Gate",
+      "name": "Riverside University Gate",
+      "label": "Riverside University Gate",
+      "kind": "place",
+      "district": "University District",
+      "category": "education",
+      "parent": "University District",
+      "grid_x": 10.8,
+      "grid_y": 2.55,
+      "x_km": 9.18,
+      "y_km": 1.836,
+      "lat": 30.290641,
+      "lng": 120.250725,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Main Library": {
+      "id": "Main Library",
+      "name": "Main Library",
+      "label": "Main Library",
+      "kind": "place",
+      "district": "University District",
+      "category": "education",
+      "parent": "University District",
+      "grid_x": 10.45,
+      "grid_y": 2.9,
+      "x_km": 8.883,
+      "y_km": 2.088,
+      "lat": 30.292911,
+      "lng": 120.247626,
+      "capacity": 1200,
+      "open_min": 420,
+      "close_min": 1080,
+      "popularity": 0.5,
+      "density": 0.55,
+      "style": {
+        "color": "#5a9bd4",
+        "icon": "graduation-cap",
+        "radius": 3
+      }
+    },
+    "Engineering Building": {
+      "id": "Engineering Building",
+      "name": "Engineering Building",
+      "label": "Engineering Building",
+      "kind": "place",
+      "district": "University District",
+      "category": "residential",
+      "parent": "University District",
+      "grid_x": 11.15,
+      "grid_y": 2.9,
+      "x_km": 9.478,
+      "y_km": 2.088,
+      "lat": 30.292911,
+      "lng": 120.253824,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Arts Building": {
+      "id": "Arts Building",
+      "name": "Arts Building",
+      "label": "Arts Building",
+      "kind": "place",
+      "district": "University District",
+      "category": "residential",
+      "parent": "University District",
+      "grid_x": 10.8,
+      "grid_y": 3.25,
+      "x_km": 9.18,
+      "y_km": 2.34,
+      "lat": 30.295181,
+      "lng": 120.250725,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Dormitory A": {
+      "id": "Dormitory A",
+      "name": "Dormitory A",
+      "label": "Dormitory A",
+      "kind": "place",
+      "district": "University District",
+      "category": "residential",
+      "parent": "University District",
+      "grid_x": 10.45,
+      "grid_y": 2.55,
+      "x_km": 8.883,
+      "y_km": 1.836,
+      "lat": 30.290641,
+      "lng": 120.247626,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Dormitory B": {
+      "id": "Dormitory B",
+      "name": "Dormitory B",
+      "label": "Dormitory B",
+      "kind": "place",
+      "district": "University District",
+      "category": "residential",
+      "parent": "University District",
+      "grid_x": 11.15,
+      "grid_y": 2.55,
+      "x_km": 9.478,
+      "y_km": 1.836,
+      "lat": 30.290641,
+      "lng": 120.253824,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Student Canteen": {
+      "id": "Student Canteen",
+      "name": "Student Canteen",
+      "label": "Student Canteen",
+      "kind": "place",
+      "district": "University District",
+      "category": "mixed",
+      "parent": "University District",
+      "grid_x": 10.45,
+      "grid_y": 3.25,
+      "x_km": 8.883,
+      "y_km": 2.34,
+      "lat": 30.295181,
+      "lng": 120.247626,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Old Town Market": {
+      "id": "Old Town Market",
+      "name": "Old Town Market",
+      "label": "Old Town Market",
+      "kind": "place",
+      "district": "Old Town",
+      "category": "commerce",
+      "parent": "Old Town",
+      "grid_x": 17.966,
+      "grid_y": 11.228,
+      "x_km": 15.271,
+      "y_km": 8.084,
+      "lat": 30.34693,
+      "lng": 120.314174,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Heritage Street": {
+      "id": "Heritage Street",
+      "name": "Heritage Street",
+      "label": "Heritage Street",
+      "kind": "place",
+      "district": "Old Town",
+      "category": "mixed",
+      "parent": "Old Town",
+      "grid_x": 17.216,
+      "grid_y": 11.978,
+      "x_km": 14.634,
+      "y_km": 8.624,
+      "lat": 30.351795,
+      "lng": 120.307533,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Temple Square": {
+      "id": "Temple Square",
+      "name": "Temple Square",
+      "label": "Temple Square",
+      "kind": "place",
+      "district": "Old Town",
+      "category": "mixed",
+      "parent": "Old Town",
+      "grid_x": 18.716,
+      "grid_y": 11.978,
+      "x_km": 15.909,
+      "y_km": 8.624,
+      "lat": 30.351795,
+      "lng": 120.320815,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Tea House Alley": {
+      "id": "Tea House Alley",
+      "name": "Tea House Alley",
+      "label": "Tea House Alley",
+      "kind": "place",
+      "district": "Old Town",
+      "category": "leisure",
+      "parent": "Old Town",
+      "grid_x": 17.966,
+      "grid_y": 12.728,
+      "x_km": 15.271,
+      "y_km": 9.164,
+      "lat": 30.35666,
+      "lng": 120.314174,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Riverside Museum": {
+      "id": "Riverside Museum",
+      "name": "Riverside Museum",
+      "label": "Riverside Museum",
+      "kind": "place",
+      "district": "Old Town",
+      "category": "leisure",
+      "parent": "Old Town",
+      "grid_x": 17.216,
+      "grid_y": 11.228,
+      "x_km": 14.634,
+      "y_km": 8.084,
+      "lat": 30.34693,
+      "lng": 120.307533,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Riverside Tower": {
+      "id": "Riverside Tower",
+      "name": "Riverside Tower",
+      "label": "Riverside Tower",
+      "kind": "place",
+      "district": "Financial District",
+      "category": "commerce",
+      "parent": "Financial District",
+      "grid_x": 8.7,
+      "grid_y": 5.75,
+      "x_km": 7.395,
+      "y_km": 4.14,
+      "lat": 30.311397,
+      "lng": 120.232131,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Finance Plaza": {
+      "id": "Finance Plaza",
+      "name": "Finance Plaza",
+      "label": "Finance Plaza",
+      "kind": "place",
+      "district": "Financial District",
+      "category": "commerce",
+      "parent": "Financial District",
+      "grid_x": 8.35,
+      "grid_y": 6.1,
+      "x_km": 7.097,
+      "y_km": 4.392,
+      "lat": 30.313668,
+      "lng": 120.229032,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Insurance Center": {
+      "id": "Insurance Center",
+      "name": "Insurance Center",
+      "label": "Insurance Center",
+      "kind": "place",
+      "district": "Financial District",
+      "category": "mixed",
+      "parent": "Financial District",
+      "grid_x": 9.05,
+      "grid_y": 6.1,
+      "x_km": 7.692,
+      "y_km": 4.392,
+      "lat": 30.313668,
+      "lng": 120.23523,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Central Bank Annex": {
+      "id": "Central Bank Annex",
+      "name": "Central Bank Annex",
+      "label": "Central Bank Annex",
+      "kind": "place",
+      "district": "Financial District",
+      "category": "commerce",
+      "parent": "Financial District",
+      "grid_x": 8.7,
+      "grid_y": 6.45,
+      "x_km": 7.395,
+      "y_km": 4.644,
+      "lat": 30.315938,
+      "lng": 120.232131,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Business Hotel": {
+      "id": "Business Hotel",
+      "name": "Business Hotel",
+      "label": "Business Hotel",
+      "kind": "place",
+      "district": "Financial District",
+      "category": "transit",
+      "parent": "Financial District",
+      "grid_x": 8.35,
+      "grid_y": 5.75,
+      "x_km": 7.097,
+      "y_km": 4.14,
+      "lat": 30.311397,
+      "lng": 120.229032,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Manufacturing Zone A": {
+      "id": "Manufacturing Zone A",
+      "name": "Manufacturing Zone A",
+      "label": "Manufacturing Zone A",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 12.8,
+      "grid_y": 7.15,
+      "x_km": 10.88,
+      "y_km": 5.148,
+      "lat": 30.320478,
+      "lng": 120.268433,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Manufacturing Zone B": {
+      "id": "Manufacturing Zone B",
+      "name": "Manufacturing Zone B",
+      "label": "Manufacturing Zone B",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 12.45,
+      "grid_y": 7.5,
+      "x_km": 10.583,
+      "y_km": 5.4,
+      "lat": 30.322749,
+      "lng": 120.265334,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Logistics Yard": {
+      "id": "Logistics Yard",
+      "name": "Logistics Yard",
+      "label": "Logistics Yard",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 13.15,
+      "grid_y": 7.5,
+      "x_km": 11.178,
+      "y_km": 5.4,
+      "lat": 30.322749,
+      "lng": 120.271532,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Power Substation": {
+      "id": "Power Substation",
+      "name": "Power Substation",
+      "label": "Power Substation",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 12.8,
+      "grid_y": 7.85,
+      "x_km": 10.88,
+      "y_km": 5.652,
+      "lat": 30.325019,
+      "lng": 120.268433,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Freight Depot": {
+      "id": "Freight Depot",
+      "name": "Freight Depot",
+      "label": "Freight Depot",
+      "kind": "place",
+      "district": "Industrial Park",
+      "category": "industry",
+      "parent": "Industrial Park",
+      "grid_x": 12.45,
+      "grid_y": 7.15,
+      "x_km": 10.583,
+      "y_km": 5.148,
+      "lat": 30.320478,
+      "lng": 120.265334,
+      "capacity": 800,
+      "open_min": 360,
+      "close_min": 1200,
+      "popularity": 0.25,
+      "density": 0.4,
+      "style": {
+        "color": "#8a8f98",
+        "icon": "factory",
+        "radius": 4
+      }
+    },
+    "Riverside Freight Station": {
+      "id": "Riverside Freight Station",
+      "name": "Riverside Freight Station",
+      "label": "Riverside Freight Station",
+      "kind": "place",
+      "district": "Logistics Hub",
+      "category": "transit",
+      "parent": "Logistics Hub",
+      "grid_x": 12.2,
+      "grid_y": 5.05,
+      "x_km": 10.37,
+      "y_km": 3.636,
+      "lat": 30.306857,
+      "lng": 120.263121,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Cold Storage Facility": {
+      "id": "Cold Storage Facility",
+      "name": "Cold Storage Facility",
+      "label": "Cold Storage Facility",
+      "kind": "place",
+      "district": "Logistics Hub",
+      "category": "mixed",
+      "parent": "Logistics Hub",
+      "grid_x": 11.85,
+      "grid_y": 5.4,
+      "x_km": 10.072,
+      "y_km": 3.888,
+      "lat": 30.309127,
+      "lng": 120.260022,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Sorting Center": {
+      "id": "Sorting Center",
+      "name": "Sorting Center",
+      "label": "Sorting Center",
+      "kind": "place",
+      "district": "Logistics Hub",
+      "category": "mixed",
+      "parent": "Logistics Hub",
+      "grid_x": 12.55,
+      "grid_y": 5.4,
+      "x_km": 10.667,
+      "y_km": 3.888,
+      "lat": 30.309127,
+      "lng": 120.26622,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Long Haul Truck Stop": {
+      "id": "Long Haul Truck Stop",
+      "name": "Long Haul Truck Stop",
+      "label": "Long Haul Truck Stop",
+      "kind": "place",
+      "district": "Logistics Hub",
+      "category": "mixed",
+      "parent": "Logistics Hub",
+      "grid_x": 12.2,
+      "grid_y": 5.75,
+      "x_km": 10.37,
+      "y_km": 4.14,
+      "lat": 30.311397,
+      "lng": 120.263121,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Stadium Plaza": {
+      "id": "Stadium Plaza",
+      "name": "Stadium Plaza",
+      "label": "Stadium Plaza",
+      "kind": "place",
+      "district": "Riverside Stadium",
+      "category": "commerce",
+      "parent": "Riverside Stadium",
+      "grid_x": 9.9,
+      "grid_y": 6.95,
+      "x_km": 8.415,
+      "y_km": 5.004,
+      "lat": 30.319181,
+      "lng": 120.242756,
+      "capacity": 600,
+      "open_min": 540,
+      "close_min": 1320,
+      "popularity": 0.9,
+      "density": 0.85,
+      "style": {
+        "color": "#e0a458",
+        "icon": "shopping-bag",
+        "radius": 4
+      }
+    },
+    "Aquatic Center": {
+      "id": "Aquatic Center",
+      "name": "Aquatic Center",
+      "label": "Aquatic Center",
+      "kind": "place",
+      "district": "Riverside Stadium",
+      "category": "leisure",
+      "parent": "Riverside Stadium",
+      "grid_x": 9.55,
+      "grid_y": 7.3,
+      "x_km": 8.117,
+      "y_km": 5.256,
+      "lat": 30.321451,
+      "lng": 120.239657,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Training Grounds": {
+      "id": "Training Grounds",
+      "name": "Training Grounds",
+      "label": "Training Grounds",
+      "kind": "place",
+      "district": "Riverside Stadium",
+      "category": "leisure",
+      "parent": "Riverside Stadium",
+      "grid_x": 10.25,
+      "grid_y": 7.3,
+      "x_km": 8.713,
+      "y_km": 5.256,
+      "lat": 30.321451,
+      "lng": 120.245855,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Sports Clinic": {
+      "id": "Sports Clinic",
+      "name": "Sports Clinic",
+      "label": "Sports Clinic",
+      "kind": "place",
+      "district": "Riverside Stadium",
+      "category": "medical",
+      "parent": "Riverside Stadium",
+      "grid_x": 9.9,
+      "grid_y": 7.65,
+      "x_km": 8.415,
+      "y_km": 5.508,
+      "lat": 30.323722,
+      "lng": 120.242756,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Civic Square": {
+      "id": "Civic Square",
+      "name": "Civic Square",
+      "label": "Civic Square",
+      "kind": "place",
+      "district": "City Hall",
+      "category": "mixed",
+      "parent": "City Hall",
+      "grid_x": 7.1,
+      "grid_y": 4.75,
+      "x_km": 6.035,
+      "y_km": 3.42,
+      "lat": 30.304911,
+      "lng": 120.217965,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Public Services Center": {
+      "id": "Public Services Center",
+      "name": "Public Services Center",
+      "label": "Public Services Center",
+      "kind": "place",
+      "district": "City Hall",
+      "category": "government",
+      "parent": "City Hall",
+      "grid_x": 6.75,
+      "grid_y": 5.1,
+      "x_km": 5.737,
+      "y_km": 3.672,
+      "lat": 30.307181,
+      "lng": 120.214866,
+      "capacity": 300,
+      "open_min": 510,
+      "close_min": 1050,
+      "popularity": 0.3,
+      "density": 0.5,
+      "style": {
+        "color": "#b08ad4",
+        "icon": "landmark",
+        "radius": 3
+      }
+    },
+    "Archives Building": {
+      "id": "Archives Building",
+      "name": "Archives Building",
+      "label": "Archives Building",
+      "kind": "place",
+      "district": "City Hall",
+      "category": "residential",
+      "parent": "City Hall",
+      "grid_x": 7.45,
+      "grid_y": 5.1,
+      "x_km": 6.332,
+      "y_km": 3.672,
+      "lat": 30.307181,
+      "lng": 120.221064,
+      "capacity": 400,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.35,
+      "density": 0.6,
+      "style": {
+        "color": "#7bb37a",
+        "icon": "home",
+        "radius": 3
+      }
+    },
+    "Courthouse": {
+      "id": "Courthouse",
+      "name": "Courthouse",
+      "label": "Courthouse",
+      "kind": "place",
+      "district": "City Hall",
+      "category": "government",
+      "parent": "City Hall",
+      "grid_x": 7.1,
+      "grid_y": 5.45,
+      "x_km": 6.035,
+      "y_km": 3.924,
+      "lat": 30.309451,
+      "lng": 120.217965,
+      "capacity": 300,
+      "open_min": 510,
+      "close_min": 1050,
+      "popularity": 0.3,
+      "density": 0.5,
+      "style": {
+        "color": "#b08ad4",
+        "icon": "landmark",
+        "radius": 3
+      }
+    },
+    "High Speed Rail Terminal": {
+      "id": "High Speed Rail Terminal",
+      "name": "High Speed Rail Terminal",
+      "label": "High Speed Rail Terminal",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 7.8,
+      "grid_y": 3.05,
+      "x_km": 6.63,
+      "y_km": 2.196,
+      "lat": 30.293884,
+      "lng": 120.224163,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Metro Concourse": {
+      "id": "Metro Concourse",
+      "name": "Metro Concourse",
+      "label": "Metro Concourse",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 7.45,
+      "grid_y": 3.4,
+      "x_km": 6.332,
+      "y_km": 2.448,
+      "lat": 30.296154,
+      "lng": 120.221064,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Taxi Loop": {
+      "id": "Taxi Loop",
+      "name": "Taxi Loop",
+      "label": "Taxi Loop",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 8.15,
+      "grid_y": 3.4,
+      "x_km": 6.928,
+      "y_km": 2.448,
+      "lat": 30.296154,
+      "lng": 120.227261,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Intercity Bus Terminal": {
+      "id": "Intercity Bus Terminal",
+      "name": "Intercity Bus Terminal",
+      "label": "Intercity Bus Terminal",
+      "kind": "place",
+      "district": "Central Station",
+      "category": "transit",
+      "parent": "Central Station",
+      "grid_x": 7.8,
+      "grid_y": 3.75,
+      "x_km": 6.63,
+      "y_km": 2.7,
+      "lat": 30.298424,
+      "lng": 120.224163,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Riverside International Airport": {
+      "id": "Riverside International Airport",
+      "name": "Riverside International Airport",
+      "label": "Riverside International Airport",
+      "kind": "place",
+      "district": "Airport District",
+      "category": "transit",
+      "parent": "Airport District",
+      "grid_x": 14.2,
+      "grid_y": 2.75,
+      "x_km": 12.07,
+      "y_km": 1.98,
+      "lat": 30.291938,
+      "lng": 120.280829,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Airport Cargo Terminal": {
+      "id": "Airport Cargo Terminal",
+      "name": "Airport Cargo Terminal",
+      "label": "Airport Cargo Terminal",
+      "kind": "place",
+      "district": "Airport District",
+      "category": "transit",
+      "parent": "Airport District",
+      "grid_x": 13.85,
+      "grid_y": 3.1,
+      "x_km": 11.772,
+      "y_km": 2.232,
+      "lat": 30.294208,
+      "lng": 120.27773,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Airport Hotel": {
+      "id": "Airport Hotel",
+      "name": "Airport Hotel",
+      "label": "Airport Hotel",
+      "kind": "place",
+      "district": "Airport District",
+      "category": "transit",
+      "parent": "Airport District",
+      "grid_x": 14.55,
+      "grid_y": 3.1,
+      "x_km": 12.367,
+      "y_km": 2.232,
+      "lat": 30.294208,
+      "lng": 120.283928,
+      "capacity": 2000,
+      "open_min": 300,
+      "close_min": 1440,
+      "popularity": 0.6,
+      "density": 0.7,
+      "style": {
+        "color": "#d4b95a",
+        "icon": "train-front",
+        "radius": 4
+      }
+    },
+    "Air Traffic Control": {
+      "id": "Air Traffic Control",
+      "name": "Air Traffic Control",
+      "label": "Air Traffic Control",
+      "kind": "place",
+      "district": "Airport District",
+      "category": "mixed",
+      "parent": "Airport District",
+      "grid_x": 14.2,
+      "grid_y": 3.45,
+      "x_km": 12.07,
+      "y_km": 2.484,
+      "lat": 30.296478,
+      "lng": 120.280829,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverside Port": {
+      "id": "Riverside Port",
+      "name": "Riverside Port",
+      "label": "Riverside Port",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 11.8,
+      "grid_y": 1.45,
+      "x_km": 10.03,
+      "y_km": 1.044,
+      "lat": 30.283505,
+      "lng": 120.259579,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Marina Pier": {
+      "id": "Marina Pier",
+      "name": "Marina Pier",
+      "label": "Marina Pier",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 11.45,
+      "grid_y": 1.8,
+      "x_km": 9.732,
+      "y_km": 1.296,
+      "lat": 30.285776,
+      "lng": 120.25648,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Riverfront Promenade": {
+      "id": "Riverfront Promenade",
+      "name": "Riverfront Promenade",
+      "label": "Riverfront Promenade",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "leisure",
+      "parent": "Waterfront",
+      "grid_x": 12.15,
+      "grid_y": 1.8,
+      "x_km": 10.328,
+      "y_km": 1.296,
+      "lat": 30.285776,
+      "lng": 120.262678,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Boathouse": {
+      "id": "Boathouse",
+      "name": "Boathouse",
+      "label": "Boathouse",
+      "kind": "place",
+      "district": "Waterfront",
+      "category": "mixed",
+      "parent": "Waterfront",
+      "grid_x": 11.8,
+      "grid_y": 2.15,
+      "x_km": 10.03,
+      "y_km": 1.548,
+      "lat": 30.288046,
+      "lng": 120.259579,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Hillside Park": {
+      "id": "Hillside Park",
+      "name": "Hillside Park",
+      "label": "Hillside Park",
+      "kind": "place",
+      "district": "Hillside District",
+      "category": "leisure",
+      "parent": "Hillside District",
+      "grid_x": 12.932,
+      "grid_y": 19.682,
+      "x_km": 10.992,
+      "y_km": 14.171,
+      "lat": 30.40177,
+      "lng": 120.269602,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    },
+    "Scenic Overlook": {
+      "id": "Scenic Overlook",
+      "name": "Scenic Overlook",
+      "label": "Scenic Overlook",
+      "kind": "place",
+      "district": "Hillside District",
+      "category": "mixed",
+      "parent": "Hillside District",
+      "grid_x": 12.184,
+      "grid_y": 20.43,
+      "x_km": 10.357,
+      "y_km": 14.71,
+      "lat": 30.406619,
+      "lng": 120.262983,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Mountain Trailhead": {
+      "id": "Mountain Trailhead",
+      "name": "Mountain Trailhead",
+      "label": "Mountain Trailhead",
+      "kind": "place",
+      "district": "Hillside District",
+      "category": "mixed",
+      "parent": "Hillside District",
+      "grid_x": 13.68,
+      "grid_y": 20.43,
+      "x_km": 11.628,
+      "y_km": 14.71,
+      "lat": 30.406619,
+      "lng": 120.276221,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Hillside Clinic": {
+      "id": "Hillside Clinic",
+      "name": "Hillside Clinic",
+      "label": "Hillside Clinic",
+      "kind": "place",
+      "district": "Hillside District",
+      "category": "medical",
+      "parent": "Hillside District",
+      "grid_x": 12.932,
+      "grid_y": 21.178,
+      "x_km": 10.992,
+      "y_km": 15.248,
+      "lat": 30.411468,
+      "lng": 120.269602,
+      "capacity": 500,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.45,
+      "density": 0.6,
+      "style": {
+        "color": "#d96c6c",
+        "icon": "cross",
+        "radius": 3
+      }
+    },
+    "Eco Trail": {
+      "id": "Eco Trail",
+      "name": "Eco Trail",
+      "label": "Eco Trail",
+      "kind": "place",
+      "district": "Greenbelt Corridor",
+      "category": "mixed",
+      "parent": "Greenbelt Corridor",
+      "grid_x": 17.703,
+      "grid_y": 21.123,
+      "x_km": 15.048,
+      "y_km": 15.209,
+      "lat": 30.411117,
+      "lng": 120.311845,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Wetland Reserve": {
+      "id": "Wetland Reserve",
+      "name": "Wetland Reserve",
+      "label": "Wetland Reserve",
+      "kind": "place",
+      "district": "Greenbelt Corridor",
+      "category": "mixed",
+      "parent": "Greenbelt Corridor",
+      "grid_x": 16.955,
+      "grid_y": 21.871,
+      "x_km": 14.412,
+      "y_km": 15.747,
+      "lat": 30.415966,
+      "lng": 120.305226,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Botanical Garden": {
+      "id": "Botanical Garden",
+      "name": "Botanical Garden",
+      "label": "Botanical Garden",
+      "kind": "place",
+      "district": "Greenbelt Corridor",
+      "category": "mixed",
+      "parent": "Greenbelt Corridor",
+      "grid_x": 18.451,
+      "grid_y": 21.871,
+      "x_km": 15.683,
+      "y_km": 15.747,
+      "lat": 30.415966,
+      "lng": 120.318465,
+      "capacity": 300,
+      "open_min": null,
+      "close_min": null,
+      "popularity": 0.4,
+      "density": 0.5,
+      "style": {
+        "color": "#a8a8a8",
+        "icon": "map-pin",
+        "radius": 2
+      }
+    },
+    "Outdoor Amphitheater": {
+      "id": "Outdoor Amphitheater",
+      "name": "Outdoor Amphitheater",
+      "label": "Outdoor Amphitheater",
+      "kind": "place",
+      "district": "Greenbelt Corridor",
+      "category": "leisure",
+      "parent": "Greenbelt Corridor",
+      "grid_x": 17.703,
+      "grid_y": 22.619,
+      "x_km": 15.048,
+      "y_km": 16.285,
+      "lat": 30.420815,
+      "lng": 120.311845,
+      "capacity": 700,
+      "open_min": 360,
+      "close_min": 1380,
+      "popularity": 0.7,
+      "density": 0.35,
+      "style": {
+        "color": "#5cc2a8",
+        "icon": "trees",
+        "radius": 3
+      }
+    }
+  },
+  "edges": [
+    {
+      "source": "C-02",
+      "target": "C-01 (Village Center)",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "C-02",
+      "target": "Market St",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Public Library",
+      "target": "East Loop",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Public Library",
+      "target": "C-01 (Village Center)",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Parking Lot",
+      "target": "Riverside Public Library",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Central Parking Lot",
+      "target": "C-02",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Market St",
+      "target": "Hangzhou Riverside Community Center",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "East Loop",
+      "target": "Riverside Bank Branch",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "C-01 (Village Center)",
+      "target": "Riverside Bank Branch",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "C-01 (Village Center)",
+      "target": "Hangzhou Riverside Community Center",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverwalk",
+      "target": "Riverside Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverwalk",
+      "target": "Riverside Ave",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Playground",
+      "target": "Bridge Rd",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Playground",
+      "target": "Riverside Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Playground",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Riverwalk",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Ave",
+      "target": "Fitness Area",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Bridge Rd",
+      "target": "Riverside Cinema",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Riverside Cinema",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Fitness Area",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Emergency Department",
+      "target": "Riverside Community Hospital",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Emergency Department",
+      "target": "Willow Pharmacy",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Pediatrics Department",
+      "target": "Willow Rd",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Pediatrics Department",
+      "target": "Riverside Community Hospital",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Northside Family Clinic",
+      "target": "Pediatrics Department",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Northside Family Clinic",
+      "target": "Emergency Department",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Willow Pharmacy",
+      "target": "Cardiology Department",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Willow Rd",
+      "target": "Imaging Department",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "Imaging Department",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "Cardiology Department",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Post Office",
+      "target": "Riverside Bus Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Police Station",
+      "target": "Riverside Bus Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Loop",
+      "target": "Riverside Police Station",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "West Loop",
+      "target": "Riverside Post Office",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Corner Mart",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Riverside Fire Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "RnD Center",
+      "target": "Hangzhou Tech Labs",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "RnD Center",
+      "target": "Bridge Construction Co.",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Admin Office",
+      "target": "Hangzhou Tech Labs",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Warehouse B",
+      "target": "Admin Office",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Warehouse B",
+      "target": "RnD Center",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Bridge Construction Co.",
+      "target": "Riverside Logistics",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Hangzhou Tech Labs",
+      "target": "Warehouse A",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hangzhou Tech Labs",
+      "target": "Riverside Logistics",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Supermart",
+      "target": "Riverside Night Market",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Cinema",
+      "target": "Riverside Night Market",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "Market St",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "Corner Mart",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Basketball Court",
+      "target": "East Pocket Park",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Picnic Area",
+      "target": "East Pocket Park",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Picnic Area",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Basketball Court",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building N-01",
+      "target": "Riverside Primary School",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Building N-02",
+      "target": "Riverside Primary School",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "North Block",
+      "target": "Building N-02",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "North Block",
+      "target": "Building N-01",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building C-01",
+      "target": "Central Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building C-02",
+      "target": "Central Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Block",
+      "target": "Little River Daycare",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Block",
+      "target": "Riverside Middle School",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building S-01",
+      "target": "Willow Design Studio",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Building S-02",
+      "target": "Willow Design Studio",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "South Block",
+      "target": "Building S-02",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "South Block",
+      "target": "Building S-01",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building E-01",
+      "target": "East Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building E-02",
+      "target": "East Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "East Pocket Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "East Community Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building W-01",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Building W-02",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Westside Playground",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "West Block",
+      "target": "Westside Community Center",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside University Gate",
+      "target": "University District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside University Gate",
+      "target": "Dormitory B",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Main Library",
+      "target": "Student Canteen",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Main Library",
+      "target": "University District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Dormitory A",
+      "target": "Main Library",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Dormitory A",
+      "target": "Riverside University Gate",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Dormitory B",
+      "target": "Engineering Building",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Student Canteen",
+      "target": "Arts Building",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "University District",
+      "target": "Arts Building",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "University District",
+      "target": "Engineering Building",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Old Town Market",
+      "target": "Old Town",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Heritage Street",
+      "target": "Old Town",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Museum",
+      "target": "Heritage Street",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Museum",
+      "target": "Old Town Market",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Old Town",
+      "target": "Tea House Alley",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Old Town",
+      "target": "Temple Square",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Tower",
+      "target": "Financial District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Finance Plaza",
+      "target": "Financial District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Business Hotel",
+      "target": "Finance Plaza",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Business Hotel",
+      "target": "Riverside Tower",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Financial District",
+      "target": "Central Bank Annex",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Financial District",
+      "target": "Insurance Center",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Manufacturing Zone A",
+      "target": "Industrial Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Manufacturing Zone B",
+      "target": "Industrial Park",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone B",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone A",
+      "road_type": "local",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Power Substation",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Logistics Yard",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Freight Station",
+      "target": "Logistics Hub",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Cold Storage Facility",
+      "target": "Logistics Hub",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Long Haul Truck Stop",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Sorting Center",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Stadium Plaza",
+      "target": "Riverside Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Aquatic Center",
+      "target": "Riverside Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Stadium",
+      "target": "Sports Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Stadium",
+      "target": "Training Grounds",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Civic Square",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Public Services Center",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "City Hall",
+      "target": "Courthouse",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "City Hall",
+      "target": "Archives Building",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "High Speed Rail Terminal",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Metro Concourse",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Intercity Bus Terminal",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Taxi Loop",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside International Airport",
+      "target": "Airport District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Airport Cargo Terminal",
+      "target": "Airport District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Airport District",
+      "target": "Air Traffic Control",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Airport District",
+      "target": "Airport Hotel",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Port",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Marina Pier",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Boathouse",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Riverfront Promenade",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hillside Park",
+      "target": "Hillside District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Scenic Overlook",
+      "target": "Hillside District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hillside District",
+      "target": "Hillside Clinic",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hillside District",
+      "target": "Mountain Trailhead",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Eco Trail",
+      "target": "Greenbelt Corridor",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Wetland Reserve",
+      "target": "Greenbelt Corridor",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Greenbelt Corridor",
+      "target": "Outdoor Amphitheater",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Greenbelt Corridor",
+      "target": "Botanical Garden",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "C-01 (Village Center)",
+      "target": "North Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "Logistics Hub",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "South Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Financial District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "University District",
+      "target": "Waterfront",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Block",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Park",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Central Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Financial District",
+      "target": "Riverside Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Financial District",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Financial District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Logistics Hub",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "Airport District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "University District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "University District",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "C-01 (Village Center)",
+      "target": "West Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "North Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Hillside District",
+      "target": "Greenbelt Corridor",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Old Town",
+      "target": "Industrial Park",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Old Town",
+      "target": "Greenbelt Corridor",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Hangzhou Tech Labs",
+      "target": "Airport District",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "City Hall",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Central Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "South Block",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "City Hall",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "East Block",
+      "target": "Riverside Stadium",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "North Block",
+      "target": "Central Block",
+      "road_type": "collector",
+      "bridge": false
+    },
+    {
+      "source": "Central Block",
+      "target": "South Block",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Central Block",
+      "target": "City Hall",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Central Station",
+      "road_type": "arterial",
+      "bridge": true
+    },
+    {
+      "source": "Central Station",
+      "target": "Financial District",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Financial District",
+      "target": "Logistics Hub",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Industrial Park",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Central Station",
+      "target": "Airport District",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "University District",
+      "target": "Central Station",
+      "road_type": "arterial",
+      "bridge": false
+    },
+    {
+      "source": "Waterfront",
+      "target": "Central Station",
+      "road_type": "collector",
+      "bridge": true
+    }
+  ],
+  "metro_lines": [
+    {
+      "name": "M1",
+      "color": "#8f5bd8",
+      "stops": [
+        "North Block",
+        "Central Block",
+        "Riverside Bus Station",
+        "Central Station",
+        "Financial District",
+        "Airport District"
+      ]
+    },
+    {
+      "name": "M2",
+      "color": "#2b9ccf",
+      "stops": [
+        "University District",
+        "Central Station",
+        "City Hall",
+        "Riverside Stadium",
+        "Waterfront"
+      ]
+    }
+  ],
+  "river": {
+    "name": "Qiantang River",
+    "path": [
+      [
+        0.04,
+        0.26
+      ],
+      [
+        0.18,
+        0.31
+      ],
+      [
+        0.34,
+        0.27
+      ],
+      [
+        0.52,
+        0.33
+      ],
+      [
+        0.7,
+        0.28
+      ],
+      [
+        0.92,
+        0.34
+      ]
+    ],
+    "width": 0.09
+  },
+  "bridges": [
+    {
+      "source": "C-02",
+      "target": "Market St",
+      "mid_x": 2.04,
+      "mid_y": 5.629
+    },
+    {
+      "source": "Riverside Public Library",
+      "target": "East Loop",
+      "mid_x": 1.707,
+      "mid_y": 3.45
+    },
+    {
+      "source": "Market St",
+      "target": "Hangzhou Riverside Community Center",
+      "mid_x": 2.216,
+      "mid_y": 5.804
+    },
+    {
+      "source": "East Loop",
+      "target": "Riverside Bank Branch",
+      "mid_x": 1.882,
+      "mid_y": 3.625
+    },
+    {
+      "source": "Bridge Rd",
+      "target": "Riverside Cinema",
+      "mid_x": 4.394,
+      "mid_y": 5.901
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Riverside Cinema",
+      "mid_x": 4.569,
+      "mid_y": 5.726
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Corner Mart",
+      "mid_x": 3.787,
+      "mid_y": 5.391
+    },
+    {
+      "source": "Riverside Supermart",
+      "target": "Riverside Night Market",
+      "mid_x": 2.024,
+      "mid_y": 7.808
+    },
+    {
+      "source": "Riverside Cinema",
+      "target": "Riverside Night Market",
+      "mid_x": 1.849,
+      "mid_y": 7.983
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "Market St",
+      "mid_x": 2.024,
+      "mid_y": 8.158
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "Corner Mart",
+      "mid_x": 2.199,
+      "mid_y": 7.983
+    },
+    {
+      "source": "Basketball Court",
+      "target": "East Pocket Park",
+      "mid_x": 8.448,
+      "mid_y": 6.26
+    },
+    {
+      "source": "Picnic Area",
+      "target": "East Pocket Park",
+      "mid_x": 8.274,
+      "mid_y": 6.434
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Picnic Area",
+      "mid_x": 7.235,
+      "mid_y": 7.631
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Basketball Court",
+      "mid_x": 7.409,
+      "mid_y": 7.457
+    },
+    {
+      "source": "Building C-01",
+      "target": "Central Block",
+      "mid_x": 5.8,
+      "mid_y": 4.325
+    },
+    {
+      "source": "Building C-02",
+      "target": "Central Block",
+      "mid_x": 5.625,
+      "mid_y": 4.5
+    },
+    {
+      "source": "Central Block",
+      "target": "Little River Daycare",
+      "mid_x": 5.8,
+      "mid_y": 4.675
+    },
+    {
+      "source": "Central Block",
+      "target": "Riverside Middle School",
+      "mid_x": 5.975,
+      "mid_y": 4.5
+    },
+    {
+      "source": "Building S-01",
+      "target": "Willow Design Studio",
+      "mid_x": 6.375,
+      "mid_y": 7.3
+    },
+    {
+      "source": "Building S-02",
+      "target": "Willow Design Studio",
+      "mid_x": 6.2,
+      "mid_y": 7.475
+    },
+    {
+      "source": "South Block",
+      "target": "Building S-02",
+      "mid_x": 6.113,
+      "mid_y": 7.387
+    },
+    {
+      "source": "South Block",
+      "target": "Building S-01",
+      "mid_x": 6.287,
+      "mid_y": 7.213
+    },
+    {
+      "source": "Building E-01",
+      "target": "East Block",
+      "mid_x": 9.4,
+      "mid_y": 4.625
+    },
+    {
+      "source": "Building E-02",
+      "target": "East Block",
+      "mid_x": 9.225,
+      "mid_y": 4.8
+    },
+    {
+      "source": "East Block",
+      "target": "East Pocket Park",
+      "mid_x": 9.4,
+      "mid_y": 4.975
+    },
+    {
+      "source": "East Block",
+      "target": "East Community Clinic",
+      "mid_x": 9.575,
+      "mid_y": 4.8
+    },
+    {
+      "source": "Building W-01",
+      "target": "West Block",
+      "mid_x": 2.4,
+      "mid_y": 5.825
+    },
+    {
+      "source": "Building W-02",
+      "target": "West Block",
+      "mid_x": 2.225,
+      "mid_y": 6.0
+    },
+    {
+      "source": "West Block",
+      "target": "Westside Playground",
+      "mid_x": 2.4,
+      "mid_y": 6.175
+    },
+    {
+      "source": "West Block",
+      "target": "Westside Community Center",
+      "mid_x": 2.575,
+      "mid_y": 6.0
+    },
+    {
+      "source": "Riverside Tower",
+      "target": "Financial District",
+      "mid_x": 8.7,
+      "mid_y": 5.925
+    },
+    {
+      "source": "Finance Plaza",
+      "target": "Financial District",
+      "mid_x": 8.525,
+      "mid_y": 6.1
+    },
+    {
+      "source": "Business Hotel",
+      "target": "Finance Plaza",
+      "mid_x": 8.35,
+      "mid_y": 5.925
+    },
+    {
+      "source": "Business Hotel",
+      "target": "Riverside Tower",
+      "mid_x": 8.525,
+      "mid_y": 5.75
+    },
+    {
+      "source": "Financial District",
+      "target": "Central Bank Annex",
+      "mid_x": 8.7,
+      "mid_y": 6.275
+    },
+    {
+      "source": "Financial District",
+      "target": "Insurance Center",
+      "mid_x": 8.875,
+      "mid_y": 6.1
+    },
+    {
+      "source": "Manufacturing Zone A",
+      "target": "Industrial Park",
+      "mid_x": 12.8,
+      "mid_y": 7.325
+    },
+    {
+      "source": "Manufacturing Zone B",
+      "target": "Industrial Park",
+      "mid_x": 12.625,
+      "mid_y": 7.5
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone B",
+      "mid_x": 12.45,
+      "mid_y": 7.325
+    },
+    {
+      "source": "Freight Depot",
+      "target": "Manufacturing Zone A",
+      "mid_x": 12.625,
+      "mid_y": 7.15
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Power Substation",
+      "mid_x": 12.8,
+      "mid_y": 7.675
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Logistics Yard",
+      "mid_x": 12.975,
+      "mid_y": 7.5
+    },
+    {
+      "source": "Riverside Freight Station",
+      "target": "Logistics Hub",
+      "mid_x": 12.2,
+      "mid_y": 5.225
+    },
+    {
+      "source": "Cold Storage Facility",
+      "target": "Logistics Hub",
+      "mid_x": 12.025,
+      "mid_y": 5.4
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Long Haul Truck Stop",
+      "mid_x": 12.2,
+      "mid_y": 5.575
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Sorting Center",
+      "mid_x": 12.375,
+      "mid_y": 5.4
+    },
+    {
+      "source": "Stadium Plaza",
+      "target": "Riverside Stadium",
+      "mid_x": 9.9,
+      "mid_y": 7.125
+    },
+    {
+      "source": "Aquatic Center",
+      "target": "Riverside Stadium",
+      "mid_x": 9.725,
+      "mid_y": 7.3
+    },
+    {
+      "source": "Riverside Stadium",
+      "target": "Sports Clinic",
+      "mid_x": 9.9,
+      "mid_y": 7.475
+    },
+    {
+      "source": "Riverside Stadium",
+      "target": "Training Grounds",
+      "mid_x": 10.075,
+      "mid_y": 7.3
+    },
+    {
+      "source": "Civic Square",
+      "target": "City Hall",
+      "mid_x": 7.1,
+      "mid_y": 4.925
+    },
+    {
+      "source": "Public Services Center",
+      "target": "City Hall",
+      "mid_x": 6.925,
+      "mid_y": 5.1
+    },
+    {
+      "source": "City Hall",
+      "target": "Courthouse",
+      "mid_x": 7.1,
+      "mid_y": 5.275
+    },
+    {
+      "source": "City Hall",
+      "target": "Archives Building",
+      "mid_x": 7.275,
+      "mid_y": 5.1
+    },
+    {
+      "source": "Riverside Community Hospital",
+      "target": "Logistics Hub",
+      "mid_x": 12.379,
+      "mid_y": 4.84
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "South Block",
+      "mid_x": 6.761,
+      "mid_y": 7.422
+    },
+    {
+      "source": "East Block",
+      "target": "Financial District",
+      "mid_x": 9.05,
+      "mid_y": 5.45
+    },
+    {
+      "source": "Central Block",
+      "target": "City Hall",
+      "mid_x": 6.45,
+      "mid_y": 4.8
+    },
+    {
+      "source": "Riverside Park",
+      "target": "City Hall",
+      "mid_x": 7.281,
+      "mid_y": 4.284
+    },
+    {
+      "source": "Financial District",
+      "target": "Riverside Stadium",
+      "mid_x": 9.3,
+      "mid_y": 6.7
+    },
+    {
+      "source": "Riverside Night Market",
+      "target": "West Block",
+      "mid_x": 2.212,
+      "mid_y": 6.992
+    },
+    {
+      "source": "Financial District",
+      "target": "City Hall",
+      "mid_x": 7.9,
+      "mid_y": 5.6
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "Financial District",
+      "mid_x": 8.011,
+      "mid_y": 6.822
+    },
+    {
+      "source": "Industrial Park",
+      "target": "Logistics Hub",
+      "mid_x": 12.5,
+      "mid_y": 6.45
+    },
+    {
+      "source": "C-01 (Village Center)",
+      "target": "West Block",
+      "mid_x": 2.228,
+      "mid_y": 4.638
+    },
+    {
+      "source": "Old Town",
+      "target": "Industrial Park",
+      "mid_x": 15.383,
+      "mid_y": 9.739
+    },
+    {
+      "source": "City Hall",
+      "target": "Central Station",
+      "mid_x": 7.45,
+      "mid_y": 4.25
+    },
+    {
+      "source": "Riverside Park",
+      "target": "Central Block",
+      "mid_x": 6.631,
+      "mid_y": 3.984
+    },
+    {
+      "source": "East Block",
+      "target": "Central Station",
+      "mid_x": 8.6,
+      "mid_y": 4.1
+    },
+    {
+      "source": "South Block",
+      "target": "City Hall",
+      "mid_x": 6.65,
+      "mid_y": 6.2
+    },
+    {
+      "source": "Willow Grove Park",
+      "target": "City Hall",
+      "mid_x": 7.211,
+      "mid_y": 6.322
+    },
+    {
+      "source": "East Block",
+      "target": "Riverside Stadium",
+      "mid_x": 9.65,
+      "mid_y": 6.05
+    },
+    {
+      "source": "Central Block",
+      "target": "South Block",
+      "mid_x": 6.0,
+      "mid_y": 5.9
+    },
+    {
+      "source": "Central Block",
+      "target": "City Hall",
+      "mid_x": 6.45,
+      "mid_y": 4.8
+    },
+    {
+      "source": "Riverside Bus Station",
+      "target": "Central Station",
+      "mid_x": 6.5,
+      "mid_y": 3.1
+    },
+    {
+      "source": "Central Station",
+      "target": "Financial District",
+      "mid_x": 8.25,
+      "mid_y": 4.75
+    },
+    {
+      "source": "Financial District",
+      "target": "Logistics Hub",
+      "mid_x": 10.45,
+      "mid_y": 5.75
+    },
+    {
+      "source": "Logistics Hub",
+      "target": "Industrial Park",
+      "mid_x": 12.5,
+      "mid_y": 6.45
+    },
+    {
+      "source": "Waterfront",
+      "target": "Central Station",
+      "mid_x": 9.8,
+      "mid_y": 2.6
+    }
+  ],
+  "tile_map": {
+    "width": 160,
+    "height": 112,
+    "terrain": [
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "................................................................................................................................................................",
+      "...........................................................................l....................................................................................",
+      "..........................................................................ldl...................................................................................",
+      ".........................................................................ddddl..................................................................................",
+      "........................................................................ddddlll.................................................................................",
+      ".......................................................................ddddCllll..........................................................i....d....d...........",
+      "...............................t.d...................................edddC==CClll........................................................iii..ddd..ddd..........",
+      "..............................tttdd...............................r.ee====C+ddll..........t.............................................iiiiidddddddddd.........",
+      "............t.d...r..........tttttddt.............t..............rr===rrCC+Cddd..........ttt...........................................iiiLLLLLCLLLLLddd........",
+      "...........tttdd.rrr........tttLLCtttt..........dttt...........====rrrrCrd+ddd..........ttttt...........................................iiLiiddCddddLdd.........",
+      "..........tttttddrrer........ttLtCttttt........dttttt......====rrrLLLCCLr+ddd..........ttttttt...........................................iLidddCddddLd..........",
+      ".........tttLLCtrreeer......ttCCC=====LLL....ldttttttt..===....er+++++CCr+rd..........ttttCtttt.........................................ddLddddCddiiLii.........",
+      "..........ttLtCrreeCeeCCCCCCCCttCt+LLL========LLCLCt====+++++++++dLdCCAA+AAAAAAAAAAAAAAAA++AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCiii........",
+      ".........ettCCCCCC++CCer......ttCt+ttt.LLLLltt======+++AAAAAAAAAAAAAAArr+C...r.mmmm...+++dCddtt.........................................ddddddiCidiiiii.........",
+      ".........tttLLCrLeee++++.......Cttt+trr...lLLCCCC++CCtt.........ddCddrr+..CCrrrmmmmm++CdddCddd...........................................ddddiiCiidiii..........",
+      ".....~~~~.ttttCcLreeer..++++..C.ttt+rrre..ttCCCCC+C+tC......r....Cddrrr+...rCCrrm+++C...ddddd.............................................d.iiiCiii.i...........",
+      "~~~~~~~~~~~~~~LCLrrer.......++++.trr+reee.CCCCtC+tt+t.~C...rrr..C.d..r+...rrrL+++CCmmm...ddd.................................................iiiii..............",
+      "~~~~~~~~~~~~~~~~~~rr.........C..+++++CeCCCCCddd~~~~~~~~~~~~~~rmC......+...mr++CCCCCmmm....d...................................................iii...............",
+      "~~~~~~~~~~~~~~~~~~~~~~......C...rrrC++ACC~~~~~~~~~~~~~~~~~~~~~~~~~...+...+++tLtCCmmmm....................~~~~~~~~~~~~~.........................i................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~.C.....rre~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+++.tdtLLCCmmm................~~~~~~~~~~~~~~~~~~~~~~~~....................................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~dddtCdddm............~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...............................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Cdddd.......~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~d.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.....................",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...............",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~......",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~....",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".........~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "...........cc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      ".............ccc.~~~~~~~~~~~~~~~~~~~~~~~~~~~~................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~......~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "..............c......~~~~~~~~~~~~~~~~~~..........................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.",
+      ".........................~~~~~~~~.....................................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..",
+      "..........................................................................~~~~~~~~~~~~~~~~~~~...AA.................................~~~~~~~~~~~~~~~~~~~~~~~~~~...",
+      "..............................................................................~~~~~~~~~~..........AA....................................~~~~~~~~~~~~~~~~~~~.....",
+      "....................................................................................................A........................................~~~~~~~~~~~........",
+      ".....................................................................................................AA.........................................................",
+      ".......................................................................................................AA....l....c.............................................",
+      ".........................................................................................................AA.lll..ccc............................................",
+      "...........................................................................................................Allllccccc...........................................",
+      "..........................................................................................................llAALLLLCcccd.........................................",
+      "...........................................................................................................llLAAccCccddd........................................",
+      "...........................................................................................................dlLldAACcddddd.......................................",
+      "..........................................................................................................dddCCCCCACCCCddd......................................",
+      "...........................................................................................................dddddddAdddddd.......................................",
+      "............................................................................................................dddddlAldddd........................................",
+      ".............................................................................................................d..llAll.d.........................................",
+      "...............................................................................................................lllAlll..........................................",
+      "................................................................................................................llAll...........................................",
+      ".................................................................................................................lAl............................................",
+      "..................................................................................................................A.............................................",
+      "..................................................................................................................A.............................................",
+      "..................................................................................................................A.............................................",
+      "..................................................................................................................A.............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      ".................................................................................................................A..............................................",
+      "..................................................................................l..............................A..............................................",
+      ".................................................................................lll.............................A..............................................",
+      "................................................................................lllll...........................A...............................................",
+      "...............................................................................lllClll..........................A...............................................",
+      ".............................................................................d..llCll..d........................A...............................................",
+      "............................................................................dddddlClddddd.......................A...............................................",
+      "...........................................................................dddddddCddddddd......................A...............................................",
+      "..........................................................................dddCCCCCAAACCCddd.....................A...............................................",
+      "...........................................................................ddddddmCmdAAAAA.....................dAd..............................................",
+      "............................................................................ddddmmCmmdddd.AAAAA...............ddAdd.............................................",
+      ".............................................................................d.mmmCmmm.d.......AAAAA.......d.dddAddd.d..........................................",
+      "................................................................................mmmmm...............AAAAA.ddddddAdddddd.........................................",
+      ".................................................................................mmm.....................AAAAAddAddddddd........................................",
+      "**********************************************************************************m*********************dddCCCAAACCCCCddd***************************************",
+      "*********************************************************************************************************ddddddlCldddddd****************************************",
+      "**********************************************************************************************************ddddllClldddd*****************************************",
+      "***********************************************************************************************************d*lllClll*d******************************************",
+      "**************************************************************************************************************lllll*********************************************",
+      "***************************************************************************************************************lll**********************************************",
+      "****************************************************************************************************************l***********************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************",
+      "****************************************************************************************************************************************************************"
+    ],
+    "bounds": {
+      "min_x": -0.1260000000000001,
+      "min_y": -0.55,
+      "max_x": 25.195,
+      "max_y": 24.619
+    },
+    "river_path": [
+      [
+        6,
+        29
+      ],
+      [
+        29,
+        34
+      ],
+      [
+        54,
+        30
+      ],
+      [
+        83,
+        37
+      ],
+      [
+        111,
+        31
+      ],
+      [
+        146,
+        38
+      ]
+    ],
+    "metro_segments": [
+      {
+        "line": "M1",
+        "color": "#8f5bd8",
+        "points": [
+          [
+            18,
+            17
+          ],
+          [
+            19,
+            17
+          ],
+          [
+            20,
+            18
+          ],
+          [
+            21,
+            18
+          ],
+          [
+            22,
+            18
+          ],
+          [
+            23,
+            18
+          ],
+          [
+            24,
+            19
+          ],
+          [
+            25,
+            19
+          ],
+          [
+            26,
+            19
+          ],
+          [
+            27,
+            19
+          ],
+          [
+            28,
+            20
+          ],
+          [
+            29,
+            20
+          ],
+          [
+            30,
+            20
+          ],
+          [
+            31,
+            20
+          ],
+          [
+            32,
+            21
+          ],
+          [
+            33,
+            21
+          ],
+          [
+            34,
+            21
+          ],
+          [
+            35,
+            21
+          ],
+          [
+            36,
+            22
+          ],
+          [
+            37,
+            22
+          ]
+        ]
+      },
+      {
+        "line": "M1",
+        "color": "#8f5bd8",
+        "points": [
+          [
+            37,
+            22
+          ],
+          [
+            36,
+            21
+          ],
+          [
+            36,
+            20
+          ],
+          [
+            35,
+            19
+          ],
+          [
+            35,
+            18
+          ],
+          [
+            34,
+            17
+          ],
+          [
+            34,
+            16
+          ],
+          [
+            33,
+            15
+          ]
+        ]
+      },
+      {
+        "line": "M1",
+        "color": "#8f5bd8",
+        "points": [
+          [
+            33,
+            15
+          ],
+          [
+            34,
+            15
+          ],
+          [
+            35,
+            15
+          ],
+          [
+            36,
+            15
+          ],
+          [
+            37,
+            15
+          ],
+          [
+            38,
+            16
+          ],
+          [
+            39,
+            16
+          ],
+          [
+            40,
+            16
+          ],
+          [
+            41,
+            16
+          ],
+          [
+            42,
+            16
+          ],
+          [
+            43,
+            16
+          ],
+          [
+            44,
+            16
+          ],
+          [
+            45,
+            16
+          ],
+          [
+            46,
+            17
+          ],
+          [
+            47,
+            17
+          ],
+          [
+            48,
+            17
+          ],
+          [
+            49,
+            17
+          ],
+          [
+            50,
+            17
+          ]
+        ]
+      },
+      {
+        "line": "M1",
+        "color": "#8f5bd8",
+        "points": [
+          [
+            50,
+            17
+          ],
+          [
+            50,
+            18
+          ],
+          [
+            51,
+            19
+          ],
+          [
+            51,
+            20
+          ],
+          [
+            52,
+            21
+          ],
+          [
+            52,
+            22
+          ],
+          [
+            53,
+            23
+          ],
+          [
+            53,
+            24
+          ],
+          [
+            53,
+            25
+          ],
+          [
+            54,
+            26
+          ],
+          [
+            54,
+            27
+          ],
+          [
+            55,
+            28
+          ],
+          [
+            55,
+            29
+          ]
+        ]
+      },
+      {
+        "line": "M1",
+        "color": "#8f5bd8",
+        "points": [
+          [
+            55,
+            29
+          ],
+          [
+            56,
+            29
+          ],
+          [
+            57,
+            28
+          ],
+          [
+            58,
+            28
+          ],
+          [
+            59,
+            28
+          ],
+          [
+            60,
+            27
+          ],
+          [
+            61,
+            27
+          ],
+          [
+            62,
+            26
+          ],
+          [
+            63,
+            26
+          ],
+          [
+            64,
+            26
+          ],
+          [
+            65,
+            25
+          ],
+          [
+            66,
+            25
+          ],
+          [
+            67,
+            25
+          ],
+          [
+            68,
+            24
+          ],
+          [
+            69,
+            24
+          ],
+          [
+            70,
+            23
+          ],
+          [
+            71,
+            23
+          ],
+          [
+            72,
+            23
+          ],
+          [
+            73,
+            22
+          ],
+          [
+            74,
+            22
+          ],
+          [
+            75,
+            22
+          ],
+          [
+            76,
+            21
+          ],
+          [
+            77,
+            21
+          ],
+          [
+            78,
+            20
+          ],
+          [
+            79,
+            20
+          ],
+          [
+            80,
+            20
+          ],
+          [
+            81,
+            19
+          ],
+          [
+            82,
+            19
+          ],
+          [
+            83,
+            19
+          ],
+          [
+            84,
+            18
+          ],
+          [
+            85,
+            18
+          ],
+          [
+            86,
+            17
+          ],
+          [
+            87,
+            17
+          ],
+          [
+            88,
+            17
+          ],
+          [
+            89,
+            16
+          ],
+          [
+            90,
+            16
+          ]
+        ]
+      },
+      {
+        "line": "M2",
+        "color": "#2b9ccf",
+        "points": [
+          [
+            69,
+            15
+          ],
+          [
+            68,
+            15
+          ],
+          [
+            67,
+            15
+          ],
+          [
+            66,
+            15
+          ],
+          [
+            65,
+            15
+          ],
+          [
+            64,
+            16
+          ],
+          [
+            63,
+            16
+          ],
+          [
+            62,
+            16
+          ],
+          [
+            61,
+            16
+          ],
+          [
+            60,
+            16
+          ],
+          [
+            59,
+            16
+          ],
+          [
+            58,
+            16
+          ],
+          [
+            57,
+            16
+          ],
+          [
+            56,
+            16
+          ],
+          [
+            55,
+            16
+          ],
+          [
+            54,
+            17
+          ],
+          [
+            53,
+            17
+          ],
+          [
+            52,
+            17
+          ],
+          [
+            51,
+            17
+          ],
+          [
+            50,
+            17
+          ]
+        ]
+      },
+      {
+        "line": "M2",
+        "color": "#2b9ccf",
+        "points": [
+          [
+            50,
+            17
+          ],
+          [
+            49,
+            18
+          ],
+          [
+            49,
+            19
+          ],
+          [
+            48,
+            20
+          ],
+          [
+            47,
+            21
+          ],
+          [
+            47,
+            22
+          ],
+          [
+            46,
+            23
+          ],
+          [
+            46,
+            24
+          ],
+          [
+            45,
+            25
+          ]
+        ]
+      },
+      {
+        "line": "M2",
+        "color": "#2b9ccf",
+        "points": [
+          [
+            45,
+            25
+          ],
+          [
+            46,
+            26
+          ],
+          [
+            47,
+            26
+          ],
+          [
+            48,
+            27
+          ],
+          [
+            49,
+            27
+          ],
+          [
+            50,
+            28
+          ],
+          [
+            51,
+            28
+          ],
+          [
+            52,
+            29
+          ],
+          [
+            53,
+            29
+          ],
+          [
+            54,
+            30
+          ],
+          [
+            55,
+            31
+          ],
+          [
+            56,
+            31
+          ],
+          [
+            57,
+            32
+          ],
+          [
+            58,
+            32
+          ],
+          [
+            59,
+            33
+          ],
+          [
+            60,
+            33
+          ],
+          [
+            61,
+            34
+          ],
+          [
+            62,
+            34
+          ],
+          [
+            63,
+            35
+          ]
+        ]
+      },
+      {
+        "line": "M2",
+        "color": "#2b9ccf",
+        "points": [
+          [
+            63,
+            35
+          ],
+          [
+            63,
+            34
+          ],
+          [
+            64,
+            33
+          ],
+          [
+            64,
+            32
+          ],
+          [
+            65,
+            31
+          ],
+          [
+            65,
+            30
+          ],
+          [
+            66,
+            29
+          ],
+          [
+            66,
+            28
+          ],
+          [
+            67,
+            27
+          ],
+          [
+            67,
+            26
+          ],
+          [
+            68,
+            25
+          ],
+          [
+            68,
+            24
+          ],
+          [
+            69,
+            23
+          ],
+          [
+            69,
+            22
+          ],
+          [
+            70,
+            21
+          ],
+          [
+            70,
+            20
+          ],
+          [
+            71,
+            19
+          ],
+          [
+            71,
+            18
+          ],
+          [
+            72,
+            17
+          ],
+          [
+            72,
+            16
+          ],
+          [
+            73,
+            15
+          ],
+          [
+            73,
+            14
+          ],
+          [
+            74,
+            13
+          ],
+          [
+            74,
+            12
+          ],
+          [
+            75,
+            11
+          ],
+          [
+            75,
+            10
+          ]
+        ]
+      }
+    ],
+    "bridge_tiles": [
+      {
+        "x": 14,
+        "y": 27,
+        "source": "C-02",
+        "target": "Market St"
+      },
+      {
+        "x": 12,
+        "y": 18,
+        "source": "Riverside Public Library",
+        "target": "East Loop"
+      },
+      {
+        "x": 15,
+        "y": 28,
+        "source": "Market St",
+        "target": "Hangzhou Riverside Community Center"
+      },
+      {
+        "x": 13,
+        "y": 18,
+        "source": "East Loop",
+        "target": "Riverside Bank Branch"
+      },
+      {
+        "x": 28,
+        "y": 28,
+        "source": "Bridge Rd",
+        "target": "Riverside Cinema"
+      },
+      {
+        "x": 29,
+        "y": 28,
+        "source": "Riverside Park",
+        "target": "Riverside Cinema"
+      },
+      {
+        "x": 25,
+        "y": 26,
+        "source": "Riverside Bus Station",
+        "target": "Corner Mart"
+      },
+      {
+        "x": 14,
+        "y": 37,
+        "source": "Riverside Supermart",
+        "target": "Riverside Night Market"
+      },
+      {
+        "x": 12,
+        "y": 38,
+        "source": "Riverside Cinema",
+        "target": "Riverside Night Market"
+      },
+      {
+        "x": 14,
+        "y": 38,
+        "source": "Riverside Night Market",
+        "target": "Market St"
+      },
+      {
+        "x": 15,
+        "y": 38,
+        "source": "Riverside Night Market",
+        "target": "Corner Mart"
+      },
+      {
+        "x": 54,
+        "y": 30,
+        "source": "Basketball Court",
+        "target": "East Pocket Park"
+      },
+      {
+        "x": 53,
+        "y": 31,
+        "source": "Picnic Area",
+        "target": "East Pocket Park"
+      },
+      {
+        "x": 46,
+        "y": 36,
+        "source": "Willow Grove Park",
+        "target": "Picnic Area"
+      },
+      {
+        "x": 47,
+        "y": 35,
+        "source": "Willow Grove Park",
+        "target": "Basketball Court"
+      },
+      {
+        "x": 37,
+        "y": 21,
+        "source": "Building C-01",
+        "target": "Central Block"
+      },
+      {
+        "x": 36,
+        "y": 22,
+        "source": "Building C-02",
+        "target": "Central Block"
+      },
+      {
+        "x": 37,
+        "y": 23,
+        "source": "Central Block",
+        "target": "Little River Daycare"
+      },
+      {
+        "x": 38,
+        "y": 22,
+        "source": "Central Block",
+        "target": "Riverside Middle School"
+      },
+      {
+        "x": 41,
+        "y": 35,
+        "source": "Building S-01",
+        "target": "Willow Design Studio"
+      },
+      {
+        "x": 40,
+        "y": 35,
+        "source": "Building S-02",
+        "target": "Willow Design Studio"
+      },
+      {
+        "x": 39,
+        "y": 35,
+        "source": "South Block",
+        "target": "Building S-02"
+      },
+      {
+        "x": 40,
+        "y": 34,
+        "source": "South Block",
+        "target": "Building S-01"
+      },
+      {
+        "x": 60,
+        "y": 23,
+        "source": "Building E-01",
+        "target": "East Block"
+      },
+      {
+        "x": 59,
+        "y": 24,
+        "source": "Building E-02",
+        "target": "East Block"
+      },
+      {
+        "x": 60,
+        "y": 24,
+        "source": "East Block",
+        "target": "East Pocket Park"
+      },
+      {
+        "x": 61,
+        "y": 24,
+        "source": "East Block",
+        "target": "East Community Clinic"
+      },
+      {
+        "x": 16,
+        "y": 28,
+        "source": "Building W-01",
+        "target": "West Block"
+      },
+      {
+        "x": 15,
+        "y": 29,
+        "source": "Building W-02",
+        "target": "West Block"
+      },
+      {
+        "x": 16,
+        "y": 30,
+        "source": "West Block",
+        "target": "Westside Playground"
+      },
+      {
+        "x": 17,
+        "y": 29,
+        "source": "West Block",
+        "target": "Westside Community Center"
+      },
+      {
+        "x": 55,
+        "y": 29,
+        "source": "Riverside Tower",
+        "target": "Financial District"
+      },
+      {
+        "x": 54,
+        "y": 29,
+        "source": "Finance Plaza",
+        "target": "Financial District"
+      },
+      {
+        "x": 53,
+        "y": 29,
+        "source": "Business Hotel",
+        "target": "Finance Plaza"
+      },
+      {
+        "x": 54,
+        "y": 28,
+        "source": "Business Hotel",
+        "target": "Riverside Tower"
+      },
+      {
+        "x": 55,
+        "y": 30,
+        "source": "Financial District",
+        "target": "Central Bank Annex"
+      },
+      {
+        "x": 57,
+        "y": 29,
+        "source": "Financial District",
+        "target": "Insurance Center"
+      },
+      {
+        "x": 81,
+        "y": 35,
+        "source": "Manufacturing Zone A",
+        "target": "Industrial Park"
+      },
+      {
+        "x": 80,
+        "y": 36,
+        "source": "Manufacturing Zone B",
+        "target": "Industrial Park"
+      },
+      {
+        "x": 79,
+        "y": 35,
+        "source": "Freight Depot",
+        "target": "Manufacturing Zone B"
+      },
+      {
+        "x": 80,
+        "y": 34,
+        "source": "Freight Depot",
+        "target": "Manufacturing Zone A"
+      },
+      {
+        "x": 81,
+        "y": 36,
+        "source": "Industrial Park",
+        "target": "Power Substation"
+      },
+      {
+        "x": 82,
+        "y": 36,
+        "source": "Industrial Park",
+        "target": "Logistics Yard"
+      },
+      {
+        "x": 77,
+        "y": 25,
+        "source": "Riverside Freight Station",
+        "target": "Logistics Hub"
+      },
+      {
+        "x": 76,
+        "y": 26,
+        "source": "Cold Storage Facility",
+        "target": "Logistics Hub"
+      },
+      {
+        "x": 77,
+        "y": 27,
+        "source": "Logistics Hub",
+        "target": "Long Haul Truck Stop"
+      },
+      {
+        "x": 78,
+        "y": 26,
+        "source": "Logistics Hub",
+        "target": "Sorting Center"
+      },
+      {
+        "x": 63,
+        "y": 34,
+        "source": "Stadium Plaza",
+        "target": "Riverside Stadium"
+      },
+      {
+        "x": 62,
+        "y": 35,
+        "source": "Aquatic Center",
+        "target": "Riverside Stadium"
+      },
+      {
+        "x": 63,
+        "y": 35,
+        "source": "Riverside Stadium",
+        "target": "Sports Clinic"
+      },
+      {
+        "x": 64,
+        "y": 35,
+        "source": "Riverside Stadium",
+        "target": "Training Grounds"
+      },
+      {
+        "x": 45,
+        "y": 24,
+        "source": "Civic Square",
+        "target": "City Hall"
+      },
+      {
+        "x": 44,
+        "y": 25,
+        "source": "Public Services Center",
+        "target": "City Hall"
+      },
+      {
+        "x": 45,
+        "y": 26,
+        "source": "City Hall",
+        "target": "Courthouse"
+      },
+      {
+        "x": 46,
+        "y": 25,
+        "source": "City Hall",
+        "target": "Archives Building"
+      },
+      {
+        "x": 79,
+        "y": 24,
+        "source": "Riverside Community Hospital",
+        "target": "Logistics Hub"
+      },
+      {
+        "x": 43,
+        "y": 35,
+        "source": "Willow Grove Park",
+        "target": "South Block"
+      },
+      {
+        "x": 58,
+        "y": 26,
+        "source": "East Block",
+        "target": "Financial District"
+      },
+      {
+        "x": 41,
+        "y": 24,
+        "source": "Central Block",
+        "target": "City Hall"
+      },
+      {
+        "x": 47,
+        "y": 21,
+        "source": "Riverside Park",
+        "target": "City Hall"
+      },
+      {
+        "x": 59,
+        "y": 32,
+        "source": "Financial District",
+        "target": "Riverside Stadium"
+      },
+      {
+        "x": 15,
+        "y": 33,
+        "source": "Riverside Night Market",
+        "target": "West Block"
+      },
+      {
+        "x": 50,
+        "y": 27,
+        "source": "Financial District",
+        "target": "City Hall"
+      },
+      {
+        "x": 51,
+        "y": 33,
+        "source": "Willow Grove Park",
+        "target": "Financial District"
+      },
+      {
+        "x": 79,
+        "y": 31,
+        "source": "Industrial Park",
+        "target": "Logistics Hub"
+      },
+      {
+        "x": 15,
+        "y": 23,
+        "source": "C-01 (Village Center)",
+        "target": "West Block"
+      },
+      {
+        "x": 97,
+        "y": 45,
+        "source": "Old Town",
+        "target": "Industrial Park"
+      },
+      {
+        "x": 48,
+        "y": 21,
+        "source": "City Hall",
+        "target": "Central Station"
+      },
+      {
+        "x": 42,
+        "y": 20,
+        "source": "Riverside Park",
+        "target": "Central Block"
+      },
+      {
+        "x": 55,
+        "y": 21,
+        "source": "East Block",
+        "target": "Central Station"
+      },
+      {
+        "x": 43,
+        "y": 30,
+        "source": "South Block",
+        "target": "City Hall"
+      },
+      {
+        "x": 46,
+        "y": 30,
+        "source": "Willow Grove Park",
+        "target": "City Hall"
+      },
+      {
+        "x": 61,
+        "y": 29,
+        "source": "East Block",
+        "target": "Riverside Stadium"
+      },
+      {
+        "x": 38,
+        "y": 28,
+        "source": "Central Block",
+        "target": "South Block"
+      },
+      {
+        "x": 41,
+        "y": 24,
+        "source": "Central Block",
+        "target": "City Hall"
+      },
+      {
+        "x": 42,
+        "y": 16,
+        "source": "Riverside Bus Station",
+        "target": "Central Station"
+      },
+      {
+        "x": 53,
+        "y": 23,
+        "source": "Central Station",
+        "target": "Financial District"
+      },
+      {
+        "x": 66,
+        "y": 28,
+        "source": "Financial District",
+        "target": "Logistics Hub"
+      },
+      {
+        "x": 79,
+        "y": 31,
+        "source": "Logistics Hub",
+        "target": "Industrial Park"
+      },
+      {
+        "x": 62,
+        "y": 14,
+        "source": "Waterfront",
+        "target": "Central Station"
+      }
+    ]
+  },
+  "bounds": {
+    "min_x": -0.1260000000000001,
+    "min_y": -0.55,
+    "max_x": 25.195,
+    "max_y": 24.619
+  },
+  "scale": {
+    "km_per_grid_x": 0.85,
+    "km_per_grid_y": 0.72
+  },
+  "interiors": {
+    "Building N-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        }
+      ]
+    },
+    "Building N-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        }
+      ]
+    },
+    "Building C-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B",
+            "1C"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B",
+            "2C"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B",
+            "3C"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B",
+            "4C"
+          ]
+        }
+      ]
+    },
+    "Building C-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        }
+      ]
+    },
+    "Building S-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        }
+      ]
+    },
+    "Building S-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        },
+        {
+          "name": "4F",
+          "units": [
+            "4A",
+            "4B"
+          ]
+        }
+      ]
+    },
+    "Building E-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        }
+      ]
+    },
+    "Building E-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        }
+      ]
+    },
+    "Building W-01": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        },
+        {
+          "name": "3F",
+          "units": [
+            "3A",
+            "3B"
+          ]
+        }
+      ]
+    },
+    "Building W-02": {
+      "floors": [
+        {
+          "name": "1F",
+          "units": [
+            "1A",
+            "1B"
+          ]
+        },
+        {
+          "name": "2F",
+          "units": [
+            "2A",
+            "2B"
+          ]
+        }
+      ]
+    }
+  },
+  "runtime": {
+    "edge_congestion": {},
+    "node_occupancy": {},
+    "time_min": null
+  }
+}

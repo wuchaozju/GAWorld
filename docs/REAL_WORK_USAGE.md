@@ -69,6 +69,12 @@ output/work/
 
 `agent_<id>/` 名字直接对应 `hangzhou_agents_state_init.csv` 里的 id，方便溯源。
 
+如果启用了兴趣爱好与技能成长系统，真实工作路由会把 `agent["growth_profile"]` 中计划发展的技能和兴趣
+合并进能力匹配表面，但不会改变 `AgentCapabilities` 的 JSON schema。运行中可同时查看：
+
+- `output/memory/growth_profiles.json`：兴趣/技能画像推导缓存
+- `output/memory/agent_<id>_growth.json`：单个智能体的成长进度
+
 ---
 
 ## 3. 检查市场状态
@@ -153,6 +159,41 @@ for j in m.all_jobs():
 
 ---
 
+## 5.5 Skill 注入（自动）
+
+启用 `CONFIG["skills"]["inject_into_work_brief"]`（默认 ON）后，router 会在投递 brief 时
+自动匹配 agent 持有的 Skill：用 `chosen_action + activity` 文本与每个 Skill 的 `name` /
+`triggers` 做子串匹配，最多取 3 个最相关的，追加到 brief 末尾：
+
+```
+【可用技能】
+- 海报网格排版：用三栏网格 + 单一主色，快速给宣传海报定排版
+  · 1. 先选一个主色（占面积 ≥ 60%）...
+- 结构化代码评审：...
+```
+
+adapter（`CodeAdapter` / `WebDesignAdapter` 等）原本就把 `brief_text` 整段拼进 LLM
+prompt，所以 **adapter 代码不需要改**——Skill 的指导内容会自然出现在工作产物的上下文里。
+
+调用侧：
+
+```python
+from gaworld.skills import SkillRegistry
+from gaworld.work.router import RealWorkRouter
+
+router = RealWorkRouter(
+    queue=queue, market=market,
+    capabilities=caps_by_agent,
+    config=CONFIG["real_work"],
+    skill_registry=SkillRegistry(),   # 不传则用默认实例
+)
+```
+
+要给 agent 挂载技能或让 agent 从经历中自总结 Skill，见
+[`docs/SKILL_SYSTEM.md`](SKILL_SYSTEM.md)。
+
+---
+
 ## 6. 写自定义 Adapter
 
 继承 `WorkAdapter` Protocol：
@@ -187,6 +228,7 @@ class VideoStoryboardAdapter:
 | 现象 | 看哪 |
 | --- | --- |
 | 启动时长，capabilities 反复算 | `output/work/capabilities.json` 是否被每次都覆盖；profile 字段 hash 变了会触发重算 |
+| agent 技能看起来和真实工作不匹配 | 同时检查 `output/work/capabilities.json` 和 `output/memory/agent_<id>_growth.json`；职业能力来自 profile，计划发展技能来自 growth profile |
 | agent 永远不接单 | `market.jsonl` 里有没有匹配 agent `job_label` 的 job；`browse_probability_base` 是不是 0；agent 是不是当天已用完 quota |
 | 任务一直 pending 不 done | WorkerPool 是否启动（看日志 `WorkerPool started`）；adapter 是不是抛了未捕获异常（看 `adapter crashed` 日志） |
 | 产物文件存在但内容不对 | adapter 的 LLM prompt 在各自 `gaworld/work/adapters/*.py` 顶部，按需调 |

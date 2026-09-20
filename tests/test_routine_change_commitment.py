@@ -5,6 +5,25 @@ import generative_city_sim as sim
 
 
 class TestRoutineChangeCommitment(unittest.TestCase):
+    """Trigger strength versus an activity's commitment resistance.
+
+    Every test here pins ``ROUTINE_CHANGE_RANDOMNESS`` to 0. The knob defaults
+    to 0.85, and at that setting it scales resistance down to ~0.40x and adds
+    ~0.38 of free-floating restlessness to the trigger — enough to carry *any*
+    trigger past *any* commitment level. The "resists" case would then survive
+    only on the `random.random()` draw further down, i.e. on whatever state the
+    global RNG happens to be in when this file runs, which is why it flips
+    depending on what ran before it. Pinned to 0, both cases are decided by
+    `trigger <= resistance`, which is the thing being asserted.
+
+    The knob's own behaviour is covered by test_routine_change_randomness.
+    """
+
+    def setUp(self):
+        patcher = patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_high_commitment_activity_resists_weak_trigger(self):
         agent = {
             "id": 41,

@@ -1,0 +1,25 @@
+{
+  "home": "Building C-01",
+  "workplace": "Finance Plaza",
+  "current": "Building C-01",
+  "destination": "Building C-01",
+  "in_transit": false,
+  "transport_mode": "",
+  "travel_minutes": 0,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Building C-01"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "",
+  "frequent_places": {},
+  "preferred_modes": {},
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.0
+}

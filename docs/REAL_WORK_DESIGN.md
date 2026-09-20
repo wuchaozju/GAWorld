@@ -37,8 +37,8 @@ name, age, living, job, personality, daily_life, values, work_style
 **没有结构化的 skills/interests/expertise**。已有的 `_extract_interest_keywords`（`generative_city_sim.py:498-525`）只是从 job/personality/daily_life 文本做关键词频次抽取，给"新闻推荐相关性"用的。
 
 ### 1.3 已有外部对接是「输入侧」
-- `openclaw_bridge.py` + `distributed_comm_server.py`：让用户的 OpenClaw agent **接进来**当虚拟市民；relay 走 HTTP 长轮询。
-- `external_environment_server.py`：让仿真**获取**外部环境（天气/新闻），是消费侧。
+- `scripts/openclaw_bridge.py` + `gaworld/apps/distributed_comm_server.py`：让用户的 OpenClaw agent **接进来**当虚拟市民；relay 走 HTTP 长轮询。
+- `gaworld/apps/external_environment_server.py`：让仿真**获取**外部环境（天气/新闻），是消费侧。
 
 **没有**任何路径把 agent 的"工作产出"推到外部系统——这是要新建的能力。
 

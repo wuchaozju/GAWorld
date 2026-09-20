@@ -1,0 +1,235 @@
+/* External Systems panel — layered on studio.css, only what it does not have.
+   Charts are hand-written SVG for the same reason population.css states: this
+   directory has no build step and no vendored chart library, and a CDN one
+   would cost the dashboard its offline usability. */
+
+.ext-topmeta {
+  font-size: 13px;
+  color: var(--muted, #66746c);
+  text-align: right;
+  line-height: 1.7;
+}
+
+/* studio.css styles `.step` as a flex item but never makes `.studio-steps` a
+   flex container, so the rail stacks. Scoped to this page's rail rather than
+   fixed globally: population.html renders the same markup and is not in scope. */
+#extTabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 8px;
+  border: 1px solid var(--line, #dde6de);
+  background: var(--card, #fff);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+#extTabs .step i {
+  width: 22px; height: 22px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-style: normal;
+  border: 1px solid var(--line, #dde6de); color: var(--muted, #66746c); background: #fff;
+}
+#extTabs .step.is-active i { background: var(--green, #0e7a58); color: #fff; border-color: var(--green, #0e7a58); }
+
+.button.subtle { font-weight: 600; color: var(--muted, #66746c); }
+
+.ext-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 18px;
+  align-items: start;
+  margin-top: 14px;
+}
+
+@media (max-width: 1100px) {
+  .ext-main { grid-template-columns: 1fr; }
+}
+
+.ext-observe { min-width: 0; display: grid; gap: 16px; }
+.ext-edit { min-width: 0; display: grid; gap: 14px; position: sticky; top: 12px; }
+
+.ext-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.ext-card > h2 { margin: 0 0 4px; font-size: 16px; }
+.ext-card > h3 { margin: 18px 0 8px; font-size: 13px; color: var(--muted, #66746c); }
+.ext-card > h3:first-of-type { margin-top: 10px; }
+
+.ext-lede,
+.ext-hint {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--muted, #66746c);
+  line-height: 1.7;
+}
+
+.ext-warn { color: var(--red, #c04545); }
+.ext-ok { color: var(--green, #0e7a58); }
+
+/* ---- stat tiles ---- */
+.ext-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.ext-tile {
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(227, 242, 234, 0.35);
+}
+
+.ext-tile b {
+  display: block;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Direct child only: a descendant selector here also caught the nested
+   `.help-tip` span and forced the "?" to display:block, bumping it onto its
+   own line in every tile. */
+.ext-tile > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  letter-spacing: .05em;
+  color: var(--muted, #66746c);
+}
+
+.ext-tile.is-warn { background: rgba(192, 69, 69, 0.08); }
+.ext-tile.is-warn b { color: var(--red, #c04545); }
+
+/* ---- tables ---- */
+.ext-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ext-table th,
+.ext-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line, #dde6de);
+}
+.ext-table th { color: var(--muted, #66746c); font-weight: 600; font-size: 11px; letter-spacing: .05em; }
+.ext-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---- charts ---- */
+/* Explicit height, not `auto`: `preserveAspectRatio="none"` discards the
+   viewBox ratio, so `auto` leaves the SVG to blow up to a stray default. */
+.ext-chart { width: 100%; height: 132px; display: block; margin: 6px 0 2px; }
+.ext-chart-legend { font-size: 11px; color: var(--muted, #66746c); display: flex; gap: 14px; flex-wrap: wrap; }
+.ext-chart-legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: middle; }
+
+/* ---- environment timeline ---- */
+.ext-day { border: 1px solid var(--line, #dde6de); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.ext-day-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.ext-day-head b { font-size: 14px; }
+.ext-day-head > span { font-size: 11.5px; color: var(--muted, #66746c); }
+.ext-day-summary { margin: 6px 0 10px; font-size: 12.5px; line-height: 1.65; color: var(--muted, #66746c); }
+
+.ext-event { border-top: 1px dashed var(--line, #dde6de); padding: 8px 0 2px; }
+.ext-event:first-of-type { border-top: none; }
+.ext-event-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ext-event-head b { font-size: 12.5px; }
+.ext-event p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted, #66746c); }
+
+/* Elements that carry their own hover explanation but are not the "?" glyph
+   (severity bars, type badges, the health-status cell) — without a cursor
+   change there is nothing telling the user an explanation is there. */
+[data-help]:not(.help-tip) { cursor: help; }
+
+.ext-badge {
+  font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line, #dde6de); color: var(--muted, #66746c); white-space: nowrap;
+}
+.ext-badge.t-natural { background: rgba(14, 122, 88, .1); color: var(--green-deep, #0a4a37); }
+.ext-badge.t-economic { background: rgba(214, 168, 30, .14); color: #8a6a05; }
+.ext-badge.t-political { background: rgba(192, 69, 69, .1); color: var(--red, #c04545); }
+.ext-badge.t-technology { background: rgba(60, 90, 104, .12); color: var(--steel, #3c5a68); }
+
+.ext-sev { display: inline-block; width: 54px; height: 5px; border-radius: 3px; background: var(--line, #dde6de); position: relative; }
+.ext-sev i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--green, #0e7a58); }
+.ext-sev.high i { background: var(--red, #c04545); }
+
+/* ---- service health ---- */
+.ext-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--line, #dde6de); margin-right: 6px; }
+.ext-dot.ok { background: var(--green, #0e7a58); }
+.ext-dot.down { background: var(--red, #c04545); }
+.ext-dot.disabled { background: #b9c6bd; }
+
+/* ---- edit panel ---- */
+.ext-edit-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ext-edit-card h3 { margin: 0 0 4px; font-size: 14px; }
+
+.ext-field { display: block; margin: 9px 0; }
+.ext-field > span {
+  display: block; font-size: 11.5px; color: var(--muted, #66746c);
+  margin-bottom: 4px; line-height: 1.5;
+}
+.ext-field input[type="text"],
+.ext-field input[type="number"],
+.ext-field select,
+.ext-field textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+  color: var(--ink, #1a2420);
+}
+.ext-field textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; min-height: 62px; resize: vertical; }
+.ext-field.inline { display: flex; align-items: center; gap: 8px; }
+.ext-field.inline > span { margin: 0; flex: 1 1 auto; }
+/* Without this the checkbox is a flex item with no basis and stretches to the
+   full column width, which reads as a broken control rather than a toggle. */
+.ext-field.inline > input[type="checkbox"] { flex: none; width: 15px; height: 15px; margin: 0; }
+.ext-field.is-dirty > span { color: var(--green, #0e7a58); font-weight: 600; }
+.ext-field.is-dirty input,
+.ext-field.is-dirty select,
+.ext-field.is-dirty textarea { border-color: var(--green, #0e7a58); background: rgba(227, 242, 234, .35); }
+.ext-field.is-bad input,
+.ext-field.is-bad textarea { border-color: var(--red, #c04545); }
+
+.ext-group { border: 1px solid var(--line, #dde6de); border-radius: 9px; padding: 0; margin: 10px 0; }
+.ext-group > summary {
+  cursor: pointer; padding: 7px 10px; font-size: 12.5px; font-weight: 600;
+  list-style: none; user-select: none;
+}
+.ext-group > summary::-webkit-details-marker { display: none; }
+.ext-group > summary::before { content: "▸ "; color: var(--muted, #66746c); }
+.ext-group[open] > summary::before { content: "▾ "; }
+.ext-group[open] > summary { border-bottom: 1px solid var(--line, #dde6de); }
+.ext-group > .ext-group-body { padding: 4px 10px 10px; }
+.ext-group .ext-group { background: rgba(238, 243, 238, .5); }
+
+.ext-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+
+.ext-edit-actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.ext-note { font-size: 11.5px; color: var(--muted, #66746c); line-height: 1.6; }
+
+.ext-queue { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; }
+.ext-queue li {
+  border: 1px solid var(--line, #dde6de); border-radius: 8px;
+  padding: 7px 9px; margin-bottom: 6px; line-height: 1.6;
+}
+.ext-queue li code { font-size: 11px; color: var(--muted, #66746c); }
+.ext-queue .del { float: right; border: none; background: none; cursor: pointer; color: var(--red, #c04545); font-size: 11.5px; }
+
+.ext-foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 16px; }
+.ext-status { font-size: 12.5px; color: var(--muted, #66746c); min-height: 18px; }
+.ext-status.err { color: var(--red, #c04545); }
+.ext-status.ok { color: var(--green, #0e7a58); }
+.ext-actions { display: flex; gap: 8px; }

@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 
 import generative_city_sim as sim
-from intervention_policy import (
+from gaworld.policy.intervention import (
     append_intervention_metrics,
     build_intervention_feed,
     initialize_agent_intervention_state,

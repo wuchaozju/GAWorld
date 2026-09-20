@@ -1,0 +1,12 @@
+{
+  "treatment": "memory_selective",
+  "config": {
+    "reset_between_phases": false,
+    "delete_summaries": true,
+    "inject_conflict": false,
+    "description": "仅保留 episodic memory"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-06-03T16:03:57.124816"
+}

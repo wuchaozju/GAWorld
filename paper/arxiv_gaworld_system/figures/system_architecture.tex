@@ -1,0 +1,43 @@
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex,
+ box/.style={draw=black!70,rounded corners=2pt,fill=black!4,minimum height=9mm,align=center},
+ item/.style={box,text width=25mm}, flow/.style={->,thick,black!70},
+ direct/.style={->,densely dashed,black!60}]
+\node[item] (cli) {CLI};
+\node[item,right=3mm of cli] (dash) {Dashboard +\ Agent Studio};
+\node[item,right=3mm of dash] (replay) {Replay +\ benchmark};
+\node[draw=black!40,fit=(cli)(replay),inner sep=3mm,label={[font=\bfseries]above:Research interfaces}] {};
+
+\node[box,below=12mm of dash,text width=86mm,minimum height=11mm] (pipe)
+ {Configurable 12-stage cognition pipeline};
+\node[item,below left=9mm and 3mm of pipe] (bus) {EventBus +\ PluginRegistry};
+\node[item,below=9mm of pipe] (controller) {Controller\ move validation + interventions};
+\node[item,below right=9mm and 3mm of pipe] (recorder) {Recorder\ audited events};
+\draw[flow] (dash) -- (pipe);
+\draw[flow] (pipe) -- (bus);
+\draw[flow] (pipe) -- (controller);
+\draw[flow] (controller) -- (recorder);
+
+\node[box,below=12mm of bus,text width=82mm] (plugins)
+ {Nine built-ins: Intervention; Skills; Interests; Life Events; Economy;\
+ Local Physical; Real Work; Dynamic Behavior; Spatial Preferences};
+\draw[flow] (bus) -- (plugins);
+\draw[flow] (plugins.east) -| (pipe.east);
+\draw[flow] (plugins) -| (recorder);
+
+\node[item,below left=12mm and 5mm of plugins] (memory) {Memory\ direct compatibility};
+\node[item,below=12mm of plugins] (environment) {Environment\ direct compatibility};
+\node[item,below right=12mm and 5mm of plugins] (social) {Social network\ direct compatibility};
+\draw[direct] (memory) -- (pipe);
+\draw[direct] (environment) -- (pipe);
+\draw[direct] (social) -- (pipe);
+\node[draw=black!40,fit=(memory)(social),inner sep=3mm,label={[font=\bfseries]below:Persistent societal substrate}] {};
+
+\node[font=\tiny,anchor=west,below=13mm of memory.west]
+ {solid = kernel/plugin connection \quad dashed = retained compatibility path};
+\end{tikzpicture}
+\end{document}

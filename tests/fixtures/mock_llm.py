@@ -1,4 +1,4 @@
-"""Deterministic mock for :func:`llm_providers.call_llm`.
+"""Deterministic mock for :func:`gaworld.llm.providers.call_llm`.
 
 Why this exists
 ---------------
@@ -123,6 +123,7 @@ DEFAULT_RESPONSES: dict[str, str] = {
             "avoidances": ["熬夜"],
             "target_social": "和朋友保持基本联系",
             "target_recovery": "早点入睡",
+            "growth_focus": ["阅读"],
         },
         ensure_ascii=False,
     ),
@@ -132,6 +133,41 @@ DEFAULT_RESPONSES: dict[str, str] = {
             "avoidances": ["拖延"],
             "target_social": "回复一条消息",
             "target_recovery": "晚饭后散步",
+            "growth_focus": ["阅读"],
+        },
+        ensure_ascii=False,
+    ),
+    "growth_profile": json.dumps(
+        {
+            "items": [
+                {
+                    "name": "阅读",
+                    "kind": "hobby",
+                    "category": "阅读",
+                    "motivation": "通过阅读放松并理解外部变化",
+                    "level": 0.3,
+                    "priority": 0.55,
+                    "weekly_target_minutes": 120,
+                    "preferred_time_blocks": ["evening", "weekend"],
+                    "activity_templates": ["阅读", "看书"],
+                    "career_link": False,
+                    "sociality": 0.1,
+                },
+                {
+                    "name": "沟通表达",
+                    "kind": "skill",
+                    "category": "职业",
+                    "motivation": "提升工作协作和长期机会",
+                    "level": 0.25,
+                    "priority": 0.65,
+                    "weekly_target_minutes": 180,
+                    "preferred_time_blocks": ["evening", "weekend"],
+                    "activity_templates": ["练习沟通表达", "整理表达材料"],
+                    "career_link": True,
+                    "sociality": 0.5,
+                },
+            ],
+            "notes": "测试成长画像",
         },
         ensure_ascii=False,
     ),
@@ -186,6 +222,32 @@ DEFAULT_RESPONSES: dict[str, str] = {
             {"time": "18:00", "activity": "晚餐"},
             {"time": "22:00", "activity": "睡觉"},
         ],
+        ensure_ascii=False,
+    ),
+    # Long-horizon fast-forward daily brief (one call/agent/day).
+    "fast_forward_day": json.dumps(
+        {
+            "brief": "照常上班，午休和同事聊了会儿，晚上按时回家，整体平稳，心情略好。",
+            "memory": "午休的闲聊让今天轻松了一点。",
+            "state_changes": {"emotion": 0.02, "stress": -0.01},
+            "goal_progress": [],
+            "social": [],
+            "intentions": {"priorities": ["保持节奏"], "avoidances": ["熬夜"]},
+        },
+        ensure_ascii=False,
+    ),
+    # Long-horizon fast-forward period brief (one call/agent/month or /year).
+    "fast_forward_period": json.dumps(
+        {
+            "brief": "这段时间工作强度一直不低，和同事的关系稳住了，周末开始固定去公园散步，"
+                     "月底交掉了一个小项目，心情比开头好一些。",
+            "memory": "把手上的活交出去时松了口气。",
+            "highlights": ["接手了一个新项目", "开始每周去公园散步"],
+            "state_changes": {"emotion": 0.06, "stress": -0.03},
+            "goal_progress": [],
+            "social": [],
+            "intentions": {"priorities": ["保持节奏"], "avoidances": ["熬夜"]},
+        },
         ensure_ascii=False,
     ),
 }
@@ -411,19 +473,19 @@ class MockLLM:
 
 @contextlib.contextmanager
 def install(mock: MockLLM | None = None) -> Iterator[MockLLM]:
-    """Patch ``llm_providers.call_llm`` and ``generative_city_sim.call_llm``.
+    """Patch ``gaworld.llm.providers.call_llm`` and ``generative_city_sim.call_llm``.
 
     The simulator imports ``call_llm`` into its own module namespace,
     so we have to patch both bindings to make the substitution
     universal.
     """
-    import llm_providers
+    from gaworld.llm import providers as llm_providers
 
     real_mock = mock if mock is not None else MockLLM()
     original_router = llm_providers.call_llm
     llm_providers.call_llm = real_mock  # type: ignore[assignment]
 
-    # Patch the legacy module binding too if it has been imported.
+    # Patch the simulator module binding too if it has been imported.
     legacy = None
     try:
         import generative_city_sim as legacy_mod  # noqa: F401

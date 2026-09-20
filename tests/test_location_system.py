@@ -15,7 +15,7 @@ import os
 import random
 import unittest
 
-from city_map_system import (
+from gaworld.world.city_map import (
     AREA_PRICE_LEVEL,
     RUSH_HOUR_PERIODS,
     TRANSPORT_FARES,

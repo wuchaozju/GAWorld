@@ -1,0 +1,28 @@
+{
+  "experiment": "exp_polarization",
+  "date": "2026-05-19",
+  "treatments": {
+    "control_baseline": {
+      "description": "无干预，自然演化",
+      "records": 109,
+      "final_polarization_index": 1.4620099220511638,
+      "avg_stance_std": 0.14403716026549618,
+      "avg_cross_viewpoint_exposure": 0.06760930442401018,
+      "avg_toxicity": 0.0
+    },
+    "treatment_diversity": {
+      "description": "增强多样性干预 (diversity_boost=0.3)",
+      "records": 85,
+      "final_polarization_index": 1.5144813629658886,
+      "avg_stance_std": 0.13112297981234383,
+      "avg_cross_viewpoint_exposure": 0.06646825396825393,
+      "avg_toxicity": 0.0
+    }
+  },
+  "key_findings": {
+    "polarization_no_reduction": "Diversity intervention did not reduce polarization (1.514 vs 1.462)",
+    "reduced_variance": "Treatment reduced stance variance (0.131 vs 0.144)",
+    "agent4_anomaly": "Agent 4 shows zero cross-viewpoint exposure and zero stance score",
+    "limited_cross_exposure": "Overall cross-viewpoint exposure is low (~0.067)"
+  }
+}

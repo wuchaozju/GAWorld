@@ -1,0 +1,110 @@
+<h2>数据模型与运行流程</h2>
+<p class="subtitle">所有过程都可追踪、可恢复；关系与会话记录分开保存，避免互相污染</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">核心数据</div>
+    <div class="mockup-body">
+      <div style="padding:12px 14px;border-left:4px solid #2574a9;background:#eef7fc;margin-bottom:10px">
+        <strong>Session</strong>
+        <p>id · 类型 · 标题/议题/任务 · 成员 · 角色 · 轮次 · 状态 · 时间</p>
+      </div>
+      <div style="padding:12px 14px;border-left:4px solid #d9941d;background:#fff7e8;margin-bottom:10px">
+        <strong>Event</strong>
+        <p>序号 · 事件类型 · 发言者 · 内容 · 时间 · 元数据</p>
+      </div>
+      <div style="padding:12px 14px;border-left:4px solid #39875a;background:#edf9f1;margin-bottom:10px">
+        <strong>Artifact</strong>
+        <p>成果名称 · 类型 · 文件路径 · 负责人 · 摘要</p>
+      </div>
+      <div style="padding:12px 14px;border-left:4px solid #8954a8;background:#f7f0fb">
+        <strong>Relationship</strong>
+        <p>双向 friend 记录 · 亲密度 · 信任度 · 来源 · 最近互动</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">持久化目录</div>
+    <div class="mockup-body">
+      <pre style="font-size:12px;line-height:1.7;background:#14202b;color:#e7f0f6;padding:16px;border-radius:8px;overflow:auto">output/collaboration/
+└── sessions/
+    └── cs_20260718_xxx/
+        ├── session.json
+        ├── events.jsonl
+        └── artifacts/
+            ├── final.md
+            └── ...
+
+output/memory/
+├── agent_1_relationships.json
+├── agent_2_relationships.json
+└── agent_*_episodes.jsonl</pre>
+      <p>会话文件采用原子写入；事件只追加，Dashboard 刷新或服务重启后仍可继续查看。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">统一状态机</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:18px;background:#f7f9fc;border-radius:10px">
+    <span style="padding:9px 14px;border-radius:18px;background:#dce8f5">queued</span>
+    <span>→</span>
+    <span style="padding:9px 14px;border-radius:18px;background:#d9f0e2">running</span>
+    <span>⇄</span>
+    <span style="padding:9px 14px;border-radius:18px;background:#fff0c8">paused</span>
+    <span>→</span>
+    <span style="padding:9px 14px;border-radius:18px;background:#d6f2ea">completed</span>
+    <span style="color:#7d8793">或</span>
+    <span style="padding:9px 14px;border-radius:18px;background:#f5dddd">cancelled / failed</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">讨论流程</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center">
+    <div style="padding:12px;background:#eef7fc;border-radius:8px">读取画像与最近上下文</div>
+    <div style="padding:12px;background:#eef7fc;border-radius:8px">成员轮流发言</div>
+    <div style="padding:12px;background:#eef7fc;border-radius:8px">事件流即时追加</div>
+    <div style="padding:12px;background:#eef7fc;border-radius:8px">达到轮次或提前收敛</div>
+    <div style="padding:12px;background:#eef7fc;border-radius:8px">摘要写入成员经历</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">合作任务流程</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center">
+    <div style="padding:12px;background:#edf9f1;border-radius:8px">分析成员能力</div>
+    <div style="padding:12px;background:#edf9f1;border-radius:8px">自动分工 / 指定队长</div>
+    <div style="padding:12px;background:#edf9f1;border-radius:8px">逐项执行并产生产物</div>
+    <div style="padding:12px;background:#edf9f1;border-radius:8px">成员交叉审阅</div>
+    <div style="padding:12px;background:#edf9f1;border-radius:8px">队长汇总最终成果</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">运行与错误处理</div>
+  <ul>
+    <li>Dashboard 每秒增量拉取事件；后台 Worker 不阻塞 HTTP 请求。</li>
+    <li>每个 LLM 步骤最多重试 2 次；仍失败则记录错误事件，并允许从失败步骤继续。</li>
+    <li>暂停在当前发言/任务步骤结束后生效；重启时未结束会话标记为 interrupted，可手动恢复。</li>
+    <li>关系写入使用成对锁与原子替换，确保双方数据一致；无效、重复或少于 2 名成员的请求直接拒绝。</li>
+  </ul>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-data-flow" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>数据与流程符合预期</h3>
+      <p>继续确认 Dashboard 界面布局。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-data-flow" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>请在 Codex 对话中说明希望修改的数据或流程。</p>
+    </div>
+  </div>
+</div>

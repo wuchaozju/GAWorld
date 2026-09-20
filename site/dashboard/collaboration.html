@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="collab.page_title">GAWorld · Cooperation Observatory</title>
+  <meta name="description" data-i18n-content="collab.meta_description" content="GAWorld 多智能体协作任务观测台" />
+  <link rel="stylesheet" href="/site/dashboard/collaboration.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">GAWORLD / COOPERATION PROTOCOL</p>
+      <h1 data-i18n="collab.headline">协作任务观测台</h1>
+      <p class="deck" data-i18n="collab.deck">编组居民、委派角色，并沿着计划、活动与产物轨道观察一项真实合作。</p>
+    </div>
+    <div class="mast-status">
+      <span class="signal" aria-hidden="true"></span>
+      <div>
+        <small data-i18n="collab.link">当前链路</small>
+        <strong id="taskStatus" role="status" aria-live="polite" data-i18n="collab.awaiting">等待任务</strong>
+      </div>
+    </div>
+  </header>
+
+  <main class="cooperation-grid">
+    <aside class="rail team-rail" data-i18n-aria="collab.rail_label" aria-label="团队编组与任务历史">
+      <section class="paper-card composer-card">
+        <div class="section-index" data-i18n="collab.idx_compose">01 / 编组</div>
+        <h2 data-i18n="collab.build_team">组建任务团队</h2>
+        <label class="field" for="taskInput">
+          <span data-i18n="collab.task_desc">任务说明</span>
+          <textarea id="taskInput" rows="4" data-i18n-placeholder="collab.task_placeholder" placeholder="例如：调研社区公共空间并形成可执行建议"></textarea>
+        </label>
+
+        <div class="field">
+          <span id="memberPickerLabel"><span data-i18n="collab.pick_members">选择成员</span> <small data-i18n="collab.at_least_two">至少 2 位</small></span>
+          <div id="memberPicker" class="member-picker" role="group" aria-labelledby="memberPickerLabel"></div>
+        </div>
+
+        <label class="field" for="leaderSelect">
+          <span><span data-i18n="collab.leader">任务负责人</span> <small data-i18n="collab.optional">可选</small></span>
+          <select id="leaderSelect">
+            <option value="" data-i18n="collab.auto_pick">自动推选</option>
+          </select>
+        </label>
+
+        <fieldset id="roleOverrides" class="role-overrides">
+          <legend><span data-i18n="collab.role_override">角色覆盖</span> <small data-i18n="collab.optional">可选</small></legend>
+          <p class="field-note" data-i18n="collab.role_note">选中成员后可指定研究、撰写或审阅职责。</p>
+        </fieldset>
+
+        <button id="startTaskBtn" class="primary-action" type="button" disabled>
+          <span data-i18n="collab.start">启动协作任务</span>
+          <small>Start cooperation</small>
+        </button>
+        <p id="formStatus" class="form-status" role="status" aria-live="polite" data-i18n="collab.loading_roster">正在读取居民名录…</p>
+      </section>
+
+      <section class="paper-card history-card">
+        <div class="section-head">
+          <div>
+            <div class="section-index" data-i18n="collab.idx_archive">02 / 档案</div>
+            <h2 data-i18n="collab.history">任务历史</h2>
+          </div>
+          <button id="refreshSessionsBtn" class="icon-action" type="button" data-i18n-aria="collab.refresh_history" aria-label="刷新任务历史">↻</button>
+        </div>
+        <div id="sessionList" class="session-list" aria-live="polite"></div>
+      </section>
+    </aside>
+
+    <section class="workspace" data-i18n-aria="collab.workspace_label" aria-label="协作任务工作区">
+      <header class="workspace-head">
+        <div>
+          <p class="workspace-code" id="sessionCode">NO ACTIVE SESSION</p>
+          <h2 id="activeTaskTitle" data-i18n="collab.pick_or_start">选择历史任务或启动新的协作</h2>
+        </div>
+        <div class="session-actions" data-i18n-aria="collab.controls_label" aria-label="任务控制">
+          <button id="pauseTaskBtn" type="button" data-i18n="collab.pause" hidden>暂停</button>
+          <button id="resumeTaskBtn" type="button" data-i18n="collab.resume" hidden>继续</button>
+          <button id="cancelTaskBtn" class="danger-action" type="button" data-i18n="collab.cancel" hidden>终止</button>
+        </div>
+      </header>
+
+      <section class="progress-board" aria-labelledby="progressTitle">
+        <div class="progress-copy">
+          <div>
+            <p class="eyebrow">LIVE EXECUTION</p>
+            <h3 id="progressTitle" data-i18n="collab.progress">执行进度</h3>
+          </div>
+          <strong id="progressText">0 / 0</strong>
+        </div>
+        <div id="taskProgress" class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="taskProgressBar"></span>
+        </div>
+      </section>
+
+      <section class="workspace-team" aria-labelledby="workspaceTeamTitle">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">ACTIVE ROSTER</p>
+            <h3 id="workspaceTeamTitle" data-i18n="collab.team_roles">团队与角色</h3>
+          </div>
+          <span id="leaderBadge" class="leader-badge" data-i18n="collab.no_leader">未指定负责人</span>
+        </div>
+        <div id="activeTeam" class="active-team"></div>
+      </section>
+
+      <section class="plan-board" aria-labelledby="planTitle">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">TASK TOPOLOGY</p>
+            <h3 id="planTitle" data-i18n="collab.plan">任务计划</h3>
+          </div>
+          <span id="currentStepText" class="steel-label" data-i18n="collab.awaiting_plan">等待计划生成</span>
+        </div>
+        <ol id="taskPlan" class="task-plan"></ol>
+      </section>
+    </section>
+
+    <aside class="rail signal-rail" data-i18n-aria="collab.signal_label" aria-label="实时活动与任务产物">
+      <section class="signal-card activity-card">
+        <div class="section-head">
+          <div>
+            <div class="section-index" data-i18n="collab.idx_signal">03 / 信号</div>
+            <h2 data-i18n="collab.live_activity">实时活动</h2>
+          </div>
+          <span id="eventCursor" class="event-cursor">SEQ 0000</span>
+        </div>
+        <div id="activityFeed" class="activity-feed" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      </section>
+
+      <section class="paper-card artifacts-card">
+        <div class="section-head">
+          <div>
+            <div class="section-index" data-i18n="collab.idx_artifacts">04 / 产物</div>
+            <h2 data-i18n="collab.deliverables">交付成果</h2>
+          </div>
+          <span id="artifactCount" class="artifact-count">0 files</span>
+        </div>
+        <div id="artifactList" class="artifact-list"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+
+  <script src="/site/dashboard/collaboration-core.js"></script>
+  <script src="/site/dashboard/collaboration.js"></script>
+</body>
+</html>

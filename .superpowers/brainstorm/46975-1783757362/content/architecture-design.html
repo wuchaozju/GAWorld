@@ -1,0 +1,53 @@
+<h2>Architecture Narrative — Implemented System, Honest Migration Boundary</h2>
+<p class="subtitle">Solid borders = implemented and connected · dashed borders = partial migration / extension path</p>
+
+<div class="mockup">
+  <div class="mockup-header">Figure 2 candidate: GAWorld system stack</div>
+  <div class="mockup-body">
+    <div style="border:1px solid #9aa3b2;border-radius:10px;padding:14px;margin-bottom:12px;background:#f8fafc">
+      <div class="label">Research interfaces</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div class="placeholder">CLI</div><div class="placeholder">Dashboard</div><div class="placeholder">Agent Studio</div><div class="placeholder">Trace Replay</div><div class="placeholder">GAWorld-Bench</div>
+      </div>
+    </div>
+
+    <div style="border:2px solid #4263eb;border-radius:10px;padding:14px;margin-bottom:12px;background:#eef2ff">
+      <div class="label">Execution core — implemented microkernel skeleton</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+        <div class="placeholder">Context</div><div class="placeholder">Clock</div><div class="placeholder">EventBus</div><div class="placeholder">Registry</div><div class="placeholder">Controller</div><div class="placeholder">Recorder</div>
+      </div>
+      <div style="margin-top:10px;border:2px dashed #7c3aed;border-radius:8px;padding:10px;background:#faf5ff">
+        <strong>Incremental plugin migration</strong> — cognition dispatch points and InterventionPlugin are integrated; remaining domain modules retain compatibility paths.
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.05fr 1.35fr 1.35fr;gap:12px">
+      <div style="border:1px solid #9aa3b2;border-radius:10px;padding:14px;background:#f8fafc">
+        <div class="label">Persistent agent</div>
+        <p>Profile + core state</p><p>Memory lifecycle</p><p>Intentions / habits</p><p>Interests / skills</p>
+      </div>
+      <div style="border:1px solid #9aa3b2;border-radius:10px;padding:14px;background:#f8fafc">
+        <div class="label">Situated world</div>
+        <p>City graph + local physical state</p><p>Weather / events / mobility</p><p>Social network + life events</p>
+      </div>
+      <div style="border:1px solid #9aa3b2;border-radius:10px;padding:14px;background:#f8fafc">
+        <div class="label">Societal mechanisms</div>
+        <p>Economy + finance</p><p>Policy / information interventions</p><p>Real-work market + artifacts</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Planned figure suite</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <div class="placeholder"><strong>F1 · At a glance</strong><br>research questions → GAWorld → observable outputs</div>
+    <div class="placeholder"><strong>F2 · System stack</strong><br>interfaces, kernel, agents, world, mechanisms</div>
+    <div class="placeholder"><strong>F3 · Agent lifecycle</strong><br>perceive → recall → plan → act → reflect</div>
+    <div class="placeholder"><strong>F4 · Memory model</strong><br>episodes, summaries, habits, intentions, skills</div>
+    <div class="placeholder"><strong>F5 · Experiment flow</strong><br>scenario → matched runs → traces → audit</div>
+    <div class="placeholder"><strong>F6 · Capability matrix</strong><br>complete / partial / designed evidence</div>
+  </div>
+</div>
+
+<p class="subtitle">The paper describes the microkernel as an incremental compatibility-preserving architecture, not as a completed rewrite.</p>

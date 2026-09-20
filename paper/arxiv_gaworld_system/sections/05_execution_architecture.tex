@@ -1,0 +1,111 @@
+\section{Execution Architecture and Incremental Modularization}
+\label{sec:execution-architecture}
+
+GAWorld combines a connected cognition pipeline with a small kernel, nine
+built-in plugins, and compatibility-preserving domain paths.
+Figure~\ref{fig:system-architecture} freezes the audited K1--K5 runtime at
+repository commit \texttt{35a551e}.  The archived capability cases predate
+this migration and are not evaluations of it.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{system_architecture.pdf}
+  \caption{Audited execution architecture at commit \texttt{35a551e}.  Nine
+  built-ins contribute through the registry, bus, pipeline filters, or
+  lifecycle events.  Movement uses the Controller validation gate; Recorder
+  events coexist with established domain-specific outputs.}
+  \label{fig:system-architecture}
+\end{figure}
+
+\subsection{Kernel services}
+
+\paragraph{Simulation context and clock.}
+\texttt{SimContext} holds configuration, Clock, EventBus, PluginRegistry,
+Controller, Recorder, agents and their identifier index, an LLM callable, a
+seeded random-number generator, and an \texttt{extras} compatibility escape
+hatch.  It also provides simulation-level and per-agent plugin-state
+namespaces.  The outer loop is the sole clock writer, giving stages, plugins,
+and records a common simulated day, time, and tick.  This ordering does not by
+itself make model calls, external services, or concurrency deterministic.
+
+\paragraph{Event bus and plugin registry.}
+The EventBus supports priority-ordered observation (\texttt{emit}), merged
+contribution (\texttt{collect}), and value rewriting (\texttt{filter}).
+Handler failures are logged and isolated by default, so warnings and active
+plugin lists must accompany results.  The PluginRegistry assembles built-ins,
+configuration-named classes, and installed entry points; orders setup by
+declared dependencies; skips failed or unsatisfied plugins; and tears active
+plugins down in reverse order.  Plugins may own configuration, namespaced
+agent state, and output directories, but execute in process and are not a
+sandbox.
+
+\paragraph{Controller.}
+The Controller provides a priority-ordered validator chain over structured
+\texttt{ActionRequest}s and a named runtime-intervention API.  In the main
+simulator, movement requests pass through validation: denial preserves the
+origin and is surfaced in the next perception, while a rewrite can change the
+destination.  K5 registers standard interventions for setting one agent-state
+value, updating a dotted live-config path, and queueing agent removal for the
+next day boundary.  Denials and interventions are audited through the
+Recorder.  Other selected actions are not all mediated, so the Controller is
+not a universal policy or safety gate.
+
+\paragraph{Recorder.}
+The Recorder appends clock-stamped JSON objects to table-specific files and is
+closed when the simulation exits.  It records Controller activity and is
+available to plugins.  Main traces, state history, memories, environment
+events, and specialized metrics also retain established writers.  Recorder
+integration therefore improves cross-plugin auditability without implying
+that the archive can be replayed from one event log.
+
+\subsection{Built-in plugin assembly}
+
+The audited registry assembles Intervention, Skills, Interests, Life Events,
+Economy, Local Physical, Real Work, Dynamic Behavior, and Spatial Preferences.
+They attach domain behavior to day/tick events, perception contributions,
+location filters, action or outcome filters, and post-step or day-end hooks.
+For example, Intervention contributes recommendation context and persists
+policy metrics, Life Events produces scheduled exogenous events and state
+effects, Local Physical contributes nearby conditions, and Spatial Preferences
+can rewrite a resolved destination.  The adapters delegate calculations and
+specialized persistence to established modules: migration changes
+orchestration and ownership, not the scientific validity of the mechanisms.
+
+\subsection{Migration-state audit}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.17\linewidth}p{0.23\linewidth}p{0.19\linewidth}p{0.32\linewidth}@{}}
+\toprule
+Surface & Current boundary & Status & Retained boundary and consequence \\
+\midrule
+Cognition & Configured 12-stage pipeline & Wired & Shared step dictionary; order and omissions must be reported \\
+Extensions & EventBus and PluginRegistry & Wired & Failures may degrade rather than terminate a run \\
+Nine domain adapters & Policy, skills, interests, events, economy, physical, work, behavior, spatial & Plugin-integrated & Established stores and writers remain; activation needs config/plugin provenance \\
+Memory & Recall, storage, consolidation, decay & Direct compatibility path & Persistent context is inspectable, not psychologically validated \\
+Environment and social network & World evolution and network modules & Direct compatibility path & The full world and network models are not isolated plugins \\
+Controller & Move validation and named interventions & Connected, scoped & Other actions retain established paths; no universal-gate claim \\
+Recorder & Clocked structured event writer & Connected, non-exclusive & Multiple writers remain; no single-log replay claim \\
+\bottomrule
+\end{tabular}
+\caption{Implementation state in the audited repository.  K1--K5 completion
+does not imply that every subsystem or output format is isolated.}
+\label{tab:migration-state}
+\end{table}
+
+\subsection{Failure and reproducibility boundaries}
+
+A cognition-stage exception propagates because the stage is control flow.
+Bus-handler and plugin-setup failures instead warn and normally leave the
+remaining run active; missing dependencies deactivate the affected plugin.
+Operational resilience therefore makes a completed process different from a
+complete treatment.  A reproducible artifact must include resolved stage
+order, active plugin identifiers, warnings, configuration, source snapshot,
+model/provider conditions, and specialized outputs.
+
+The scoped K1--K5 migration is complete, but shared dictionaries, the context
+escape hatch, direct domain calls, and multiple recording paths remain.
+``K1--K5 complete'' describes completion of the migration plan, not universal
+subsystem isolation or validation.

@@ -1,0 +1,137 @@
+{
+  "night|public|睡前": {
+    "action_counts": {
+      "睡觉": 2
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|work|睡前": {
+    "action_counts": {
+      "睡觉": 2
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|睡前": {
+    "action_counts": {
+      "睡觉": 4
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.355246336,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Hangzhou Riverside Community Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|home|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|加班": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.2287104,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Riverside Night Market": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 2
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|home|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "afternoon|public|午饭": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "联系一下相关的人确认接下来的安排": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.222633984,
+    "last_updated_day": 1
+  },
+  "evening|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 3,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.26827831168204797,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Picnic Area": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|home|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "night|public|午饭": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "night|home|午饭": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  }
+}

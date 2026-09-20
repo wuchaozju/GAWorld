@@ -1,0 +1,763 @@
+/* Population Studio — layered on studio.css, only the pieces it does not have.
+   Hand-written SVG charts, no chart library: site/dashboard has no build step
+   and no vendored chart dependency, and adding a CDN one would break the
+   dashboard's offline usability. */
+
+.pop-topmeta {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  text-align: right;
+  line-height: 1.7;
+}
+
+.studio-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+.pop-panel {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.pop-side {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+}
+
+.pop-side-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.pop-side-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.pop-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  line-height: 1.6;
+}
+
+.pop-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.pop-card > h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.pop-card > .pop-lede {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  line-height: 1.7;
+}
+
+.pop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px 20px;
+}
+
+.pop-field {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.pop-field > label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--ink, #111827);
+}
+
+.pop-field .pop-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--accent, #2563eb);
+}
+
+.pop-field .pop-note {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+}
+
+.pop-field input[type="range"] {
+  width: 100%;
+}
+
+.pop-field input[type="number"],
+.pop-field select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.pop-issues {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pop-issue {
+  border-left: 3px solid;
+  padding: 6px 8px;
+  border-radius: 0 6px 6px 0;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.pop-issue.error {
+  border-color: #dc2626;
+}
+
+.pop-issue.warning {
+  border-color: #d97706;
+}
+
+.pop-issue.ok {
+  border-color: #16a34a;
+}
+
+.pop-issue b {
+  display: block;
+}
+
+.pop-issue .pop-suggest {
+  color: var(--muted, #6b7280);
+  margin-top: 2px;
+}
+
+.pop-summary {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ink, #111827);
+}
+
+.pop-summary dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+}
+
+.pop-summary dt {
+  color: var(--muted, #6b7280);
+}
+
+.pop-summary dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pop-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.pop-chart {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pop-chart h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.pop-chart .pop-chart-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+}
+
+.pop-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.pop-table th,
+.pop-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line, #e5e7eb);
+  text-align: left;
+}
+
+.pop-table td.num,
+.pop-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.pop-progress {
+  flex: 1;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.pop-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line, #e5e7eb);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.pop-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent, #2563eb);
+  transition: width 0.25s ease;
+}
+
+.pop-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pop-verdict {
+  display: grid;
+  gap: 8px;
+}
+
+.pop-layer {
+  border: 1px solid var(--line, #e5e7eb);
+  border-left-width: 4px;
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.pop-layer.pass {
+  border-left-color: #16a34a;
+}
+
+.pop-layer.fail {
+  border-left-color: #dc2626;
+}
+
+.pop-layer.inconclusive {
+  border-left-color: #d97706;
+}
+
+.pop-layer .pop-layer-head {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.pop-layer .pop-layer-note {
+  color: var(--muted, #6b7280);
+}
+
+.pop-log {
+  max-height: 320px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+}
+
+.pop-warn {
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+/* ---------------------------------------------------------------- v2 additions
+   Plain-language UI: hover help markers, in-panel action bars, preset cards,
+   stat tiles, and the validation-gate explainer. */
+
+/* Hover help marker. `title` is deliberate rather than a custom tooltip:
+   it works on every browser, needs no JS, and is what a user already expects
+   from a "?" next to a label. */
+.pop-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--line, #e5e7eb);
+  color: var(--muted, #6b7280);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 3px;
+  user-select: none;
+}
+
+.pop-q:hover {
+  background: var(--accent, #2563eb);
+  color: #fff;
+}
+
+.pop-field input[type="range"],
+.pop-field select,
+.pop-field input[type="text"],
+.pop-field input[type="number"] {
+  cursor: pointer;
+}
+
+.pop-field input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.pop-key {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted, #9ca3af);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* In-panel action bar. The primary action must live *in* the panel — relying on
+   a footer button whose label changes is poor affordance, and a user who
+   cannot find it concludes the feature is broken. */
+.pop-actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #e5e7eb);
+}
+
+.pop-actionbar .btn.primary {
+  background: var(--accent, #2563eb);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.pop-actionbar .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pop-actionhint {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+/* Preset description card */
+.pop-presetcard {
+  margin-top: 14px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-left: 4px solid var(--accent, #2563eb);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 14px;
+  background: rgba(37, 99, 235, 0.03);
+}
+
+.pop-presetcard h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.pop-presetcard p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.pop-usewhen {
+  color: var(--muted, #6b7280);
+}
+
+/* Seed explainer */
+.pop-seedbox {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ink, #374151);
+}
+
+.pop-seedbox b {
+  display: block;
+}
+
+/* Result stat tiles */
+.pop-statgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.pop-stat {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: help;
+}
+
+.pop-stat-k {
+  display: block;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  margin-bottom: 3px;
+}
+
+.pop-stat-v {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-subhead {
+  margin: 18px 0 4px;
+  font-size: 14px;
+}
+
+/* Validation gate explainers */
+.pop-explain {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.pop-explain h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.pop-explain p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.pop-guide {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.pop-guide li {
+  margin-bottom: 4px;
+}
+
+.pop-guide em {
+  font-style: normal;
+  text-decoration: underline dotted;
+}
+
+.pop-verdict-box {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.pop-verdict-box b {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.pop-verdict-box.pass {
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.pop-verdict-box.fail {
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.pop-layer-head em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted, #9ca3af);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.pop-layer-fact {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ink, #374151);
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-details {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.pop-details summary {
+  cursor: pointer;
+  color: var(--muted, #6b7280);
+  margin-bottom: 8px;
+}
+
+.pop-issue.info {
+  border-color: #6b7280;
+}
+
+.pop-progress-err {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.pop-side-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ------------------------------------------------------------- v3 additions
+   Openable output files, and a verdict a non-specialist can act on. */
+
+.pop-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.pop-file {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pop-file-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.pop-file-head span {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.pop-file-hint {
+  margin: 4px 0 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted, #6b7280);
+}
+
+.pop-file-path {
+  display: block;
+  font-size: 11px;
+  color: var(--muted, #9ca3af);
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+
+.pop-file-acts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.pop-file .btn.small {
+  font-size: 12px;
+  padding: 4px 10px;
+  text-decoration: none;
+}
+
+.pop-file details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.pop-pre {
+  max-height: 220px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 6px 0 0;
+  font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+
+/* "So what can I actually do with this run?" — the question the four layer
+   codes do not answer on their own. */
+.pop-usecase {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pop-usecase-col {
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pop-usecase-col.ok {
+  background: rgba(22, 163, 74, 0.06);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.pop-usecase-col.no {
+  background: rgba(220, 38, 38, 0.05);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.pop-usecase-col h5 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.pop-usecase-col ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.pop-layer-fact b {
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------- 居民名册（第 2 步）
+   The generated agents themselves: filterable, expandable, downloadable. */
+
+.pop-rostertools {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pop-rostertools input[type="search"] {
+  flex: 0 1 280px;
+  padding: 6px 10px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.pop-rostertools .pop-hint {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.pop-roster {
+  table-layout: auto;
+}
+
+.pop-roster-row {
+  cursor: pointer;
+}
+
+.pop-roster-row.is-open {
+  background: rgba(37, 99, 235, 0.07);
+  font-weight: 600;
+}
+
+.pop-roster-detail td {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 10px 12px;
+}
+
+.pop-roster-more {
+  margin-top: 8px;
+}
+
+.pop-roster-more .btn.small {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.pop-statebars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 18px;
+}
+
+.pop-statebar {
+  display: grid;
+  grid-template-columns: 84px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+}
+
+.pop-statebar i {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line, #e5e7eb);
+  overflow: hidden;
+}
+
+.pop-statebar i b {
+  display: block;
+  height: 100%;
+  background: var(--accent, #2563eb);
+  opacity: 0.75;
+}
+
+.pop-statebar em {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ink, #111827);
+}

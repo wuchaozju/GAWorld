@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="settings.page_title">GAWorld · 配置</title>
+  <meta name="description" data-i18n-content="settings.meta_description" content="GAWorld 配置中心：集中查看和修改仿真、模型、环境、经济等全部配置" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/settings.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="settings.kicker">GAWorld 配置</p>
+          <h1 data-i18n="settings.headline">所有旋钮在一个地方，改之前先知道它管什么</h1>
+          <p class="sub" data-i18n="settings.sub">
+            全部配置项集中在这里 —— 鼠标停在任何一项上，会告诉你它是干什么的、默认是多少、当前这个值是从哪来的。
+          </p>
+        </div>
+      </div>
+      <div class="set-topmeta" id="setTopMeta"></div>
+    </header>
+
+    <div class="set-toolbar">
+      <label class="set-search">
+        <span class="set-search-icon">⌕</span>
+        <input id="setSearch" type="search" data-i18n-placeholder="settings.search_placeholder" placeholder="搜索配置项：名称、路径或说明，例如 通胀 / sim_days / 记忆" />
+      </label>
+      <label class="set-filter">
+        <input id="setOnlyOverridden" type="checkbox" />
+        <span><span data-i18n="settings.only_overridden">只看被改过的</span>
+          <span class="help-tip" data-i18n-help="settings.only_overridden_hint" data-help="只显示当前值与代码默认值不同的项 —— 也就是被 dashboard_config.json、环境变量或 environment_config.json 覆盖过的那些。用来快速回答「这一轮到底改了什么」。"></span>
+        </span>
+      </label>
+    </div>
+
+    <nav class="studio-steps set-tabs" id="setTabs"></nav>
+
+    <section class="set-main">
+      <div class="set-body" id="setBody">
+        <p class="set-hint" data-i18n="settings.loading">正在加载配置…</p>
+      </div>
+      <aside class="set-side" id="setSide"></aside>
+    </section>
+
+    <footer class="studio-foot set-foot">
+      <div class="set-status" id="setStatus"></div>
+      <div class="set-actions">
+        <button class="button subtle" id="setReload" data-i18n="settings.reload">重新读取</button>
+        <button class="button" id="setDiscard" data-i18n="settings.discard" disabled>放弃修改</button>
+        <button class="button primary" id="setSave" data-i18n="settings.save" disabled>保存配置</button>
+      </div>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Central Bank Annex",
+  "destination": "Central Bank Annex",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 6,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Finance Plaza",
+    "Financial District",
+    "Central Bank Annex"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "13:14",
+  "frequent_places": {
+    "Riverside Post Office": 1,
+    "C-02": 1,
+    "Riverside Cinema": 2,
+    "Riverside Bank Branch": 1,
+    "City Hall": 2,
+    "Market St": 1,
+    "Courthouse": 1,
+    "Financial District": 2,
+    "Stadium Plaza": 1,
+    "Central Bank Annex": 2,
+    "Finance Plaza": 1
+  },
+  "preferred_modes": {
+    "e-bike": 5,
+    "metro": 3,
+    "bike": 7
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 6.970000000000001,
+  "travel_distance_km": 0.98,
+  "depart_time": "13:08"
+}

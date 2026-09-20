@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "generated_at": "2026-05-30T16:11:58Z",
+    "last_updated": "2026-05-30T16:27:56Z",
+    "finished": true,
+    "frame_count": 27,
+    "sim_meta": {
+      "sim_days": 3,
+      "seconds_per_day": 10,
+      "simulate_realtime": false,
+      "time_step_minutes": null,
+      "map_path": "data/citymap.md",
+      "agent_ids": [
+        34
+      ]
+    }
+  },
+  "frame": {
+    "index": 26,
+    "day": 3,
+    "time": "22:59",
+    "date": "2026-06-02",
+    "weekday": "周二",
+    "day_type": "工作日",
+    "env_context": "背景：2025年冬季，中国·杭州。经济发展中等偏稳，青年就业压力上升，生活成本偏高；社会秩序稳定但政策与舆论压力较高。 当前环境事件：日级环境：今日外部环境总体平稳。",
+    "env_events": [],
+    "policy": {},
+    "agents": [
+      {
+        "agent_id": 34,
+        "name": "徐桂兰",
+        "avatar_path": "avatars/agent_34.svg",
+        "time": "22:59",
+        "location": "Riverside Post Office",
+        "resolved_location": "Riverside Post Office",
+        "target_location": "Riverside Post Office",
+        "home": "Building C-01",
+        "workplace": "Central Block",
+        "scheduled_activity": "睡前",
+        "activity": "睡前",
+        "action": "睡觉",
+        "outcome": "在【睡前】中执行了【睡觉】",
+        "perception": "",
+        "plan": "目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希望不把后面的安排弄得更乱",
+        "reflection": "结果：The user is Chinese, wants to output JSON with fields result, feeling, lesson...；感受：情绪有一点波动；教训：下次还是要更早判断状态和代价；后续倾向：接下来会更偏向省力或稳妥的做法",
+        "changed": false,
+        "change_reason": "",
+        "state": {
+          "emotion": 0.8927,
+          "stress": 0.097,
+          "econ_security": 0.6861,
+          "city_identity": 0.7813,
+          "policy_sensitivity": 0.4532,
+          "platform_dependence": 0.4141,
+          "risk_preference": 0.5923,
+          "voice_propensity": 0.6123,
+          "mobility_intent": 0.1437,
+          "fatigue_debt": 0.0158,
+          "self_control": 0.7235,
+          "time_pressure": 0.1861,
+          "stance_score": 0.0,
+          "toxicity_score": 0.0,
+          "misinformation_risk": 0.0,
+          "cross_viewpoint_exposure": 0.0,
+          "intervention_reward": 0.32,
+          "energy": 0.8011,
+          "hunger": 0.1534,
+          "social_need": 0.611
+        },
+        "travel": {
+          "mode": "e-bike",
+          "distance_km": 2.163,
+          "minutes": 7,
+          "progress": 1.0,
+          "route": [
+            "Hangzhou Riverside Community Center",
+            "C-01 (Village Center)",
+            "North Block",
+            "Riverside Bus Station",
+            "Riverside Post Office"
+          ],
+          "cost": 0.22,
+          "rush_hour": false,
+          "status": "arrived"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,6823 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173314,
+          30.295343
+        ]
+      },
+      "properties": {
+        "id": "C-01 (Village Center)",
+        "name": "C-01 (Village Center)",
+        "kind": "hub",
+        "category": "mixed",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.4,
+        "capacity": 450,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.221175,
+          30.296597
+        ]
+      },
+      "properties": {
+        "id": "Riverside Park",
+        "name": "Riverside Park",
+        "kind": "hub",
+        "category": "leisure",
+        "district": "Riverside Park",
+        "popularity": 0.7,
+        "capacity": 1050,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.266288,
+          30.301861
+        ]
+      },
+      "properties": {
+        "id": "Riverside Community Hospital",
+        "name": "Riverside Community Hospital",
+        "kind": "hub",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 750,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.201142,
+          30.292262
+        ]
+      },
+      "properties": {
+        "id": "Riverside Bus Station",
+        "name": "Riverside Bus Station",
+        "kind": "hub",
+        "category": "transit",
+        "district": "Transit Core",
+        "popularity": 0.6,
+        "capacity": 3000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.355601,
+          30.293584
+        ]
+      },
+      "properties": {
+        "id": "Hangzhou Tech Labs",
+        "name": "Hangzhou Tech Labs",
+        "kind": "hub",
+        "category": "mixed",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.4,
+        "capacity": 450,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173023,
+          30.325879
+        ]
+      },
+      "properties": {
+        "id": "Riverside Night Market",
+        "name": "Riverside Night Market",
+        "kind": "hub",
+        "category": "commerce",
+        "district": "Riverside Night Market",
+        "popularity": 0.9,
+        "capacity": 900,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.219928,
+          30.323034
+        ]
+      },
+      "properties": {
+        "id": "Willow Grove Park",
+        "name": "Willow Grove Park",
+        "kind": "hub",
+        "category": "leisure",
+        "district": "Willow Grove Park",
+        "popularity": 0.7,
+        "capacity": 1050,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.179892,
+          30.294857
+        ]
+      },
+      "properties": {
+        "id": "North Block",
+        "name": "North Block",
+        "kind": "hub",
+        "category": "residential",
+        "district": "North Residential",
+        "popularity": 0.35,
+        "capacity": 600,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.206454,
+          30.303289
+        ]
+      },
+      "properties": {
+        "id": "Central Block",
+        "name": "Central Block",
+        "kind": "hub",
+        "category": "residential",
+        "district": "Central Residential",
+        "popularity": 0.35,
+        "capacity": 600,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.209996,
+          30.321451
+        ]
+      },
+      "properties": {
+        "id": "South Block",
+        "name": "South Block",
+        "kind": "hub",
+        "category": "residential",
+        "district": "South Residential",
+        "popularity": 0.35,
+        "capacity": 600,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.238329,
+          30.305235
+        ]
+      },
+      "properties": {
+        "id": "East Block",
+        "name": "East Block",
+        "kind": "hub",
+        "category": "residential",
+        "district": "East Residential",
+        "popularity": 0.35,
+        "capacity": 600,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.17635,
+          30.313019
+        ]
+      },
+      "properties": {
+        "id": "West Block",
+        "name": "West Block",
+        "kind": "hub",
+        "category": "residential",
+        "district": "West Residential",
+        "popularity": 0.35,
+        "capacity": 600,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.250725,
+          30.292911
+        ]
+      },
+      "properties": {
+        "id": "University District",
+        "name": "University District",
+        "kind": "hub",
+        "category": "education",
+        "district": "University District",
+        "popularity": 0.5,
+        "capacity": 1800,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.314177,
+          30.351792
+        ]
+      },
+      "properties": {
+        "id": "Old Town",
+        "name": "Old Town",
+        "kind": "hub",
+        "category": "mixed",
+        "district": "Old Town",
+        "popularity": 0.4,
+        "capacity": 450,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.232131,
+          30.313668
+        ]
+      },
+      "properties": {
+        "id": "Financial District",
+        "name": "Financial District",
+        "kind": "hub",
+        "category": "commerce",
+        "district": "CBD",
+        "popularity": 0.9,
+        "capacity": 900,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.268433,
+          30.322749
+        ]
+      },
+      "properties": {
+        "id": "Industrial Park",
+        "name": "Industrial Park",
+        "kind": "hub",
+        "category": "industry",
+        "district": "Industry Belt",
+        "popularity": 0.25,
+        "capacity": 1200,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263121,
+          30.309127
+        ]
+      },
+      "properties": {
+        "id": "Logistics Hub",
+        "name": "Logistics Hub",
+        "kind": "hub",
+        "category": "industry",
+        "district": "Logistics Belt",
+        "popularity": 0.25,
+        "capacity": 1200,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.242756,
+          30.321451
+        ]
+      },
+      "properties": {
+        "id": "Riverside Stadium",
+        "name": "Riverside Stadium",
+        "kind": "hub",
+        "category": "leisure",
+        "district": "River Sports Zone",
+        "popularity": 0.7,
+        "capacity": 1050,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.217965,
+          30.307181
+        ]
+      },
+      "properties": {
+        "id": "City Hall",
+        "name": "City Hall",
+        "kind": "hub",
+        "category": "government",
+        "district": "Civic Center",
+        "popularity": 0.3,
+        "capacity": 450,
+        "style": {
+          "color": "#b08ad4",
+          "icon": "landmark",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.224163,
+          30.296154
+        ]
+      },
+      "properties": {
+        "id": "Central Station",
+        "name": "Central Station",
+        "kind": "hub",
+        "category": "transit",
+        "district": "Transit Core",
+        "popularity": 0.6,
+        "capacity": 3000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.280829,
+          30.294208
+        ]
+      },
+      "properties": {
+        "id": "Airport District",
+        "name": "Airport District",
+        "kind": "hub",
+        "category": "transit",
+        "district": "Airport Corridor",
+        "popularity": 0.6,
+        "capacity": 3000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.259579,
+          30.285776
+        ]
+      },
+      "properties": {
+        "id": "Waterfront",
+        "name": "Waterfront",
+        "kind": "hub",
+        "category": "leisure",
+        "district": "Waterfront",
+        "popularity": 0.7,
+        "capacity": 1050,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.269602,
+          30.406617
+        ]
+      },
+      "properties": {
+        "id": "Hillside District",
+        "name": "Hillside District",
+        "kind": "hub",
+        "category": "mixed",
+        "district": "Hillside District",
+        "popularity": 0.4,
+        "capacity": 450,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.311847,
+          30.415965
+        ]
+      },
+      "properties": {
+        "id": "Greenbelt Corridor",
+        "name": "Greenbelt Corridor",
+        "kind": "hub",
+        "category": "mixed",
+        "district": "Greenbelt Corridor",
+        "popularity": 0.4,
+        "capacity": 450,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173313,
+          30.293073
+        ]
+      },
+      "properties": {
+        "id": "C-02",
+        "name": "C-02",
+        "kind": "place",
+        "category": "mixed",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.170214,
+          30.295343
+        ]
+      },
+      "properties": {
+        "id": "Riverside Public Library",
+        "name": "Riverside Public Library",
+        "kind": "place",
+        "category": "education",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.176412,
+          30.295343
+        ]
+      },
+      "properties": {
+        "id": "Hangzhou Riverside Community Center",
+        "name": "Hangzhou Riverside Community Center",
+        "kind": "place",
+        "category": "mixed",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173313,
+          30.297614
+        ]
+      },
+      "properties": {
+        "id": "Riverside Bank Branch",
+        "name": "Riverside Bank Branch",
+        "kind": "place",
+        "category": "commerce",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.170214,
+          30.293073
+        ]
+      },
+      "properties": {
+        "id": "Central Parking Lot",
+        "name": "Central Parking Lot",
+        "kind": "place",
+        "category": "transit",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173021,
+          30.328152
+        ]
+      },
+      "properties": {
+        "id": "Market St",
+        "name": "Market St",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Riverside Night Market",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.170214,
+          30.297614
+        ]
+      },
+      "properties": {
+        "id": "East Loop",
+        "name": "East Loop",
+        "kind": "place",
+        "category": "transit",
+        "district": "C-01 (Village Center)",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.221179,
+          30.294325
+        ]
+      },
+      "properties": {
+        "id": "Riverwalk",
+        "name": "Riverwalk",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Riverside Park",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.21808,
+          30.296595
+        ]
+      },
+      "properties": {
+        "id": "Playground",
+        "name": "Playground",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Riverside Park",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.224278,
+          30.296595
+        ]
+      },
+      "properties": {
+        "id": "Fitness Area",
+        "name": "Fitness Area",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Riverside Park",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.169922,
+          30.325882
+        ]
+      },
+      "properties": {
+        "id": "Riverside Cinema",
+        "name": "Riverside Cinema",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Riverside Night Market",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.224278,
+          30.294325
+        ]
+      },
+      "properties": {
+        "id": "Riverside Ave",
+        "name": "Riverside Ave",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Park",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.21808,
+          30.298865
+        ]
+      },
+      "properties": {
+        "id": "Bridge Rd",
+        "name": "Bridge Rd",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Park",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.266291,
+          30.299592
+        ]
+      },
+      "properties": {
+        "id": "Emergency Department",
+        "name": "Emergency Department",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263192,
+          30.301862
+        ]
+      },
+      "properties": {
+        "id": "Pediatrics Department",
+        "name": "Pediatrics Department",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.26939,
+          30.301862
+        ]
+      },
+      "properties": {
+        "id": "Cardiology Department",
+        "name": "Cardiology Department",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.266291,
+          30.304132
+        ]
+      },
+      "properties": {
+        "id": "Imaging Department",
+        "name": "Imaging Department",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263192,
+          30.299592
+        ]
+      },
+      "properties": {
+        "id": "Northside Family Clinic",
+        "name": "Northside Family Clinic",
+        "kind": "place",
+        "category": "residential",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.26939,
+          30.299592
+        ]
+      },
+      "properties": {
+        "id": "Willow Pharmacy",
+        "name": "Willow Pharmacy",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263192,
+          30.304132
+        ]
+      },
+      "properties": {
+        "id": "Willow Rd",
+        "name": "Willow Rd",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Community Hospital",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.201142,
+          30.289992
+        ]
+      },
+      "properties": {
+        "id": "Riverside Post Office",
+        "name": "Riverside Post Office",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Riverside Bus Station",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.198043,
+          30.292262
+        ]
+      },
+      "properties": {
+        "id": "Riverside Police Station",
+        "name": "Riverside Police Station",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Bus Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.204241,
+          30.292262
+        ]
+      },
+      "properties": {
+        "id": "Riverside Fire Station",
+        "name": "Riverside Fire Station",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Bus Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.17612,
+          30.325882
+        ]
+      },
+      "properties": {
+        "id": "Corner Mart",
+        "name": "Corner Mart",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Riverside Night Market",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.198043,
+          30.289992
+        ]
+      },
+      "properties": {
+        "id": "West Loop",
+        "name": "West Loop",
+        "kind": "place",
+        "category": "transit",
+        "district": "Riverside Bus Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.355603,
+          30.288721
+        ]
+      },
+      "properties": {
+        "id": "RnD Center",
+        "name": "RnD Center",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.348962,
+          30.293585
+        ]
+      },
+      "properties": {
+        "id": "Admin Office",
+        "name": "Admin Office",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.362243,
+          30.293585
+        ]
+      },
+      "properties": {
+        "id": "Riverside Logistics",
+        "name": "Riverside Logistics",
+        "kind": "place",
+        "category": "industry",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.355603,
+          30.29845
+        ]
+      },
+      "properties": {
+        "id": "Warehouse A",
+        "name": "Warehouse A",
+        "kind": "place",
+        "category": "industry",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.348962,
+          30.288721
+        ]
+      },
+      "properties": {
+        "id": "Warehouse B",
+        "name": "Warehouse B",
+        "kind": "place",
+        "category": "industry",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.362243,
+          30.288721
+        ]
+      },
+      "properties": {
+        "id": "Bridge Construction Co.",
+        "name": "Bridge Construction Co.",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Hangzhou Tech Labs",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173021,
+          30.323611
+        ]
+      },
+      "properties": {
+        "id": "Riverside Supermart",
+        "name": "Riverside Supermart",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Riverside Night Market",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.22148,
+          30.321899
+        ]
+      },
+      "properties": {
+        "id": "Basketball Court",
+        "name": "Basketball Court",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Willow Grove Park",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.218381,
+          30.324169
+        ]
+      },
+      "properties": {
+        "id": "Picnic Area",
+        "name": "Picnic Area",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Willow Grove Park",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.238329,
+          30.307505
+        ]
+      },
+      "properties": {
+        "id": "East Pocket Park",
+        "name": "East Pocket Park",
+        "kind": "place",
+        "category": "leisure",
+        "district": "East Block",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.181441,
+          30.293722
+        ]
+      },
+      "properties": {
+        "id": "Building N-01",
+        "name": "Building N-01",
+        "kind": "place",
+        "category": "residential",
+        "district": "North Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.178342,
+          30.295992
+        ]
+      },
+      "properties": {
+        "id": "Building N-02",
+        "name": "Building N-02",
+        "kind": "place",
+        "category": "residential",
+        "district": "North Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.181441,
+          30.295992
+        ]
+      },
+      "properties": {
+        "id": "Riverside Primary School",
+        "name": "Riverside Primary School",
+        "kind": "place",
+        "category": "education",
+        "district": "North Block",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.206454,
+          30.301019
+        ]
+      },
+      "properties": {
+        "id": "Building C-01",
+        "name": "Building C-01",
+        "kind": "place",
+        "category": "residential",
+        "district": "Central Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.203355,
+          30.303289
+        ]
+      },
+      "properties": {
+        "id": "Building C-02",
+        "name": "Building C-02",
+        "kind": "place",
+        "category": "residential",
+        "district": "Central Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.209553,
+          30.303289
+        ]
+      },
+      "properties": {
+        "id": "Riverside Middle School",
+        "name": "Riverside Middle School",
+        "kind": "place",
+        "category": "education",
+        "district": "Central Block",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.206454,
+          30.305559
+        ]
+      },
+      "properties": {
+        "id": "Little River Daycare",
+        "name": "Little River Daycare",
+        "kind": "place",
+        "category": "education",
+        "district": "Central Block",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.211545,
+          30.320316
+        ]
+      },
+      "properties": {
+        "id": "Building S-01",
+        "name": "Building S-01",
+        "kind": "place",
+        "category": "residential",
+        "district": "South Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.208446,
+          30.322586
+        ]
+      },
+      "properties": {
+        "id": "Building S-02",
+        "name": "Building S-02",
+        "kind": "place",
+        "category": "residential",
+        "district": "South Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.211545,
+          30.322586
+        ]
+      },
+      "properties": {
+        "id": "Willow Design Studio",
+        "name": "Willow Design Studio",
+        "kind": "place",
+        "category": "mixed",
+        "district": "South Block",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.238329,
+          30.302965
+        ]
+      },
+      "properties": {
+        "id": "Building E-01",
+        "name": "Building E-01",
+        "kind": "place",
+        "category": "residential",
+        "district": "East Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.23523,
+          30.305235
+        ]
+      },
+      "properties": {
+        "id": "Building E-02",
+        "name": "Building E-02",
+        "kind": "place",
+        "category": "residential",
+        "district": "East Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.241428,
+          30.305235
+        ]
+      },
+      "properties": {
+        "id": "East Community Clinic",
+        "name": "East Community Clinic",
+        "kind": "place",
+        "category": "medical",
+        "district": "East Block",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.17635,
+          30.310749
+        ]
+      },
+      "properties": {
+        "id": "Building W-01",
+        "name": "Building W-01",
+        "kind": "place",
+        "category": "residential",
+        "district": "West Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.173251,
+          30.313019
+        ]
+      },
+      "properties": {
+        "id": "Building W-02",
+        "name": "Building W-02",
+        "kind": "place",
+        "category": "residential",
+        "district": "West Block",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.179449,
+          30.313019
+        ]
+      },
+      "properties": {
+        "id": "Westside Community Center",
+        "name": "Westside Community Center",
+        "kind": "place",
+        "category": "mixed",
+        "district": "West Block",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.17635,
+          30.315289
+        ]
+      },
+      "properties": {
+        "id": "Westside Playground",
+        "name": "Westside Playground",
+        "kind": "place",
+        "category": "leisure",
+        "district": "West Block",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.250725,
+          30.290641
+        ]
+      },
+      "properties": {
+        "id": "Riverside University Gate",
+        "name": "Riverside University Gate",
+        "kind": "place",
+        "category": "education",
+        "district": "University District",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.247626,
+          30.292911
+        ]
+      },
+      "properties": {
+        "id": "Main Library",
+        "name": "Main Library",
+        "kind": "place",
+        "category": "education",
+        "district": "University District",
+        "popularity": 0.5,
+        "capacity": 1200,
+        "style": {
+          "color": "#5a9bd4",
+          "icon": "graduation-cap",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.253824,
+          30.292911
+        ]
+      },
+      "properties": {
+        "id": "Engineering Building",
+        "name": "Engineering Building",
+        "kind": "place",
+        "category": "residential",
+        "district": "University District",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.250725,
+          30.295181
+        ]
+      },
+      "properties": {
+        "id": "Arts Building",
+        "name": "Arts Building",
+        "kind": "place",
+        "category": "residential",
+        "district": "University District",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.247626,
+          30.290641
+        ]
+      },
+      "properties": {
+        "id": "Dormitory A",
+        "name": "Dormitory A",
+        "kind": "place",
+        "category": "residential",
+        "district": "University District",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.253824,
+          30.290641
+        ]
+      },
+      "properties": {
+        "id": "Dormitory B",
+        "name": "Dormitory B",
+        "kind": "place",
+        "category": "residential",
+        "district": "University District",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.247626,
+          30.295181
+        ]
+      },
+      "properties": {
+        "id": "Student Canteen",
+        "name": "Student Canteen",
+        "kind": "place",
+        "category": "mixed",
+        "district": "University District",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.314174,
+          30.34693
+        ]
+      },
+      "properties": {
+        "id": "Old Town Market",
+        "name": "Old Town Market",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Old Town",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.307533,
+          30.351795
+        ]
+      },
+      "properties": {
+        "id": "Heritage Street",
+        "name": "Heritage Street",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Old Town",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.320815,
+          30.351795
+        ]
+      },
+      "properties": {
+        "id": "Temple Square",
+        "name": "Temple Square",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Old Town",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.314174,
+          30.35666
+        ]
+      },
+      "properties": {
+        "id": "Tea House Alley",
+        "name": "Tea House Alley",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Old Town",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.307533,
+          30.34693
+        ]
+      },
+      "properties": {
+        "id": "Riverside Museum",
+        "name": "Riverside Museum",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Old Town",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.232131,
+          30.311397
+        ]
+      },
+      "properties": {
+        "id": "Riverside Tower",
+        "name": "Riverside Tower",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Financial District",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.229032,
+          30.313668
+        ]
+      },
+      "properties": {
+        "id": "Finance Plaza",
+        "name": "Finance Plaza",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Financial District",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.23523,
+          30.313668
+        ]
+      },
+      "properties": {
+        "id": "Insurance Center",
+        "name": "Insurance Center",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Financial District",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.232131,
+          30.315938
+        ]
+      },
+      "properties": {
+        "id": "Central Bank Annex",
+        "name": "Central Bank Annex",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Financial District",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.229032,
+          30.311397
+        ]
+      },
+      "properties": {
+        "id": "Business Hotel",
+        "name": "Business Hotel",
+        "kind": "place",
+        "category": "transit",
+        "district": "Financial District",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.268433,
+          30.320478
+        ]
+      },
+      "properties": {
+        "id": "Manufacturing Zone A",
+        "name": "Manufacturing Zone A",
+        "kind": "place",
+        "category": "industry",
+        "district": "Industrial Park",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.265334,
+          30.322749
+        ]
+      },
+      "properties": {
+        "id": "Manufacturing Zone B",
+        "name": "Manufacturing Zone B",
+        "kind": "place",
+        "category": "industry",
+        "district": "Industrial Park",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.271532,
+          30.322749
+        ]
+      },
+      "properties": {
+        "id": "Logistics Yard",
+        "name": "Logistics Yard",
+        "kind": "place",
+        "category": "industry",
+        "district": "Industrial Park",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.268433,
+          30.325019
+        ]
+      },
+      "properties": {
+        "id": "Power Substation",
+        "name": "Power Substation",
+        "kind": "place",
+        "category": "industry",
+        "district": "Industrial Park",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.265334,
+          30.320478
+        ]
+      },
+      "properties": {
+        "id": "Freight Depot",
+        "name": "Freight Depot",
+        "kind": "place",
+        "category": "industry",
+        "district": "Industrial Park",
+        "popularity": 0.25,
+        "capacity": 800,
+        "style": {
+          "color": "#8a8f98",
+          "icon": "factory",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263121,
+          30.306857
+        ]
+      },
+      "properties": {
+        "id": "Riverside Freight Station",
+        "name": "Riverside Freight Station",
+        "kind": "place",
+        "category": "transit",
+        "district": "Logistics Hub",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.260022,
+          30.309127
+        ]
+      },
+      "properties": {
+        "id": "Cold Storage Facility",
+        "name": "Cold Storage Facility",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Logistics Hub",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.26622,
+          30.309127
+        ]
+      },
+      "properties": {
+        "id": "Sorting Center",
+        "name": "Sorting Center",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Logistics Hub",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.263121,
+          30.311397
+        ]
+      },
+      "properties": {
+        "id": "Long Haul Truck Stop",
+        "name": "Long Haul Truck Stop",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Logistics Hub",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.242756,
+          30.319181
+        ]
+      },
+      "properties": {
+        "id": "Stadium Plaza",
+        "name": "Stadium Plaza",
+        "kind": "place",
+        "category": "commerce",
+        "district": "Riverside Stadium",
+        "popularity": 0.9,
+        "capacity": 600,
+        "style": {
+          "color": "#e0a458",
+          "icon": "shopping-bag",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.239657,
+          30.321451
+        ]
+      },
+      "properties": {
+        "id": "Aquatic Center",
+        "name": "Aquatic Center",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Riverside Stadium",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.245855,
+          30.321451
+        ]
+      },
+      "properties": {
+        "id": "Training Grounds",
+        "name": "Training Grounds",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Riverside Stadium",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.242756,
+          30.323722
+        ]
+      },
+      "properties": {
+        "id": "Sports Clinic",
+        "name": "Sports Clinic",
+        "kind": "place",
+        "category": "medical",
+        "district": "Riverside Stadium",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.217965,
+          30.304911
+        ]
+      },
+      "properties": {
+        "id": "Civic Square",
+        "name": "Civic Square",
+        "kind": "place",
+        "category": "mixed",
+        "district": "City Hall",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.214866,
+          30.307181
+        ]
+      },
+      "properties": {
+        "id": "Public Services Center",
+        "name": "Public Services Center",
+        "kind": "place",
+        "category": "government",
+        "district": "City Hall",
+        "popularity": 0.3,
+        "capacity": 300,
+        "style": {
+          "color": "#b08ad4",
+          "icon": "landmark",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.221064,
+          30.307181
+        ]
+      },
+      "properties": {
+        "id": "Archives Building",
+        "name": "Archives Building",
+        "kind": "place",
+        "category": "residential",
+        "district": "City Hall",
+        "popularity": 0.35,
+        "capacity": 400,
+        "style": {
+          "color": "#7bb37a",
+          "icon": "home",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.217965,
+          30.309451
+        ]
+      },
+      "properties": {
+        "id": "Courthouse",
+        "name": "Courthouse",
+        "kind": "place",
+        "category": "government",
+        "district": "City Hall",
+        "popularity": 0.3,
+        "capacity": 300,
+        "style": {
+          "color": "#b08ad4",
+          "icon": "landmark",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.224163,
+          30.293884
+        ]
+      },
+      "properties": {
+        "id": "High Speed Rail Terminal",
+        "name": "High Speed Rail Terminal",
+        "kind": "place",
+        "category": "transit",
+        "district": "Central Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.221064,
+          30.296154
+        ]
+      },
+      "properties": {
+        "id": "Metro Concourse",
+        "name": "Metro Concourse",
+        "kind": "place",
+        "category": "transit",
+        "district": "Central Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.227261,
+          30.296154
+        ]
+      },
+      "properties": {
+        "id": "Taxi Loop",
+        "name": "Taxi Loop",
+        "kind": "place",
+        "category": "transit",
+        "district": "Central Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.224163,
+          30.298424
+        ]
+      },
+      "properties": {
+        "id": "Intercity Bus Terminal",
+        "name": "Intercity Bus Terminal",
+        "kind": "place",
+        "category": "transit",
+        "district": "Central Station",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.280829,
+          30.291938
+        ]
+      },
+      "properties": {
+        "id": "Riverside International Airport",
+        "name": "Riverside International Airport",
+        "kind": "place",
+        "category": "transit",
+        "district": "Airport District",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.27773,
+          30.294208
+        ]
+      },
+      "properties": {
+        "id": "Airport Cargo Terminal",
+        "name": "Airport Cargo Terminal",
+        "kind": "place",
+        "category": "transit",
+        "district": "Airport District",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.283928,
+          30.294208
+        ]
+      },
+      "properties": {
+        "id": "Airport Hotel",
+        "name": "Airport Hotel",
+        "kind": "place",
+        "category": "transit",
+        "district": "Airport District",
+        "popularity": 0.6,
+        "capacity": 2000,
+        "style": {
+          "color": "#d4b95a",
+          "icon": "train-front",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.280829,
+          30.296478
+        ]
+      },
+      "properties": {
+        "id": "Air Traffic Control",
+        "name": "Air Traffic Control",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Airport District",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.259579,
+          30.283505
+        ]
+      },
+      "properties": {
+        "id": "Riverside Port",
+        "name": "Riverside Port",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Waterfront",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.25648,
+          30.285776
+        ]
+      },
+      "properties": {
+        "id": "Marina Pier",
+        "name": "Marina Pier",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Waterfront",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.262678,
+          30.285776
+        ]
+      },
+      "properties": {
+        "id": "Riverfront Promenade",
+        "name": "Riverfront Promenade",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Waterfront",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.259579,
+          30.288046
+        ]
+      },
+      "properties": {
+        "id": "Boathouse",
+        "name": "Boathouse",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Waterfront",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.269602,
+          30.40177
+        ]
+      },
+      "properties": {
+        "id": "Hillside Park",
+        "name": "Hillside Park",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Hillside District",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.262983,
+          30.406619
+        ]
+      },
+      "properties": {
+        "id": "Scenic Overlook",
+        "name": "Scenic Overlook",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Hillside District",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.276221,
+          30.406619
+        ]
+      },
+      "properties": {
+        "id": "Mountain Trailhead",
+        "name": "Mountain Trailhead",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Hillside District",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.269602,
+          30.411468
+        ]
+      },
+      "properties": {
+        "id": "Hillside Clinic",
+        "name": "Hillside Clinic",
+        "kind": "place",
+        "category": "medical",
+        "district": "Hillside District",
+        "popularity": 0.45,
+        "capacity": 500,
+        "style": {
+          "color": "#d96c6c",
+          "icon": "cross",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.311845,
+          30.411117
+        ]
+      },
+      "properties": {
+        "id": "Eco Trail",
+        "name": "Eco Trail",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Greenbelt Corridor",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.305226,
+          30.415966
+        ]
+      },
+      "properties": {
+        "id": "Wetland Reserve",
+        "name": "Wetland Reserve",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Greenbelt Corridor",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.318465,
+          30.415966
+        ]
+      },
+      "properties": {
+        "id": "Botanical Garden",
+        "name": "Botanical Garden",
+        "kind": "place",
+        "category": "mixed",
+        "district": "Greenbelt Corridor",
+        "popularity": 0.4,
+        "capacity": 300,
+        "style": {
+          "color": "#a8a8a8",
+          "icon": "map-pin",
+          "radius": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.311845,
+          30.420815
+        ]
+      },
+      "properties": {
+        "id": "Outdoor Amphitheater",
+        "name": "Outdoor Amphitheater",
+        "kind": "place",
+        "category": "leisure",
+        "district": "Greenbelt Corridor",
+        "popularity": 0.7,
+        "capacity": 700,
+        "style": {
+          "color": "#5cc2a8",
+          "icon": "trees",
+          "radius": 3
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173313,
+            30.293073
+          ],
+          [
+            120.173314,
+            30.295343
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173313,
+            30.293073
+          ],
+          [
+            120.173021,
+            30.328152
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.170214,
+            30.295343
+          ],
+          [
+            120.170214,
+            30.297614
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.170214,
+            30.295343
+          ],
+          [
+            120.173314,
+            30.295343
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.170214,
+            30.293073
+          ],
+          [
+            120.170214,
+            30.295343
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.170214,
+            30.293073
+          ],
+          [
+            120.173313,
+            30.293073
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173021,
+            30.328152
+          ],
+          [
+            120.176412,
+            30.295343
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.170214,
+            30.297614
+          ],
+          [
+            120.173313,
+            30.297614
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173314,
+            30.295343
+          ],
+          [
+            120.173313,
+            30.297614
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173314,
+            30.295343
+          ],
+          [
+            120.176412,
+            30.295343
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221179,
+            30.294325
+          ],
+          [
+            120.221175,
+            30.296597
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221179,
+            30.294325
+          ],
+          [
+            120.224278,
+            30.294325
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.21808,
+            30.296595
+          ],
+          [
+            120.21808,
+            30.298865
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.21808,
+            30.296595
+          ],
+          [
+            120.221175,
+            30.296597
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.21808,
+            30.296595
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.221179,
+            30.294325
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224278,
+            30.294325
+          ],
+          [
+            120.224278,
+            30.296595
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.21808,
+            30.298865
+          ],
+          [
+            120.169922,
+            30.325882
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221175,
+            30.296597
+          ],
+          [
+            120.169922,
+            30.325882
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221175,
+            30.296597
+          ],
+          [
+            120.224278,
+            30.296595
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266291,
+            30.299592
+          ],
+          [
+            120.266288,
+            30.301861
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266291,
+            30.299592
+          ],
+          [
+            120.26939,
+            30.299592
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263192,
+            30.301862
+          ],
+          [
+            120.263192,
+            30.304132
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263192,
+            30.301862
+          ],
+          [
+            120.266288,
+            30.301861
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263192,
+            30.299592
+          ],
+          [
+            120.263192,
+            30.301862
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263192,
+            30.299592
+          ],
+          [
+            120.266291,
+            30.299592
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.26939,
+            30.299592
+          ],
+          [
+            120.26939,
+            30.301862
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263192,
+            30.304132
+          ],
+          [
+            120.266291,
+            30.304132
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266288,
+            30.301861
+          ],
+          [
+            120.266291,
+            30.304132
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266288,
+            30.301861
+          ],
+          [
+            120.26939,
+            30.301862
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.289992
+          ],
+          [
+            120.201142,
+            30.292262
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.198043,
+            30.292262
+          ],
+          [
+            120.201142,
+            30.292262
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.198043,
+            30.289992
+          ],
+          [
+            120.198043,
+            30.292262
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.198043,
+            30.289992
+          ],
+          [
+            120.201142,
+            30.289992
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.17612,
+            30.325882
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.204241,
+            30.292262
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.355603,
+            30.288721
+          ],
+          [
+            120.355601,
+            30.293584
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.355603,
+            30.288721
+          ],
+          [
+            120.362243,
+            30.288721
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.348962,
+            30.293585
+          ],
+          [
+            120.355601,
+            30.293584
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.348962,
+            30.288721
+          ],
+          [
+            120.348962,
+            30.293585
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.348962,
+            30.288721
+          ],
+          [
+            120.355603,
+            30.288721
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.362243,
+            30.288721
+          ],
+          [
+            120.362243,
+            30.293585
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.355601,
+            30.293584
+          ],
+          [
+            120.355603,
+            30.29845
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.355601,
+            30.293584
+          ],
+          [
+            120.362243,
+            30.293585
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173021,
+            30.323611
+          ],
+          [
+            120.173023,
+            30.325879
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.169922,
+            30.325882
+          ],
+          [
+            120.173023,
+            30.325879
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173023,
+            30.325879
+          ],
+          [
+            120.173021,
+            30.328152
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173023,
+            30.325879
+          ],
+          [
+            120.17612,
+            30.325882
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.22148,
+            30.321899
+          ],
+          [
+            120.238329,
+            30.307505
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.218381,
+            30.324169
+          ],
+          [
+            120.238329,
+            30.307505
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.219928,
+            30.323034
+          ],
+          [
+            120.218381,
+            30.324169
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.219928,
+            30.323034
+          ],
+          [
+            120.22148,
+            30.321899
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.181441,
+            30.293722
+          ],
+          [
+            120.181441,
+            30.295992
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.178342,
+            30.295992
+          ],
+          [
+            120.181441,
+            30.295992
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.179892,
+            30.294857
+          ],
+          [
+            120.178342,
+            30.295992
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.179892,
+            30.294857
+          ],
+          [
+            120.181441,
+            30.293722
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.301019
+          ],
+          [
+            120.206454,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.203355,
+            30.303289
+          ],
+          [
+            120.206454,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.206454,
+            30.305559
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.209553,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.211545,
+            30.320316
+          ],
+          [
+            120.211545,
+            30.322586
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.208446,
+            30.322586
+          ],
+          [
+            120.211545,
+            30.322586
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.209996,
+            30.321451
+          ],
+          [
+            120.208446,
+            30.322586
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.209996,
+            30.321451
+          ],
+          [
+            120.211545,
+            30.320316
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.302965
+          ],
+          [
+            120.238329,
+            30.305235
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.23523,
+            30.305235
+          ],
+          [
+            120.238329,
+            30.305235
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.238329,
+            30.307505
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.241428,
+            30.305235
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.17635,
+            30.310749
+          ],
+          [
+            120.17635,
+            30.313019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173251,
+            30.313019
+          ],
+          [
+            120.17635,
+            30.313019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.17635,
+            30.313019
+          ],
+          [
+            120.17635,
+            30.315289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.17635,
+            30.313019
+          ],
+          [
+            120.179449,
+            30.313019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.290641
+          ],
+          [
+            120.250725,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.290641
+          ],
+          [
+            120.253824,
+            30.290641
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.247626,
+            30.292911
+          ],
+          [
+            120.247626,
+            30.295181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.247626,
+            30.292911
+          ],
+          [
+            120.250725,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.247626,
+            30.290641
+          ],
+          [
+            120.247626,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.247626,
+            30.290641
+          ],
+          [
+            120.250725,
+            30.290641
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.253824,
+            30.290641
+          ],
+          [
+            120.253824,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.247626,
+            30.295181
+          ],
+          [
+            120.250725,
+            30.295181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.292911
+          ],
+          [
+            120.250725,
+            30.295181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.292911
+          ],
+          [
+            120.253824,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.314174,
+            30.34693
+          ],
+          [
+            120.314177,
+            30.351792
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.307533,
+            30.351795
+          ],
+          [
+            120.314177,
+            30.351792
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.307533,
+            30.34693
+          ],
+          [
+            120.307533,
+            30.351795
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.307533,
+            30.34693
+          ],
+          [
+            120.314174,
+            30.34693
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.314177,
+            30.351792
+          ],
+          [
+            120.314174,
+            30.35666
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.314177,
+            30.351792
+          ],
+          [
+            120.320815,
+            30.351795
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.311397
+          ],
+          [
+            120.232131,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.229032,
+            30.313668
+          ],
+          [
+            120.232131,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.229032,
+            30.311397
+          ],
+          [
+            120.229032,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.229032,
+            30.311397
+          ],
+          [
+            120.232131,
+            30.311397
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.232131,
+            30.315938
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.23523,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.268433,
+            30.320478
+          ],
+          [
+            120.268433,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.265334,
+            30.322749
+          ],
+          [
+            120.268433,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.265334,
+            30.320478
+          ],
+          [
+            120.265334,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.265334,
+            30.320478
+          ],
+          [
+            120.268433,
+            30.320478
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "local",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.268433,
+            30.322749
+          ],
+          [
+            120.268433,
+            30.325019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.268433,
+            30.322749
+          ],
+          [
+            120.271532,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263121,
+            30.306857
+          ],
+          [
+            120.263121,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.260022,
+            30.309127
+          ],
+          [
+            120.263121,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263121,
+            30.309127
+          ],
+          [
+            120.263121,
+            30.311397
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263121,
+            30.309127
+          ],
+          [
+            120.26622,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.242756,
+            30.319181
+          ],
+          [
+            120.242756,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.239657,
+            30.321451
+          ],
+          [
+            120.242756,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.242756,
+            30.321451
+          ],
+          [
+            120.242756,
+            30.323722
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.242756,
+            30.321451
+          ],
+          [
+            120.245855,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.217965,
+            30.304911
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.214866,
+            30.307181
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.217965,
+            30.307181
+          ],
+          [
+            120.217965,
+            30.309451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.217965,
+            30.307181
+          ],
+          [
+            120.221064,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224163,
+            30.293884
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221064,
+            30.296154
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.224163,
+            30.298424
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.227261,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.280829,
+            30.291938
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.27773,
+            30.294208
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.280829,
+            30.294208
+          ],
+          [
+            120.280829,
+            30.296478
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.280829,
+            30.294208
+          ],
+          [
+            120.283928,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.259579,
+            30.283505
+          ],
+          [
+            120.259579,
+            30.285776
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.25648,
+            30.285776
+          ],
+          [
+            120.259579,
+            30.285776
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.259579,
+            30.285776
+          ],
+          [
+            120.259579,
+            30.288046
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.259579,
+            30.285776
+          ],
+          [
+            120.262678,
+            30.285776
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.269602,
+            30.40177
+          ],
+          [
+            120.269602,
+            30.406617
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.262983,
+            30.406619
+          ],
+          [
+            120.269602,
+            30.406617
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.269602,
+            30.406617
+          ],
+          [
+            120.269602,
+            30.411468
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.269602,
+            30.406617
+          ],
+          [
+            120.276221,
+            30.406619
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.311845,
+            30.411117
+          ],
+          [
+            120.311847,
+            30.415965
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.305226,
+            30.415966
+          ],
+          [
+            120.311847,
+            30.415965
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.311847,
+            30.415965
+          ],
+          [
+            120.311845,
+            30.420815
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.311847,
+            30.415965
+          ],
+          [
+            120.318465,
+            30.415966
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221175,
+            30.296597
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173314,
+            30.295343
+          ],
+          [
+            120.179892,
+            30.294857
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266288,
+            30.301861
+          ],
+          [
+            120.263121,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.219928,
+            30.323034
+          ],
+          [
+            120.209996,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.232131,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.292911
+          ],
+          [
+            120.259579,
+            30.285776
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221175,
+            30.296597
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.206454,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.242756,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173023,
+            30.325879
+          ],
+          [
+            120.17635,
+            30.313019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.219928,
+            30.323034
+          ],
+          [
+            120.232131,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.268433,
+            30.322749
+          ],
+          [
+            120.263121,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266288,
+            30.301861
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.266288,
+            30.301861
+          ],
+          [
+            120.250725,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.250725,
+            30.292911
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.173314,
+            30.295343
+          ],
+          [
+            120.17635,
+            30.313019
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.179892,
+            30.294857
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.269602,
+            30.406617
+          ],
+          [
+            120.311847,
+            30.415965
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.314177,
+            30.351792
+          ],
+          [
+            120.268433,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.314177,
+            30.351792
+          ],
+          [
+            120.311847,
+            30.415965
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.355601,
+            30.293584
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.217965,
+            30.307181
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.221175,
+            30.296597
+          ],
+          [
+            120.206454,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.209996,
+            30.321451
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.219928,
+            30.323034
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.238329,
+            30.305235
+          ],
+          [
+            120.242756,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.179892,
+            30.294857
+          ],
+          [
+            120.206454,
+            30.303289
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.209996,
+            30.321451
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.217965,
+            30.307181
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.232131,
+            30.313668
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.263121,
+            30.309127
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.263121,
+            30.309127
+          ],
+          [
+            120.268433,
+            30.322749
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.292911
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "arterial",
+        "bridge": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.259579,
+            30.285776
+          ],
+          [
+            120.224163,
+            30.296154
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "road",
+        "road_type": "collector",
+        "bridge": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.179892,
+            30.294857
+          ],
+          [
+            120.206454,
+            30.303289
+          ],
+          [
+            120.201142,
+            30.292262
+          ],
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.232131,
+            30.313668
+          ],
+          [
+            120.280829,
+            30.294208
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "metro",
+        "line": "M1",
+        "color": "#8f5bd8"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.250725,
+            30.292911
+          ],
+          [
+            120.224163,
+            30.296154
+          ],
+          [
+            120.217965,
+            30.307181
+          ],
+          [
+            120.242756,
+            30.321451
+          ],
+          [
+            120.259579,
+            30.285776
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "metro",
+        "line": "M2",
+        "color": "#2b9ccf"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.162952,
+            30.31298
+          ],
+          [
+            120.19434,
+            30.321143
+          ],
+          [
+            120.230211,
+            30.314612
+          ],
+          [
+            120.270566,
+            30.324408
+          ],
+          [
+            120.310922,
+            30.316245
+          ],
+          [
+            120.360245,
+            30.32604
+          ]
+        ]
+      },
+      "properties": {
+        "kind": "river",
+        "name": "Qiantang River",
+        "width": 0.09
+      }
+    }
+  ]
+}

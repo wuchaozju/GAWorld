@@ -1,0 +1,176 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "morning|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 10,
+      "推进最重要的一项任务": 4,
+      "按原计划继续处理例行事项": 4,
+      "拖一会儿再开始，先刷手机分心": 2
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.46390431937232557,
+    "last_updated_day": 2
+  },
+  "morning|public|前往Riverside Tower": {
+    "action_counts": {
+      "乘坐metro移动": 2,
+      "乘坐bike移动": 6
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.44089969962123265,
+    "last_updated_day": 3
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "推进最重要的一项任务": 6,
+      "联系相关的人确认进度和分工": 8,
+      "按原计划继续处理例行事项": 5
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.5201253690976152,
+    "last_updated_day": 2
+  },
+  "afternoon|public|前往Logistics Hub": {
+    "action_counts": {
+      "乘坐e-bike移动": 4
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.355246336,
+    "last_updated_day": 3
+  },
+  "evening|public|上午工作": {
+    "action_counts": {
+      "拖一会儿再开始，先刷手机分心": 5,
+      "推进最重要的一项任务": 3,
+      "按原计划继续处理例行事项": 4,
+      "联系相关的人确认进度和分工": 5
+    },
+    "preferred_action": "拖一会儿再开始，先刷手机分心",
+    "strength": 0.3965897981287528,
+    "last_updated_day": 2
+  },
+  "evening|public|前往Finance Plaza": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|上午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 3,
+      "推进最重要的一项任务": 3,
+      "联系相关的人确认进度和分工": 2,
+      "拖一会儿再开始，先刷手机分心": 1
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.2391957515815354,
+    "last_updated_day": 2
+  },
+  "afternoon|public|前往Financial District": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "night|public|下午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 1,
+      "推进最重要的一项任务": 2,
+      "拖一会儿再开始，先刷手机分心": 2,
+      "联系相关的人确认进度和分工": 1
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.2051794796544,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Public Services Center": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Finance Plaza": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Stadium Plaza": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|下午工作": {
+    "action_counts": {
+      "推进最重要的一项任务": 1,
+      "拖一会儿再开始，先刷手机分心": 2
+    },
+    "preferred_action": "拖一会儿再开始，先刷手机分心",
+    "strength": 0.23191040000000002,
+    "last_updated_day": 3
+  },
+  "afternoon|public|下午工作": {
+    "action_counts": {
+      "拖一会儿再开始，先刷手机分心": 2,
+      "按原计划继续处理例行事项": 1,
+      "联系相关的人确认进度和分工": 1,
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "拖一会儿再开始，先刷手机分心",
+    "strength": 0.22000062464000003,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Public Services Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Logistics Yard": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "evening|public|下午工作": {
+    "action_counts": {
+      "拖一会儿再开始，先刷手机分心": 2,
+      "联系相关的人确认进度和分工": 3,
+      "推进最重要的一项任务": 2
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.262960458498048,
+    "last_updated_day": 3
+  },
+  "evening|public|前往Power Substation": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  }
+}

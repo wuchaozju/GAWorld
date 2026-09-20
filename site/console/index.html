@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld Console</title>
+  <meta name="description" data-i18n-content="console.shell_description" content="GAWorld 一体化控制台：控制台 · 仿真回放 · 智能体工作台" />
+  <link rel="stylesheet" href="/site/console/console.css" />
+</head>
+<body>
+  <header class="console-bar">
+    <div class="brand">
+      <span class="brand-mark">GA</span>
+      <span class="brand-name">GAWorld Console</span>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="views">
+      <button class="tab" role="tab" data-tab="dashboard"><span data-i18n="nav.dashboard">控制台</span><span class="en">Dashboard</span></button>
+      <button class="tab" role="tab" data-tab="simviz"><span data-i18n="nav.simviz">仿真回放</span><span class="en">Simulation</span></button>
+      <button class="tab" role="tab" data-tab="city"><span data-i18n="nav.city">城市</span><span class="en">Cities</span></button>
+      <button class="tab" role="tab" data-tab="worlds"><span data-i18n="nav.worlds">平行世界</span><span class="en">Parallel Worlds</span></button>
+      <button class="tab" role="tab" data-tab="analytics"><span data-i18n="nav.analytics">结果分析</span><span class="en">Analytics</span></button>
+      <button class="tab" role="tab" data-tab="studio"><span data-i18n="nav.studio">智能体工作台</span><span class="en">Agent Studio</span></button>
+      <button class="tab" role="tab" data-tab="population"><span data-i18n="nav.population">人口与群体</span><span class="en">Population</span></button>
+      <button class="tab" role="tab" data-tab="collaboration"><span data-i18n="nav.collaboration">合作任务</span><span class="en">Cooperation</span></button>
+      <button class="tab" role="tab" data-tab="external"><span data-i18n="nav.external">外部系统</span><span class="en">External</span></button>
+      <button class="tab" role="tab" data-tab="settings"><span data-i18n="nav.settings">配置</span><span class="en">Settings</span></button>
+      <button class="tab" role="tab" data-tab="docs"><span data-i18n="nav.docs">文档</span><span class="en">Docs</span></button>
+    </nav>
+    <div class="bar-right">
+      <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.switch_label" aria-label="切换语言">
+        <button type="button" class="lang-btn" id="lang-zh-btn" lang="zh-CN" aria-pressed="true">中文</button>
+        <button type="button" class="lang-btn" id="lang-en-btn" lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+  <main class="frames" id="frames"></main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/console/console.js"></script>
+</body>
+</html>

@@ -19,7 +19,7 @@ Covers:
 import random
 import unittest
 
-from dynamic_behavior import (
+from gaworld.behavior.dynamic import (
     COMMITMENT_KEYWORDS,
     EVENT_CASCADES,
     SPONTANEOUS_POOLS,

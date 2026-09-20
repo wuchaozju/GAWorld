@@ -1,0 +1,13 @@
+{
+  "treatment": "treatment_diversity",
+  "config": {
+    "description": "\u589e\u5f3a\u591a\u6837\u6027\u5e72\u9884",
+    "intervention_enabled": true,
+    "diversity_boost": 0.3,
+    "filter_similar": false,
+    "social_diversity_boost": false
+  },
+  "days": 5,
+  "seed": 42,
+  "timestamp": "2026-05-19T02:36:28.392982"
+}

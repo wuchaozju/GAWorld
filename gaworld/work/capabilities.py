@@ -141,6 +141,52 @@ def _coerce_capabilities(
     )
 
 
+def _merge_growth_surface(agent: dict[str, Any], caps: AgentCapabilities) -> AgentCapabilities:
+    """Blend planned growth interests/skills into the work surface.
+
+    The public AgentCapabilities schema stays unchanged; we only enrich the
+    existing skills/interests lists when the simulator has already derived a
+    growth profile for this agent.
+    """
+    caps = AgentCapabilities.from_dict(caps.to_dict())
+    profile = agent.get("growth_profile", {}) if isinstance(agent, dict) else {}
+    raw_items = profile.get("items", []) if isinstance(profile, dict) else []
+    if not isinstance(raw_items, list):
+        return caps
+
+    def _append_unique(base: list[str], values: list[str], limit: int = 8) -> list[str]:
+        out = []
+        seen = set()
+        for value in [*base, *values]:
+            text = str(value).strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            out.append(text)
+            if len(out) >= limit:
+                break
+        return out
+
+    growth_skills = []
+    growth_interests = []
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        if item.get("kind") == "skill" or bool(item.get("career_link", False)):
+            growth_skills.append(name)
+        else:
+            growth_interests.append(name)
+        if name not in growth_interests:
+            growth_interests.append(name)
+
+    caps.skills = _append_unique(caps.skills, growth_skills)
+    caps.interests = _append_unique(caps.interests, growth_interests)
+    return caps
+
+
 # ---------------------------------------------------------------------------
 # Cache I/O
 # ---------------------------------------------------------------------------
@@ -175,7 +221,9 @@ def save_cache(path: str, caps: dict[int, AgentCapabilities]) -> None:
     if directory:
         os.makedirs(directory, exist_ok=True)
     payload = {str(k): v.to_dict() for k, v in caps.items()}
-    tmp = f"{path}.tmp"
+    # Process-unique tmp: parallel compare-event scenarios may write the same
+    # global cache path; a shared "{path}.tmp" races on os.replace.
+    tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
     os.replace(tmp, path)
@@ -201,7 +249,7 @@ def derive_one(
     if cache is not None:
         cached = cache.get(agent_id)
         if cached is not None and cached.source_hash == source_hash:
-            return cached
+            return _merge_growth_surface(agent, cached)
     prompt = _build_prompt(agent)
     try:
         raw = llm(prompt)
@@ -209,7 +257,7 @@ def derive_one(
         _LOG.warning("capability LLM call failed for agent %s: %s", agent_id, exc)
         raw = ""
     payload = _parse_llm_response(raw)
-    return _coerce_capabilities(agent_id, payload, source_hash)
+    return _merge_growth_surface(agent, _coerce_capabilities(agent_id, payload, source_hash))
 
 
 def bootstrap_all_agents(

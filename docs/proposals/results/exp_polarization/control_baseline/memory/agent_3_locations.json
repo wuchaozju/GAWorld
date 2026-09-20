@@ -1,0 +1,43 @@
+{
+  "home": "Building S-01",
+  "workplace": "Little River Daycare",
+  "current": "Riverside Middle School",
+  "destination": "Riverside Middle School",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 4,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Little River Daycare",
+    "Central Block",
+    "Riverside Middle School"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "14:27",
+  "frequent_places": {
+    "Willow Design Studio": 1,
+    "Picnic Area": 3,
+    "Basketball Court": 1,
+    "Building S-01": 2,
+    "Riverside Middle School": 2,
+    "Willow Grove Park": 2,
+    "Little River Daycare": 3,
+    "Riverside Park": 1,
+    "Fitness Area": 1
+  },
+  "preferred_modes": {
+    "bike": 12,
+    "e-bike": 3,
+    "walk": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.37,
+  "travel_distance_km": 0.614,
+  "depart_time": "14:23"
+}

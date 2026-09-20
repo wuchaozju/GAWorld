@@ -1,0 +1,43 @@
+{
+  "home": "Building C-01",
+  "workplace": "Finance Plaza",
+  "current": "Basketball Court",
+  "destination": "Basketball Court",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 10,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Finance Plaza",
+    "Financial District",
+    "Willow Grove Park",
+    "Basketball Court"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "10:32",
+  "frequent_places": {
+    "Willow Design Studio": 1,
+    "Building C-01": 2,
+    "Playground": 1,
+    "Insurance Center": 1,
+    "Basketball Court": 2,
+    "Stadium Plaza": 1,
+    "Sorting Center": 1,
+    "Finance Plaza": 1
+  },
+  "preferred_modes": {
+    "e-bike": 6,
+    "metro": 3,
+    "bike": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 8.87,
+  "travel_distance_km": 2.058,
+  "depart_time": "10:22"
+}

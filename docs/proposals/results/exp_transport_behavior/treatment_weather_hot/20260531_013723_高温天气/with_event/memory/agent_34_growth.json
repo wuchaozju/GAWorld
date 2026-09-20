@@ -1,0 +1,54 @@
+{
+  "agent_id": 34,
+  "items": [
+    {
+      "name": "专业进修",
+      "kind": "skill",
+      "category": "职业",
+      "motivation": "希望提升长期选择空间和工作稳定性",
+      "level": 0.28,
+      "priority": 0.68,
+      "weekly_target_minutes": 180,
+      "preferred_time_blocks": [
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "阅读专业资料",
+        "复盘工作案例",
+        "学习新规范"
+      ],
+      "career_link": true,
+      "sociality": 0.35,
+      "last_practiced_day": 0,
+      "total_minutes": 0,
+      "streak_days": 0
+    },
+    {
+      "name": "运动",
+      "kind": "hobby",
+      "category": "健康",
+      "motivation": "通过规律活动保持身体和情绪稳定",
+      "level": 1.0,
+      "priority": 0.6,
+      "weekly_target_minutes": 180,
+      "preferred_time_blocks": [
+        "morning",
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "跑步训练",
+        "健身锻炼",
+        "散步拉伸"
+      ],
+      "career_link": false,
+      "sociality": 0.35,
+      "last_practiced_day": 1,
+      "total_minutes": 6658,
+      "streak_days": 1
+    }
+  ],
+  "notes": "基于职业、生活习惯和价值观规则推导。",
+  "source_hash": "2708acecf8aa5a62d219b12b1994d9c6"
+}

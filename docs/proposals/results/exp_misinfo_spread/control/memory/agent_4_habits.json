@@ -1,0 +1,66 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|通勤": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 5,
+      "先把眼前这件事往前推进一点": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "按原节奏继续当前安排": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.3992738879039848,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往East Loop": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 4,
+      "先拖一会儿再说，顺手刷会儿手机": 4,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.3754303186531254,
+    "last_updated_day": 1
+  },
+  "evening|public|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 4,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.31522167157948416,
+    "last_updated_day": 1
+  },
+  "evening|public|前往East Loop": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|通勤": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 3
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  }
+}

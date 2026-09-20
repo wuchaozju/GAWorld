@@ -1,0 +1,15 @@
+{
+  "priorities": [
+    "...",
+    "..."
+  ],
+  "avoidances": [
+    "..."
+  ],
+  "target_social": "...",
+  "target_recovery": "...",
+  "growth_focus": [
+    "今日重点发展的兴趣或技能名称"
+  ],
+  "day": 1
+}

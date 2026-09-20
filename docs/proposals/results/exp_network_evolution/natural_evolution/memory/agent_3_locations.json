@@ -1,0 +1,38 @@
+{
+  "home": "Building S-01",
+  "workplace": "Little River Daycare",
+  "current": "Building S-01",
+  "destination": "Building S-01",
+  "in_transit": false,
+  "transport_mode": "metro",
+  "travel_minutes": 19,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverside Post Office",
+    "Riverside Bus Station",
+    "Central Block",
+    "South Block",
+    "Building S-01"
+  ],
+  "travel_cost": 2.0,
+  "rush_hour": true,
+  "arrival_time": "08:47",
+  "frequent_places": {
+    "Civic Square": 2,
+    "Building S-01": 2,
+    "Riverside Post Office": 1
+  },
+  "preferred_modes": {
+    "e-bike": 4,
+    "metro": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 2.77,
+  "travel_distance_km": 3.35,
+  "depart_time": "08:28"
+}

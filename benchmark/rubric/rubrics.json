@@ -1,0 +1,805 @@
+{
+  "rubric_version": "0.1.0",
+  "note": "Rubric definitions for GAWorld-Rubric-Bench (Track R). See ../GAWORLD_RUBRIC_BENCH.md. Editing this file changes the rubric version hash -> scores across versions are NOT comparable.",
+  "dimensions": {
+    "R1": {
+      "name": "个体拟人性",
+      "pass": 0.65
+    },
+    "R2": {
+      "name": "演化能力",
+      "pass": 0.55,
+      "min_days": 30
+    },
+    "R3": {
+      "name": "社会真实性",
+      "pass": 0.6
+    },
+    "R4": {
+      "name": "世界一致性",
+      "pass": 0.8
+    }
+  },
+  "gates": {
+    "abstain_max": 0.3,
+    "discrimination_min": 0.15,
+    "discrimination_good": 0.3,
+    "human_alpha_min": 0.6
+  },
+  "items": [
+    {
+      "id": "R1.1",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "记忆可溯源：决策中引用的往事真实存在于此前 episodes，且未被篡改",
+      "anchors": {
+        "0": "引用了不存在或与史实矛盾的往事",
+        "1": "往事存在但引用牽强、与当日决策无关",
+        "2": "往事存在、准确，且构成当日决策的理由"
+      },
+      "failure_modes": [
+        "泛化回忆（“最近一直挺忙”）冒充具体记忆",
+        "回忆内容与原 episode 细节不符"
+      ],
+      "evidence_fields": [
+        "recollections",
+        "change_reason",
+        "decision_driver"
+      ],
+      "ablations": [
+        "N1"
+      ]
+    },
+    {
+      "id": "R1.2",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "动机可解释：计划活动到实际活动的偏离有具体理由，且与当时的需求/状态一致",
+      "anchors": {
+        "0": "无理由，或理由与需求/状态直接矛盾",
+        "1": "理由是套话（“根据实际情况调整”之类），无实质信息",
+        "2": "理由具体，且能从需求快照或状态变量推出"
+      },
+      "failure_modes": [
+        "change_reason 模板化",
+        "所有偏离都归因于天气"
+      ],
+      "evidence_fields": [
+        "scheduled_activity",
+        "final_activity",
+        "change_reason",
+        "need_snapshot",
+        "state_before"
+      ],
+      "ablations": [
+        "N2"
+      ]
+    },
+    {
+      "id": "R1.3",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "人设贴合：行为、消费档次、语言风格与给定人设不冲突",
+      "anchors": {
+        "0": "与人设明显冲突（如无收入者无解释的高消费）",
+        "1": "不冲突，但从行为看不出是谁（换个人也成立）",
+        "2": "能从行为反推出人设特征"
+      },
+      "failure_modes": [
+        "所有 agent 说话一个腔调",
+        "职业/收入与日常完全脱钩"
+      ],
+      "evidence_fields": [
+        "profile",
+        "final_activity",
+        "plan_struct",
+        "diary"
+      ],
+      "ablations": [
+        "N2"
+      ]
+    },
+    {
+      "id": "R1.4",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "情绪动力学合理：状态变量的变化幅度与事件强度匹配",
+      "anchors": {
+        "0": "无因暴涨暴跌，或全天恒定平线",
+        "1": "方向合理但幅度与事件量级不相称",
+        "2": "幅度与事件量级匹配，且存在惯性（不是逐步重置）"
+      },
+      "failure_modes": [
+        "情绪是随机噪声",
+        "情绪是常数"
+      ],
+      "evidence_fields": [
+        "state_before",
+        "state_after",
+        "delta",
+        "env_events",
+        "life_events"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    },
+    {
+      "id": "R1.5",
+      "dim": "R1",
+      "unit": "trajectory",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "authored_diary"
+      ],
+      "proposition": "非模板化：跨天叙事在关注点、句式、细节颗粒度上有变化",
+      "anchors": {
+        "0": "换名词的同一模板",
+        "1": "结构相同但细节有变化",
+        "2": "不同天的关注重心自然迁移"
+      },
+      "failure_modes": [
+        "日记段落结构逐日雷同",
+        "每天都以同一句式开头"
+      ],
+      "evidence_fields": [
+        "diary",
+        "reflection",
+        "plan_struct"
+      ],
+      "ablations": [
+        "N4"
+      ]
+    },
+    {
+      "id": "R1.6",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "有限理性（反向）：存在拖延、后悔、次优选择、与自述目标不一致的行为",
+      "anchors": {
+        "0": "全天最优化、计划完美执行、无一失误",
+        "1": "有一处不完美但无后果",
+        "2": "有可解释的次优行为并留下后果"
+      },
+      "failure_modes": [
+        "计划与执行完全一致",
+        "所有偏离都是外部原因，从不是自己的问题"
+      ],
+      "evidence_fields": [
+        "scheduled_activity",
+        "final_activity",
+        "reflection",
+        "outcome"
+      ],
+      "ablations": [
+        "N4"
+      ]
+    },
+    {
+      "id": "R1.7",
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "内在张力：同日冲突需求间做了取舍，且被牺牲的一方留下代价",
+      "anchors": {
+        "0": "所有需求同时被满足",
+        "1": "有取舍但无代价",
+        "2": "取舍 + 代价 + 对后续的影响"
+      },
+      "failure_modes": [
+        "需求系统只加不减"
+      ],
+      "evidence_fields": [
+        "need_snapshot",
+        "plan_struct",
+        "reflection",
+        "delta"
+      ],
+      "ablations": [
+        "N4"
+      ]
+    },
+    {
+      "id": "R2.1",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "series"
+      ],
+      "proposition": "轨迹非平凡：技能/关系/状态存在可辨识的方向性变化，而非围绕初值抖动",
+      "anchors": {
+        "0": "无任何显著趋势且幅度不超噪声",
+        "1": "少数序列有趋势",
+        "2": "多数序列有显著趋势且幅度超噪声"
+      },
+      "failure_modes": [
+        "全部指标随机游走"
+      ],
+      "evidence_fields": [
+        "growth",
+        "series"
+      ],
+      "ablations": [
+        "N3",
+        "N4"
+      ]
+    },
+    {
+      "id": "R2.2",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "episodes",
+        "series"
+      ],
+      "proposition": "因果链可追：每次显著变化能追溯到具体事件、练习记录或互动",
+      "anchors": {
+        "0": "凭空跳变",
+        "1": "能找到时间上接近的事件但因果牽强",
+        "2": "事件→机制→变化三段完整"
+      },
+      "failure_modes": [
+        "growth 数值按公式匀速上涨，与 episodes 无关"
+      ],
+      "evidence_fields": [
+        "growth",
+        "growth_matches",
+        "episodes"
+      ],
+      "ablations": [
+        "N5",
+        "N3"
+      ]
+    },
+    {
+      "id": "R2.3",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "daily_narrative"
+      ],
+      "proposition": "路径依赖：早期选择约束了后期的可行集",
+      "anchors": {
+        "0": "前后期无关，任意时点可做任意事",
+        "1": "有弱约束",
+        "2": "能指出“因为第 k 天做了 X，后来才可能/不可能 Y”"
+      },
+      "failure_modes": [
+        "每天从同一分布重新采样"
+      ],
+      "evidence_fields": [
+        "episodes",
+        "growth"
+      ],
+      "ablations": [
+        "N3"
+      ]
+    },
+    {
+      "id": "R2.4",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "适应而非漂移：对外部冲击有策略调整，且调整维持数日",
+      "anchors": {
+        "0": "无反应，或当日反应次日回弹",
+        "1": "有反应但无策略性",
+        "2": "形成新的稳定行为模式"
+      },
+      "failure_modes": [
+        "事件只进感知文本、不改行为"
+      ],
+      "evidence_fields": [
+        "policy_event",
+        "life_events",
+        "episodes"
+      ],
+      "ablations": [
+        "N8"
+      ]
+    },
+    {
+      "id": "R2.5",
+      "dim": "R2",
+      "unit": "cohort",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "series"
+      ],
+      "proposition": "群体分化：不同 agent 随时间分化，而非趋同",
+      "anchors": {
+        "0": "跨 agent 方差随时间下降（趋同）",
+        "1": "方差基本持平",
+        "2": "多数指标的跨 agent 方差随时间上升"
+      },
+      "failure_modes": [
+        "所有人最后活成同一个人"
+      ],
+      "evidence_fields": [
+        "series"
+      ],
+      "ablations": [
+        "N4"
+      ]
+    },
+    {
+      "id": "R2.6",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "growth"
+      ],
+      "proposition": "挫折与回退：存在停滞、放弃、目标降级",
+      "anchors": {
+        "0": "所有成长曲线单调上升",
+        "1": "有停滞",
+        "2": "有放弃/降级且有可解释的触发"
+      },
+      "failure_modes": [
+        "单调递增的成长曲线"
+      ],
+      "evidence_fields": [
+        "growth",
+        "episodes"
+      ],
+      "ablations": [
+        "N5"
+      ]
+    },
+    {
+      "id": "R2.7",
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "growth"
+      ],
+      "proposition": "时间尺度合理：技能 level 增量与投入分钟数的比例符合常识量级",
+      "anchors": {
+        "0": "量级明显不合理（一周从新手到专家）",
+        "1": "偏快或偏慢但尚可接受",
+        "2": "速率合理"
+      },
+      "failure_modes": [
+        "level 与投入时间脱钩"
+      ],
+      "evidence_fields": [
+        "growth"
+      ],
+      "ablations": [
+        "N5"
+      ]
+    },
+    {
+      "id": "R3.1",
+      "dim": "R3",
+      "unit": "cohort",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "social_graph"
+      ],
+      "proposition": "互惠一致：A 记录的互动，B 那边也存在且指向同一件事",
+      "anchors": {
+        "0": "双向匹配率 < 0.3",
+        "1": "0.3 ≤ 匹配率 < 0.6",
+        "2": "匹配率 ≥ 0.6"
+      },
+      "failure_modes": [
+        "单向幻觉社交：A 记得和 B 聊过，B 无记录"
+      ],
+      "evidence_fields": [
+        "social_partners"
+      ],
+      "ablations": [
+        "N6"
+      ]
+    },
+    {
+      "id": "R3.2",
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "social_graph"
+      ],
+      "proposition": "关系有历史：互动引用共同过去，亲密度随累积互动上升",
+      "anchors": {
+        "0": "每次都像初次见面",
+        "1": "有称呼上的熟悉但无共同事件",
+        "2": "引用了具体共同经历"
+      },
+      "failure_modes": [
+        "关系强度是静态属性"
+      ],
+      "evidence_fields": [
+        "episodes",
+        "recollections"
+      ],
+      "ablations": [
+        "N6"
+      ]
+    },
+    {
+      "id": "R3.3",
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "social_graph"
+      ],
+      "proposition": "分寸与规范：请求强度、边界、称呼与关系强度匹配",
+      "anchors": {
+        "0": "对陌生人提亲密请求之类的失分寸",
+        "1": "略失分寸",
+        "2": "分寸自然"
+      },
+      "failure_modes": [
+        "所有人一律热情友好"
+      ],
+      "evidence_fields": [
+        "episodes"
+      ],
+      "ablations": [
+        "N6"
+      ]
+    },
+    {
+      "id": "R3.4",
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "social_graph"
+      ],
+      "proposition": "选择性与冲突：存在拒绝、疏远、争执、社交回避",
+      "anchors": {
+        "0": "零冲突零拒绝",
+        "1": "有回避",
+        "2": "有冲突且有后果"
+      },
+      "failure_modes": [
+        "无摩擦的乌托邦"
+      ],
+      "evidence_fields": [
+        "episodes",
+        "delta"
+      ],
+      "ablations": [
+        "N6"
+      ]
+    },
+    {
+      "id": "R3.5",
+      "dim": "R3",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "传播有失真：信息在转述链上有丢失、强调偏移或变形",
+      "anchors": {
+        "0": "逐字复制传播",
+        "1": "有措辞变化",
+        "2": "有内容取舍与立场着色"
+      },
+      "failure_modes": [
+        "广播式复制粘贴"
+      ],
+      "evidence_fields": [
+        "perception",
+        "env_events",
+        "policy_event"
+      ],
+      "ablations": [
+        "N8"
+      ]
+    },
+    {
+      "id": "R3.6",
+      "dim": "R3",
+      "unit": "cohort",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "social_graph"
+      ],
+      "proposition": "结构成因可解释：形成的小圈子有可解释成因（同事/同区/共同兴趣）",
+      "anchors": {
+        "0": "簇内无任何共性",
+        "1": "部分簇有共性",
+        "2": "多数簇的成因清晰"
+      },
+      "failure_modes": [
+        "社区结构与任何属性都不相关"
+      ],
+      "evidence_fields": [
+        "social_partners",
+        "location",
+        "profile"
+      ],
+      "ablations": [
+        "N6"
+      ]
+    },
+    {
+      "id": "R4.1",
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "时间预算守恒：活动时长 + 通勤 ≤ 可用时间，且不出现时序倒流",
+      "anchors": {
+        "0": "硬超支（通勤时长超出相邻事件间隔）或时序倒流",
+        "1": "轻微超支（≤10%）",
+        "2": "无超支"
+      },
+      "failure_modes": [
+        "一天干了 30 小时的事"
+      ],
+      "evidence_fields": [
+        "time",
+        "travel"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    },
+    {
+      "id": "R4.2",
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "空间可达：location 变更均有对应 travel，且速度在交通方式上限内",
+      "anchors": {
+        "0": "存在瞬移（无 travel 的地点变更）或速度超上限 2 倍",
+        "1": "≤ 1 处轻微超速",
+        "2": "全部自洽"
+      },
+      "failure_modes": [
+        "瞬移"
+      ],
+      "evidence_fields": [
+        "location",
+        "target_location",
+        "travel"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    },
+    {
+      "id": "R4.3",
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "requires": [
+        "episodes",
+        "ledger"
+      ],
+      "proposition": "金钱可负担：当日支出不超可用资金，账户无负余额，且守恒审计无漂移",
+      "anchors": {
+        "0": "余额为负或守恒 drift 超容差",
+        "1": "余额正但 drift 非零",
+        "2": "余额正且 drift = 0"
+      },
+      "failure_modes": [
+        "花了不存在的钱"
+      ],
+      "evidence_fields": [
+        "ledger",
+        "travel"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    },
+    {
+      "id": "R4.4",
+      "dim": "R4",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "环境响应一致：当日事件在多数 agent 行为中留下一致痕迹",
+      "anchors": {
+        "0": "只有被注入文本的 agent 有反应",
+        "1": "部分人有行为反应",
+        "2": "反应面合理且强度分层"
+      },
+      "failure_modes": [
+        "事件只写进 perception，不改行为"
+      ],
+      "evidence_fields": [
+        "env_events",
+        "policy_event",
+        "final_activity"
+      ],
+      "ablations": [
+        "N8"
+      ]
+    },
+    {
+      "id": "R4.5",
+      "dim": "R4",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "公共事实无矛盾：不同 agent 对同一公共事件的描述不互相打脸",
+      "anchors": {
+        "0": "硬矛盾（同一天说店开着/关着）",
+        "1": "细节出入",
+        "2": "一致且视角不同"
+      },
+      "failure_modes": [
+        "各人活在各自的世界"
+      ],
+      "evidence_fields": [
+        "perception",
+        "env_events"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    },
+    {
+      "id": "R4.6",
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "requires": [
+        "episodes"
+      ],
+      "proposition": "常识不越界：无同时出现于两地、无违背基本常识的行为",
+      "anchors": {
+        "0": "存在硬冲突（同一时刻两个地点）",
+        "1": "有可疑但不确定的情形",
+        "2": "无越界"
+      },
+      "failure_modes": [
+        "分身"
+      ],
+      "evidence_fields": [
+        "time",
+        "location",
+        "final_activity"
+      ],
+      "ablations": [
+        "N7"
+      ]
+    }
+  ],
+  "ablations": {
+    "N1": {
+      "desc": "打乱 recollections（换成其他 agent 的记忆）",
+      "targets": [
+        "R1.1"
+      ]
+    },
+    "N2": {
+      "desc": "人设互换（A 的 profile 配 B 的行为）",
+      "targets": [
+        "R1.2",
+        "R1.3"
+      ]
+    },
+    "N3": {
+      "desc": "时间打乱（轨迹内天序 shuffle）",
+      "targets": [
+        "R2.1",
+        "R2.2",
+        "R2.3"
+      ]
+    },
+    "N4": {
+      "desc": "单日复制（首日复制成全期，只改日期）",
+      "targets": [
+        "R1.5",
+        "R1.6",
+        "R1.7",
+        "R2.1",
+        "R2.5"
+      ]
+    },
+    "N5": {
+      "desc": "合成随机游走替换真实 growth 曲线",
+      "targets": [
+        "R2.2",
+        "R2.6",
+        "R2.7"
+      ]
+    },
+    "N6": {
+      "desc": "社交线互换（A-B 的互动接到 A-C 上）",
+      "targets": [
+        "R3.1",
+        "R3.2",
+        "R3.3",
+        "R3.4",
+        "R3.6"
+      ]
+    },
+    "N7": {
+      "desc": "预算破坏（注入超支的钱/时间/瞬移）",
+      "targets": [
+        "R1.4",
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.5",
+        "R4.6"
+      ]
+    },
+    "N8": {
+      "desc": "事件剥离（删掉 policy_event / env_events）",
+      "targets": [
+        "R2.4",
+        "R3.5",
+        "R4.4"
+      ]
+    }
+  },
+  "capabilities_note": "requires 列出该 item 需要的数据能力；缺任一项则该 item 全部弃权而非记 0 分。authored_diary = 日记由 LLM 撰写（快进模式的确定性模板日记不算）；daily_narrative = 存在日级叙事（含快进日简报）；social_graph = episodes 里有可解析的 social_partners。"
+}

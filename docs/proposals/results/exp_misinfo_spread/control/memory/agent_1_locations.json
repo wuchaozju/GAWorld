@@ -1,0 +1,53 @@
+{
+  "home": "Building C-01",
+  "workplace": "Riverside Bank Branch",
+  "current": "Basketball Court",
+  "destination": "Basketball Court",
+  "in_transit": false,
+  "transport_mode": "e-bike",
+  "travel_minutes": 7,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Building C-01",
+    "Central Block",
+    "Willow Grove Park",
+    "Basketball Court"
+  ],
+  "travel_cost": 0.14,
+  "rush_hour": true,
+  "arrival_time": "07:12",
+  "frequent_places": {
+    "Corner Mart": 4,
+    "Hangzhou Riverside Community Center": 3,
+    "Riverside Post Office": 2,
+    "Riverwalk": 1,
+    "C-02": 1,
+    "Westside Community Center": 1,
+    "C-01 (Village Center)": 1,
+    "Riverside Bank Branch": 2,
+    "Riverside Night Market": 7,
+    "Central Parking Lot": 1,
+    "West Block": 4,
+    "Riverside Cinema": 1,
+    "Building W-02": 2,
+    "Picnic Area": 1,
+    "Market St": 1,
+    "Building W-01": 1,
+    "Building C-01": 1,
+    "Basketball Court": 1
+  },
+  "preferred_modes": {
+    "e-bike": 15,
+    "bike": 19,
+    "metro": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 2.14,
+  "travel_distance_km": 1.443,
+  "depart_time": "07:05"
+}

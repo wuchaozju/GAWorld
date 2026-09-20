@@ -3,8 +3,8 @@ import os
 import tempfile
 import unittest
 
-from city_map_system import load_city_map
-from simulation_visualizer import SimulationVisualizer, build_agent_step_payload, build_map_layout
+from gaworld.world.city_map import load_city_map
+from gaworld.apps.visualizer import SimulationVisualizer, build_agent_step_payload, build_map_layout
 
 
 class TestSimulationVisualizer(unittest.TestCase):
@@ -63,6 +63,29 @@ class TestSimulationVisualizer(unittest.TestCase):
             self.assertEqual("Hangzhou Tech Labs", payload["frames"][0]["agents"][0]["target_location"])
             self.assertEqual("avatars/agent_1.svg", payload["frames"][0]["agents"][0]["avatar_path"])
             self.assertEqual("bus", payload["frames"][0]["agents"][0]["travel"]["mode"])
+
+            # The run is also archived under runs/<run_id>/ so the next run
+            # does not bury it — that archive is what the replay page lists.
+            archive = os.path.join(tmpdir, "runs", visualizer.run_id, "simulation_trace.json")
+            self.assertTrue(os.path.exists(archive))
+            with open(archive, "r", encoding="utf-8") as f:
+                archived = json.load(f)
+            self.assertTrue(archived["meta"]["finished"])
+            self.assertEqual(1, archived["meta"]["frame_count"])
+            self.assertEqual(visualizer.run_id, archived["meta"]["run_id"])
+
+    def test_successive_runs_get_separate_archives(self):
+        city_map = load_city_map("citymap.md")
+        agents = [{"id": 1, "name": "李泽宇", "locations": {"home": "Central Block"}, "state": {}}]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            first = SimulationVisualizer(tmpdir, city_map, agents)
+            first.finalize()
+            second = SimulationVisualizer(tmpdir, city_map, agents)
+            second.finalize()
+            self.assertNotEqual(first.run_id, second.run_id)
+            self.assertEqual(
+                2, len(os.listdir(os.path.join(tmpdir, "runs"))), "each run keeps its own archive"
+            )
 
 
 if __name__ == "__main__":

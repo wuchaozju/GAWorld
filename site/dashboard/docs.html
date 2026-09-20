@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="docs.page_title">GAWorld · 文档</title>
+  <meta name="description" data-i18n-content="docs.meta_description" content="GAWorld 文档中心：用户教程、专题教程、插件开发与设计文档" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/docs.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="docs.kicker">GAWorld 文档</p>
+          <h1 data-i18n="docs.headline">从第一次运行，到写自己的插件</h1>
+          <p class="sub">
+            <span data-i18n="docs.sub_before">这里显示的就是仓库</span> <code>docs/</code> <span data-i18n="docs.sub_after">里的文档本身 —— 不是复制过来的副本，改了代码库里的文档，这里立刻同步。</span>
+          </p>
+        </div>
+      </div>
+      <div class="doc-topmeta" id="docTopMeta"></div>
+    </header>
+
+    <div class="doc-toolbar">
+      <label class="doc-search">
+        <span class="doc-search-icon">⌕</span>
+        <input id="docSearch" type="search" data-i18n-placeholder="docs.search_placeholder" placeholder="搜索文档：标题或正文，例如 快进 / 插件 / ollama" />
+      </label>
+      <span class="doc-searchhint" id="docSearchHint"></span>
+    </div>
+
+    <section class="doc-main">
+      <nav class="doc-side" id="docSide" data-i18n-aria="docs.side_label" aria-label="文档列表"></nav>
+      <article class="doc-article panel" id="docArticle">
+        <p class="doc-loading" data-i18n="docs.loading">正在载入文档…</p>
+      </article>
+      <aside class="doc-toc" id="docToc" data-i18n-aria="docs.toc_label" aria-label="本页大纲"></aside>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/docs-markdown.js"></script>
+  <script src="/site/dashboard/docs.js"></script>
+</body>
+</html>

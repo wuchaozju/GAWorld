@@ -1,0 +1,57 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Financial District",
+  "destination": "Financial District",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 3,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Central Bank Annex",
+    "Financial District"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "00:02",
+  "frequent_places": {
+    "Riverside Fire Station": 1,
+    "Bridge Rd": 3,
+    "Riverside Bus Station": 3,
+    "Building C-02": 1,
+    "Public Services Center": 7,
+    "City Hall": 2,
+    "Financial District": 12,
+    "Riverside Stadium": 3,
+    "Riverside Tower": 17,
+    "Stadium Plaza": 10,
+    "Logistics Hub": 4,
+    "Industrial Park": 1,
+    "Manufacturing Zone A": 1,
+    "Finance Plaza": 11,
+    "Central Bank Annex": 10,
+    "East Pocket Park": 2,
+    "Courthouse": 4,
+    "Aquatic Center": 1,
+    "Training Grounds": 1,
+    "Manufacturing Zone B": 2,
+    "Logistics Yard": 2,
+    "Freight Depot": 1,
+    "Power Substation": 1
+  },
+  "preferred_modes": {
+    "bike": 58,
+    "walk": 6,
+    "e-bike": 33,
+    "metro": 3
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 3.1399999999999997,
+  "travel_distance_km": 0.54,
+  "depart_time": "23:59"
+}

@@ -1,0 +1,20 @@
+{
+  "treatment": "treatment_happy",
+  "config": {
+    "emotion_seed": {
+      "seed_agents": [
+        1,
+        5,
+        10
+      ],
+      "seed_value": 0.9,
+      "inject_day": 2,
+      "inject_hour": 8
+    },
+    "network_modification": null,
+    "description": "播种开心情绪"
+  },
+  "days": 5,
+  "seed": 42,
+  "timestamp": "2026-06-06T11:59:26.761085"
+}

@@ -1,0 +1,184 @@
+{
+  "g_mother": {
+    "kind": "ghost",
+    "role": "mother",
+    "tie_origin": "hometown",
+    "profile": {
+      "name": "李泽宇的母亲",
+      "city": "余杭未来科技城合租公寓",
+      "vibe": "关心子女、爱唠叨"
+    },
+    "closeness": 0.849,
+    "trust": 0.8645,
+    "obligation": 0.8,
+    "obligation_base": 0.8,
+    "friction": 0.245,
+    "decay_rate": 0.001,
+    "channels": [
+      "call",
+      "visit"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "inner"
+  },
+  "g_father": {
+    "kind": "ghost",
+    "role": "father",
+    "tie_origin": "hometown",
+    "profile": {
+      "name": "李泽宇的父亲",
+      "city": "余杭未来科技城合租公寓",
+      "vibe": "话不多但务实"
+    },
+    "closeness": 0.779,
+    "trust": 0.8015000000000001,
+    "obligation": 0.8,
+    "obligation_base": 0.8,
+    "friction": 0.266,
+    "decay_rate": 0.001,
+    "channels": [
+      "call",
+      "visit"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "inner"
+  },
+  "g_sibling": {
+    "kind": "ghost",
+    "role": "sibling",
+    "tie_origin": "hometown",
+    "profile": {
+      "name": "李泽宇的兄弟姐妹",
+      "city": "余杭未来科技城合租公寓",
+      "vibe": "彼此熟悉但不天天聊"
+    },
+    "closeness": 0.648,
+    "trust": 0.684,
+    "obligation": 0.62,
+    "obligation_base": 0.62,
+    "friction": 0.305,
+    "decay_rate": 0.002,
+    "channels": [
+      "call",
+      "chat"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "inner"
+  },
+  "g_close_friend_1": {
+    "kind": "ghost",
+    "role": "close_friend",
+    "tie_origin": "college",
+    "profile": {
+      "name": "老朋友A",
+      "city": "余杭未来科技城合租公寓",
+      "vibe": "讲义气的老友"
+    },
+    "closeness": 0.695,
+    "trust": 0.7275,
+    "obligation": 0.5,
+    "obligation_base": 0.5,
+    "friction": 0.29000000000000004,
+    "decay_rate": 0.005,
+    "channels": [
+      "call",
+      "chat",
+      "visit"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "inner"
+  },
+  "g_classmate_1": {
+    "kind": "ghost",
+    "role": "classmate",
+    "tie_origin": "college",
+    "profile": {
+      "name": "老同学B",
+      "city": "其他城市",
+      "vibe": "偶尔朋友圈点赞"
+    },
+    "closeness": 0.388,
+    "trust": 0.45400000000000007,
+    "obligation": 0.28,
+    "obligation_base": 0.28,
+    "friction": 0.38,
+    "decay_rate": 0.012,
+    "channels": [
+      "chat"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "close"
+  },
+  "g_former_coworker_1": {
+    "kind": "ghost",
+    "role": "former_coworker",
+    "tie_origin": "first_job",
+    "profile": {
+      "name": "前同事C",
+      "city": "其他城市",
+      "vibe": "项目期间合作很紧"
+    },
+    "closeness": 0.435,
+    "trust": 0.4975,
+    "obligation": 0.2,
+    "obligation_base": 0.2,
+    "friction": 0.365,
+    "decay_rate": 0.015,
+    "channels": [
+      "chat"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "close"
+  },
+  "g_mentor": {
+    "kind": "ghost",
+    "role": "mentor",
+    "tie_origin": "college",
+    "profile": {
+      "name": "老师D",
+      "city": "其他城市",
+      "vibe": "曾给过关键建议"
+    },
+    "closeness": 0.545,
+    "trust": 0.5925000000000001,
+    "obligation": 0.45,
+    "obligation_base": 0.45,
+    "friction": 0.33499999999999996,
+    "decay_rate": 0.005,
+    "channels": [
+      "chat",
+      "visit"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "inner"
+  },
+  "g_neighbor": {
+    "kind": "ghost",
+    "role": "neighbor",
+    "tie_origin": "neighborhood",
+    "profile": {
+      "name": "邻居E",
+      "city": "余杭未来科技城合租公寓",
+      "vibe": "见面会打招呼"
+    },
+    "closeness": 0.33999999999999997,
+    "trust": 0.41000000000000003,
+    "obligation": 0.28,
+    "obligation_base": 0.28,
+    "friction": 0.395,
+    "decay_rate": 0.01,
+    "channels": [
+      "face"
+    ],
+    "last_interaction_day": 0,
+    "last_contact_day": 0,
+    "dunbar_tier": "close"
+  }
+}

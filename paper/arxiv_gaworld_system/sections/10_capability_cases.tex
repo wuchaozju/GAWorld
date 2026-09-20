@@ -1,0 +1,160 @@
+\section{Existing Capability Cases}
+\label{sec:capability-cases}
+
+This section audits what the archived outputs demonstrate about GAWorld as a
+research instrument.  It does not treat an available file as a successful
+scientific evaluation.  We use \emph{complete} only when an artifact is
+adequate for the narrow descriptive purpose stated here; \emph{partial} when
+arms, durations, metrics, or interactions are missing; \emph{designed} when a
+protocol exists without usable outcome evidence; and \emph{fixture} for
+synthetic data that tests analysis code.  These labels describe evidence
+availability, not system performance.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{capability_matrix.pdf}
+  \caption{Coverage of the audited result archive.  The matrix distinguishes
+  inspectable capability evidence from incomplete evaluations and diagnostic
+  fixtures; it is not a leaderboard or a validation score.}
+  \label{fig:capability-matrix}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Status of all experiment families represented in the frozen artifact
+ledger.  Counts and horizons describe the archived files, not a common
+evaluation protocol.}
+\label{tab:archive-status}
+\begin{tabular}{@{}p{0.20\linewidth}p{0.16\linewidth}p{0.23\linewidth}p{0.33\linewidth}@{}}
+\toprule
+Area & Status & Archived scope & Permitted use \\
+\midrule
+Macro economy and wellbeing & Complete for description & $n=5$ agents, one seed, three-day configuration; 116 recorded steps per agent & Multivariate state-trace production, not an economic or psychological finding \\
+Persistent memory & Partial & $n=1$ agent; four planned 14-day arms; only one completed both seven-day phases & Persistence and cross-phase artifact inspection, not a treatment comparison \\
+Policy comparisons & Partial & Four single archived event--baseline pairs; Day-3 events; no seed replications & Pairing, isolation, and metric extraction, not policy effects \\
+Information intervention & Partial & Three arms, $n=5$ each; unequal horizons of one or two days & Information-metric schema and missing/inactive-field audit \\
+Polarization & Partial & Two arms with 109 versus 85 records & Availability of a comparison artifact; unequal records preclude an effect claim \\
+Network evolution & Partial & $n=5$, 14-day report; zero recorded interactions on every day & Initialization and failure visibility, not emergent-network evidence \\
+Emotion contagion & Designed / incomplete & Four intended arms; all four report a missing state-history file & Protocol coverage only; no outcome result \\
+ABM validation & Designed / incomplete & Validation workflow is present; completed empirical evidence is insufficient & Evaluation design only, not an empirical validation result \\
+GAWorld-Bench & Fixture & Built-in synthetic scorecard & Parser and scoring-path diagnostics only \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Case 1: Persistence Is Observable, but the Memory Contrast Is Not}
+
+The memory-consistency archive is useful because it exposes a longitudinal
+experimental shape that is often hidden in agent demonstrations.  One agent
+(ID 34) was assigned to four intended treatments: intact memory, reset between
+phases, selective summary deletion, and injected conflict.  Each arm planned a
+seven-day acquisition phase followed by a seven-day continuation phase.  The
+archive contains seven phase-1 diaries for every arm, together with state and
+memory files.  It also records different memory-file footprints, including
+episodic, growth, habit, and relationship artifacts.  Thus a researcher can
+inspect what persisted, what was deleted, and how a later elicited action was
+represented.
+
+Only the intact-memory arm, however, contains all seven phase-2 diaries.  The
+reset, selective, and conflict arms each stop after phase 1, with the archived
+report attributing the interruption to initialization after the worker pool
+started.  The archive therefore demonstrates file-backed persistence across
+two phases for one agent in one arm; it does not compare the behavioral effect
+of memory retention, deletion, or conflict.  Qualitative labels such as a move
+from ``procrastinating'' to ``active'' are post-hoc codings of a few generated
+actions, not a validated continuity measure.  In particular, differences in
+phase-1 final actions cannot explain missing phase-2 outcomes.  This failure is
+scientifically informative at the infrastructure level: treatment completeness
+must be checked before interpreting a fluent diary as longitudinal evidence.
+
+\subsection{Case 2: Policy Artifacts Exercise a Counterfactual Workflow}
+
+The policy archive contains four timestamped comparisons---traffic
+restriction, housing subsidy, medical reimbursement, and job-training
+subsidy.  Each stores an event arm beside a baseline arm and exports the same
+metric columns, thereby exercising the isolation and reduction path described
+in \cref{sec:experiment-workflow}.  All are single archived comparisons, with
+events injected on simulation day 3 (09:00 for traffic and 08:00 for the other
+three); there is no multi-seed sampling distribution or uncertainty estimate.
+
+The raw CSV files also show why mechanistic inspection must precede substantive
+interpretation.  In every pair, the final values of
+\texttt{cross\_viewpoint\_exposure}, \texttt{misinformation\_risk},
+\texttt{stance\_score}, and \texttt{toxicity\_score} are zero in both arms.
+Some generic state variables differ: for example, the housing comparison has
+a final event-minus-baseline \texttt{time\_pressure} difference of $-0.0311$
+and the traffic comparison a \texttt{mobility\_intent} difference of
+$-0.0036$.  These numbers are reported only to show that the reducer retains
+metric direction and magnitude.  A single LLM-mediated trajectory cannot tell
+whether the named policy caused the difference, whether the relevant
+structural mechanism was connected, or whether the sign would persist under a
+new seed.  The case supports a workflow claim---GAWorld can preserve paired
+trees and compute declared contrasts---rather than a claim about housing,
+health, training, or transport policy.
+
+\subsection{Case 3: Information Metrics Make Inactivity Visible}
+
+The misinformation artifact contains three five-agent arms.  The control and
+treatment B each cover two simulated days, whereas treatment A covers one.
+Across every recorded day and arm, average misinformation risk is $0.0$, and
+the reported peak and final risks are also $0.0$.  Mean
+cross-viewpoint-exposure is $0.06656$ for control, $0.06707$ for treatment A,
+and $0.06635$ for treatment B.  The unequal horizons rule out a balanced
+comparison, and differences at the fourth decimal place are descriptive
+properties of these files, not estimated intervention effects.
+
+That negative result is nevertheless a useful system diagnostic.  The archive
+records treatment names, horizons, agent counts, daily risk series, and an
+exposure aggregate together.  It does not prove that
+misinformation propagated, that risk detection was sensitive, or that the
+interventions changed exposure.  The separate polarization artifact reinforces
+the boundary: its two arms contain 109 and 85 records, respectively, and thus
+cannot be read as a balanced longitudinal contrast without reconstructing the
+missingness.  GAWorld's value here is inspectability---inactive fields and
+unequal coverage remain visible rather than being silently converted into a
+success score.
+
+\subsection{Case 4: Economy--Wellbeing Traces Provide Dense State, Not External Validity}
+
+The macro-economy archive is the most complete artifact for demonstrating
+multivariate trace production.  Its hashed long-format CSV contains 11,600
+rows for five agents, 116 unique recorded steps per agent, and 20 metrics per
+step ($5\times116\times20$).  The associated configuration describes a
+three-day, seed-42 run.  Direct aggregation of the CSV gives 580 values for
+each metric across agents and steps.  Mean emotion, stress, and economic
+security are $0.4896$, $0.5490$, and $0.6270$, respectively; their observed
+ranges are $[0.0233,0.9310]$, $[0.0907,0.9898]$, and
+$[0.4455,0.8298]$.
+
+The raw row count matters because the accompanying narrative report describes
+``580 timesteps per agent.''  In the CSV, 580 is instead the number of
+agent--step values for one metric ($5\times116$); each agent has 116 distinct
+step identifiers.  We therefore use the CSV cardinalities rather than the
+report's timestep wording.  This discrepancy illustrates the role of an
+artifact ledger: even a plausible derived report must be checked against its
+hashed source.
+
+The trace can support new descriptive analyses without a new simulation.  For
+example, partitioning the 116 step identifiers into consecutive ranges
+$0$--$38$, $39$--$76$, and $77$--$115$ yields emotion means of $0.6365$,
+$0.5020$, and $0.3305$, while stress means are $0.4122$, $0.5428$, and
+$0.6916$.  These bins are equal-index summaries, not validated ``days,'' and
+the trajectories remain generated state variables from one seed.  They show
+that GAWorld records joinable, time-indexed state across agents and constructs;
+they do not show human wellbeing dynamics, economic realism, or an effect of
+any real-world shock.
+
+\subsection{Failures Are Part of the Capability Record}
+
+Two additional archives prevent the coverage matrix from becoming a showcase
+of successful-looking outputs.  The network-evolution report describes five
+nodes and two initialization edges over a nominal 14-day horizon, but records
+zero agent--agent interactions on each of the 14 days; the edges were inferred
+from initial co-location.  It cannot support a homophily or emergent-network
+claim.  The emotion-contagion comparison contains four arm entries, all of
+which report that their state-history CSV is missing.  It contains no contagion
+outcome.  Finally, the GAWorld-Bench scorecard matches its built-in synthetic
+fixture.  It verifies that parsers, checks, and report generation execute; it
+is not a result from GAWorld agents.  Reporting these cases alongside the more
+complete trace is essential to the scientific use of an inspectable system.

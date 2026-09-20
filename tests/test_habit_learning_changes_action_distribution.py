@@ -1,6 +1,6 @@
 import unittest
 
-from human_realism import update_habits_from_episode
+from gaworld.cognition.realism import update_habits_from_episode
 
 
 class TestHabitLearning(unittest.TestCase):

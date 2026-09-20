@@ -1,0 +1,11 @@
+{
+  "treatment": "control",
+  "config": {
+    "misinfo_seed": null,
+    "intervention_enabled": true,
+    "description": "无信息注入基线"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-05-16T10:49:55.745926"
+}

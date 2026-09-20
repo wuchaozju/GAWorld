@@ -1,0 +1,71 @@
+{
+  "currency": "CNY",
+  "wealth_drive": 0.742,
+  "income_skill": 0.5365,
+  "risk_tolerance": 0.7,
+  "industry": "tech",
+  "gross_monthly_salary": 12269.47,
+  "net_monthly_salary": 9859.66,
+  "base_hourly_income": 69.71,
+  "hourly_income": 82.26,
+  "income_volatility": 0.25,
+  "income_target_daily": 565.9,
+  "monthly_tax": 139.96,
+  "monthly_si_total": 2269.85,
+  "monthly_si_breakdown": {
+    "pension": 981.56,
+    "medical": 245.39,
+    "unemployment": 61.35,
+    "housing_fund_individual": 981.56
+  },
+  "monthly_housing_fund": 1963.12,
+  "engel_coefficient": 0.3,
+  "savings_rate": 0.25,
+  "monthly_budget": {
+    "food": 2218.42,
+    "housing": 1787.96,
+    "transport": 700.39,
+    "clothing": 466.53,
+    "leisure": 827.86,
+    "education": 609.17,
+    "healthcare": 411.54,
+    "misc": 372.86
+  },
+  "monthly_expense_estimate": 7394.74,
+  "monthly_rent": 1964.65,
+  "accounts": {
+    "checking": 10302.44,
+    "savings": 20213.75,
+    "investment": 12659.11,
+    "housing_fund": 100060.86
+  },
+  "balance": 43175.3,
+  "portfolio_type": "aggressive",
+  "portfolio_weights": {
+    "deposits": 0.15,
+    "funds": 0.35,
+    "stocks": 0.5
+  },
+  "investment_return_ytd": 0.0,
+  "initial_assets": {
+    "labor_savings": 40835.85,
+    "inheritance": 0.0,
+    "total": 40835.85
+  },
+  "daily_income": 2850.5647726598613,
+  "daily_expense": 511.1409654771358,
+  "daily_expense_by_category": {
+    "food": 0.0,
+    "clothing": 0.0,
+    "housing": 79.03809999999999,
+    "transport": 339.8003946707639,
+    "leisure": 0.0,
+    "education": 0.0,
+    "healthcare": 0.0,
+    "misc": 92.30247080637194
+  },
+  "lifetime_income": 2850.5647726598613,
+  "lifetime_expense": 511.1409654771358,
+  "last_location": "Riverside Tower",
+  "shock_log": []
+}

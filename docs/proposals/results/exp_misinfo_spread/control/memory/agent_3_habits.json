@@ -1,0 +1,138 @@
+{
+  "night|public|上午学习": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "night|public|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|睡前": {
+    "action_counts": {
+      "睡觉": 3
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Student Canteen": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|下午学习": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 1,
+      "推进最重要的一项任务": 4
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.34988896256,
+    "last_updated_day": 1
+  },
+  "morning|work|下午学习": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|上午学习": {
+    "action_counts": {
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Corner Mart": {
+    "action_counts": {
+      "乘坐e-bike移动": 3
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "afternoon|home|午饭": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "afternoon|public|午饭": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "按原节奏继续当前安排": 1,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.21680062464,
+    "last_updated_day": 1
+  },
+  "afternoon|public|下午学习": {
+    "action_counts": {
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Little River Daycare": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|public|下课": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.222633984,
+    "last_updated_day": 1
+  },
+  "evening|work|前往Willow Design Studio": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|work|下课": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|下课": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.23191040000000002,
+    "last_updated_day": 1
+  }
+}

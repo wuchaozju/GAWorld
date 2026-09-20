@@ -1,0 +1,104 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "night|public|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|睡前": {
+    "action_counts": {
+      "睡觉": 5
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.40682662912,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Building C-01": {
+    "action_counts": {
+      "乘坐e-bike移动": 3
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "morning|home|前往C-01 (Village Center)": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|上午工作": {
+    "action_counts": {
+      "推进最重要的一项任务": 2
+    },
+    "preferred_action": "推进最重要的一项任务",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|通勤": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 2,
+      "推进最重要的一项任务": 2
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.219561984,
+    "last_updated_day": 1
+  },
+  "afternoon|public|午饭": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.28776726528,
+    "last_updated_day": 1
+  },
+  "afternoon|home|午饭": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|public|午饭": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 3,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 3
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.3812795647996723,
+    "last_updated_day": 1
+  },
+  "night|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.23191040000000002,
+    "last_updated_day": 1
+  }
+}

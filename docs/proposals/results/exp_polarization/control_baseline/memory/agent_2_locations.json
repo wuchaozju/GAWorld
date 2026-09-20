@@ -1,0 +1,46 @@
+{
+  "home": "Building C-01",
+  "workplace": "Riverside Bank Branch",
+  "current": "West Block",
+  "destination": "West Block",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 4,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverside Cinema",
+    "Riverside Night Market",
+    "West Block"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "14:27",
+  "frequent_places": {
+    "Hangzhou Riverside Community Center": 1,
+    "Building C-01": 2,
+    "Riverside Cinema": 3,
+    "Riverside Fire Station": 1,
+    "Bridge Rd": 1,
+    "Public Services Center": 1,
+    "City Hall": 1,
+    "Riverside Tower": 1,
+    "Central Bank Annex": 2,
+    "Stadium Plaza": 1,
+    "Riverside Bank Branch": 1,
+    "West Block": 1
+  },
+  "preferred_modes": {
+    "e-bike": 8,
+    "bike": 5,
+    "metro": 3
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 9.91,
+  "travel_distance_km": 0.643,
+  "depart_time": "14:23"
+}

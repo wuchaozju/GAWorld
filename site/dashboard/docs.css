@@ -1,0 +1,142 @@
+/* 文档面板 —— 叠在 studio.css 之上，只写它没有的部分。
+   和 settings.css / external.css 同一套做法：不引构建步骤，不引外部样式库。 */
+
+.doc-topmeta { display: flex; gap: 8px; align-items: center; }
+.doc-chip {
+  font-size: 12px; color: var(--muted, #66746c);
+  border: 1px solid var(--line, #dde6de); border-radius: 999px;
+  padding: 4px 11px; background: var(--card, #fff); white-space: nowrap;
+}
+.doc-chip b { color: var(--ink, #17251f); font-variant-numeric: tabular-nums; }
+
+/* ---- 搜索条 ---- */
+
+.doc-toolbar {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  margin-top: 14px; padding: 10px 12px;
+  border: 1px solid var(--line, #dde6de); border-radius: 10px;
+  background: var(--card, #fff); box-shadow: var(--shadow-sm);
+}
+.doc-search { flex: 1 1 340px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.doc-search-icon { color: var(--muted, #66746c); font-size: 16px; }
+.doc-search input {
+  flex: 1 1 auto; min-width: 0; padding: 8px 11px;
+  border: 1px solid var(--line, #dde6de); border-radius: 8px;
+  background: #fff; color: var(--ink, #17251f); font-size: 13px;
+}
+.doc-search input:focus { outline: none; border-color: var(--green, #0e7a58); }
+.doc-searchhint { font-size: 12.5px; color: var(--muted, #66746c); }
+
+/* ---- 三栏：目录 / 正文 / 大纲 ---- */
+
+.doc-main {
+  display: grid; grid-template-columns: 268px minmax(0, 1fr) 210px;
+  gap: 16px; align-items: start; margin-top: 14px;
+}
+@media (max-width: 1200px) { .doc-main { grid-template-columns: 250px minmax(0, 1fr); } .doc-toc { display: none; } }
+@media (max-width: 860px) { .doc-main { grid-template-columns: 1fr; } }
+
+.doc-side {
+  position: sticky; top: 12px; max-height: calc(100vh - 28px); overflow: auto;
+  padding: 12px 10px; border: 1px solid var(--line, #dde6de);
+  background: var(--card, #fff); border-radius: 12px; box-shadow: var(--shadow-sm);
+}
+@media (max-width: 860px) { .doc-side { position: static; max-height: none; } }
+
+.doc-group + .doc-group { margin-top: 14px; }
+.doc-group > h2 {
+  margin: 0 0 6px; padding: 0 6px; font-size: 11px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted, #66746c);
+}
+.doc-item {
+  display: block; padding: 7px 9px; margin-bottom: 2px; border-radius: 8px;
+  border: 1px solid transparent; text-decoration: none; color: var(--ink, #17251f);
+}
+.doc-item:hover { background: rgba(19, 121, 91, 0.06); }
+.doc-item.is-active { border-color: var(--green, #0e7a58); background: rgba(19, 121, 91, 0.09); }
+.doc-item strong { font-size: 13.5px; font-weight: 700; }
+.doc-item em {
+  font-style: normal; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--muted, #66746c); margin-left: 6px;
+}
+.doc-item-note {
+  display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.55;
+  color: var(--muted, #66746c);
+}
+.doc-empty { margin: 8px; font-size: 12.5px; color: var(--muted, #66746c); }
+
+.doc-article { min-width: 0; padding: 22px 26px 32px; }
+.doc-loading { color: var(--muted, #66746c); font-size: 13px; }
+.doc-error { color: #c04545; font-size: 13px; line-height: 1.8; }
+
+.doc-head { padding-bottom: 12px; margin-bottom: 6px; border-bottom: 1px solid var(--line, #dde6de); }
+.doc-kicker {
+  margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted, #66746c);
+}
+.doc-head h1 { margin: 6px 0 4px; font-family: Georgia, "Noto Serif SC", serif; font-size: 26px; }
+.doc-source { margin: 0; font-size: 12px; color: var(--muted, #66746c); }
+.doc-source a { color: var(--green, #0e7a58); }
+
+/* ---- 大纲 ---- */
+
+.doc-toc { position: sticky; top: 12px; max-height: calc(100vh - 28px); overflow: auto; }
+.doc-toc > h2 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted, #66746c);
+}
+.doc-tocitem {
+  display: block; padding: 4px 8px; border-left: 2px solid var(--line, #dde6de);
+  font-size: 12px; line-height: 1.5; color: var(--muted, #66746c); text-decoration: none;
+}
+.doc-tocitem.level-3 { padding-left: 18px; font-size: 11.5px; }
+.doc-tocitem:hover { color: var(--ink, #17251f); }
+.doc-tocitem.is-active { color: var(--green, #0e7a58); border-left-color: var(--green, #0e7a58); font-weight: 700; }
+
+/* ---- Markdown 正文 ---- */
+
+.doc-body { font-size: 14px; line-height: 1.85; color: var(--ink, #17251f); }
+.doc-body h1, .doc-body h2, .doc-body h3, .doc-body h4, .doc-body h5, .doc-body h6 {
+  font-family: Georgia, "Noto Serif SC", serif; line-height: 1.4;
+  margin: 26px 0 10px; scroll-margin-top: 16px;
+}
+.doc-body h1 { font-size: 23px; }
+.doc-body h2 { font-size: 20px; padding-bottom: 5px; border-bottom: 1px solid var(--line, #dde6de); }
+.doc-body h3 { font-size: 16.5px; }
+.doc-body h4, .doc-body h5, .doc-body h6 { font-size: 14.5px; }
+/* 第一个标题紧贴文档头，不需要额外留白。 */
+.doc-body > h1:first-child, .doc-body > h2:first-child { margin-top: 10px; }
+
+.doc-body p { margin: 10px 0; }
+.doc-body ul, .doc-body ol { margin: 10px 0; padding-left: 24px; }
+.doc-body li { margin: 4px 0; }
+.doc-body li > ul, .doc-body li > ol { margin: 4px 0; }
+.doc-body a { color: var(--green, #0e7a58); }
+.doc-body hr { border: 0; border-top: 1px solid var(--line, #dde6de); margin: 22px 0; }
+.doc-body img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line, #dde6de); }
+
+.doc-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  background: #f0f4f1; border-radius: 5px; padding: 1px 5px; word-break: break-word;
+}
+.doc-body pre.md-code {
+  margin: 12px 0; padding: 12px 14px; overflow: auto;
+  background: #16221d; border-radius: 10px;
+}
+.doc-body pre.md-code code {
+  background: transparent; padding: 0; color: #d8e7de; font-size: 12.5px; line-height: 1.7;
+  white-space: pre; word-break: normal;
+}
+
+.doc-body blockquote {
+  margin: 12px 0; padding: 2px 14px; color: var(--muted, #66746c);
+  border-left: 3px solid var(--green, #0e7a58); background: #f4f8f5; border-radius: 0 8px 8px 0;
+}
+
+.md-tablewrap { overflow-x: auto; margin: 12px 0; }
+.doc-body table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.doc-body th, .doc-body td {
+  border: 1px solid var(--line, #dde6de); padding: 7px 10px; text-align: left; vertical-align: top;
+}
+.doc-body th { background: #f4f8f5; font-weight: 700; }
+.doc-body tbody tr:nth-child(even) { background: #fafcfa; }

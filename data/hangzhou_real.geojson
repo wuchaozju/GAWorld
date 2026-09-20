@@ -1,0 +1,7787 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "Hangzhou",
+  "source": "OpenStreetMap"
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3335079,
+     30.1938151
+    ]
+   },
+   "properties": {
+    "name": "新街街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2422288,
+     30.3898055
+    ]
+   },
+   "properties": {
+    "name": "天都城",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1506271,
+     30.3144543
+    ]
+   },
+   "properties": {
+    "name": "上塘街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1517651,
+     30.3077177
+    ]
+   },
+   "properties": {
+    "name": "大关街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1402931,
+     30.2957108
+    ]
+   },
+   "properties": {
+    "name": "湖墅街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1458221,
+     30.2886357
+    ]
+   },
+   "properties": {
+    "name": "米市巷街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1398208,
+     30.3237537
+    ]
+   },
+   "properties": {
+    "name": "拱宸桥街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1272088,
+     30.3079915
+    ]
+   },
+   "properties": {
+    "name": "小河街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1203205,
+     30.3104438
+    ]
+   },
+   "properties": {
+    "name": "和睦街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1019047,
+     30.325797
+    ]
+   },
+   "properties": {
+    "name": "祥符街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1442204,
+     30.3673984
+    ]
+   },
+   "properties": {
+    "name": "康桥街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1746926,
+     30.3521725
+    ]
+   },
+   "properties": {
+    "name": "半山街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1549923,
+     30.2924795
+    ]
+   },
+   "properties": {
+    "name": "朝晖街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1762176,
+     30.2954168
+    ]
+   },
+   "properties": {
+    "name": "文晖街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1683531,
+     30.2625852
+    ]
+   },
+   "properties": {
+    "name": "长庆街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1616144,
+     30.261717
+    ]
+   },
+   "properties": {
+    "name": "武林街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1576647,
+     30.2692979
+    ]
+   },
+   "properties": {
+    "name": "天水街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1665769,
+     30.3130964
+    ]
+   },
+   "properties": {
+    "name": "东新街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1804058,
+     30.3414934
+    ]
+   },
+   "properties": {
+    "name": "石桥街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1446817,
+     30.2777392
+    ]
+   },
+   "properties": {
+    "name": "西溪街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1192235,
+     30.2761999
+    ]
+   },
+   "properties": {
+    "name": "翠苑街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1139972,
+     30.2789383
+    ]
+   },
+   "properties": {
+    "name": "古荡街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0991537,
+     30.2785799
+    ]
+   },
+   "properties": {
+    "name": "文新街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0596699,
+     30.2830441
+    ]
+   },
+   "properties": {
+    "name": "蒋村街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0799906,
+     30.3237201
+    ]
+   },
+   "properties": {
+    "name": "三墩镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1065023,
+     30.2477733
+    ]
+   },
+   "properties": {
+    "name": "西湖街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0741512,
+     30.1615766
+    ]
+   },
+   "properties": {
+    "name": "转塘街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1571482,
+     30.1672131
+    ]
+   },
+   "properties": {
+    "name": "浦沿街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1852244,
+     30.1801009
+    ]
+   },
+   "properties": {
+    "name": "长河街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0049908,
+     30.2852354
+    ]
+   },
+   "properties": {
+    "name": "仓前街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0418306,
+     30.3825313
+    ]
+   },
+   "properties": {
+    "name": "良渚街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1700924,
+     30.3899613
+    ]
+   },
+   "properties": {
+    "name": "崇贤街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2819292,
+     30.351821
+    ]
+   },
+   "properties": {
+    "name": "乔司街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0315953,
+     30.2514854
+    ]
+   },
+   "properties": {
+    "name": "五常街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1718533,
+     30.2214689
+    ]
+   },
+   "properties": {
+    "name": "紫阳街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1659292,
+     30.257916
+    ]
+   },
+   "properties": {
+    "name": "湖滨街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1721223,
+     30.2420829
+    ]
+   },
+   "properties": {
+    "name": "小营街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1576771,
+     30.2097152
+    ]
+   },
+   "properties": {
+    "name": "南星街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1938406,
+     30.2377572
+    ]
+   },
+   "properties": {
+    "name": "望江街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1564266,
+     30.2409992
+    ]
+   },
+   "properties": {
+    "name": "清波街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.346581,
+     30.3090162
+    ]
+   },
+   "properties": {
+    "name": "白杨街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2679308,
+     30.3137648
+    ]
+   },
+   "properties": {
+    "name": "九堡街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2695902,
+     30.1629635
+    ]
+   },
+   "properties": {
+    "name": "城厢街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2726294,
+     30.1840307
+    ]
+   },
+   "properties": {
+    "name": "北干街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2282341,
+     30.1897132
+    ]
+   },
+   "properties": {
+    "name": "西兴街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2755776,
+     30.2177403
+    ]
+   },
+   "properties": {
+    "name": "宁围街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3045014,
+     30.1508967
+    ]
+   },
+   "properties": {
+    "name": "新塘街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2865633,
+     30.1695574
+    ]
+   },
+   "properties": {
+    "name": "萧山商业城",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1218627,
+     30.2609841
+    ]
+   },
+   "properties": {
+    "name": "灵隐街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1448624,
+     30.2712778
+    ]
+   },
+   "properties": {
+    "name": "北山街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1994267,
+     30.2699621
+    ]
+   },
+   "properties": {
+    "name": "凯旋街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.193951,
+     30.2578492
+    ]
+   },
+   "properties": {
+    "name": "采荷街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1982241,
+     30.2548183
+    ]
+   },
+   "properties": {
+    "name": "四季青街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.186526,
+     30.2914991
+    ]
+   },
+   "properties": {
+    "name": "闸弄口街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2243461,
+     30.2909421
+    ]
+   },
+   "properties": {
+    "name": "彭埠街道",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1549074,
+     30.1797294
+    ]
+   },
+   "properties": {
+    "name": "钱塘江",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1669587,
+     30.2196083
+    ]
+   },
+   "properties": {
+    "name": "南星桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2659007,
+     30.2281594
+    ]
+   },
+   "properties": {
+    "name": "盈宁",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2126119,
+     30.3308393
+    ]
+   },
+   "properties": {
+    "name": "笕桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1589398,
+     30.3429538
+    ]
+   },
+   "properties": {
+    "name": "杭州北",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1069652,
+     30.3756343
+    ]
+   },
+   "properties": {
+    "name": "行宫塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2613617,
+     30.3779079
+    ]
+   },
+   "properties": {
+    "name": "乔司",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.246493,
+     30.2887065
+    ]
+   },
+   "properties": {
+    "name": "六堡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2586486,
+     30.2955419
+    ]
+   },
+   "properties": {
+    "name": "红普南路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2316778,
+     30.2764192
+    ]
+   },
+   "properties": {
+    "name": "御道",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2373358,
+     30.2829244
+    ]
+   },
+   "properties": {
+    "name": "五堡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.164536,
+     30.353389
+    ]
+   },
+   "properties": {
+    "name": "吴家角港",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2190564,
+     30.3177439
+    ]
+   },
+   "properties": {
+    "name": "黎明",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2227596,
+     30.3059959
+    ]
+   },
+   "properties": {
+    "name": "明石路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1242634,
+     30.2792025
+    ]
+   },
+   "properties": {
+    "name": "文三路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0155594,
+     30.2827324
+    ]
+   },
+   "properties": {
+    "name": "海创园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0653403,
+     30.2839817
+    ]
+   },
+   "properties": {
+    "name": "西溪湿地北",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2430643,
+     30.2601582
+    ]
+   },
+   "properties": {
+    "name": "亚运村",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9940461,
+     30.2801424
+    ]
+   },
+   "properties": {
+    "name": "创景路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2900497,
+     30.1746889
+    ]
+   },
+   "properties": {
+    "name": "杭州南",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2517631,
+     30.1719125
+    ]
+   },
+   "properties": {
+    "name": "萧山西",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2082034,
+     30.2935486
+    ]
+   },
+   "properties": {
+    "name": "杭州东",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2917822,
+     30.3828603
+    ]
+   },
+   "properties": {
+    "name": "临平南",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1783532,
+     30.2459675
+    ]
+   },
+   "properties": {
+    "name": "杭州",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.155783,
+     30.3760971
+    ]
+   },
+   "properties": {
+    "name": "沈家塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3311785,
+     30.1595713
+    ]
+   },
+   "properties": {
+    "name": "夏家桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9821401,
+     30.3007603
+    ]
+   },
+   "properties": {
+    "name": "杭州西",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2020387,
+     30.3036802
+    ]
+   },
+   "properties": {
+    "name": "枸桔弄",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0641625,
+     30.33035
+    ]
+   },
+   "properties": {
+    "name": "池华街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0784318,
+     30.3411616
+    ]
+   },
+   "properties": {
+    "name": "金家渡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1404542,
+     30.3594704
+    ]
+   },
+   "properties": {
+    "name": "平安桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.124046,
+     30.3561258
+    ]
+   },
+   "properties": {
+    "name": "储运路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1574718,
+     30.3594975
+    ]
+   },
+   "properties": {
+    "name": "独城生态公园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1673208,
+     30.3325434
+    ]
+   },
+   "properties": {
+    "name": "皋亭坝",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1739195,
+     30.3433099
+    ]
+   },
+   "properties": {
+    "name": "桃源街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1970297,
+     30.3263824
+    ]
+   },
+   "properties": {
+    "name": "华中南路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0955705,
+     30.3529693
+    ]
+   },
+   "properties": {
+    "name": "好运街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2149383,
+     30.3254155
+    ]
+   },
+   "properties": {
+    "name": "笕桥老街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2191052,
+     30.2964728
+    ]
+   },
+   "properties": {
+    "name": "彭埠",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2487181,
+     30.3083641
+    ]
+   },
+   "properties": {
+    "name": "九和路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2617969,
+     30.3102441
+    ]
+   },
+   "properties": {
+    "name": "九堡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2360891,
+     30.3023126
+    ]
+   },
+   "properties": {
+    "name": "七堡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2033838,
+     30.289479
+    ]
+   },
+   "properties": {
+    "name": "新风",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2027257,
+     30.2785564
+    ]
+   },
+   "properties": {
+    "name": "新塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2031447,
+     30.2687379
+    ]
+   },
+   "properties": {
+    "name": "景芳",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2082401,
+     30.2580532
+    ]
+   },
+   "properties": {
+    "name": "钱江路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1878158,
+     30.2868712
+    ]
+   },
+   "properties": {
+    "name": "闸弄口",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.172257,
+     30.2885412
+    ]
+   },
+   "properties": {
+    "name": "打铁关",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1609282,
+     30.2819552
+    ]
+   },
+   "properties": {
+    "name": "西湖文化广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2933195,
+     30.3844664
+    ]
+   },
+   "properties": {
+    "name": "临平南高铁站",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2740689,
+     30.3134337
+    ]
+   },
+   "properties": {
+    "name": "客运中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.30789,
+     30.3122484
+    ]
+   },
+   "properties": {
+    "name": "下沙西",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3210782,
+     30.3116262
+    ]
+   },
+   "properties": {
+    "name": "金沙湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3437723,
+     30.3123438
+    ]
+   },
+   "properties": {
+    "name": "文泽路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3308325,
+     30.3117612
+    ]
+   },
+   "properties": {
+    "name": "高沙路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2862284,
+     30.329745
+    ]
+   },
+   "properties": {
+    "name": "乔司南",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.290611,
+     30.3674259
+    ]
+   },
+   "properties": {
+    "name": "翁梅",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.159392,
+     30.2571141
+    ]
+   },
+   "properties": {
+    "name": "龙翔桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1590076,
+     30.2654688
+    ]
+   },
+   "properties": {
+    "name": "凤起路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2109587,
+     30.2521275
+    ]
+   },
+   "properties": {
+    "name": "江锦路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2069182,
+     30.2452181
+    ]
+   },
+   "properties": {
+    "name": "市民中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2021883,
+     30.2418536
+    ]
+   },
+   "properties": {
+    "name": "城星路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1932999,
+     30.2331479
+    ]
+   },
+   "properties": {
+    "name": "近江",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1762087,
+     30.2470314
+    ]
+   },
+   "properties": {
+    "name": "城站",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1633118,
+     30.2482811
+    ]
+   },
+   "properties": {
+    "name": "定安路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2121281,
+     30.211593
+    ]
+   },
+   "properties": {
+    "name": "江陵路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1862594,
+     30.2394354
+    ]
+   },
+   "properties": {
+    "name": "婺江路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2131709,
+     30.201925
+    ]
+   },
+   "properties": {
+    "name": "滨和路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2161808,
+     30.1898083
+    ]
+   },
+   "properties": {
+    "name": "西兴",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2266894,
+     30.1861935
+    ]
+   },
+   "properties": {
+    "name": "滨康路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2300465,
+     30.1701799
+    ]
+   },
+   "properties": {
+    "name": "湘湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1860675,
+     30.2265985
+    ]
+   },
+   "properties": {
+    "name": "甬江路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1684312,
+     30.2289018
+    ]
+   },
+   "properties": {
+    "name": "侯潮门",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1736037,
+     30.2407681
+    ]
+   },
+   "properties": {
+    "name": "江城路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1759164,
+     30.2565995
+    ]
+   },
+   "properties": {
+    "name": "万安桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1768944,
+     30.2668314
+    ]
+   },
+   "properties": {
+    "name": "建国北路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1677349,
+     30.2669589
+    ]
+   },
+   "properties": {
+    "name": "中河北路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2001951,
+     30.2052384
+    ]
+   },
+   "properties": {
+    "name": "江汉路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1899808,
+     30.1998126
+    ]
+   },
+   "properties": {
+    "name": "长河",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2193267,
+     30.2156665
+    ]
+   },
+   "properties": {
+    "name": "星民",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.228309,
+     30.2259998
+    ]
+   },
+   "properties": {
+    "name": "奥体中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2320549,
+     30.2350431
+    ]
+   },
+   "properties": {
+    "name": "博览中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2387733,
+     30.2427619
+    ]
+   },
+   "properties": {
+    "name": "钱江世纪城",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.175761,
+     30.1935335
+    ]
+   },
+   "properties": {
+    "name": "建业路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1651059,
+     30.1889662
+    ]
+   },
+   "properties": {
+    "name": "诚业路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1543935,
+     30.1847313
+    ]
+   },
+   "properties": {
+    "name": "伟业路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1417198,
+     30.1781005
+    ]
+   },
+   "properties": {
+    "name": "中医药大学",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2454283,
+     30.2520605
+    ]
+   },
+   "properties": {
+    "name": "丰北",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1323544,
+     30.1708852
+    ]
+   },
+   "properties": {
+    "name": "西浦路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1046124,
+     30.1608907
+    ]
+   },
+   "properties": {
+    "name": "之江文化中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.093909,
+     30.1574177
+    ]
+   },
+   "properties": {
+    "name": "枫桦西路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0760462,
+     30.1534402
+    ]
+   },
+   "properties": {
+    "name": "美院象山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0682921,
+     30.1450424
+    ]
+   },
+   "properties": {
+    "name": "霞鸣街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1939177,
+     30.1849298
+    ]
+   },
+   "properties": {
+    "name": "聚才路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2065567,
+     30.1840364
+    ]
+   },
+   "properties": {
+    "name": "江晖路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2478669,
+     30.239387
+    ]
+   },
+   "properties": {
+    "name": "盈丰路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2588453,
+     30.2333162
+    ]
+   },
+   "properties": {
+    "name": "飞虹路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2645199,
+     30.2211989
+    ]
+   },
+   "properties": {
+    "name": "振宁路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2638303,
+     30.2069099
+    ]
+   },
+   "properties": {
+    "name": "建设三路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2619832,
+     30.1965097
+    ]
+   },
+   "properties": {
+    "name": "建设一路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2625341,
+     30.1836501
+    ]
+   },
+   "properties": {
+    "name": "人民广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2489232,
+     30.1842934
+    ]
+   },
+   "properties": {
+    "name": "金鸡路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2396125,
+     30.1848531
+    ]
+   },
+   "properties": {
+    "name": "博奥路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1591946,
+     30.2127997
+    ]
+   },
+   "properties": {
+    "name": "复兴路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1474277,
+     30.2063431
+    ]
+   },
+   "properties": {
+    "name": "水澄桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1472278,
+     30.1885898
+    ]
+   },
+   "properties": {
+    "name": "联庄",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.144112,
+     30.1701531
+    ]
+   },
+   "properties": {
+    "name": "杨家墩",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.149031,
+     30.1611272
+    ]
+   },
+   "properties": {
+    "name": "浦沿",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2623297,
+     30.1730439
+    ]
+   },
+   "properties": {
+    "name": "杭发厂",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2630329,
+     30.1613679
+    ]
+   },
+   "properties": {
+    "name": "人民路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.263294,
+     30.1509428
+    ]
+   },
+   "properties": {
+    "name": "潘水",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2730356,
+     30.1833071
+    ]
+   },
+   "properties": {
+    "name": "育才北路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2806399,
+     30.1831126
+    ]
+   },
+   "properties": {
+    "name": "通惠中路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3044997,
+     30.1755184
+    ]
+   },
+   "properties": {
+    "name": "双桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3259406,
+     30.1782381
+    ]
+   },
+   "properties": {
+    "name": "姑娘桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2240839,
+     30.2687812
+    ]
+   },
+   "properties": {
+    "name": "三堡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2160213,
+     30.2865272
+    ]
+   },
+   "properties": {
+    "name": "元宝塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2117649,
+     30.2961749
+    ]
+   },
+   "properties": {
+    "name": "火车东站（东广场）",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1999521,
+     30.2600336
+    ]
+   },
+   "properties": {
+    "name": "庆春广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1884346,
+     30.2600544
+    ]
+   },
+   "properties": {
+    "name": "庆菱路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1620458,
+     30.2931534
+    ]
+   },
+   "properties": {
+    "name": "浙江工业大学",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0229274,
+     30.2214596
+    ]
+   },
+   "properties": {
+    "name": "浙江科技大学（小和山校区）",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1557081,
+     30.2287408
+    ]
+   },
+   "properties": {
+    "name": "万松书院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1517443,
+     30.333523
+    ]
+   },
+   "properties": {
+    "name": "浙江大学工程师学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0103999,
+     30.2943313
+    ]
+   },
+   "properties": {
+    "name": "杭州国际城市学研究中心",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.006464,
+     30.2901346
+    ]
+   },
+   "properties": {
+    "name": "国际教育学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0091871,
+     30.2910353
+    ]
+   },
+   "properties": {
+    "name": "阿里巴巴商学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0089867,
+     30.2919338
+    ]
+   },
+   "properties": {
+    "name": "城市研究所",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3430231,
+     30.3060293
+    ]
+   },
+   "properties": {
+    "name": "下沙棋院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0790162,
+     30.3042094
+    ]
+   },
+   "properties": {
+    "name": "建筑工程学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3462646,
+     30.3156917
+    ]
+   },
+   "properties": {
+    "name": "理学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3453072,
+     30.3145105
+    ]
+   },
+   "properties": {
+    "name": "化学与化工学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0317581,
+     30.2272962
+    ]
+   },
+   "properties": {
+    "name": "社会科学研究院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.03231,
+     30.2263797
+    ]
+   },
+   "properties": {
+    "name": "外国语学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0270758,
+     30.2237622
+    ]
+   },
+   "properties": {
+    "name": "人文学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0437964,
+     30.2347057
+    ]
+   },
+   "properties": {
+    "name": "设计与建筑学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0265499,
+     30.2244557
+    ]
+   },
+   "properties": {
+    "name": "法学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0274336,
+     30.2250586
+    ]
+   },
+   "properties": {
+    "name": "公共管理学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0277901,
+     30.2250666
+    ]
+   },
+   "properties": {
+    "name": "马克思主义学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.042017,
+     30.23549
+    ]
+   },
+   "properties": {
+    "name": "机械工程学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0318924,
+     30.2272894
+    ]
+   },
+   "properties": {
+    "name": "国际学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0429736,
+     30.2339437
+    ]
+   },
+   "properties": {
+    "name": "信息工程学院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1440947,
+     30.2869656
+    ]
+   },
+   "properties": {
+    "name": "浙江省新华医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1767691,
+     30.24884
+    ]
+   },
+   "properties": {
+    "name": "浙医一院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2756974,
+     30.1696675
+    ]
+   },
+   "properties": {
+    "name": "萧山区中医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.342494,
+     30.3214258
+    ]
+   },
+   "properties": {
+    "name": "浙江传媒学院卫生所",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.147105,
+     30.1658515
+    ]
+   },
+   "properties": {
+    "name": "浦沿卫生院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1443478,
+     30.1712802
+    ]
+   },
+   "properties": {
+    "name": "滨江诚铭门诊",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2712931,
+     30.1583422
+    ]
+   },
+   "properties": {
+    "name": "城厢街道卫生院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1567019,
+     30.2870064
+    ]
+   },
+   "properties": {
+    "name": "朝晖街道社区卫生服务中心",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3395267,
+     30.3178853
+    ]
+   },
+   "properties": {
+    "name": "杭州电子科技大学校医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0035581,
+     30.2917762
+    ]
+   },
+   "properties": {
+    "name": "附属医院仓前校区卫生所",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1935452,
+     30.2801752
+    ]
+   },
+   "properties": {
+    "name": "仁馨老年病医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3392244,
+     30.3998203
+    ]
+   },
+   "properties": {
+    "name": "许巷社区卫生服务中心",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2007197,
+     30.3005696
+    ]
+   },
+   "properties": {
+    "name": "杭州长卫医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1156493,
+     30.2750661
+    ]
+   },
+   "properties": {
+    "name": "杭州华研白癜风医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1051822,
+     30.3033656
+    ]
+   },
+   "properties": {
+    "name": "浙江省口腔医院城西分院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1766534,
+     30.2724106
+    ]
+   },
+   "properties": {
+    "name": "杭州江城骨科医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0837191,
+     30.3115569
+    ]
+   },
+   "properties": {
+    "name": "紫金港校医院",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1979703,
+     30.2588474
+    ]
+   },
+   "properties": {
+    "name": "浙江大学医学院附属邵逸夫医院（庆春院区）",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1696389,
+     30.1936285
+    ]
+   },
+   "properties": {
+    "name": "浙江大学医学院附属儿童医院滨江院区",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1612286,
+     30.2546086
+    ]
+   },
+   "properties": {
+    "name": "浙江省中医院（湖滨院区）",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1934896,
+     30.2038326
+    ]
+   },
+   "properties": {
+    "name": "浙江大学医学院附属第二医院滨江院区",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.17473,
+     30.1939076
+    ]
+   },
+   "properties": {
+    "name": "浙江省血液中心",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1120667,
+     30.2755377
+    ]
+   },
+   "properties": {
+    "name": "古荡小商品市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2472574,
+     30.184937
+    ]
+   },
+   "properties": {
+    "name": "lse城市生活广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1693556,
+     30.3105339
+    ]
+   },
+   "properties": {
+    "name": "国美电器",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1570153,
+     30.2880459
+    ]
+   },
+   "properties": {
+    "name": "来伊份",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0394647,
+     30.2325928
+    ]
+   },
+   "properties": {
+    "name": "浙江工业大学家人超市（东15店）",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.122232,
+     30.2715279
+    ]
+   },
+   "properties": {
+    "name": "瑶瑶果蔬超市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9954585,
+     30.2834199
+    ]
+   },
+   "properties": {
+    "name": "欧美广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2025425,
+     30.2129572
+    ]
+   },
+   "properties": {
+    "name": "华联星光大道",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2753857,
+     30.3100873
+    ]
+   },
+   "properties": {
+    "name": "东城农贸市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1877065,
+     30.2878292
+    ]
+   },
+   "properties": {
+    "name": "衣之家城市广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1511119,
+     30.2800906
+    ]
+   },
+   "properties": {
+    "name": "苏宁生活广场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0995837,
+     30.2870088
+    ]
+   },
+   "properties": {
+    "name": "竞舟农贸市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1091002,
+     30.2815277
+    ]
+   },
+   "properties": {
+    "name": "嘉绿苑农贸市场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1232246,
+     30.2615491
+    ]
+   },
+   "properties": {
+    "name": "东山弄市集",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1599794,
+     30.2570658
+    ]
+   },
+   "properties": {
+    "name": "工联CC",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1600676,
+     30.2545563
+    ]
+   },
+   "properties": {
+    "name": "湖滨银泰in77 C2区",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2109675,
+     30.2541658
+    ]
+   },
+   "properties": {
+    "name": "万象城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1553837,
+     30.2892515
+    ]
+   },
+   "properties": {
+    "name": "53幢",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0357958,
+     30.286307
+    ]
+   },
+   "properties": {
+    "name": "北大资源·博雅城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.16016,
+     30.2520864
+    ]
+   },
+   "properties": {
+    "name": "解放路百货商店",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1610813,
+     30.252142
+    ]
+   },
+   "properties": {
+    "name": "解百新世纪",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1396874,
+     30.3213293
+    ]
+   },
+   "properties": {
+    "name": "运河上街",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1470314,
+     30.3069082
+    ]
+   },
+   "properties": {
+    "name": "水晶城购物中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3431086,
+     30.3113809
+    ]
+   },
+   "properties": {
+    "name": "和达城商场",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1991917,
+     30.2033525
+    ]
+   },
+   "properties": {
+    "name": "龙湖杭州滨江天街",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1606763,
+     30.2574771
+    ]
+   },
+   "properties": {
+    "name": "工联CC二期",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3312449,
+     30.3110422
+    ]
+   },
+   "properties": {
+    "name": "金沙印象城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1559511,
+     30.3334562
+    ]
+   },
+   "properties": {
+    "name": "太阳城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1589761,
+     30.2534488
+    ]
+   },
+   "properties": {
+    "name": "湖滨银泰in77 E区",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0445974,
+     30.2495087
+    ]
+   },
+   "properties": {
+    "name": "西溪印象城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1662607,
+     30.2426088
+    ]
+   },
+   "properties": {
+    "name": "四拐角",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1232066,
+     30.2552608
+    ]
+   },
+   "properties": {
+    "name": "植物园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1602582,
+     30.2376386
+    ]
+   },
+   "properties": {
+    "name": "十二生肖石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1615457,
+     30.2351977
+    ]
+   },
+   "properties": {
+    "name": "江湖汇观亭",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1354984,
+     30.252792
+    ]
+   },
+   "properties": {
+    "name": "西泠印社",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0967987,
+     30.2427953
+    ]
+   },
+   "properties": {
+    "name": "灵隐寺",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1529085,
+     30.2610806
+    ]
+   },
+   "properties": {
+    "name": "马可波罗像",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1557357,
+     30.2560855
+    ]
+   },
+   "properties": {
+    "name": "西湖音乐喷泉",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1397779,
+     30.2394753
+    ]
+   },
+   "properties": {
+    "name": "三潭印月",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9829827,
+     30.2965612
+    ]
+   },
+   "properties": {
+    "name": "仓前",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0159049,
+     30.1922452
+    ]
+   },
+   "properties": {
+    "name": "白龙潭景区",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0081429,
+     30.1967584
+    ]
+   },
+   "properties": {
+    "name": "下白泷",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1286926,
+     30.2156952
+    ]
+   },
+   "properties": {
+    "name": "小火车乐园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1285728,
+     30.2163645
+    ]
+   },
+   "properties": {
+    "name": "海狮训练馆",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1283156,
+     30.2148985
+    ]
+   },
+   "properties": {
+    "name": "猴房",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.129118,
+     30.251296
+    ]
+   },
+   "properties": {
+    "name": "曲院",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.13591,
+     30.253632
+    ]
+   },
+   "properties": {
+    "name": "中山公园",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1502965,
+     30.2358002
+    ]
+   },
+   "properties": {
+    "name": "长桥",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1275924,
+     30.245895
+    ]
+   },
+   "properties": {
+    "name": "郭庄",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9803946,
+     30.1509689
+    ]
+   },
+   "properties": {
+    "name": "火烈鸟",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9800929,
+     30.1544687
+    ]
+   },
+   "properties": {
+    "name": "犀牛",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9801479,
+     30.1589702
+    ]
+   },
+   "properties": {
+    "name": "白虎",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9814119,
+     30.1593749
+    ]
+   },
+   "properties": {
+    "name": "野马",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9821307,
+     30.1596369
+    ]
+   },
+   "properties": {
+    "name": "野驴",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9828321,
+     30.1600034
+    ]
+   },
+   "properties": {
+    "name": "非洲狮",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9844206,
+     30.1602503
+    ]
+   },
+   "properties": {
+    "name": "东北虎",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2760184,
+     30.1547049
+    ]
+   },
+   "properties": {
+    "name": "萧山区广播电视中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2619294,
+     30.189732
+    ]
+   },
+   "properties": {
+    "name": "萧山区税务局",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.082275,
+     30.2049631
+    ]
+   },
+   "properties": {
+    "name": "杭州市西湖街道梅家坞村民委员会",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2059078,
+     30.2495421
+    ]
+   },
+   "properties": {
+    "name": "杭州市旅游委员会",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2059254,
+     30.2485833
+    ]
+   },
+   "properties": {
+    "name": "杭州市人民政府",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1729857,
+     30.2404431
+    ]
+   },
+   "properties": {
+    "name": "上城区地方税务局",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1937019,
+     30.2323667
+    ]
+   },
+   "properties": {
+    "name": "Immigration - Hangzhou Entry Exit Office",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1770973,
+     30.262968
+    ]
+   },
+   "properties": {
+    "name": "潮鸣街道办事处",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1210596,
+     30.2738057
+    ]
+   },
+   "properties": {
+    "name": "浙江省公安厅车辆牌证制作中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1190275,
+     30.249454
+    ]
+   },
+   "properties": {
+    "name": "杭州西湖风景名胜区管理委员会",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2322659,
+     30.2277746
+    ]
+   },
+   "properties": {
+    "name": "杭州亚运总指挥部",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1459052,
+     30.2805138
+    ]
+   },
+   "properties": {
+    "name": "杭州国际旅行卫生保健中心",
+    "category": "government",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1506043,
+     30.2721085
+    ]
+   },
+   "properties": {
+    "name": "武林门",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1348377,
+     30.2855683
+    ]
+   },
+   "properties": {
+    "name": "下宁桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1246616,
+     30.2850547
+    ]
+   },
+   "properties": {
+    "name": "学院路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1129204,
+     30.2844514
+    ]
+   },
+   "properties": {
+    "name": "古翠路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1046046,
+     30.2842335
+    ]
+   },
+   "properties": {
+    "name": "丰潭路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0933601,
+     30.2915173
+    ]
+   },
+   "properties": {
+    "name": "文新",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.093163,
+     30.3016848
+    ]
+   },
+   "properties": {
+    "name": "三坝",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0915258,
+     30.311746
+    ]
+   },
+   "properties": {
+    "name": "虾龙圩",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0882043,
+     30.3224872
+    ]
+   },
+   "properties": {
+    "name": "三墩",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.082801,
+     30.3339989
+    ]
+   },
+   "properties": {
+    "name": "墩祥街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2926585,
+     30.1750716
+    ]
+   },
+   "properties": {
+    "name": "火车南站",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.218251,
+     30.2782311
+    ]
+   },
+   "properties": {
+    "name": "昙花庵路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1821445,
+     30.2453541
+    ]
+   },
+   "properties": {
+    "name": "莫邪塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1596174,
+     30.2421418
+    ]
+   },
+   "properties": {
+    "name": "吴山广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1968808,
+     30.2495165
+    ]
+   },
+   "properties": {
+    "name": "观音塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2046749,
+     30.2522717
+    ]
+   },
+   "properties": {
+    "name": "新业路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1451876,
+     30.280759
+    ]
+   },
+   "properties": {
+    "name": "沈塘桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1156738,
+     30.3118905
+    ]
+   },
+   "properties": {
+    "name": "和睦",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0852215,
+     30.2644524
+    ]
+   },
+   "properties": {
+    "name": "东岳",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0720387,
+     30.2630675
+    ]
+   },
+   "properties": {
+    "name": "花坞",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0565215,
+     30.2560059
+    ]
+   },
+   "properties": {
+    "name": "西溪湿地南",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0455531,
+     30.2506099
+    ]
+   },
+   "properties": {
+    "name": "洪园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0292252,
+     30.2467747
+    ]
+   },
+   "properties": {
+    "name": "联胜路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0146671,
+     30.2453095
+    ]
+   },
+   "properties": {
+    "name": "高教路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0033457,
+     30.2492795
+    ]
+   },
+   "properties": {
+    "name": "全丰",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9874792,
+     30.2626176
+    ]
+   },
+   "properties": {
+    "name": "绿汀路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0970596,
+     30.2675181
+    ]
+   },
+   "properties": {
+    "name": "古墩路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.107954,
+     30.272791
+    ]
+   },
+   "properties": {
+    "name": "古荡新村",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0472665,
+     30.2434487
+    ]
+   },
+   "properties": {
+    "name": "留下",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0327177,
+     30.225381
+    ]
+   },
+   "properties": {
+    "name": "屏峰",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0163454,
+     30.2142712
+    ]
+   },
+   "properties": {
+    "name": "小和山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0061415,
+     30.2091791
+    ]
+   },
+   "properties": {
+    "name": "石马",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1251382,
+     30.2704319
+    ]
+   },
+   "properties": {
+    "name": "黄龙体育中心",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1174233,
+     30.2731976
+    ]
+   },
+   "properties": {
+    "name": "古荡",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1359399,
+     30.2677132
+    ]
+   },
+   "properties": {
+    "name": "黄龙洞",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1544091,
+     30.2917478
+    ]
+   },
+   "properties": {
+    "name": "潮王路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1597122,
+     30.2748095
+    ]
+   },
+   "properties": {
+    "name": "武林广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1241044,
+     30.2927099
+    ]
+   },
+   "properties": {
+    "name": "翠柏路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1249316,
+     30.3057255
+    ]
+   },
+   "properties": {
+    "name": "北大桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2171554,
+     30.2635827
+    ]
+   },
+   "properties": {
+    "name": "江河汇",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2664757,
+     30.3064797
+    ]
+   },
+   "properties": {
+    "name": "九睦路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1108515,
+     30.3272491
+    ]
+   },
+   "properties": {
+    "name": "渡驾桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1116593,
+     30.3391586
+    ]
+   },
+   "properties": {
+    "name": "祥园路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1096725,
+     30.3559137
+    ]
+   },
+   "properties": {
+    "name": "杭行路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1093771,
+     30.366751
+    ]
+   },
+   "properties": {
+    "name": "金德路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1090263,
+     30.3804428
+    ]
+   },
+   "properties": {
+    "name": "逸盛路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1069549,
+     30.3192948
+    ]
+   },
+   "properties": {
+    "name": "花园岗",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0679035,
+     30.3536511
+    ]
+   },
+   "properties": {
+    "name": "白洋",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0516224,
+     30.3612588
+    ]
+   },
+   "properties": {
+    "name": "杜甫村",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0374068,
+     30.3612957
+    ]
+   },
+   "properties": {
+    "name": "良渚",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0720629,
+     30.2963793
+    ]
+   },
+   "properties": {
+    "name": "浙大紫金港",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0637523,
+     30.2970796
+    ]
+   },
+   "properties": {
+    "name": "蒋村",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0402719,
+     30.2987796
+    ]
+   },
+   "properties": {
+    "name": "五常",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0216404,
+     30.2937117
+    ]
+   },
+   "properties": {
+    "name": "永福",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.012552,
+     30.2910053
+    ]
+   },
+   "properties": {
+    "name": "杭师大仓前",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0025181,
+     30.2880786
+    ]
+   },
+   "properties": {
+    "name": "良睦路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9939983,
+     30.2728682
+    ]
+   },
+   "properties": {
+    "name": "葛巷",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1269728,
+     30.3216044
+    ]
+   },
+   "properties": {
+    "name": "大运河",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1433302,
+     30.3193983
+    ]
+   },
+   "properties": {
+    "name": "拱宸桥东",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.154998,
+     30.318704
+    ]
+   },
+   "properties": {
+    "name": "善贤",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1655195,
+     30.3183805
+    ]
+   },
+   "properties": {
+    "name": "西文街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1711631,
+     30.3105822
+    ]
+   },
+   "properties": {
+    "name": "东新园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1742907,
+     30.2963514
+    ]
+   },
+   "properties": {
+    "name": "杭氧",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2979742,
+     30.3975217
+    ]
+   },
+   "properties": {
+    "name": "南苑",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9840479,
+     30.1421059
+    ]
+   },
+   "properties": {
+    "name": "银湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9967609,
+     30.1491909
+    ]
+   },
+   "properties": {
+    "name": "野生动物园东",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0340092,
+     30.1495342
+    ]
+   },
+   "properties": {
+    "name": "中村",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0537029,
+     30.1499343
+    ]
+   },
+   "properties": {
+    "name": "音乐学院",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1076999,
+     30.3051056
+    ]
+   },
+   "properties": {
+    "name": "萍水街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1750984,
+     30.323584
+    ]
+   },
+   "properties": {
+    "name": "新天地街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1445459,
+     30.3103298
+    ]
+   },
+   "properties": {
+    "name": "大关",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1439815,
+     30.3024692
+    ]
+   },
+   "properties": {
+    "name": "香积寺",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3384152,
+     30.2003797
+    ]
+   },
+   "properties": {
+    "name": "合欢路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9985069,
+     30.2632628
+    ]
+   },
+   "properties": {
+    "name": "创明路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1836845,
+     30.3372383
+    ]
+   },
+   "properties": {
+    "name": "汽轮广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1980357,
+     30.3424152
+    ]
+   },
+   "properties": {
+    "name": "华丰路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2167754,
+     30.3538632
+    ]
+   },
+   "properties": {
+    "name": "桃花湖公园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2296148,
+     30.3580497
+    ]
+   },
+   "properties": {
+    "name": "丁桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2335531,
+     30.3731373
+    ]
+   },
+   "properties": {
+    "name": "华鹤街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2419545,
+     30.3834043
+    ]
+   },
+   "properties": {
+    "name": "黄鹤山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2073036,
+     30.3468286
+    ]
+   },
+   "properties": {
+    "name": "同协路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2577974,
+     30.3913613
+    ]
+   },
+   "properties": {
+    "name": "星桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3262667,
+     30.2017903
+    ]
+   },
+   "properties": {
+    "name": "新街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3021645,
+     30.2054511
+    ]
+   },
+   "properties": {
+    "name": "新汉路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2891111,
+     30.2074732
+    ]
+   },
+   "properties": {
+    "name": "新兴路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.244567,
+     30.2071721
+    ]
+   },
+   "properties": {
+    "name": "明星路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2338842,
+     30.2143484
+    ]
+   },
+   "properties": {
+    "name": "兴议",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.3314419,
+     30.2306369
+    ]
+   },
+   "properties": {
+    "name": "知行路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2973513,
+     30.2424204
+    ]
+   },
+   "properties": {
+    "name": "耕文路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2541529,
+     30.2624961
+    ]
+   },
+   "properties": {
+    "name": "平澜路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9818938,
+     30.3005025
+    ]
+   },
+   "properties": {
+    "name": "火车西站",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1937607,
+     30.3004913
+    ]
+   },
+   "properties": {
+    "name": "驿城路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0941795,
+     30.2780116
+    ]
+   },
+   "properties": {
+    "name": "五联",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.038477,
+     30.2888502
+    ]
+   },
+   "properties": {
+    "name": "荆长路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0871523,
+     30.1610715
+    ]
+   },
+   "properties": {
+    "name": "丽景路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0683932,
+     30.1696931
+    ]
+   },
+   "properties": {
+    "name": "庙山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0548796,
+     30.1834999
+    ]
+   },
+   "properties": {
+    "name": "叶埠桥路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0438589,
+     30.1873714
+    ]
+   },
+   "properties": {
+    "name": "龙坞",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0331424,
+     30.191447
+    ]
+   },
+   "properties": {
+    "name": "慈母桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.9973742,
+     30.3031816
+    ]
+   },
+   "properties": {
+    "name": "站北路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0306528,
+     30.3298053
+    ]
+   },
+   "properties": {
+    "name": "西湖大学",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0425215,
+     30.3315765
+    ]
+   },
+   "properties": {
+    "name": "山联",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0280784,
+     30.3209843
+    ]
+   },
+   "properties": {
+    "name": "云谷",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0992558,
+     30.396711
+    ]
+   },
+   "properties": {
+    "name": "双陈",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1751518,
+     30.2743753
+    ]
+   },
+   "properties": {
+    "name": "宝善桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0510065,
+     30.3256097
+    ]
+   },
+   "properties": {
+    "name": "五幸",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2785322,
+     30.3808877
+    ]
+   },
+   "properties": {
+    "name": "文正街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2731622,
+     30.3317818
+    ]
+   },
+   "properties": {
+    "name": "丰收湖",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.270234,
+     30.3626131
+    ]
+   },
+   "properties": {
+    "name": "永玄路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2553845,
+     30.3202074
+    ]
+   },
+   "properties": {
+    "name": "九昌路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1866652,
+     30.2700882
+    ]
+   },
+   "properties": {
+    "name": "浙大华家池",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1960562,
+     30.16493
+    ]
+   },
+   "properties": {
+    "name": "江南科学城",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1804288,
+     30.1456874
+    ]
+   },
+   "properties": {
+    "name": "湘滨路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1774875,
+     30.2833534
+    ]
+   },
+   "properties": {
+    "name": "艮山门",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1678478,
+     30.2956436
+    ]
+   },
+   "properties": {
+    "name": "和平广场",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1569386,
+     30.3074476
+    ]
+   },
+   "properties": {
+    "name": "三塘",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1479314,
+     30.320941
+    ]
+   },
+   "properties": {
+    "name": "七古登",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1438282,
+     30.3394087
+    ]
+   },
+   "properties": {
+    "name": "瓜山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1424167,
+     30.3468903
+    ]
+   },
+   "properties": {
+    "name": "候圣街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1481355,
+     30.3274967
+    ]
+   },
+   "properties": {
+    "name": "蔡马",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.140881,
+     30.3708433
+    ]
+   },
+   "properties": {
+    "name": "康桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1399825,
+     30.3786088
+    ]
+   },
+   "properties": {
+    "name": "蒋家浜",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1449649,
+     30.3848413
+    ]
+   },
+   "properties": {
+    "name": "沾驾桥",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1582182,
+     30.3849955
+    ]
+   },
+   "properties": {
+    "name": "崇杭街",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1729634,
+     30.385816
+    ]
+   },
+   "properties": {
+    "name": "崇贤",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2441925,
+     30.2251436
+    ]
+   },
+   "properties": {
+    "name": "合丰",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2447212,
+     30.2168656
+    ]
+   },
+   "properties": {
+    "name": "丰二",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2447955,
+     30.1981814
+    ]
+   },
+   "properties": {
+    "name": "建设一路西",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2455688,
+     30.163969
+    ]
+   },
+   "properties": {
+    "name": "西山公园",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2491049,
+     30.1778366
+    ]
+   },
+   "properties": {
+    "name": "五七路口",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.2463601,
+     30.1460533
+    ]
+   },
+   "properties": {
+    "name": "南秀路",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0159692,
+     30.2328275
+    ]
+   },
+   "properties": {
+    "name": "黄泥坞",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0149807,
+     30.256922
+    ]
+   },
+   "properties": {
+    "name": "水乡南",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.0184222,
+     30.273417
+    ]
+   },
+   "properties": {
+    "name": "水乡北",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1507869,
+     30.1505426
+    ]
+   },
+   "properties": {
+    "name": "浦联",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.1538592,
+     30.1425513
+    ]
+   },
+   "properties": {
+    "name": "黄山",
+    "category": "transit",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.1090263,
+      30.3804428
+     ],
+     [
+      120.1093771,
+      30.366751
+     ],
+     [
+      120.1096725,
+      30.3559137
+     ],
+     [
+      120.1116593,
+      30.3391586
+     ],
+     [
+      120.1108515,
+      30.3272491
+     ],
+     [
+      120.1069549,
+      30.3192948
+     ],
+     [
+      120.1156738,
+      30.3118905
+     ],
+     [
+      120.1249316,
+      30.3057255
+     ],
+     [
+      120.1241044,
+      30.2927099
+     ],
+     [
+      120.1246616,
+      30.2850547
+     ],
+     [
+      120.1242634,
+      30.2792025
+     ],
+     [
+      120.1251382,
+      30.2704319
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "10号线",
+    "color": "#DAA520",
+    "stops": [
+     "逸盛路",
+     "金德路",
+     "杭行路",
+     "祥园路",
+     "渡驾桥",
+     "花园岗",
+     "和睦",
+     "北大桥",
+     "翠柏路",
+     "学院路",
+     "文三路",
+     "黄龙体育中心"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.3314419,
+      30.2306369
+     ],
+     [
+      120.2973513,
+      30.2424204
+     ],
+     [
+      120.2541529,
+      30.2624961
+     ],
+     [
+      120.2316778,
+      30.2764192
+     ],
+     [
+      120.2117649,
+      30.2961749
+     ],
+     [
+      120.1937607,
+      30.3004913
+     ],
+     [
+      120.1609282,
+      30.2819552
+     ],
+     [
+      120.1451876,
+      30.280759
+     ],
+     [
+      120.1242634,
+      30.2792025
+     ],
+     [
+      120.0941795,
+      30.2780116
+     ],
+     [
+      120.0653403,
+      30.2839817
+     ],
+     [
+      120.038477,
+      30.2888502
+     ],
+     [
+      120.0155594,
+      30.2827324
+     ],
+     [
+      119.9940461,
+      30.2801424
+     ],
+     [
+      119.9818938,
+      30.3005025
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "19号线",
+    "color": "#05C3DE",
+    "stops": [
+     "知行路",
+     "耕文路",
+     "平澜路",
+     "御道",
+     "火车东站（东广场）",
+     "驿城路",
+     "西湖文化广场",
+     "沈塘桥",
+     "文三路",
+     "五联",
+     "西溪湿地北",
+     "荆长路",
+     "海创园",
+     "创景路",
+     "火车西站"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.2300465,
+      30.1701799
+     ],
+     [
+      120.2266894,
+      30.1861935
+     ],
+     [
+      120.2161808,
+      30.1898083
+     ],
+     [
+      120.2131709,
+      30.201925
+     ],
+     [
+      120.2121281,
+      30.211593
+     ],
+     [
+      120.1932999,
+      30.2331479
+     ],
+     [
+      120.1862594,
+      30.2394354
+     ],
+     [
+      120.1762087,
+      30.2470314
+     ],
+     [
+      120.1633118,
+      30.2482811
+     ],
+     [
+      120.159392,
+      30.2571141
+     ],
+     [
+      120.1590076,
+      30.2654688
+     ],
+     [
+      120.1597122,
+      30.2748095
+     ],
+     [
+      120.1609282,
+      30.2819552
+     ],
+     [
+      120.172257,
+      30.2885412
+     ],
+     [
+      120.1878158,
+      30.2868712
+     ],
+     [
+      120.2191052,
+      30.2964728
+     ],
+     [
+      120.2360891,
+      30.3023126
+     ],
+     [
+      120.2487181,
+      30.3083641
+     ],
+     [
+      120.2617969,
+      30.3102441
+     ],
+     [
+      120.2740689,
+      30.3134337
+     ],
+     [
+      120.30789,
+      30.3122484
+     ],
+     [
+      120.3210782,
+      30.3116262
+     ],
+     [
+      120.3308325,
+      30.3117612
+     ],
+     [
+      120.3437723,
+      30.3123438
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "1号线",
+    "color": "#df4661",
+    "stops": [
+     "湘湖",
+     "滨康路",
+     "西兴",
+     "滨和路",
+     "江陵路",
+     "近江",
+     "婺江路",
+     "城站",
+     "定安路",
+     "龙翔桥",
+     "凤起路",
+     "武林广场",
+     "西湖文化广场",
+     "打铁关",
+     "闸弄口",
+     "彭埠",
+     "七堡",
+     "九和路",
+     "九堡",
+     "客运中心",
+     "下沙西",
+     "金沙湖",
+     "高沙路",
+     "文泽路"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.263294,
+      30.1509428
+     ],
+     [
+      120.2630329,
+      30.1613679
+     ],
+     [
+      120.2623297,
+      30.1730439
+     ],
+     [
+      120.2625341,
+      30.1836501
+     ],
+     [
+      120.2619832,
+      30.1965097
+     ],
+     [
+      120.2638303,
+      30.2069099
+     ],
+     [
+      120.2645199,
+      30.2211989
+     ],
+     [
+      120.2588453,
+      30.2333162
+     ],
+     [
+      120.2478669,
+      30.239387
+     ],
+     [
+      120.2387733,
+      30.2427619
+     ],
+     [
+      120.2082401,
+      30.2580532
+     ],
+     [
+      120.1999521,
+      30.2600336
+     ],
+     [
+      120.1884346,
+      30.2600544
+     ],
+     [
+      120.1768944,
+      30.2668314
+     ],
+     [
+      120.1677349,
+      30.2669589
+     ],
+     [
+      120.1590076,
+      30.2654688
+     ],
+     [
+      120.1506043,
+      30.2721085
+     ],
+     [
+      120.1451876,
+      30.280759
+     ],
+     [
+      120.1348377,
+      30.2855683
+     ],
+     [
+      120.1246616,
+      30.2850547
+     ],
+     [
+      120.1129204,
+      30.2844514
+     ],
+     [
+      120.1046046,
+      30.2842335
+     ],
+     [
+      120.0933601,
+      30.2915173
+     ],
+     [
+      120.093163,
+      30.3016848
+     ],
+     [
+      120.0915258,
+      30.311746
+     ],
+     [
+      120.0882043,
+      30.3224872
+     ],
+     [
+      120.082801,
+      30.3339989
+     ],
+     [
+      120.0784318,
+      30.3411616
+     ],
+     [
+      120.0679035,
+      30.3536511
+     ],
+     [
+      120.0516224,
+      30.3612588
+     ],
+     [
+      120.0374068,
+      30.3612957
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "2号线",
+    "color": "#ff7300",
+    "stops": [
+     "潘水",
+     "人民路",
+     "杭发厂",
+     "人民广场",
+     "建设一路",
+     "建设三路",
+     "振宁路",
+     "飞虹路",
+     "盈丰路",
+     "钱江世纪城",
+     "钱江路",
+     "庆春广场",
+     "庆菱路",
+     "建国北路",
+     "中河北路",
+     "凤起路",
+     "武林门",
+     "沈塘桥",
+     "下宁桥",
+     "学院路",
+     "古翠路",
+     "丰潭路",
+     "文新",
+     "三坝",
+     "虾龙圩",
+     "三墩",
+     "墩祥街",
+     "金家渡",
+     "白洋",
+     "杜甫村",
+     "良渚"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.2577974,
+      30.3913613
+     ],
+     [
+      120.2419545,
+      30.3834043
+     ],
+     [
+      120.2335531,
+      30.3731373
+     ],
+     [
+      120.2296148,
+      30.3580497
+     ],
+     [
+      120.2167754,
+      30.3538632
+     ],
+     [
+      120.2073036,
+      30.3468286
+     ],
+     [
+      120.1980357,
+      30.3424152
+     ],
+     [
+      120.1836845,
+      30.3372383
+     ],
+     [
+      120.1750984,
+      30.323584
+     ],
+     [
+      120.154998,
+      30.318704
+     ],
+     [
+      120.1445459,
+      30.3103298
+     ],
+     [
+      120.1439815,
+      30.3024692
+     ],
+     [
+      120.1544091,
+      30.2917478
+     ],
+     [
+      120.1609282,
+      30.2819552
+     ],
+     [
+      120.1597122,
+      30.2748095
+     ],
+     [
+      120.1506043,
+      30.2721085
+     ],
+     [
+      120.1359399,
+      30.2677132
+     ],
+     [
+      120.1251382,
+      30.2704319
+     ],
+     [
+      120.1174233,
+      30.2731976
+     ],
+     [
+      120.107954,
+      30.272791
+     ],
+     [
+      120.0970596,
+      30.2675181
+     ],
+     [
+      120.0852215,
+      30.2644524
+     ],
+     [
+      120.0720387,
+      30.2630675
+     ],
+     [
+      120.0565215,
+      30.2560059
+     ],
+     [
+      120.0455531,
+      30.2506099
+     ],
+     [
+      120.0292252,
+      30.2467747
+     ],
+     [
+      120.0146671,
+      30.2453095
+     ],
+     [
+      120.0033457,
+      30.2492795
+     ],
+     [
+      119.9874792,
+      30.2626176
+     ],
+     [
+      119.9818938,
+      30.3005025
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "3号线",
+    "color": "#FFD700",
+    "stops": [
+     "星桥",
+     "黄鹤山",
+     "华鹤街",
+     "丁桥",
+     "桃花湖公园",
+     "同协路",
+     "华丰路",
+     "汽轮广场",
+     "新天地街",
+     "善贤",
+     "大关",
+     "香积寺",
+     "潮王路",
+     "西湖文化广场",
+     "武林广场",
+     "武林门",
+     "黄龙洞",
+     "黄龙体育中心",
+     "古荡",
+     "古荡新村",
+     "古墩路",
+     "东岳",
+     "花坞",
+     "西溪湿地南",
+     "洪园",
+     "联胜路",
+     "高教路",
+     "全丰",
+     "绿汀路",
+     "火车西站"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.149031,
+      30.1611272
+     ],
+     [
+      120.144112,
+      30.1701531
+     ],
+     [
+      120.1417198,
+      30.1781005
+     ],
+     [
+      120.1472278,
+      30.1885898
+     ],
+     [
+      120.1474277,
+      30.2063431
+     ],
+     [
+      120.1591946,
+      30.2127997
+     ],
+     [
+      120.1669587,
+      30.2196083
+     ],
+     [
+      120.1860675,
+      30.2265985
+     ],
+     [
+      120.1932999,
+      30.2331479
+     ],
+     [
+      120.2021883,
+      30.2418536
+     ],
+     [
+      120.2069182,
+      30.2452181
+     ],
+     [
+      120.2109587,
+      30.2521275
+     ],
+     [
+      120.2082401,
+      30.2580532
+     ],
+     [
+      120.2031447,
+      30.2687379
+     ],
+     [
+      120.2027257,
+      30.2785564
+     ],
+     [
+      120.2033838,
+      30.289479
+     ],
+     [
+      120.2191052,
+      30.2964728
+     ],
+     [
+      120.2227596,
+      30.3059959
+     ],
+     [
+      120.2190564,
+      30.3177439
+     ],
+     [
+      120.2149383,
+      30.3254155
+     ],
+     [
+      120.1970297,
+      30.3263824
+     ],
+     [
+      120.1750984,
+      30.323584
+     ],
+     [
+      120.1673208,
+      30.3325434
+     ],
+     [
+      120.1739195,
+      30.3433099
+     ],
+     [
+      120.164536,
+      30.353389
+     ],
+     [
+      120.1404542,
+      30.3594704
+     ],
+     [
+      120.124046,
+      30.3561258
+     ],
+     [
+      120.1096725,
+      30.3559137
+     ],
+     [
+      120.0955705,
+      30.3529693
+     ],
+     [
+      120.0784318,
+      30.3411616
+     ],
+     [
+      120.0641625,
+      30.33035
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "4号线",
+    "color": "#6bc349",
+    "stops": [
+     "浦沿",
+     "杨家墩",
+     "中医药大学",
+     "联庄",
+     "水澄桥",
+     "复兴路",
+     "南星桥",
+     "甬江路",
+     "近江",
+     "城星路",
+     "市民中心",
+     "江锦路",
+     "钱江路",
+     "景芳",
+     "新塘",
+     "新风",
+     "彭埠",
+     "明石路",
+     "黎明",
+     "笕桥老街",
+     "华中南路",
+     "新天地街",
+     "皋亭坝",
+     "桃源街",
+     "吴家角港",
+     "平安桥",
+     "储运路",
+     "杭行路",
+     "好运街",
+     "金家渡",
+     "池华街"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      119.9874792,
+      30.2626176
+     ],
+     [
+      119.9939983,
+      30.2728682
+     ],
+     [
+      119.9940461,
+      30.2801424
+     ],
+     [
+      120.0025181,
+      30.2880786
+     ],
+     [
+      120.012552,
+      30.2910053
+     ],
+     [
+      120.0216404,
+      30.2937117
+     ],
+     [
+      120.0402719,
+      30.2987796
+     ],
+     [
+      120.0637523,
+      30.2970796
+     ],
+     [
+      120.0720629,
+      30.2963793
+     ],
+     [
+      120.093163,
+      30.3016848
+     ],
+     [
+      120.1076999,
+      30.3051056
+     ],
+     [
+      120.1156738,
+      30.3118905
+     ],
+     [
+      120.1269728,
+      30.3216044
+     ],
+     [
+      120.1433302,
+      30.3193983
+     ],
+     [
+      120.154998,
+      30.318704
+     ],
+     [
+      120.1655195,
+      30.3183805
+     ],
+     [
+      120.1711631,
+      30.3105822
+     ],
+     [
+      120.1742907,
+      30.2963514
+     ],
+     [
+      120.172257,
+      30.2885412
+     ],
+     [
+      120.1751518,
+      30.2743753
+     ],
+     [
+      120.1768944,
+      30.2668314
+     ],
+     [
+      120.1759164,
+      30.2565995
+     ],
+     [
+      120.1762087,
+      30.2470314
+     ],
+     [
+      120.1736037,
+      30.2407681
+     ],
+     [
+      120.1684312,
+      30.2289018
+     ],
+     [
+      120.1669587,
+      30.2196083
+     ],
+     [
+      120.1899808,
+      30.1998126
+     ],
+     [
+      120.1939177,
+      30.1849298
+     ],
+     [
+      120.2065567,
+      30.1840364
+     ],
+     [
+      120.2266894,
+      30.1861935
+     ],
+     [
+      120.2396125,
+      30.1848531
+     ],
+     [
+      120.2489232,
+      30.1842934
+     ],
+     [
+      120.2625341,
+      30.1836501
+     ],
+     [
+      120.2730356,
+      30.1833071
+     ],
+     [
+      120.2806399,
+      30.1831126
+     ],
+     [
+      120.2926585,
+      30.1750716
+     ],
+     [
+      120.3044997,
+      30.1755184
+     ],
+     [
+      120.3259406,
+      30.1782381
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "5号线",
+    "color": "#0db0c8",
+    "stops": [
+     "绿汀路",
+     "葛巷",
+     "创景路",
+     "良睦路",
+     "杭师大仓前",
+     "永福",
+     "五常",
+     "蒋村",
+     "浙大紫金港",
+     "三坝",
+     "萍水街",
+     "和睦",
+     "大运河",
+     "拱宸桥东",
+     "善贤",
+     "西文街",
+     "东新园",
+     "杭氧",
+     "打铁关",
+     "宝善桥",
+     "建国北路",
+     "万安桥",
+     "城站",
+     "江城路",
+     "侯潮门",
+     "南星桥",
+     "长河",
+     "聚才路",
+     "江晖路",
+     "滨康路",
+     "博奥路",
+     "金鸡路",
+     "人民广场",
+     "育才北路",
+     "通惠中路",
+     "火车南站",
+     "双桥",
+     "姑娘桥"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      119.9840479,
+      30.1421059
+     ],
+     [
+      119.9967609,
+      30.1491909
+     ],
+     [
+      120.0340092,
+      30.1495342
+     ],
+     [
+      120.0537029,
+      30.1499343
+     ],
+     [
+      120.0760462,
+      30.1534402
+     ],
+     [
+      120.093909,
+      30.1574177
+     ],
+     [
+      120.1046124,
+      30.1608907
+     ],
+     [
+      120.1323544,
+      30.1708852
+     ],
+     [
+      120.1417198,
+      30.1781005
+     ],
+     [
+      120.1543935,
+      30.1847313
+     ],
+     [
+      120.1651059,
+      30.1889662
+     ],
+     [
+      120.175761,
+      30.1935335
+     ],
+     [
+      120.1899808,
+      30.1998126
+     ],
+     [
+      120.2001951,
+      30.2052384
+     ],
+     [
+      120.2121281,
+      30.211593
+     ],
+     [
+      120.2193267,
+      30.2156665
+     ],
+     [
+      120.228309,
+      30.2259998
+     ],
+     [
+      120.2320549,
+      30.2350431
+     ],
+     [
+      120.2387733,
+      30.2427619
+     ],
+     [
+      120.2454283,
+      30.2520605
+     ],
+     [
+      120.2430643,
+      30.2601582
+     ],
+     [
+      120.2240839,
+      30.2687812
+     ],
+     [
+      120.218251,
+      30.2782311
+     ],
+     [
+      120.2160213,
+      30.2865272
+     ],
+     [
+      120.2117649,
+      30.2961749
+     ],
+     [
+      120.2020387,
+      30.3036802
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "6号线",
+    "color": "#0072ce",
+    "stops": [
+     "银湖",
+     "野生动物园东",
+     "中村",
+     "音乐学院",
+     "美院象山",
+     "枫桦西路",
+     "之江文化中心",
+     "西浦路",
+     "中医药大学",
+     "伟业路",
+     "诚业路",
+     "建业路",
+     "长河",
+     "江汉路",
+     "江陵路",
+     "星民",
+     "奥体中心",
+     "博览中心",
+     "钱江世纪城",
+     "丰北",
+     "亚运村",
+     "三堡",
+     "昙花庵路",
+     "元宝塘",
+     "火车东站（东广场）",
+     "枸桔弄"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.3384152,
+      30.2003797
+     ],
+     [
+      120.3262667,
+      30.2017903
+     ],
+     [
+      120.3021645,
+      30.2054511
+     ],
+     [
+      120.2891111,
+      30.2074732
+     ],
+     [
+      120.2638303,
+      30.2069099
+     ],
+     [
+      120.244567,
+      30.2071721
+     ],
+     [
+      120.2338842,
+      30.2143484
+     ],
+     [
+      120.228309,
+      30.2259998
+     ],
+     [
+      120.2069182,
+      30.2452181
+     ],
+     [
+      120.1968808,
+      30.2495165
+     ],
+     [
+      120.1821445,
+      30.2453541
+     ],
+     [
+      120.1736037,
+      30.2407681
+     ],
+     [
+      120.1596174,
+      30.2421418
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "7号线",
+    "color": "#88129e",
+    "stops": [
+     "合欢路",
+     "新街",
+     "新汉路",
+     "新兴路",
+     "建设三路",
+     "明星路",
+     "兴议",
+     "奥体中心",
+     "市民中心",
+     "观音塘",
+     "莫邪塘",
+     "江城路",
+     "吴山广场"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.2979742,
+      30.3975217
+     ],
+     [
+      120.2933195,
+      30.3844664
+     ],
+     [
+      120.290611,
+      30.3674259
+     ],
+     [
+      120.2613617,
+      30.3779079
+     ],
+     [
+      120.2862284,
+      30.329745
+     ],
+     [
+      120.2740689,
+      30.3134337
+     ],
+     [
+      120.2664757,
+      30.3064797
+     ],
+     [
+      120.2586486,
+      30.2955419
+     ],
+     [
+      120.2316778,
+      30.2764192
+     ],
+     [
+      120.2240839,
+      30.2687812
+     ],
+     [
+      120.2171554,
+      30.2635827
+     ],
+     [
+      120.2082401,
+      30.2580532
+     ],
+     [
+      120.2046749,
+      30.2522717
+     ],
+     [
+      120.1968808,
+      30.2495165
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "metro",
+    "line": "9号线",
+    "color": "#be4d00",
+    "stops": [
+     "南苑",
+     "临平南高铁站",
+     "翁梅",
+     "乔司",
+     "乔司南",
+     "客运中心",
+     "九睦路",
+     "红普南路",
+     "御道",
+     "三堡",
+     "江河汇",
+     "钱江路",
+     "新业路",
+     "观音塘"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      120.1181147,
+      30.1731995
+     ],
+     [
+      120.1278136,
+      30.191674
+     ],
+     [
+      120.1539919,
+      30.1304502
+     ],
+     [
+      120.1758788,
+      30.1102566
+     ],
+     [
+      120.1918433,
+      30.2177103
+     ],
+     [
+      120.2277466,
+      30.2553051
+     ],
+     [
+      120.2356609,
+      30.267335
+     ],
+     [
+      120.2382099,
+      30.2703488
+     ],
+     [
+      120.2433952,
+      30.2747167
+     ],
+     [
+      120.2531781,
+      30.2801802
+     ],
+     [
+      120.26255,
+      30.2842614
+     ],
+     [
+      120.2673773,
+      30.2861374
+     ],
+     [
+      120.2813098,
+      30.2897138
+     ],
+     [
+      120.2857347,
+      30.2904779
+     ],
+     [
+      120.2945078,
+      30.2893805
+     ],
+     [
+      120.3028839,
+      30.2855643
+     ],
+     [
+      120.3135024,
+      30.2789141
+     ],
+     [
+      120.3166379,
+      30.2766021
+     ],
+     [
+      120.3370278,
+      30.2597525
+     ],
+     [
+      120.3494884,
+      30.2544615
+     ],
+     [
+      120.3570098,
+      30.2542154
+     ],
+     [
+      120.3625347,
+      30.2555641
+     ],
+     [
+      120.3743993,
+      30.2626692
+     ],
+     [
+      120.3819896,
+      30.2696236
+     ],
+     [
+      120.3951288,
+      30.2894695
+     ]
+    ]
+   },
+   "properties": {
+    "kind": "river",
+    "name": "钱塘江",
+    "width_km": 1.1
+   }
+  }
+ ]
+}

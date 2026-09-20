@@ -1,0 +1,52 @@
+{
+  "agent_id": 3,
+  "items": [
+    {
+      "name": "研究学习",
+      "kind": "skill",
+      "category": "职业",
+      "motivation": "希望提升长期选择空间和工作稳定性",
+      "level": 0.41776000000000013,
+      "priority": 0.68,
+      "weekly_target_minutes": 180,
+      "preferred_time_blocks": [
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "阅读专业资料",
+        "整理学习笔记",
+        "研究课题"
+      ],
+      "career_link": true,
+      "sociality": 0.35,
+      "last_practiced_day": 1,
+      "total_minutes": 156,
+      "streak_days": 1
+    },
+    {
+      "name": "阅读",
+      "kind": "hobby",
+      "category": "阅读",
+      "motivation": "用低成本方式放松并理解外部变化",
+      "level": 0.35,
+      "priority": 0.52,
+      "weekly_target_minutes": 120,
+      "preferred_time_blocks": [
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "阅读",
+        "阅读感兴趣的内容"
+      ],
+      "career_link": false,
+      "sociality": 0.15,
+      "last_practiced_day": 0,
+      "total_minutes": 0,
+      "streak_days": 0
+    }
+  ],
+  "notes": "基于职业、生活习惯和价值观规则推导。",
+  "source_hash": "5c7d66fa58e803e48a71e70c36ede995"
+}

@@ -1,0 +1,351 @@
+/* City panel — layered on studio.css, only the pieces it does not have.
+   Same palette variables as population.css so the two panels read as one
+   product when switched between in the console shell. */
+
+/* .studio-top is a flex row whose .brand happily eats every spare pixel, so
+   the meta block has to opt out of shrinking or it collapses to one
+   character per line. */
+.city-topmeta {
+  display: flex;
+  flex-shrink: 0;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+}
+
+.city-meta-item {
+  text-align: right;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.city-meta-item span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.city-meta-item b {
+  font-size: 16px;
+  color: var(--ink, #111827);
+}
+
+.city-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 18px;
+  align-items: start;
+}
+
+.city-col {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.city-side {
+  position: sticky;
+  top: 12px;
+}
+
+.city-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.city-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.city-card h4 {
+  margin: 20px 0 10px;
+  font-size: 13px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #e5e7eb);
+}
+
+.city-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  line-height: 1.6;
+}
+
+.city-note {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------- forms */
+
+.city-form {
+  display: grid;
+  gap: 10px;
+}
+
+.city-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.city-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.city-field input,
+.city-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink, #111827);
+  background: var(--bg, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+}
+
+.city-field input:focus,
+.city-field select:focus {
+  outline: 2px solid var(--accent, #0e7a58);
+  outline-offset: -1px;
+}
+
+.city-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+}
+
+/* styles.css sizes every input to 100% width; a checkbox must opt back out or
+   it renders as a 390px-wide box. */
+.city-check input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  flex: none;
+  margin: 0;
+  padding: 0;
+}
+
+.city-form button[disabled] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* ----------------------------------------------------------------- list */
+
+.city-list {
+  display: grid;
+  gap: 8px;
+}
+
+.city-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 11px 12px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  background: var(--bg, #fff);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+}
+
+.city-item:hover {
+  border-color: var(--accent, #0e7a58);
+}
+
+.city-item.is-active {
+  border-color: var(--accent, #0e7a58);
+  box-shadow: inset 3px 0 0 var(--accent, #0e7a58);
+}
+
+.city-item-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--ink, #111827);
+}
+
+.city-item-sub {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-item-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+}
+
+.city-badge {
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 99px;
+  color: var(--muted, #6b7280);
+  background: var(--chip, #f3f4f6);
+}
+
+.city-badge.is-real {
+  color: #0e7a58;
+  background: #e6f4ef;
+}
+
+.city-badge.is-use {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+/* --------------------------------------------------------------- detail */
+
+.city-kv {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 5px 10px;
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+
+.city-kv dt {
+  color: var(--muted, #6b7280);
+}
+
+.city-kv dd {
+  margin: 0;
+  color: var(--ink, #111827);
+  overflow-wrap: anywhere;
+}
+
+.city-detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.city-detail-actions .btn {
+  flex: 1;
+}
+
+.btn.danger {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #fff;
+}
+
+.btn.danger:hover {
+  background: #fef2f2;
+}
+
+/* --------------------------------------------------------------- status */
+
+.city-status {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  min-height: 1em;
+}
+
+.city-status.is-ok { color: #0e7a58; }
+.city-status.is-error { color: #b91c1c; }
+.city-status.is-busy { color: var(--muted, #6b7280); }
+
+/* Map preview -------------------------------------------------------------
+   The canvas has a fixed intrinsic size (its drawing buffer); the wrapper
+   scales it down to the column width. position:relative is load-bearing —
+   CityMapView mounts its zoom controls into the canvas's parent. */
+.city-map-wrap {
+  position: relative;
+  margin: 8px 0 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e5ece4;
+  line-height: 0;
+}
+
+.city-map-wrap canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.city-map-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #385866;
+  background: rgba(229, 236, 228, 0.92);
+  z-index: 7;
+}
+
+.city-map-name {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+}
+
+.city-map-meta {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted, #6b7280);
+  min-height: 1em;
+  margin-bottom: 4px;
+}
+
+/* Knowledge base ----------------------------------------------------------*/
+.city-knowledge { font-size: 13px; line-height: 1.7; }
+.city-knowledge p { margin: 6px 0; }
+.city-knowledge em { color: var(--muted, #6b7280); font-style: normal; margin-right: 4px; }
+
+.city-industries { list-style: none; margin: 8px 0; padding: 0; }
+.city-industries li {
+  display: grid;
+  grid-template-columns: 18px minmax(70px, auto) 46px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+}
+.city-ind-trend { font-weight: 700; color: var(--muted, #6b7280); }
+.city-ind-trend.is-growing { color: #0e7a58; }
+.city-ind-trend.is-declining { color: #b91c1c; }
+.city-ind-weight { color: var(--muted, #6b7280); font-variant-numeric: tabular-nums; }
+.city-ind-note { color: var(--muted, #6b7280); }
+
+.city-knowledge-sources a { color: var(--muted, #6b7280); font-size: 12px; }
+
+@media (max-width: 900px) {
+  .city-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .city-side {
+    position: static;
+  }
+}

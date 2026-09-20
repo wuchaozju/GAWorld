@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="external.page_title">GAWorld · 外部系统</title>
+  <meta name="description" data-i18n-content="external.meta_description" content="GAWorld 外部系统观测台：货币系统 · 外部环境 · 对外服务" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/external.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="external.kicker">GAWorld 外部系统</p>
+          <h1 data-i18n="external.headline">看住世界本身，而不只是住在里面的人</h1>
+          <p class="sub" data-i18n="external.sub">
+            货币怎么流、环境抛出了什么事件、对外服务通不通 —— 观察它们，然后直接改。
+          </p>
+        </div>
+      </div>
+      <div class="ext-topmeta" id="extTopMeta"></div>
+    </header>
+
+    <nav class="studio-steps" id="extTabs">
+      <button class="step is-active" data-tab="currency">
+        <i>¥</i><span data-i18n="external.tab_currency">货币系统</span>
+        <span class="help-tip" data-i18n-help="external.tab_currency_hint" data-help="钱在这个世界里怎么流：宏观形势、企业/政府/银行三个资金池、总量守不守恒、财富分布。也可以在这里改经济规则，或对正在跑的仿真做一次干预。"></span>
+      </button>
+      <button class="step" data-tab="environment">
+        <i>≋</i><span data-i18n="external.tab_environment">外部环境</span>
+        <span class="help-tip" data-i18n-help="external.tab_environment_hint" data-help="世界每天发生了什么：天气、经济新闻、政策、科技。这些事件会进入每个居民的当天情境，影响他们的心情和日程。"></span>
+      </button>
+      <button class="step" data-tab="services">
+        <i>⇄</i><span data-i18n="external.tab_services">对外服务</span>
+        <span class="help-tip" data-i18n-help="external.tab_services_hint" data-help="仿真要往外拨号的地方：外部环境服务、多机中继、新闻源、用哪个大模型。这里可以看通不通，也可以改。"></span>
+      </button>
+    </nav>
+
+    <section class="ext-main">
+      <div class="ext-observe" id="extObserve">
+        <div class="ext-card"><p class="ext-hint" data-i18n="external.loading">正在加载…</p></div>
+      </div>
+      <aside class="ext-edit" id="extEdit"></aside>
+    </section>
+
+    <footer class="studio-foot ext-foot">
+      <div class="ext-status" id="extStatus"></div>
+      <div class="ext-actions">
+        <button class="button subtle" id="extRefresh" data-i18n="external.refresh">刷新观测</button>
+      </div>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/external.js"></script>
+</body>
+</html>

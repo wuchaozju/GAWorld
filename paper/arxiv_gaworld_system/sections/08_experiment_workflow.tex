@@ -1,0 +1,111 @@
+\section{Experimental Workflow and Evidence Production}
+\label{sec:experiment-workflow}
+
+GAWorld treats an experiment as a configured execution that produces an
+inspectable artifact tree, rather than as a prompt followed by a single model
+response.  The ordinary entry point, \texttt{generative\_city\_sim.py run},
+loads the selected agents and city map, restores persistent state when enabled,
+assembles the currently integrated plugins, and advances a shared simulation
+clock.  Runtime configuration controls the horizon, agent cohort, random seed,
+provider routing, environment, policy events, and output locations.  A run can
+therefore be reconstructed at the level of its declared configuration and
+stored traces, although exact replay also depends on external model behavior,
+network services, and the completeness of the archived inputs.
+
+\subsection{Matched Event and Baseline Runs}
+
+For intervention studies, the \texttt{compare-event} command constructs two
+scenario directories under a timestamped comparison root.  The
+\texttt{without\_event} arm inherits the configured policy-event list, whereas
+the \texttt{with\_event} arm appends a named event at an explicit simulation
+day and clock time.  Both arms receive the same requested agent subset,
+simulation horizon, random seed, and---when supplied---LLM provider override.
+Before execution, each arm is reset within its own isolated memory, log,
+vector-database, state, network, environment, intervention, and visualization
+directories.  The two runs are then launched concurrently.  This organization
+reduces accidental cross-arm state leakage and makes missing or failed arms
+visible through separate reset and run logs.
+
+After both subprocesses finish, the comparison routine reads each arm's
+\path{state/agent_state_history.csv}.  For every available metric, it
+computes the across-agent final snapshot, the mean over recorded observations,
+and event-minus-baseline differences.  Machine-readable results are stored in
+\path{comparison_metrics.csv}; \path{comparison_summary.md} provides a
+human-readable view.  The separate \path{run_meta.json} records choices such
+as seed, horizon, provider, and whether the lower-fidelity fast mode was
+requested.  Policy-oriented fields can include stance, toxicity,
+misinformation risk, cross-viewpoint exposure, and intervention reward when
+their upstream mechanisms emit them.  Importantly, archived policy runs contain
+fields that remain identically zero, including misinformation-risk and
+cross-viewpoint-exposure series in some comparisons.  Presence in the schema
+must therefore not be reported as evidence that the corresponding mechanism was
+active.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{experiment_flow.pdf}
+  \caption{GAWorld's experiment path separates a research question and
+  configured scenario from matched execution arms, stored traces, metric
+  extraction, and a descriptive audit.  The final boundary is substantive:
+  an inspectable comparison is not by itself a real-world causal estimate.}
+  \label{fig:experiment-flow}
+\end{figure}
+
+\subsection{What Matching Does---and Does Not---Identify}
+
+Sharing a pseudorandom seed and configuration is a software control, not a
+causal-identification strategy.  LLM endpoints can be nondeterministic despite
+fixed sampling parameters; concurrent calls may experience different failures,
+fallbacks, latency, or service-side model revisions; and an injected event can
+change subsequent prompts and thereby amplify trajectory divergence.  Moreover,
+the implemented report contrasts raw trajectories without random assignment,
+replication, uncertainty estimation, or adjustment to an external population.
+Consequently, GAWorld's paired output supports debugging, mechanism tracing,
+and hypothesis generation.  It does not establish that a measured difference
+was caused by the analogous intervention in a real city, or even that a
+single-run simulation contrast is stable across seeds.
+
+A defensible study should therefore pre-specify outcomes and event timing,
+archive the exact configuration and provider information, repeat both arms over
+multiple seeds, include negative controls where appropriate, and report
+missingness and failures alongside effect summaries.  The event should also be
+traced to the subsystem expected to implement it: textual exposure to a policy
+is not equivalent to a verified economic, mobility, or network-state update.
+This distinction is especially important in an LLM-based society, where a
+plausible narrative response can mask a disconnected structural mechanism.
+
+\subsection{Heterogeneous but Inspectable Outputs}
+
+The current runtime writes several complementary views of a simulation.  Agent
+logs preserve local action and cognition traces; state histories provide a long
+table of agent, step, metric, and value; environment output contains the shared
+timeline and contextual events; memory directories contain durable episodic,
+relationship, growth, and vector-retrieval state; and the economy subsystem
+maintains financial snapshots and audit artifacts.  Visualization traces encode
+frames for replay, while intervention plugins retain policy-specific metrics.
+Comparison roots place two complete scenario trees beside their derived
+summary files.  Together these artifacts allow an analyst to move from an
+aggregate difference back to the relevant agents, times, and subsystem records.
+
+This plurality is currently both a strength and a limitation.  The emerging
+kernel provides an append-only \texttt{Recorder} that time-stamps plugin events
+into named JSONL streams, but it has not replaced or normalized the simulator's
+existing logs, CSV files, environment timeline, memories, and subsystem-owned
+outputs.  Cross-subsystem analysis still requires explicit joins and attention
+to distinct schemas and clocks.  We therefore describe GAWorld as inspectable,
+not as having a fully unified provenance store.
+
+\subsection{GAWorld-Bench as an Audit Layer}
+
+GAWorld-Bench consumes existing output trees or, when explicitly requested,
+orchestrates comparison runs.  Its implemented tracks examine macro-level
+anchors and selected intervention diagnostics, including known-sign checks,
+placebo handling, and an optional determinism comparison.  The scorecard marks
+unassessed components rather than treating missing evidence as success, and
+labels its composite as a diagnostic summary rather than a scientific result.
+Other proposed validation dimensions remain unimplemented or incomplete.
+Synthetic fixtures bundled with the harness exercise parsers and scoring paths;
+they are software tests and are never treated in this paper as observations from
+an artificial society.  The benchmark thus complements the artifact workflow
+in \cref{fig:experiment-flow}: it helps expose coverage gaps and suspicious
+outputs, but cannot repair an underpowered or poorly identified experiment.

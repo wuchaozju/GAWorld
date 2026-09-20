@@ -3,261 +3,436 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GAWorld Twin Console</title>
-  <meta name="description" content="GAWorld 个人孪生与分布式社交控制台" />
+  <title>GAWorld Console</title>
+  <meta name="description" data-i18n-content="meta.description" content="GAWorld 本地仿真控制台" />
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/interaction.css" />
 </head>
 <body>
   <main class="shell">
-    <header class="masthead">
-      <div class="masthead-copy">
+    <header class="hero">
+      <div class="hero-copy">
         <p class="kicker">GAWorld Console</p>
-        <h1>个人孪生控制台</h1>
-        <p>本地分身、分布式社交、运行控制、访谈与记忆观察集中在一个面板中。</p>
+        <h1 data-i18n="dashboard.headline">仿真控制台</h1>
+        <p class="hero-sub" data-i18n="dashboard.hero_sub">配置 · 人物 · 运行 · 采访 · 记忆 — 一站式本地仿真面板</p>
       </div>
-      <img src="/video/public/gaworld-graphical-abstract.png" alt="GAWorld abstract map" />
+      <div class="hero-status">
+        <span id="runStatusBadge" class="status-badge" data-i18n="sim.reading_status">读取状态</span>
+        <span id="traceStatus" class="hero-chip" data-i18n="status.waiting_trace">等待轨迹数据</span>
+      </div>
     </header>
 
     <section class="toolbar panel">
-      <label>
-        <span>Agent IDs</span>
-        <input id="agentIdsInput" placeholder="1,2,3" />
-      </label>
-      <label>
-        <span>仿真天数</span>
-        <input id="simDaysInput" type="number" min="1" />
-      </label>
-      <label>
-        <span>每天秒数</span>
-        <input id="secondsPerDayInput" type="number" min="1" />
-      </label>
-      <label>
-        <span>时间步长</span>
-        <input id="timeStepInput" placeholder="None / 60 / 2 hours" />
-      </label>
-      <label>
-        <span>默认 LLM</span>
-        <select id="defaultProviderSelect"></select>
-      </label>
-      <label>
-        <span>日程 LLM</span>
-        <select id="scheduleProviderSelect"></select>
-      </label>
-      <label class="checkline">
-        <input id="realtimeInput" type="checkbox" />
-        <span>实时等待</span>
-      </label>
-      <div class="button-row">
-        <button id="saveConfigBtn" class="button">保存配置</button>
-        <button id="runBtn" class="button primary">运行仿真</button>
-        <button id="resetRunBtn" class="button">重置并运行</button>
-        <button id="stopBtn" class="button danger">停止</button>
+      <div class="toolbar-fields">
+        <label>
+          <span class="field-label"><span data-i18n="sim.city">城市</span><span class="help-tip" data-i18n-help="sim.city_hint" data-help="本次仿真发生在哪座城市：决定地图、环境事件、背景设定和居民名册。「默认世界」为 data/ 下的原始杭州数据。城市在「城市」页签创建。切换城市会同时换掉居民名册，Agent IDs 要落在新城市的人数范围内。"></span></span>
+          <select id="citySelect"></select>
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="agent.ids">Agent IDs</span><span class="help-tip" data-i18n-help="agent.ids_hint" data-help="参与仿真的居民编号，逗号分隔（如 1,2,3）；若只填单个数字 N，则表示取前 N 位居民。编号是每座城市各自从 1 开始的。"></span></span>
+          <!-- The placeholder is owned by app.js (updateCityHint), not by
+               data-i18n-placeholder: it shows the selected city's actual id
+               range, and the i18n pass loads asynchronously, so the two race. -->
+          <input id="agentIdsInput" placeholder="1,2,3" />
+        </label>
+        <label>
+          <span class="field-label"><span id="simSpanLabel" data-i18n="sim.days">仿真天数</span><span id="simSpanHelp" class="help-tip" data-i18n-help="sim.days_hint" data-help="本次仿真持续的天数。"></span></span>
+          <input id="simDaysInput" type="number" min="1" />
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="sim.seconds_per_day">每天秒数</span><span class="help-tip" data-i18n-help="sim.seconds_per_day_hint" data-help="每个仿真日折算的真实秒数：越大，日内推进越细、回放越慢。"></span></span>
+          <input id="secondsPerDayInput" type="number" min="1" />
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="sim.time_step">时间步长</span><span class="help-tip" data-i18n-help="sim.time_step_hint" data-help="日内推进的时间粒度：留空使用默认；也可填 60（秒）或“2 hours”等。"></span></span>
+          <input id="timeStepInput" placeholder="None / 60 / 2 hours" />
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="sim.default_llm">默认 LLM</span><span class="help-tip" data-i18n-help="sim.default_llm_hint" data-help="智能体思考、行动、采访等默认调用的语言模型提供方。"></span></span>
+          <select id="defaultProviderSelect"></select>
+        </label>
+        <label>
+          <span class="field-label"><span data-i18n="sim.schedule_llm">日程 LLM</span><span class="help-tip" data-i18n-help="sim.schedule_llm_hint" data-help="生成每日日程时使用的语言模型（可与默认不同以节省成本）。"></span></span>
+          <select id="scheduleProviderSelect"></select>
+        </label>
+        <label class="checkline">
+          <input id="realtimeInput" type="checkbox" />
+          <span data-i18n="sim.realtime">实时等待</span>
+        </label>
+        <label class="checkline" data-i18n-title="sim.fast_forward_hint" title="长时段快进：一步压缩成一条简报（每智能体每步一次 LLM 调用），跳过日内时刻循环；状态/目标/关系仍近似推进。一步多长由旁边的「步长单位」决定——按天适合 60/600 天，按月/按年才跑得动数年到数十年。">
+          <input id="fastForwardInput" type="checkbox" />
+          <span data-i18n="sim.fast_forward">长时段快进</span>
+        </label>
+        <label class="field">
+          <span class="field-label"><span data-i18n="sim.step_unit">步长单位</span><span class="help-tip" data-i18n-help="sim.step_unit_hint" data-help="快进时一步代表多长时间：按天（每人每天一条简报）、按月、按年。跑数年以上必须用月或年——否则调用量按天数线性增长。仅在长时段快进时生效。"></span></span>
+          <select id="stepUnitSelect">
+            <option value="day" data-i18n="sim.step_unit_day">天</option>
+            <option value="month" data-i18n="sim.step_unit_month">月</option>
+            <option value="year" data-i18n="sim.step_unit_year">年</option>
+          </select>
+        </label>
       </div>
-    </section>
-
-    <section class="status-line">
-      <span id="runStatusBadge" class="status-badge">读取状态</span>
-      <span id="traceStatus">等待轨迹数据</span>
-      <span id="messageLine"></span>
+      <div class="toolbar-lower">
+        <div class="toolbar-sliders">
+          <label data-i18n-title="sim.randomness_hint" title="随机性：越高，快进期间的突发事件越频繁、智能体状态波动越大。0 = 完全确定。仅在长时段快进时生效。">
+            <span><span data-i18n="sim.randomness">随机性</span> <output id="randomnessValue">0.3</output></span>
+            <input id="randomnessInput" type="range" min="0" max="1" step="0.05" value="0.3" />
+          </label>
+          <label data-i18n-title="sim.routine_randomness_hint" title="日程随机度：越高，智能体越不按每日routine行事——临时改变活动、偏离计划更频繁。0 = 严格按日程执行（睡眠时段不受影响）。">
+            <span><span data-i18n="sim.routine_randomness">日程随机度</span> <output id="routineRandomnessValue">0.00</output></span>
+            <input id="routineRandomnessInput" type="range" min="0" max="1" step="0.05" value="0" />
+          </label>
+        </div>
+        <div class="button-row toolbar-actions">
+          <a href="/#studio" target="_top" class="button" data-i18n="btn.agent_studio">Agent Studio ↗</a>
+          <a href="/#settings" target="_top" class="button" data-i18n-title="btn.all_settings_hint" title="打开配置中心：本项目的全部配置项集中在那里，每一项都有说明。"><span data-i18n="btn.all_settings">全部配置</span> ↗</a>
+          <button id="saveConfigBtn" class="button" data-i18n="btn.save_config">保存配置</button>
+          <button id="runBtn" class="button primary" data-i18n="btn.run_simulation">运行仿真</button>
+          <div class="schedule-run">
+            <input id="scheduleAtInput" type="datetime-local" data-i18n-title="btn.schedule_run_hint" title="定时运行：到达设定时刻后，服务器用当前配置自动启动仿真。时间按运行面板所在机器的本地时间计算，页面关掉也不影响。" />
+            <button id="scheduleRunBtn" class="button" data-i18n="btn.schedule_run">定时运行</button>
+            <button id="cancelScheduleBtn" class="button" data-i18n="btn.cancel_schedule" hidden>取消定时</button>
+          </div>
+          <button id="resetRunBtn" class="button" data-i18n="btn.reset_and_run">重置并运行</button>
+          <button id="stopBtn" class="button danger" data-i18n="btn.stop">停止</button>
+        </div>
+      </div>
     </section>
 
     <section class="workspace">
       <section class="panel map-panel">
         <div class="section-head">
           <div>
-            <p class="kicker">Live Trace</p>
-            <h2 id="frameTitle">未加载轨迹</h2>
+            <p class="kicker" data-i18n="trace.live">Live Trace</p>
+            <h2 id="frameTitle" data-i18n="trace.not_loaded">未加载轨迹</h2>
           </div>
-          <button id="reloadTraceBtn" class="button small">刷新轨迹</button>
+          <div class="head-actions">
+            <span class="help-tip" data-i18n-help="trace.not_loaded_hint" data-help="实时轨迹回放：按帧展示每个时刻居民在城市中的位置与状态。拖动下方时间轴可回看任意帧，或勾选“跟随最新”自动追踪最新一帧。"></span>
+            <button id="reloadTraceBtn" class="button small" data-i18n="btn.reload_trace">刷新轨迹</button>
+          </div>
         </div>
         <canvas id="mapCanvas" width="1440" height="900" aria-label="simulation map"></canvas>
         <div class="timeline">
           <input id="timelineSlider" type="range" min="0" max="0" value="0" />
-          <span id="timelineLabel">暂无帧</span>
+          <label class="follow-toggle">
+            <input id="followLatestInput" type="checkbox" checked />
+            <span data-i18n="trace.follow_latest">跟随最新</span>
+          </label>
+          <span id="timelineLabel" data-i18n="trace.no_frames">暂无帧</span>
         </div>
-        <pre id="latestFrameBox" class="codebox">暂无当前帧。</pre>
+        <div class="frame-json is-collapsed">
+          <button type="button" class="frame-json-toggle">
+            <span data-i18n="trace.frame_json">当前帧数据</span>
+            <span class="help-tip" data-i18n-help="trace.frame_json_hint" data-help="当前时刻的原始仿真数据（JSON）：包含该帧的天数、时间、日期，以及每个智能体的位置、状态与当前活动，供开发/调试查看。"></span>
+          </button>
+          <pre id="latestFrameBox" class="codebox" data-i18n="trace.no_current_frame">暂无当前帧。</pre>
+        </div>
       </section>
 
-      <aside class="right-stack">
-        <section class="panel">
+      <div class="workspace-masonry">
+        <section class="panel profile-panel">
           <div class="section-head">
             <div class="agent-head">
               <div class="dashboard-avatar-wrap">
                 <img id="selectedAgentAvatar" class="dashboard-avatar" alt="" />
               </div>
               <div>
-                <p class="kicker">Twin Profile</p>
-                <h2>分身画像</h2>
+                <p class="kicker" data-i18n="agent.profile">Agent Profile</p>
+                <h2 data-i18n="agent.profile_title">人物设定</h2>
               </div>
             </div>
-            <select id="agentSelect"></select>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="agent.profile_title_hint" data-help="该居民的人物设定（只读）。如需修改，请前往 Agent Studio 编辑。"></span>
+              <select id="agentSelect"></select>
+            </div>
           </div>
-          <textarea id="profileEditor" class="profile-editor" spellcheck="false"></textarea>
+          <div class="sim-roster">
+            <div class="sim-roster-head">
+              <span data-i18n="agent.roster">参与本次运行</span>
+              <span class="help-tip" data-i18n-help="agent.roster_hint" data-help="本次运行名单中的居民头像（来自上方 Agent IDs）。点击头像即可查看该居民的人物设定。"></span>
+              <span id="simRosterCount" class="sim-roster-count"></span>
+            </div>
+            <div id="simRosterList" class="sim-roster-list" data-i18n-empty="roster.empty" data-empty="尚未选择参与仿真的居民。"></div>
+          </div>
+          <div id="profileView" class="profile-view md-body" data-i18n-empty="profile.empty" data-empty="选择居民以查看人物设定。"></div>
           <div class="button-row end">
-            <button id="saveProfileBtn" class="button">保存 Profile</button>
-            <button id="refreshAgentBtn" class="button">刷新</button>
+            <button id="toggleSimBtn" class="button" data-i18n="btn.join_sim">加入仿真</button>
+            <button id="refreshAgentBtn" class="button" data-i18n="btn.refresh">刷新</button>
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel family-panel">
           <div class="section-head">
             <div>
-              <p class="kicker">Interview</p>
-              <h2>采访</h2>
+              <p class="kicker" data-i18n="family.kicker">Household</p>
+              <h2 data-i18n="family.title">家庭结构</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="family.title_hint" data-help="本次运行里居民的家庭：谁结了婚、和谁住、要照顾谁。婚姻状态按年龄段抽样生成，同住的家人会共享一个住处、共担开销、互相影响情绪。婚配率、生育率等规则在「配置 → 家庭与户」里调整；改完需要重新开始一轮运行才会生效。"></span>
+              <button id="refreshFamilyBtn" class="button ghost" data-i18n="btn.refresh">刷新</button>
             </div>
           </div>
-          <textarea id="interviewContext" class="compact-editor" placeholder="可选背景上下文"></textarea>
-          <textarea id="interviewQuestions" class="compact-editor" placeholder="每行一个问题"></textarea>
-          <div class="button-row end">
-            <button id="interviewBtn" class="button primary">开始采访</button>
-          </div>
-          <pre id="interviewOutput" class="codebox">采访结果会显示在这里。</pre>
+          <div id="familyOverview" class="family-overview"></div>
+          <div id="familyDetail" class="family-detail" data-i18n-empty="family.empty" data-empty="尚无家庭数据——完整跑过一轮仿真后，这里会显示每位居民的家庭。"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
-              <p class="kicker">What-if</p>
-              <h2>个人反事实</h2>
+              <p class="kicker" data-i18n="interview.kicker">Interview</p>
+              <h2 data-i18n="interview.title">采访</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="interview.title_hint" data-help="向选中的居民提问，模型会以其人物设定与记忆为背景作答。每行一个问题，可选填背景上下文。"></span>
             </div>
           </div>
-          <input id="whatIfTitleInput" class="event-title-input" placeholder="情景标题（可选）" />
-          <textarea id="whatIfQuestionInput" class="compact-editor" placeholder="例如：如果我明天不去上班而是准备面试，会怎样？"></textarea>
+          <textarea id="interviewContext" class="compact-editor" data-i18n-placeholder="interview.context_placeholder" placeholder="可选背景上下文"></textarea>
+          <textarea id="interviewQuestions" class="compact-editor" data-i18n-placeholder="interview.questions_placeholder" placeholder="每行一个问题"></textarea>
+          <div class="button-row end">
+            <button id="interviewBtn" class="button primary" data-i18n="btn.start_interview">开始采访</button>
+          </div>
+          <pre id="interviewOutput" class="codebox" data-i18n="interview.no_output">采访结果会显示在这里。</pre>
+        </section>
+
+        <section id="collaborationPanel" class="panel collaboration-panel collapsible is-collapsed">
+          <div class="section-head collaboration-head">
+            <div>
+              <p class="kicker" data-i18n="collaboration.kicker">Agent Link</p>
+              <h2 data-i18n="collaboration.title">智能体互动</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="collaboration.title_hint" data-help="选择两位或更多居民，为其建立关系并发起多轮讨论，观察智能体之间的实时互动与对话。"></span>
+              <span id="collaborationStatus" class="collaboration-status is-idle" data-i18n="collaboration.status_idle">待命</span>
+            </div>
+          </div>
+          <p class="collaboration-intro" data-i18n="collaboration.subtitle">选择两位或更多居民，建立关系并观察实时讨论。</p>
+
+          <div class="collaboration-roster-head">
+            <div>
+              <h3 id="collaborationMembersLabel" data-i18n="collaboration.members">参与成员</h3>
+              <p data-i18n="collaboration.members_hint">可使用键盘聚焦并选择成员。</p>
+            </div>
+            <span id="collaborationSelectionCount" class="collaboration-count" data-i18n="collaboration.selected_count">已选 0 位</span>
+          </div>
+          <div id="collaborationMembers" class="collaboration-members" role="group" aria-labelledby="collaborationMembersLabel"></div>
+
+          <div class="collaboration-friendship-row">
+            <button id="makeFriendsBtn" class="button" type="button" disabled data-i18n="collaboration.make_friends">建立好友关系</button>
+            <p id="collaborationFriendship" class="collaboration-friendship" data-i18n="collaboration.friendship_idle">关系操作尚未开始。</p>
+          </div>
+
+          <div class="collaboration-compose">
+            <label>
+              <span data-i18n="collaboration.topic">讨论主题（可选）</span>
+              <input id="collaborationTopic" data-i18n-placeholder="collaboration.topic_placeholder" placeholder="例如：公共空间如何改善？" />
+            </label>
+            <label class="collaboration-round-field">
+              <span data-i18n="collaboration.rounds">轮数</span>
+              <input id="collaborationRounds" type="number" min="3" max="20" value="6" />
+            </label>
+          </div>
+
+          <div class="button-row collaboration-launch">
+            <button id="startDiscussionBtn" class="button primary" type="button" disabled data-i18n="collaboration.start">开始讨论</button>
+            <button id="pauseDiscussionBtn" class="button" type="button" hidden data-i18n="collaboration.pause">暂停</button>
+            <button id="resumeDiscussionBtn" class="button" type="button" hidden data-i18n="collaboration.resume">继续</button>
+            <button id="cancelDiscussionBtn" class="button danger" type="button" hidden data-i18n="collaboration.cancel">终止</button>
+          </div>
+
+          <p id="collaborationNotice" class="collaboration-notice" role="status" aria-live="polite" data-i18n="collaboration.status_idle">待命</p>
+
+          <div class="collaboration-observatory" aria-label="discussion observatory">
+            <div>
+              <span data-i18n="collaboration.status">状态</span>
+              <strong id="collaborationRound" data-i18n="collaboration.round_idle">0 / 0 轮</strong>
+            </div>
+            <div>
+              <span data-i18n="collaboration.speaker">当前发言</span>
+              <strong id="collaborationSpeaker" data-i18n="collaboration.speaker_idle">等待成员发言</strong>
+            </div>
+          </div>
+
+          <div class="collaboration-transcript-head">
+            <h3 id="collaborationTranscriptLabel" data-i18n="collaboration.transcript">实时记录</h3>
+            <button id="fullHistoryBtn" class="button small" type="button" disabled data-i18n="collaboration.full_history">完整记录</button>
+          </div>
+          <div id="collaborationTranscript" class="collaboration-transcript" role="log" aria-live="polite" aria-relevant="additions text" aria-labelledby="collaborationTranscriptLabel"></div>
+        </section>
+
+        <section class="panel collapsible is-collapsed">
+          <div class="section-head">
+            <div>
+              <p class="kicker" data-i18n="life_event.kicker">Life Event</p>
+              <h2 data-i18n="life_event.title">人生事件</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="life_event.title_hint" data-help="向一个或多个居民注入人生事件（如失业、搬家、亲人离世），观察其状态与行为在后续仿真中的变化。"></span>
+              <button id="reloadLifeEventsBtn" class="button small" data-i18n="btn.reload_life_events">刷新</button>
+            </div>
+          </div>
+          <div class="candidate-head">
+            <span data-i18n="life_event.candidates">状态候选事件</span>
+            <span class="help-tip" data-i18n-help="life_event.candidates_hint" data-help="根据当前人物的年龄、职业、家庭与状态变量自动生成的候选大事件，点一下即刻对该人物触发；人物状态变化后标签会自动更新。"></span>
+            <strong id="lifeEventCandidateAgent" class="candidate-agent"></strong>
+          </div>
+          <div id="lifeEventCandidates" class="candidate-tags"></div>
+
           <div class="event-grid">
             <label>
-              <span>Day</span>
-              <input id="whatIfDayInput" type="number" min="1" value="1" />
-            </label>
-            <label>
-              <span>Time</span>
-              <input id="whatIfTimeInput" value="09:00" />
-            </label>
-            <label>
-              <span>仿真天数</span>
-              <input id="whatIfSimDaysInput" type="number" min="1" value="2" />
-            </label>
-            <label>
-              <span>LLM Provider</span>
-              <input id="whatIfProviderInput" placeholder="留空=默认路由" />
-            </label>
-          </div>
-          <div class="button-row end">
-            <button id="runWhatIfBtn" class="button primary">运行 What-if</button>
-          </div>
-          <pre id="whatIfOutput" class="codebox">What-if 输出会显示在这里。</pre>
-        </section>
-
-        <section class="panel">
-          <div class="section-head">
-            <div>
-              <p class="kicker">Life Event</p>
-              <h2>人生事件</h2>
-            </div>
-            <button id="reloadLifeEventsBtn" class="button small">刷新</button>
-          </div>
-          <div class="event-grid">
-            <label>
-              <span>事件模板</span>
+              <span data-i18n="life_event.template">事件模板</span>
               <select id="lifeEventTemplateSelect"></select>
             </label>
             <label>
-              <span>目标 Agent</span>
-              <input id="lifeEventAgentInput" placeholder="留空=所有，或 4,5" />
+              <span data-i18n="life_event.target_agent">目标 Agent</span>
+              <input id="lifeEventAgentInput" data-i18n-placeholder="life_event.target_placeholder" placeholder="留空=所有，或 4,5" />
             </label>
             <label>
-              <span>触发方式</span>
+              <span data-i18n="life_event.trigger_mode">触发方式</span>
               <select id="lifeEventModeSelect">
-                <option value="immediate">下一时间步</option>
-                <option value="scheduled">指定 Day/Time</option>
+                <option value="immediate" data-i18n="life_event.immediate">下一时间步</option>
+                <option value="scheduled" data-i18n="life_event.scheduled">指定 Day/Time</option>
               </select>
             </label>
             <label>
-              <span>Day</span>
-              <input id="lifeEventDayInput" type="number" min="1" placeholder="当前 Day" />
+              <span data-i18n="life_event.day">Day</span>
+              <input id="lifeEventDayInput" type="number" min="1" data-i18n-placeholder="life_event.day_placeholder" placeholder="当前 Day" />
             </label>
             <label>
-              <span>Time</span>
+              <span data-i18n="life_event.time">Time</span>
               <input id="lifeEventTimeInput" placeholder="HH:MM" />
             </label>
             <label>
-              <span>强度</span>
+              <span data-i18n="life_event.severity">强度</span>
               <input id="lifeEventSeverityInput" type="number" min="0" max="1" step="0.05" value="0.7" />
             </label>
+            <label id="lifeEventNewJobField" hidden>
+              <span data-i18n="life_event.new_job">新职业</span>
+              <input id="lifeEventNewJobInput" data-i18n-placeholder="life_event.new_job_placeholder" placeholder="留空=自动转行" />
+            </label>
           </div>
-          <input id="lifeEventTitleInput" class="event-title-input" placeholder="事件标题（可覆盖模板）" />
-          <textarea id="lifeEventDescriptionInput" class="compact-editor" placeholder="事件描述（可覆盖模板）"></textarea>
+          <input id="lifeEventTitleInput" class="event-title-input" data-i18n-placeholder="life_event.title_placeholder" placeholder="事件标题（可覆盖模板）" />
+          <textarea id="lifeEventDescriptionInput" class="compact-editor" data-i18n-placeholder="life_event.description_placeholder" placeholder="事件描述（可覆盖模板）"></textarea>
           <div class="button-row end">
-            <button id="useSelectedAgentBtn" class="button">使用当前人物</button>
-            <button id="addLifeEventBtn" class="button primary">添加事件</button>
+            <button id="useSelectedAgentBtn" class="button" data-i18n="btn.use_selected_agent">使用当前人物</button>
+            <button id="addLifeEventBtn" class="button primary" data-i18n="btn.add_event">添加事件</button>
           </div>
-          <pre id="lifeEventListBox" class="codebox event-list">暂无人生事件。</pre>
+          <pre id="lifeEventListBox" class="codebox event-list" data-i18n="life_event.none">暂无人生事件。</pre>
         </section>
-      </aside>
-    </section>
 
-    <section class="lower-grid">
-      <section class="panel">
-        <div class="section-head">
-          <div>
-              <p class="kicker">Memory</p>
-              <h2>本地记忆与习惯</h2>
+        <section class="panel collapsible is-collapsed">
+          <div class="section-head">
+            <div>
+              <p class="kicker" data-i18n="fos_export.kicker">FOS Export</p>
+              <h2 data-i18n="fos_export.title">FOS AI Scientist Export</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="fos_export.title_hint" data-help="导出用于 FOS AI Scientist 的分析提示词，把本次仿真结果交给科研分析流程（可选生成英文摘要）。"></span>
+              <button id="reloadFosBtn" class="button small" data-i18n="btn.refresh">Refresh</button>
+            </div>
           </div>
-          <button id="reloadMemoryBtn" class="button small">刷新记忆</button>
-        </div>
-        <div class="memory-grid">
-          <article><h3>长期记忆</h3><pre id="memoryBox" class="codebox"></pre></article>
-          <article><h3>日程/习惯/意图</h3><pre id="stateMemoryBox" class="codebox"></pre></article>
-          <article><h3>近期 episode</h3><pre id="episodesBox" class="codebox"></pre></article>
-          <article><h3>Agent 日志</h3><pre id="agentLogBox" class="codebox"></pre></article>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-head">
-          <div>
-            <p class="kicker">Run Log</p>
-            <h2>运行输出</h2>
+          <div class="fos-options">
+            <label>
+              <span data-i18n="fos_export.hint_label">Analyst Hint</span>
+              <input id="fosHintInput" data-i18n-placeholder="fos_export.hint_placeholder" placeholder="e.g. Look for social withdrawal" />
+            </label>
+            <label class="checkline">
+              <input id="fosEnglishCheckbox" type="checkbox" />
+              <span data-i18n="fos_export.english">English summary (translate Chinese output)</span>
+            </label>
           </div>
-          <button id="reloadStatusBtn" class="button small">刷新状态</button>
-        </div>
-        <pre id="runLogBox" class="codebox run-log">暂无运行日志。</pre>
-      </section>
-    </section>
+          <div class="button-row end">
+            <button id="fosExportBtn" class="button primary" data-i18n="fos_export.generate_btn">Generate FOS Prompt</button>
+            <button id="fosCopyBtn" class="button" data-i18n="fos_export.copy_btn">Copy to Clipboard</button>
+            <button id="fosDownloadBtn" class="button" data-i18n="fos_export.download_btn">Download</button>
+          </div>
+          <pre id="fosOutputBox" class="codebox fos-output" data-i18n="fos_export.no_output">Click &quot;Generate FOS Prompt&quot; after running a simulation.</pre>
+        </section>
+        <section class="panel collapsible">
+          <div class="section-head">
+            <div>
+              <p class="kicker" data-i18n="memory.kicker">Memory</p>
+              <h2 data-i18n="memory.title">记忆与习惯</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="memory.title_hint" data-help="选中居民的长期记忆、日程/习惯/意图、近期经历(episode)与 Agent 日志。“原始数据”可查看并下载未经加工的 JSON / JSONL / 日志原文。"></span>
+              <button id="rawMemoryBtn" class="button small" data-i18n="btn.raw_data">原始数据</button>
+              <button id="reloadMemoryBtn" class="button small" data-i18n="btn.reload_memory">刷新记忆</button>
+            </div>
+          </div>
+          <div class="memory-grid">
+            <article class="memory-card">
+              <div class="memory-card-head">
+                <h3 data-i18n="memory.long_term">长期记忆</h3>
+                <button class="raw-link" data-raw-open="long_term" data-i18n="raw.open">原始</button>
+              </div>
+              <div id="memoryView" class="memory-view"></div>
+            </article>
+            <article class="memory-card">
+              <div class="memory-card-head">
+                <h3 data-i18n="memory.schedule">日程/习惯/意图</h3>
+                <button class="raw-link" data-raw-open="state" data-i18n="raw.open">原始</button>
+              </div>
+              <div id="stateMemoryView" class="memory-view"></div>
+            </article>
+            <article class="memory-card">
+              <div class="memory-card-head">
+                <h3 data-i18n="memory.recent_episodes">近期 episode</h3>
+                <button class="raw-link" data-raw-open="episodes" data-i18n="raw.open">原始</button>
+              </div>
+              <div id="episodesView" class="memory-view"></div>
+            </article>
+            <article class="memory-card">
+              <div class="memory-card-head">
+                <h3 data-i18n="memory.agent_log">Agent 日志</h3>
+                <button class="raw-link" data-raw-open="log" data-i18n="raw.open">原始</button>
+              </div>
+              <div id="agentLogView" class="memory-view log-view"></div>
+            </article>
+          </div>
+        </section>
 
-    <section class="panel distributed-panel">
-      <div class="section-head">
-        <div>
-          <p class="kicker">Distributed Social</p>
-          <h2>分布式虚拟社交</h2>
-        </div>
-        <div class="button-row">
-          <span id="distributedStatusBadge" class="status-badge">未连接</span>
-          <button id="reloadDistributedBtn" class="button small">刷新社交层</button>
-        </div>
-      </div>
-      <div class="social-meta">
-        <span id="distributedMetaLine">等待 relay snapshot。</span>
-      </div>
-      <div class="social-grid">
-        <article>
-          <h3>个人孪生状态</h3>
-          <pre id="personalTwinBox" class="codebox">暂无个人孪生状态。</pre>
-        </article>
-        <article>
-          <h3>连接中的分身</h3>
-          <pre id="distributedAgentsBox" class="codebox">暂无远程分身。</pre>
-        </article>
-        <article>
-          <h3>社交关系边</h3>
-          <pre id="distributedEdgesBox" class="codebox">暂无互动边。</pre>
-        </article>
-        <article>
-          <h3>最近跨节点消息</h3>
-          <pre id="distributedMessagesBox" class="codebox">暂无社交消息。</pre>
-        </article>
+        <section class="panel collapsible is-collapsed">
+          <div class="section-head">
+            <div>
+              <p class="kicker" data-i18n="run_log.kicker">Run Log</p>
+              <h2 data-i18n="run_log.title">运行输出</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="run_log.title_hint" data-help="后台仿真进程的实时输出日志，用于查看运行进度与排查错误。"></span>
+              <button id="exportRunLogBtn" class="button small" data-i18n="btn.export_run_log">导出 Markdown</button>
+              <button id="reloadStatusBtn" class="button small" data-i18n="btn.reload_status">刷新状态</button>
+            </div>
+          </div>
+          <pre id="runLogBox" class="codebox run-log" data-i18n="run_log.no_log">暂无运行日志。</pre>
+          <p id="runLogMeta" class="run-log-meta"></p>
+        </section>
       </div>
     </section>
   </main>
+  <div id="messageLine" class="toast" role="status"></div>
+  <div id="rawModal" class="raw-modal" hidden>
+    <div class="raw-modal-backdrop" data-raw-close></div>
+    <div class="raw-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rawModalTitle">
+      <div class="raw-modal-head">
+        <h3 id="rawModalTitle" data-i18n="raw.title">原始数据</h3>
+        <button class="raw-modal-close" data-raw-close aria-label="Close" data-i18n-title="raw.close" title="关闭">&times;</button>
+      </div>
+      <div id="rawModalTabs" class="raw-modal-tabs"></div>
+      <pre id="rawModalBody" class="codebox raw-modal-body"></pre>
+      <div class="raw-modal-foot">
+        <span id="rawModalMeta" class="raw-modal-meta"></span>
+        <div class="button-row">
+          <button id="rawCopyBtn" class="button small" data-i18n="raw.copy">复制</button>
+          <button id="rawDownloadBtn" class="button small primary" data-i18n="raw.download">下载</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/collaboration-core.js"></script>
+  <script src="/site/dashboard/citymap-view.js"></script>
   <script src="/site/dashboard/app.js"></script>
+  <script src="/site/dashboard/interaction.js"></script>
 </body>
 </html>

@@ -1,0 +1,105 @@
+\section{Related Work}
+\label{sec:related-work}
+
+GAWorld draws on four bodies of work that answer different parts of the
+artificial-society problem.  Its contribution is a system integration and an
+audited set of research surfaces; we do not claim that the underlying ideas of
+memory, tool-using agents, social evaluation, or agent-based validation are
+unique to GAWorld.
+
+\subsection{Generative agents and simulated individuals}
+
+Generative Agents demonstrated that an LLM-driven architecture combining an
+experience stream, retrieval, reflection, and planning can sustain socially
+legible behavior in a sandbox community \citep{park2023generative}.  That work
+provides a central precedent for persistent social characters and for studying
+emergent interaction through an inspectable environment.  Later work grounds
+agents in extensive self-report data and evaluates how well responses predict
+held-out answers from the same individuals \citep{park2024grounded}.  Research
+on ``silicon samples'' similarly explores conditioning language models to
+approximate distributions of survey responses
+\citep{argyle2023outofone}.  These studies motivate profile grounding and
+longitudinal state, but they also distinguish two validation targets:
+internally coherent simulated inhabitants and externally evaluated models of
+particular people or populations.
+
+GAWorld is oriented toward constructing the surrounding research system.  It
+adds configurable urban, social, economic, work, information, and policy
+mechanisms; multiple operational interfaces; and explicit experiment and
+artifact workflows around a persistent-agent loop.  Its archived profiles and
+traces have not undergone the held-out, person-level validation used in work
+on self-report-grounded agents.  Accordingly, GAWorld adopts persistence as a
+system property and treats fidelity as an open empirical claim.
+
+\subsection{Language-agent cognition and architecture}
+
+LLM-agent research has developed reusable patterns for coupling language
+generation to action.  ReAct interleaves reasoning and environment-facing
+actions \citep{yao2023react}; Reflexion stores verbal feedback to improve later
+attempts \citep{shinn2023reflexion}; and Voyager combines iterative prompting,
+environment feedback, and an accumulating skill library in an open-ended
+embodied setting \citep{wang2023voyager}.  MemoryBank studies long-term memory
+with retrieval and forgetting mechanisms \citep{zhong2024memorybank}, while
+CoALA offers a conceptual organization of language agents in terms of memory,
+action space, and decision procedures \citep{sumers2024coala}.  CAMEL, in
+turn, examines role-conditioned communication among language agents
+\citep{li2023camel}.
+
+These systems and abstractions inform GAWorld's separation of structured
+state, episodic storage, retrieval, planning, action, reflection, and learned
+skills.  GAWorld differs in scope rather than by proposing a new generic
+reasoning algorithm: it connects such components to a persistent multi-agent
+society and to a clocked, file-backed experimental runtime.  Its twelve-stage
+pipeline, event bus, and plugin registry expose replacement and observation
+points, but the present migration remains mixed with direct and hook-based
+paths.  Thus GAWorld contributes an implemented integration for social
+simulation, not a claim of a universally superior cognitive architecture.
+
+\subsection{Social-agent tasks and evaluation}
+
+AgentBench evaluates LLM agents across interactive environments and emphasizes
+the gap between language ability and reliable action
+\citep{liu2024agentbench}.  AgentBoard adds fine-grained progress measures and
+analytical visualization for multi-turn agents \citep{ma2024agentboard}.
+SOTOPIA focuses specifically on social intelligence by placing agents in
+interactive social scenarios and evaluating goal achievement and social
+dimensions \citep{zhou2024sotopia}.  Together, these benchmarks provide
+controlled tasks, comparative evaluation, and diagnostics for an agent or a
+small interaction.
+
+GAWorld addresses a complementary unit of analysis: a persistent society run
+whose agents, environment, institutions, and artifacts evolve across simulated
+time.  Its benchmark layer can check selected outputs, known-sign diagnostics,
+placebos, and determinism when suitable artifacts exist, but it is not a
+replacement for standardized social-intelligence or interactive-agent
+benchmarks.  Conversely, task success alone does not validate population
+composition, emergent dynamics, or policy counterfactuals.  GAWorld therefore
+retains agent-level traces and run-level evidence status so that task
+competence, social interaction, and society-level claims can be evaluated
+separately.
+
+\subsection{Agent-based social simulation and validation}
+
+Agent-based modeling (ABM) treats macro patterns as outcomes of specified
+micro-level rules and interactions, while generative social science emphasizes
+using such models to explain how collective regularities can arise
+\citep{epstein2006generative}.  The ODD protocol provides a standard vocabulary
+for documenting an individual- or agent-based model's overview, design
+concepts, and details \citep{grimm2006odd}.  Methodological work on empirical
+ABM validation stresses that matching selected aggregate observations is not
+sufficient: calibration, identification, sensitivity, multiple validation
+targets, and out-of-sample evidence remain distinct concerns
+\citep{windrum2007empirical,fagiolo2007critical}.
+
+GAWorld inherits this demand for explicit mechanisms and layered evidence, but
+LLM mediation introduces additional sources of variation.  Prompt context,
+provider behavior, model versions, parsing fallbacks, and generated text can
+change trajectories even when conventional parameters and seeds are recorded.
+The system therefore couples ABM-style configuration and intervention design
+to provider logs, raw agent traces, per-arm completion status, and an artifact
+ledger.  Its present archive supports software-path and affordance claims, not
+empirical validation of a population model.  This distinction also responds to
+concerns that language models should not be treated as drop-in replacements
+for human participants \citep{dillion2023replace}, particularly when generated
+outputs can flatten variation within identity groups
+\citep{wang2025flatten}.

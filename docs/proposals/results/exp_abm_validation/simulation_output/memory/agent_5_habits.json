@@ -1,0 +1,114 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.28721356800000003,
+    "last_updated_day": 1
+  },
+  "morning|public|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1,
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 2
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Building C-02": {
+    "action_counts": {
+      "乘坐metro移动": 4
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.355246336,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Insurance Center": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|work|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|home|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 4,
+      "按原节奏继续当前安排": 2,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.3163841914182041,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Insurance Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Riverwalk": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|public|个人时间": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "按原节奏继续当前安排": 2,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.20812859965439998,
+    "last_updated_day": 1
+  },
+  "evening|work|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Westside Community Center": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|home|前往C-01 (Village Center)": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  }
+}

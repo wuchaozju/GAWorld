@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-import life_events
+from gaworld.events import life as life_events
 
 
 class TestLifeEvents(unittest.TestCase):

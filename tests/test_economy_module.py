@@ -6,7 +6,7 @@ import csv
 import json
 from unittest.mock import patch
 
-import economy_module as eco
+from gaworld.economy import finance as eco
 
 
 def _build_agent(agent_id=1, job="软件工程师", age=30, risk_preference=0.6):
@@ -147,7 +147,7 @@ class TestInvestment(unittest.TestCase):
         self.assertEqual(eco._infer_portfolio_type(aggressive), "aggressive")
 
     def test_investment_return_simulation(self):
-        random.seed(42)
+        eco._rng.seed(42)
         cfg = eco.deepcopy(eco.DEFAULT_ECONOMY_CONFIG)
         weights = {"deposits": 0.5, "funds": 0.3, "stocks": 0.2}
         ret, per_asset = eco._simulate_monthly_investment_return(100000, weights, cfg)
@@ -204,22 +204,29 @@ class TestShockEvents(unittest.TestCase):
     """Test economic shock events."""
 
     def test_layoff_shock(self):
-        random.seed(7)
+        eco._rng.seed(7)
         agent = _build_agent()
         cfg = eco.deepcopy(eco.DEFAULT_ECONOMY_CONFIG)
-        econ = {"base_hourly_income": 80, "income_skill": 0.6,
+        econ = {"base_hourly_income": 80, "gross_monthly_salary": 14080,
+                "income_skill": 0.6,
                 "daily_expense": 0, "daily_expense_by_category": eco._empty_daily_categories(),
                 "accounts": {"checking": 50000}}
         macro = {"enabled": True, "phase": "trough"}
         # Force layoff
-        with patch("economy_module.random.random", return_value=0.0):
+        with patch.object(eco._rng, "random", return_value=0.0):
             events = eco._check_daily_shocks(agent, econ, cfg, macro)
         layoffs = [e for e in events if e["type"] == "layoff"]
         self.assertTrue(len(layoffs) > 0)
         self.assertLess(econ["base_hourly_income"], 80)
+        # Gross salary must drop proportionally so the monthly settlement
+        # (tax / SI / budget) uses the post-layoff tax base.
+        self.assertLess(econ["gross_monthly_salary"], 14080)
+        self.assertAlmostEqual(
+            econ["gross_monthly_salary"] / 14080,
+            econ["base_hourly_income"] / 80, places=4)
 
     def test_medical_emergency(self):
-        random.seed(11)
+        eco._rng.seed(11)
         agent = _build_agent()
         cfg = eco.deepcopy(eco.DEFAULT_ECONOMY_CONFIG)
         econ = {"base_hourly_income": 80, "income_skill": 0.6,
@@ -227,7 +234,7 @@ class TestShockEvents(unittest.TestCase):
                 "accounts": {"checking": 50000}}
         macro = {"enabled": False}
         # Force medical emergency
-        with patch("economy_module.random.random", return_value=0.0):
+        with patch.object(eco._rng, "random", return_value=0.0):
             events = eco._check_daily_shocks(agent, econ, cfg, macro)
         medical = [e for e in events if e["type"] == "medical_emergency"]
         self.assertTrue(len(medical) > 0)
@@ -245,7 +252,7 @@ class TestEconomyModule(unittest.TestCase):
         self.tmpdir.cleanup()
 
     def test_init_sets_finance_profile(self):
-        random.seed(7)
+        eco._rng.seed(7)
         agent = _build_agent()
         ctx = {"config": self.config, "agents": [agent], "extension_state": {}}
         eco.on_simulation_start(ctx)
@@ -268,7 +275,7 @@ class TestEconomyModule(unittest.TestCase):
             self.config["log_dir"], "agent_1.log")))
 
     def test_init_multi_account_sums_to_balance(self):
-        random.seed(13)
+        eco._rng.seed(13)
         agent = _build_agent()
         ctx = {"config": self.config, "agents": [agent], "extension_state": {}}
         eco.on_simulation_start(ctx)
@@ -278,7 +285,7 @@ class TestEconomyModule(unittest.TestCase):
         self.assertAlmostEqual(econ["balance"], liquid, places=1)
 
     def test_init_can_include_inheritance_assets(self):
-        random.seed(9)
+        eco._rng.seed(9)
         agent = _build_agent()
         cfg = dict(self.config)
         cfg["economy"] = dict(self.config["economy"])
@@ -294,7 +301,7 @@ class TestEconomyModule(unittest.TestCase):
             places=2)
 
     def test_high_wealth_drive_can_seek_income_activity(self):
-        random.seed(11)
+        eco._rng.seed(11)
         agent = _build_agent()
         ctx = {"config": self.config, "agents": [agent], "extension_state": {}}
         eco.on_simulation_start(ctx)
@@ -314,13 +321,13 @@ class TestEconomyModule(unittest.TestCase):
             "actions": {1: {"工作": ["处理任务"]}},
             "extension_state": ctx["extension_state"],
         }
-        with patch("economy_module.random.random", return_value=0.0):
+        with patch.object(eco._rng, "random", return_value=0.0):
             eco.on_agent_pre_step(pre_ctx)
         self.assertEqual("工作", step["activity"])
         self.assertTrue(step.get("economy_forced_income", False))
 
     def test_post_step_records_income_and_expense(self):
-        random.seed(19)
+        eco._rng.seed(19)
         agent = _build_agent()
         ext = {}
         start_ctx = {"config": self.config, "agents": [agent], "extension_state": ext}
@@ -345,14 +352,16 @@ class TestEconomyModule(unittest.TestCase):
         self.assertGreater(econ["daily_expense"], 0.0)
         self.assertNotEqual(before_balance, econ["balance"])
 
-    def test_day_end_can_raise_income_after_deficit(self):
-        random.seed(23)
+    def test_day_end_does_not_raise_income_on_deficit(self):
+        """Running a deficit must NOT magically raise wages (removed perpetual-motion rule)."""
+        eco._rng.seed(23)
         agent = _build_agent()
         ext = {}
         start_ctx = {"config": self.config, "agents": [agent], "extension_state": ext}
         eco.on_simulation_start(start_ctx)
         econ = agent["economy"]
         base_before = econ["base_hourly_income"]
+        skill_before = econ["income_skill"]
         econ["wealth_drive"] = 0.9
         econ["daily_income"] = 20.0
         econ["daily_expense"] = 180.0
@@ -363,11 +372,12 @@ class TestEconomyModule(unittest.TestCase):
             "extension_state": ext,
         }
         eco.on_day_end(end_ctx)
-        self.assertGreater(agent["economy"]["base_hourly_income"], base_before)
+        self.assertEqual(base_before, agent["economy"]["base_hourly_income"])
+        self.assertEqual(skill_before, agent["economy"]["income_skill"])
         self.assertEqual(1, len(ext["economy_module"]["day_rows"]))
 
     def test_day_rows_include_new_fields(self):
-        random.seed(31)
+        eco._rng.seed(31)
         agent = _build_agent()
         ext = {}
         ctx = {"config": self.config, "agents": [agent], "extension_state": ext}
@@ -389,7 +399,7 @@ class TestEconomyModule(unittest.TestCase):
         self.assertIn("macro_phase", row)
 
     def test_simulation_end_exports_per_agent_files(self):
-        random.seed(31)
+        eco._rng.seed(31)
         agent1 = _build_agent(1)
         agent2 = _build_agent(2)
         ext = {}
@@ -425,7 +435,7 @@ class TestEconomyModule(unittest.TestCase):
 
     def test_different_jobs_produce_different_profiles(self):
         """Doctors should earn more than students; spending patterns differ."""
-        random.seed(42)
+        eco._rng.seed(42)
         doctor = _build_agent(1, job="医生", age=40)
         student = _build_agent(2, job="大学生", age=21)
         ext = {}
@@ -438,6 +448,24 @@ class TestEconomyModule(unittest.TestCase):
         # Doctor should have lower Engel coefficient (richer)
         if doc_econ["net_monthly_salary"] > stu_econ["net_monthly_salary"]:
             self.assertLessEqual(doc_econ["engel_coefficient"], stu_econ["engel_coefficient"])
+
+    def test_rng_isolated_from_global_random(self):
+        """Same random_seed → identical economy, even if the global RNG is perturbed."""
+        def run_once():
+            agent = _build_agent()
+            cfg = _build_config(self.tmpdir.name)
+            cfg["stateful"] = False  # no state reload between runs
+            cfg["random_seed"] = 42
+            ctx = {"config": cfg, "agents": [agent], "extension_state": {}}
+            eco.on_simulation_start(ctx)
+            return agent["economy"]
+
+        econ_a = run_once()
+        random.random()  # perturb the global stream between runs
+        econ_b = run_once()
+        self.assertEqual(econ_a["gross_monthly_salary"], econ_b["gross_monthly_salary"])
+        self.assertEqual(econ_a["accounts"], econ_b["accounts"])
+        self.assertEqual(econ_a["initial_assets"], econ_b["initial_assets"])
 
     def test_industry_mapping(self):
         agent_tech = _build_agent(job="程序员")

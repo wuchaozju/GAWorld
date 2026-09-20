@@ -1,0 +1,4258 @@
+{
+  "rubric_version": "0.1.0",
+  "dimensions": {
+    "R1": {
+      "name": "个体拟人性",
+      "score": null,
+      "status": "unassessed",
+      "reason": "无可用 item（全部弃权或被判别力剔除）",
+      "coverage": 0.0,
+      "n_items_used": 0,
+      "n_items_applicable": 7,
+      "n_items_total": 7
+    },
+    "R2": {
+      "name": "演化能力",
+      "score": null,
+      "status": "unassessed",
+      "reason": "无可用 item（全部弃权或被判别力剔除）",
+      "coverage": 0.0,
+      "n_items_used": 0,
+      "n_items_applicable": 7,
+      "n_items_total": 7
+    },
+    "R3": {
+      "name": "社会真实性",
+      "score": null,
+      "status": "unassessed",
+      "reason": "无可用 item（全部弃权或被判别力剔除）",
+      "coverage": 1.0,
+      "n_items_used": 0,
+      "n_items_applicable": 1,
+      "n_items_total": 6
+    },
+    "R4": {
+      "name": "世界一致性",
+      "score": 0.441,
+      "raw_score": 0.928,
+      "coverage": 0.475,
+      "abstain_rate": 0.737,
+      "pass": false,
+      "threshold": 0.8,
+      "status": "unassessed",
+      "n_items_used": 3,
+      "n_items_applicable": 6,
+      "n_items_total": 6
+    }
+  },
+  "items": {
+    "R1.1": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.2": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.3": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.4": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.5": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "trajectory",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.6": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R1.7": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R1",
+      "unit": "agent_day",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.1": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.2": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.3": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.4": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.5": {
+      "n_units": 1,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "cohort",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.6": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R2.7": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R2",
+      "unit": "trajectory",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R3.1": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [
+        "social_graph"
+      ],
+      "dim": "R3",
+      "unit": "cohort",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": null,
+      "status": "missing_data"
+    },
+    "R3.2": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [
+        "social_graph"
+      ],
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "missing_data"
+    },
+    "R3.3": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [
+        "social_graph"
+      ],
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "missing_data"
+    },
+    "R3.4": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [
+        "social_graph"
+      ],
+      "dim": "R3",
+      "unit": "dyad",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "missing_data"
+    },
+    "R3.5": {
+      "n_units": 5,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R3",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R3.6": {
+      "n_units": 0,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [
+        "social_graph"
+      ],
+      "dim": "R3",
+      "unit": "cohort",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "missing_data"
+    },
+    "R4.1": {
+      "n_units": 19,
+      "n_scored": 14,
+      "abstain_rate": 0.263,
+      "mean_score": 1.571,
+      "score_hist": {
+        "0": 3,
+        "1": 0,
+        "2": 11
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": 0.643,
+      "status": "ok"
+    },
+    "R4.2": {
+      "n_units": 19,
+      "n_scored": 14,
+      "abstain_rate": 0.263,
+      "mean_score": 2,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 14
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": 0.857,
+      "status": "ok"
+    },
+    "R4.3": {
+      "n_units": 19,
+      "n_scored": 2,
+      "abstain_rate": 0.895,
+      "mean_score": 2,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 2
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "rule",
+      "weight": 1,
+      "discrimination": 1.0,
+      "status": "ok"
+    },
+    "R4.4": {
+      "n_units": 5,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R4.5": {
+      "n_units": 5,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "world_slice",
+      "checker": "llm",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    },
+    "R4.6": {
+      "n_units": 19,
+      "n_scored": 0,
+      "abstain_rate": 1.0,
+      "mean_score": null,
+      "score_hist": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      },
+      "missing_capabilities": [],
+      "dim": "R4",
+      "unit": "agent_day",
+      "checker": "hybrid",
+      "weight": 1,
+      "discrimination": null,
+      "status": "unverified_no_ablation"
+    }
+  },
+  "dropped_items": [],
+  "coverage": {
+    "agent_day": 0.475,
+    "trajectory": 0.0,
+    "dyad": 0.0,
+    "world_slice": 1.0,
+    "cohort": 1.0
+  },
+  "reliability": {
+    "krippendorff_alpha": null,
+    "n_rated_units": 0,
+    "mean_vote_spread": null,
+    "any_dimension_untrustworthy": false,
+    "untrustworthy_dimensions": []
+  },
+  "manifest": {
+    "sample_seed": 42,
+    "min_days": 30,
+    "targets": {
+      "agent_day": 40,
+      "trajectory": 12,
+      "dyad": 15,
+      "world_slice": 5
+    },
+    "available": {
+      "agent_day": 19,
+      "trajectory": 0,
+      "dyad": 0,
+      "world_slice": 13
+    },
+    "n_agents": 11,
+    "strata_sizes": {
+      "mid": 4,
+      "low": 5,
+      "high": 2
+    },
+    "rubric_hash": "56523e783e28",
+    "judges": [],
+    "ablations_run": [
+      "N1",
+      "N3",
+      "N4",
+      "N6",
+      "N7"
+    ],
+    "run_mode": "full",
+    "capabilities": {
+      "episodes": true,
+      "series": true,
+      "growth": true,
+      "ledger": true,
+      "profiles": true,
+      "daily_narrative": true,
+      "authored_diary": true,
+      "social_graph": false
+    },
+    "missing_capabilities": [
+      "social_graph"
+    ]
+  },
+  "gate": {
+    "state": "UNVERIFIED",
+    "reason": "没有任何维度达到可评状态（数据不足或全部弃权）"
+  },
+  "raw_results": {
+    "R1.1": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 16,
+          "grounded_ratio": 0.667,
+          "checks": [
+            {
+              "recollection": "这让你想起一段经历：Day 6 10:27 上午工作/按原计划继续处理例行事项 @ 西溪街道 driver=现实承诺约束...；一段经历：Day 6 09:01",
+              "best_overlap": 0.167,
+              "matched_day": 6,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【找地方避雨】中执行了【联系一下相关的人确认接下来的安排】；某次做法：在【找地方避雨】中执行了【联系一下相关的人确认接下来的安排】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 7 14:53 下午工作/推进最重要的一项任务 @ 来伊份 driver=现实承诺约束...；某次做法：在【约朋友出去】中执行了【联",
+              "best_overlap": 0.211,
+              "matched_day": 7,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【约朋友出去】中执行了【联系一下相关的人确认接下来的安排】；某次做法：在【找地方避雨】中执行了【按原节奏继续当前安排】",
+              "best_overlap": 0.188,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【约朋友出去】中执行了【联系一下相关的人确认接下来的安排】；某次做法：在【约朋友出去】中执行了【按原节奏继续当前安排】",
+              "best_overlap": 0.125,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【下午工作】中执行了【按原计划继续处理例行事项】；某次做法：在【下午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.2,
+              "matched_day": 6,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【下午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【下午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.2,
+              "matched_day": 6,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 15,
+          "grounded_ratio": 0.625,
+          "checks": [
+            {
+              "recollection": "这让你想起过去的记忆：[Day 6 Consolidation] 09:28 上午工作 -> 推进最重要的一项任务...；过去的记忆：[Day 5 Consol",
+              "best_overlap": 0.111,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【下午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【下午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.2,
+              "matched_day": 6,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 5 09:39 上午工作/联系相关的人确认进度和分工 @ 解放路百货商店 driver=现实承诺约束...；一个生活片段：── [邓",
+              "best_overlap": 0.13,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【午饭】中执行了【先把眼前这件事往前推进一点】；之前的反思：结果：这一步暂时就这样。；感受：情绪有一点波动；教训：下次还是要更早判断状态和",
+              "best_overlap": 0.667,
+              "matched_day": 6,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 20,
+          "n_grounded": 0,
+          "grounded_ratio": 0.0,
+          "checks": [
+            {
+              "recollection": "这让你想起一段经历：Day 3 08:45 找地方避雨/先拖一会儿再说，顺手刷会儿手机 @ 武林街道 driver=惯性延续...；某次做法：在【找地方避雨】中",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；一段经历：",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；一段经历：Day 3 09:05 上午工作/联系相关的人确认进度和分工 @ 工联CC二",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；一段经历：Day 3 09:05 上午工作/联系相关的人确认进度和分工 @ 工联CC二",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 16,
+          "grounded_ratio": 0.667,
+          "checks": [
+            {
+              "recollection": "这让你想起过去的记忆：[Day 7 Consolidation] 20:51 找地方避雨 -> 按原节奏继续当前安排...；过去的记忆：[Day 8 Conso",
+              "best_overlap": 0.118,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 33,
+          "n_grounded": 0,
+          "grounded_ratio": 0.0,
+          "checks": [
+            {
+              "recollection": "这让你想起一个生活片段：── [施永强 @ 06:40] 起床洗漱 → 收集筛选本地兼职机会并列出预计报酬与时间投入...；一段经历：Day 49 06:40 ",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：完成今日安排并做好记录；顾虑：气温突降且下雨，需先找避雨点；冲动：想偷懒跳过慢跑直接避雨；打算：先在家避雨热身，再...；一段经历：",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到一个生活片段：── [施永强 @ 06:40] 起床洗漱 → 收集筛选本地兼职机会并列出预计报酬与时间投入...；之前的反思：结果：已整理出本周兼职列",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；一段经历：",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；一段经历：",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【收集筛选本地兼职机会并列出预计报酬与时间投入】中执行了【每日检查本地招聘网站更新，确保不遗漏新机会】；一个生活片段：── [施永强 @ ",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【收集筛选本地兼职机会并列出预计报酬与时间投入】中执行了【加入社区兼职信息共享群组，快速筛选符合个人技能的岗位】；先前的打算：目标：筛选并",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 49 06:39 起床洗漱/检查手机是否有社区重要信息，及时回复 @ 湖滨银泰in77 E区...；一段经历：Day 49 07:0",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【在开门场所收集相关信息】中执行了【在信息采集间隙确认天气变化】；一段经历：Day 49 08:00 在开门场所收集相关信息/在信息采集间",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 16,
+          "grounded_ratio": 0.667,
+          "checks": [
+            {
+              "recollection": "这让你想起过去的记忆：[Day 5 Consolidation] 08:22 找地方避雨 -> 先把眼前这件事往前推进一点...；一段经历：Day 5 09:3",
+              "best_overlap": 0.15,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】；一段经历：Day 5 11:55 上午工作/按原计划继续处理例行事项 @ 工联CC dr",
+              "best_overlap": 0.235,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 5 09:39 上午工作/联系相关的人确认进度和分工 @ 解放路百货商店 driver=现实承诺约束...；一段经历：Day 5 0",
+              "best_overlap": 0.167,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.214,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 6 09:28 上午工作/推进最重要的一项任务 @ 苏宁生活广场 driver=现实承诺约束...；一段经历：Day 5 09:39",
+              "best_overlap": 0.158,
+              "matched_day": 5,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 16,
+          "grounded_ratio": 0.667,
+          "checks": [
+            {
+              "recollection": "这让你想起过去的记忆：[Day 8 Consolidation] 17:23 找地方避雨 -> 联系一下相关的人确认接下来的安排...；过去的记忆：[Day 7",
+              "best_overlap": 0.118,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【下午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【下午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.214,
+              "matched_day": 6,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 5 09:39 上午工作/联系相关的人确认进度和分工 @ 解放路百货商店 driver=现实承诺约束...；一段经历：Day 8 1",
+              "best_overlap": 0.143,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.214,
+              "matched_day": 9,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【按原计划继续处理例行事项】",
+              "best_overlap": 0.2,
+              "matched_day": 5,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【推进最重要的一项任务】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.214,
+              "matched_day": 9,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 7 14:53 下午工作/推进最重要的一项任务 @ 来伊份 driver=现实承诺约束...；一段经历：Day 7 12:21 午饭",
+              "best_overlap": 0.143,
+              "matched_day": 7,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 22,
+          "n_grounded": 15,
+          "grounded_ratio": 0.682,
+          "checks": [
+            {
+              "recollection": "这让你想起过去的记忆：[Day 3 Consolidation] 08:45 找地方避雨 -> 先拖一会儿再说，顺手刷会儿手机...；一个生活片段：── [胡建",
+              "best_overlap": 0.182,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 3 08:45 找地方避雨/先拖一会儿再说，顺手刷会儿手机 @ 武林街道 driver=惯性延续...；一段经历：Day 3 09:",
+              "best_overlap": 0.217,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 3 08:45 找地方避雨/先拖一会儿再说，顺手刷会儿手机 @ 武林街道 driver=惯性延续...；一段经历：Day 3 09:",
+              "best_overlap": 0.217,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "你又联想到某次做法：从【西泠印社】前往【武林街道】，使用【e-bike】，路程约 8.2 km，预计 36 分钟；一段经历：Day 4 08:37 前往武林街道",
+              "best_overlap": 0.034,
+              "matched_day": 3,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.188,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【推进最重要的一项任务】",
+              "best_overlap": 0.188,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 4 10:04 上午工作/联系相关的人确认进度和分工 @ 湖滨银泰in77 C2区 driver=现实承诺约束...；一段经历：Da",
+              "best_overlap": 0.2,
+              "matched_day": 3,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 4 10:04 上午工作/联系相关的人确认进度和分工 @ 湖滨银泰in77 C2区 driver=现实承诺约束...；之前的反思：结",
+              "best_overlap": 0.474,
+              "matched_day": 3,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 21,
+          "n_grounded": 0,
+          "grounded_ratio": 0.0,
+          "checks": [
+            {
+              "recollection": "这让你想起某次做法：在【找地方避雨】中执行了【先把眼前这件事往前推进一点】；一段经历：Day 5 08:22 找地方避雨/先把眼前这件事往前推进一点 @ 北山街",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；一段经历：",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【找地方避雨】中执行了【先把眼前这件事往前推进一点】；更高层的总结：[Day 5 08:22 MemoryReview]...",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；一段经历：Day 5 08:42 上午工作/联系相关的人确认进度和分工 @ 西泠印社 ",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；一段经历：Day 5 08:42 上午工作/联系相关的人确认进度和分工 @ 西泠印社 ",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】；某次做法：在【上午工作】中执行了【联系相关的人确认进度和分工】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 36,
+          "n_grounded": 30,
+          "grounded_ratio": 0.833,
+          "checks": [
+            {
+              "recollection": "这让你想起一段经历：Day 49 16:30 核实岗位并梳理政策/提取复杂土地政策的关键要点 @ 马可波罗像 driver=惯性延续...；一段经历：Day 4",
+              "best_overlap": 0.167,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；一段经历：",
+              "best_overlap": 0.16,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 49 06:39 起床洗漱/检查手机是否有社区重要信息，及时回复 @ 湖滨银泰in77 E区...；一段经历：Day 49 12:3",
+              "best_overlap": 0.174,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 49 11:00 寻找稳固的场所/避开无关人群干扰，快速标注筛选出的候选点 @ 来伊份 driver=惯性延续...；一段经历：Da",
+              "best_overlap": 0.154,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【收集筛选本地兼职机会并列出预计报酬与时间投入】中执行了【加入社区兼职信息共享群组，快速筛选符合个人技能的岗位】；先前的打算：目标：核实高",
+              "best_overlap": 0.167,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 49 06:39 起床洗漱/检查手机是否有社区重要信息，及时回复 @ 湖滨银泰in77 E区...；一段经历：Day 49 09:3",
+              "best_overlap": 0.16,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：筛选并核实高潜力兼职项目，同时整理近期的土地政策及社区信息。；顾虑：信息流过载导致的决策迟滞，以及近期环境变化带来...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 49 11:00 寻找稳固的场所/避开无关人群干扰，快速标注筛选出的候选点 @ 来伊份 driver=惯性延续...；一段经历：Da",
+              "best_overlap": 0.16,
+              "matched_day": 49,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 50 08:00 联系并初步沟通筛选出的兼职岗位/核对最终约定的到岗地点及时间节点 @ 西溪街道...；一段经历：Day 49 08",
+              "best_overlap": 0.115,
+              "matched_day": 49,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 21,
+          "n_grounded": 0,
+          "grounded_ratio": 0.0,
+          "checks": [
+            {
+              "recollection": "这让你想起某次做法：在【兼职】中执行了【在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。】；一段经历：Day 1 08:35 兼职/在小区公告栏或",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：在熟悉的环境中，通过日常节奏和本地交流锚定心绪。；顾虑：突发降雨导致的路面湿滑结冰危险，需要降低户外活动强度。；冲...；一个生活片",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到一个生活片段：── [钱福生 @ 08:35]...；某次做法：在【兼职】中执行了【在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。】",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起一个生活片段：── [钱福生 @ 08:35]...；某次做法：在【暂时避雨躲困】中执行了【眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：在熟悉的环境中恢复平静，通过慢节奏交流维持心绪稳定。；顾虑：必须考虑突发降雨导致的路面湿滑和安全风险。；冲动：恢复...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【兼职】中执行了【在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。】；一段经历：Day 1 08:35 兼职/在小区公告栏或",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起某次做法：在【退回庇护所静待雨歇】中执行了【先拖一会儿再说，顺手刷会儿手机】；先前的打算：目标：在安全避雨的角落，延续对本地生活节拍的观察与记录。；顾",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你临时想起一段经历：Day 1 11:00 暂时避雨躲困/眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（参照旧记忆进行定位）...；一段经历：Day",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【暂时避雨躲困】中执行了【眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（参照旧记忆进行定位）。】；一段经历：Day 1 11:",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 1 08:35 兼职/在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。 @ Willow...；某次做法：在【暂时避雨",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 24,
+          "n_grounded": 20,
+          "grounded_ratio": 0.833,
+          "checks": [
+            {
+              "recollection": "这让你想起先前的打算：目标：在熟悉的环境中，通过日常节奏和本地交流锚定心绪。；顾虑：突发降雨导致的路面湿滑结冰危险，需要降低户外活动强度。；冲...；一段经历：",
+              "best_overlap": 0.133,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：在熟悉的环境中，通过日常节奏和本地交流锚定心绪。；顾虑：突发降雨导致的路面湿滑结冰危险，需要降低户外活动强度。；冲...；一段经历：",
+              "best_overlap": 0.121,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "你又联想到某次做法：在【兼职】中执行了【在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。】；一段经历：Day 1 08:35 兼职/在小区公告栏或",
+              "best_overlap": 0.185,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 1 08:35 兼职/在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。 @ Willow...；先前的打算：目标：在熟",
+              "best_overlap": 0.121,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起一段经历：Day 1 14:30 回庇护所休养/习惯性地找寻熟悉的固定物体或角落，将身体倚靠在看似坚实的结构上（维持型）。 @...；先前的打算：目标",
+              "best_overlap": 0.129,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "你又联想到一段经历：Day 1 14:30 回庇护所休养/习惯性地找寻熟悉的固定物体或角落，将身体倚靠在看似坚实的结构上（维持型）。 @...；一段经历：Day",
+              "best_overlap": 0.208,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起一段经历：Day 2 11:00 找阴凉处休息/联系一下相关的人确认接下来的安排 @ 杭州西湖风景名胜区管理委员会...；一段经历：Day 1 14:",
+              "best_overlap": 0.143,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "你临时想起先前的打算：目标：在稳定的社区环境中，维持日常节奏的观察与记录。；顾虑：突发性强降雨和湿滑路面要求，目前必须将安全置于首位，进行躲避...；先前的打算",
+              "best_overlap": 0.0,
+              "matched_day": null,
+              "grounded": false
+            },
+            {
+              "recollection": "你又联想到某次做法：在【暂时避雨躲困】中执行了【眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（参照旧记忆进行定位）。】；一个生活片段：── [钱福生",
+              "best_overlap": 0.25,
+              "matched_day": 1,
+              "grounded": true
+            },
+            {
+              "recollection": "这让你想起某次做法：在【寻找稳定庇护所】中执行了【与几位熟悉的老邻居围坐在一起，进行传统的家常交谈来稳定情绪。】；一个生活片段：── [钱福生 @ 11:00]",
+              "best_overlap": 0.111,
+              "matched_day": 1,
+              "grounded": true
+            }
+          ]
+        }
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_recollections": 0,
+          "n_grounded": 0,
+          "grounded_ratio": null,
+          "checks": []
+        }
+      }
+    ],
+    "R1.2": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R1.3": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R1.4": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "09:05",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.071
+            },
+            {
+              "time": "09:44",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.058
+            },
+            {
+              "time": "09:59",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.083
+            },
+            {
+              "time": "11:23",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.034
+            },
+            {
+              "time": "15:31",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.031
+            },
+            {
+              "time": "17:23",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.062
+            },
+            {
+              "time": "21:13",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.038
+            },
+            {
+              "time": "22:29",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.038
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:54",
+              "n_events": 2,
+              "large_deltas": {
+                "time_pressure": 0.116
+              },
+              "max_abs_delta": 0.116
+            },
+            {
+              "time": "09:14",
+              "n_events": 0,
+              "large_deltas": {
+                "time_pressure": 0.11
+              },
+              "max_abs_delta": 0.11
+            },
+            {
+              "time": "09:29",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.039
+            },
+            {
+              "time": "12:21",
+              "n_events": 0,
+              "large_deltas": {
+                "hunger": -0.208
+              },
+              "max_abs_delta": 0.208
+            },
+            {
+              "time": "14:53",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.057
+            },
+            {
+              "time": "18:21",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.056
+            },
+            {
+              "time": "20:51",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.082
+            },
+            {
+              "time": "23:05",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.082
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:45",
+              "n_events": 2,
+              "large_deltas": {
+                "time_pressure": 0.101
+              },
+              "max_abs_delta": 0.101
+            },
+            {
+              "time": "09:05",
+              "n_events": 0,
+              "large_deltas": {
+                "time_pressure": 0.105
+              },
+              "max_abs_delta": 0.105
+            },
+            {
+              "time": "10:08",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.041
+            },
+            {
+              "time": "11:48",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.054
+            },
+            {
+              "time": "13:10",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.081
+            },
+            {
+              "time": "18:15",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.04
+            },
+            {
+              "time": "20:42",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.034
+            },
+            {
+              "time": "22:36",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.08
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:05",
+              "n_events": 2,
+              "large_deltas": {
+                "time_pressure": 0.119
+              },
+              "max_abs_delta": 0.119
+            },
+            {
+              "time": "09:10",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.046
+            },
+            {
+              "time": "10:32",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.043
+            },
+            {
+              "time": "12:13",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.048
+            },
+            {
+              "time": "14:27",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.029
+            },
+            {
+              "time": "17:58",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.087
+            },
+            {
+              "time": "20:45",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.078
+            },
+            {
+              "time": "23:59",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.075
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "06:39",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.116,
+                "platform_dependence": 0.104,
+                "voice_propensity": 0.152
+              },
+              "max_abs_delta": 0.152
+            },
+            {
+              "time": "06:40",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.192,
+                "stress": 0.172,
+                "econ_security": -0.207,
+                "platform_dependence": 0.103,
+                "time_pressure": 0.102
+              },
+              "max_abs_delta": 0.207
+            },
+            {
+              "time": "07:00",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.134,
+                "stress": -0.135
+              },
+              "max_abs_delta": 0.135
+            },
+            {
+              "time": "08:00",
+              "n_events": 2,
+              "large_deltas": {
+                "stress": -0.221,
+                "city_identity": 0.149,
+                "policy_sensitivity": 0.106,
+                "voice_propensity": 0.134
+              },
+              "max_abs_delta": 0.221
+            },
+            {
+              "time": "09:30",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.081
+            },
+            {
+              "time": "11:00",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.116,
+                "econ_security": -0.117,
+                "platform_dependence": 0.105
+              },
+              "max_abs_delta": 0.117
+            },
+            {
+              "time": "12:30",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.083
+            },
+            {
+              "time": "14:30",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.079
+            },
+            {
+              "time": "16:30",
+              "n_events": 2,
+              "large_deltas": {
+                "stress": -0.164
+              },
+              "max_abs_delta": 0.164
+            },
+            {
+              "time": "18:00",
+              "n_events": 3,
+              "large_deltas": {
+                "emotion": -0.128,
+                "platform_dependence": -0.108,
+                "voice_propensity": 0.129
+              },
+              "max_abs_delta": 0.129
+            },
+            {
+              "time": "19:30",
+              "n_events": 3,
+              "large_deltas": {
+                "emotion": 0.131,
+                "city_identity": 0.118,
+                "platform_dependence": -0.153,
+                "voice_propensity": 0.125
+              },
+              "max_abs_delta": 0.153
+            },
+            {
+              "time": "22:30",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.082
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "09:01",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.083
+            },
+            {
+              "time": "09:28",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.072
+            },
+            {
+              "time": "10:27",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.037
+            },
+            {
+              "time": "12:14",
+              "n_events": 0,
+              "large_deltas": {
+                "hunger": -0.229
+              },
+              "max_abs_delta": 0.229
+            },
+            {
+              "time": "14:00",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.055
+            },
+            {
+              "time": "17:46",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.058
+            },
+            {
+              "time": "20:48",
+              "n_events": 2,
+              "large_deltas": {
+                "hunger": -0.229
+              },
+              "max_abs_delta": 0.229
+            },
+            {
+              "time": "22:17",
+              "n_events": 0,
+              "large_deltas": {
+                "hunger": -0.192
+              },
+              "max_abs_delta": 0.192
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:03",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.083
+            },
+            {
+              "time": "08:47",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.074
+            },
+            {
+              "time": "09:42",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.045
+            },
+            {
+              "time": "11:25",
+              "n_events": 0,
+              "large_deltas": {
+                "hunger": -0.247
+              },
+              "max_abs_delta": 0.247
+            },
+            {
+              "time": "13:33",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.055
+            },
+            {
+              "time": "16:59",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.065
+            },
+            {
+              "time": "21:34",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.031
+            },
+            {
+              "time": "23:59",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.06
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:37",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.043
+            },
+            {
+              "time": "08:57",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.043
+            },
+            {
+              "time": "10:04",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.047
+            },
+            {
+              "time": "11:38",
+              "n_events": 0,
+              "large_deltas": {
+                "hunger": -0.228
+              },
+              "max_abs_delta": 0.228
+            },
+            {
+              "time": "13:01",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.056
+            },
+            {
+              "time": "17:52",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.042
+            },
+            {
+              "time": "20:39",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.074
+            },
+            {
+              "time": "22:19",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.039
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:22",
+              "n_events": 2,
+              "large_deltas": {
+                "time_pressure": 0.1
+              },
+              "max_abs_delta": 0.1
+            },
+            {
+              "time": "08:42",
+              "n_events": 0,
+              "large_deltas": {
+                "time_pressure": 0.104
+              },
+              "max_abs_delta": 0.104
+            },
+            {
+              "time": "09:39",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.043
+            },
+            {
+              "time": "11:55",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.049
+            },
+            {
+              "time": "13:45",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.082
+            },
+            {
+              "time": "17:39",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.034
+            },
+            {
+              "time": "20:15",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.081
+            },
+            {
+              "time": "22:46",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.074
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "06:31",
+              "n_events": 1,
+              "large_deltas": {
+                "emotion": 0.111,
+                "mobility_intent": 0.137
+              },
+              "max_abs_delta": 0.137
+            },
+            {
+              "time": "07:00",
+              "n_events": 1,
+              "large_deltas": {},
+              "max_abs_delta": 0.1
+            },
+            {
+              "time": "08:00",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.087
+            },
+            {
+              "time": "09:30",
+              "n_events": 3,
+              "large_deltas": {
+                "platform_dependence": 0.106,
+                "mobility_intent": -0.116
+              },
+              "max_abs_delta": 0.116
+            },
+            {
+              "time": "11:00",
+              "n_events": 3,
+              "large_deltas": {},
+              "max_abs_delta": 0.046
+            },
+            {
+              "time": "12:30",
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.067
+            },
+            {
+              "time": "14:00",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": 0.106
+              },
+              "max_abs_delta": 0.106
+            },
+            {
+              "time": "15:30",
+              "n_events": 2,
+              "large_deltas": {},
+              "max_abs_delta": 0.051
+            },
+            {
+              "time": "17:00",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": 0.126,
+                "city_identity": 0.122
+              },
+              "max_abs_delta": 0.126
+            },
+            {
+              "time": "18:00",
+              "n_events": 1,
+              "large_deltas": {
+                "econ_security": -0.12,
+                "platform_dependence": 0.103
+              },
+              "max_abs_delta": 0.12
+            },
+            {
+              "time": "19:30",
+              "n_events": 2,
+              "large_deltas": {
+                "mobility_intent": -0.106
+              },
+              "max_abs_delta": 0.106
+            },
+            {
+              "time": "22:30",
+              "n_events": 0,
+              "large_deltas": {
+                "stance_score": 0.133
+              },
+              "max_abs_delta": 0.133
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:35",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.222,
+                "stress": -0.348,
+                "econ_security": -0.259,
+                "city_identity": -0.227,
+                "policy_sensitivity": -0.193,
+                "voice_propensity": -0.128,
+                "time_pressure": 0.106
+              },
+              "max_abs_delta": 0.348
+            },
+            {
+              "time": "11:00",
+              "n_events": 3,
+              "large_deltas": {
+                "emotion": -0.374,
+                "econ_security": -0.171,
+                "city_identity": -0.314,
+                "policy_sensitivity": -0.281
+              },
+              "max_abs_delta": 0.374
+            },
+            {
+              "time": "12:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.216,
+                "city_identity": -0.227
+              },
+              "max_abs_delta": 0.227
+            },
+            {
+              "time": "14:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.18
+              },
+              "max_abs_delta": 0.18
+            },
+            {
+              "time": "16:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.115,
+                "voice_propensity": 0.295
+              },
+              "max_abs_delta": 0.295
+            },
+            {
+              "time": "18:00",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.24,
+                "voice_propensity": -0.295
+              },
+              "max_abs_delta": 0.295
+            },
+            {
+              "time": "20:00",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.203
+              },
+              "max_abs_delta": 0.203
+            },
+            {
+              "time": "21:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": 0.133,
+                "city_identity": 0.259,
+                "voice_propensity": 0.182
+              },
+              "max_abs_delta": 0.259
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": "08:33",
+              "n_events": 2,
+              "large_deltas": {
+                "emotion": -0.265,
+                "econ_security": -0.261,
+                "city_identity": -0.197,
+                "policy_sensitivity": -0.198,
+                "platform_dependence": 0.152
+              },
+              "max_abs_delta": 0.265
+            },
+            {
+              "time": "11:00",
+              "n_events": 3,
+              "large_deltas": {
+                "emotion": -0.335,
+                "stress": -0.304,
+                "econ_security": -0.34,
+                "city_identity": -0.212,
+                "policy_sensitivity": -0.272,
+                "platform_dependence": -0.119
+              },
+              "max_abs_delta": 0.34
+            },
+            {
+              "time": "12:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": 0.158
+              },
+              "max_abs_delta": 0.158
+            },
+            {
+              "time": "14:30",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.189,
+                "city_identity": -0.197,
+                "voice_propensity": -0.264
+              },
+              "max_abs_delta": 0.264
+            },
+            {
+              "time": "16:00",
+              "n_events": 2,
+              "large_deltas": {
+                "econ_security": -0.116,
+                "policy_sensitivity": 0.131,
+                "voice_propensity": 0.119
+              },
+              "max_abs_delta": 0.131
+            },
+            {
+              "time": "18:00",
+              "n_events": 3,
+              "large_deltas": {
+                "voice_propensity": -0.16
+              },
+              "max_abs_delta": 0.16
+            },
+            {
+              "time": "20:00",
+              "n_events": 3,
+              "large_deltas": {
+                "econ_security": -0.243,
+                "city_identity": -0.105,
+                "policy_sensitivity": -0.118
+              },
+              "max_abs_delta": 0.243
+            },
+            {
+              "time": "22:00",
+              "n_events": 3,
+              "large_deltas": {},
+              "max_abs_delta": 0.098
+            }
+          ],
+          "all_flat": false
+        }
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            },
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "steps": [
+            {
+              "time": null,
+              "n_events": 0,
+              "large_deltas": {},
+              "max_abs_delta": 0.0
+            }
+          ],
+          "all_flat": true
+        }
+      }
+    ],
+    "R1.5": [],
+    "R1.6": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R1.7": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R2.1": [],
+    "R2.2": [],
+    "R2.3": [],
+    "R2.4": [],
+    "R2.5": [
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "参与比较的 agent 或时间点不足",
+        "facts": {},
+        "unit_id": "CH:all"
+      }
+    ],
+    "R2.6": [],
+    "R2.7": [],
+    "R3.1": [
+      {
+        "unit_id": "CH:all",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "本次运行缺少：social_graph",
+        "missing_capabilities": [
+          "social_graph"
+        ]
+      }
+    ],
+    "R3.2": [
+      {
+        "unit_id": "-",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "本次运行缺少：social_graph",
+        "missing_capabilities": [
+          "social_graph"
+        ]
+      }
+    ],
+    "R3.3": [
+      {
+        "unit_id": "-",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "本次运行缺少：social_graph",
+        "missing_capabilities": [
+          "social_graph"
+        ]
+      }
+    ],
+    "R3.4": [
+      {
+        "unit_id": "-",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "本次运行缺少：social_graph",
+        "missing_capabilities": [
+          "social_graph"
+        ]
+      }
+    ],
+    "R3.5": [
+      {
+        "unit_id": "WS:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R3.6": [
+      {
+        "unit_id": "CH:all",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "本次运行缺少：social_graph",
+        "missing_capabilities": [
+          "social_graph"
+        ]
+      }
+    ],
+    "R4.1": [
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 58.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:8"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 83.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:7"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验时间预算",
+        "facts": {},
+        "unit_id": "AD:7:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 71.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:39:3"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验时间预算",
+        "facts": {},
+        "unit_id": "AD:30:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 73.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:9"
+      },
+      {
+        "score": 0,
+        "abstain": false,
+        "evidence": [
+          "06:40 通勤 10 分钟 > 与上一事件间隔 1 分钟",
+          "07:00 通勤 22 分钟 > 与上一事件间隔 20 分钟"
+        ],
+        "reasoning": "2 处通勤时长超出事件间隔",
+        "facts": {
+          "total_travel_minutes": 115.0,
+          "n_overflow": 2,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:41:49"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验时间预算",
+        "facts": {},
+        "unit_id": "AD:32:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 48.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:6"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 91.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:10"
+      },
+      {
+        "score": 0,
+        "abstain": false,
+        "evidence": [
+          "08:57 通勤 36 分钟 > 与上一事件间隔 20 分钟"
+        ],
+        "reasoning": "1 处通勤时长超出事件间隔",
+        "facts": {
+          "total_travel_minutes": 156.0,
+          "n_overflow": 1,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:39:4"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 0.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:3:0"
+      },
+      {
+        "score": 0,
+        "abstain": false,
+        "evidence": [
+          "08:42 通勤 29 分钟 > 与上一事件间隔 20 分钟"
+        ],
+        "reasoning": "1 处通勤时长超出事件间隔",
+        "facts": {
+          "total_travel_minutes": 115.0,
+          "n_overflow": 1,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:40:5"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验时间预算",
+        "facts": {},
+        "unit_id": "AD:4:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 82.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:41:50"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 72.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:33:1"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 54.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:33:2"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "无超支",
+        "facts": {
+          "total_travel_minutes": 0.0,
+          "n_overflow": 0,
+          "n_backwards": 0
+        },
+        "unit_id": "AD:1:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验时间预算",
+        "facts": {},
+        "unit_id": "AD:5:0"
+      }
+    ],
+    "R4.2": [
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:8"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:7"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验空间可达",
+        "facts": {},
+        "unit_id": "AD:7:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:39:3"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验空间可达",
+        "facts": {},
+        "unit_id": "AD:30:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:9"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:41:49"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验空间可达",
+        "facts": {},
+        "unit_id": "AD:32:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:6"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:10"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:39:4"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:3:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:40:5"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验空间可达",
+        "facts": {},
+        "unit_id": "AD:4:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:41:50"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:33:1"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:33:2"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "全部地点变更均自洽",
+        "facts": {
+          "n_teleport": 0,
+          "n_speeding": 0,
+          "n_hard_speeding": 0
+        },
+        "unit_id": "AD:1:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "当日 episode 少于 2 条，无法检验空间可达",
+        "facts": {},
+        "unit_id": "AD:5:0"
+      }
+    ],
+    "R4.3": [
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:8"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:7"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:7:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:39:3"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:30:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:9"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "余额为正且守恒 drift = 0",
+        "facts": {
+          "balance": 39898.63,
+          "expense": 171.02,
+          "income": 130.73,
+          "drift": 0.0
+        },
+        "unit_id": "AD:41:49"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:32:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:6"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:10"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:39:4"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:3:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:40:5"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:4:0"
+      },
+      {
+        "score": 2,
+        "abstain": false,
+        "evidence": [],
+        "reasoning": "余额为正且守恒 drift = 0",
+        "facts": {
+          "balance": 39967.97,
+          "expense": 168.8,
+          "income": 238.14,
+          "drift": 0.0
+        },
+        "unit_id": "AD:41:50"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:33:1"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:33:2"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:1:0"
+      },
+      {
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "缺 daily_ledger 记录",
+        "facts": {},
+        "unit_id": "AD:5:0"
+      }
+    ],
+    "R4.4": [
+      {
+        "unit_id": "WS:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R4.5": [
+      {
+        "unit_id": "WS:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      },
+      {
+        "unit_id": "WS:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {}
+      }
+    ],
+    "R4.6": [
+      {
+        "unit_id": "AD:40:8",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:40:7",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:7:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:39:3",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:30:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:40:9",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:41:49",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:32:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:40:6",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:40:10",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:39:4",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:3:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:40:5",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:4:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:41:50",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:33:1",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:33:2",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:1:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      },
+      {
+        "unit_id": "AD:5:0",
+        "score": null,
+        "abstain": true,
+        "evidence": [],
+        "reasoning": "未配置 judge，跳过 LLM 条目",
+        "facts": {
+          "n_conflicts": 0
+        }
+      }
+    ]
+  },
+  "mode": "real"
+}

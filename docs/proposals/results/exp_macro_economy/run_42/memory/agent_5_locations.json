@@ -1,0 +1,55 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Central Station",
+  "destination": "Central Station",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 3,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "High Speed Rail Terminal",
+    "Central Station"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "00:02",
+  "frequent_places": {
+    "Riverside Tower": 6,
+    "Building C-02": 8,
+    "Financial District": 4,
+    "Central Bank Annex": 4,
+    "East Pocket Park": 1,
+    "Finance Plaza": 7,
+    "Riverside Fire Station": 1,
+    "Bridge Rd": 17,
+    "Riverside Bus Station": 16,
+    "Riverwalk": 1,
+    "Riverside Bank Branch": 2,
+    "Riverside Cinema": 1,
+    "Corner Mart": 1,
+    "Market St": 1,
+    "Public Services Center": 2,
+    "Courthouse": 1,
+    "Stadium Plaza": 3,
+    "Business Hotel": 1,
+    "Intercity Bus Terminal": 1,
+    "Central Station": 18,
+    "High Speed Rail Terminal": 17
+  },
+  "preferred_modes": {
+    "e-bike": 21,
+    "bike": 57,
+    "walk": 32,
+    "metro": 3
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.29000000000000004,
+  "travel_distance_km": 0.54,
+  "depart_time": "23:59"
+}

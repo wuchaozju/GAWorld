@@ -1,0 +1,122 @@
+\section{Situated Urban and Societal Substrate}
+\label{sec:societal-substrate}
+
+GAWorld places persistent agents in a shared substrate whose components read
+and write overlapping state.  The city constrains movement, local occupancy
+changes perception, relationships affect encounters, and financial or life
+events alter later choices.  This coupling supports questions that cross
+individual and aggregate levels, but it also means that mechanism provenance
+and configuration are part of every experimental treatment.
+
+\subsection{City graph and local physical conditions}
+
+The city map parses places, roads, transit lines, interiors, and land-use
+attributes into a graph.  Nodes carry categories, coordinates, capacity,
+opening hours, popularity, density, and display metadata.  Destination
+resolution can match activity terms to place categories, while graph routing
+and transport-mode rules estimate distance, time, and fare.  Mode speeds,
+fixed delays, road-class multipliers, rush-hour penalties, area price levels,
+and weather preferences are explicit parameters.  They make travel costs
+inspectable; their presence does not imply transport-model calibration.
+
+At each tick, the local-physical layer recomputes occupancy from stationary
+agents, clears stale counts, and exposes the current location's crowding,
+opening status, and weather.  A crowd anomaly is flagged when occupancy is both
+high and sharply above the previous tick.  These snapshots can enter
+perception and interruption generation, linking collective movement to
+individual behavior.  The mechanism is deterministic given agent locations
+and parameters, although the locations themselves may follow stochastic or
+LLM-mediated decisions.
+
+The broader environment system supports configured natural, economic,
+political, technological, and intraday events.  In rule mode it samples from
+configured event distributions using a local random generator.  In LLM mode a
+model proposes a daily summary, events, and intraday rules that are parsed into
+the same bounded event schema; configured fallback generation remains
+available if that call fails.  Severity and anomaly tagging are rule-based.
+Reports must therefore identify the generator mode rather than treating all
+environmental histories as equivalent.
+
+\subsection{Social ties and life events}
+
+Relationships are typed records rather than undifferentiated neighbor edges.
+Role templates specify channels, obligation, protection, and daily decay;
+interaction signals update closeness and contact time.  The implementation can
+bootstrap off-screen contacts from an LLM-generated backstory, with a
+deterministic heuristic fallback.  It can also generate events involving
+off-screen contacts, using templates and optional LLM wording, and disclose
+shared contacts across agents.
+
+Maintenance is rule-based.  Uncontacted ties decay at role-specific rates,
+long-neglected obligations can rise, and an enforcement pass assigns nested
+Dunbar-style tiers while pruning beyond a configured outer cap and protecting
+selected kin roles.  These tiers are an operational capacity constraint, not
+evidence that the simulated network reproduces measured human networks.
+
+Life events are normalized, persisted, scheduled by simulated day and time,
+and drained once when due.  Events can target agents and carry bounded state
+effects and tags.  This provides a controlled exogenous-event surface whose
+timing and direct updates are inspectable.  The realism of event frequencies,
+dependencies, and consequences must be established by a separate study.
+
+\subsection{Economic state transitions}
+
+The finance module maintains checking, savings, investment, and housing-fund
+accounts; monthly budgets; income and expense records; liabilities and credit;
+sector pools; government flows; and macro state.  Configured rules calculate
+social-insurance deductions and progressive income tax, route wages and
+consumption, enforce available-cash and credit constraints, transfer savings,
+and settle payments.  A dedicated seeded random generator drives expenditure
+variation, market returns, shocks, and other probabilistic transitions so that
+unrelated random draws need not perturb the economy sequence.
+
+Shared sector and government pools make counterparties visible instead of
+creating every monetary flow without an account.  Agent-to-agent payments and
+some rent or labor flows can be routed to modeled recipients; investment
+returns combine a common market component with idiosyncratic variation.
+Ledger and conservation checks can reveal implementation defects such as
+unbalanced internal transfers.  They cannot establish that the tax schedule,
+consumption response, labor process, credit behavior, or macro dynamics is an
+empirically valid representation of a real economy.  Accounting consistency
+is therefore a software invariant, not a behavioral-validation result.
+
+\subsection{Coupling and ownership boundaries}
+
+Table~\ref{tab:component-coupling} makes the principal shared-state paths
+explicit.  ``Implemented'' refers to an inspectable current mechanism;
+``partial boundary'' indicates that the mechanism is connected but retains
+direct calls, shared dictionaries, or specialized writers rather than a fully
+isolated plugin interface.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}p{0.14\linewidth}p{0.17\linewidth}p{0.17\linewidth}p{0.27\linewidth}p{0.16\linewidth}@{}}
+\toprule
+Subsystem & Reads & Writes & Agent-visible consequence & Evidence status \\
+\midrule
+Memory and cognition & Episodes, state, context, retrieved entries & Memories, intentions, habits, relationships & Recalled context, priorities, reflection, and later action bias & Implemented; human realism unvalidated \\
+Interests and skills & Profile, episodes, social growth context & Growth profile, private skills & Practice focus and procedural prompt context & Implemented; partial plugin boundary \\
+World and local physics & City graph, time, weather, locations & Routes, travel state, occupancy snapshots & Feasible destinations, travel costs, crowding and closure cues & Implemented; direct integration \\
+Environment & Configuration, history, optional LLM output & Events, weather and macro context & Interruptions and perceived exogenous conditions & Implemented; generator-mode dependent \\
+Social network & Profiles, contact history, interactions & Typed ties, closeness, obligation, tiers & Encounter probability and relationship context & Implemented; mechanism validity unassessed \\
+Life events & Persisted event queue, clock & Consumption flag and configured state effects & Scheduled exogenous changes to targeted agents & Implemented; committed plugin-integrated event producer \\
+Economy & Activity, balances, calendar, sectors, macro state & Accounts, ledger, budgets, pools, agent state & Income, spending constraints, taxes, credit, returns and payments & Implemented; primarily hook-based \\
+Work & Capability cache, activity, growth, market jobs & Queue results, artifacts, settlement and state effects & Produced files, earnings, and experience records & Implemented; artifact quality unvalidated \\
+\bottomrule
+\end{tabular}
+\caption{Coupling among agent and societal components.  Evidence status
+describes implementation visibility, not empirical validity.}
+\label{tab:component-coupling}
+\end{table}
+
+The table also exposes the current modularity limit.  Interests and skills have
+plugin entry points, and economy, local physical perception, spatial
+preferences, work, and dynamic behavior now have built-in adapters.  Memory,
+environment evolution, and social-network operations still exchange mutable
+agent dictionaries or runtime objects directly.  This arrangement is usable
+and inspectable, yet replacing
+one mechanism can change prompts, state schemas, random draws, and specialized
+artifacts elsewhere.  Controlled comparisons should therefore freeze the
+complete coupled configuration rather than naming only the focal intervention.

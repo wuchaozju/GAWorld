@@ -1,0 +1,22 @@
+{
+  "treatment": "treatment_sparse",
+  "config": {
+    "emotion_seed": {
+      "seed_agents": [
+        1,
+        5,
+        10
+      ],
+      "seed_value": 0.9,
+      "inject_day": 2,
+      "inject_hour": 8
+    },
+    "network_modification": {
+      "reduce_density_by": 0.5
+    },
+    "description": "稀疏网络 + 开心情绪播种"
+  },
+  "days": 5,
+  "seed": 42,
+  "timestamp": "2026-06-06T13:26:39.529811"
+}

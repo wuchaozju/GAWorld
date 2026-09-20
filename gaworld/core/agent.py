@@ -73,6 +73,18 @@ class Agent:
         loc = self.data.get("location")
         return str(loc) if loc is not None else None
 
+    @property
+    def skill_ids(self) -> list[str]:
+        """IDs of global Skills attached to this agent.
+
+        Private (agent-summarised) skills live on disk under the
+        agent's memory directory and are discovered by the
+        :class:`gaworld.skills.registry.SkillRegistry`; only attached
+        *global* skills need to be tracked here.
+        """
+        s = self.data.setdefault("skill_ids", [])
+        return s if isinstance(s, list) else []
+
     def need(self, key: str, default: float = 0.0) -> float:
         try:
             return float(self.state.get(key, default))

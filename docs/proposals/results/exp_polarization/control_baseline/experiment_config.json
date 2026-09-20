@@ -1,0 +1,13 @@
+{
+  "treatment": "control_baseline",
+  "config": {
+    "description": "\u65e0\u5e72\u9884\uff0c\u81ea\u7136\u6f14\u5316",
+    "intervention_enabled": true,
+    "diversity_boost": 0.0,
+    "filter_similar": false,
+    "social_diversity_boost": false
+  },
+  "days": 5,
+  "seed": 42,
+  "timestamp": "2026-05-19T02:26:21.116729"
+}

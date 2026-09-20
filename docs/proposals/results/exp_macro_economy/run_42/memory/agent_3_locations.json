@@ -1,0 +1,63 @@
+{
+  "home": "Building S-01",
+  "workplace": "Little River Daycare",
+  "current": "Picnic Area",
+  "destination": "Picnic Area",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 5,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Little River Daycare",
+    "Central Block",
+    "Willow Grove Park",
+    "Picnic Area"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "00:04",
+  "frequent_places": {
+    "Picnic Area": 10,
+    "Willow Design Studio": 2,
+    "Westside Community Center": 2,
+    "C-01 (Village Center)": 3,
+    "Riverside Night Market": 1,
+    "Building S-01": 9,
+    "Riverside Primary School": 2,
+    "Basketball Court": 4,
+    "Riverwalk": 3,
+    "Little River Daycare": 13,
+    "Fitness Area": 9,
+    "Riverside Middle School": 11,
+    "Riverside Park": 7,
+    "Financial District": 1,
+    "Central Bank Annex": 1,
+    "Stadium Plaza": 1,
+    "Riverside Tower": 1,
+    "Archives Building": 1,
+    "Riverside Cinema": 1,
+    "West Block": 1,
+    "C-02": 3,
+    "Riverside Supermart": 2,
+    "Riverside Post Office": 2,
+    "Civic Square": 2,
+    "Willow Grove Park": 2,
+    "Playground": 4,
+    "Hangzhou Riverside Community Center": 1
+  },
+  "preferred_modes": {
+    "bike": 47,
+    "e-bike": 50,
+    "walk": 1,
+    "metro": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 4.64,
+  "travel_distance_km": 0.896,
+  "depart_time": "23:59"
+}

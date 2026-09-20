@@ -3,6 +3,16 @@ import unittest
 from unittest.mock import patch
 
 import generative_city_sim as sim
+from gaworld.llm import providers as llm_providers
+from gaworld.sim import _action, _cognition, _diary, _memory_recall
+
+# ``patch.object(sim, ...)`` only intercepts a dependency when the function
+# under test also resolves that name from ``generative_city_sim``'s globals.
+# The refactor moved these functions into ``gaworld.sim.*``, where they resolve
+# their dependencies from *their own* module — so patching the re-export on
+# ``sim`` silently intercepts nothing. That is worse than a failing test: the
+# call goes to the real vector DB or the real LLM while the test reads as
+# though it were stubbed. Patch where the callee looks the name up.
 
 
 class TestMemoryRecallAndReview(unittest.TestCase):
@@ -144,8 +154,14 @@ class TestMemoryRecallAndReview(unittest.TestCase):
                 "score": 0.6,
             }
         ]
-        with patch.object(sim, "retrieve_relevant_memories", return_value=hits):
+        with patch.object(
+            _memory_recall, "retrieve_relevant_memories", return_value=hits
+        ) as stub:
             recall = sim.evoke_memory(agent, "planning", "类似任务")
+        # Assert the stub was actually consumed. Without this the test would go
+        # quiet again the next time the function moves: a patch that intercepts
+        # nothing produces no error, only a different answer.
+        self.assertTrue(stub.called, "the memory stub was never reached")
         self.assertIn("想起", recall["recollection"])
         self.assertGreater(agent["state"]["emotion"], 0.50)
         self.assertLess(agent["state"]["stress"], 0.50)
@@ -259,10 +275,15 @@ class TestMemoryRecallAndReview(unittest.TestCase):
             ],
         }
         budget = {"remaining": 1}
-        with patch.object(sim, "save_agent_memory"), patch.object(
-            sim, "vector_db_add_entry"
+        # save_agent_memory / vector_db_add_entry are called from
+        # ``_diary._append_memory_record``; call_llm goes through
+        # ``_llm_providers.call_llm`` module-attribute dispatch, which is what
+        # tests/fixtures/mock_llm.py reassigns too.
+        with patch.object(_diary, "save_agent_memory"), patch.object(
+            _diary, "vector_db_add_entry"
         ) as mock_vector, patch.object(
-            sim, "call_llm", return_value="你意识到稳定推进重点任务时，情绪和节奏都会更稳。"
+            llm_providers, "call_llm",
+            return_value="你意识到稳定推进重点任务时，情绪和节奏都会更稳。",
         ):
             review = sim.maybe_review_memories(
                 agent,
@@ -271,6 +292,7 @@ class TestMemoryRecallAndReview(unittest.TestCase):
                 recent_episode=agent["episodes"][0],
                 llm_budget_ctx=budget,
             )
+        self.assertTrue(mock_vector.called, "the memory-write stub was never reached")
         self.assertIn("MemoryReview", review)
         self.assertEqual(0, budget["remaining"])
         self.assertTrue(agent["memory"])

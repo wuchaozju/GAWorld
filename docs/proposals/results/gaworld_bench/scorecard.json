@@ -1,0 +1,97 @@
+{
+  "generated": "2026-06-06T11:53:29",
+  "trust_gate": "OK",
+  "composite_hint": 0.1925,
+  "headline_track": null,
+  "tracks": {
+    "A": {
+      "track": "A",
+      "status": "ok",
+      "score": 0.3849,
+      "pass": false,
+      "metrics": {
+        "engel_coefficient": {
+          "sim": 0.3,
+          "anchor": 0.288,
+          "rel_err": 0.0417,
+          "score": 0.7222,
+          "source": "国家统计局2024公报 (城镇28.8%)"
+        },
+        "savings_rate": {
+          "sim": 0.25,
+          "anchor": 0.35,
+          "rel_err": 0.2857,
+          "score": 0.0476,
+          "source": "2024 口径敏感, 区间30-43%"
+        }
+      }
+    },
+    "C": {
+      "track": "C",
+      "status": "ok",
+      "sign": {
+        "score": 0.0,
+        "n_eval": 3,
+        "n_correct": 0,
+        "tests": [
+          {
+            "name": "traffic_restriction",
+            "metric": "mobility_intent",
+            "sign": 1,
+            "why": "限行→出行摩擦上升→流动意愿上升",
+            "delta_mean": null,
+            "correct": false
+          },
+          {
+            "name": "layoff_shock",
+            "metric": "econ_security",
+            "sign": -1,
+            "why": "裁员→收入骤降→经济安全感下降",
+            "delta_mean": 0.019573677264325906,
+            "correct": false
+          },
+          {
+            "name": "layoff_shock",
+            "metric": "stress",
+            "sign": 1,
+            "why": "裁员→压力上升",
+            "delta_mean": -0.03293028666376002,
+            "correct": false
+          },
+          {
+            "name": "tax_cut",
+            "metric": "econ_security",
+            "sign": 1,
+            "why": "减税→可支配收入上升→经济安全感上升",
+            "delta_mean": -0.008559226379740603,
+            "correct": false
+          }
+        ]
+      },
+      "placebo": {
+        "score": null,
+        "note": "no placebo comparison provided"
+      },
+      "determinism": {
+        "score": null,
+        "note": "no baseline pair provided"
+      },
+      "score": 0.0,
+      "pass": false,
+      "gate_determinism_ok": true
+    },
+    "B": {
+      "status": "n/a",
+      "note": "未实现 (v0.3)"
+    },
+    "D": {
+      "status": "n/a",
+      "note": "未实现 (v0.4)"
+    },
+    "E": {
+      "status": "n/a",
+      "note": "确定性见 Track C; 成本未实现 (v0.2)"
+    }
+  },
+  "note": "composite is a trend hint only — read tracks separately (design §3)."
+}

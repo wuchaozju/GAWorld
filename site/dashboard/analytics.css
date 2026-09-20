@@ -1,0 +1,252 @@
+/* Analytics view. Builds on styles.css tokens (--card, --line, --green, …);
+   only the figure-specific layout lives here. */
+
+.hero-status .an-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f2faf6;
+}
+.an-status.is-ok { background: rgba(159, 224, 196, 0.28); }
+.an-status.is-error { background: rgba(192, 69, 69, 0.42); }
+
+/* ------------------------------------------------------------- run picker */
+
+.an-run-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(240, 250, 245, 0.82);
+}
+.an-run-picker select {
+  /* The run label carries the scenario path, so it needs room — but not so
+     much that it pushes the export menu off the hero. */
+  max-width: 320px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f2faf6;
+  font-size: 12px;
+}
+.an-run-picker select option { color: var(--ink); }
+.an-run-note {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------- export */
+
+.an-export { position: relative; }
+.an-export > summary { list-style: none; cursor: pointer; }
+.an-export > summary::-webkit-details-marker { display: none; }
+/* Fixed, not absolute: the hero clips its overflow, so an absolutely
+   positioned dropdown would be invisible. analytics.js sets top/left. */
+.an-export-menu {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  gap: 2px;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+}
+.an-export-menu button {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.an-export-menu button:hover { background: var(--green-soft); }
+.an-export-menu em { font-style: normal; font-size: 11px; font-weight: 400; color: var(--muted); }
+
+/* ----------------------------------------------------------------- KPIs */
+
+.an-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.an-kpi {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf7 100%);
+}
+.an-kpi-label { font-size: 12px; color: var(--muted); }
+.an-kpi-value { font-size: 24px; font-weight: 700; color: var(--green-deep); line-height: 1.15; }
+.an-kpi-hint { font-size: 11px; color: var(--muted); }
+
+/* ---------------------------------------------------------------- cards */
+
+.an-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.an-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.an-card {
+  padding: 12px 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+.an-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.an-card-head h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.an-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+.an-badge.is-down { background: #fbeaea; color: var(--red); }
+
+.an-chart { width: 100%; height: auto; display: block; overflow: visible; }
+/* Radar and heatmap have small viewBoxes; letting them fill a wide card
+   scales their type to poster size. */
+.an-chart.is-compact { max-width: 380px; margin: 0 auto; }
+.an-empty { margin: 12px 0; font-size: 12px; color: var(--muted); }
+
+/* -------------------------------------------------------------- pickers */
+
+.an-pickers {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.an-picker-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.an-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.an-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.an-chip:hover { border-color: #b7cbbd; color: var(--ink); }
+.an-chip.is-on {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-weight: 600;
+}
+.an-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--chip, var(--muted));
+}
+
+/* ----------------------------------------------------------------- meta */
+
+.an-meta { display: grid; gap: 6px; margin: 0; }
+.an-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--line);
+}
+.an-meta dt { font-size: 12px; color: var(--muted); }
+.an-meta dd { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink); text-align: right; word-break: break-all; }
+
+/* ---------------------------------------------------------------- graph */
+
+.an-graph-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: radial-gradient(600px 300px at 50% 40%, #f6faf7, var(--card));
+}
+.an-graph { width: 100%; height: auto; display: block; }
+
+/* ---------------------------------------------------------------- table */
+
+.an-table-wrap { max-height: 320px; overflow: auto; }
+.an-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.an-table th {
+  position: sticky;
+  top: 0;
+  padding: 6px 8px;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.an-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.an-cell-wide { max-width: 420px; }
+
+/* --------------------------------------------------------------- events */
+
+.an-event-list {
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  overflow: auto;
+  margin-top: 10px;
+  padding-right: 4px;
+}
+.an-event {
+  display: grid;
+  grid-template-columns: 60px 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  font-size: 12px;
+}
+.an-event-day { color: var(--muted); font-variant-numeric: tabular-nums; }
+.an-event-dot { width: 8px; height: 8px; border-radius: 50%; }
+.an-event-name { color: var(--ink); }
+.an-event-meta { color: var(--muted); font-size: 11px; white-space: nowrap; }

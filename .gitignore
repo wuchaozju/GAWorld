@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -130,11 +131,11 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+/env/
+/venv/
+/ENV/
+/env.bak/
+/venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -147,8 +148,15 @@ venv.bak/
 /site
 !/site/
 /site/*
+!/site/tokens.css
 !/site/dashboard/
 !/site/dashboard/**
+!/site/console/
+!/site/console/**
+!/site/mobile/
+!/site/mobile/**
+!/site/simviz/
+!/site/simviz/**
 dashboard_config.json
 
 # mypy
@@ -189,3 +197,10 @@ cython_debug/
 /video/node_modules/
 /output/video/
 /output/
+data/twin_bindings.json
+
+# Local scratch / archives (not for version control)
+/tmp/
+/output_archive_202606/
+/_to_delete/
+.claude/settings.local.json

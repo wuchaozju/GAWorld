@@ -1,0 +1,40 @@
+{
+  "home": "Building C-01",
+  "workplace": "Riverside Bank Branch",
+  "current": "Riverside Bank Branch",
+  "destination": "Riverside Bank Branch",
+  "in_transit": false,
+  "transport_mode": "",
+  "travel_minutes": 0,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverside Bank Branch"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "12:27",
+  "frequent_places": {
+    "Riverwalk": 1,
+    "Civic Square": 1,
+    "Building C-01": 2,
+    "Hangzhou Riverside Community Center": 1,
+    "Riverside Post Office": 1,
+    "C-02": 1,
+    "Riverside Park": 1,
+    "Riverside Bank Branch": 2,
+    "Central Parking Lot": 1
+  },
+  "preferred_modes": {
+    "bike": 4,
+    "e-bike": 7
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 1.56,
+  "travel_distance_km": 0.0,
+  "depart_time": "12:27"
+}

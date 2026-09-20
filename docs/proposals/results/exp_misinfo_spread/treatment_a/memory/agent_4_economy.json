@@ -1,0 +1,71 @@
+{
+  "currency": "CNY",
+  "wealth_drive": 0.6495,
+  "income_skill": 0.55,
+  "risk_tolerance": 0.45,
+  "industry": "service",
+  "gross_monthly_salary": 9018.96,
+  "net_monthly_salary": 7324.94,
+  "base_hourly_income": 51.24,
+  "hourly_income": 51.24,
+  "income_volatility": 0.25,
+  "income_target_daily": 358.71,
+  "monthly_tax": 25.51,
+  "monthly_si_total": 1668.51,
+  "monthly_si_breakdown": {
+    "pension": 721.52,
+    "medical": 180.38,
+    "unemployment": 45.09,
+    "housing_fund_individual": 721.52
+  },
+  "monthly_housing_fund": 1443.03,
+  "engel_coefficient": 0.3,
+  "savings_rate": 0.25,
+  "monthly_budget": {
+    "food": 1648.11,
+    "housing": 1391.46,
+    "transport": 561.51,
+    "clothing": 322.38,
+    "leisure": 523.28,
+    "education": 433.65,
+    "healthcare": 339.89,
+    "misc": 273.43
+  },
+  "monthly_expense_estimate": 5493.7,
+  "monthly_rent": 1440.93,
+  "accounts": {
+    "checking": 9311.91,
+    "savings": 21327.28,
+    "investment": 9412.04,
+    "housing_fund": 60450.93
+  },
+  "balance": 40051.23,
+  "portfolio_type": "moderate",
+  "portfolio_weights": {
+    "deposits": 0.4,
+    "funds": 0.4,
+    "stocks": 0.2
+  },
+  "investment_return_ytd": 0.0,
+  "initial_assets": {
+    "labor_savings": 40051.24,
+    "inheritance": 0.0,
+    "total": 40051.24
+  },
+  "daily_income": 0.0,
+  "daily_expense": 0.0,
+  "daily_expense_by_category": {
+    "food": 0.0,
+    "clothing": 0.0,
+    "housing": 0.0,
+    "transport": 0.0,
+    "leisure": 0.0,
+    "education": 0.0,
+    "healthcare": 0.0,
+    "misc": 0.0
+  },
+  "lifetime_income": 0.0,
+  "lifetime_expense": 0.0,
+  "last_location": "",
+  "shock_log": []
+}

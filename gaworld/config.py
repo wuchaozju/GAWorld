@@ -22,9 +22,9 @@ replacing the field definitions; the public surface stays the same.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping
-
+from typing import Any
 
 # ---------------------------------------------------------------------
 # Helpers
@@ -128,6 +128,7 @@ class SimulationConfig:
     seconds_per_day: int
     simulate_realtime: bool
     time_step_minutes: int | None
+    time_grid_snap: bool
     stateful: bool
     print_agent_profile: bool
     background: str
@@ -153,9 +154,9 @@ class SimulationConfig:
 def _build_paths(raw: Mapping[str, Any]) -> PathsConfig:
     vis = raw.get("visualization", {}) or {}
     return PathsConfig(
-        csv_path=str(raw.get("csv_path", "hangzhou_agents_state_init.csv")),
-        md_path=str(raw.get("md_path", "hangzhou_profiles_with_names.md")),
-        map_path=str(raw.get("map_path", "citymap.md")),
+        csv_path=str(raw.get("csv_path", "data/hangzhou_agents_state_init.csv")),
+        md_path=str(raw.get("md_path", "data/hangzhou_profiles_with_names.md")),
+        map_path=str(raw.get("map_path", "data/citymap.md")),
         memory_dir=str(raw.get("memory_dir", "output/memory")),
         log_dir=str(raw.get("log_dir", "output/logs")),
         diary_dir=str(raw.get("diary_output_dir", "output/diaries")),
@@ -218,6 +219,7 @@ def from_legacy(raw: Mapping[str, Any]) -> SimulationConfig:
         seconds_per_day=_safe_int(raw.get("seconds_per_day", 10), 10),
         simulate_realtime=_safe_bool(raw.get("simulate_realtime", False)),
         time_step_minutes=_parse_step_minutes(raw.get("time_step_minutes")),
+        time_grid_snap=_safe_bool(raw.get("time_grid_snap", False)),
         stateful=_safe_bool(raw.get("stateful", True), True),
         print_agent_profile=_safe_bool(raw.get("print_agent_profile", False)),
         background=str(raw.get("background", "")),
@@ -237,7 +239,7 @@ def load_simulation_config() -> SimulationConfig:
     Lazily imports :mod:`config` so this module is import-safe in unit
     tests that stub the legacy module.
     """
-    from config import CONFIG  # local import to avoid circular dependency
+    from gaworld.settings import CONFIG  # local import to avoid circular dependency
 
     return from_legacy(CONFIG)
 

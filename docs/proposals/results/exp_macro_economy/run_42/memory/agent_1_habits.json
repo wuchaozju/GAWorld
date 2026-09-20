@@ -1,0 +1,308 @@
+{
+  "night|public|睡前": {
+    "action_counts": {
+      "睡觉": 7
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.497938058887168,
+    "last_updated_day": 3
+  },
+  "morning|public|睡前": {
+    "action_counts": {
+      "睡觉": 10
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.6090503911987311,
+    "last_updated_day": 3
+  },
+  "morning|work|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|home|前往C-01 (Village Center)": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Building C-01": {
+    "action_counts": {
+      "乘坐e-bike移动": 2,
+      "乘坐metro移动": 5
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.392282282196992,
+    "last_updated_day": 3
+  },
+  "morning|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 1,
+      "推进最重要的一项任务": 1,
+      "按原计划继续处理例行事项": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.15851520000000002,
+    "last_updated_day": 1
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 3,
+      "联系相关的人确认进度和分工": 3,
+      "推进最重要的一项任务": 1,
+      "拖一会儿再开始，先刷手机分心": 1
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.31522167157948416,
+    "last_updated_day": 2
+  },
+  "afternoon|public|前往Riverside Bank Branch": {
+    "action_counts": {
+      "乘坐e-bike移动": 6,
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.43070714768523255,
+    "last_updated_day": 3
+  },
+  "afternoon|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.28776726528,
+    "last_updated_day": 2
+  },
+  "afternoon|public|前往Building W-01": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 5,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.39055356395519997,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Building N-02": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|home|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|home|午饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "night|public|加班": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Westside Community Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "morning|home|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "morning|public|吃早饭": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "morning|public|前往Financial District": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "morning|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 2
+  },
+  "morning|work|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "afternoon|public|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "afternoon|public|下午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 1
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "evening|public|下午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 2,
+      "推进最重要的一项任务": 1,
+      "拖一会儿再开始，先刷手机分心": 1
+    },
+    "preferred_action": "按原计划继续处理例行事项",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 2
+  },
+  "evening|public|加班": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.28199702528,
+    "last_updated_day": 2
+  },
+  "night|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "先把眼前这件事往前推进一点": 2,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 2
+  },
+  "morning|public|前往Sorting Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Cold Storage Facility": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "afternoon|public|睡前": {
+    "action_counts": {
+      "睡觉": 3
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.2991808,
+    "last_updated_day": 3
+  },
+  "afternoon|work|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Building C-01": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Westside Community Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 3
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.2991808,
+    "last_updated_day": 3
+  },
+  "evening|public|睡前": {
+    "action_counts": {
+      "睡觉": 7
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.497938058887168,
+    "last_updated_day": 3
+  },
+  "evening|public|前往Insurance Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "night|work|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 3
+  }
+}

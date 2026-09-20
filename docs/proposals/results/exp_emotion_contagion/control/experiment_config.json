@@ -1,0 +1,11 @@
+{
+  "treatment": "control",
+  "config": {
+    "emotion_seed": null,
+    "network_modification": null,
+    "description": "无干预基线"
+  },
+  "days": 1,
+  "seed": 42,
+  "timestamp": "2026-06-10T21:45:53.245352"
+}

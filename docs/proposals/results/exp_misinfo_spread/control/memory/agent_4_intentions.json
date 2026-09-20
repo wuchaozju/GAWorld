@@ -1,0 +1,18 @@
+{
+  "priorities": [
+    "降低压力",
+    "保持社区连接",
+    "发展编程技能",
+    "发展阅读"
+  ],
+  "avoidances": [
+    "冲动决策"
+  ],
+  "target_social": "增加与熟人的正向互动",
+  "target_recovery": "确保休息与进食节奏",
+  "growth_focus": [
+    "编程技能",
+    "阅读"
+  ],
+  "day": 2
+}

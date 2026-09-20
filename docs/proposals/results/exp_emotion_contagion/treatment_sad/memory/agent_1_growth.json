@@ -1,0 +1,54 @@
+{
+  "agent_id": 1,
+  "items": [
+    {
+      "name": "编程技能",
+      "kind": "skill",
+      "category": "技术",
+      "motivation": "希望提升长期选择空间和工作稳定性",
+      "level": 0.28,
+      "priority": 0.68,
+      "weekly_target_minutes": 180,
+      "preferred_time_blocks": [
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "练习编程",
+        "学习技术资料",
+        "做小项目"
+      ],
+      "career_link": true,
+      "sociality": 0.35,
+      "last_practiced_day": 0,
+      "total_minutes": 0,
+      "streak_days": 0
+    },
+    {
+      "name": "运动",
+      "kind": "hobby",
+      "category": "健康",
+      "motivation": "通过规律活动保持身体和情绪稳定",
+      "level": 0.38,
+      "priority": 0.6,
+      "weekly_target_minutes": 180,
+      "preferred_time_blocks": [
+        "morning",
+        "evening",
+        "weekend"
+      ],
+      "activity_templates": [
+        "跑步训练",
+        "健身锻炼",
+        "散步拉伸"
+      ],
+      "career_link": false,
+      "sociality": 0.35,
+      "last_practiced_day": 0,
+      "total_minutes": 0,
+      "streak_days": 0
+    }
+  ],
+  "notes": "基于职业、生活习惯和价值观规则推导。",
+  "source_hash": "a2751d62cf619e8422cbccf791d3ae29"
+}

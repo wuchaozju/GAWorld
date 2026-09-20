@@ -1,0 +1,120 @@
+<h2>Dashboard 界面布局</h2>
+<p class="subtitle">沿用 GAWorld 现有绿色控制台语言，把即时互动放在 Dashboard，把长期协作放进独立 Tab</p>
+
+<div class="mockup">
+  <div class="mockup-header" style="background:linear-gradient(115deg,#0a4a37,#0e7a58);color:white">
+    <span style="font-weight:800">GAWorld Console</span>
+    <span style="margin-left:28px;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,.12)">控制台</span>
+    <span style="margin-left:6px;padding:7px 14px">仿真回放</span>
+    <span style="margin-left:6px;padding:7px 14px">智能体工作台</span>
+    <span style="margin-left:6px;padding:7px 14px;border-radius:8px;background:#fff;color:#0a4a37;font-weight:800">合作任务</span>
+  </div>
+  <div class="mockup-body">
+    <p><strong>控制台新增「智能体互动」面板</strong>：放在人物设定与采访附近，复用当前居民列表。</p>
+    <div style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:14px">
+      <div style="border:1px solid #dde6de;border-radius:12px;padding:16px;background:#fff">
+        <div class="label">成员选择</div>
+        <h3 style="font-size:18px;margin:6px 0 12px;color:#1a2420">智能体互动</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <span style="padding:7px 10px;border:2px solid #0e7a58;border-radius:18px;background:#e3f2ea">✓ 林雨 · 01</span>
+          <span style="padding:7px 10px;border:2px solid #0e7a58;border-radius:18px;background:#e3f2ea">✓ 陈明 · 02</span>
+          <span style="padding:7px 10px;border:1px solid #dde6de;border-radius:18px">周野 · 03</span>
+          <span style="padding:7px 10px;border:1px solid #dde6de;border-radius:18px">王琪 · 04</span>
+        </div>
+        <button class="mock-button" style="background:#fff;color:#0a4a37;border:1px solid #0e7a58">建立朋友关系</button>
+        <div style="height:12px"></div>
+        <label style="display:block;font-size:12px;font-weight:700;color:#66746c">讨论议题（留空为自由讨论）</label>
+        <input class="mock-input" value="城市公共空间如何改善？" style="margin-top:6px">
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <select class="mock-input" style="width:120px"><option>6 轮</option></select>
+          <button class="mock-button" style="flex:1;background:#0e7a58;color:#fff">开始讨论</button>
+        </div>
+      </div>
+      <div style="border:1px solid #dde6de;border-radius:12px;padding:16px;background:#f8fbf9">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>实时讨论 · 进行中</strong>
+          <span style="font-size:12px;color:#0e7a58">第 2 / 6 轮</span>
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;background:#fff;border-radius:8px;border-left:3px solid #0e7a58">
+          <small style="color:#0e7a58;font-weight:800">林雨</small>
+          <p style="margin:4px 0">我更关心步行空间是否能让不同年龄的人自然相遇。</p>
+        </div>
+        <div style="margin-top:9px;padding:10px 12px;background:#fff;border-radius:8px;border-left:3px solid #3c5a68">
+          <small style="color:#3c5a68;font-weight:800">陈明</small>
+          <p style="margin:4px 0">可以先从社区边角空间做低成本试点，再观察实际使用。</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+          <button class="mock-button">暂停</button>
+          <button class="mock-button" style="color:#c04545">终止</button>
+          <button class="mock-button">展开完整记录 ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header" style="background:linear-gradient(115deg,#0a4a37,#0e7a58);color:white">
+    合作任务 Tab
+  </div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:280px 1fr 300px;gap:14px;min-height:390px">
+      <div style="border:1px solid #dde6de;border-radius:12px;padding:14px">
+        <div class="label">新建任务</div>
+        <h3 style="font-size:17px;margin:6px 0 12px;color:#1a2420">组建协作小队</h3>
+        <textarea class="mock-input" style="min-height:86px">调研社区独居老人服务需求，并形成一份行动建议。</textarea>
+        <p style="margin:10px 0 5px;font-size:12px;font-weight:800">成员 · 3</p>
+        <div style="font-size:13px;line-height:2.1">☑ 林雨　研究<br>☑ 陈明　数据分析<br>☑ 王琪　社区工作</div>
+        <select class="mock-input" style="margin-top:8px"><option>队长：自动选择</option></select>
+        <button class="mock-button" style="margin-top:10px;width:100%;background:#0e7a58;color:#fff">创建并开始</button>
+      </div>
+
+      <div style="border:1px solid #dde6de;border-radius:12px;padding:14px;background:#f8fbf9">
+        <div style="display:flex;justify-content:space-between">
+          <div><div class="label">当前任务</div><strong>社区独居老人服务调研</strong></div>
+          <span style="color:#0e7a58;font-weight:800">执行中 · 46%</span>
+        </div>
+        <div style="height:7px;background:#dfe8e2;border-radius:5px;margin:12px 0 16px"><div style="width:46%;height:100%;background:#0e7a58;border-radius:5px"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+          <div style="padding:11px;background:#fff;border:1px solid #dde6de;border-radius:8px"><small>林雨 · 研究</small><p style="margin:6px 0">整理访谈问题</p><b style="color:#0e7a58">已完成</b></div>
+          <div style="padding:11px;background:#fff;border:2px solid #0e7a58;border-radius:8px"><small>陈明 · 分析</small><p style="margin:6px 0">归纳需求主题</p><b style="color:#d9941d">执行中</b></div>
+          <div style="padding:11px;background:#fff;border:1px solid #dde6de;border-radius:8px"><small>王琪 · 审阅</small><p style="margin:6px 0">检验可执行性</p><b style="color:#66746c">等待中</b></div>
+        </div>
+        <div style="margin-top:14px;padding:12px;background:#fff;border-radius:8px">
+          <strong>团队计划</strong>
+          <ol style="margin:8px 0 0;line-height:1.8"><li>明确需求与产出格式</li><li>成员并行完成子任务</li><li>交叉审阅并修改</li><li>队长汇总最终建议</li></ol>
+        </div>
+      </div>
+
+      <div style="border:1px solid #dde6de;border-radius:12px;padding:14px">
+        <div class="label">活动流</div>
+        <div style="font-size:13px;line-height:1.55">
+          <p><b>10:31 · 系统</b><br>已根据能力完成角色分配</p>
+          <p><b>10:33 · 林雨</b><br>上传访谈提纲 draft.md</p>
+          <p><b>10:35 · 陈明</b><br>开始归纳 5 类核心需求</p>
+        </div>
+        <hr style="border:0;border-top:1px solid #dde6de">
+        <strong>成果</strong>
+        <p>📄 draft.md<br>📊 themes.json<br>⏳ final.md</p>
+        <div style="display:flex;gap:7px"><button class="mock-button">暂停</button><button class="mock-button">查看全部</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-ui" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>界面布局符合预期</h3>
+      <p>进入测试范围与完整设计确认。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-ui" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>请在 Codex 对话中说明希望修改的布局。</p>
+    </div>
+  </div>
+</div>

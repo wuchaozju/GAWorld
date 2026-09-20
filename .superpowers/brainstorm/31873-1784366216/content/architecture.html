@@ -1,0 +1,85 @@
+<h2>GAWorld 互动会话架构</h2>
+<p class="subtitle">三种 Dashboard 操作共用一个可持久化、可观察、可暂停的会话引擎</p>
+
+<div class="mockup">
+  <div class="mockup-header">Dashboard 操作层</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="padding:16px;border:1px solid #d7dde8;border-radius:10px;background:#f7fafc">
+        <div class="label">关系</div>
+        <h3 style="margin:6px 0">成为朋友</h3>
+        <p>选择 2 个或更多智能体，一次建立所有成员间的双向朋友关系。</p>
+      </div>
+      <div style="padding:16px;border:1px solid #d7dde8;border-radius:10px;background:#f7fafc">
+        <div class="label">会话</div>
+        <h3 style="margin:6px 0">自由讨论 / 指定议题</h3>
+        <p>设置成员与轮数，实时观察发言，支持暂停、继续和终止。</p>
+      </div>
+      <div style="padding:16px;border:1px solid #d7dde8;border-radius:10px;background:#f7fafc">
+        <div class="label">任务</div>
+        <h3 style="margin:6px 0">合作任务</h3>
+        <p>自动分工或指定队长，跟踪计划、执行、审阅、产物与总结。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:28px;line-height:1.3;color:#677489">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">gaworld/collaboration — 插件化互动会话引擎</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div style="padding:14px;border-left:4px solid #2574a9;background:#eef7fc">
+        <strong>Session Service</strong>
+        <p>创建、校验、暂停、恢复、取消会话</p>
+      </div>
+      <div style="padding:14px;border-left:4px solid #d9941d;background:#fff7e8">
+        <strong>Discussion Runner</strong>
+        <p>轮流发言、共享上下文、提前收敛、生成摘要</p>
+      </div>
+      <div style="padding:14px;border-left:4px solid #39875a;background:#edf9f1">
+        <strong>Cooperation Runner</strong>
+        <p>能力分析、角色分配、分步执行、交叉审阅、成果汇总</p>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:14px;border:1px dashed #8d99aa;border-radius:8px">
+      <strong>Event Store + Worker</strong>
+      <span>　JSON 会话快照 + JSONL 事件流；后台线程只运行独立会话，不阻塞 Dashboard 请求。</span>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:28px;line-height:1.3;color:#677489">↓</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:22px">
+  <div style="padding:15px;border:1px solid #d7dde8;border-radius:10px">
+    <strong>关系与记忆</strong>
+    <p>双向关系文件、讨论摘要、合作经历写回成员记忆。</p>
+  </div>
+  <div style="padding:15px;border:1px solid #d7dde8;border-radius:10px">
+    <strong>LLM 与能力系统</strong>
+    <p>沿用现有提供商路由、智能体画像、技能与认知评分。</p>
+  </div>
+  <div style="padding:15px;border:1px solid #d7dde8;border-radius:10px">
+    <strong>内核事件总线</strong>
+    <p>独立运行时可用；主仿真存在时发布关系、讨论与任务事件。</p>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-architecture" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>架构符合预期</h3>
+      <p>继续确认数据模型、运行流程和错误处理。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise-architecture" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>请在 Codex 对话中说明希望修改的部分。</p>
+    </div>
+  </div>
+</div>

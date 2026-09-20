@@ -1,0 +1,44 @@
+{
+  "home": "Building C-02",
+  "workplace": "Finance Plaza",
+  "current": "Building C-02",
+  "destination": "Building C-02",
+  "in_transit": false,
+  "transport_mode": "",
+  "travel_minutes": 0,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Building C-02"
+  ],
+  "travel_cost": 0.36,
+  "rush_hour": false,
+  "arrival_time": "00:10",
+  "frequent_places": {
+    "Riverwalk": 5,
+    "Basketball Court": 2,
+    "Insurance Center": 6,
+    "Cold Storage Facility": 1,
+    "Building C-02": 4,
+    "Riverside Post Office": 1,
+    "C-01 (Village Center)": 2,
+    "Civic Square": 2,
+    "Finance Plaza": 2,
+    "Training Grounds": 1,
+    "Willow Design Studio": 1,
+    "Westside Community Center": 1
+  },
+  "preferred_modes": {
+    "e-bike": 23,
+    "metro": 4,
+    "bike": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.0,
+  "travel_distance_km": 0.0,
+  "depart_time": "00:10"
+}

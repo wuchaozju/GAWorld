@@ -1,0 +1,54 @@
+# GAWorld-Bench 运行报告
+
+## 结果概览
+
+- generated: 2026-06-07T12:06:55
+- **trust gate: OK**
+- composite hint: 0.3175  _(trend only, 弱证据)_
+- headline (weakest passing track): None
+
+| Track | 命题 | score | pass |
+|---|---|---|---|
+| A | 宏观经验拟合 | 0.3849 | FAIL |
+| B | Stylized-facts | n/a | 未实现 (v0.3) |
+| C | 因果反事实 ⭐ | 0.25 | FAIL |
+| D | 可信度一致性 | n/a | 未实现 (v0.4) |
+| E | 可复现/成本 | n/a | 确定性见 Track C; 成本未实现 (v0.2) |
+
+- Track C 覆盖度: 符号 1/4 (共 4 项已配置) · 安慰剂 未评估 · 确定性 未评估
+
+## 分项诊断与建议
+
+### Track C — 因果反事实 ⭐ — 0.25 FAIL
+符号覆盖：1/4（共 4 项配置）。
+- `traffic_restriction/mobility_intent`: Δ=+0.0068 期望↑ ✓
+- `layoff_shock/econ_security`: Δ=+0.0196 期望↓ ✗
+- `layoff_shock/stress`: Δ=-0.0329 期望↑ ✗
+- `tax_cut/econ_security`: Δ=-0.0086 期望↑ ✗
+
+建议：
+1. 失败项效应量极小（|Δ|≤0.033，与安慰剂同量级）→ 符号由噪声主导，不是『方向反了』。经济类干预改用 ≥30 天仿真，并加显著性检验（跨 seed/agent）。
+2. 安慰剂未评估：补一个空事件 compare-event 运行（确保生成 comparison_metrics.csv）。
+3. 确定性未评估：提供两份同 seed baseline（`--det-a/--det-b`）验证可复现性。
+
+### Track A — 宏观经验拟合 — 0.3849 FAIL
+样本：1 个 agent 快照。
+- `savings_rate`: sim 0.25 vs 锚点 0.35 (误差 28.6%) ✗  _2024 口径敏感, 区间30-43%_
+- `engel_coefficient`: sim 0.3 vs 锚点 0.288 (误差 4.2%) ✗  _国家统计局2024公报 (城镇28.8%)_
+
+建议：
+1. 主要拖累项 `savings_rate`（误差 28.6%）：明确口径：『住户存款/收入』口径偏高(~43%)，『可支配收入流量储蓄』口径约30-35%，再校准锚点/容差。
+2. 样本仅 1 个，统计不稳；增大 agent 数或延长仿真天数后再评估宏观拟合。
+3. 提醒：Track A 属弱证据（验证的是写进模型的参数），强证据看 Track C。
+
+### 未实现：Track B, D, E
+这些有效性维度尚未评估，当前结论存在盲区（见设计文档路线图 §7）。
+
+## 下一步（按优先级）
+
+1. 【Track C】失败项效应量极小（|Δ|≤0.033，与安慰剂同量级）→ 符号由噪声主导，不是『方向反了』。经济类干预改用 ≥30 天仿真，并加显著性检验（跨 seed/agent）。
+2. 【Track C】安慰剂未评估：补一个空事件 compare-event 运行（确保生成 comparison_metrics.csv）。
+3. 【Track C】确定性未评估：提供两份同 seed baseline（`--det-a/--det-b`）验证可复现性。
+4. 【Track A】主要拖累项 `savings_rate`（误差 28.6%）：明确口径：『住户存款/收入』口径偏高(~43%)，『可支配收入流量储蓄』口径约30-35%，再校准锚点/容差。
+5. 【Track A】样本仅 1 个，统计不稳；增大 agent 数或延长仿真天数后再评估宏观拟合。
+6. 【Track A】提醒：Track A 属弱证据（验证的是写进模型的参数），强证据看 Track C。

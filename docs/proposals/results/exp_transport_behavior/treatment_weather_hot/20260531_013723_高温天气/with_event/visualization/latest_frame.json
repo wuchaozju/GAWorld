@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "generated_at": "2026-05-30T17:37:52Z",
+    "last_updated": "2026-05-30T17:44:20Z",
+    "finished": false,
+    "frame_count": 12,
+    "sim_meta": {
+      "sim_days": 3,
+      "seconds_per_day": 10,
+      "simulate_realtime": false,
+      "time_step_minutes": null,
+      "map_path": "data/citymap.md",
+      "agent_ids": [
+        34
+      ]
+    }
+  },
+  "frame": {
+    "index": 11,
+    "day": 2,
+    "time": "09:33",
+    "date": "2026-06-01",
+    "weekday": "周一",
+    "day_type": "工作日",
+    "env_context": "背景：2025年冬季，中国·杭州。经济发展中等偏稳，青年就业压力上升，生活成本偏高；社会秩序稳定但政策与舆论压力较高。 当前环境事件：日级环境：今日外部环境总体平稳。",
+    "env_events": [],
+    "policy": {},
+    "agents": [
+      {
+        "agent_id": 34,
+        "name": "徐桂兰",
+        "avatar_path": "avatars/agent_34.svg",
+        "time": "09:33",
+        "location": "Building C-01",
+        "resolved_location": "Building C-01",
+        "target_location": "Building C-01",
+        "home": "Building C-01",
+        "workplace": "Central Block",
+        "scheduled_activity": "吃早饭",
+        "activity": "吃早饭",
+        "action": "先拖一会儿再说，顺手刷会儿手机",
+        "outcome": "在【吃早饭】中执行了【先拖一会儿再说，顺手刷会儿手机】",
+        "perception": "今天上午寒风拂面，街道安静得几乎没有熟人出现，我感到社区秩序井然，但仍在留意政府养老和医疗政策的最新动向。",
+        "plan": "目标：先把当前时段过稳；顾虑：时间和状态都有限；冲动：也想顺着当下感觉稍微省点力；打算：先按当前情况稳住节奏。；预期：希望不把后面的安排弄得更乱",
+        "reflection": "结果：We have a conversation: system messages says \"You are MiniMax-M2.7 ...\"...；感受：情绪有一点波动；教训：下次还是要更早判断状态和代价；后续倾向：接下来会更偏向省力或稳妥的做法",
+        "changed": false,
+        "change_reason": "",
+        "state": {
+          "emotion": 0.9067,
+          "stress": 0.1203,
+          "econ_security": 0.6431,
+          "city_identity": 0.7836,
+          "policy_sensitivity": 0.4994,
+          "platform_dependence": 0.3531,
+          "risk_preference": 0.5118,
+          "voice_propensity": 0.549,
+          "mobility_intent": 0.1412,
+          "fatigue_debt": 0.047,
+          "self_control": 0.6771,
+          "time_pressure": 0.2635,
+          "stance_score": 0.0,
+          "toxicity_score": 0.0,
+          "misinformation_risk": 0.0,
+          "cross_viewpoint_exposure": 0.0,
+          "intervention_reward": 0.32,
+          "energy": 0.7695,
+          "hunger": 0.0338,
+          "social_need": 0.5507
+        },
+        "travel": {
+          "mode": "e-bike",
+          "distance_km": 1.74,
+          "minutes": 6,
+          "progress": 1.0,
+          "route": [
+            "Riverwalk",
+            "Riverside Park",
+            "Central Block",
+            "Building C-01"
+          ],
+          "cost": 0.17,
+          "rush_hour": false,
+          "status": "arrived"
+        }
+      }
+    ]
+  }
+}

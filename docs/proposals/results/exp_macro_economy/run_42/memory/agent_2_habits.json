@@ -1,0 +1,281 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "按原节奏继续当前安排": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 3
+  },
+  "night|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 1,
+      "按原计划继续处理例行事项": 1,
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.15851520000000002,
+    "last_updated_day": 1
+  },
+  "morning|public|上午工作": {
+    "action_counts": {
+      "按原计划继续处理例行事项": 3,
+      "联系相关的人确认进度和分工": 4,
+      "推进最重要的一项任务": 3
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.29936056772765257,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Courthouse": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Courthouse": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 3,
+      "按原计划继续处理例行事项": 2,
+      "推进最重要的一项任务": 1
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.2734303346688,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Building C-01": {
+    "action_counts": {
+      "乘坐metro移动": 3
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "evening|public|上午工作": {
+    "action_counts": {
+      "联系相关的人确认进度和分工": 3,
+      "按原计划继续处理例行事项": 2,
+      "推进最重要的一项任务": 3
+    },
+    "preferred_action": "联系相关的人确认进度和分工",
+    "strength": 0.3207898067474842,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Finance Plaza": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|前往Courthouse": {
+    "action_counts": {
+      "乘坐metro移动": 1
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Civic Square": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "morning|work|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "联系一下相关的人确认接下来的安排": 1,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 2
+  },
+  "morning|public|通勤": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.219561984,
+    "last_updated_day": 2
+  },
+  "morning|public|前往Bridge Rd": {
+    "action_counts": {
+      "乘坐walk移动": 2
+    },
+    "preferred_action": "乘坐walk移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "afternoon|work|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.21077950463999998,
+    "last_updated_day": 2
+  },
+  "afternoon|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "按原节奏继续当前安排": 2,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.21680062464,
+    "last_updated_day": 2
+  },
+  "afternoon|work|前往Riverside Bus Station": {
+    "action_counts": {
+      "乘坐walk移动": 2
+    },
+    "preferred_action": "乘坐walk移动",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "evening|work|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 3,
+      "联系一下相关的人确认接下来的安排": 2
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.27879702528,
+    "last_updated_day": 2
+  },
+  "evening|public|通勤": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.22583398400000002,
+    "last_updated_day": 2
+  },
+  "night|public|通勤": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 2
+  },
+  "night|work|通勤": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.23824,
+    "last_updated_day": 2
+  },
+  "night|public|加班": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.28162326528,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Riverside Bank Branch": {
+    "action_counts": {
+      "乘坐metro移动": 6
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.4542804987904,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Central Bank Annex": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|前往Riverside Tower": {
+    "action_counts": {
+      "乘坐bike移动": 2
+    },
+    "preferred_action": "乘坐bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "morning|public|加班": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.2287104,
+    "last_updated_day": 3
+  },
+  "afternoon|public|加班": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 3,
+      "按原节奏继续当前安排": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.265565121282048,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Riverside Tower": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "afternoon|public|前往Riverside Bank Branch": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 3
+  },
+  "evening|public|加班": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.21372862464,
+    "last_updated_day": 3
+  },
+  "evening|public|前往Financial District": {
+    "action_counts": {
+      "乘坐e-bike移动": 4
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.355246336,
+    "last_updated_day": 3
+  }
+}

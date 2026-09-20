@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from human_realism import consolidate_day
+from gaworld.cognition.realism import consolidate_day
 import generative_city_sim as sim
 
 
@@ -47,7 +47,7 @@ class TestDayEndConsolidation(unittest.TestCase):
             '"target_social":"与同事保持协作",'
             '"target_recovery":"按时休息"}'
         )
-        with patch("human_realism.call_llm", return_value=llm_json):
+        with patch("gaworld.cognition.realism.call_llm", return_value=llm_json):
             result = consolidate_day(agent, 3, episodes, {}, budget)
         self.assertEqual(0, budget["remaining"])
         self.assertIn("今天关键进展稳定", result["summary"])

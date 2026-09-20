@@ -1,0 +1,855 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "乌镇镇",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 30.746488,
+   "lng": 120.481902,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.010452312
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4819022,
+     30.7464875
+    ]
+   },
+   "properties": {
+    "name": "乌镇镇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5146766,
+     30.7679651
+    ]
+   },
+   "properties": {
+    "name": "庙后浜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5035293,
+     30.7807137
+    ]
+   },
+   "properties": {
+    "name": "新亭村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4956758,
+     30.7706108
+    ]
+   },
+   "properties": {
+    "name": "前窑村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5098116,
+     30.7250031
+    ]
+   },
+   "properties": {
+    "name": "杨树浜新区",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4898657,
+     30.7318495
+    ]
+   },
+   "properties": {
+    "name": "浮澜桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4932024,
+     30.7154035
+    ]
+   },
+   "properties": {
+    "name": "陈庄村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4935457,
+     30.7193389
+    ]
+   },
+   "properties": {
+    "name": "西邱港",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4847409,
+     30.7167747
+    ]
+   },
+   "properties": {
+    "name": "及金兜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5136301,
+     30.7558119
+    ]
+   },
+   "properties": {
+    "name": "新翁村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5105477,
+     30.7168341
+    ]
+   },
+   "properties": {
+    "name": "孔家浜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4998632,
+     30.7237273
+    ]
+   },
+   "properties": {
+    "name": "文家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5125596,
+     30.7205238
+    ]
+   },
+   "properties": {
+    "name": "陆家村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5165579,
+     30.722682
+    ]
+   },
+   "properties": {
+    "name": "胡家桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4947979,
+     30.7133606
+    ]
+   },
+   "properties": {
+    "name": "钱家庄",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4866011,
+     30.7185874
+    ]
+   },
+   "properties": {
+    "name": "严家弄",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4969365,
+     30.7204935
+    ]
+   },
+   "properties": {
+    "name": "邱港",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5088956,
+     30.714283
+    ]
+   },
+   "properties": {
+    "name": "高家舍",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5050976,
+     30.7148672
+    ]
+   },
+   "properties": {
+    "name": "众福桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5072434,
+     30.7117495
+    ]
+   },
+   "properties": {
+    "name": "北庄里",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4871583,
+     30.7399471
+    ]
+   },
+   "properties": {
+    "name": "南宫社区",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4846889,
+     30.7341882
+    ]
+   },
+   "properties": {
+    "name": "木行头",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4833657,
+     30.73476
+    ]
+   },
+   "properties": {
+    "name": "仰鱼窠",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4778224,
+     30.7385224
+    ]
+   },
+   "properties": {
+    "name": "东古山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4747325,
+     30.7385531
+    ]
+   },
+   "properties": {
+    "name": "西古山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4739672,
+     30.7406495
+    ]
+   },
+   "properties": {
+    "name": "北庄头",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4774219,
+     30.7421556
+    ]
+   },
+   "properties": {
+    "name": "心田村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4829437,
+     30.7471134
+    ]
+   },
+   "properties": {
+    "name": "潭家桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4730159,
+     30.7493294
+    ]
+   },
+   "properties": {
+    "name": "南圣堂",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4753673,
+     30.7468583
+    ]
+   },
+   "properties": {
+    "name": "长浜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4793441,
+     30.7492864
+    ]
+   },
+   "properties": {
+    "name": "虹桥村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4842973,
+     30.744925
+    ]
+   },
+   "properties": {
+    "name": "凤仙圩",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4851806,
+     30.7389804
+    ]
+   },
+   "properties": {
+    "name": "计家汇",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4860747,
+     30.7374957
+    ]
+   },
+   "properties": {
+    "name": "渔业村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4955983,
+     30.739254
+    ]
+   },
+   "properties": {
+    "name": "黄家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5008662,
+     30.7409722
+    ]
+   },
+   "properties": {
+    "name": "三里塘",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4928231,
+     30.7458871
+    ]
+   },
+   "properties": {
+    "name": "唐家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4838324,
+     30.764496
+    ]
+   },
+   "properties": {
+    "name": "乌村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4925388,
+     30.7505373
+    ]
+   },
+   "properties": {
+    "name": "北安桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5021304,
+     30.7509
+    ]
+   },
+   "properties": {
+    "name": "圣堂桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5038971,
+     30.7532358
+    ]
+   },
+   "properties": {
+    "name": "王家浜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5078525,
+     30.7515884
+    ]
+   },
+   "properties": {
+    "name": "落马桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5060357,
+     30.7545696
+    ]
+   },
+   "properties": {
+    "name": "戴家桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4996842,
+     30.756389
+    ]
+   },
+   "properties": {
+    "name": "钱家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.5009717,
+     30.7587677
+    ]
+   },
+   "properties": {
+    "name": "张家元",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4947347,
+     30.7534325
+    ]
+   },
+   "properties": {
+    "name": "小河东",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4923171,
+     30.7525535
+    ]
+   },
+   "properties": {
+    "name": "小桥头",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4887265,
+     30.7525904
+    ]
+   },
+   "properties": {
+    "name": "装车桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4863626,
+     30.7460592
+    ]
+   },
+   "properties": {
+    "name": "银杏社区",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4913265,
+     30.7439138
+    ]
+   },
+   "properties": {
+    "name": "东苑社区",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4779954,
+     30.7662574
+    ]
+   },
+   "properties": {
+    "name": "顾家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4780383,
+     30.7651081
+    ]
+   },
+   "properties": {
+    "name": "圣堂头",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4770012,
+     30.7617585
+    ]
+   },
+   "properties": {
+    "name": "淡水桥",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4751201,
+     30.7604985
+    ]
+   },
+   "properties": {
+    "name": "妞家埭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.470614,
+     30.7595643
+    ]
+   },
+   "properties": {
+    "name": "高家浜",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.4965321,
+     30.7233355
+    ]
+   },
+   "properties": {
+    "name": "乌镇镇澜庄社区卫生服务站",
+    "category": "medical",
+    "kind": "place"
+   }
+  }
+ ]
+}

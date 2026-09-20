@@ -1,0 +1,118 @@
+\section{Memory, Cognition, and Behavioral Continuity}
+\label{sec:memory-cognition}
+
+GAWorld separates persistence from generation.  An agent's continuity is not
+held solely in an LLM context window: structured state, episodic records,
+habits, intentions, relationships, environmental preferences, growth profiles,
+and skills are written to mechanism-specific stores and reintroduced at later
+steps.  Figure~\ref{fig:memory-growth} summarizes this path.  The resulting
+system can preserve and expose information across simulated days; whether its
+memory dynamics resemble those of people is a separate empirical question.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.94\linewidth]{memory_growth.pdf}
+  \caption{Persistent experience and growth paths.  Tick-level episodes feed
+  retrieval and rule-based updates; configured day-boundary processes may
+  consolidate episodes into semantic memories or private skills.  Solid
+  storage paths denote implemented persistence, not validated models of human
+  remembering or learning.}
+  \label{fig:memory-growth}
+\end{figure}
+
+\subsection{Episodic persistence and retrieval}
+
+The basic store retains an agent's memory list, schedule, available actions,
+locations, and location--action biases as JSON, alongside append-only textual
+logs and simulation state.  A second experience layer records episodes in
+JSONL and persists habits, daily intentions, relationships, and environmental
+preferences in separate per-agent files.  This division supports inspection
+and selective restart, although a complete restart requires all of these
+stores rather than a single canonical agent file.
+
+For content-addressed recall, memory entries are also indexed in SQLite with
+type, simulated time, salience, recall count, and an embedding.  The configured
+embedding path may call an embedding provider; if that path is unavailable,
+the implementation falls back to a deterministic hash embedding.  Retrieval
+combines vector similarity with salience, age decay, and prior recall, then
+optionally boosts entries related to the agent's current growth interests.
+Thus ranking is a specified scoring procedure over stored entries, whereas the
+text being ranked may have originated in an LLM-generated action, reflection,
+diary, news item, or external source.
+
+The day-boundary lifecycle adds two optional transformations.  Consolidation
+selects recent episodic rows and asks an LLM to distill them into a small set of
+semantic entries; malformed output or insufficient material produces no new
+entry.  Decay is LLM-free: after a configured period it lowers the salience of
+old, unrecalled episodic rows and deletes rows already below a floor, while
+protecting semantic, external-information, and procedural entries.  A separate
+episode store also computes exponential salience decay and enforces a size cap.
+These two decay paths operate over different stores and should not be mistaken
+for one unified cognitive theory.
+
+External retrieval-augmented memory is likewise optional.  Agent-derived
+queries can retrieve web material, after which an LLM may assess or compress
+it into external-information entries.  This path depends on a caller-supplied
+fetch adapter and degrades to no operation on failure.  Consequently, an
+experimental report must disclose whether external retrieval, provider-based
+embeddings, consolidation, and decay were enabled.
+
+\subsection{Intentions, habits, and reactive behavior}
+
+Behavioral continuity combines model-mediated interpretation with explicit
+state-transition rules.  At day boundaries, recent episodes and current state
+can be supplied to an LLM to produce priorities, avoidances, social targets,
+and recovery goals.  When the call budget is exhausted or parsing fails, a
+rule-based fallback constructs intentions from state and recent experience.
+Habit strength, relationship signals, physiological and time-pressure needs,
+episode salience, and many mood or stress adjustments are updated by bounded
+numeric rules.  These values enter subsequent prompt context rather than being
+left as unstructured prose.
+
+The dynamic-behavior module evaluates candidate interruptions from needs,
+co-location, incoming messages, environmental events, local physical
+conditions, cascades, and spontaneous urges.  Acceptance probabilities depend
+on event intensity, activity commitment, personality proxies, relationship
+closeness, and agent state.  Candidate generation and schedule insertion are
+LLM-free but stochastic; they are repeatable only when the relevant random
+state is seeded.  Once an interruption wins, the ordinary activity-adjustment
+or action path may invoke an LLM to phrase or refine the response.  GAWorld
+therefore distinguishes rule-based opportunity and constraint generation from
+model-generated interpretation and action text.
+
+Spatial preference illustrates continuity without language generation.  A
+crowd surge or other location anomaly raises a time-bucketed aversion score;
+scores decay with recency, and a later destination can be redirected when its
+aversion crosses a configured threshold.  This mechanism implements learned
+avoidance as a transparent rule.  It does not establish that the learning rate,
+threshold, or decay reproduces human spatial choice.
+
+\subsection{Interests, skills, and productive activity}
+
+Growth profiles contain bounded hobby and skill items with phase, engagement,
+competence, practice history, and activity templates.  Their initial content
+may be derived by an LLM and cached by a profile signature; deterministic
+fallback profiles are available when generation fails.  Episode matching,
+practice updates, phase classification, daily retention decay, retirement of
+stale interests, and socially mediated adoption then use explicit rules and a
+seedable random generator.  The labels borrow a developmental vocabulary, but
+their implementation is a simulation mechanism rather than a validated model
+of human interest development.
+
+The skill subsystem maintains a curated global library and per-agent private
+skills.  Available skills can be injected into cognition context, while an
+optional LLM consolidation step extracts a reusable procedure from recent
+episodes and saves it as a private Markdown skill.  Parsing, schema checks, and
+registry precedence constrain this output; they do not demonstrate that the
+procedure is correct or transferable outside the generated setting.
+
+Productive activity extends this pattern to a mock work market.  Cached,
+LLM-derived capability profiles and current growth items inform routing.  A
+JSONL queue provides claim and recovery semantics, a worker pool dispatches
+briefs concurrently, and code, content, teaching, and web-design adapters use
+an LLM to produce files.  Lightweight validators check properties such as
+Python syntax, Markdown structure, or HTML/SVG parseability before successful
+results are ingested into agent state and market settlement.  These checks and
+persisted artifact paths demonstrate a functioning production pipeline; they
+are not evidence that an artifact meets professional, pedagogical, factual, or
+security standards.

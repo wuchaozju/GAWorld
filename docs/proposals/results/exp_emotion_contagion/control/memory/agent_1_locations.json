@@ -1,0 +1,49 @@
+{
+  "home": "Building C-01",
+  "workplace": "Finance Plaza",
+  "current": "Marina Pier",
+  "destination": "Waterfront",
+  "in_transit": true,
+  "transport_mode": "walk",
+  "travel_minutes": 4,
+  "travel_progress": 0.5,
+  "travel_route": [
+    "Marina Pier",
+    "Waterfront"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "22:40",
+  "frequent_places": {
+    "Basketball Court": 2,
+    "Civic Square": 1,
+    "Insurance Center": 2,
+    "Willow Design Studio": 1,
+    "Riverwalk": 1,
+    "Building C-01": 1,
+    "Student Canteen": 2,
+    "Boathouse": 6,
+    "Marina Pier": 2,
+    "Stadium Plaza": 1,
+    "Riverside Port": 2,
+    "Air Traffic Control": 2,
+    "Sorting Center": 2,
+    "Long Haul Truck Stop": 1,
+    "Cold Storage Facility": 1,
+    "Riverside Stadium": 1
+  },
+  "preferred_modes": {
+    "e-bike": 16,
+    "bike": 7,
+    "metro": 5
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 17.630000000000006,
+  "travel_distance_km": 0.298,
+  "depart_time": "22:36"
+}

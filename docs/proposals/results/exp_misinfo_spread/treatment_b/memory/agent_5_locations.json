@@ -1,0 +1,52 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Riverside Tower",
+  "destination": "Riverside Tower",
+  "in_transit": false,
+  "transport_mode": "metro",
+  "travel_minutes": 17,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Market St",
+    "Riverside Night Market",
+    "Financial District",
+    "Riverside Tower"
+  ],
+  "travel_cost": 2.65,
+  "rush_hour": false,
+  "arrival_time": "11:17",
+  "frequent_places": {
+    "Riverside Post Office": 1,
+    "C-02": 1,
+    "Riverside Cinema": 4,
+    "Riverside Bank Branch": 2,
+    "City Hall": 2,
+    "Market St": 2,
+    "Courthouse": 1,
+    "Financial District": 8,
+    "Stadium Plaza": 4,
+    "Central Bank Annex": 5,
+    "Finance Plaza": 5,
+    "Building C-02": 1,
+    "Public Services Center": 1,
+    "Riverside Tower": 2,
+    "Basketball Court": 1,
+    "Riverside Ave": 1,
+    "Corner Mart": 1
+  },
+  "preferred_modes": {
+    "e-bike": 12,
+    "metro": 4,
+    "bike": 26
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 3.94,
+  "travel_distance_km": 5.445,
+  "depart_time": "11:00"
+}

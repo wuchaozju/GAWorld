@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="studio.page_title">GAWorld · Agent Studio</title>
+  <meta name="description" data-i18n-content="studio.meta_description" content="GAWorld 智能体展示与编辑工作台" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/studio.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <!-- Top bar -->
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker">GAWorld Agent Studio</p>
+          <h1><span data-i18n="studio.headline">构建一个数字居民</span> <span class="help-tip" data-i18n-help="studio.headline_hint" data-help="智能体工作台：按“身份 → 状态·性格 → 能力·技能 → 记忆 → 社交·关系 → 行为·目标 → 复核·部署”七步，设计并部署一个具有状态、记忆、社交与目标的城市居民。左侧可切换已有居民。"></span></h1>
+          <p class="sub" data-i18n="studio.sub">设计具有状态、记忆、社交与目标的生成式城市居民智能体。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/#dashboard" target="_top" data-i18n="studio.back">← 返回控制台</a>
+        <button id="newAgentBtn" class="button" data-i18n="studio.new">＋ 新建</button>
+        <button id="saveBtn" class="button primary" data-i18n="studio.save">保存</button>
+        <button id="runBtn" class="button steel" data-i18n="studio.run">运行仿真</button>
+      </div>
+    </header>
+
+    <!-- Step rail -->
+    <nav class="step-rail" id="stepRail" aria-label="steps">
+      <button class="step is-active" data-step="1"><span class="num">1</span><span data-i18n="studio.step1">身份</span></button>
+      <button class="step" data-step="2"><span class="num">2</span><span data-i18n="studio.step2">状态 · 性格</span></button>
+      <button class="step" data-step="3"><span class="num">3</span><span data-i18n="studio.step3">能力 · 技能</span></button>
+      <button class="step" data-step="4"><span class="num">4</span><span data-i18n="studio.step4">记忆</span></button>
+      <button class="step" data-step="5"><span class="num">5</span><span data-i18n="studio.step5">社交 · 关系</span></button>
+      <button class="step" data-step="6"><span class="num">6</span><span data-i18n="studio.step6">行为 · 目标</span></button>
+      <button class="step" data-step="7"><span class="num">7</span><span data-i18n="studio.step7">复核 · 部署</span></button>
+    </nav>
+
+    <div class="studio-grid">
+      <!-- Persistent subject rail -->
+      <aside class="subject panel">
+        <div class="subject-head">
+          <label class="field">
+            <span><span data-i18n="studio.pick_agent">选择居民</span> <span class="help-tip" data-i18n-help="studio.pick_agent_hint" data-help="选择要查看或编辑的居民，右侧表单会载入其对应设定；也可点右上角“＋ 新建”创建新居民。"></span></span>
+            <select id="agentSelect"></select>
+          </label>
+        </div>
+        <div class="avatar-wrap">
+          <img id="subjectAvatar" class="subject-avatar" alt="" />
+          <span class="idle-dot"><span></span>Idle</span>
+        </div>
+        <div class="subject-id">
+          <strong id="subjectName">—</strong>
+          <span id="subjectMeta" class="muted-line"></span>
+        </div>
+        <div class="mini-radar">
+          <svg id="miniRadar" viewBox="0 0 200 200" aria-label="state radar"></svg>
+        </div>
+        <p class="autosave" id="saveHint" data-i18n="studio.not_loaded">未加载</p>
+      </aside>
+
+      <!-- Step body -->
+      <section class="stepbody panel" id="stepBody"></section>
+    </div>
+
+    <footer class="studio-foot">
+      <span>Model <b>GAWorld Sim</b></span>
+      <span>State <b>9 vars · [0,1]</b></span>
+      <span>Seed <b id="footSeed">data/hangzhou_agents_state_init.csv</b></span>
+      <span id="footMsg" class="foot-msg"></span>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/studio.js"></script>
+</body>
+</html>

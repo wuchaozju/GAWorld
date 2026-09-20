@@ -1,0 +1,27 @@
+{
+  "generated": "2026-07-12T18:07:41",
+  "trust_gate": "UNVERIFIED",
+  "fast": false,
+  "composite_hint": null,
+  "headline_track": null,
+  "tracks": {
+    "C": {
+      "track": "C",
+      "status": "n/a",
+      "note": "live compare-event runs failed — check LLM provider / config"
+    },
+    "B": {
+      "status": "n/a",
+      "note": "未实现 (v0.3)"
+    },
+    "D": {
+      "status": "n/a",
+      "note": "未实现 (v0.4)"
+    },
+    "E": {
+      "status": "n/a",
+      "note": "确定性见 Track C; 成本未实现 (v0.2)"
+    }
+  },
+  "note": "composite is a trend hint only — read tracks separately (design §3)."
+}

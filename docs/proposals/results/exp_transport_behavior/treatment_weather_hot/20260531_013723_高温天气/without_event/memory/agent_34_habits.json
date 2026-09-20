@@ -1,0 +1,38 @@
+{
+  "morning|public|晨练": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.219561984,
+    "last_updated_day": 1
+  },
+  "afternoon|public|晨练": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "evening|public|晨练": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "night|public|晨练": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  }
+}

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="worlds.page_title">GAWorld · 平行世界</title>
+  <meta name="description" data-i18n-content="worlds.meta_description" content="GAWorld 平行世界实验台：改变事件，比较不同世界的走向" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/worlds.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="worlds.kicker">GAWorld 平行世界</p>
+          <h1 data-i18n="worlds.headline">同一批人，换一件事，看历史怎么分叉</h1>
+          <p class="sub" data-i18n="worlds.sub">
+            所有世界共用同一批居民、同一个随机种子、同一个模型 ——
+            唯一的区别是发生了什么。剩下的差异就是这件事造成的。
+          </p>
+        </div>
+      </div>
+      <div class="pw-topmeta" id="pwTopMeta"></div>
+    </header>
+
+    <section class="pw-main">
+      <!-- ============ 左：世界设计 ============ -->
+      <aside class="pw-design" id="pwDesign">
+        <div class="pw-card">
+          <h2><span data-i18n="worlds.setup">实验设置</span><span class="help-tip" data-i18n-help="worlds.setup_hint" data-help="这些设置对所有平行世界都一样：同样的居民、同样的天数、同样的随机种子。保持一致才能把终局差异归因到事件本身。"></span></h2>
+          <div class="pw-fields" id="pwShared"></div>
+        </div>
+
+        <div class="pw-card">
+          <div class="pw-card-head">
+            <h2><span data-i18n="worlds.list_title">平行世界</span><span class="help-tip" data-i18n-help="worlds.list_hint" data-help="每个世界是一次完整仿真，拥有独立的记忆、日志与状态目录。给某个世界加事件，它就会走出不同的历史；不加事件的世界就是基准。"></span></h2>
+            <button class="button small" id="pwAddWorld" type="button" data-i18n="worlds.add">+ 新世界</button>
+          </div>
+          <p class="pw-hint" id="pwPresetHint" data-i18n="worlds.preset_hint">从模板开始：</p>
+          <div class="pw-presets" id="pwPresets"></div>
+          <div class="pw-worlds" id="pwWorldList"></div>
+        </div>
+      </aside>
+
+      <!-- ============ 右：观测 ============ -->
+      <section class="pw-observe">
+        <div class="pw-card">
+          <div class="pw-card-head">
+            <h2><span data-i18n="worlds.branch">分叉图</span><span class="help-tip" data-i18n-help="worlds.branch_hint" data-help="横轴是仿真天数。所有世界从同一条主干出发，在各自的第一个事件处分叉；分叉后的粗细代表它离基准世界有多远。"></span></h2>
+            <div class="pw-legend" id="pwLegend"></div>
+          </div>
+          <div class="pw-svgwrap" id="pwBranch"></div>
+        </div>
+
+        <div class="pw-card">
+          <div class="pw-card-head">
+            <h2><span data-i18n="worlds.trajectory">走向对比</span><span class="help-tip" data-i18n-help="worlds.trajectory_hint" data-help="每条线是一个世界该指标的人群均值随时间的变化。虚线标记事件发生的位置。"></span></h2>
+            <div class="pw-chart-tools">
+              <select id="pwMetricSelect" data-i18n-aria="worlds.metric_label" aria-label="指标"></select>
+              <label class="pw-check"><input type="checkbox" id="pwRelative" /> <span data-i18n="worlds.relative">只看与基准的差</span></label>
+            </div>
+          </div>
+          <div class="pw-svgwrap" id="pwTrajectory"></div>
+          <div class="pw-readout" id="pwReadout" data-i18n="worlds.readout">把鼠标移到图上查看某一步的数值。</div>
+        </div>
+
+        <div class="pw-card">
+          <div class="pw-card-head">
+            <h2><span data-i18n="worlds.divergence">偏离基准的距离</span><span class="help-tip" data-i18n-help="worlds.divergence_hint" data-help="每一步，该世界所有指标与基准世界同一步的平均绝对差。它第一次稳定越过阈值的那一步，就是两段历史真正分开的时刻。"></span></h2>
+          </div>
+          <div class="pw-svgwrap" id="pwDivergence"></div>
+        </div>
+
+        <div class="pw-grid2">
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.deltas">终局差异</span><span class="help-tip" data-i18n-help="worlds.deltas_hint" data-help="每个世界相对基准世界的终值与均值差，按绝对差排序。"></span></h2>
+            </div>
+            <div class="pw-table" id="pwDeltas"></div>
+          </div>
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.movers">谁被改变了</span><span class="help-tip" data-i18n-help="worlds.movers_hint" data-help="同一个居民在两个世界里的终局差距。人群均值会把个体差异抹平，这张表把它们找回来。"></span></h2>
+              <select id="pwMoverWorld" data-i18n-aria="worlds.world_label" aria-label="世界"></select>
+            </div>
+            <div class="pw-table" id="pwMovers"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="studio-foot pw-foot">
+      <div class="pw-runstate" id="pwRunState" data-i18n="worlds.not_running">未运行</div>
+      <div class="pw-progress" id="pwProgress"></div>
+      <div class="pw-actions">
+        <select id="pwHistory" data-i18n-aria="worlds.history_label" aria-label="历史实验"></select>
+        <button class="button subtle" id="pwRefresh" type="button" data-i18n="worlds.refresh">刷新</button>
+        <button class="button danger" id="pwStop" type="button" data-i18n="worlds.stop" hidden>停止</button>
+        <button class="button primary" id="pwRun" type="button" data-i18n="worlds.run">运行平行世界</button>
+      </div>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/worlds.js"></script>
+</body>
+</html>

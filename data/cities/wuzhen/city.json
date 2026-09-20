@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "slug": "wuzhen",
+  "name": "乌镇镇",
+  "display_name": "乌镇镇, 桐乡市, 嘉兴市, 浙江省, 314501, 中国",
+  "created_at": "2026-09-15T15:54:59+00:00",
+  "place": {
+    "query": "Wuzhen",
+    "name": "乌镇镇",
+    "display_name": "乌镇镇, 桐乡市, 嘉兴市, 浙江省, 314501, 中国",
+    "lat": 30.7464875,
+    "lng": 120.4819022,
+    "bbox": [
+      30.7114875,
+      120.4469022,
+      30.7814875,
+      120.51690219999999
+    ],
+    "kind": "town",
+    "scale": "small",
+    "country": "中国",
+    "country_code": "cn",
+    "population": null,
+    "source": "nominatim",
+    "osm_id": 12766522,
+    "osm_type": "relation"
+  },
+  "scale": "small",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 30.746488,
+      "lng": 120.481902,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.010452312
+    },
+    "nodes": 56
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 60,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-15T15:54:59+00:00",
+      "action": "map.virtual",
+      "scale": "small",
+      "seed": 133030765
+    },
+    {
+      "at": "2026-09-15T16:12:06+00:00",
+      "action": "map.real",
+      "nodes": 56,
+      "bbox": [
+        30.7114875,
+        120.4469022,
+        30.7814875,
+        120.51690219999999
+      ]
+    },
+    {
+      "at": "2026-09-15T16:12:06+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-15T16:12:06+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim"
+    },
+    {
+      "at": "2026-09-15T16:42:40+00:00",
+      "action": "population.add",
+      "added": 20,
+      "total": 20,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-15T16:44:34+00:00",
+      "action": "population.add",
+      "added": 20,
+      "total": 40,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-15T16:44:40+00:00",
+      "action": "population.add",
+      "added": 20,
+      "total": 60,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    }
+  ],
+  "updated_at": "2026-09-15T16:44:40+00:00"
+}

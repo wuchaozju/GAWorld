@@ -1,4 +1,3 @@
-import argparse
 import pandas as pd
 import time
 import random
@@ -12,18 +11,16 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime, timedelta
 import matplotlib.pyplot as plt
 import networkx as nx
 from html import unescape
-from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
-from config import CONFIG
+from gaworld.settings import CONFIG
 from gaworld.core.runner import parallel_map, resolve_max_workers
-from gaworld.logging_setup import get_logger, LOG_MODE
-from gaworld.personal_twin.state import apply_daily_twin_update, build_initial_twin_state
-from gaworld.personal_twin.what_if import write_personal_what_if_report as _write_personal_what_if_report
-from gaworld.work.ab_fork_engine import ABForkEngine, get_engine
+# Growth-profile lifecycle moved to gaworld.interests_plugin (K3d); only
+# the inline read-side consumers remain (schedule prompt context + matching).
+from gaworld.interests import format_growth_context, match_growth_items
+from gaworld.logging_setup import LOG_MODE, get_logger
 
 _LOG = get_logger("gaworld.sim")
 
@@ -32,71 +29,20 @@ _LOG = get_logger("gaworld.sim")
 # ---------------------------------------------------------------------------
 _LOG_SIMPLE: bool = LOG_MODE == "simple"
 
+# Text-cleaning helpers moved to ``gaworld.sim._utils`` during the S3
+# refactor. Re-exported here so existing in-file callers keep working.
+from gaworld.sim._utils import (  # noqa: E402
+    _clean_env_context,
+    _clean_reflection,
+)
 
-def _clean_env_context(env_text: str, max_chars: int = 80) -> str:
-    """Strip static background and intervention text; return dynamic events only.
-
-    The env context string is structured as:
-      背景：<static>  当前环境事件：<dynamic>  平台干预推荐：<intervention>
-
-    In simple mode we only want the dynamic part, and skip it entirely when
-    it only contains the boilerplate "今日外部环境总体平稳" phrase.
-    """
-    if not env_text:
-        return ""
-    # Drop platform intervention section (verbose, repeated, often truncated).
-    for marker in ("平台干预推荐：", "\n平台干预推荐"):
-        idx = env_text.find(marker)
-        if idx != -1:
-            env_text = env_text[:idx]
-    env_text = env_text.strip()
-    # Keep only the part after "当前环境事件：".
-    dyn_marker = "当前环境事件："
-    idx = env_text.find(dyn_marker)
-    if idx != -1:
-        env_text = env_text[idx + len(dyn_marker):].strip()
-    # Skip uninformative boilerplate.
-    if not env_text or "今日外部环境总体平稳" in env_text:
-        return ""
-    if len(env_text) > max_chars:
-        env_text = env_text[:max_chars].rstrip() + "…"
-    return env_text
-
-
-def _clean_reflection(text: str, max_chars: int = 160) -> str:
-    """Return a clean Chinese reflection, stripping LLM reasoning leakage.
-
-    Some LLM backends prepend English chain-of-thought ("The user says: …")
-    before the actual Chinese answer.  When detected, we try to extract only
-    the structured Chinese key-value pairs (感受/教训/后续倾向).
-    """
-    if not text:
-        return text
-    # Measure English-character ratio.
-    ascii_alpha = sum(1 for c in text if c.isascii() and c.isalpha())
-    if ascii_alpha / max(len(text), 1) < 0.10:
-        # Looks clean — just truncate.
-        return text[:max_chars] + ("…" if len(text) > max_chars else "")
-    # Extract structured Chinese parts, skipping polluted 结果 field.
-    parts: list[str] = []
-    for key in ("感受", "教训", "后续倾向"):
-        m = re.search(rf"{key}[：:]\s*([^；\n]+)", text)
-        if not m:
-            continue
-        val = m.group(1).strip()
-        val_ascii = sum(1 for c in val if c.isascii() and c.isalpha())
-        if val_ascii / max(len(val), 1) < 0.30:
-            parts.append(f"{key}：{val}")
-    if parts:
-        return "；".join(parts)
-    # Fallback: truncate original.
-    return text[:max_chars] + ("…" if len(text) > max_chars else "")
-
-from city_map_system import (
+from gaworld.world.city_map import (
     all_locations as city_all_locations,
     distance_between as city_distance_between,
     load_city_map as load_structured_city_map,
     load_city_map_text as load_structured_city_map_text,
+    load_real_city_map as load_real_structured_city_map,
+    real_city_map_text as real_structured_city_map_text,
     node_by_name as city_node_by_name,
     travel_plan as build_travel_plan,
     nearest_by_category,
@@ -108,38 +54,36 @@ from city_map_system import (
     calc_transport_cost,
     is_rush_hour,
 )
-from distributed_comm import (
+from gaworld.distributed.comm import (
     DistributedRelayClient,
     extract_sender_agent_ids,
     format_inbox_context,
 )
-from dynamic_behavior import (
-    dynamic_transient_thought,
-    evaluate_step_dynamics,
+from gaworld.behavior.dynamic import (
     insert_activity_into_schedule as dynamic_insert_activity,
 )
-from extensibility import HookBus
+from gaworld.kernel import ActionRequest, build_kernel
+from gaworld.sim.pipeline import DEFAULT_AGENT_STEP_ORDER, StagePipeline
 from environment import EnvironmentSystem, RemoteEnvironmentClient
-from llm_providers import call_llm
-from gaworld.work.runtime import RealWorkRuntime
-from gaworld.work.ingest import summarise_for_outcome as _rw_summarise
-from simulation_visualizer import (
+from gaworld.llm.providers import call_llm
+from gaworld.apps.visualizer import (
     SimulationVisualizer,
     build_agent_step_payload,
 )
-from experience_store import (
+from gaworld.memory.experience import (
     append_agent_episode,
+    load_agent_env_preferences,
     load_agent_episodes,
     load_agent_habits,
     load_agent_intentions,
     load_agent_relationships,
     prune_and_decay_episodes,
+    save_agent_env_preferences,
     save_agent_habits,
     save_agent_intentions,
     save_agent_relationships,
 )
-from human_realism import (
-    apply_relationship_decay,
+from gaworld.cognition.realism import (
     build_context_key,
     build_daily_intentions,
     compute_episode_salience,
@@ -152,38 +96,44 @@ from human_realism import (
     update_habits_from_episode,
     update_needs,
 )
-from intervention_policy import (
-    INTERVENTION_METRICS,
-    append_intervention_metrics,
-    build_intervention_feed,
-    initialize_agent_intervention_state,
-    update_agent_intervention_metrics,
+from gaworld.social.network import (
+    apply_closeness_delta,
+    bootstrap_social_roster,
+    decay_relationships,
+    enforce_dunbar,
+    form_tie,
+    migrate_relationships,
 )
-from life_events import (
-    drain_due_life_events,
-    format_life_event,
-    life_event_dir,
-    life_events_for_agent,
+from gaworld.events.life import list_life_events
+from gaworld.goals import (
+    apply_goal_progress,
+    format_goals_context,
+    load_agent_goals,
+    match_goal_relevance,
+    save_agent_goals,
 )
-from memory_store import (
+
+from gaworld.policy.intervention import INTERVENTION_METRICS
+from gaworld.plugins import builtin_plugins
+from gaworld.personality import personality_line
+from gaworld.events.life import life_event_dir
+from gaworld.memory.store import (
     append_agent_log,
+    known_agent_ids,
     load_agent_actions,
     load_agent_locations,
     load_agent_location_action_bias,
     load_agent_memory,
     load_agent_schedule,
-    load_agent_twin_state,
     load_recent_actions,
     load_recent_log_blocks,
     load_sim_state,
     reset_agent_memory,
     retrieve_relevant_memories,
-    save_agent_actions,
     save_agent_location_action_bias,
     save_agent_locations,
     save_agent_memory,
     save_agent_schedule,
-    save_agent_twin_state,
     save_sim_state,
     seed_vector_db_from_memory,
     vector_db_add_entry,
@@ -191,167 +141,33 @@ from memory_store import (
     _format_memory_hint,
     _memory_action_bias,
 )
+from gaworld.memory.lifecycle import run_daily_memory_lifecycle  # noqa: E402
 
 # =========================================================
 # Utils
 # =========================================================
-def _parse_step_minutes(value):
-    if value is None:
-        return None
-    if isinstance(value, (int, float)):
-        return int(value)
-    text = str(value).strip().lower()
-    if not text:
-        return None
-    match = re.match(r"^(\d+)\s*(m|min|mins|minute|minutes|h|hour|hours)?$", text)
-    if not match:
-        return None
-    amount = int(match.group(1))
-    unit = match.group(2)
-    if not unit or unit.startswith("m"):
-        return amount
-    if unit.startswith("h"):
-        return amount * 60
-    return amount
-
-def _time_str_to_minutes(time_str):
-    if not re.match(r"^\d{2}:\d{2}$", str(time_str)):
-        return None
-    hh, mm = time_str.split(":")
-    return int(hh) * 60 + int(mm)
-
-def _minutes_to_time_str(minutes):
-    minutes = int(minutes) % (24 * 60)
-    hh = minutes // 60
-    mm = minutes % 60
-    return f"{hh:02d}:{mm:02d}"
-
-def _build_time_grid(step_minutes):
-    step = max(1, int(step_minutes))
-    return [_minutes_to_time_str(m) for m in range(0, 24 * 60, step)]
-
-def _format_external_env_event(ev):
-    if not isinstance(ev, dict):
-        return str(ev)
-    etype = str(ev.get("type", "event"))
-    topic = str(ev.get("topic", "")).strip()
-    severity = float(ev.get("severity", 0.0))
-    description = str(ev.get("description", ev.get("name", ""))).strip()
-    topic_part = f"/{topic}" if topic else ""
-    return f"{etype}{topic_part}({severity:.2f}) {description}".strip()
-
-_WEEKDAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-_WEEKDAY_ZH = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-_WEEKDAY_ALIASES = {
-    "mon": "monday",
-    "tue": "tuesday",
-    "wed": "wednesday",
-    "thu": "thursday",
-    "fri": "friday",
-    "sat": "saturday",
-    "sun": "sunday",
-    "周一": "monday",
-    "周二": "tuesday",
-    "周三": "wednesday",
-    "周四": "thursday",
-    "周五": "friday",
-    "周六": "saturday",
-    "周日": "sunday",
-}
-
-def _weekday_to_index(name):
-    key = str(name or "").strip().lower()
-    key = _WEEKDAY_ALIASES.get(key, key)
-    if key not in _WEEKDAY_ORDER:
-        return None
-    return _WEEKDAY_ORDER.index(key)
-
-def _build_weekend_indexes(raw_days):
-    if not isinstance(raw_days, (list, tuple, set)):
-        raw_days = [raw_days]
-    indexes = set()
-    for day_name in raw_days:
-        idx = _weekday_to_index(day_name)
-        if idx is not None:
-            indexes.add(idx)
-    return indexes or {5, 6}
-
-def _parse_sim_start_date(value):
-    if value is None:
-        return date.today()
-    if isinstance(value, date):
-        return value
-    text = str(value).strip()
-    if not text or text.lower() == "today":
-        return date.today()
-    for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(text, fmt).date()
-        except ValueError:
-            continue
-    return date.today()
-
-def _resolve_day_context(day_number, start_weekday_idx=0, weekend_indexes=None, start_date=None):
-    safe_day = max(1, int(day_number or 1))
-    sim_date = None
-    if isinstance(start_date, date):
-        sim_date = start_date + timedelta(days=safe_day - 1)
-        idx = sim_date.weekday()
-    else:
-        idx = (int(start_weekday_idx) + safe_day - 1) % 7
-    weekend_indexes = weekend_indexes or {5, 6}
-    is_weekend = idx in weekend_indexes
-    return {
-        "sim_date": sim_date.isoformat() if sim_date else "",
-        "sim_date_zh": (
-            f"{sim_date.year}年{sim_date.month:02d}月{sim_date.day:02d}日"
-            if sim_date else ""
-        ),
-        "weekday_index": idx,
-        "weekday_en": _WEEKDAY_ORDER[idx],
-        "weekday_zh": _WEEKDAY_ZH[idx],
-        "day_type": "weekend" if is_weekend else "weekday",
-        "day_type_zh": "周末" if is_weekend else "工作日",
-    }
-
-def _clear_dir(path):
-    if not path or not os.path.exists(path):
-        return
-    for name in os.listdir(path):
-        target = os.path.join(path, name)
-        try:
-            if os.path.islink(target) or os.path.isfile(target):
-                os.remove(target)
-            elif os.path.isdir(target):
-                shutil.rmtree(target)
-        except OSError:
-            continue
-
-
-def _stable_json_marker(value):
-    try:
-        return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    except (TypeError, ValueError):
-        return repr(value)
-
-
-def _coerce_positive_int_list(values):
-    if values is None:
-        return []
-    if not isinstance(values, (list, tuple, set)):
-        values = [values]
-    seen = set()
-    out = []
-    for raw in values:
-        try:
-            value = int(raw)
-        except (TypeError, ValueError):
-            continue
-        if value <= 0 or value in seen:
-            continue
-        seen.add(value)
-        out.append(value)
-    return out
+# The pure-utility helpers that used to live in this section were extracted
+# into ``gaworld.sim._utils`` during the S3 refactor. They are re-exported
+# here unchanged so internal callers keep working without any rename.
+from gaworld.sim._utils import (  # noqa: E402
+    _WEEKDAY_ALIASES,
+    _WEEKDAY_ORDER,
+    _WEEKDAY_ZH,
+    _build_time_grid,
+    _build_weekend_indexes,
+    _clear_dir,
+    _coerce_positive_int_list,
+    _format_external_env_event,
+    _minutes_to_time_str,
+    _parse_sim_start_date,
+    _parse_step_minutes,
+    _resolve_day_context,
+    _sanitize_extra_text,
+    _stable_json_marker,
+    _time_str_to_minutes,
+    _weekday_to_index,
+    snap_schedule_to_grid,
+)
 
 # --------------------------------------------------------------------
 # HTML extraction helpers — delegated to gaworld.io.web_scrape.
@@ -373,794 +189,43 @@ from gaworld.io.web_scrape import (  # noqa: E402
 )
 
 
-def fetch_social_page_profile_source(
-    url,
-    timeout=12,
-    max_chars=12000,
-    user_agent="GAWorld/1.0",
-):
-    if not url:
-        raise ValueError("缺少 URL")
-    headers = {"User-Agent": user_agent}
-    resp = requests.get(url, headers=headers, timeout=timeout)
-    resp.raise_for_status()
-    if not resp.encoding:
-        resp.encoding = resp.apparent_encoding
-    raw_text = resp.text or ""
-    title = _extract_title(raw_text)
-    meta_desc = _extract_meta_content(
-        raw_text,
-        "description",
-        "og:description",
-        "twitter:description",
-    )
-    content = _extract_news_main_content(raw_text)
-    if len(content) < 200:
-        content = _strip_html(raw_text)
-    combined = "\n".join(
-        part for part in [
-            f"页面标题：{title}" if title else "",
-            f"页面摘要：{meta_desc}" if meta_desc else "",
-            content,
-        ]
-        if part
-    ).strip()
-    if max_chars and len(combined) > max_chars:
-        combined = combined[:max_chars]
-    return {
-        "url": url,
-        "title": title,
-        "summary": meta_desc,
-        "content": combined,
-    }
+# --------------------------------------------------------------------
+# External information acquisition (news / search / info-seek) —
+# extracted to ``gaworld.sim._news``. Re-exported here for backwards
+# compatibility: tests use ``patch.object(sim, "_choose_info_target", ...)``
+# and ``patch.object(sim, "_build_agent_preferred_sites", ...)``, and
+# ``generate_agent_rag_seed.py`` calls ``sim.web_search`` /
+# ``sim._domain_from_url``. New code should import from
+# ``gaworld.sim._news`` directly.
+# --------------------------------------------------------------------
+from gaworld.sim._news import (  # noqa: E402
+    fetch_social_page_profile_source,
+    load_news_sources,
+    load_news_cache,
+    update_news_cache,
+    _extract_interest_keywords,
+    _score_news_relevance,
+    choose_news_for_agent,
+    _domain_from_url,
+    _build_agent_preferred_sites,
+    _choose_info_target,
+    info_seek_and_store,
+    _estimate_curiosity,
+    _build_search_query,
+    _extract_google_results,
+    _extract_baidu_results,
+    _extract_bing_results,
+    _extract_generic_results,
+    web_search,
+    search_web_and_store,
+    read_news_and_store,
+)
+from gaworld.sim._curiosity import (  # noqa: E402
+    assemble_curiosity_context,
+    should_seek_knowledge,
+    propose_contextual_keywords,
+)
 
-def load_news_sources(path):
-    if not path or not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
-        return []
-    urls = re.findall(r"\\((https?://[^)\\s]+)\\)", text)
-    urls.extend(re.findall(r"https?://[^\\s)]+", text))
-    cleaned = []
-    seen = set()
-    for url in urls:
-        url = url.strip().rstrip(").,;")
-        if not url or url in seen:
-            continue
-        seen.add(url)
-        cleaned.append(url)
-    return cleaned
-
-def load_news_cache(path):
-    if not path or not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return []
-    if isinstance(data, dict):
-        data = data.get("items", [])
-    if not isinstance(data, list):
-        return []
-    cleaned = []
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-        url = str(item.get("url", "")).strip()
-        text = str(item.get("text", "")).strip()
-        if not url or not text:
-            continue
-        cleaned.append({
-            "url": url,
-            "text": text,
-            "title": str(item.get("title", "")).strip(),
-            "fetched_at": str(item.get("fetched_at", "")).strip(),
-        })
-    return cleaned
-
-def update_news_cache(path, sources, config=None):
-    config = config or {}
-    existing = load_news_cache(path)
-    if not sources:
-        return existing
-    timeout = int(config.get("timeout", 8))
-    max_chars = int(config.get("max_chars", 2000))
-    user_agent = str(config.get("user_agent", "GAWorld/1.0"))
-    items = []
-    seen = set()
-    for url in sources:
-        url = str(url).strip()
-        if not url or url in seen:
-            continue
-        seen.add(url)
-        excerpt, title = fetch_news_excerpt(
-            url,
-            timeout=timeout,
-            max_chars=max_chars,
-            user_agent=user_agent,
-            return_title=True,
-        )
-        if not excerpt:
-            continue
-        items.append({
-            "url": url,
-            "title": title,
-            "text": excerpt,
-            "fetched_at": time.strftime("%Y-%m-%d"),
-        })
-    if not items:
-        return existing
-    cache_dir = os.path.dirname(path)
-    if cache_dir:
-        os.makedirs(cache_dir, exist_ok=True)
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(items, f, ensure_ascii=False, indent=2)
-    except OSError:
-        return existing
-    return items
-
-def _extract_interest_keywords(agent, max_items=24):
-    profile_fields = [
-        "job",
-        "personality",
-        "daily_life",
-        "values",
-        "work_style",
-        "living",
-        "residence",
-    ]
-    seed_text = " ".join(str(agent.get(k, "")) for k in profile_fields)
-    tokens = re.findall(r"[A-Za-z]{3,}|[\u4e00-\u9fff]{2,8}", seed_text)
-    stopwords = {
-        "自己", "一些", "这种", "这个", "那个", "他们", "我们", "你们",
-        "以及", "对于", "非常", "比较", "可以", "因为", "所以", "但是",
-        "工作", "生活", "习惯", "日常", "态度", "价值观", "情绪", "性格",
-        "城市", "社会", "公共", "事务", "时候", "进行", "觉得", "喜欢",
-        "about", "into", "with", "from", "that", "this", "have", "their",
-    }
-    counts = defaultdict(int)
-    for raw in tokens:
-        token = raw.lower().strip()
-        if len(token) < 2 or token in stopwords:
-            continue
-        counts[token] += 1
-    ranked = sorted(counts.items(), key=lambda x: (-x[1], -len(x[0]), x[0]))
-    return [k for k, _ in ranked[:max_items]]
-
-def _score_news_relevance(url, title, excerpt, interests):
-    if not interests:
-        return 0.0, []
-    domain = urlparse(url).netloc.lower() if url else ""
-    haystack = " ".join(
-        [
-            str(url or "").lower(),
-            str(domain or "").lower(),
-            str(title or "").lower(),
-            str(excerpt or "").lower(),
-        ]
-    )
-    if not haystack.strip():
-        return 0.0, []
-    matched = []
-    score = 0.0
-    for kw in interests:
-        if kw and kw in haystack:
-            matched.append(kw)
-            score += 1.0 + min(len(kw), 10) * 0.05
-    return score, matched[:8]
-
-def choose_news_for_agent(
-    agent,
-    news_cache,
-    news_sources,
-    use_cache_first=True,
-    seen_urls=None,
-):
-    seen_urls = seen_urls or set()
-    interests = _extract_interest_keywords(agent)
-
-    def _pick_best_from_cache(items):
-        ranked = []
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            url = str(item.get("url", "")).strip()
-            if not url or url in seen_urls:
-                continue
-            title = str(item.get("title", "")).strip()
-            text = str(item.get("text", "")).strip()
-            score, matched = _score_news_relevance(url, title, text, interests)
-            ranked.append((score + random.random() * 0.05, matched, item))
-        if not ranked:
-            return None
-        ranked.sort(key=lambda x: x[0], reverse=True)
-        top_n = ranked[: min(3, len(ranked))]
-        chosen = random.choice(top_n)
-        return chosen[2], chosen[0], chosen[1]
-
-    if use_cache_first and news_cache:
-        picked = _pick_best_from_cache(news_cache)
-        if picked:
-            item, score, matched = picked
-            return (
-                item.get("url", ""),
-                item.get("text", ""),
-                item.get("title", ""),
-                score,
-                matched,
-            )
-
-    candidate_sources = [u for u in news_sources if u and u not in seen_urls]
-    if candidate_sources:
-        source_ranked = []
-        for source_url in candidate_sources:
-            score, matched = _score_news_relevance(source_url, "", "", interests)
-            source_ranked.append((score + random.random() * 0.05, matched, source_url))
-        source_ranked.sort(key=lambda x: x[0], reverse=True)
-        best_score, best_matched, best_url = source_ranked[0]
-        return best_url, "", "", best_score, best_matched
-
-    if news_cache:
-        picked = _pick_best_from_cache(news_cache)
-        if picked:
-            item, score, matched = picked
-            return (
-                item.get("url", ""),
-                item.get("text", ""),
-                item.get("title", ""),
-                score,
-                matched,
-            )
-    return "", "", "", 0.0, []
-
-def _domain_from_url(url):
-    domain = urlparse(str(url or "")).netloc.lower().strip()
-    if domain.startswith("www."):
-        domain = domain[4:]
-    return domain
-
-def _build_agent_preferred_sites(agent, news_sources=None, news_cache=None, max_sites=6):
-    news_sources = news_sources or []
-    news_cache = news_cache or []
-    interests = _extract_interest_keywords(agent, max_items=18)
-    fallback_domains = [
-        "baidu.com",
-        "bing.com",
-        "google.com",
-        "thepaper.cn",
-        "news.qq.com",
-        "weibo.com",
-        "zhihu.com",
-    ]
-    domain_scores = defaultdict(float)
-    for url in news_sources:
-        domain = _domain_from_url(url)
-        if domain:
-            domain_scores[domain] += 0.6
-            score, _ = _score_news_relevance(url, "", "", interests)
-            domain_scores[domain] += score
-    for item in news_cache:
-        if not isinstance(item, dict):
-            continue
-        url = str(item.get("url", "")).strip()
-        title = str(item.get("title", "")).strip()
-        text = str(item.get("text", "")).strip()
-        domain = _domain_from_url(url)
-        if not domain:
-            continue
-        score, _ = _score_news_relevance(url, title, text, interests)
-        domain_scores[domain] += 0.5 + score
-    for domain in fallback_domains:
-        domain_scores[domain] += 0.2
-    ranked = sorted(domain_scores.items(), key=lambda x: (-x[1], x[0]))
-    return [domain for domain, _ in ranked[:max(1, int(max_sites))]]
-
-def _choose_info_target(
-    agent,
-    news_cache,
-    news_sources,
-    preferred_sites,
-    seen_urls=None,
-    used_queries=None,
-    config=None,
-):
-    config = config or {}
-    seen_urls = seen_urls or set()
-    used_queries = used_queries or set()
-    direct_visit_ratio = float(config.get("prefer_source_visit_ratio", 0.55))
-    interests = _extract_interest_keywords(agent)
-
-    preferred_cache = []
-    for item in news_cache or []:
-        if not isinstance(item, dict):
-            continue
-        url = str(item.get("url", "")).strip()
-        if not url or url in seen_urls:
-            continue
-        domain = _domain_from_url(url)
-        if preferred_sites and domain not in preferred_sites:
-            continue
-        title = str(item.get("title", "")).strip()
-        text = str(item.get("text", "")).strip()
-        score, matched = _score_news_relevance(url, title, text, interests)
-        preferred_cache.append((score + random.random() * 0.03, matched, url, title, text))
-    preferred_cache.sort(key=lambda x: x[0], reverse=True)
-
-    preferred_sources = []
-    for url in news_sources or []:
-        url = str(url).strip()
-        if not url or url in seen_urls:
-            continue
-        domain = _domain_from_url(url)
-        if preferred_sites and domain not in preferred_sites:
-            continue
-        score, matched = _score_news_relevance(url, "", "", interests)
-        preferred_sources.append((score + random.random() * 0.03, matched, url))
-    preferred_sources.sort(key=lambda x: x[0], reverse=True)
-
-    if random.random() < direct_visit_ratio and preferred_cache:
-        score, matched, url, title, text = preferred_cache[0]
-        return {
-            "mode": "direct_source",
-            "query": "",
-            "engine": "",
-            "url": url,
-            "title": title,
-            "content": text,
-            "score": score,
-            "matched": matched,
-        }
-    if random.random() < direct_visit_ratio and preferred_sources:
-        score, matched, url = preferred_sources[0]
-        text = fetch_news_excerpt(
-            url,
-            timeout=int(config.get("content_timeout", config.get("timeout", 8))),
-            max_chars=int(config.get("content_max_chars", 2000)),
-            user_agent=str(config.get("user_agent", "GAWorld/1.0")),
-        )
-        if text:
-            return {
-                "mode": "direct_source",
-                "query": "",
-                "engine": "",
-                "url": url,
-                "title": "",
-                "content": text,
-                "score": score,
-                "matched": matched,
-            }
-
-    query = _build_search_query(agent, used_queries=used_queries)
-    if preferred_sites and random.random() < 0.85:
-        query = f"{query} site:{random.choice(preferred_sites)}"
-    engine, results = web_search(query, config=config)
-    if not results:
-        return None
-
-    ranked = []
-    timeout = int(config.get("content_timeout", config.get("timeout", 8)))
-    max_chars = int(config.get("content_max_chars", 2000))
-    user_agent = str(config.get("user_agent", "GAWorld/1.0"))
-    for item in results:
-        url = str(item.get("url", "")).strip()
-        if not url or url in seen_urls:
-            continue
-        title = str(item.get("title", "")).strip()
-        snippet = str(item.get("snippet", "")).strip()
-        excerpt = fetch_news_excerpt(url, timeout=timeout, max_chars=max_chars, user_agent=user_agent)
-        content = excerpt or snippet
-        if not content:
-            continue
-        score, matched = _score_news_relevance(url, title, content, interests)
-        if preferred_sites and _domain_from_url(url) in preferred_sites:
-            score += 0.9
-        ranked.append((score + random.random() * 0.03, matched, url, title, content))
-    if not ranked:
-        return None
-    ranked.sort(key=lambda x: x[0], reverse=True)
-    score, matched, url, title, content = ranked[0]
-    return {
-        "mode": "web_search",
-        "query": query,
-        "engine": engine,
-        "url": url,
-        "title": title,
-        "content": content,
-        "score": score,
-        "matched": matched,
-    }
-
-def info_seek_and_store(
-    agent,
-    day=None,
-    time_str=None,
-    news_cache=None,
-    news_sources=None,
-    preferred_sites=None,
-    seen_urls=None,
-    used_queries=None,
-    config=None,
-):
-    config = config or {}
-    target = _choose_info_target(
-        agent=agent,
-        news_cache=news_cache or [],
-        news_sources=news_sources or [],
-        preferred_sites=preferred_sites or [],
-        seen_urls=seen_urls or set(),
-        used_queries=used_queries or set(),
-        config=config,
-    )
-    if not target:
-        return None, None, "", ""
-
-    title = target.get("title", "")
-    url = target.get("url", "")
-    content = str(target.get("content", "")).strip()
-    if not url or not content:
-        return None, None, "", ""
-    mode = target.get("mode", "direct_source")
-    query = target.get("query", "")
-    engine = target.get("engine", "")
-
-    profile_text = "\\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    prompt = f"""
-你是{agent['name']}。
-角色资料：
-{profile_text}
-
-你本次的信息获取方式：{mode}
-检索词：{query or "N/A"}
-来源：{title or "N/A"} ({url})
-内容摘要：
-{content}
-
-请用1-2句写出你为何会关注这条信息，以及你的看法。
-"""
-    thought = call_llm(prompt, task="info_seek_reaction", agent_id=agent["id"]).strip()
-    if not thought:
-        thought = "这条信息符合我近期关注，我会继续观察。"
-
-    memory_excerpt_chars = int(config.get("memory_excerpt_chars", 700))
-    memory_excerpt = content
-    if memory_excerpt_chars > 0 and len(memory_excerpt) > memory_excerpt_chars:
-        memory_excerpt = memory_excerpt[:memory_excerpt_chars].rsplit(" ", 1)[0].strip() if " " in memory_excerpt else memory_excerpt[:memory_excerpt_chars]
-        memory_excerpt = f"{memory_excerpt}..."
-
-    stamp = f"Day {day} {time_str}" if day and time_str else "InfoSeek"
-    preferred_text = ", ".join(preferred_sites or []) if preferred_sites else "N/A"
-    memory_entry = (
-        f"[{stamp}] 信息获取：{mode}\n"
-        f"偏好站点：{preferred_text}\n"
-        f"检索词：{query or 'N/A'}\n"
-        f"来源：{title or 'N/A'} ({url})\n"
-        f"内容：{memory_excerpt}\n"
-        f"想法：{thought}"
-    )
-    agent["memory"].append(memory_entry)
-    save_agent_memory(agent)
-    vector_db_add_entry(agent["id"], "info_seek", memory_entry, sim_day=day, sim_time=time_str or "info_seek")
-
-    log = f"""
-[InfoSeek {agent['name']} @ {time_str}]
-Mode: {mode}
-Query: {query or "N/A"}
-Engine: {engine or "N/A"}
-PreferredSites: {preferred_text}
-Result: {title or "N/A"}
-URL: {url}
-MatchedInterests: {", ".join(target.get("matched", [])) if target.get("matched") else "N/A"}
-RelevanceScore: {float(target.get("score", 0.0)):.2f}
-"""
-    return memory_entry, log, url, query
-
-def _estimate_curiosity(agent):
-    state = agent.get("state", {})
-    platform_dependence = float(state.get("platform_dependence", 0.5))
-    risk_preference = float(state.get("risk_preference", 0.5))
-    text = " ".join(
-        str(agent.get(k, ""))
-        for k in ("personality", "daily_life", "values", "job")
-    )
-    boosts = {
-        "好奇": 0.25,
-        "探索": 0.20,
-        "新鲜": 0.12,
-        "学习": 0.10,
-        "研究": 0.10,
-        "科技": 0.08,
-        "关注": 0.06,
-        "trend": 0.06,
-        "research": 0.10,
-    }
-    dampens = {
-        "保守": 0.12,
-        "封闭": 0.15,
-        "排斥": 0.10,
-        "抗拒": 0.10,
-    }
-    score = 0.20 + 0.45 * platform_dependence + 0.20 * risk_preference
-    for key, value in boosts.items():
-        if key in text.lower() or key in text:
-            score += value
-    for key, value in dampens.items():
-        if key in text:
-            score -= value
-    return max(0.05, min(0.98, score))
-
-def _build_search_query(agent, used_queries=None):
-    used_queries = used_queries or set()
-    interests = _extract_interest_keywords(agent, max_items=16)
-    if not interests:
-        interests = ["本地新闻", "行业动态", "公共政策"]
-    name = agent.get("name", "该居民")
-    job = str(agent.get("job", "")).strip()
-    seeds = []
-    for kw in interests[:8]:
-        seeds.extend(
-            [
-                f"{kw} 最新消息",
-                f"{kw} 今日新闻",
-                f"{kw} 趋势",
-            ]
-        )
-        if job:
-            seeds.append(f"{job} {kw} 资讯")
-    random.shuffle(seeds)
-    for q in seeds:
-        if q not in used_queries:
-            return q
-    return f"{name} 关注话题 今日新闻"
-
-def _extract_google_results(html_text, max_results=5):
-    results = []
-    blocks = re.findall(r'(?is)<a[^>]+href="(/url\?q=[^"]+)"[^>]*>(.*?)</a>', html_text)
-    for href, anchor in blocks:
-        qs = parse_qs(urlparse(href).query)
-        raw_url = (qs.get("q") or [""])[0]
-        raw_url = unquote(raw_url).strip()
-        if not raw_url.startswith("http"):
-            continue
-        title = _normalize_text(_strip_html(anchor))
-        if len(title) < 6:
-            continue
-        results.append({"url": raw_url, "title": title, "snippet": ""})
-        if len(results) >= max_results:
-            break
-    return results
-
-def _extract_baidu_results(html_text, max_results=5):
-    results = []
-    blocks = re.findall(r'(?is)<h3[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>\s*</h3>', html_text)
-    for href, anchor in blocks:
-        url = unquote(href).strip()
-        if not url.startswith("http"):
-            continue
-        title = _normalize_text(_strip_html(anchor))
-        if len(title) < 4:
-            continue
-        results.append({"url": url, "title": title, "snippet": ""})
-        if len(results) >= max_results:
-            break
-    return results
-
-def _extract_bing_results(html_text, max_results=5):
-    results = []
-    blocks = re.findall(r'(?is)<li[^>]*class="[^"]*b_algo[^"]*"[^>]*>.*?</li>', html_text)
-    for block in blocks:
-        link = re.search(r'(?is)<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>\s*</h2>', block)
-        if not link:
-            continue
-        url = unquote(link.group(1)).strip()
-        if not url.startswith("http"):
-            continue
-        title = _normalize_text(_strip_html(link.group(2)))
-        snippet_match = re.search(r'(?is)<p[^>]*>(.*?)</p>', block)
-        snippet = _normalize_text(_strip_html(snippet_match.group(1))) if snippet_match else ""
-        if len(title) < 4:
-            continue
-        results.append({"url": url, "title": title, "snippet": snippet})
-        if len(results) >= max_results:
-            break
-    return results
-
-def _extract_generic_results(html_text, max_results=5):
-    results = []
-    links = re.findall(r'(?is)<a[^>]+href="(https?://[^"]+)"[^>]*>(.*?)</a>', html_text)
-    for href, anchor in links:
-        title = _normalize_text(_strip_html(anchor))
-        if len(title) < 10:
-            continue
-        results.append({"url": unquote(href).strip(), "title": title, "snippet": ""})
-        if len(results) >= max_results:
-            break
-    return results
-
-def web_search(query, config=None):
-    config = config or {}
-    engines = config.get("engines", ["google", "baidu", "bing"])
-    timeout = int(config.get("timeout", 8))
-    max_results = int(config.get("max_results", 4))
-    user_agent = str(config.get("user_agent", "GAWorld/1.0"))
-    search_urls = {
-        "google": f"https://www.google.com/search?q={quote_plus(query)}&hl=zh-CN",
-        "baidu": f"https://www.baidu.com/s?wd={quote_plus(query)}",
-        "bing": f"https://www.bing.com/search?q={quote_plus(query)}",
-    }
-    extractors = {
-        "google": _extract_google_results,
-        "baidu": _extract_baidu_results,
-        "bing": _extract_bing_results,
-    }
-    headers = {"User-Agent": user_agent}
-    for engine in engines:
-        search_url = search_urls.get(str(engine).lower())
-        if not search_url:
-            continue
-        try:
-            resp = requests.get(search_url, headers=headers, timeout=timeout)
-            resp.raise_for_status()
-            html_text = resp.text or ""
-        except requests.RequestException:
-            continue
-        extractor = extractors.get(str(engine).lower(), _extract_generic_results)
-        results = extractor(html_text, max_results=max_results)
-        if not results:
-            results = _extract_generic_results(html_text, max_results=max_results)
-        if results:
-            return engine, results
-    return "", []
-
-def search_web_and_store(agent, query, day=None, time_str=None, config=None, seen_urls=None):
-    config = config or {}
-    seen_urls = seen_urls or set()
-    engine, results = web_search(query, config=config)
-    if not results:
-        return None, None, ""
-    interests = _extract_interest_keywords(agent)
-    timeout = int(config.get("content_timeout", config.get("timeout", 8)))
-    max_chars = int(config.get("content_max_chars", 2000))
-    user_agent = str(config.get("user_agent", "GAWorld/1.0"))
-
-    ranked = []
-    for item in results:
-        url = str(item.get("url", "")).strip()
-        if not url or url in seen_urls:
-            continue
-        title = str(item.get("title", "")).strip()
-        snippet = str(item.get("snippet", "")).strip()
-        excerpt = fetch_news_excerpt(
-            url,
-            timeout=timeout,
-            max_chars=max_chars,
-            user_agent=user_agent,
-        )
-        candidate_text = excerpt or snippet
-        if not candidate_text:
-            continue
-        score, matched = _score_news_relevance(url, title, candidate_text, interests)
-        ranked.append((score + random.random() * 0.03, matched, url, title, candidate_text))
-
-    if not ranked:
-        return None, None, ""
-
-    ranked.sort(key=lambda x: x[0], reverse=True)
-    score, matched, url, title, content = ranked[0]
-    profile_text = "\\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    prompt = f"""
-你是{agent['name']}。
-角色资料：
-{profile_text}
-
-你主动搜索了：{query}
-搜索结果标题：{title}
-内容摘要：
-{content}
-
-请用1-2句写出你为何关注这个信息，以及你的看法。
-"""
-    thought = call_llm(prompt, task="web_search_reaction", agent_id=agent["id"]).strip()
-    if not thought:
-        thought = "这条信息与我关注的话题相关，我会继续跟进。"
-
-    memory_excerpt_chars = int(config.get("memory_excerpt_chars", 700))
-    memory_excerpt = content.strip()
-    if memory_excerpt_chars > 0 and len(memory_excerpt) > memory_excerpt_chars:
-        memory_excerpt = memory_excerpt[:memory_excerpt_chars].rsplit(" ", 1)[0].strip() if " " in memory_excerpt else memory_excerpt[:memory_excerpt_chars]
-        memory_excerpt = f"{memory_excerpt}..."
-
-    stamp = f"Day {day} {time_str}" if day and time_str else "WebSearch"
-    memory_entry = (
-        f"[{stamp}] 主动搜索：{query}\n"
-        f"搜索引擎：{engine or 'unknown'}\n"
-        f"结果：{title} ({url})\n"
-        f"内容：{memory_excerpt}\n"
-        f"想法：{thought}"
-    )
-    agent["memory"].append(memory_entry)
-    save_agent_memory(agent)
-    vector_db_add_entry(agent["id"], "web_search", memory_entry, sim_day=day, sim_time=time_str or "search")
-
-    log = f"""
-[WebSearch {agent['name']} @ {time_str}]
-Query: {query}
-Engine: {engine or "N/A"}
-Result: {title}
-URL: {url}
-MatchedInterests: {", ".join(matched) if matched else "N/A"}
-RelevanceScore: {score:.2f}
-"""
-    return memory_entry, log, url
-
-def read_news_and_store(agent, source_url, day=None, time_str=None, config=None, excerpt=None, title=None):
-    config = config or {}
-    if not excerpt:
-        excerpt = fetch_news_excerpt(
-            source_url,
-            timeout=int(config.get("timeout", 8)),
-            max_chars=int(config.get("max_chars", 2000)),
-            user_agent=str(config.get("user_agent", "GAWorld/1.0")),
-        )
-    if not excerpt:
-        return None, None
-    profile_text = "\\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"年龄：{agent.get('age', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"日常生活与习惯：{agent.get('daily_life', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    prompt = f"""
-你是{agent['name']}。
-角色资料：
-{profile_text}
-
-你刚阅读了一条新闻/社交媒体内容（节选）：
-{excerpt}
-
-请用1-2句写出你的反应，尽量体现角色身份与态度。
-"""
-    response = call_llm(prompt, task="news_reaction", agent_id=agent["id"]).strip()
-    if not response:
-        return None, None
-    stamp = f"Day {day} {time_str}" if day and time_str else "NewsRead"
-    title_text = f" 标题：{title}" if title else ""
-    memory_excerpt_chars = int(config.get("memory_excerpt_chars", 600))
-    memory_excerpt = excerpt.strip()
-    if memory_excerpt_chars > 0 and len(memory_excerpt) > memory_excerpt_chars:
-        memory_excerpt = memory_excerpt[:memory_excerpt_chars].rsplit(" ", 1)[0].strip() if " " in memory_excerpt else memory_excerpt[:memory_excerpt_chars]
-        memory_excerpt = f"{memory_excerpt}..."
-    memory_entry = (
-        f"[{stamp}] 来源：{source_url}{title_text}\n"
-        f"内容：{memory_excerpt}\n"
-        f"想法：{response}"
-    )
-    agent["memory"].append(memory_entry)
-    save_agent_memory(agent)
-    vector_db_add_entry(agent["id"], "news", memory_entry, sim_day=day, sim_time=time_str or "news")
-    log = f"""
-[NewsRead {agent['name']} @ {time_str}]
-Source: {source_url}
-Title: {title or "N/A"}
-Response: {response}
-"""
-    return memory_entry, log
 
 def reset_simulation():
     memory_dir = CONFIG.get("memory_dir", "output/memory")
@@ -1189,8 +254,51 @@ def reset_simulation():
             _clear_dir(output_dir)
     save_sim_state({
         "last_day": 0,
+        "agent_last_day": {},
         "memory_model_version": MEMORY_MODEL_VERSION,
     })
+
+
+def _agent_last_day_map(sim_state):
+    """Per-agent day cursors, migrating state files written before they existed."""
+    per_agent = sim_state.get("agent_last_day")
+    if isinstance(per_agent, dict):
+        return {str(key): value for key, value in per_agent.items()}
+    global_last = sim_state.get("last_day", 0)
+    if not isinstance(global_last, int) or global_last <= 0:
+        return {}
+    # Old state file: every agent with memory on disk ran up to the one global
+    # cursor, so seed them all with it and let per-agent tracking take over.
+    return {str(aid): global_last for aid in known_agent_ids()}
+
+
+def _resume_start_day(agent_day_cursor, agent_ids):
+    """Sim day this run resumes on, counted only over ``agent_ids``.
+
+    ``last_day`` is a single world-wide cursor, so an agent that had never run
+    used to inherit however many years other agents had accumulated — a brand
+    new resident woke up in 2047 instead of on the configured start date. Only
+    the agents in this run count: if none of them has ever run, the calendar
+    starts over at Day 1.
+    """
+    days = []
+    for aid in agent_ids:
+        value = agent_day_cursor.get(str(aid))
+        if isinstance(value, int) and value > 0:
+            days.append(value)
+    return max(days) + 1 if days else 1
+
+
+def _persist_sim_day(day, agent_day_cursor, agent_ids):
+    """Record ``day`` as lived by ``agent_ids``, then write the sim state."""
+    for aid in agent_ids:
+        agent_day_cursor[str(aid)] = day
+    save_sim_state({
+        "last_day": day,
+        "agent_last_day": agent_day_cursor,
+        "memory_model_version": MEMORY_MODEL_VERSION,
+    })
+
 
 def visualize_social_network(
     agents,
@@ -1282,15 +390,14 @@ def visualize_agent_state_changes(
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 4.2, rows * 3.2), sharex=True)
     axes = np.array(axes).reshape(-1)
 
-    steps = None
     for i, metric in enumerate(metrics):
         ax = axes[i]
         for agent_id, history in state_history.items():
             series = history.get(metric, [])
-            if steps is None:
-                steps = list(range(len(series)))
             label = agent_names.get(agent_id, str(agent_id))
-            ax.plot(steps, series, label=label, linewidth=1.6)
+            # Series lengths differ once an agent is removed mid-run (K5);
+            # each series plots against its own step range.
+            ax.plot(range(len(series)), series, label=label, linewidth=1.6)
         ax.set_title(metric)
         ax.set_ylim(0, 1)
         ax.grid(True, alpha=0.2)
@@ -1331,66 +438,6 @@ def append_jsonl(path, row):
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def _life_event_as_env_event(event):
-    return {
-        "id": str(event.get("id", "")),
-        "type": "life_event",
-        "topic": str(event.get("template_key", "custom") or "custom"),
-        "name": str(event.get("title", "人生事件") or "人生事件"),
-        "description": str(event.get("description", "") or ""),
-        "severity": float(event.get("severity", 0.6) or 0.6),
-        "scope": "agent",
-        "impact_tags": list(event.get("impact_tags", []) or []),
-        "life_event": True,
-    }
-
-
-def _format_life_event_context(events):
-    lines = [format_life_event(event) for event in (events or [])]
-    lines = [line for line in lines if line]
-    if not lines:
-        return ""
-    return "人生事件：" + "；".join(lines)
-
-
-def _record_life_events_for_agent(agent, events, day, time_str, daily_logs):
-    recorded_ids = agent.setdefault("_recorded_life_event_ids", set())
-    for event in events or []:
-        event_id = str(event.get("id", ""))
-        if event_id and event_id in recorded_ids:
-            continue
-        if event_id:
-            recorded_ids.add(event_id)
-        text = (
-            f"[LifeEvent Day {day} {time_str}] "
-            f"{agent.get('name', agent.get('id', 'agent'))}: {format_life_event(event)}"
-        )
-        print(text)
-        daily_logs[agent["id"]] += text + "\n"
-        append_agent_log(agent, text + "\n")
-        _append_memory_record(
-            agent,
-            text,
-            entry_type="life_event",
-            day=day,
-            time_str=time_str,
-        )
-
-
-def _apply_life_event_state_effects(agent, events):
-    state = agent.setdefault("state", {})
-    for event in events or []:
-        effects = event.get("state_effects", {})
-        if not isinstance(effects, dict):
-            continue
-        for key, delta in effects.items():
-            if key not in state:
-                continue
-            try:
-                state[key] = _clip01(float(state.get(key, 0.5)) + float(delta))
-            except (TypeError, ValueError):
-                continue
-
 
 # =========================================================
 # 参数
@@ -1398,8 +445,6 @@ def _apply_life_event_state_effects(agent, events):
 _BASE_AGENT_IDS = _coerce_positive_int_list(CONFIG.get("agent_ids", []))
 DISTRIBUTED_CONFIG = CONFIG.get("distributed", {})
 DISTRIBUTED_ENABLED = bool(DISTRIBUTED_CONFIG.get("enabled", False))
-PERSONAL_TWIN_CONFIG = CONFIG.get("personal_twin", {})
-PERSONAL_TWIN_ENABLED = bool(PERSONAL_TWIN_CONFIG.get("enabled", False))
 _DISTRIBUTED_LOCAL_AGENT_IDS = _coerce_positive_int_list(
     DISTRIBUTED_CONFIG.get("local_agent_ids", [])
 )
@@ -1410,18 +455,85 @@ SECONDS_PER_DAY = CONFIG["seconds_per_day"]
 CSV_PATH = CONFIG["csv_path"]
 MD_PATH = CONFIG["md_path"]
 STATEFUL = CONFIG["stateful"]
-MAP_PATH = CONFIG.get("map_path", "citymap.md")
+MAP_PATH = CONFIG.get("map_path", "data/citymap.md")
+MAP_MODE = str(CONFIG.get("map_mode", "virtual")).lower()
+REAL_MAP_PATH = CONFIG.get("real_map_path", "data/hangzhou_real.geojson")
 PRINT_AGENT_PROFILE = CONFIG.get("print_agent_profile", False)
 BACKGROUND = CONFIG.get("background", "")
+
+
+def _load_city_context(config):
+    """The selected city's knowledge base, or an empty context without one."""
+    from gaworld.city.context import load_context
+
+    return load_context(config)
+
+
+#: Last sim-day on which a city-news refresh was attempted. The fetch itself is
+#: gated on *real* elapsed time inside ``news.refresh``; this only stops us
+#: re-entering that check on every tick of the same day.
+_CITY_NEWS_LAST_DAY = [-1]
+
+
+def _refresh_city_news(context, day):
+    """Pull fresh local news if the real-time TTL has expired.
+
+    Called once per sim-day. Because the TTL is wall-clock, a 365-day run inside
+    one afternoon performs a handful of fetches, not 365 — see gaworld/city/news.py.
+    """
+    cfg = CONFIG.get("city_news", {}) or {}
+    if not context.slug or not cfg.get("enabled", True):
+        return
+    if _CITY_NEWS_LAST_DAY[0] == int(day or 0):
+        return
+    _CITY_NEWS_LAST_DAY[0] = int(day or 0)
+    try:
+        from gaworld.city.bundle import resolve_city
+        from gaworld.city.context import clear_cache
+        from gaworld.city.create import default_search
+        from gaworld.city.news import DEFAULT_TTL_HOURS, is_stale, refresh
+
+        bundle = resolve_city(context.slug)
+        if not is_stale(context.news, ttl_hours=float(cfg.get("ttl_hours", DEFAULT_TTL_HOURS))):
+            return
+        refresh(
+            bundle.news_path, bundle.name, search_fn=default_search,
+            ttl_hours=float(cfg.get("ttl_hours", DEFAULT_TTL_HOURS)),
+        )
+        clear_cache()
+        from gaworld.city.context import load_context
+
+        context.news = load_context(CONFIG).news
+    except Exception as exc:  # noqa: BLE001 - news is enrichment, never critical
+        _LOG.warning("city news refresh failed: %s", exc)
+
+
+def _city_news_block(context, day):
+    """This sim-day's slice of the city's local headlines (may be empty)."""
+    from gaworld.city.news import for_sim_day, prompt_block
+
+    _refresh_city_news(context, day)
+    items = for_sim_day(context.news, int(day or 0))
+    text = prompt_block(items)
+    return f"近期本地消息：{text}" if text else ""
 MEMORY_MODEL_VERSION = int(CONFIG.get("memory_model_version", 1))
 REQUIRE_CLEAN_RESET_ON_MEMORY_MODEL_CHANGE = bool(
     CONFIG.get("require_clean_reset_on_memory_model_change", False)
 )
 HUMAN_REALISM_CONFIG = CONFIG.get("human_realism", {})
 HUMAN_REALISM_ENABLED = bool(HUMAN_REALISM_CONFIG.get("enabled", False))
-HUMAN_MEMORY_CONFIG = HUMAN_REALISM_CONFIG.get("memory", {}) if HUMAN_REALISM_ENABLED else {}
-RECALL_CONFIG = HUMAN_MEMORY_CONFIG.get("recall", {}) if HUMAN_REALISM_ENABLED else {}
-MEMORY_REVIEW_CONFIG = HUMAN_MEMORY_CONFIG.get("review", {}) if HUMAN_REALISM_ENABLED else {}
+# HUMAN_MEMORY_CONFIG / RECALL_CONFIG / MEMORY_REVIEW_CONFIG snapshots
+# removed in run-split-1 — their only consumers (the evoke_memory cluster)
+# moved to ``gaworld.sim._memory_recall`` and now read CONFIG at call time.
+# Growth-profile lifecycle constants moved into gaworld.interests_plugin
+# (K3d); the ones left feed the inline schedule-prompt and matching reads.
+INTERESTS_CONFIG = CONFIG.get("interests", {})
+INTERESTS_ENABLED = bool(INTERESTS_CONFIG.get("enabled", True))
+INTERESTS_MAX_ITEMS = max(1, int(INTERESTS_CONFIG.get("max_items", 6)))
+INTERESTS_DAILY_INSERT_CHANCE = float(INTERESTS_CONFIG.get("daily_insert_chance", 0.55))
+INTERESTS_WEEKEND_BOOST = float(INTERESTS_CONFIG.get("weekend_boost", 0.25))
+GOALS_CONFIG = CONFIG.get("goals", {})
+GOALS_ENABLED = bool(GOALS_CONFIG.get("enabled", True))
 STATE_OUTPUT_DIR = CONFIG.get("state_output_dir", "output/state")
 NETWORK_OUTPUT_DIR = CONFIG.get("network_output_dir", "output/network")
 ENV_OUTPUT_DIR = CONFIG.get("environment_output_dir", "output/environment")
@@ -1434,19 +546,40 @@ VISUALIZATION_FLUSH_EVERY_FRAMES = max(
     0,
     int(VISUALIZATION_CONFIG.get("flush_every_frames", 24)),
 )
-INTERVENTION_CONFIG = CONFIG.get("intervention", {})
-INTERVENTION_ENABLED = bool(INTERVENTION_CONFIG.get("enabled", False))
-INTERVENTION_OUTPUT_DIR = INTERVENTION_CONFIG.get("output_dir", "output/intervention")
-OPENCLAW_CONFIG = CONFIG.get("openclaw", {})
+# Only the output dir stays module-level (reset_simulation clears it);
+# the intervention runtime itself now lives in gaworld.policy.plugin.
+INTERVENTION_OUTPUT_DIR = CONFIG.get("intervention", {}).get("output_dir", "output/intervention")
 SIMULATE_REALTIME = bool(CONFIG.get("simulate_realtime", False))
 RANDOM_SEED = CONFIG.get("random_seed")
 TIME_STEP_MINUTES = _parse_step_minutes(CONFIG.get("time_step_minutes"))
+# Opt-in: align every agent's schedule onto the TIME_STEP_MINUTES grid so the
+# master timeline stays a fixed 1440/step ticks instead of growing with the
+# population. See gaworld/settings/runtime.py for the rationale.
+TIME_GRID_SNAP = bool(CONFIG.get("time_grid_snap", False)) and bool(TIME_STEP_MINUTES)
+# Long-horizon fast-forward mode (see gaworld/sim/_fastforward.py). Read
+# inline here — this runs at import time, before the staged `# noqa: E402`
+# import of the fast-forward helpers further down the file.
+LONG_RUN_CONFIG = CONFIG.get("long_run", {}) if isinstance(CONFIG.get("long_run"), dict) else {}
+# Step unit: "day" (classic fast-forward) | "month" | "year". Anything else
+# degrades to "day".
+LONG_RUN_UNIT = str(LONG_RUN_CONFIG.get("unit", "day") or "day").strip().lower()
+if LONG_RUN_UNIT not in ("day", "month", "year"):
+    LONG_RUN_UNIT = "day"
+# A coarse unit *is* fast-forward — there is no per-month tick loop, so
+# "unit=year, enabled=False" would silently mean "run 365 tick-loop days",
+# which is the expensive wrong answer. Mirrors `_fastforward.long_run_enabled`
+# and the CLI, where --sim-years implies --fast-forward.
+LONG_RUN_ENABLED = bool(LONG_RUN_CONFIG.get("enabled", False)) or LONG_RUN_UNIT != "day"
 ROUTINE_CHANGE_CONFIG = CONFIG.get("routine_change", {})
 ROUTINE_CHANGE_ENABLED = bool(ROUTINE_CHANGE_CONFIG.get("enabled", True))
 ROUTINE_CHANGE_BASE_CHANCE = float(ROUTINE_CHANGE_CONFIG.get("base_chance", 0.08))
 ROUTINE_CHANGE_EVENT_BOOST = float(ROUTINE_CHANGE_CONFIG.get("event_boost", 0.08))
 ROUTINE_CHANGE_POLICY_BOOST = float(ROUTINE_CHANGE_CONFIG.get("policy_boost", 0.05))
 ROUTINE_CHANGE_MAX_CHANCE = float(ROUTINE_CHANGE_CONFIG.get("max_chance", 0.45))
+ROUTINE_CHANGE_SEVERITY_PIVOT = float(ROUTINE_CHANGE_CONFIG.get("severity_pivot", 0.4))
+ROUTINE_CHANGE_RANDOMNESS = float(np.clip(ROUTINE_CHANGE_CONFIG.get("randomness", 0.0), 0.0, 1.0))
+ROUTINE_CHANGE_EVENT_TRIGGER_SCALE = float(ROUTINE_CHANGE_CONFIG.get("event_trigger_scale", 1.0))
+ROUTINE_CHANGE_EVENT_TRIGGER_CAP = float(ROUTINE_CHANGE_CONFIG.get("event_trigger_cap", 0.6))
 SPONTANEITY_CONFIG = CONFIG.get("spontaneity", {})
 SPONTANEITY_ENABLED = bool(SPONTANEITY_CONFIG.get("enabled", True))
 SPONTANEITY_BASE_THOUGHT_CHANCE = float(SPONTANEITY_CONFIG.get("base_thought_chance", 0.18))
@@ -1463,15 +596,100 @@ SPONTANEITY_RANDOM_ACTION_CHANCE = float(SPONTANEITY_CONFIG.get("random_action_c
 SPONTANEITY_MAX_OVERRIDE_BONUS = float(SPONTANEITY_CONFIG.get("max_override_bonus", 0.35))
 NEWS_CONFIG = CONFIG.get("news", {})
 NEWS_ENABLED = bool(NEWS_CONFIG.get("enabled", False))
-NEWS_SOURCES_PATH = NEWS_CONFIG.get("sources_path", "news_source.md")
+NEWS_SOURCES_PATH = NEWS_CONFIG.get("sources_path", "data/news_source.md")
 NEWS_DAILY_CHANCE = float(NEWS_CONFIG.get("daily_chance", 0.5))
 NEWS_MAX_READS_PER_DAY = int(NEWS_CONFIG.get("max_reads_per_day", 1))
-NEWS_CACHE_PATH = NEWS_CONFIG.get("cache_path", "news_cache.json")
+NEWS_CACHE_PATH = NEWS_CONFIG.get("cache_path", "data/news_cache.json")
 NEWS_USE_CACHE_FIRST = bool(NEWS_CONFIG.get("use_cache_first", True))
 INFO_SEEK_CONFIG = NEWS_CONFIG.get("info_seek", NEWS_CONFIG.get("curiosity_search", {}))
 INFO_SEEK_ENABLED = bool(INFO_SEEK_CONFIG.get("enabled", True))
 INFO_SEEK_BASE_CHANCE = float(INFO_SEEK_CONFIG.get("base_daily_chance", 0.55))
 INFO_SEEK_MAX_PER_DAY = int(INFO_SEEK_CONFIG.get("max_seeks_per_day", INFO_SEEK_CONFIG.get("max_searches_per_day", 3)))
+
+
+def _maybe_curiosity_seek(
+    agent,
+    *,
+    day,
+    time_str,
+    scheduled_activity,
+    recent_events,
+    news_cache,
+    news_sources,
+    preferred_sites,
+    seen_urls,
+    used_queries,
+    curiosity_budget,
+    config,
+    daily_logs=None,
+):
+    """Event-driven contextual seek. Returns True if a seek fired.
+
+    Writes nothing itself beyond delegating to ``info_seek_and_store``;
+    decrements the per-agent daily budget on a real fire.
+    """
+    if not config.get("contextual_keywords", True):
+        return False
+    agent_id = agent["id"]
+    budget_left = int(curiosity_budget.get(agent_id, 0))
+    context = assemble_curiosity_context(
+        agent,
+        scheduled_activity=scheduled_activity or "",
+        recent_events=recent_events or [],
+        day=day,
+        time_str=time_str,
+    )
+    trigger, _reason = should_seek_knowledge(
+        agent, context, budget_left=budget_left, config=config
+    )
+    if not trigger:
+        return False
+    keywords = propose_contextual_keywords(agent, context, config=config)
+    if not keywords:
+        return False
+    memory_entry, info_log, result_url, query = info_seek_and_store(
+        agent,
+        day=day,
+        time_str=time_str,
+        news_cache=news_cache,
+        news_sources=news_sources,
+        preferred_sites=preferred_sites,
+        seen_urls=seen_urls,
+        used_queries=used_queries,
+        keywords=keywords,
+        config=config,
+    )
+    if query:
+        used_queries.add(query)
+    if result_url:
+        seen_urls.add(result_url)
+    if not memory_entry:
+        return False
+    curiosity_budget[agent_id] = budget_left - 1
+    if info_log:
+        print(info_log)
+        if daily_logs is not None:
+            daily_logs[agent_id] += info_log
+        append_agent_log(agent, info_log)
+    return True
+
+
+# Local-physical snapshot/injection constants moved to
+# gaworld.world.plugin.LocalPhysicalPlugin (K3g).
+REPLAN_CONFIG = CONFIG.get("replan", {}) if isinstance(CONFIG, dict) else {}
+REPLAN_ENABLED = bool(REPLAN_CONFIG.get("enabled", True))
+REPLAN_WINDOW_MINUTES = max(1, int(REPLAN_CONFIG.get("window_minutes", 120)))
+REPLAN_DEFER_GAP = max(1, int(REPLAN_CONFIG.get("defer_gap_minutes", 30)))
+# Life-event-driven same-day reshaping (Part B).
+_LIFE_EVENT_RUNTIME_CONFIG = CONFIG.get("life_events", {}) if isinstance(CONFIG, dict) else {}
+_LIFE_EVENT_RESHAPE_CONFIG = _LIFE_EVENT_RUNTIME_CONFIG.get("reshape", {}) if isinstance(_LIFE_EVENT_RUNTIME_CONFIG, dict) else {}
+LIFE_EVENT_RESHAPE_ENABLED = bool(_LIFE_EVENT_RESHAPE_CONFIG.get("enabled", True))
+LIFE_EVENT_RESHAPE_SEVERITY = float(_LIFE_EVENT_RESHAPE_CONFIG.get("severity_threshold", 0.7))
+LIFE_EVENT_RESHAPE_WINDOW = max(1, int(_LIFE_EVENT_RESHAPE_CONFIG.get("window_minutes", 240)))
+# Spatial-preference (P4) constants moved to
+# gaworld.world.plugin.SpatialPreferencesPlugin (K3i).
+
+
 DAILY_PLANNING_CONFIG = CONFIG.get("daily_planning", {})
 DAILY_PLAN_ANCHOR_MINUTES = max(1, int(DAILY_PLANNING_CONFIG.get("anchor_minutes", 30)))
 DAILY_PLAN_RANDOM_DELAY_MAX_MINUTES = max(0, int(DAILY_PLANNING_CONFIG.get("random_delay_max_minutes", 10)))
@@ -1482,8 +700,13 @@ DAILY_PLAN_MAX_ITEMS = max(DAILY_PLAN_MIN_ITEMS, int(DAILY_PLAN_FLEX_CONFIG.get(
 DAILY_PLAN_MAX_SHIFT_MINUTES = max(0, int(DAILY_PLAN_FLEX_CONFIG.get("max_time_shift_minutes", 120)))
 DAILY_PLAN_MIN_GAP_MINUTES = max(1, int(DAILY_PLAN_FLEX_CONFIG.get("min_gap_minutes", 15)))
 DAILY_PLAN_ALLOW_INSERTIONS = bool(DAILY_PLAN_FLEX_CONFIG.get("allow_insertions", True))
+# Part D: carry yesterday's plan forward as today's base instead of
+# regenerating from a fixed per-archetype template every day, so divergences
+# (from state, events, aftermath) persist and the days stop looking same-y.
+DAILY_PLAN_AUTOREGRESSIVE = bool(DAILY_PLANNING_CONFIG.get("autoregressive", True))
 EXTERNAL_RAG_CONFIG = CONFIG.get("external_rag", {})
-EXTERNAL_RAG_TOP_K = max(1, int(EXTERNAL_RAG_CONFIG.get("top_k", 2)))
+# EXTERNAL_RAG_TOP_K was moved to gaworld.sim._rag along with its only
+# caller (_external_rag_hint); the constant is now re-exported from there.
 CALENDAR_CONFIG = CONFIG.get("calendar", {})
 SIM_START_DATE = _parse_sim_start_date(CALENDAR_CONFIG.get("start_date", "today"))
 SIM_START_WEEKDAY_INDEX = _weekday_to_index(CALENDAR_CONFIG.get("start_weekday", "monday"))
@@ -1492,41 +715,13 @@ if SIM_START_WEEKDAY_INDEX is None:
 SIM_WEEKEND_INDEXES = _build_weekend_indexes(CALENDAR_CONFIG.get("weekend_days", ["saturday", "sunday"]))
 AGENT_IMPORT_OUTPUT_DIR = CONFIG.get("agent_import_output_dir", "output/imported_agents")
 
-RECALL_STAGE_ENTRY_TYPES = {
-    "planning": ["meta_memory", "memory", "episode", "reflection", "plan", "action", "log"],
-    "action": ["episode", "reflection", "meta_memory", "memory", "action", "plan", "log"],
-    "reflection": ["reflection", "episode", "meta_memory", "memory", "action", "plan", "log"],
-    "interview": ["meta_memory", "memory", "episode", "reflection", "action", "plan", "log"],
-}
-RECALL_STAGE_HINTS = {
-    "planning": ["计划", "打算", "安排", "经验", "教训"],
-    "action": ["行动", "选择", "做法", "后果"],
-    "reflection": ["反思", "感受", "经验", "情绪"],
-    "interview": ["访谈", "经历", "回忆", "看法"],
-}
-POSITIVE_RECALL_HINTS = (
-    "顺利",
-    "满意",
-    "开心",
-    "支持",
-    "完成",
-    "收获",
-    "稳定",
-    "放松",
-    "认可",
-)
-NEGATIVE_RECALL_HINTS = (
-    "失败",
-    "挫败",
-    "焦虑",
-    "压力",
-    "冲突",
-    "不满",
-    "拖延",
-    "后悔",
-    "疲惫",
-    "孤独",
-)
+# RECALL_STAGE_ENTRY_TYPES / RECALL_STAGE_HINTS /
+# POSITIVE_RECALL_HINTS / NEGATIVE_RECALL_HINTS moved to
+# ``gaworld.sim._memory_recall`` and re-exported below at the
+# memory-recall import block.  The two POSITIVE/NEGATIVE tuples still
+# have an in-file consumer (the affect-sentiment lookup further down);
+# the re-export binds them in this module's globals so the bare-name
+# lookups continue to resolve.
 
 # =========================================================
 # 政策事件
@@ -1545,41 +740,17 @@ def load_profile_from_md(agent_id):
         raise ValueError(f"Profile {agent_id} not found")
     return match.group(0)
 
-def parse_profile(block):
-    def _extract(pattern, default=""):
-        match = re.search(pattern, block)
-        return match.group(1) if match else default
-
-    p = {}
-    p["name"] = _extract(r"## Profile \d+｜(.+)")
-    base = _extract(r"\*\*基础信息\*\*：(.+)")
-    p["age"] = int(re.search(r"(\d+)岁", base).group(1))
-    p["living"] = re.search(r"居住(?:于)?(.+?)[，。]", base).group(1)
-    p["job"] = _extract(r"\*\*职业与工作节奏\*\*：(.+)")
-    p["personality"] = _extract(r"\*\*性格与情绪特征\*\*：(.+)")
-    p["daily_life"] = _extract(r"\*\*日常生活与生活习惯\*\*：(.+)")
-    p["values"] = _extract(r"\*\*价值观与公共事务态度\*\*：(.+)")
-    p["work_style"] = p["job"]
-    return p
-
-def _safe_text(value, default=""):
-    text = str(value if value is not None else "").strip()
-    return text if text else default
-
-def _safe_int(value, default):
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return int(default)
-
-def _safe_float(value, default):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return float(default)
-
-def _clip_state_value(value, default=0.5):
-    return float(np.clip(_safe_float(value, default), 0.0, 1.0))
+# Profile parsing + payload coercion helpers moved to
+# ``gaworld.sim.agents_loader`` during the S3 refactor. Re-exported here so
+# the rest of this file (and external callers like
+# ``generate_agent_rag_seed.py``) keep working unchanged.
+from gaworld.sim.agents_loader import (  # noqa: E402
+    _clip_state_value,
+    _safe_float,
+    _safe_int,
+    _safe_text,
+    parse_profile,
+)
 
 def _next_profile_id(df, md_path):
     max_id = 0
@@ -1639,64 +810,12 @@ def _parse_agent_seed_payload(text):
         return {}
     return raw if isinstance(raw, dict) else {}
 
-def _default_imported_agent_payload(source, override_name=None):
-    source_title = _safe_text(source.get("title"), "社交媒体用户")
-    name = _safe_text(override_name, source_title[:12] or "社交媒体用户")
-    return {
-        "name": name,
-        "gender": "未知",
-        "age": 28,
-        "hukou": "未知",
-        "residence": "杭州",
-        "job": "自媒体/平台活跃用户",
-        "personality": "表达欲较强，部分信息不完整，需在模拟中进一步补足。",
-        "daily_life": "日常活动受线上平台内容发布、浏览和社交互动影响较大。",
-        "values": "关注与个人内容、平台环境和公共讨论相关的话题。",
-        "education_income": "根据社交媒体内容估计，教育与收入信息未完全公开。",
-        "social_network": "线上互动关系较多，线下社交网络待进一步观察。",
-        "source_summary": _safe_text(source.get("summary")) or _safe_text(source.get("content"))[:200],
-        "state": {
-            "emotion": 0.58,
-            "stress": 0.52,
-            "econ_security": 0.50,
-            "city_identity": 0.55,
-            "policy_sensitivity": 0.55,
-            "platform_dependence": 0.72,
-            "risk_preference": 0.45,
-            "voice_propensity": 0.66,
-            "mobility_intent": 0.50,
-        },
-    }
-
-def _normalize_imported_agent_payload(raw, source, override_name=None):
-    payload = _default_imported_agent_payload(source, override_name=override_name)
-    if not isinstance(raw, dict):
-        return payload
-
-    state_raw = raw.get("state", {})
-    if not isinstance(state_raw, dict):
-        state_raw = {}
-
-    for key in [
-        "name",
-        "gender",
-        "hukou",
-        "residence",
-        "job",
-        "personality",
-        "daily_life",
-        "values",
-        "education_income",
-        "social_network",
-        "source_summary",
-    ]:
-        payload[key] = _safe_text(raw.get(key), payload[key])
-    payload["name"] = _safe_text(override_name, payload["name"])
-    payload["age"] = max(16, min(80, _safe_int(raw.get("age"), payload["age"])))
-
-    for metric, default in payload["state"].items():
-        payload["state"][metric] = _clip_state_value(state_raw.get(metric), default)
-    return payload
+# Imported-agent payload defaults / normalisation moved to
+# ``gaworld.sim.agents_loader`` during the S3 refactor.
+from gaworld.sim.agents_loader import (  # noqa: E402
+    _default_imported_agent_payload,
+    _normalize_imported_agent_payload,
+)
 
 def _generate_imported_agent_seed(source, override_name=None):
     content = _safe_text(source.get("content"))
@@ -1726,27 +845,9 @@ emotion, stress, econ_security, city_identity, policy_sensitivity, platform_depe
     raw = _parse_agent_seed_payload(response)
     return _normalize_imported_agent_payload(raw, source, override_name=override_name)
 
-def _format_imported_profile_block(agent_id, payload):
-    state = payload["state"]
-    return (
-        f"\n## Profile {agent_id:02d}｜{payload['name']}\n"
-        f"**基础信息**：{payload['gender']}，{payload['age']}岁，{payload['hukou']}户籍，居住{payload['residence']}。\n\n"
-        f"**教育与收入背景**：{payload['education_income']}\n\n"
-        f"**职业与工作节奏**：{payload['job']}\n\n"
-        f"**性格与情绪特征**：{payload['personality']}\n\n"
-        f"**日常生活与生活习惯**：{payload['daily_life']}\n\n"
-        f"**社交网络情况**：{payload['social_network']}\n\n"
-        f"**价值观与公共事务态度**：{payload['values']}\n\n"
-        f"**研究增强变量初始化**：\n"
-        f"- policy_sensitivity：{state['policy_sensitivity']:.2f}\n"
-        f"- platform_dependence：{state['platform_dependence']:.2f}\n"
-        f"- risk_preference：{state['risk_preference']:.2f}\n"
-        f"- voice_propensity：{state['voice_propensity']:.2f}\n"
-        f"- mobility_intent：{state['mobility_intent']:.2f}\n\n"
-        f"**核心状态变量**：emotion {state['emotion']:.2f}｜stress {state['stress']:.2f}｜"
-        f"econ_security {state['econ_security']:.2f}｜city_identity {state['city_identity']:.2f}\n"
-        f"\n---\n"
-    )
+# Markdown profile formatter moved to ``gaworld.sim.agents_loader`` during
+# the S3 refactor.
+from gaworld.sim.agents_loader import _format_imported_profile_block  # noqa: E402
 
 def _append_imported_agent_records(agent_id, payload, source, csv_path=CSV_PATH, md_path=MD_PATH):
     df = pd.read_csv(csv_path)
@@ -1812,19 +913,6 @@ def _cli_create_agent_from_social(url=None, file_path=None, text=None, name=None
 def build_agent(agent_id, df, city_map=None):
     row = df[df["id"] == agent_id].iloc[0]
     text = parse_profile(load_profile_from_md(agent_id))
-    public_profile = {
-        "summary": _compact_text(text.get("daily_life") or text.get("personality", ""), max_chars=180),
-        "status": "",
-        "focus": _compact_text(text.get("job", ""), max_chars=64),
-        "tags": [
-            value for value in (
-                _compact_text(text.get("job", ""), max_chars=24),
-                _compact_text(text.get("personality", ""), max_chars=24),
-                _compact_text(text.get("values", ""), max_chars=24),
-            )
-            if value
-        ][:3],
-    }
     agent = {
         "id": agent_id,
         **text,
@@ -1851,9 +939,7 @@ def build_agent(agent_id, df, city_map=None):
             "intervention_reward": float(row.get("intervention_reward", 0.0)),
         },
         "memory": [],
-        "social_neighbors": [],
-        "public_profile": public_profile,
-        "twin_status": build_initial_twin_state({"public_profile": public_profile}, PERSONAL_TWIN_CONFIG),
+        "social_neighbors": []
     }
     if city_map is None:
         city_map = load_city_map(MAP_PATH)
@@ -1908,148 +994,33 @@ def build_social_network(agents, avg_degree=6, p_cross=0.15):
 # Map & Location
 # =========================================================
 def load_city_map(map_path):
+    """Load the world map for the configured mode.
+
+    ``map_mode="real"`` builds the map from the real Hangzhou OSM bundle
+    (``real_map_path``); otherwise the procedural grid map from ``map_path``.
+    All call sites route through here, so switching modes is config-only."""
+    if MAP_MODE == "real":
+        return load_real_structured_city_map(REAL_MAP_PATH)
     return load_structured_city_map(map_path)
 
 def load_city_map_text(map_path):
+    """Human-readable map context for prompts, matching the active mode."""
+    if MAP_MODE == "real":
+        return real_structured_city_map_text(load_city_map(map_path))
     return load_structured_city_map_text(map_path)
 
 def _all_locations(city_map):
     return city_all_locations(city_map)
 
-def _pick_first_available(candidates, location_set):
-    for c in candidates:
-        if c in location_set:
-            return c
-    return None
-
-def _infer_workplace(agent, city_map, home_node=None):
-    """Infer the agent's workplace using category-based spatial matching.
-
-    Uses the agent's job profile to determine workplace categories, then
-    finds the nearest matching node from the city map.  Falls back to the
-    legacy hardcoded lookup when the map-based search yields nothing.
-    """
-    location_set = set(_all_locations(city_map))
-    job_str = agent.get("job", "")
-    categories = job_to_workplace_categories(job_str)
-
-    # Also check profile blob for Chinese keywords → categories
-    profile_blob = " ".join([job_str, agent.get("personality", ""),
-                             agent.get("daily_life", ""), agent.get("values", "")])
-    if any(k in profile_blob for k in ["学生", "硕士", "博士", "学校", "上课", "老师", "教师", "教育"]):
-        categories = list(dict.fromkeys(["education"] + categories))
-    if any(k in profile_blob for k in ["医院", "医生", "护士", "医疗", "诊所"]):
-        categories = list(dict.fromkeys(["medical"] + categories))
-    if any(k in profile_blob for k in ["警察", "公安", "消防"]):
-        categories = list(dict.fromkeys(["government"] + categories))
-
-    if not categories:
-        categories = ["commerce", "industry"]
-
-    # Search from home or a central location
-    origin = home_node or "Central Block"
-    candidates = resolve_best_location(city_map, origin, categories, top_k=3,
-                                       max_radius_km=20.0)
-    if candidates:
-        # Pick the closest one that is in the location set
-        for node_id, _dist in candidates:
-            if node_id in location_set:
-                return node_id
-        # If slug mismatch, still return the first candidate
-        return candidates[0][0]
-
-    # Fallback: legacy hardcoded names
-    return _pick_first_available(
-        ["C-01 (Village Center)", "Riverside Night Market", "Market St"],
-        location_set
-    )
-
-def _infer_home(agent, city_map):
-    """Infer the agent's home using category-based spatial matching.
-
-    Picks a residential node, preferring those near the city centre.
-    Falls back to legacy hardcoded names then random selection.
-    """
-    location_set = set(_all_locations(city_map))
-    residential = resolve_best_location(city_map, "Central Block",
-                                        ["residential"], top_k=10,
-                                        max_radius_km=30.0)
-    if residential:
-        # Introduce mild randomness so not all agents live in the same block
-        pool = residential[:min(5, len(residential))]
-        node_id, _ = random.choice(pool)
-        if node_id in location_set:
-            return node_id
-        return residential[0][0]
-
-    # Fallback
-    candidates = ["Central Block", "North Block", "South Block"]
-    home = _pick_first_available(candidates, location_set)
-    if home:
-        return home
-    return random.choice(list(location_set)) if location_set else "Home"
-
-def assign_agent_locations(agent, city_map):
-    home = _infer_home(agent, city_map)
-    workplace = _infer_workplace(agent, city_map, home_node=home) or home
-    return {
-        "home": home,
-        "workplace": workplace,
-        "current": home,
-        "destination": home,
-        "in_transit": False,
-        "transport_mode": "",
-        "travel_minutes": 0,
-        "travel_progress": 1.0,
-        "travel_route": [home],
-        "travel_cost": 0.0,
-        "rush_hour": False,
-        "arrival_time": "",
-        # Commute memory: tracks frequent places and preferred transport modes
-        "frequent_places": {},      # {location_id: visit_count}
-        "preferred_modes": {},      # {mode: use_count}
-        "commute_route": {          # primary commute (home <-> work)
-            "mode": "",
-            "distance_km": 0.0,
-            "avg_minutes": 0,
-            "trip_count": 0,
-        },
-        "daily_travel_cost": 0.0,   # accumulated cost for the current day
-    }
-
-
-def _update_commute_memory(agent, destination, mode, travel_cost):
-    """Update the agent's commute memory after a completed trip."""
-    locs = agent.get("locations", {})
-
-    # Update frequent places
-    freq = locs.setdefault("frequent_places", {})
-    freq[destination] = freq.get(destination, 0) + 1
-
-    # Update preferred modes
-    modes = locs.setdefault("preferred_modes", {})
-    if mode:
-        modes[mode] = modes.get(mode, 0) + 1
-
-    # Update daily travel cost
-    locs["daily_travel_cost"] = locs.get("daily_travel_cost", 0.0) + travel_cost
-
-    # Update commute route stats if this is a home<->work trip
-    home = locs.get("home", "")
-    work = locs.get("workplace", "")
-    current = locs.get("current", "")
-    is_commute = ((current == home and destination == work) or
-                  (current == work and destination == home))
-    if is_commute and mode:
-        cr = locs.setdefault("commute_route", {})
-        prev_count = cr.get("trip_count", 0)
-        prev_avg = cr.get("avg_minutes", 0)
-        new_mins = locs.get("travel_minutes", 0)
-        cr["mode"] = mode
-        cr["distance_km"] = locs.get("travel_distance_km", 0.0)
-        cr["avg_minutes"] = round(
-            (prev_avg * prev_count + new_mins) / (prev_count + 1), 1)
-        cr["trip_count"] = prev_count + 1
+# Location inference, agent-location assignment, and commute memory
+# moved to gaworld.sim._location during the S3 refactor.
+from gaworld.sim._location import (  # noqa: E402
+    _infer_home,
+    _infer_workplace,
+    _pick_first_available,
+    _update_commute_memory,
+    assign_agent_locations,
+)
 
 def init_agent_locations(agent, city_map):
     cached_locations = load_agent_locations(agent["id"]) if STATEFUL else {}
@@ -2191,6 +1162,22 @@ def resolve_location(agent, activity, time_str, city_map):
 
     # ----- Category-based activity matching -----
     activity_categories = activity_to_categories(activity)
+    growth_matches = match_growth_items(agent.get("growth_profile"), activity) if INTERESTS_ENABLED else []
+    growth_categories = []
+    for item in growth_matches:
+        category = str(item.get("category", ""))
+        name = str(item.get("name", ""))
+        blob = f"{category} {name} {' '.join(item.get('activity_templates', []) or [])}"
+        if any(k in blob for k in ["运动", "健康", "跑步", "健身"]):
+            growth_categories.extend(["leisure"])
+        elif any(k in blob for k in ["阅读", "学习", "研究", "专业"]):
+            growth_categories.extend(["education", "leisure"])
+        elif any(k in blob for k in ["艺术", "创作", "摄影", "音乐", "内容"]):
+            growth_categories.extend(["leisure", "commerce"])
+        elif any(k in blob for k in ["技术", "编程", "职业", "沟通", "运营"]):
+            growth_categories.extend(["commerce", "education"])
+    if growth_categories:
+        activity_categories = list(dict.fromkeys(list(activity_categories or []) + growth_categories))
     activity_candidates = []
 
     if any(k in activity for k in ["工作", "上班", "加班"]):
@@ -2270,347 +1257,27 @@ def _timeline_step_minutes(timeline, index):
     return max(1, TIME_STEP_MINUTES or 30)
 
 
-def _update_transit_progress(agent, current_minutes):
-    locations = agent.get("locations", {})
-    if not locations.get("in_transit"):
-        return False
-    arrival_time = locations.get("arrival_time", "")
-    arrival_minutes = _time_str_to_minutes(arrival_time)
-    travel_minutes = max(1, int(locations.get("travel_minutes", 1) or 1))
-    start_minutes = _time_str_to_minutes(locations.get("depart_time", ""))
-    if start_minutes is None:
-        start_minutes = current_minutes
-
-    def _complete_transit():
-        locations["in_transit"] = False
-        dest = locations.get("destination", locations.get("current", ""))
-        locations["current"] = dest
-        locations["travel_progress"] = 1.0
-        _update_commute_memory(
-            agent, dest,
-            locations.get("transport_mode", ""),
-            float(locations.get("travel_cost", 0.0) or 0.0))
-
-    if arrival_minutes is None:
-        _complete_transit()
-        return True
-    elapsed = current_minutes - start_minutes
-    if elapsed < 0:
-        elapsed += 24 * 60
-    if current_minutes == arrival_minutes or elapsed >= travel_minutes:
-        _complete_transit()
-        return True
-    locations["travel_progress"] = max(0.0, min(0.99, elapsed / float(travel_minutes)))
-    return False
-
-
-def move_agent(agent, desired_location, activity, time_str, step_minutes, city_map):
-    locations = agent.setdefault("locations", {})
-    current_minutes = _time_str_to_minutes(time_str)
-    if current_minutes is None:
-        current_minutes = 0
-    just_arrived = _update_transit_progress(agent, current_minutes)
-    if locations.get("in_transit"):
-        return {
-            "display_location": f"Transit to {locations.get('destination', '')}",
-            "resolved_location": locations.get("current", locations.get("home", "Home")),
-            "target_location": locations.get("destination", locations.get("current", locations.get("home", "Home"))),
-            "travel": {
-                "mode": locations.get("transport_mode", ""),
-                "distance_km": float(locations.get("travel_distance_km", 0.0) or 0.0),
-                "minutes": int(locations.get("travel_minutes", 0) or 0),
-                "progress": float(locations.get("travel_progress", 0.0) or 0.0),
-                "route": locations.get("travel_route", []),
-                "status": "in_transit",
-            },
-            "just_arrived": just_arrived,
-        }
-
-    origin = locations.get("current", locations.get("home", "Home"))
-    target = desired_location or origin
-    if target == origin:
-        locations["destination"] = target
-        locations["travel_progress"] = 1.0
-        locations["transport_mode"] = ""
-        locations["travel_minutes"] = 0
-        locations["travel_distance_km"] = 0.0
-        locations["travel_route"] = [origin]
-        locations["arrival_time"] = time_str
-        locations["depart_time"] = time_str
-        return {
-            "display_location": origin,
-            "resolved_location": origin,
-            "target_location": target,
-            "travel": {
-                "mode": "",
-                "distance_km": 0.0,
-                "minutes": 0,
-                "progress": 1.0,
-                "route": [origin],
-                "status": "stationary",
-            },
-            "just_arrived": False,
-        }
-
-    # Pass time_str for rush-hour detection; weather from environment if available
-    _weather = agent.get("_env_weather", None)
-    travel = build_travel_plan(agent, city_map, origin, target, activity=activity,
-                               time_str=time_str, weather=_weather)
-    travel_minutes = max(1, int(travel.get("travel_minutes", 1) or 1))
-    arrival_minutes = (current_minutes + travel_minutes) % (24 * 60)
-    arrival_time = _minutes_to_time_str(arrival_minutes)
-    travel_cost = float(travel.get("travel_cost", 0.0) or 0.0)
-    is_rush = travel.get("rush_hour", False)
-    locations["destination"] = target
-    locations["transport_mode"] = travel.get("mode", "")
-    locations["travel_minutes"] = travel_minutes
-    locations["travel_distance_km"] = float(travel.get("distance_km", 0.0) or 0.0)
-    locations["travel_cost"] = travel_cost
-    locations["rush_hour"] = is_rush
-    locations["travel_route"] = travel.get("route", [origin, target])
-    locations["depart_time"] = time_str
-    locations["arrival_time"] = arrival_time
-
-    if travel_minutes <= max(1, int(step_minutes or 1)):
-        locations["current"] = target
-        locations["in_transit"] = False
-        locations["travel_progress"] = 1.0
-        _update_commute_memory(agent, target, travel.get("mode", ""), travel_cost)
-        return {
-            "display_location": target,
-            "resolved_location": target,
-            "target_location": target,
-            "travel": {
-                "mode": travel.get("mode", ""),
-                "distance_km": float(travel.get("distance_km", 0.0) or 0.0),
-                "minutes": travel_minutes,
-                "progress": 1.0,
-                "route": travel.get("route", [origin, target]),
-                "cost": travel_cost,
-                "rush_hour": is_rush,
-                "status": "arrived",
-            },
-            "just_arrived": True,
-        }
-
-    locations["in_transit"] = True
-    locations["travel_progress"] = max(0.05, min(0.95, float(step_minutes) / float(travel_minutes)))
-    return {
-        "display_location": f"Transit to {target}",
-        "resolved_location": origin,
-        "target_location": target,
-        "travel": {
-            "mode": travel.get("mode", ""),
-            "distance_km": float(travel.get("distance_km", 0.0) or 0.0),
-            "minutes": travel_minutes,
-            "progress": float(locations["travel_progress"]),
-            "route": travel.get("route", [origin, target]),
-            "cost": travel_cost,
-            "rush_hour": is_rush,
-            "status": "departed",
-        },
-        "just_arrived": False,
-    }
+# Transit progress + main movement dispatcher moved to
+# gaworld.sim._location during the S3 refactor.
+from gaworld.sim._location import _update_transit_progress, move_agent  # noqa: E402
 
 # =========================================================
 # Schedule & Action
 # =========================================================
-def _extract_json_array_block(text):
-    block_match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.S)
-    if block_match:
-        return block_match.group(1)
-    inline_match = re.search(r"\[.*\]", text, re.S)
-    return inline_match.group(0) if inline_match else ""
-
-def _parse_schedule(text):
-    json_blob = _extract_json_array_block(text)
-    if not json_blob:
-        return []
-    try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(raw, list):
-        return []
-    schedule = []
-    for item in raw:
-        if isinstance(item, (list, tuple)) and len(item) == 2:
-            time_str, activity = item
-        elif isinstance(item, dict) and "time" in item and "activity" in item:
-            time_str, activity = item["time"], item["activity"]
-        else:
-            continue
-        time_str = str(time_str).strip()
-        activity = str(activity).strip()
-        if re.match(r"^\d{2}:\d{2}$", time_str) and activity:
-            schedule.append((time_str, activity))
-    if not schedule:
-        return []
-    seen = set()
-    cleaned = []
-    for time_str, activity in schedule:
-        if time_str in seen:
-            continue
-        seen.add(time_str)
-        cleaned.append((time_str, activity))
-    return cleaned
-
-def _heuristic_schedule(agent):
-    profile_blob = " ".join([
-        agent.get("job", ""),
-        agent.get("personality", ""),
-        agent.get("daily_life", ""),
-        agent.get("values", "")
-    ])
-
-    is_student = any(k in profile_blob for k in ["学生", "硕士", "博士", "课题组"])
-    is_retired = any(k in profile_blob for k in ["退休", "无业", "待业", "失业", "家庭主妇", "家庭主夫"])
-    late_schedule = any(k in profile_blob for k in ["夜间活跃", "晚睡", "作息偏晚"])
-
-    if is_retired:
-        base = [
-            ("07:30", "晨练"),
-            ("08:30", "吃早饭"),
-            ("10:00", "买菜"),
-            ("11:30", "午饭"),
-            ("13:00", "午休"),
-            ("16:00", "散步"),
-            ("18:00", "晚饭"),
-            ("20:00", "个人时间"),
-            ("22:30", "睡前"),
-        ]
-        return base
-
-    if is_student:
-        base = [
-            ("09:30", "吃早饭"),
-            ("10:00", "上午学习"),
-            ("12:00", "午饭"),
-            ("14:00", "下午学习"),
-            ("18:00", "下课"),
-            ("20:30", "个人时间"),
-            ("00:30", "睡前"),
-        ]
-        return base
-
-    if late_schedule:
-        base = [
-            ("09:30", "吃早饭"),
-            ("10:30", "通勤"),
-            ("11:00", "上午工作"),
-            ("12:30", "午饭"),
-            ("14:30", "下午工作"),
-        ]
-        base += [("19:30", "加班" if "加班" in agent["work_style"] else "下班")]
-        base += [("22:00", "个人时间"), ("01:00", "睡前")]
-        return base
-
-    base = [
-        ("08:00", "吃早饭"),
-        ("09:00", "通勤"),
-        ("10:00", "上午工作"),
-        ("12:00", "午饭"),
-        ("14:00", "下午工作"),
-    ]
-    base += [("18:30", "加班" if "加班" in agent["work_style"] else "下班")]
-    base += [("21:00", "个人时间"), ("23:30", "睡前")]
-    return base
-
-def _schedule_profile_flags(agent):
-    profile_blob = " ".join([
-        agent.get("job", ""),
-        agent.get("personality", ""),
-        agent.get("daily_life", ""),
-        agent.get("values", ""),
-        agent.get("work_style", ""),
-    ])
-    is_student = any(k in profile_blob for k in ["学生", "硕士", "博士", "课题组", "上课", "学习"])
-    is_retired = any(k in profile_blob for k in ["退休", "无业", "待业", "失业", "家庭主妇", "家庭主夫", "已退休"])
-    late_schedule = any(k in profile_blob for k in ["夜间活跃", "晚睡", "作息偏晚"])
-    overtime = "加班" in agent.get("work_style", "")
-    return is_student, is_retired, late_schedule, overtime
-
-def ensure_sleep_in_schedule(agent, schedule):
-    if any(is_sleep_activity(activity) for _, activity in schedule):
-        return schedule
-    is_student, is_retired, late_schedule, _ = _schedule_profile_flags(agent)
-    if is_retired:
-        sleep_time = "22:30"
-    elif is_student:
-        sleep_time = "00:30"
-    elif late_schedule:
-        sleep_time = "01:00"
-    else:
-        sleep_time = "23:30"
-
-    used_times = {t for t, _ in schedule}
-    sleep_minutes = _time_str_to_minutes(sleep_time)
-    if sleep_minutes is None:
-        sleep_minutes = 23 * 60 + 30
-    max_minutes = max((_time_str_to_minutes(t) for t in used_times if _time_str_to_minutes(t) is not None), default=None)
-    if max_minutes is not None and max_minutes >= sleep_minutes:
-        sleep_minutes = min(max_minutes + 60, 23 * 60 + 59)
-    candidate = _minutes_to_time_str(sleep_minutes)
-    if candidate in used_times:
-        for _ in range(48):
-            sleep_minutes = (sleep_minutes + 30) % (24 * 60)
-            candidate = _minutes_to_time_str(sleep_minutes)
-            if candidate not in used_times:
-                break
-
-    schedule = list(schedule) + [(candidate, "睡前")]
-    schedule.sort(key=lambda x: _time_str_to_minutes(x[0]) or 0)
-    return schedule
-
-def _schedule_times(schedule):
-    return [t for t, _ in schedule]
-
-def _is_strictly_increasing_times(schedule):
-    minutes = []
-    for t, _ in schedule:
-        m = _time_str_to_minutes(t)
-        if m is None:
-            return False
-        minutes.append(m)
-    return all(a < b for a, b in zip(minutes, minutes[1:]))
-
-def _round_to_anchor(minutes, anchor_step=30):
-    step = max(1, int(anchor_step))
-    return int(round(minutes / step) * step)
-
-def _align_daily_planning_start_time(schedule, anchor_step=30, max_delay=10, min_gap=20):
-    if not schedule:
-        return []
-    minute_points = [_time_str_to_minutes(t) for t, _ in schedule]
-    if any(m is None for m in minute_points):
-        return list(schedule)
-
-    start_idx = 0
-    for idx, (_, activity) in enumerate(schedule):
-        if not is_sleep_activity(activity):
-            start_idx = idx
-            break
-
-    anchor = _round_to_anchor(minute_points[start_idx], anchor_step=anchor_step)
-    target = min(23 * 60 + 59, anchor + random.randint(0, max(0, int(max_delay))))
-
-    lower_bound = 0
-    if start_idx > 0:
-        lower_bound = minute_points[start_idx - 1] + max(1, int(min_gap))
-    upper_bound = 23 * 60 + 59
-    if start_idx + 1 < len(minute_points):
-        upper_bound = minute_points[start_idx + 1] - max(1, int(min_gap))
-
-    if upper_bound < lower_bound:
-        return list(schedule)
-    minute_points[start_idx] = max(lower_bound, min(target, upper_bound))
-    return [(_minutes_to_time_str(m), act) for m, (_, act) in zip(minute_points, schedule)]
-
-def _has_workday_signature(schedule):
-    if not schedule:
-        return False
-    keywords = ["通勤", "工作", "上班", "加班", "会议", "办公", "出差", "上课", "实验", "课题"]
-    return any(any(k in str(activity) for k in keywords) for _, activity in schedule)
+# Schedule parsing / heuristic / sleep / timing helpers moved to
+# gaworld.sim._schedule during the S3 refactor.
+from gaworld.sim._schedule import (  # noqa: E402
+    _align_daily_planning_start_time,
+    _extract_json_array_block,
+    _has_workday_signature,
+    _heuristic_schedule,
+    _is_strictly_increasing_times,
+    _parse_schedule,
+    _round_to_anchor,
+    _schedule_profile_flags,
+    _schedule_times,
+    ensure_sleep_in_schedule,
+)
 
 def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, day=None):
     if not schedule:
@@ -2624,8 +1291,9 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
         f"姓名：{agent.get('name', '')}",
         f"年龄：{agent.get('age', '')}",
         f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
+        personality_line(agent, "routine"),
         f"日常生活与习惯：{agent.get('daily_life', '')}",
+        f"家庭状况：{agent.get('family', '') or '（无家庭记录）'}",
         f"价值观与公共事务态度：{agent.get('values', '')}",
     ])
     routine_text = json.dumps(
@@ -2636,6 +1304,11 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
     memory_hits = retrieve_relevant_memories(agent, "周末 休息 兴趣 爱好 日程", max_items=VECTOR_DB_TOP_K)
     memory_hint = _format_memory_hint(memory_hits)
     intent_hint = intention_text(agent.get("intentions")) if HUMAN_REALISM_ENABLED else "无"
+    state_brief_text = _state_brief_for_prompt(agent)
+    yesterday_recap_text = _yesterday_recap_for_prompt(agent, day)
+    recent_events_text = _recent_life_events_for_prompt(agent, day)
+    aftermath_text = _event_aftermath_for_prompt(agent, day)
+    social_pulse_text = _social_pulse_for_prompt(agent, day)
     weekday_zh = day_context.get("weekday_zh", "周末")
     sim_date_text = day_context.get("sim_date", "")
     day_label = f"Day {day}" if day is not None else "当日"
@@ -2658,8 +1331,13 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
 日期：{day_label}，{sim_date_text}，{weekday_zh}（周末）
 角色资料：
 {profile_text}
-当前周末草案：
+基础日程（当前周末草案）：
 {routine_text}
+{state_brief_text}
+{yesterday_recap_text}
+{recent_events_text}
+{aftermath_text}
+{social_pulse_text}
 相关记忆：{memory_hint}
 今日行为意图：{intent_hint}
 
@@ -2667,8 +1345,9 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
 1) 仅改活动文本，时间点必须与输入完全一致。
 2) 至少改写 1 个非睡眠活动，使其体现角色的个体偏好（职业压力、性格、兴趣习惯）。
 3) {work_rule}
-4) 输出 JSON 数组，每项为 ["HH:MM","活动"] 或 {{"time":"HH:MM","activity":"活动"}}。
-5) 仅输出 JSON，不要其他文字。
+4) 若“家庭状况”里有同住的伴侣、子女或长辈，周末活动应优先落到家庭场景（带孩子、陪长辈、家务采买、家庭聚餐），而不是纯个人休闲。
+5) 输出 JSON 数组，每项为 ["HH:MM","活动"] 或 {{"time":"HH:MM","activity":"活动"}}。
+6) 仅输出 JSON，不要其他文字。
 """
     response = call_llm(prompt, task="weekend_routine", agent_id=agent["id"])
     candidate = _parse_schedule(response)
@@ -2689,44 +1368,16 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
     )
     return aligned if changed else list(schedule)
 
-def _external_rag_hint(agent, query, max_items=EXTERNAL_RAG_TOP_K):
-    hits = retrieve_relevant_memories(
-        agent,
-        query,
-        max_items=max_items,
-        entry_types=["external_info"],
-    )
-    if hits:
-        return _format_memory_hint(hits, max_chars=240)
-    fallback = []
-    if isinstance(agent, dict):
-        for item in reversed(agent.get("memory", [])):
-            text = str(item).strip()
-            if "[额外信息" not in text:
-                continue
-            fallback.append({"type": "external_info", "text": text})
-            if len(fallback) >= max_items:
-                break
-    return _format_memory_hint(list(reversed(fallback)), max_chars=240)
-
-def _agent_has_external_rag(agent):
-    if not isinstance(agent, dict):
-        return False
-    for item in agent.get("memory", []):
-        text = str(item).strip()
-        if text.startswith("[额外信息"):
-            return True
-    return False
+# External-RAG hint helpers moved to gaworld.sim._rag during the S3 refactor.
+from gaworld.sim._rag import (  # noqa: E402
+    EXTERNAL_RAG_TOP_K,
+    _agent_has_external_rag,
+    _external_rag_hint,
+)
 
 
-def _compact_text(text, max_chars=120):
-    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(cleaned) <= max_chars:
-        return cleaned
-    clipped = cleaned[:max_chars]
-    if " " in clipped:
-        clipped = clipped.rsplit(" ", 1)[0]
-    return clipped.rstrip("，,；;。.") + "..."
+# _compact_text moved to gaworld.sim._schedule during the S3 refactor.
+from gaworld.sim._schedule import _compact_text  # noqa: E402
 
 
 def _parse_structured_json(text, allowed_fields):
@@ -2748,945 +1399,98 @@ def _parse_structured_json(text, allowed_fields):
     return parsed
 
 
-def _fallback_plan_struct(raw_text=""):
-    text = _compact_text(raw_text, max_chars=80) or "先按当前情况稳住节奏。"
-    return {
-        "goal": "先把当前时段过稳",
-        "constraint": "时间和状态都有限",
-        "urge": "也想顺着当下感觉稍微省点力",
-        "plan": text,
-        "expected_outcome": "希望不把后面的安排弄得更乱",
-    }
-
-
-def _fallback_reflection_struct(raw_text=""):
-    text = _compact_text(raw_text, max_chars=80) or "这一步暂时就这样。"
-    return {
-        "result": text,
-        "feeling": "情绪有一点波动",
-        "lesson": "下次还是要更早判断状态和代价",
-        "next_bias": "接下来会更偏向省力或稳妥的做法",
-    }
-
-
-def format_plan_text(plan):
-    if not isinstance(plan, dict):
-        return _compact_text(plan, max_chars=120)
-    return "；".join(
-        part
-        for part in [
-            f"目标：{plan.get('goal', '').strip()}".strip("："),
-            f"顾虑：{plan.get('constraint', '').strip()}".strip("："),
-            f"冲动：{plan.get('urge', '').strip()}".strip("："),
-            f"打算：{plan.get('plan', '').strip()}".strip("："),
-            f"预期：{plan.get('expected_outcome', '').strip()}".strip("："),
-        ]
-        if part and not part.endswith("：")
-    )
-
-
-def format_reflection_text(reflection):
-    if not isinstance(reflection, dict):
-        return _compact_text(reflection, max_chars=120)
-    return "；".join(
-        part
-        for part in [
-            f"结果：{reflection.get('result', '').strip()}".strip("："),
-            f"感受：{reflection.get('feeling', '').strip()}".strip("："),
-            f"教训：{reflection.get('lesson', '').strip()}".strip("："),
-            f"后续倾向：{reflection.get('next_bias', '').strip()}".strip("："),
-        ]
-        if part and not part.endswith("：")
-    )
-
-
-def _activity_commitment_level(activity):
-    text = str(activity or "")
-    if any(k in text for k in ["工作", "上班", "会议", "开会", "上课", "学习", "实验", "看病", "医院", "诊所", "面试", "报告"]):
-        return "high"
-    if any(k in text for k in ["购物", "买菜", "社交", "聚会", "拜访", "办事", "沟通", "会面", "约见", "联系"]):
-        return "medium"
-    return "low"
-
-
-def _compute_relationship_delta(before, after):
-    """Compute direction, magnitude, and stability of relationship changes."""
-    if not before and not after:
-        return {"trust_change": 0.0, "closeness_change": 0.0, "direction": "stable", "stability_score": 1.0, "changed_partners": []}
-
-    all_partners = set()
-    if before:
-        all_partners.update(str(k) for k in before.keys())
-    if after:
-        all_partners.update(str(k) for k in after.keys())
-
-    trust_delta_sum = 0.0
-    closeness_delta_sum = 0.0
-    changed = []
-    total = len(all_partners) or 1
-
-    for pid in all_partners:
-        b = before.get(str(pid), {}) if before else {}
-        a = after.get(str(pid), {}) if after else {}
-        b_trust = float(b.get("trust", 0.5) or 0.5)
-        a_trust = float(a.get("trust", 0.5) or 0.5)
-        b_close = float(b.get("closeness", 0.5) or 0.5)
-        a_close = float(a.get("closeness", 0.5) or 0.5)
-        trust_delta_sum += a_trust - b_trust
-        closeness_delta_sum += a_close - b_close
-        if abs(a_trust - b_trust) >= 0.008 or abs(a_close - b_close) >= 0.008:
-            changed.append(str(pid))
-
-    n = len(all_partners) or 1
-    trust_change = trust_delta_sum / n
-    closeness_change = closeness_delta_sum / n
-    direction = "stable"
-    if trust_change >= 0.008 or closeness_change >= 0.008:
-        direction = "improving"
-    elif trust_change <= -0.008 or closeness_change <= -0.008:
-        direction = "deteriorating"
-    stability_score = 1.0 - (len(changed) / n)
-
-    return {
-        "trust_change": round(trust_change, 4),
-        "closeness_change": round(closeness_change, 4),
-        "direction": direction,
-        "stability_score": round(stability_score, 4),
-        "changed_partners": changed,
-    }
-
-
-def _save_daily_network_snapshot(agents, variant_label="", day=1):
-    """Save daily relationship network snapshot for A/B analysis."""
-    import json
-    from collections import defaultdict
-
-    variant_dir = os.environ.get("GAWORLD_VARIANT_DIR", "")
-    if not variant_dir:
-        return
-    snap_dir = os.path.join(variant_dir, "network_snapshots")
-    os.makedirs(snap_dir, exist_ok=True)
-
-    nodes = []
-    edges = []
-    adj = defaultdict(list)
-    for a in agents:
-        aid = a["id"]
-        rels = a.get("relationships", {})
-        nodes.append({
-            "id": aid,
-            "name": a.get("name", str(aid)),
-            "trust": float(np.mean([float(r.get("trust", 0.5)) for r in rels.values()])) if rels else 0.5,
-            "closeness": float(np.mean([float(r.get("closeness", 0.5)) for r in rels.values()])) if rels else 0.5,
-            "relationship_count": len(rels),
-        })
-        for pid, rel in rels.items():
-            if int(pid) > aid:
-                edges.append({
-                    "source": aid,
-                    "target": int(pid),
-                    "trust": float(rel.get("trust", 0.5)),
-                    "closeness": float(rel.get("closeness", 0.5)),
-                    "friction": float(rel.get("friction", 0.5)),
-                })
-                adj[aid].append(int(pid))
-                adj[int(pid)].append(aid)
-
-    snapshot = {
-        "day": day,
-        "variant": variant_label,
-        "nodes": nodes,
-        "edges": edges,
-        "degree_distribution": {str(k): len(v) for k, v in adj.items()},
-    }
-
-    snap_path = os.path.join(snap_dir, f"day_{day}.json")
-    with open(snap_path, "w", encoding="utf-8") as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
-    print(f"  [snapshot] Network saved: {snap_path}")
-
-
-def _commitment_weight(level):
-    behavior_cfg = HUMAN_REALISM_CONFIG.get("behavior", {}) if HUMAN_REALISM_ENABLED else {}
-    weights = behavior_cfg.get("commitment_weights", {}) if isinstance(behavior_cfg, dict) else {}
-    default_map = {"high": 1.2, "medium": 0.6, "low": 0.2}
-    return float(weights.get(level, default_map.get(level, 0.2)))
-
-
-def _state_recall_labels(agent):
-    state = agent.get("state", {}) if isinstance(agent, dict) else {}
-    labels = []
-    if float(state.get("self_control", 0.6)) < 0.4:
-        labels.append("low_self_control")
-    if float(state.get("fatigue_debt", 0.2)) > 0.6:
-        labels.append("high_fatigue")
-    if float(state.get("time_pressure", 0.25)) > 0.6:
-        labels.append("high_time_pressure")
-    if float(state.get("hunger", 0.25)) > 0.65:
-        labels.append("high_hunger")
-    if float(state.get("energy", 0.75)) < 0.35:
-        labels.append("low_energy")
-    return labels
-
-
-def _build_recall_context_labels(agent, activity="", time_str="", location="", commitment_level=""):
-    labels = list(_state_recall_labels(agent))
-    if activity:
-        labels.append(f"activity {activity}")
-    if time_str and location and activity:
-        labels.append(f"context {build_context_key(time_str, location, activity)}")
-    if commitment_level:
-        labels.append(f"{commitment_level}_commitment")
-    return labels
-
-
-def _action_style_tags(action_text):
-    text = str(action_text or "")
-    tags = set()
-    if any(k in text for k in ["推进", "完成", "整理", "处理", "准备", "学习", "规划", "落实", "回复", "确认"]):
-        tags.add("progress")
-    if any(k in text for k in ["继续", "维持", "例行", "按原计划", "照常", "看看进度", "简单处理"]):
-        tags.add("maintain")
-    if any(k in text for k in ["拖延", "刷手机", "摸鱼", "发呆", "放空", "晚点再说", "逃避", "躺平"]):
-        tags.add("avoidant")
-    if any(k in text for k in ["聊天", "联系", "沟通", "拜访", "会面", "回消息", "确认安排", "聚会"]):
-        tags.add("social")
-    if any(k in text for k in ["休息", "放松", "回家", "睡", "午休", "吃饭", "散步"]):
-        tags.add("restorative")
-    if any(k in text for k in ["先", "立刻", "马上", "顺手", "简单", "快速"]):
-        tags.add("quick")
-    return tags
-
-
-def _behavioral_action_fallbacks(activity):
-    text = str(activity or "")
-    if any(k in text for k in ["工作", "学习", "会议", "上课", "实验"]):
-        return {
-            "progress": "推进最重要的一项任务",
-            "maintain": "按原计划继续处理例行事项",
-            "avoidant": "拖一会儿再开始，先刷手机分心",
-            "social": "联系相关的人确认进度和分工",
-        }
-    if any(k in text for k in ["买菜", "购物", "办事"]):
-        return {
-            "progress": "尽快把最需要买的东西先办完",
-            "maintain": "按清单照常处理手头事务",
-            "avoidant": "先随便逛一会儿拖时间",
-            "social": "发消息问熟人有没有顺路需求",
-        }
-    return {
-        "progress": "先把眼前这件事往前推进一点",
-        "maintain": "按原节奏继续当前安排",
-        "avoidant": "先拖一会儿再说，顺手刷会儿手机",
-        "social": "联系一下相关的人确认接下来的安排",
-    }
-
-
-def _ensure_behavioral_action_balance(activity, actions):
-    cleaned = []
-    seen = set()
-    for action in actions or []:
-        text = str(action).strip()
-        if not text or text in seen:
-            continue
-        seen.add(text)
-        cleaned.append(text)
-    fallbacks = _behavioral_action_fallbacks(activity)
-    for category in ("progress", "maintain", "avoidant", "social"):
-        if not any(category in _action_style_tags(action) for action in cleaned):
-            fallback = fallbacks.get(category, "")
-            if fallback and fallback not in seen:
-                cleaned.append(fallback)
-                seen.add(fallback)
-    return cleaned
-
-
-def _social_relationship_snapshot(agent):
-    relationships = agent.get("relationships", {}) if isinstance(agent, dict) else {}
-    partner_ids = list(agent.get("_recent_social_partners", []) or [])
-    selected = []
-    for pid in partner_ids:
-        item = relationships.get(str(pid), {})
-        if isinstance(item, dict):
-            selected.append(item)
-    if not selected:
-        for item in relationships.values():
-            if isinstance(item, dict):
-                selected.append(item)
-            if len(selected) >= 3:
-                break
-    if not selected:
-        return {"obligation": 0.5, "friction": 0.5, "support": 0.5}
-    return {
-        "obligation": float(np.mean([float(item.get("obligation", 0.5)) for item in selected])),
-        "friction": float(np.mean([float(item.get("friction", 0.5)) for item in selected])),
-        "support": float(np.mean([float(item.get("closeness", 0.5)) for item in selected])),
-    }
-
-
-def _compute_relationship_delta(before, after):
-    """Compute direction, magnitude, and stability of relationship changes.
-
-    Returns dict with:
-      - trust_change: net change in trust (-1 to 1 scale, roughly)
-      - closeness_change: net change in closeness (-1 to 1)
-      - direction: "improving" | "deteriorating" | "stable"
-      - stability_score: 0-1, fraction of relationships that did NOT change
-      - changed_partners: list of partner IDs whose relationship changed
-    """
-    if not before and not after:
-        return {"trust_change": 0.0, "closeness_change": 0.0, "direction": "stable", "stability_score": 1.0, "changed_partners": []}
-
-    all_partners = set()
-    if before:
-        all_partners.update(str(k) for k in before.keys())
-    if after:
-        all_partners.update(str(k) for k in after.keys())
-
-    trust_delta_sum = 0.0
-    closeness_delta_sum = 0.0
-    changed = []
-    total = len(all_partners) or 1
-
-    for pid in all_partners:
-        b = before.get(str(pid), {}) if before else {}
-        a = after.get(str(pid), {}) if after else {}
-        b_trust = float(b.get("trust", 0.5) or 0.5)
-        a_trust = float(a.get("trust", 0.5) or 0.5)
-        b_close = float(b.get("closeness", 0.5) or 0.5)
-        a_close = float(a.get("closeness", 0.5) or 0.5)
-        trust_delta_sum += a_trust - b_trust
-        closeness_delta_sum += a_close - b_close
-        if abs(a_trust - b_trust) >= 0.008 or abs(a_close - b_close) >= 0.008:
-            changed.append(str(pid))
-
-    # Per-partner average delta (scale to roughly +/- 1)
-    n = len(all_partners) or 1
-    trust_change = trust_delta_sum / n
-    closeness_change = closeness_delta_sum / n
-    direction = "stable"
-    if trust_change >= 0.008 or closeness_change >= 0.008:
-        direction = "improving"
-    elif trust_change <= -0.008 or closeness_change <= -0.008:
-        direction = "deteriorating"
-    stability_score = 1.0 - (len(changed) / n)
-
-    return {
-        "trust_change": round(trust_change, 4),
-        "closeness_change": round(closeness_change, 4),
-        "direction": direction,
-        "stability_score": round(stability_score, 4),
-        "changed_partners": changed,
-    }
-
-
-def _save_daily_network_snapshot(agents, variant_label="", day=1):
-    """Save daily relationship network snapshot for A/B analysis."""
-    import json
-    from collections import defaultdict
-
-    variant_dir = os.environ.get("GAWORLD_VARIANT_DIR", "")
-    if not variant_dir:
-        return
-    snap_dir = os.path.join(variant_dir, "network_snapshots")
-    os.makedirs(snap_dir, exist_ok=True)
-
-    # Build adjacency + attributes
-    nodes = []
-    edges = []
-    adj = defaultdict(list)
-    for a in agents:
-        aid = a["id"]
-        rels = a.get("relationships", {})
-        nodes.append({
-            "id": aid,
-            "name": a.get("name", str(aid)),
-            "trust": float(np.mean([float(r.get("trust", 0.5)) for r in rels.values()])) if rels else 0.5,
-            "closeness": float(np.mean([float(r.get("closeness", 0.5)) for r in rels.values()])) if rels else 0.5,
-            "relationship_count": len(rels),
-        })
-        for pid, rel in rels.items():
-            if int(pid) > aid:  # deduplicate edges
-                edges.append({
-                    "source": aid,
-                    "target": int(pid),
-                    "trust": float(rel.get("trust", 0.5)),
-                    "closeness": float(rel.get("closeness", 0.5)),
-                    "friction": float(rel.get("friction", 0.5)),
-                })
-                adj[aid].append(int(pid))
-                adj[int(pid)].append(aid)
-
-    snapshot = {
-        "day": day,
-        "variant": variant_label,
-        "nodes": nodes,
-        "edges": edges,
-        "degree_distribution": {str(k): len(v) for k, v in adj.items()},
-    }
-
-    snap_path = os.path.join(snap_dir, f"day_{day}.json")
-    with open(snap_path, "w", encoding="utf-8") as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
-    print(f"  [snapshot] Network saved: {snap_path}")
-
-
-def _current_emotion_text(agent):
-    state = agent.get("state", {}) if isinstance(agent, dict) else {}
-    emotion = float(state.get("emotion", 0.5))
-    stress = float(state.get("stress", 0.5))
-    if emotion >= 0.7:
-        mood = "明显偏积极"
-    elif emotion <= 0.35:
-        mood = "明显偏低落"
-    else:
-        mood = "中性偏波动"
-    if stress >= 0.72:
-        pressure = "压力偏高"
-    elif stress <= 0.35:
-        pressure = "压力较低"
-    else:
-        pressure = "压力中等"
-    return f"当前情绪：{mood}（emotion={emotion:.2f}）；当前压力：{pressure}（stress={stress:.2f}）"
-
-
-def _is_meaningful_text(text):
-    cleaned = str(text or "").strip()
-    if not cleaned:
-        return False
-    return cleaned not in {"无", "无特殊变化", "今天几乎没有与熟人互动。"}
-
-
-def _activity_matches_keywords(activity, keywords):
-    text = str(activity or "")
-    return any(keyword in text for keyword in keywords)
-
-
-def _is_location_time_relevant(activity, time_str="", location=""):
-    if _activity_matches_keywords(
-        activity,
-        [
-            "通勤", "前往", "移动", "会面", "拜访", "上班", "工作", "上课", "学习",
-            "买菜", "购物", "吃饭", "早餐", "午饭", "晚饭", "散步", "运动", "看病",
-            "医院", "诊所", "睡前", "休息",
-        ],
-    ):
-        return True
-    if is_sleep_activity(str(activity or "")):
-        return True
-    return bool(str(time_str).strip() and str(location).strip())
-
-
-def _is_social_context_relevant(agent, activity, social_context):
-    if not _is_meaningful_text(social_context):
-        return False
-    if _activity_matches_keywords(
-        activity,
-        ["社交", "联系", "沟通", "拜访", "会面", "聚会", "聊天", "会议", "组会", "讨论", "协作", "家人", "朋友"],
-    ):
-        return True
-    snapshot = _social_relationship_snapshot(agent)
-    state = agent.get("state", {}) if isinstance(agent, dict) else {}
-    if snapshot["obligation"] > 0.65 or snapshot["friction"] > 0.65:
-        return True
-    if float(state.get("social_need", 0.4)) > 0.65:
-        return True
-    return False
-
-
-def _is_physical_environment_relevant(activity, env_context, env_events):
-    if not _is_meaningful_text(env_context) and not env_events:
-        return False
-    combined = " ".join(
-        [str(env_context or "")] + [str(ev.get("description", ev.get("name", ""))) for ev in (env_events or [])]
-    )
-    physical_keywords = ["雨", "雪", "风", "高温", "降温", "寒潮", "拥堵", "封路", "施工", "停电", "噪音", "天气", "路况"]
-    activity_keywords = ["通勤", "前往", "移动", "散步", "运动", "买菜", "购物", "拜访", "会面", "看病"]
-    return any(keyword in combined for keyword in physical_keywords) and _activity_matches_keywords(activity, activity_keywords)
-
-
-def _is_social_environment_relevant(activity, env_events, policy_desc):
-    combined = " ".join(
-        [str(policy_desc or "")] + [str(ev.get("description", ev.get("name", ""))) for ev in (env_events or [])]
-    )
-    if not _is_meaningful_text(combined):
-        return False
-    social_keywords = ["政策", "工资", "就业", "监管", "物价", "裁员", "舆论", "抗议", "社区", "学校", "医院", "平台"]
-    activity_keywords = ["工作", "上班", "学习", "上课", "买菜", "购物", "社交", "联系", "沟通", "社区", "看病"]
-    return any(keyword in combined for keyword in social_keywords) and _activity_matches_keywords(activity, activity_keywords)
-
-
-def _summarize_environment_refs(env_context, env_events, policy_desc):
-    physical = []
-    social = []
-    for ev in env_events or []:
-        desc = str(ev.get("description", ev.get("name", ""))).strip()
-        if not desc:
-            continue
-        ev_type = str(ev.get("type", "")).strip().lower()
-        if ev_type in {"natural", "weather"} or any(k in desc for k in ["雨", "雪", "风", "高温", "拥堵", "封路", "施工", "停电"]):
-            physical.append(desc)
-        else:
-            social.append(desc)
-    if _is_meaningful_text(env_context) and not physical and not social:
-        physical.append(str(env_context).strip())
-    if _is_meaningful_text(policy_desc):
-        social.append(str(policy_desc).strip())
-    return {
-        "physical": "；".join(dict.fromkeys(physical)),
-        "social": "；".join(dict.fromkeys(social)),
-    }
-
-
-def _build_decision_reference_bundle(
-    agent,
-    activity,
-    memory_hint="",
-    recollection="",
-    time_str="",
-    location="",
-    env_context="",
-    env_events=None,
-    policy_desc="",
-    social_context="",
-):
-    env_summary = _summarize_environment_refs(env_context, env_events or [], policy_desc)
-    refs = {
-        "emotion_text": _current_emotion_text(agent),
-        "memory_hint": memory_hint or "暂无重要经验",
-        "recollection": recollection or "无明显回忆",
-        "physical_env_relevant": _is_physical_environment_relevant(activity, env_context, env_events or []),
-        "social_env_relevant": _is_social_environment_relevant(activity, env_events or [], policy_desc),
-        "location_time_relevant": _is_location_time_relevant(activity, time_str=time_str, location=location),
-        "social_network_relevant": _is_social_context_relevant(agent, activity, social_context),
-        "physical_env_text": env_summary.get("physical", ""),
-        "social_env_text": env_summary.get("social", ""),
-        "location_time_text": (
-            f"当前地点：{location or '未知'}；当前时间：{time_str or '未知'}"
-            if _is_location_time_relevant(activity, time_str=time_str, location=location)
-            else ""
-        ),
-        "social_network_text": social_context if _is_social_context_relevant(agent, activity, social_context) else "",
-    }
-    return refs
-
-
-def _same_activity_habit_entry(agent, activity):
-    habits = agent.get("habits", {}) if isinstance(agent, dict) else {}
-    if not isinstance(habits, dict):
-        return {}
-    counts = defaultdict(int)
-    strength_total = 0.0
-    strength_count = 0
-    for key, item in habits.items():
-        if not str(key).endswith(f"|{activity}"):
-            continue
-        if not isinstance(item, dict):
-            continue
-        for action, count in item.get("action_counts", {}).items():
-            try:
-                counts[str(action)] += int(count)
-            except (TypeError, ValueError):
-                continue
-        strength_total += float(item.get("strength", 0.0))
-        strength_count += 1
-    if not counts:
-        return {}
-    preferred_action = max(counts.items(), key=lambda x: x[1])[0]
-    avg_strength = strength_total / max(1, strength_count)
-    return {
-        "preferred_action": preferred_action,
-        "strength": avg_strength,
-    }
-
-
-def _clip01(value):
-    return float(np.clip(float(value), 0.0, 1.0))
-
-
-def _join_query_parts(*parts):
-    chunks = []
-    for part in parts:
-        if part is None:
-            continue
-        if isinstance(part, (list, tuple, set)):
-            chunks.extend(str(x).strip() for x in part if str(x).strip())
-        else:
-            text = str(part).strip()
-            if text:
-                chunks.append(text)
-    return " ".join(chunks)
-
-
-def _memory_recall_top_k(agent, stage):
-    base = max(1, int(RECALL_CONFIG.get("base_top_k", 2)))
-    stage_top = max(base, int(RECALL_CONFIG.get(f"{stage}_top_k", base)))
-    max_top = max(stage_top, int(RECALL_CONFIG.get("max_top_k", 5)))
-    state = agent.get("state", {}) if isinstance(agent, dict) else {}
-    stress = abs(float(state.get("stress", 0.5)) - 0.5)
-    emotion = abs(float(state.get("emotion", 0.5)) - 0.5)
-    hunger = abs(float(state.get("hunger", 0.5)) - 0.5)
-    social_need = abs(float(state.get("social_need", 0.5)) - 0.5)
-    fatigue = abs(float(state.get("fatigue_debt", 0.2)) - 0.5)
-    self_control = abs(float(state.get("self_control", 0.6)) - 0.5)
-    time_pressure = abs(float(state.get("time_pressure", 0.25)) - 0.5)
-    bonus = 0
-    if max(stress, emotion, hunger, social_need, fatigue, self_control, time_pressure) >= 0.22:
-        bonus += 1
-    if stage == "interview":
-        bonus += 1
-    return max(1, min(stage_top + bonus, max_top))
-
-
-def _infer_recall_valence(hits):
-    if not hits:
-        return 0.0
-    score = 0.0
-    for item in hits[:3]:
-        text = str(item.get("text", "") if isinstance(item, dict) else item)
-        score += sum(1 for hint in POSITIVE_RECALL_HINTS if hint in text)
-        score -= sum(1 for hint in NEGATIVE_RECALL_HINTS if hint in text)
-    return float(np.clip(score / 4.0, -1.0, 1.0))
-
-
-def _apply_recall_effect(agent, valence, stage, top_score=0.0):
-    if not isinstance(agent, dict) or abs(float(valence)) < 0.01 or stage == "interview":
-        return {}
-    state = agent.setdefault("state", {})
-    if "emotion" not in state or "stress" not in state:
-        return {}
-    scale = float(RECALL_CONFIG.get("effect_scale", 0.015))
-    strength = scale * (1.0 + min(max(float(top_score), 0.0), 1.0))
-    emotion_delta = strength * float(valence)
-    stress_delta = -0.7 * strength * float(valence)
-    state["emotion"] = _clip01(float(state.get("emotion", 0.5)) + emotion_delta)
-    state["stress"] = _clip01(float(state.get("stress", 0.5)) + stress_delta)
-    return {
-        "emotion": round(emotion_delta, 4),
-        "stress": round(stress_delta, 4),
-    }
-
-
-def _format_recollection(stage, hits):
-    if not hits:
-        return ""
-    prefix = {
-        "planning": "这让你想起",
-        "action": "你临时想起",
-        "reflection": "你又联想到",
-        "interview": "这些问题让你回忆起",
-    }.get(stage, "你想起")
-    type_label = {
-        "episode": "一段经历",
-        "reflection": "之前的反思",
-        "meta_memory": "更高层的总结",
-        "memory": "过去的记忆",
-        "action": "某次做法",
-        "plan": "先前的打算",
-        "log": "一个生活片段",
-    }
-    items = []
-    for hit in hits[:2]:
-        if isinstance(hit, dict):
-            label = type_label.get(str(hit.get("type", "")), "一个片段")
-            text = _compact_text(hit.get("text", ""), max_chars=60)
-        else:
-            label = "一个片段"
-            text = _compact_text(hit, max_chars=60)
-        if text:
-            items.append(f"{label}：{text}")
-    if not items:
-        return ""
-    return f"{prefix}{'；'.join(items)}"
-
-
-def evoke_memory(agent, stage, *parts, entry_types=None, context_labels=None):
-    query = _join_query_parts(RECALL_STAGE_HINTS.get(stage, []), context_labels or [], parts)
-    hits = retrieve_relevant_memories(
-        agent,
-        query,
-        max_items=_memory_recall_top_k(agent, stage),
-        entry_types=entry_types or RECALL_STAGE_ENTRY_TYPES.get(stage),
-    )
-    hint = _format_memory_hint(hits, max_chars=max(120, int(RECALL_CONFIG.get("hint_chars", 240))))
-    top_score = float(hits[0].get("score", 0.0)) if hits and isinstance(hits[0], dict) else 0.0
-    min_score = float(RECALL_CONFIG.get("surface_min_score", 0.08))
-    recollection = ""
-    valence = 0.0
-    effect = {}
-    if hits and (stage == "interview" or top_score >= min_score):
-        recollection = _format_recollection(stage, hits)
-        valence = _infer_recall_valence(hits)
-        effect = _apply_recall_effect(agent, valence, stage, top_score=top_score)
-    return {
-        "query": query,
-        "hits": hits,
-        "hint": hint,
-        "recollection": recollection,
-        "valence": valence,
-        "effect": effect,
-        "top_score": top_score,
-    }
-
-
-def _append_memory_record(agent, text, entry_type="memory", day=None, time_str=None):
-    payload = str(text or "").strip()
-    if not payload or not isinstance(agent, dict):
-        return False
-    memory = agent.setdefault("memory", [])
-    if payload not in memory:
-        memory.append(payload)
-    save_agent_memory(agent)
-    vector_db_add_entry(agent["id"], entry_type, payload, sim_day=day, sim_time=time_str)
-    return True
-
-
-def _heuristic_memory_review(agent, selected):
-    tags = []
-    for ep in selected:
-        tags.extend(ep.get("tags", []))
-    drivers = [str(ep.get("decision_driver", "")).strip() for ep in selected if str(ep.get("decision_driver", "")).strip()]
-    activities = [str(ep.get("final_activity", "")).strip() for ep in selected if str(ep.get("final_activity", "")).strip()]
-    repeated = ""
-    if activities:
-        counts = defaultdict(int)
-        for activity in activities:
-            counts[activity] += 1
-        repeated, repeated_count = max(counts.items(), key=lambda x: x[1])
-        if repeated_count < 2:
-            repeated = ""
-    repeated_driver = ""
-    if drivers:
-        counts = defaultdict(int)
-        for driver in drivers:
-            counts[driver] += 1
-        repeated_driver, repeated_driver_count = max(counts.items(), key=lambda x: x[1])
-        if repeated_driver_count < 2:
-            repeated_driver = ""
-    if "failure" in tags or "conflict" in tags:
-        insight = "最近有些做法会反复带来压力，接下来最好更早调整。"
-    elif "success" in tags:
-        insight = "最近有效的做法值得继续保留。"
-    elif "health" in tags:
-        insight = "身体状态和恢复节奏正在明显影响你的判断。"
-    else:
-        insight = "这几段经历说明你的日常节奏正在慢慢塑造接下来的选择。"
-    if repeated_driver:
-        return f"回顾最近几段经历后，你意识到自己常常被“{repeated_driver}”推着走，{insight}"
-    if repeated:
-        return f"回顾最近几段经历后，你意识到自己总会被“{repeated}”牵引，{insight}"
-    return f"回顾最近几段经历后，你意识到{insight}"
-
-
-def maybe_review_memories(agent, day, time_str, recent_episode=None, llm_budget_ctx=None):
-    if not HUMAN_REALISM_ENABLED:
-        return ""
-    now = _time_str_to_minutes(time_str)
-    if now is None:
-        return ""
-    if agent.get("_memory_review_day") != day:
-        agent["_memory_review_day"] = day
-        agent["_memory_review_count"] = 0
-        agent["_last_memory_review_minute"] = -10**9
-    max_reviews = max(1, int(MEMORY_REVIEW_CONFIG.get("max_per_day", 3)))
-    if int(agent.get("_memory_review_count", 0)) >= max_reviews:
-        return ""
-    interval = max(60, int(MEMORY_REVIEW_CONFIG.get("interval_minutes", 240)))
-    last_minute = int(agent.get("_last_memory_review_minute", -10**9))
-    recent_salience = 0.0
-    if isinstance(recent_episode, dict):
-        recent_salience = float(recent_episode.get("salience", recent_episode.get("decayed_salience", 0.0)))
-    trigger_salience = float(MEMORY_REVIEW_CONFIG.get("trigger_salience", 0.72))
-    if now - last_minute < interval and recent_salience < trigger_salience:
-        return ""
-    top_k = max(1, int(MEMORY_REVIEW_CONFIG.get("top_k", 4)))
-    episodes = sorted(
-        agent.get("episodes", []),
-        key=lambda e: float(e.get("decayed_salience", e.get("salience", 0.0))),
-        reverse=True,
-    )
-    selected = []
-    for ep in episodes:
-        ep_day = int(ep.get("day", ep.get("created_at_day", 0)) or 0)
-        if ep_day < max(0, int(day) - 2):
-            continue
-        selected.append(ep)
-        if len(selected) >= top_k:
-            break
-    if not selected and isinstance(recent_episode, dict):
-        selected = [recent_episode]
-    if not selected:
-        return ""
-    summary_lines = [
-        f"{ep.get('time', '')} {ep.get('final_activity', '')} -> {ep.get('action', '')} / {ep.get('reflection', '')}"
-        for ep in selected
-    ]
-    summary = _heuristic_memory_review(agent, selected)
-    if isinstance(llm_budget_ctx, dict) and llm_budget_ctx.get("remaining", 0) > 0:
-        prompt = f"""
-你是城市模拟器中的“记忆复盘器”。
-请根据角色近期经历，写一句更高层次的自我认识，像人在回顾自己最近状态时形成的结论。
-角色：{agent.get('name', '')}
-近期经历：
-{json.dumps(summary_lines, ensure_ascii=False, indent=2)}
-
-要求：
-1) 只输出一句中文，不超过60字。
-2) 要体现模式、偏好、教训或状态变化，不要重复流水账。
-3) 不要输出其他文字。
-"""
-        llm_budget_ctx["remaining"] = max(0, int(llm_budget_ctx.get("remaining", 0)) - 1)
-        try:
-            response = call_llm(prompt, task="memory_review", agent_id=agent["id"]).strip()
-        except (requests.RequestException, ValueError, RuntimeError) as exc:
-            _LOG.warning("memory_review LLM call failed for agent %s: %s", agent.get("id"), exc)
-            response = ""
-        if response:
-            summary = _compact_text(response, max_chars=90)
-    review_text = f"[Day {day} {time_str} MemoryReview] {summary}"
-    _append_memory_record(agent, review_text, entry_type="meta_memory", day=day, time_str=time_str)
-    agent["_memory_review_count"] = int(agent.get("_memory_review_count", 0)) + 1
-    agent["_last_memory_review_minute"] = now
-    return review_text
-
-def _append_external_payload_to_agent(agent, payload):
-    if not payload or not isinstance(agent, dict):
-        return
-    memory = agent.setdefault("memory", [])
-    if payload not in memory:
-        memory.append(payload)
-
-def _heuristic_bootstrap_external_items(agent, max_items=3, max_chars=280):
-    if not isinstance(agent, dict):
-        return []
-    state = agent.get("state", {})
-    items = []
-    living = str(agent.get("living") or agent.get("residence") or agent.get("residence", "")).strip()
-    job = str(agent.get("job", "")).strip()
-    personality = str(agent.get("personality", "")).strip()
-    daily_life = str(agent.get("daily_life", "")).strip()
-    values = str(agent.get("values", "")).strip()
-    if living:
-        items.append(f"长期生活在{living}一带，熟悉周边通勤路径、生活服务与大致消费水平。")
-    if job:
-        items.append(f"对“{job}”相关的工作节奏、收入波动和行业机会有持续关注，会据此调整自己的日常安排。")
-    if daily_life:
-        items.append(f"平时的生活习惯是：{_sanitize_extra_text(daily_life, max_chars=max_chars)}")
-    stress = float(state.get("stress", 0.5))
-    econ_security = float(state.get("econ_security", 0.5))
-    if stress >= 0.6 or econ_security <= 0.45:
-        items.append("最近会更留意收入稳定性、生活成本和能否节省开支。")
-    else:
-        items.append("通常会平衡工作、休息和消费，不会完全被短期经济波动牵着走。")
-    if personality:
-        items.append(f"熟人对其的稳定印象通常是：{_sanitize_extra_text(personality, max_chars=max_chars)}")
-    if values:
-        items.append(f"在公共事务和人生选择上，长期倾向于：{_sanitize_extra_text(values, max_chars=max_chars)}")
-    cleaned = []
-    seen = set()
-    for item in items:
-        text = _sanitize_extra_text(item, max_chars=max_chars)
-        if not text or text in seen:
-            continue
-        seen.add(text)
-        cleaned.append(text)
-        if len(cleaned) >= max(1, int(max_items)):
-            break
-    return cleaned
-
-def _parse_bootstrap_external_items(text, max_items=3):
-    blob = _extract_json_array_block(text)
-    if not blob:
-        return []
-    try:
-        raw = json.loads(blob)
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(raw, list):
-        return []
-    parsed = []
-    for item in raw:
-        if isinstance(item, str):
-            cleaned = _sanitize_extra_text(item, max_chars=280)
-        elif isinstance(item, dict):
-            cleaned = ""
-            for key in ("text", "memory", "knowledge", "content"):
-                value = item.get(key)
-                if isinstance(value, str) and value.strip():
-                    cleaned = _sanitize_extra_text(value, max_chars=280)
-                    break
-        else:
-            cleaned = _sanitize_extra_text(str(item), max_chars=280)
-        if cleaned:
-            parsed.append(cleaned)
-        if len(parsed) >= max(1, int(max_items)):
-            break
-    return parsed
-
-def _llm_bootstrap_external_items(agent, max_items=3, max_chars=280):
-    profile_text = "\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"年龄：{agent.get('age', '')}",
-        f"居住情况：{agent.get('living', agent.get('residence', ''))}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"日常生活与习惯：{agent.get('daily_life', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    prompt = f"""
-你是城市模拟器的初始化器。请为一个智能体生成 {max_items} 条“可放入 RAG 的背景记忆/知识”。
-
-角色资料：
-{profile_text}
-
-要求：
-1) 内容应当是“合理、模糊但有帮助”的长期背景信息，可被后续计划/访谈/决策引用。
-2) 不要写极端具体、不可验证的重大事件；更像长期经验、偏好、熟悉领域、持续关注主题。
-3) 每条 20-80 字，中文。
-4) 仅输出 JSON 数组，每项是字符串，不能输出其他文字。
-"""
-    response = call_llm(prompt, task="external_rag_bootstrap", agent_id=agent["id"])
-    items = _parse_bootstrap_external_items(response, max_items=max_items)
-    if items:
-        return [_sanitize_extra_text(item, max_chars=max_chars) for item in items]
-    return _heuristic_bootstrap_external_items(agent, max_items=max_items, max_chars=max_chars)
-
-def _summarize_bootstrap_web_item(agent, title, content, url, max_chars=280):
-    profile_text = "\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    prompt = f"""
-你是城市模拟器的初始化器。请把下面一条外部信息转写成适合放入角色 RAG 的“长期背景知识”。
-
-角色资料：
-{profile_text}
-
-标题：{title or "N/A"}
-链接：{url}
-内容摘要：
-{content}
-
-要求：
-1) 输出 1 句中文，20-80 字。
-2) 要体现“这条信息为什么会长期影响/被该角色持续关注”。
-3) 不要出现“根据新闻”“网页显示”等措辞。
-4) 只输出这一句。
-"""
-    response = call_llm(prompt, task="external_rag_bootstrap", agent_id=agent["id"]).strip()
-    cleaned = _sanitize_extra_text(response, max_chars=max_chars)
-    if cleaned:
-        return cleaned
-    title_text = _sanitize_extra_text(title, max_chars=80)
-    excerpt = _sanitize_extra_text(content, max_chars=max_chars)
-    if title_text:
-        return f"持续关注“{title_text}”这类信息，因为它可能影响自己的工作机会、生活成本或公共环境判断。 {excerpt}"
-    return excerpt
+# Fallback plan/reflection structs, plan/reflection text formatters, and
+# the activity-commitment-level classifier moved to gaworld.sim._schedule
+# during the S3 refactor.
+from gaworld.sim._schedule import (  # noqa: E402
+    _activity_commitment_level,
+    _fallback_plan_struct,
+    _fallback_reflection_struct,
+    format_plan_text,
+    format_reflection_text,
+    is_routine_impacting_event,
+    replan_affected_interval,
+    reshape_day_for_life_event,
+    resolve_life_event_activities,
+)
+
+
+# --------------------------------------------------------------------
+# Decision-time memory recall + behavioural context — extracted to
+# ``gaworld.sim._memory_recall``.  28 helpers: ``evoke_memory``,
+# ``maybe_review_memories``, ``_build_decision_reference_bundle``, plus
+# the 23 predicates / formatters / helpers they depend on.  Three
+# constants (``RECALL_STAGE_HINTS``, ``RECALL_STAGE_ENTRY_TYPES``,
+# ``POSITIVE_RECALL_HINTS``, ``NEGATIVE_RECALL_HINTS``) also moved.
+#
+# Re-exported because the legacy ``RECALL_STAGE_HINTS`` etc. constants
+# at L612–L646 of this file are now dead — but ``choose_action``,
+# ``planning``, ``reflection``, ``interview_agent``, and
+# ``infer_event_effect`` all call these helpers as
+# bare names.  Tests do ``patch.object(sim, "evoke_memory", ...)`` so
+# the binding must live in this module's globals.
+#
+# This is the first cut of the RUN_SIMULATION extraction plan — see
+# ``docs/RUN_SIMULATION_EXTRACTION_PLAN.md`` for the prerequisite
+# ordering.
+# --------------------------------------------------------------------
+from gaworld.sim._memory_recall import (  # noqa: E402, F401
+    NEGATIVE_RECALL_HINTS,
+    POSITIVE_RECALL_HINTS,
+    RECALL_STAGE_ENTRY_TYPES,
+    RECALL_STAGE_HINTS,
+    _activity_matches_keywords,
+    _apply_recall_effect,
+    _behavioral_action_fallbacks,
+    _build_decision_reference_bundle,
+    _build_recall_context_labels,
+    _clip01,
+    _commitment_weight,
+    _current_emotion_text,
+    _ensure_behavioral_action_balance,
+    _format_recollection,
+    _heuristic_memory_review,
+    _infer_recall_valence,
+    _is_location_time_relevant,
+    _is_meaningful_text,
+    _is_physical_environment_relevant,
+    _is_social_context_relevant,
+    _is_social_environment_relevant,
+    _join_query_parts,
+    _memory_recall_top_k,
+    _same_activity_habit_entry,
+    _social_relationship_snapshot,
+    _summarize_environment_refs,
+    evoke_memory,
+    is_fallback_only_action_list,
+    maybe_review_memories,
+)
+
+# --------------------------------------------------------------------
+# RAG bootstrap helpers — extracted to ``gaworld.sim._rag``.
+# Re-exported because tests do
+#   patch.object(sim, "_llm_bootstrap_external_items", ...)
+#   patch.object(sim, "_summarize_bootstrap_web_item", ...)
+# and the orchestrator ``_bootstrap_agent_external_rag`` (below) calls
+# these as bare names — bare-name lookup resolves in sim's globals,
+# which is where the re-export binds them, and where patch.object
+# replaces them.  Orchestrator stays here.
+# --------------------------------------------------------------------
+from gaworld.sim._rag import (  # noqa: E402
+    _append_external_payload_to_agent,
+    _heuristic_bootstrap_external_items,
+    _parse_bootstrap_external_items,
+    _llm_bootstrap_external_items,
+    _summarize_bootstrap_web_item,
+)
 
 def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
-    bootstrap_cfg = EXTERNAL_RAG_CONFIG.get("bootstrap", {})
+    # Read from CONFIG at call time (not the module-load snapshot
+    # EXTERNAL_RAG_CONFIG): test fixtures replace CONFIG["external_rag"]
+    # wholesale before each run, so the snapshot misses their patches —
+    # the simulator used to silently still fire the network-heavy
+    # bootstrap during the e2e smoke run. (Phase 3 perf fix.)
+    bootstrap_cfg = CONFIG.get("external_rag", {}).get("bootstrap", {})
     if not isinstance(bootstrap_cfg, dict) or not bootstrap_cfg.get("enabled", False):
         return []
     # Prefer the standalone seed generator for unified bootstrap behavior.
@@ -3710,11 +1514,21 @@ def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
 
     max_chars = int(bootstrap_cfg.get("max_chars_per_item", 280))
     inserted = []
-    profile_items = _llm_bootstrap_external_items(
-        agent,
-        max_items=int(bootstrap_cfg.get("profile_items", 3)),
-        max_chars=max_chars,
-    )
+    try:
+        profile_items = _llm_bootstrap_external_items(
+            agent,
+            max_items=int(bootstrap_cfg.get("profile_items", 3)),
+            max_chars=max_chars,
+        )
+    except Exception as exc:  # noqa: BLE001 — bootstrap must never abort the run.
+        # Match the sibling seed-script substep: degrade to no profile seed and
+        # keep the simulation going (e.g. LLM endpoint down / transient error).
+        _LOG.warning(
+            "external_rag profile-seed bootstrap failed for agent %s: %s — skipping seed, continuing",
+            agent.get("id"),
+            exc,
+        )
+        profile_items = []
     for item in profile_items:
         payload = _store_external_info_for_agent(
             agent,
@@ -3764,13 +1578,22 @@ def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
         content = _sanitize_extra_text(target.get("content", ""), max_chars=900)
         if not content:
             continue
-        text = _summarize_bootstrap_web_item(
-            agent,
-            target.get("title", ""),
-            content,
-            url,
-            max_chars=max_chars,
-        )
+        try:
+            text = _summarize_bootstrap_web_item(
+                agent,
+                target.get("title", ""),
+                content,
+                url,
+                max_chars=max_chars,
+            )
+        except Exception as exc:  # noqa: BLE001 — web seeding is best-effort.
+            _LOG.warning(
+                "external_rag web-seed summarize failed for agent %s (%s): %s — skipping item",
+                agent.get("id"),
+                url,
+                exc,
+            )
+            continue
         domain = _domain_from_url(url) or "web"
         payload = _store_external_info_for_agent(
             agent,
@@ -3783,125 +1606,60 @@ def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
             inserted.append(payload)
     return inserted
 
-def _jitter_schedule_times(base_schedule, max_shift=45, min_gap=20):
-    if not base_schedule:
-        return []
-    base_minutes = [_time_str_to_minutes(t) for t, _ in base_schedule]
-    if any(m is None for m in base_minutes):
-        return list(base_schedule)
-    adjusted_minutes = []
-    prev = None
-    for m in base_minutes:
-        shift = random.randint(-max_shift, max_shift)
-        target = m + shift
-        if prev is None:
-            target = max(0, target)
-        else:
-            target = max(prev + min_gap, target)
-        target = min(target, 23 * 60 + 59)
-        adjusted_minutes.append(target)
-        prev = target
-    adjusted = [(_minutes_to_time_str(m), act) for m, (_, act) in zip(adjusted_minutes, base_schedule)]
-    return adjusted
+# --------------------------------------------------------------------
+# Schedule normalisation helpers — extracted to ``gaworld.sim._schedule``.
+# Re-exported because nothing outside the sim module references them; this
+# keeps the in-file callers (``generate_schedule``, ``generate_daily_routine``,
+# etc.) working unchanged. New code should import from
+# ``gaworld.sim._schedule`` directly.
+# --------------------------------------------------------------------
+from gaworld.sim._schedule import (  # noqa: E402
+    _jitter_schedule_times,
+    normalize_schedule_to_base,
+    _dedupe_schedule_items,
+    _enforce_schedule_min_gap,
+    _has_enough_schedule_anchors,
+    normalize_flexible_schedule,
+)
 
-def normalize_schedule_to_base(base_schedule, candidate_schedule):
-    if not base_schedule:
-        return candidate_schedule
-    if not candidate_schedule:
-        return base_schedule
-    base_times = [t for t, _ in base_schedule]
-    candidate_by_time = {t: a for t, a in candidate_schedule}
-    normalized = []
-    for t, base_act in base_schedule:
-        act = candidate_by_time.get(t, base_act)
-        normalized.append((t, act))
-    return normalized
+# ---------------------------------------------------------------------------
+# Daily-routine context aggregators
+#
+# The daily-routine LLM prompt now folds in four extra signals so that the
+# generated schedule feels like a continuation of the agent's life rather
+# than a fresh draft each morning:
+#   1. current body/mind state (emotion, stress, fatigue, hunger, ...)
+#   2. yesterday's salient episodes (continuation cues, unfinished business)
+#   3. recently triggered life events that still cast a shadow on today
+#   4. social pulse — recent interactions worth following up on
+#
+# Each aggregator is a pure function: easy to unit-test without an LLM call.
+# ---------------------------------------------------------------------------
 
-def _dedupe_schedule_items(schedule):
-    seen_times = set()
-    seen_pairs = set()
-    cleaned = []
-    for time_str, activity in schedule or []:
-        time_str = str(time_str).strip()
-        activity = str(activity).strip()
-        if not activity or _time_str_to_minutes(time_str) is None:
-            continue
-        pair = (time_str, activity)
-        if time_str in seen_times or pair in seen_pairs:
-            continue
-        seen_times.add(time_str)
-        seen_pairs.add(pair)
-        cleaned.append(pair)
-    return cleaned
 
-def _enforce_schedule_min_gap(schedule, min_gap=15):
-    if not schedule:
-        return []
-    sorted_schedule = sorted(schedule, key=lambda x: _time_str_to_minutes(x[0]) or 0)
-    kept = []
-    prev_minutes = None
-    for time_str, activity in sorted_schedule:
-        minutes = _time_str_to_minutes(time_str)
-        if minutes is None:
-            continue
-        if prev_minutes is not None and minutes - prev_minutes < max(1, int(min_gap)):
-            continue
-        kept.append((time_str, activity))
-        prev_minutes = minutes
-    return kept
+# --------------------------------------------------------------------
+# Prompt-fragment builders — extracted to ``gaworld.sim._prompt``.
+# Re-exported here because tests at ``tests/test_daily_routine_context.py``
+# call them via direct attribute access on the sim module
+# (``sim._state_brief_for_prompt(...)`` etc.). New code should import
+# from ``gaworld.sim._prompt`` directly.
+# --------------------------------------------------------------------
+from gaworld.sim._prompt import (  # noqa: E402
+    _band_label,
+    _state_brief_for_prompt,
+    _yesterday_recap_for_prompt,
+    _recent_life_events_for_prompt,
+    _event_aftermath_for_prompt,
+    _social_pulse_for_prompt,
+)
 
-def _has_enough_schedule_anchors(base_schedule, candidate_schedule, max_shift_minutes):
-    if not base_schedule or not candidate_schedule:
-        return False
-    if max_shift_minutes <= 0:
-        return True
-    base_minutes = [
-        _time_str_to_minutes(t)
-        for t, activity in base_schedule
-        if _time_str_to_minutes(t) is not None and not is_sleep_activity(activity)
-    ]
-    candidate_minutes = [
-        _time_str_to_minutes(t)
-        for t, _ in candidate_schedule
-        if _time_str_to_minutes(t) is not None
-    ]
-    if not base_minutes or not candidate_minutes:
-        return True
-    close_count = 0
-    for base_minute in base_minutes:
-        if any(abs(candidate_minute - base_minute) <= max_shift_minutes for candidate_minute in candidate_minutes):
-            close_count += 1
-    required = min(len(base_minutes), max(2, int(round(len(base_minutes) * 0.45))))
-    return close_count >= required
 
-def normalize_flexible_schedule(base_schedule, candidate_schedule):
-    if not candidate_schedule or not base_schedule:
-        return None
-    cleaned = _dedupe_schedule_items(candidate_schedule)
-    if not cleaned:
-        return None
-    if not DAILY_PLAN_FLEX_ENABLED:
-        if len(cleaned) != len(base_schedule):
-            return None
-        sorted_candidate = sorted(cleaned, key=lambda x: _time_str_to_minutes(x[0]) or 0)
-        if not _is_strictly_increasing_times(sorted_candidate):
-            return None
-        return sorted_candidate
+def _goals_hint(agent):
+    """Goals block for prompts; '无' when the goals layer is disabled."""
+    if not GOALS_ENABLED:
+        return "无"
+    return format_goals_context(agent.get("goals"))
 
-    cleaned = _enforce_schedule_min_gap(cleaned, min_gap=DAILY_PLAN_MIN_GAP_MINUTES)
-    if not _is_strictly_increasing_times(cleaned):
-        return None
-    if not DAILY_PLAN_ALLOW_INSERTIONS and len(cleaned) != len(base_schedule):
-        return None
-    if len(cleaned) < DAILY_PLAN_MIN_ITEMS or len(cleaned) > DAILY_PLAN_MAX_ITEMS:
-        return None
-    if not _has_enough_schedule_anchors(
-        base_schedule,
-        cleaned,
-        max_shift_minutes=DAILY_PLAN_MAX_SHIFT_MINUTES,
-    ):
-        return None
-    return cleaned
 
 def generate_daily_routine(agent, base_schedule, day=None, day_context=None):
     if not base_schedule:
@@ -3934,10 +1692,12 @@ def generate_daily_routine(agent, base_schedule, day=None, day_context=None):
         f"姓名：{agent.get('name', '')}",
         f"年龄：{agent.get('age', '')}",
         f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
+        personality_line(agent, "routine"),
         f"日常生活与习惯：{agent.get('daily_life', '')}",
+        f"家庭状况：{agent.get('family', '') or '（无家庭记录）'}",
         f"价值观与公共事务态度：{agent.get('values', '')}",
     ])
+    family_duty_text = str(agent.get("family_today", "") or "")
     base_text = json.dumps(
         [{"time": t, "activity": a} for t, a in base_schedule],
         ensure_ascii=False,
@@ -3947,6 +1707,15 @@ def generate_daily_routine(agent, base_schedule, day=None, day_context=None):
     memory_hint = _format_memory_hint(memory_hits)
     external_hint = _external_rag_hint(agent, f"{day_type_zh} 日程 计划")
     intent_hint = intention_text(agent.get("intentions")) if HUMAN_REALISM_ENABLED else "无"
+    goals_hint = _goals_hint(agent)
+    growth_context = format_growth_context(agent.get("growth_profile"), max_items=INTERESTS_MAX_ITEMS) if INTERESTS_ENABLED else "无"
+    # New: four contextual signals so the schedule reflects the agent's
+    # ongoing life rather than being regenerated from scratch each day.
+    state_brief_text = _state_brief_for_prompt(agent)
+    yesterday_recap_text = _yesterday_recap_for_prompt(agent, day)
+    recent_events_text = _recent_life_events_for_prompt(agent, day)
+    aftermath_text = _event_aftermath_for_prompt(agent, day)
+    social_pulse_text = _social_pulse_for_prompt(agent, day)
     prompt = f"""
 你是城市生活模拟器的“今日日程”制定器。请基于角色资料与基础日程，生成今天的日程。
 角色资料：
@@ -3954,17 +1723,36 @@ def generate_daily_routine(agent, base_schedule, day=None, day_context=None):
 日期类型：{day_label}，{sim_date_text}，{weekday_zh}，{day_type_zh}
 基础日程（作为框架，不是死板脚本）：
 {base_text}
+{state_brief_text}
+{yesterday_recap_text}
+{recent_events_text}
+{aftermath_text}
+{social_pulse_text}
+{family_duty_text}
 可参考的近期记忆：{memory_hint}
 可参考的额外信息：{external_hint}
 今日行为意图：{intent_hint}
+当前人生与阶段目标：
+{goals_hint}
+兴趣与技能成长画像：
+{growth_context}
 日程约束：{day_rule}
 弹性约束：{flexibility_rule}
 要求：
 1) 输出 JSON 数组，每项为 ["HH:MM","活动"] 或 {{"time":"HH:MM","activity":"活动"}}。
 2) 时间点需保持顺序，活动为中文短语；不要所有人都套同一个模板。
 3) 必须包含“睡前/睡觉/睡眠”类活动，并给出具体时间。
-4) 活动可以包含临时念头或外界触发，但要符合角色职业、状态、星期和近期意图。
-5) 仅输出 JSON，不要其他文字。
+4) 若兴趣与技能成长画像不为“无”，按现实约束自然插入 0-2 个兴趣恢复或技能练习活动；日常倾向约 {INTERESTS_DAILY_INSERT_CHANCE:.2f}，周末额外提高 {INTERESTS_WEEKEND_BOOST:.2f}，工作日少量，周末可更多。
+5) 高承诺工作/上课/医疗/睡眠不可被兴趣活动硬性覆盖，低承诺个人时间可被具体兴趣或技能活动替换。
+6) 活动可以包含临时念头或外界触发，但要符合角色职业、状态、星期和近期意图。
+7) 日程应自然反映“当前身心状态”：情绪低/压力高/疲劳重时减少高强度任务、增加恢复性活动；精力充沛/情绪积极时可加入挑战性或社交活动。
+8) “昨日关键回顾”里的未完成或被打断事项可被自然延续到今日；昨日已让人疲惫或受挫的事项今日应缩减或推后。
+9) “近期突发事件”应优先反映在前一/两个时段（例如就医、处理纠纷、家庭责任、处理影响等），但不要凭空编造未在事件中提及的细节。
+10) “事件余波”仍在持续时，应让今日日程为其让路：影响很强时明显收缩高强度/高承诺活动并保留恢复、善后或处理时段，影响消退时逐步恢复常态；不要凭空编造事件未提及的细节。
+11) “近期社交脉动”里有强互动对象时，可在合适时段加入跟进社交（约见、电话、回信等）；如最近无社交，可适度补一次轻量联络。
+12) 若“当前人生与阶段目标”不为“无”，日程应自然服务于当前短期目标（每天推进 0-2 个即可，不要堆砌）；疲惫、突发事件或周末休整时目标推进可让位。
+13) 若“今日家庭责任”不为空，这些是高承诺事项：接送、照料、家庭聚餐要落到具体时段，且不能被兴趣或加班随意挤掉；单亲或无人分担时更要优先满足。
+14) 仅输出 JSON，不要其他文字。
 """
     response = call_llm(prompt, task="daily_routine", agent_id=agent["id"])
     schedule = _parse_schedule(response)
@@ -4011,26 +1799,32 @@ def generate_schedule(agent):
         f"姓名：{agent.get('name', '')}",
         f"年龄：{agent.get('age', '')}",
         f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
+        personality_line(agent, "routine"),
         f"日常生活与习惯：{agent.get('daily_life', '')}",
+        f"家庭状况：{agent.get('family', '') or '（无家庭记录）'}",
         f"价值观与公共事务态度：{agent.get('values', '')}",
     ])
     memory_hits = retrieve_relevant_memories(agent, "日程安排", max_items=VECTOR_DB_TOP_K)
     memory_hint = _format_memory_hint(memory_hits)
     external_hint = _external_rag_hint(agent, "长期日程 生活偏好 职业节奏")
+    growth_context = format_growth_context(agent.get("growth_profile"), max_items=INTERESTS_MAX_ITEMS) if INTERESTS_ENABLED else "无"
     prompt = f"""
 你是城市生活模拟器的日程生成器。请基于角色资料生成一天日程安排。
 角色资料：
 {profile_text}
 可参考的近期记忆：{memory_hint}
 可参考的额外信息：{external_hint}
+兴趣与技能成长画像：
+{growth_context}
 要求：
 1) 输出 JSON 数组，每项为 ["HH:MM","活动"] 或 {{"time":"HH:MM","activity":"活动"}}。
 2) 6-10 项，时间升序覆盖早中晚，活动为中文短语。
 3) 必须包含“睡前/睡觉/睡眠”类活动，并给出具体时间。
 4) 若角色为退休/无业/待业/失业/家庭主妇/家庭主夫/已退休，不出现“工作/通勤/上班/加班”等活动。
 5) 若角色为学生，优先出现“上课/学习/实验”等活动；若作息偏晚，适度延后。
-6) 仅输出 JSON，不要其他文字。
+6) 若兴趣与技能成长画像不为“无”，把个人时间具体化为 0-2 个兴趣爱好或技能发展活动。
+7) 若“家庭状况”里有同住的伴侣、子女或长辈，基础日程要留出固定的家庭时段（接送、晚饭、照料），并据此约束加班与夜间活动。
+8) 仅输出 JSON，不要其他文字。
 """
     response = call_llm(prompt, task="schedule", agent_id=agent["id"])
     schedule = _parse_schedule(response)
@@ -4038,37 +1832,57 @@ def generate_schedule(agent):
         return ensure_sleep_in_schedule(agent, schedule)
     return ensure_sleep_in_schedule(agent, _heuristic_schedule(agent))
 
-def _extract_json_block(text):
-    block_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
-    if block_match:
-        return block_match.group(1)
-    inline_match = re.search(r"\{.*\}", text, re.S)
-    return inline_match.group(0) if inline_match else ""
+# --------------------------------------------------------------------
+# JSON block extractor and schedule-change parser — extracted to
+# ``gaworld.sim._schedule`` (siblings of the existing
+# ``_extract_json_array_block``).
+# --------------------------------------------------------------------
+from gaworld.sim._schedule import _extract_json_block, _parse_schedule_change  # noqa: E402
 
-def _parse_schedule_change(text):
-    json_blob = _extract_json_block(text)
-    if not json_blob:
-        return {}
+def _event_severity(event):
+    """Severity of an env/life event, defaulting to 0.5 when unspecified.
+
+    The 0.5 fallback is deliberate: it makes a plain env event (which
+    historically carried no severity) contribute the same routine-change
+    pressure it did before severity-weighting was introduced.
+    """
+    if not isinstance(event, dict):
+        return 0.5
+    raw = event.get("severity")
+    if raw is None:
+        return 0.5
     try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    change = raw.get("change")
-    if isinstance(change, str):
-        change = change.strip().lower() in ("true", "yes", "y", "1", "是", "需要", "改变", "变更")
-    change = bool(change)
-    activity = str(raw.get("activity", "")).strip()
-    reason = str(raw.get("reason", "")).strip()
-    return {"change": change, "activity": activity, "reason": reason}
+        return float(np.clip(float(raw), 0.0, 1.0))
+    except (TypeError, ValueError):
+        return 0.5
+
+
+def _pick_reshape_life_event(events):
+    """Highest-severity routine-impacting life event above the reshape
+    threshold, or ``None`` when no event this tick warrants reshaping the day."""
+    best = None
+    best_sev = -1.0
+    for ev in events or []:
+        if not isinstance(ev, dict) or not is_routine_impacting_event(ev):
+            continue
+        sev = _event_severity(ev)
+        if sev < LIFE_EVENT_RESHAPE_SEVERITY:
+            continue
+        if sev > best_sev:
+            best = ev
+            best_sev = sev
+    return best
+
 
 def _routine_change_probability(agent, env_events, policy_desc):
     if not ROUTINE_CHANGE_ENABLED:
         return 0.0
     prob = ROUTINE_CHANGE_BASE_CHANCE
     if env_events:
-        prob += ROUTINE_CHANGE_EVENT_BOOST * len(env_events)
+        # Weight each event by severity: sev=0.5 reproduces the old flat
+        # per-event boost, a serious life event (0.86) counts ~1.36×.
+        weighted = sum(min(2.0, 0.5 + _event_severity(ev)) for ev in env_events)
+        prob += ROUTINE_CHANGE_EVENT_BOOST * weighted
     if policy_desc:
         prob += ROUTINE_CHANGE_POLICY_BOOST
     s = agent.get("state", {})
@@ -4104,7 +1918,15 @@ def _routine_change_trigger_strength(agent, env_events, policy_desc):
     trigger += max(0.0, time_pressure - 0.60) * 0.45
     trigger += max(0.0, 0.42 - self_control) * 0.65
     trigger += max(0.0, 0.35 - energy) * 0.35
-    trigger += min(0.25, 0.10 * len(env_events or []))
+    # Severity-weighted event pressure (was flat 0.10 per event, capped 0.25):
+    # each event contributes in proportion to how far its severity exceeds the
+    # pivot, so a high-severity life event can single-handedly beat a
+    # high-commitment activity's resistance.
+    event_pressure = sum(
+        max(0.0, _event_severity(ev) - ROUTINE_CHANGE_SEVERITY_PIVOT)
+        for ev in env_events or []
+    )
+    trigger += min(ROUTINE_CHANGE_EVENT_TRIGGER_CAP, event_pressure * ROUTINE_CHANGE_EVENT_TRIGGER_SCALE)
     if policy_desc:
         trigger += 0.10
     return float(np.clip(trigger, 0.0, 1.0))
@@ -4386,6 +2208,17 @@ def maybe_adjust_activity(agent, time_str, scheduled_activity, perception_text, 
             self_control = float(agent.get("state", {}).get("self_control", 0.6))
             if self_control < 0.45:
                 resistance = max(0.0, resistance - 0.10)
+    # Global routine-randomness: the higher the knob, the less agents stick to
+    # their routine. It relaxes the current activity's commitment resistance,
+    # injects free-floating restlessness into the trigger (so an agent can go
+    # off-script even without a state/event push), and lifts the deviation
+    # probability. Sleep slots are exempt so high randomness doesn't keep
+    # agents up all night. 0 keeps the tuned defaults unchanged.
+    if ROUTINE_CHANGE_RANDOMNESS > 0.0 and not is_sleep_activity(scheduled_activity):
+        r = ROUTINE_CHANGE_RANDOMNESS
+        resistance = max(0.0, resistance * (1.0 - 0.70 * r))
+        trigger = float(np.clip(trigger + 0.45 * r, 0.0, 1.0))
+        prob = min(0.97, prob + 0.45 * r)
     if trigger <= resistance:
         return scheduled_activity, "", False
     activation = min(0.95, prob + max(0.0, trigger - resistance) * 0.9)
@@ -4396,7 +2229,7 @@ def maybe_adjust_activity(agent, time_str, scheduled_activity, perception_text, 
         f"姓名：{agent.get('name', '')}",
         f"年龄：{agent.get('age', '')}",
         f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
+        personality_line(agent, "action"),
         f"日常生活与习惯：{agent.get('daily_life', '')}",
         f"价值观与公共事务态度：{agent.get('values', '')}",
     ])
@@ -4450,538 +2283,39 @@ def maybe_adjust_activity(agent, time_str, scheduled_activity, perception_text, 
         return scheduled_activity, parsed.get("reason", ""), False
     return activity, parsed.get("reason", ""), True
 
-def _parse_action_space(text, activities):
-    json_blob = _extract_json_block(text)
-    if not json_blob:
-        return {}
-    try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    action_space = {}
-    for activity in activities:
-        acts = raw.get(activity, [])
-        if not isinstance(acts, list):
-            continue
-        cleaned = [str(a).strip() for a in acts if str(a).strip()]
-        if cleaned:
-            action_space[activity] = cleaned
-    return action_space
-
-def _parse_location_bias(text, activities):
-    json_blob = _extract_json_block(text)
-    if not json_blob:
-        return {}
-    try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    bias_map = {}
-    for activity in activities:
-        item = raw.get(activity, {})
-        if not isinstance(item, dict):
-            continue
-        prefer = item.get("prefer", [])
-        avoid = item.get("avoid", [])
-        if not isinstance(prefer, list):
-            prefer = []
-        if not isinstance(avoid, list):
-            avoid = []
-        cleaned_prefer = [str(a).strip() for a in prefer if str(a).strip()]
-        cleaned_avoid = [str(a).strip() for a in avoid if str(a).strip()]
-        if cleaned_prefer or cleaned_avoid:
-            bias_map[activity] = {
-                "prefer": cleaned_prefer,
-                "avoid": cleaned_avoid,
-            }
-    return bias_map
-
-def _parse_policy_effect(text):
-    json_blob = _extract_json_block(text)
-    if not json_blob:
-        return {}
-    try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    allowed = {
-        "emotion",
-        "stress",
-        "econ_security",
-        "city_identity",
-        "policy_sensitivity",
-        "platform_dependence",
-        "risk_preference",
-        "voice_propensity",
-        "mobility_intent",
-    }
-    effect = {}
-    for k in allowed:
-        if k in raw:
-            try:
-                effect[k] = float(raw[k])
-            except (TypeError, ValueError):
-                continue
-    return effect
-
-def _llm_generate_actions(agent, activities, seed_actions=None):
-    profile_text = "\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"年龄：{agent.get('age', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"日常生活与习惯：{agent.get('daily_life', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    memory_context = " ".join(activities)
-    memory_hits = retrieve_relevant_memories(agent, memory_context, max_items=VECTOR_DB_TOP_K)
-    memory_hint = _format_memory_hint(memory_hits)
-    seed_text = ""
-    if seed_actions:
-        seed_text = f"\n已有动作参考（可改写、扩展、去重）：\n{json.dumps(seed_actions, ensure_ascii=False, indent=2)}"
-    prompt = f"""
-你是城市生活模拟器的动作生成器。请基于角色资料，为每个活动生成具体动作。
-角色资料：
-{profile_text}
-活动列表：{", ".join(activities)}
-可参考的近期记忆：{memory_hint}
-要求：
-1) 每个活动给出 5-10 个动作，中文短语。
-2) 动作要符合角色职业、性格与生活习惯。
-3) 每个活动尽量同时覆盖：推进型、维持型、回避型、社交/协调型动作。
-4) 仅输出 JSON 对象，键为活动名，值为动作列表，不要输出其他文字。
-{seed_text}
-"""
-    response = call_llm(prompt, task="actions", agent_id=agent["id"])
-    action_space = _parse_action_space(response, activities)
-    missing = [a for a in activities if a not in action_space]
-    if missing:
-        retry_prompt = f"""
-请只为以下活动补全动作，仍然严格输出 JSON。
-角色资料：
-{profile_text}
-活动列表：{", ".join(missing)}
-每个活动 5-10 个动作，中文短语。
-"""
-        retry_response = call_llm(retry_prompt, task="actions", agent_id=agent["id"])
-        retry_actions = _parse_action_space(retry_response, missing)
-        for activity, acts in retry_actions.items():
-            action_space[activity] = acts
-    balanced = {}
-    for activity in activities:
-        balanced[activity] = _ensure_behavioral_action_balance(activity, action_space.get(activity, []))
-    return balanced
-
-def _llm_generate_location_bias(agent, location, city_map_text, action_space):
-    activities = list(action_space.keys())
-    if not activities:
-        return {}
-    profile_text = "\n".join([
-        f"姓名：{agent.get('name', '')}",
-        f"年龄：{agent.get('age', '')}",
-        f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
-        f"日常生活与习惯：{agent.get('daily_life', '')}",
-        f"价值观与公共事务态度：{agent.get('values', '')}",
-    ])
-    actions_text = json.dumps(action_space, ensure_ascii=False, indent=2)
-    prompt = f"""
-你是城市生活模拟器的“地点动作偏好”生成器。请基于角色资料、地点与城市地图，
-为每个活动在该地点给出“偏好动作/避免动作”。
-
-角色资料：
-{profile_text}
-
-地点：{location}
-
-城市地图（完整）：
-{city_map_text}
-
-活动与可选动作（仅可从下列动作中选择）：
-{actions_text}
-
-要求：
-1) 仅输出 JSON 对象，键为活动名，值为对象：{{"prefer":[...], "avoid":[...]}}。
-2) prefer/avoid 中的动作必须来自给定动作列表，使用完全一致的动作文本。
-3) 每个活动 0-5 个 prefer，0-5 个 avoid，允许为空数组。
-4) 不要输出其他文字。
-"""
-    response = call_llm(prompt, task="location_actions", agent_id=agent["id"])
-    return _parse_location_bias(response, activities)
-
-def get_location_action_bias(agent, location, city_map_text, action_space):
-    if not city_map_text:
-        return {}
-    bias_cache = agent.setdefault("location_action_bias", {})
-    cached = bias_cache.get(location)
-    if isinstance(cached, dict):
-        return cached
-    bias = _llm_generate_location_bias(agent, location, city_map_text, action_space)
-    bias_cache[location] = bias
-    save_agent_location_action_bias(agent["id"], bias_cache)
-    return bias
-
-def generate_actions(agent, schedule):
-    activities = sorted({activity for _, activity in schedule})
-    return _llm_generate_actions(agent, activities)
-
-def build_action_space_for_agent(agent, base_actions):
-    activities = list(base_actions.keys())
-    refined_actions = _llm_generate_actions(agent, activities, seed_actions=base_actions)
-    action_space = {k: list(v) for k, v in base_actions.items()}
-    for activity, acts in refined_actions.items():
-        action_space.setdefault(activity, [])
-        for act in acts:
-            if act not in action_space[activity]:
-                action_space[activity].append(act)
-    return action_space
-
-DEFAULT_ACTIONS = {
-    "工作": "继续处理手头工作",
-    "时间": "发呆",
-}
-
-SLEEP_KEYWORDS = ["睡前", "睡觉", "睡眠", "入睡", "就寝"]
-
-def is_sleep_activity(activity):
-    return any(k in activity for k in SLEEP_KEYWORDS)
-
-def fallback_action(activity):
-    for k, v in DEFAULT_ACTIONS.items():
-        if k in activity:
-            return v
-    return "继续当前活动"
-
-def ensure_action_space_for_activity(agent, action_space, activity):
-    if activity in action_space:
-        return False
-    generated = _llm_generate_actions(agent, [activity])
-    acts = generated.get(activity, [])
-    if not acts:
-        acts = [fallback_action(activity)]
-    action_space[activity] = acts
-    return True
-
-def choose_action(
-    agent,
-    activity,
-    action_space,
-    context=None,
-    location_bias=None,
-    location=None,
-    time_str=None,
-    recall_context=None,
-    decision_refs=None,
-    return_debug=False,
-):
-    if is_sleep_activity(activity):
-        result = "睡觉"
-        if return_debug:
-            return result, {
-                "decision_driver": "恢复需求",
-                "commitment_level": _activity_commitment_level(activity),
-                "scores": {result: {"weight": 1.0, "components": {}}},
-            }
-        return result
-    options = action_space.get(activity, [])
-
-    if not options:
-        result = fallback_action(activity)
-        if return_debug:
-            return result, {
-                "decision_driver": "动作空间缺省",
-                "commitment_level": _activity_commitment_level(activity),
-                "scores": {result: {"weight": 1.0, "components": {}}},
-            }
-        return result
-
-    weights = []
-    score_map = {}
-    s = agent["state"]
-    recent_actions = []
-    memory_hits = []
-    if STATEFUL:
-        recent_actions = load_recent_actions(agent["id"], max_items=6)
-    refs = decision_refs or {}
-    transient_thought = refs.get("transient_thought") if isinstance(refs.get("transient_thought"), dict) else {}
-    thought_intensity = float(transient_thought.get("intensity", 0.0) or 0.0)
-    thought_source = str(transient_thought.get("source", ""))
-    thought_kind = str(transient_thought.get("kind", ""))
-    thought_suggestion = str(transient_thought.get("activity_suggestion", "")).strip()
-    use_location_time = bool(refs.get("location_time_relevant", True))
-    default_social_relevant = _activity_matches_keywords(
-        activity,
-        ["社交", "联系", "沟通", "拜访", "会面", "聚会", "聊天", "会议", "组会", "讨论", "协作", "家人", "朋友"],
-    )
-    if not default_social_relevant:
-        snapshot = _social_relationship_snapshot(agent)
-        default_social_relevant = snapshot["obligation"] > 0.65 or snapshot["friction"] > 0.65
-    use_social_network = bool(refs.get("social_network_relevant", default_social_relevant))
-    if isinstance(recall_context, dict):
-        memory_hits = list(recall_context.get("hits", []) or [])
-    elif context or activity:
-        query = context if context else activity
-        memory_hits = evoke_memory(
-            agent,
-            "action",
-            activity,
-            query,
-            (location or "") if use_location_time else "",
-            (time_str or "") if use_location_time else "",
-            context_labels=_build_recall_context_labels(
-                agent,
-                activity=activity,
-                time_str=time_str if use_location_time else "",
-                location=location if use_location_time else "",
-                commitment_level=_activity_commitment_level(activity),
-            ),
-        ).get("hits", [])
-    bias = (location_bias or {}).get(activity, {})
-    prefer_set = set(bias.get("prefer", [])) if isinstance(bias, dict) and use_location_time else set()
-    avoid_set = set(bias.get("avoid", [])) if isinstance(bias, dict) and use_location_time else set()
-    habits = agent.get("habits", {}) if HUMAN_REALISM_ENABLED else {}
-    behavior_cfg = HUMAN_REALISM_CONFIG.get("behavior", {}) if HUMAN_REALISM_ENABLED else {}
-    inertia_weight = float(behavior_cfg.get("inertia_weight", 0.25))
-    decision_noise = float(behavior_cfg.get("decision_noise", 0.18))
-    avoidance_bonus_scale = float(behavior_cfg.get("avoidance_bonus_scale", 1.1))
-    need_weights = behavior_cfg.get("need_weights", {}) if isinstance(behavior_cfg, dict) else {}
-    energy_w = float(need_weights.get("energy", 0.45))
-    hunger_w = float(need_weights.get("hunger", 0.30))
-    social_w = float(need_weights.get("social_need", 0.25))
-    context_key = build_context_key(time_str or "", location or "", activity) if use_location_time else ""
-    if use_location_time:
-        habit_entry = habits.get(context_key, {}) if isinstance(habits, dict) else {}
-    else:
-        habit_entry = _same_activity_habit_entry(agent, activity)
-    preferred_habit_action = str(habit_entry.get("preferred_action", ""))
-    habit_strength = float(habit_entry.get("strength", 0.0))
-    energy = float(s.get("energy", 0.75))
-    hunger = float(s.get("hunger", 0.25))
-    social_need = float(s.get("social_need", 0.4))
-    fatigue = float(s.get("fatigue_debt", 0.20))
-    self_control = float(s.get("self_control", 0.60))
-    time_pressure = float(s.get("time_pressure", 0.25))
-    commitment_level = _activity_commitment_level(activity)
-    commitment_weight = _commitment_weight(commitment_level)
-    relation_snapshot = _social_relationship_snapshot(agent) if use_social_network else {
-        "obligation": 0.5,
-        "friction": 0.5,
-        "support": 0.5,
-    }
-    driver_labels = {
-        "stress_avoidance": "压力驱动",
-        "low_mood_avoidance": "低情绪回避",
-        "growth_drive": "成长动机",
-        "night_reflection": "夜间反思惯性",
-        "recent_repeat": "近期惯性",
-        "memory_recall": "记忆牵引",
-        "memory_penalty": "负面记忆提醒",
-        "memory_support": "正面记忆支撑",
-        "location_prefer": "地点偏好",
-        "location_avoid": "地点阻力",
-        "habit": "习惯惯性",
-        "activity_inertia": "延续当前节奏",
-        "action_inertia": "重复上一步做法",
-        "energy_need": "体力不足",
-        "hunger_need": "饥饿驱动",
-        "social_need": "社交需求",
-        "solitude_need": "想独处恢复",
-        "fatigue_pressure": "疲劳积累",
-        "commitment_guardrail": "现实承诺约束",
-        "commitment_slack": "低承诺时段更松",
-        "self_control_penalty": "低自控偏向省力",
-        "self_control_support": "自控尚可",
-        "time_pressure_bias": "时间压力",
-        "relation_pull": "关系牵引",
-        "relation_friction": "关系摩擦",
-        "external_trigger": "外界事件触发",
-        "social_trigger": "他人/消息触发",
-        "need_trigger": "身体需求插队",
-        "task_trigger": "任务压力触发",
-        "impulse_pull": "临时冲动",
-        "suggested_by_thought": "临时念头牵引",
-    }
-
-    for act in options:
-        components = {}
-        styles = _action_style_tags(act)
-        avoidant = "avoidant" in styles
-        social = "social" in styles
-        progress = "progress" in styles
-        maintain = "maintain" in styles
-        restorative = "restorative" in styles
-        quick = "quick" in styles
-
-        if s["stress"] > 0.7 and avoidant:
-            components["stress_avoidance"] = 1.2 * avoidance_bonus_scale
-        if s["emotion"] < 0.4 and avoidant:
-            components["low_mood_avoidance"] = 1.0 * avoidance_bonus_scale
-        if s["econ_security"] > 0.6 and progress:
-            components["growth_drive"] = 0.6
-        if activity == "睡前" and "回顾" in act:
-            components["night_reflection"] = 1.0
-
-        if act in recent_actions:
-            components["recent_repeat"] = 0.4
-        components["memory_recall"] = _memory_action_bias(act, memory_hits)
-        for hit in memory_hits[:4]:
-            if not isinstance(hit, dict):
-                continue
-            text = str(hit.get("text", ""))
-            if act not in text:
-                continue
-            if any(hint in text for hint in NEGATIVE_RECALL_HINTS):
-                components["memory_penalty"] = components.get("memory_penalty", 0.0) - 0.85
-            if any(hint in text for hint in POSITIVE_RECALL_HINTS):
-                components["memory_support"] = components.get("memory_support", 0.0) + 0.35
-
-        if act in prefer_set:
-            components["location_prefer"] = 1.0
-        if act in avoid_set:
-            components["location_avoid"] = -0.6
-
-        if transient_thought:
-            act_blob = f"{act} {thought_suggestion}"
-            if thought_suggestion and (thought_suggestion in act or act in thought_suggestion):
-                components["suggested_by_thought"] = 0.85 * thought_intensity
-            if thought_source in {"external_event", "policy"}:
-                if quick or progress or maintain or any(k in act_blob for k in ["查看", "调整", "确认", "避开", "改线", "通知", "消息"]):
-                    components["external_trigger"] = 0.65 * thought_intensity
-            if thought_source == "social" and (social or any(k in act_blob for k in ["回复", "联系", "消息", "沟通", "确认"])):
-                components["social_trigger"] = 0.75 * thought_intensity
-            if thought_source == "task" and (quick or progress or maintain or any(k in act_blob for k in ["待办", "处理", "确认", "完成"])):
-                components["task_trigger"] = 0.70 * thought_intensity
-            if thought_kind == "hunger" and any(k in act_blob for k in ["吃", "餐", "饭", "菜", "外卖", "食堂"]):
-                components["need_trigger"] = 0.80 * thought_intensity
-            if thought_kind == "recovery" and (restorative or any(k in act_blob for k in ["休息", "放松", "缓", "散步", "咖啡"])):
-                components["need_trigger"] = 0.70 * thought_intensity
-            if thought_source == "impulse" and (avoidant or quick or restorative or social):
-                components["impulse_pull"] = 0.65 * thought_intensity
-
-        if HUMAN_REALISM_ENABLED:
-            if act == preferred_habit_action:
-                components["habit"] = habit_strength * 0.9
-            if agent.get("last_activity") == activity:
-                components["activity_inertia"] = inertia_weight
-            if agent.get("last_action") == act:
-                components["action_inertia"] = inertia_weight * 0.6
-
-            if energy < 0.35 and restorative:
-                components["energy_need"] = (0.35 - energy) * 2.4 * energy_w
-            if hunger > 0.65 and any(k in act for k in ["吃", "买菜", "做饭", "餐", "饭"]):
-                components["hunger_need"] = (hunger - 0.65) * 2.4 * hunger_w
-            if social_need > 0.65 and social:
-                components["social_need"] = (social_need - 0.65) * 2.4 * social_w
-            if social_need < 0.25 and any(k in act for k in ["独处", "安静", "放空", "回家"]):
-                components["solitude_need"] = (0.25 - social_need) * 2.0 * social_w
-            if fatigue > 0.60 and (avoidant or restorative):
-                components["fatigue_pressure"] = (fatigue - 0.60) * 2.6 * avoidance_bonus_scale
-
-            if commitment_level == "high":
-                if progress or maintain:
-                    components["commitment_guardrail"] = commitment_weight * 0.75
-                elif avoidant:
-                    components["commitment_guardrail"] = -commitment_weight * 0.9
-            elif commitment_level == "medium":
-                if progress or social:
-                    components["commitment_guardrail"] = commitment_weight * 0.55
-                elif avoidant:
-                    components["commitment_guardrail"] = -commitment_weight * 0.35
-            else:
-                if avoidant or restorative:
-                    components["commitment_slack"] = commitment_weight * 0.55
-
-            if self_control < 0.40 and avoidant:
-                components["self_control_penalty"] = (0.40 - self_control) * 2.8
-            elif self_control > 0.70 and progress:
-                components["self_control_support"] = (self_control - 0.70) * 1.6
-
-            if time_pressure > 0.60:
-                if quick or progress or maintain:
-                    components["time_pressure_bias"] = (time_pressure - 0.60) * 2.0
-                elif social and not quick:
-                    components["time_pressure_bias"] = -(time_pressure - 0.60) * 1.2
-
-            if social:
-                relation_pull = (
-                    (relation_snapshot["obligation"] - 0.5) * 1.8
-                    + (relation_snapshot["support"] - 0.5) * 0.9
-                    - max(0.0, relation_snapshot["friction"] - 0.5) * 1.5
-                )
-                components["relation_pull"] = relation_pull
-            if relation_snapshot["friction"] > 0.65 and any(k in act for k in ["见面", "拜访", "聚会"]):
-                components["relation_friction"] = -(relation_snapshot["friction"] - 0.65) * 1.8
-
-        total_weight = 1.0 + sum(components.values())
-        if HUMAN_REALISM_ENABLED and decision_noise > 0:
-            total_weight *= random.uniform(max(0.5, 1.0 - decision_noise), 1.0 + decision_noise)
-        total_weight = max(total_weight, 0.01)
-        weights.append(total_weight)
-        score_map[act] = {
-            "weight": round(total_weight, 4),
-            "components": {k: round(v, 4) for k, v in components.items() if abs(v) > 0.0001},
-            "styles": sorted(styles),
-        }
-    impulse_choice = False
-    if transient_thought and SPONTANEITY_ENABLED:
-        random_action_chance = SPONTANEITY_RANDOM_ACTION_CHANCE + thought_intensity * 0.12
-        if thought_source == "impulse":
-            random_action_chance += 0.08
-        if random.random() < min(0.40, random_action_chance):
-            impulse_pool = []
-            for option in options:
-                option_styles = _action_style_tags(option)
-                if thought_source == "impulse" and option_styles & {"avoidant", "quick", "restorative", "social"}:
-                    impulse_pool.append(option)
-                elif thought_source == "social" and "social" in option_styles:
-                    impulse_pool.append(option)
-                elif thought_kind == "recovery" and "restorative" in option_styles:
-                    impulse_pool.append(option)
-                elif thought_kind == "hunger" and any(k in option for k in ["吃", "餐", "饭", "菜", "外卖", "食堂"]):
-                    impulse_pool.append(option)
-                elif thought_source in {"external_event", "policy", "task"} and option_styles & {"quick", "progress", "maintain"}:
-                    impulse_pool.append(option)
-            choice = random.choice(impulse_pool or options)
-            impulse_choice = True
-        else:
-            choice = random.choices(options, weights=weights, k=1)[0]
-    else:
-        choice = random.choices(options, weights=weights, k=1)[0]
-    if not return_debug:
-        return choice
-    chosen = score_map.get(choice, {})
-    components = chosen.get("components", {})
-    if impulse_choice:
-        if thought_source == "impulse":
-            driver = "临时冲动"
-        elif thought_source in {"external_event", "policy"}:
-            driver = "外界事件触发"
-        elif thought_source == "social":
-            driver = "他人/消息触发"
-        else:
-            driver = "临时念头"
-    elif components:
-        best_key, best_value = max(
-            components.items(),
-            key=lambda item: (item[1] > 0, abs(item[1])),
-        )
-        if best_value > 0:
-            driver = driver_labels.get(best_key, "多重因素")
-        else:
-            driver = f"{driver_labels.get(best_key, '约束因素')}压住了其他选择"
-    else:
-        driver = "惯性延续"
-    return choice, {
-        "decision_driver": driver,
-        "commitment_level": commitment_level,
-        "scores": score_map,
-    }
+# --------------------------------------------------------------------
+# Action choice + action-space generation — extracted to
+# ``gaworld.sim._action`` in run-split-2.  12 names total: 3 pure JSON
+# parsers, 5 LLM-call helpers (``_llm_generate_actions``,
+# ``_llm_generate_location_bias``, ``get_location_action_bias``,
+# ``generate_actions``, ``build_action_space_for_agent``), the
+# 340-line ``choose_action`` weighted picker, plus
+# ``fallback_action``, ``ensure_action_space_for_activity``, and
+# ``DEFAULT_ACTIONS``.
+#
+# Re-exported because tests do ``sim.choose_action(...)`` and other
+# in-file callers (``planning``, ``reflection``, ``run_simulation``,
+# ``maybe_adjust_activity``) reference these as bare names.  All
+# CONFIG knobs are now read at call time inside ``_action.py``.
+# --------------------------------------------------------------------
+from gaworld.sim._action import (  # noqa: E402, F401
+    DEFAULT_ACTIONS,
+    _llm_generate_actions,
+    _llm_generate_location_bias,
+    _parse_action_space,
+    _parse_location_bias,
+    _parse_policy_effect,
+    build_action_space_for_agent,
+    choose_action,
+    ensure_action_space_for_activity,
+    fallback_action,
+    generate_actions,
+    get_location_action_bias,
+    save_action_space,
+    strip_fallback_only_activities,
+)
+# is_sleep_activity kept for in-file callers at L1238 and L3355 (now-shifted).
+from gaworld.sim._schedule import is_sleep_activity  # noqa: E402, F401
 
 # =========================================================
 # Policy effect inference
@@ -4991,7 +2325,7 @@ def infer_event_effect(agent, event_desc, event_type="event"):
         f"姓名：{agent.get('name', '')}",
         f"年龄：{agent.get('age', '')}",
         f"职业：{agent.get('job', '')}",
-        f"性格与情绪特征：{agent.get('personality', '')}",
+        personality_line(agent, "news"),
         f"日常生活与习惯：{agent.get('daily_life', '')}",
         f"价值观与公共事务态度：{agent.get('values', '')}",
     ])
@@ -5018,56 +2352,13 @@ def infer_event_effect(agent, event_desc, event_type="event"):
 # =========================================================
 # A. 认知模块（使用社交网络）
 # =========================================================
-def get_social_context(agent, agents_by_id):
-    neighbors = agent["social_neighbors"]
-    agent["_recent_social_partners"] = []
-    if not neighbors:
-        return "今天几乎没有与熟人互动。"
-    k = min(3, len(neighbors))
-    if HUMAN_REALISM_ENABLED:
-        sampled = []
-        pool = list(neighbors)
-        for _ in range(k):
-            weights = [max(0.01, relationship_weight(agent, n)) for n in pool]
-            pick = random.choices(pool, weights=weights, k=1)[0]
-            sampled.append(pick)
-            pool = [n for n in pool if n != pick]
-            if not pool:
-                break
-    else:
-        sampled = random.sample(neighbors, k)
-    agent["_recent_social_partners"] = sampled
-    fragments = []
-    relationships = agent.get("relationships", {})
-    for neighbor_id in sampled:
-        name = agents_by_id.get(neighbor_id, {}).get("name", str(neighbor_id))
-        rel = relationships.get(str(neighbor_id), {}) if isinstance(relationships, dict) else {}
-        closeness = float(rel.get("closeness", 0.5))
-        obligation = float(rel.get("obligation", 0.5))
-        friction = float(rel.get("friction", 0.5))
-        if friction > 0.62:
-            fragments.append(f"{name}最近让你有些顾虑，想到对方时会有一点摩擦感")
-        elif obligation > 0.65:
-            fragments.append(f"{name}最近可能等你回应或配合，这会带来一点责任压力")
-        elif closeness > 0.65:
-            fragments.append(f"{name}会给你支持感，你更容易想到和对方保持联系")
-        else:
-            fragments.append(f"{name}的近况会偶尔分散你的注意力")
-    return "；".join(fragments) if fragments else "今天几乎没有与熟人互动。"
+# get_social_context + perception moved to gaworld.sim._cognition during
+# the S3 refactor (unblocked once human_realism + llm_providers migrated).
+from gaworld.sim._cognition import get_social_context, perception  # noqa: E402
 
-def perception(agent, time_str, social_context, env_context, policy_event):
-    prompt = f"""
-你是{agent['name']}。
-现在是 {time_str}。
-你感知到的社交环境是：{social_context}
-自然与社会环境：{env_context if env_context else "无特殊变化"}
-政策环境：{policy_event if policy_event else "无特殊变化"}
-
-请描述你此刻对环境、他人和制度的感知。（1-2句）
-"""
-    return call_llm(prompt, task="perception", agent_id=agent["id"])
-
-def planning(agent, perception_text, recall_context=None, decision_refs=None, timestep=0):
+def planning(agent, perception_text, recall_context=None, decision_refs=None):
+    if bool((CONFIG.get("fos_fast_mode", {}) or {}).get("deterministic_cognition", False)):
+        return _fallback_plan_struct(perception_text)
     if not isinstance(recall_context, dict):
         recall_context = evoke_memory(agent, "planning", perception_text)
     memory_hint = recall_context.get("hint", "暂无重要经验")
@@ -5104,29 +2395,6 @@ def planning(agent, perception_text, recall_context=None, decision_refs=None, ti
     if refs.get("transient_thought"):
         optional_sections.append(f"临时念头：{format_transient_thought(refs.get('transient_thought'))}")
     optional_text = "\n".join(optional_sections) if optional_sections else "无其他与当前规划强相关的补充参考。"
-    refs["external_hint"] = external_hint
-
-    # Planning Fork A/B Experiment: check if we should fork this call
-    ab_config = CONFIG.get("ab_experiment", {})
-    if ab_config.get("enabled"):
-        engine = get_engine(ab_config)
-        if engine.should_fork():
-            comparison = engine.plan_with_fork(
-                agent=agent,
-                perception_text=perception_text,
-                recall_context=recall_context,
-                decision_refs=refs,
-                intent_hint=intent_hint,
-                optional_text=optional_text,
-                history_hint=history_hint,
-                call_llm_fn=call_llm,
-                timestep=timestep,
-            )
-            if comparison is not None:
-                # Return the A variant result as the "normal" result
-                # (B variant result is saved to disk by the engine)
-                return comparison.variant_a.parsed or _fallback_plan_struct(comparison.variant_a.raw_response)
-
     prompt = f"""
 你是{agent['name']}。
 你的感知是：{perception_text}
@@ -5162,6 +2430,8 @@ def planning(agent, perception_text, recall_context=None, decision_refs=None, ti
     return parsed or _fallback_plan_struct(response)
 
 def reflection(agent, outcome, recall_context=None):
+    if bool((CONFIG.get("fos_fast_mode", {}) or {}).get("deterministic_cognition", False)):
+        return _fallback_reflection_struct(outcome)
     if not isinstance(recall_context, dict):
         recall_context = evoke_memory(agent, "reflection", outcome)
     memory_hint = recall_context.get("hint", "暂无重要经验")
@@ -5193,32 +2463,9 @@ def reflection(agent, outcome, recall_context=None):
     )
     return parsed or _fallback_reflection_struct(response)
 
-def _parse_interview(text, questions):
-    json_blob = _extract_json_array_block(text)
-    if not json_blob:
-        return []
-    try:
-        raw = json.loads(json_blob)
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(raw, list):
-        return []
-    parsed = []
-    for i, item in enumerate(raw):
-        if isinstance(item, (list, tuple)) and len(item) == 2:
-            q, a = item
-        elif isinstance(item, dict):
-            q = item.get("question")
-            a = item.get("answer")
-        else:
-            continue
-        q = str(q).strip() if q else ""
-        a = str(a).strip() if a else ""
-        if not q:
-            q = questions[i] if i < len(questions) else ""
-        if q and a:
-            parsed.append({"question": q, "answer": a})
-    return parsed
+# _parse_interview moved to gaworld.sim._schedule (joins _parse_schedule
+# as another LLM-JSON list parser) during the S3 refactor.
+from gaworld.sim._schedule import _parse_interview  # noqa: E402
 
 def interview_agent(agent, questions, context=None, max_questions=6):
     if not questions:
@@ -5236,11 +2483,13 @@ def interview_agent(agent, questions, context=None, max_questions=6):
     recall_context = evoke_memory(agent, "interview", context_text, questions)
     memory_hint = recall_context.get("hint", "暂无重要经验")
     recollection = recall_context.get("recollection", "").strip() or "无明显回忆"
+    goals_hint = _goals_hint(agent)
     prompt = f"""
 你是{agent['name']}。
 这是一次访谈，回答要真实且基于角色经历。
 背景：{context_text}
 你的近期经验：{memory_hint}
+你的目标与追求：{goals_hint}
 这些问题勾起的回忆：{recollection}
 
 请逐题回答以下问题，每题1-3句。
@@ -5263,22 +2512,8 @@ def interview_agent(agent, questions, context=None, max_questions=6):
 # =========================================================
 # 社会影响（情绪扩散）
 # =========================================================
-def social_influence(agent, agents_by_id):
-    neighbors = agent["social_neighbors"]
-    if not neighbors:
-        return
-    if HUMAN_REALISM_ENABLED:
-        weights = [max(0.01, relationship_weight(agent, n)) for n in neighbors]
-        total = sum(weights)
-        if total <= 0:
-            avg_emotion = sum(agents_by_id[n]["state"]["emotion"] for n in neighbors) / len(neighbors)
-        else:
-            avg_emotion = sum(
-                agents_by_id[n]["state"]["emotion"] * w for n, w in zip(neighbors, weights)
-            ) / total
-    else:
-        avg_emotion = sum(agents_by_id[n]["state"]["emotion"] for n in neighbors) / len(neighbors)
-    agent["state"]["emotion"] += 0.1 * (avg_emotion - agent["state"]["emotion"])
+# social_influence moved to gaworld.sim._cognition during the S3 refactor.
+from gaworld.sim._cognition import social_influence  # noqa: E402
 
 # =========================================================
 # 状态更新
@@ -5410,170 +2645,43 @@ def update_state(agent):
 # =========================================================
 # B. 长期记忆
 # =========================================================
-def daily_summary(agent, logs, day=None):
-    prompt = f"""
-你是{agent['name']}。
-这是你今天经历的关键片段：
-{logs}
-
-请总结今天最重要的一条经验或感受。
-"""
-    memory = call_llm(prompt, task="summary", agent_id=agent["id"])
-    _append_memory_record(agent, memory, entry_type="memory", day=day, time_str="end_of_day")
-    return memory
-
-
-def _daily_diary_path(agent_id, day, output_dir=None):
-    base_dir = output_dir or DIARY_OUTPUT_DIR
-    return os.path.join(base_dir, f"agent_{int(agent_id)}", f"day_{int(day):03d}.md")
-
-
-def _top_day_episode_lines(agent, day, max_items=8, clean=True):
-    episodes = [
-        ep for ep in agent.get("episodes", [])
-        if int(ep.get("day", ep.get("created_at_day", 0)) or 0) == int(day)
-    ]
-    episodes = sorted(
-        episodes,
-        key=lambda e: float(e.get("decayed_salience", e.get("salience", 0.0))),
-        reverse=True,
-    )[:max(1, int(max_items))]
-    lines = []
-    for ep in episodes:
-        if clean:
-            piece = (
-                f"{ep.get('time', '')}，{ep.get('final_activity', '')}，{ep.get('action', '')}。"
-            ).strip()
-        else:
-            piece = (
-                f"{ep.get('time', '')}，{ep.get('final_activity', '')}，做了{ep.get('action', '')}。"
-                f" 当时觉得：{ep.get('reflection', '')}"
-            ).strip()
-        lines.append(_compact_text(piece, max_chars=140))
-    return lines
-
-
-def _fallback_daily_diary(agent, day, day_context=None, day_memory="", consolidation_text="", intentions=None):
-    diary_date = ""
-    if isinstance(day_context, dict):
-        diary_date = " ".join(
-            str(day_context.get(key, "")).strip()
-            for key in ("sim_date", "weekday_zh", "day_type_zh")
-            if str(day_context.get(key, "")).strip()
-        ).strip()
-    episode_lines = _top_day_episode_lines(agent, day, max_items=3, clean=True)
-    major = "今天整体比较平稳。" if not episode_lines else "；".join(episode_lines)
-    feelings = _compact_text(day_memory or "今天的起伏让我更清楚自己在意什么。", max_chars=120)
-    plan_text = intention_text(intentions or agent.get("intentions", {}))
-    return (
-        f"# {agent.get('name', 'Agent')} 的 Day {int(day)} 日记\n\n"
-        f"{diary_date}\n\n"
-        "## 今天主要发生的事情\n"
-        f"{major}\n\n"
-        "## 今天的感想\n"
-        f"{feelings}\n\n"
-        "## 明天的计划\n"
-        f"{plan_text}\n"
-    )
-
-
-def generate_daily_diary(agent, day, logs, day_context=None, day_memory="", consolidation_text="", intentions=None):
-    episode_lines = _top_day_episode_lines(agent, day, max_items=8, clean=True)
-    intent_hint = intention_text(intentions or agent.get("intentions", {}))
-    diary_date = ""
-    if isinstance(day_context, dict):
-        diary_date = " ".join(
-            str(day_context.get(key, "")).strip()
-            for key in ("sim_date", "weekday_zh", "day_type_zh")
-            if str(day_context.get(key, "")).strip()
-        ).strip()
-    log_excerpt = _compact_text(logs, max_chars=1200)
-    prompt = f"""
-你是{agent.get('name', '某位居民')}。今天是 Day {int(day)} {diary_date}，写一篇日记。
-
-今天每个时段的重要经历：
-{json.dumps(episode_lines, ensure_ascii=False, indent=2)}
-
-详细日志：
-{log_excerpt}
-
-全天总结：{day_memory}
-
-明天打算：{intent_hint}
-
-写一篇完整的日记，包含三个部分：
-
-## 今天主要发生的事情
-（按时间线写出今天各个时段的具体事件，每个事件用一两句话描述。尽量覆盖多个时段，不要只写一两件事。）
-
-## 今天的感想
-（写今天最真实的感受、收获或反思）
-
-## 明天的计划
-（具体的打算）
-
-注意：用第一人称，写出具体事件细节，不要只写概述。
-"""
-    try:
-        response = call_llm(prompt, task="daily_diary", agent_id=agent["id"]).strip()
-    except (requests.RequestException, ValueError, RuntimeError) as exc:
-        _LOG.warning("daily_diary LLM call failed for agent %s: %s", agent.get("id"), exc)
-        response = ""
-    # Detect prompt echo: when the LLM returns the instruction prompt itself
-    # rather than the intended diary content (indicates model confusion or
-    # repeated context). Also require substantive content after headings.
-    if (
-        not response
-        or "The user asks" in response
-        or "The user is asking" in response
-        or "Thus we need" in response
-        or "We need to produce" in response
-        or "请以第一人称写一篇日记" in response and "你是" in response
-        or "user wants" in response and ("diary entry" in response or "日记" in response)
-        or "user wants the assistant" in response
-        or "output a JSON" in response.lower()
-        or "## 今天主要发生的事情" not in response
-        or "## 今天的感想" not in response
-        or "## 明天的计划" not in response
-    ):
-        return _fallback_daily_diary(
-            agent,
-            day,
-            day_context=day_context,
-            day_memory=day_memory,
-            consolidation_text=consolidation_text,
-            intentions=intentions,
-        )
-    # Require meaningful content length (not just headings with no body).
-    body_only = re.sub(r"^#{1,2}\s*[^ ]*.*$", "", response, flags=re.MULTILINE).strip()
-    if len(body_only) < 30:
-        _LOG.warning("daily_diary response too short for agent %s (%d chars), using fallback", agent.get("id"), len(body_only))
-        return _fallback_daily_diary(
-            agent,
-            day,
-            day_context=day_context,
-            day_memory=day_memory,
-            consolidation_text=consolidation_text,
-            intentions=intentions,
-        )
-    title = f"# {agent.get('name', 'Agent')} 的 Day {int(day)} 日记"
-    if not response.lstrip().startswith("#"):
-        response = f"{title}\n\n{response}"
-    return response
-
-
-def save_daily_diary(agent, day, diary_text, output_dir=None):
-    path = _daily_diary_path(agent["id"], day, output_dir=output_dir)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(str(diary_text or "").strip() + "\n")
-    return path
+# Daily summary + daily diary chain (the entire ``# B. 长期记忆`` banner)
+# moved to gaworld.sim._diary during the S3 refactor.
+from gaworld.sim._diary import (  # noqa: E402
+    _append_memory_record,
+    _daily_diary_path,
+    _fallback_daily_diary,
+    _top_day_episode_lines,
+    daily_summary,
+    generate_daily_diary,
+    save_daily_diary,
+)
+from gaworld.sim._summary import (  # noqa: E402
+    summarize_simulation,
+    take_initial_snapshot,
+)
+from gaworld.sim._fastforward import (  # noqa: E402
+    apply_random_jitter as _ff_apply_random_jitter,
+    apply_state_changes as _ff_apply_state_changes,
+    hook_chunk_days as _ff_hook_chunk_days,
+    jitter_scale_for as _ff_jitter_scale,
+    long_run_config as _long_run_config,
+    max_state_delta_for as _ff_max_state_delta,
+    plan_hook_chunks as _ff_plan_hook_chunks,
+    plan_horizon as _ff_plan_horizon,
+    randomness_level as _ff_randomness,
+    render_period_brief_block as _ff_render_brief,
+    _REL_DELTA_CAP as _FF_REL_DELTA_CAP,
+    simulate_agent_period as _ff_simulate_agent_period,
+    span_days as _ff_span_days,
+)
 
 # =========================================================
 # C. 主循环
 # =========================================================
 def validate_action_space(schedules, action_space):
     missing = set()
+    filler_only = set()
     if not schedules:
         return
 
@@ -5588,9 +2696,17 @@ def validate_action_space(schedules, action_space):
         for _, activity in sch:
             if activity not in space:
                 missing.add(activity)
+            elif is_fallback_only_action_list(activity, space.get(activity, [])):
+                filler_only.add(activity)
     if missing:
         print("⚠️ 警告：以下活动没有定义动作空间：")
         for m in missing:
+            print("  -", m)
+    if filler_only:
+        # Present but useless: only generic behavioural filler, which means
+        # action generation failed for these activities.
+        print("⚠️ 警告：以下活动只有通用兜底动作（动作生成很可能失败了）：")
+        for m in filler_only:
             print("  -", m)
 
 def build_schedule_map(schedules):
@@ -5639,6 +2755,8 @@ def _enforce_memory_model_compat(sim_state):
     if not REQUIRE_CLEAN_RESET_ON_MEMORY_MODEL_CHANGE:
         return
     current_version = sim_state.get("memory_model_version")
+    if current_version is None:
+        return  # Fresh start, no prior state
     if current_version != MEMORY_MODEL_VERSION:
         raise RuntimeError(
             "Memory model version changed. "
@@ -5647,44 +2765,66 @@ def _enforce_memory_model_compat(sim_state):
         )
 
 def run_simulation():
+    # ====================================================================
+    # PHASE BANNERS — added in S3/round 4 as navigation aids for a future
+    # extraction of this orchestrator.  Each banner marks the start of a
+    # cohesive chunk; once the helpers each phase depends on have been
+    # migrated out of this file, lifting each phase into
+    # ``gaworld/sim/runner_<phase>.py`` becomes mechanical.  See
+    # ``docs/REFACTOR_PLAN.md`` for the deferred-extraction rationale.
+    # ====================================================================
+    # ----- PHASE 1: Initialise (seed, load data, build agents, restore state, growth bootstrap) -----
     if RANDOM_SEED is not None:
         try:
             seed = int(RANDOM_SEED)
             random.seed(seed)
             np.random.seed(seed)
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            # Seed config is invalid — keep going unseeded, but tell the user
+            # so they don't expect reproducibility.
+            _LOG.warning(
+                "RANDOM_SEED=%r is not a valid int (%s); running unseeded.",
+                RANDOM_SEED,
+                exc,
+            )
     df = pd.read_csv(CSV_PATH)
     city_map = load_city_map(MAP_PATH)
     city_map_text = load_city_map_text(MAP_PATH)
-    hook_bus = HookBus(CONFIG.get("extensions", {}))
+    # Kernel bootstrap (K1): EventBus is a drop-in superset of HookBus — the
+    # same CONFIG["extensions"] hooks load and the 7 legacy phases keep firing.
+    sim_ctx = build_kernel(CONFIG, llm=call_llm)
+    hook_bus = sim_ctx.bus
+    for _plugin in builtin_plugins():
+        sim_ctx.registry.register(_plugin)
     extension_state = {}
     agents = [build_agent(i, df, city_map=city_map) for i in AGENT_IDS]
-    for agent in agents:
-        initialize_agent_intervention_state(agent, INTERVENTION_CONFIG)
+    sim_ctx.set_agents(agents)
+    sim_ctx.extras["city_map"] = city_map
+    sim_ctx.extras["city_map_text"] = city_map_text
+    # Plugins assemble before `agents.built` so pre-snapshot seeding (e.g.
+    # intervention metric keys) lands at the same point the inline code did.
+    active_plugins = sim_ctx.registry.setup_all(sim_ctx)
+    if active_plugins:
+        print(f"🧩 已装配插件：{', '.join(active_plugins)}")
+    hook_bus.emit("agents.built", agents=agents, config=CONFIG)
     if PRINT_AGENT_PROFILE:
         print_agent_profiles([a["id"] for a in agents])
     start_day = 1
+    agent_day_cursor = {}
     if STATEFUL:
         sim_state = load_sim_state()
         _enforce_memory_model_compat(sim_state)
-        # Resume day count for persistent simulations.
-        last_day = sim_state.get("last_day", 0)
-        if isinstance(last_day, int) and last_day >= 0:
-            start_day = last_day + 1
+        # Resume day count for persistent simulations, per agent: agents that
+        # have never run start the calendar at Day 1 rather than inheriting
+        # someone else's elapsed years.
+        agent_day_cursor = _agent_last_day_map(sim_state)
+        start_day = _resume_start_day(agent_day_cursor, AGENT_IDS)
     if STATEFUL:
         for agent in agents:
             agent["memory"] = load_agent_memory(agent["id"])
             seed_vector_db_from_memory(agent)
-            saved_twin_state = load_agent_twin_state(agent["id"]) if PERSONAL_TWIN_ENABLED else {}
-            if saved_twin_state:
-                agent["twin_status"] = saved_twin_state
-                if isinstance(saved_twin_state.get("public_summary"), str) and saved_twin_state.get("public_summary"):
-                    agent["public_profile"]["summary"] = saved_twin_state.get("public_summary", "")
-                if isinstance(saved_twin_state.get("current_public_status"), str):
-                    agent["public_profile"]["status"] = saved_twin_state.get("current_public_status", "")
-                if isinstance(saved_twin_state.get("tomorrow_focus"), str) and saved_twin_state.get("tomorrow_focus"):
-                    agent["public_profile"]["focus"] = saved_twin_state.get("tomorrow_focus", "")
+            # K3i: learned location-aversion loading rides `agents.built`
+            # (SpatialPreferencesPlugin).
             if HUMAN_REALISM_ENABLED:
                 agent["episodes"] = load_agent_episodes(agent["id"])
                 agent["habits"] = load_agent_habits(agent["id"])
@@ -5703,8 +2843,6 @@ def run_simulation():
         for agent in agents:
             agent["memory"] = []
             reset_agent_memory(agent["id"])
-            if PERSONAL_TWIN_ENABLED:
-                agent["twin_status"] = build_initial_twin_state(agent, PERSONAL_TWIN_CONFIG)
             if HUMAN_REALISM_ENABLED:
                 agent["episodes"] = []
                 agent["habits"] = {}
@@ -5721,12 +2859,9 @@ def run_simulation():
                 agent.setdefault("last_action", "")
     agents_by_id = {a["id"]: a for a in agents}
     agent_names = {a["id"]: a.get("name", str(a["id"])) for a in agents}
-    distributed_client = DistributedRelayClient(
-        {
-            **dict(DISTRIBUTED_CONFIG or {}),
-            "personal_twin": PERSONAL_TWIN_CONFIG,
-        }
-    )
+    # K3d: growth-profile bootstrap now rides the `agents.built` event
+    # (gaworld/interests_plugin.py), which fires before this point.
+    distributed_client = DistributedRelayClient(DISTRIBUTED_CONFIG)
     if distributed_client.enabled:
         registered = distributed_client.register_agents(agents)
         directory = distributed_client.refresh_directory()
@@ -5749,6 +2884,7 @@ def run_simulation():
         env_system = RemoteEnvironmentClient(env_service_cfg)
     else:
         env_system = EnvironmentSystem(CONFIG, llm_fn=call_llm)
+    sim_ctx.extras["env_system"] = env_system
     os.makedirs(ENV_OUTPUT_DIR, exist_ok=True)
     env_timeline_path = os.path.join(ENV_OUTPUT_DIR, "timeline.jsonl")
     if os.path.exists(env_timeline_path):
@@ -5757,6 +2893,12 @@ def run_simulation():
         except OSError:
             pass
     background_text = str(BACKGROUND).strip()
+    # The selected city's industry profile rides along on the background so every
+    # cognition prompt knows what kind of place this is. Empty without a city.
+    _city_context = _load_city_context(CONFIG)
+    _city_block = _city_context.profile.prompt_block()
+    if _city_block:
+        background_text = f"{background_text} {_city_block}".strip()
     news_sources = load_news_sources(NEWS_SOURCES_PATH) if NEWS_ENABLED else []
     news_cache = []
     if NEWS_ENABLED:
@@ -5768,7 +2910,16 @@ def run_simulation():
         print(f"ℹ️ 未找到新闻源列表或列表为空：{NEWS_SOURCES_PATH}，将主要使用 Web 搜索。")
     if NEWS_ENABLED and not news_cache and NEWS_USE_CACHE_FIRST:
         print(f"ℹ️ 新闻缓存为空或未找到：{NEWS_CACHE_PATH}，将实时抓取网页。")
+    # City knowledge goes into every resident's external-info store, so it is
+    # retrieved by the RAG path that already exists rather than needing a
+    # parallel city-level query. Seeded independently of external_rag.bootstrap:
+    # knowing what your own city does for a living is not optional enrichment.
+    _city_chunks = _city_context.rag_chunks()
     for agent in agents:
+        for chunk in _city_chunks:
+            _store_external_info_for_agent(
+                agent, chunk, timestamp=None, source="city_knowledge", persist=STATEFUL
+            )
         seeded = _bootstrap_agent_external_rag(
             agent,
             news_cache=news_cache,
@@ -5776,8 +2927,10 @@ def run_simulation():
         )
         if seeded:
             print(f"🧱 {agent['name']} 初始化 RAG 条目：{len(seeded)}")
+    if _city_chunks:
+        print(f"🏙️ 城市知识已写入 {len(agents)} 位居民的 RAG：{len(_city_chunks)} 条/人")
 
-    # === 构建社交网络 ===
+    # ----- PHASE 2: Build social network + initialise per-agent edges and weights -----
     social_net = build_social_network(agents)
     for a in agents:
         a["social_neighbors"] = social_net[a["id"]]
@@ -5800,6 +2953,24 @@ def run_simulation():
                 rel[key].setdefault("obligation", 0.5)
                 rel[key].setdefault("friction", 0.5)
                 rel[key].setdefault("last_interaction_day", 0)
+            # Migrate existing records into the extended schema, then
+            # seed an off-screen roster (family, old friends, etc.) so
+            # the agent has relationships beyond the in-sim neighbours.
+            migrate_relationships(a, current_day=start_day)
+            try:
+                bootstrap_social_roster(
+                    a,
+                    lambda prompt, task=None, agent_id=None: call_llm(
+                        prompt, task=task, agent_id=agent_id
+                    ),
+                    current_day=start_day,
+                )
+            except Exception as exc:  # noqa: BLE001 - never block sim init
+                _LOG.warning(
+                    "off-screen social roster bootstrap failed for %s: %s",
+                    a.get("name", a.get("id")),
+                    exc,
+                )
 
     for a in agents:
         if not a.get("locations"):
@@ -5826,6 +2997,7 @@ def run_simulation():
                 "seconds_per_day": SECONDS_PER_DAY,
                 "simulate_realtime": SIMULATE_REALTIME,
                 "time_step_minutes": TIME_STEP_MINUTES,
+                "time_grid_snap": TIME_GRID_SNAP,
                 "map_path": MAP_PATH,
                 "agent_ids": [a["id"] for a in agents],
             },
@@ -5847,7 +3019,9 @@ def run_simulation():
             schedules[agent_id] = generate_schedule(a)
             save_agent_schedule(agent_id, schedules[agent_id])
 
-        cached_actions = load_agent_actions(agent_id)
+        # Legacy caches may hold fallback-only entries written before those
+        # were kept out of the cache; drop them so they get regenerated.
+        cached_actions = strip_fallback_only_activities(load_agent_actions(agent_id))
         if cached_actions:
             actions[agent_id] = {
                 activity: _ensure_behavioral_action_balance(activity, acts)
@@ -5857,7 +3031,7 @@ def run_simulation():
             # Action space is expensive; cache for reuse across runs.
             base_actions = generate_actions(a, schedules[agent_id])
             actions[agent_id] = build_action_space_for_agent(a, base_actions)
-        save_agent_actions(agent_id, actions[agent_id])
+        save_action_space(agent_id, actions[agent_id])
 
     # Print each agent's base routine at the beginning of the simulation.
     for agent in agents:
@@ -5870,12 +3044,17 @@ def run_simulation():
 
     base_schedule_map = build_schedule_map(schedules)
     validate_action_space(schedules, actions)
-    # Real-work runtime: bootstrap capabilities + queue + market + workers.
-    # Returns None when CONFIG.real_work.enabled is False, in which case
-    # all real-work code paths are no-ops.
-    real_work_runtime = RealWorkRuntime.create(CONFIG, agents, llm_fn=call_llm)
-    if real_work_runtime is not None:
-        real_work_runtime.start()
+
+    # Snapshot per-agent state at sim start so the end-of-run summary can
+    # diff state / growth / schedule / relationships against the agent's
+    # initial profile. Kept lightweight (deep-copies only the fields the
+    # summary needs). See ``gaworld/sim/_summary.py``.
+    initial_snapshots = {
+        a["id"]: take_initial_snapshot(a, schedule=schedules.get(a["id"]))
+        for a in agents
+    }
+    # K3h: the real-work runtime (capabilities + queue + market + workers)
+    # is created and started by RealWorkPlugin on `on_simulation_start`.
     hook_bus.emit(
         "on_simulation_start",
         config=CONFIG,
@@ -5888,9 +3067,1320 @@ def run_simulation():
         extension_state=extension_state,
     )
 
-    for day in range(start_day, start_day + SIM_DAYS):
-        if real_work_runtime is not None:
-            real_work_runtime.tick_day(day)
+    # ---- K2: cognition pipeline stages -------------------------------------
+    # Each stage is a closure over run_simulation locals (day, time_str,
+    # policy, env caches, ... — Python closures late-bind, so per-tick
+    # rebindings are visible) with signature (agent, step, sim). Cross-stage
+    # data rides the step dict: hook-visible keys keep their legacy names,
+    # working keys are underscore-prefixed. Stage bodies are verbatim moves
+    # of the former inline loop body; see gaworld/sim/pipeline.py.
+
+    def _stage_prepare(agent, step, sim):
+        agent_id = agent["id"]
+        # K3e: event-producer plugins contribute per-agent env events here
+        # (life events, ...); contributions merge with the day/tick env feed.
+        # The life-events plugin also records its events and exposes them as
+        # step["life_events"].
+        agent_env_events = list(env_events or []) + hook_bus.collect(
+            "env.events.compose",
+            agent=agent,
+            day=day,
+            time_str=time_str,
+            step=step,
+            daily_logs=daily_logs,
+        )
+        scheduled_activity = get_activity_for_time(schedule_map[agent_id], time_str)
+        inbox_messages = distributed_inbox.get(agent_id, [])
+        social_context = get_social_context(agent, agents_by_id)
+        inbox_context = format_inbox_context(
+            inbox_messages,
+            max_items=int(DISTRIBUTED_CONFIG.get("max_inbound_per_step", 3)),
+        )
+        if inbox_context:
+            social_context = f"{social_context} {inbox_context}".strip()
+            inbox_log = f"[DistributedInbox {agent['name']} @ {time_str}] {inbox_context}\n"
+            daily_logs[agent_id] += inbox_log
+            append_agent_log(agent, inbox_log)
+            vector_db_add_entry(
+                agent_id,
+                "distributed_in",
+                inbox_context,
+                sim_day=day,
+                sim_time=time_str,
+            )
+
+        policy_desc = None
+        if policy:
+            policy_desc = policy.get("description") or policy.get("name")
+        step["_state_before"] = dict(agent.get("state", {}))
+        step.update({
+            "scheduled_activity": scheduled_activity,
+            "activity": scheduled_activity,
+            "social_context": social_context,
+            "policy_desc": policy_desc,
+            "life_events": step.get("life_events", []),
+        })
+        hook_bus.emit(
+            "on_agent_pre_step",
+            day=day,
+            time_str=time_str,
+            config=CONFIG,
+            agent=agent,
+            agents=agents,
+            agents_by_id=agents_by_id,
+            city_map=city_map,
+            city_map_text=city_map_text,
+            schedule_map=schedule_map,
+            actions=actions,
+            env_events=agent_env_events,
+            env_context=env_context,
+            policy=policy,
+            step=step,
+            extension_state=extension_state,
+        )
+        scheduled_activity = step.get("scheduled_activity", scheduled_activity)
+        # K3e: the "人生事件：…" context line now rides perception.compose
+        # (LifeEventsPlugin) and renders after the local-physical snippet.
+        step_env_context = env_context
+        step["_env_events"] = agent_env_events
+        step["_inbox_messages"] = inbox_messages
+        step["_env_context"] = step_env_context
+
+    def _stage_perceive(agent, step, sim):
+        scheduled_activity = step.get("scheduled_activity", "")
+        social_context = step.get("social_context", "")
+        policy_desc = step.get("policy_desc")
+        agent_env_events = step.get("_env_events", [])
+        step_env_context = step.get("_env_context", "")
+        # K4: surface Controller denials from the previous step so the
+        # agent can perceive why its action didn't happen.
+        _denials = agent.pop("_action_denials", None)
+        if _denials:
+            _denial_text = "；".join(str(d) for d in _denials)
+            step_env_context = (
+                f"{step_env_context}\n刚才的行动受阻：{_denial_text}"
+                if step_env_context
+                else f"刚才的行动受阻：{_denial_text}"
+            )
+        # K3g: the local-physical snapshot (agent["_local_physical"] + the
+        # "身边的物理环境" line) rides perception.compose at priority 30.
+        # K2: plugins contribute perception snippets (collect semantics —
+        # with no subscribers this is a no-op and behavior is unchanged).
+        for _snippet in hook_bus.collect(
+            "perception.compose",
+            agent=agent,
+            day=day,
+            time_str=time_str,
+            scheduled_activity=scheduled_activity,
+            env_context=step_env_context,
+            social_context=social_context,
+            env_events=agent_env_events,
+            policy=policy,
+            policy_desc=policy_desc,
+            news=news_cache[:5],
+        ):
+            _snippet = str(_snippet).strip()
+            if _snippet:
+                step_env_context = (
+                    f"{step_env_context}\n{_snippet}" if step_env_context else _snippet
+                )
+        step["_env_context"] = step_env_context
+        # K3c: plugins contribute prompt sections rendered inside the
+        # perception prompt (e.g. the Skill library block).
+        extra_sections = hook_bus.collect(
+            "perception.sections",
+            agent=agent,
+            day=day,
+            time_str=time_str,
+            scheduled_activity=scheduled_activity,
+            social_context=social_context,
+        )
+        # Core cognition loop: perceive -> plan -> (maybe) change routine -> act -> reflect.
+        step["_perception"] = perception(
+            agent,
+            time_str,
+            social_context,
+            step_env_context,
+            policy_desc if policy else None,
+            extra_sections=extra_sections,
+        )
+
+    def _stage_interrupts(agent, step, sim):
+        scheduled_activity = step.get("scheduled_activity", "")
+        # K3i: interrupt/thought computation rides the interrupts.compose
+        # filter (DynamicBehaviorPlugin; engines return {} for "no change",
+        # never None). None here means no producer ran — fall back to the
+        # legacy spontaneity path, matching the old enabled/disabled branch.
+        transient_thought = hook_bus.filter(
+            "interrupts.compose",
+            None,
+            agent=agent,
+            step=step,
+            day=day,
+            time_str=time_str,
+        )
+        if transient_thought is None:
+            transient_thought = maybe_generate_transient_thought(
+                agent,
+                time_str,
+                scheduled_activity,
+                step.get("_perception", ""),
+                env_events=step.get("_env_events", []),
+                policy_desc=step.get("policy_desc"),
+                social_context=step.get("social_context", ""),
+                inbox_messages=step.get("_inbox_messages", []),
+            )
+        step["_transient_thought"] = transient_thought
+
+    def _stage_plan(agent, step, sim):
+        scheduled_activity = step.get("scheduled_activity", "")
+        perc = step.get("_perception", "")
+        social_context = step.get("social_context", "")
+        step_recollections = step.setdefault("_recollections", [])
+        plan_commitment = _activity_commitment_level(scheduled_activity)
+        plan_prefetch_refs = _build_decision_reference_bundle(
+            agent,
+            scheduled_activity,
+            time_str=time_str,
+            location=agent.get("locations", {}).get("current", ""),
+            env_context=step.get("_env_context", ""),
+            env_events=step.get("_env_events", []),
+            policy_desc=step.get("policy_desc"),
+            social_context=social_context,
+        )
+        plan_recall = evoke_memory(
+            agent,
+            "planning",
+            scheduled_activity,
+            perc,
+            social_context if plan_prefetch_refs.get("social_network_relevant") else "",
+            plan_prefetch_refs.get("physical_env_text", "") if plan_prefetch_refs.get("physical_env_relevant") else "",
+            plan_prefetch_refs.get("social_env_text", "") if plan_prefetch_refs.get("social_env_relevant") else "",
+            context_labels=_build_recall_context_labels(
+                agent,
+                activity=scheduled_activity,
+                time_str=time_str if plan_prefetch_refs.get("location_time_relevant") else "",
+                location=agent.get("locations", {}).get("current", "") if plan_prefetch_refs.get("location_time_relevant") else "",
+                commitment_level=plan_commitment,
+            ),
+        )
+        if plan_recall.get("recollection"):
+            step_recollections.append(plan_recall["recollection"])
+        plan_refs = dict(plan_prefetch_refs)
+        plan_refs["memory_hint"] = plan_recall.get("hint", "")
+        plan_refs["recollection"] = plan_recall.get("recollection", "")
+        plan_refs["transient_thought"] = step.get("_transient_thought")
+        plan = planning(agent, perc, recall_context=plan_recall, decision_refs=plan_refs)
+        step["_plan_struct"] = plan
+        step["_plan_text"] = format_plan_text(plan)
+
+    def _stage_adjust_activity(agent, step, sim):
+        agent_id = agent["id"]
+        scheduled_activity = step.get("scheduled_activity", "")
+        transient_thought = step.get("_transient_thought")
+        activity, change_reason, changed = maybe_adjust_activity(
+            agent,
+            time_str,
+            scheduled_activity,
+            step.get("_perception", ""),
+            step.get("_plan_text", ""),
+            step.get("_env_context", ""),
+            step.get("_env_events", []),
+            step.get("policy_desc"),
+            transient_thought=transient_thought,
+            social_context=step.get("social_context", ""),
+        )
+        # --- Dynamic behaviour system: apply if LLM didn't change ---
+        _dyn_result = transient_thought.get("dynamic_result") if isinstance(transient_thought, dict) else None
+        if _dyn_result and not changed and _dyn_result.get("changed"):
+            activity = _dyn_result["activity"]
+            change_reason = _dyn_result.get("reason", "动态行为系统触发")
+            changed = True
+        # Apply mood delta from dynamic system
+        if _dyn_result and _dyn_result.get("mood_delta"):
+            _mood_d = float(_dyn_result["mood_delta"])
+            state = agent.get("state", {})
+            state["emotion"] = max(0.0, min(1.0, float(state.get("emotion", 0.5)) + _mood_d))
+        # Apply schedule insertion from dynamic system
+        if _dyn_result and _dyn_result.get("schedule_insert") and changed:
+            _si = _dyn_result["schedule_insert"]
+            _sched_tuples = [(s.get("time", ""), s.get("activity", "")) if isinstance(s, dict) else s
+                             for s in schedule_map.get(agent_id, [])]
+            _new_sched = dynamic_insert_activity(
+                _sched_tuples,
+                _si["insert_time"],
+                _si["activity"],
+                duration_minutes=_si.get("duration_minutes", 30),
+                resumable=True,
+                original_activity=_si.get("original_activity", scheduled_activity),
+            )
+            # Convert back to schedule format used by the simulator
+            schedule_map[agent_id] = [{"time": t, "activity": a} for t, a in _new_sched]
+        # Log social encounters from dynamic system
+        if _dyn_result and _dyn_result.get("social_encounters"):
+            for _enc in _dyn_result["social_encounters"]:
+                _LOG.debug("agent_%s social_encounter: %s", agent_id, _enc.get("activity", ""))
+
+        # A pre-step hook may force an activity (e.g. economy income-seek);
+        # it wins only when it actually changed the seeded value. The pre-K2
+        # code re-read step["activity"] unconditionally, letting the seeded
+        # scheduled_activity clobber the LLM/dynamic adjustment above —
+        # which silently disabled routine changes on the mainline path.
+        hook_activity = step.get("activity", scheduled_activity)
+        if hook_activity != scheduled_activity:
+            activity = hook_activity
+        if activity != scheduled_activity and not changed:
+            changed = True
+            hook_reason = str(step.get("change_reason", "")).strip()
+            if hook_reason:
+                change_reason = hook_reason
+        if changed:
+            schedule_map[agent_id] = apply_schedule_override(
+                schedule_map[agent_id],
+                time_str,
+                activity,
+            )
+            updated = ensure_action_space_for_activity(agent, actions[agent_id], activity)
+            if updated and STATEFUL:
+                save_action_space(agent_id, actions[agent_id])
+
+        # P3: a *persistent* anomaly (non-resumable physical / emergency
+        # reaction) makes the disrupted activity unworkable for a while —
+        # defer its upcoming slots rather than only patching this step.
+        if REPLAN_ENABLED and changed and isinstance(_dyn_result, dict):
+            _itr = _dyn_result.get("interrupt") or {}
+            _extra = _itr.get("extra", {}) if isinstance(_itr, dict) else {}
+            _persistent_anomaly = (
+                isinstance(_itr, dict)
+                and not _itr.get("resumable", True)
+                and (bool(_extra.get("anomaly"))
+                     or _extra.get("event_type") in ("emergency", "local_physical"))
+            )
+            _cur_min = _time_str_to_minutes(time_str)
+            if _persistent_anomaly and scheduled_activity and _cur_min is not None:
+                _sched_tuples = [
+                    (s.get("time", ""), s.get("activity", "")) if isinstance(s, dict) else tuple(s)
+                    for s in schedule_map.get(agent_id, [])
+                ]
+                _new_sched, _replan_changes = replan_affected_interval(
+                    _sched_tuples,
+                    time_str,
+                    _minutes_to_time_str(min(24 * 60 - 1, _cur_min + REPLAN_WINDOW_MINUTES)),
+                    is_affected=lambda t, a, _d=scheduled_activity: a == _d,
+                    defer=True,
+                    defer_gap_minutes=REPLAN_DEFER_GAP,
+                )
+                if _replan_changes:
+                    schedule_map[agent_id] = _new_sched
+                    _replan_log = (
+                        f"[Replan {time_str}] 因突发异常重排日程，"
+                        f"顺延 {len(_replan_changes)} 项（{scheduled_activity}）\n"
+                    )
+                    daily_logs[agent_id] += _replan_log
+                    append_agent_log(agent, _replan_log)
+        # Part B: a serious, routine-impacting life event (illness, family
+        # emergency, being framed) deterministically bends the rest of the day
+        # around it — bypassing the probabilistic routine-change gate above,
+        # which a high-commitment activity's resistance would usually win.
+        if LIFE_EVENT_RESHAPE_ENABLED:
+            _reshape_ev = _pick_reshape_life_event(step.get("life_events", []))
+            if _reshape_ev is not None:
+                _sched_tuples = [
+                    (s.get("time", ""), s.get("activity", "")) if isinstance(s, dict) else tuple(s)
+                    for s in schedule_map.get(agent_id, [])
+                ]
+                _imm, _fol = resolve_life_event_activities(_reshape_ev)
+                _new_sched, _reshape_changes = reshape_day_for_life_event(
+                    _sched_tuples,
+                    time_str,
+                    _reshape_ev,
+                    window_minutes=LIFE_EVENT_RESHAPE_WINDOW,
+                    immediate_activity=_imm,
+                    follow_activity=_fol,
+                )
+                if _reshape_changes:
+                    schedule_map[agent_id] = [{"time": t, "activity": a} for t, a in _new_sched]
+                    activity = _imm
+                    changed = True
+                    change_reason = f"人生事件：{_reshape_ev.get('title', '突发事件')}"
+                    for _evt_activity in (_imm, _fol):
+                        _upd = ensure_action_space_for_activity(agent, actions[agent_id], _evt_activity)
+                        if _upd and STATEFUL:
+                            save_action_space(agent_id, actions[agent_id])
+                    _reshape_log = (
+                        f"[LifeReshape {time_str}] 因“{_reshape_ev.get('title', '突发事件')}”"
+                        f"（严重度 {_event_severity(_reshape_ev):.2f}）重排当天，"
+                        f"改动 {len(_reshape_changes)} 项\n"
+                    )
+                    daily_logs[agent_id] += _reshape_log
+                    append_agent_log(agent, _reshape_log)
+
+        # K3i: observers react to the applied interrupt result (e.g. the
+        # spatial-preferences plugin records location-bound anomalies).
+        hook_bus.emit(
+            "interrupt.applied",
+            agent=agent,
+            step=step,
+            dyn_result=_dyn_result,
+            changed=changed,
+            scheduled_activity=scheduled_activity,
+            day=day,
+            time_str=time_str,
+        )
+        step["_activity"] = activity
+        step["_changed"] = changed
+        step["_change_reason"] = change_reason
+
+    def _stage_move(agent, step, sim):
+        activity = step.get("_activity", step.get("scheduled_activity", ""))
+        desired_location = resolve_location(agent, activity, time_str, city_map)
+        # K3i: plugins may rewrite the resolved location (aversion-aware
+        # redirection rides this filter).
+        desired_location = hook_bus.filter(
+            "location.resolve",
+            desired_location,
+            agent=agent,
+            activity=activity,
+            day=day,
+            time_str=time_str,
+        )
+        # K4: structured moves pass the Controller's validation gate. A
+        # denial keeps the agent where it is (move_agent falls back to the
+        # origin) and surfaces the reason in its next perception.
+        if desired_location:
+            _verdict = sim.controller.validate(
+                ActionRequest(
+                    agent_id=agent["id"],
+                    name="move",
+                    params={"to": desired_location, "activity": activity},
+                ),
+                sim,
+            )
+            if not _verdict.allowed:
+                agent.setdefault("_action_denials", []).append(
+                    f"你想前往【{desired_location}】，但没能成行：{_verdict.reason}"
+                )
+                desired_location = None
+            elif _verdict.rewritten is not None:
+                desired_location = _verdict.rewritten.params.get("to", desired_location)
+        movement = move_agent(
+            agent,
+            desired_location=desired_location,
+            activity=activity,
+            time_str=time_str,
+            step_minutes=step_minutes,
+            city_map=city_map,
+        )
+        if STATEFUL:
+            persist_agent_locations_if_changed(agent)
+        step["_movement"] = movement
+        step["_location"] = movement["display_location"]
+        step["_resolved_location"] = movement["resolved_location"]
+        step["_travel"] = movement["travel"]
+
+    def _stage_select_action(agent, step, sim):
+        agent_id = agent["id"]
+        activity = step.get("_activity", step.get("scheduled_activity", ""))
+        movement = step.get("_movement", {})
+        travel = step.get("_travel", {})
+        resolved_location = step.get("_resolved_location", "")
+        perc = step.get("_perception", "")
+        plan_text = step.get("_plan_text", "")
+        step_recollections = step.setdefault("_recollections", [])
+        effective_activity = activity
+        if travel.get("status") in {"departed", "in_transit"}:
+            act = f"乘坐{travel.get('mode', '交通工具')}移动"
+            action_meta = {
+                "decision_driver": "时空约束",
+                "commitment_level": _activity_commitment_level(activity),
+                "scores": {act: {"weight": 1.0, "components": {}, "styles": ["quick"]}},
+            }
+            outcome = (
+                f"从【{resolved_location}】前往【{movement['target_location']}】，"
+                f"使用【{travel.get('mode', '未知方式')}】，路程约 {travel.get('distance_km', 0.0):.1f} km，"
+                f"预计 {travel.get('minutes', 0)} 分钟"
+            )
+            location_bias = {}
+            effective_activity = f"前往{movement['target_location']}"
+        else:
+            location_bias = get_location_action_bias(
+                agent,
+                resolved_location,
+                city_map_text,
+                actions[agent_id],
+            )
+            location_time_relevant = _is_location_time_relevant(activity, time_str=time_str, location=resolved_location)
+            action_prefetch_refs = _build_decision_reference_bundle(
+                agent,
+                activity,
+                time_str=time_str,
+                location=resolved_location,
+                env_context=step.get("_env_context", ""),
+                env_events=step.get("_env_events", []),
+                policy_desc=step.get("policy_desc"),
+                social_context=step.get("social_context", ""),
+            )
+            action_recall = evoke_memory(
+                agent,
+                "action",
+                activity,
+                perc,
+                plan_text,
+                step.get("social_context", "") if action_prefetch_refs.get("social_network_relevant") else "",
+                action_prefetch_refs.get("physical_env_text", "") if action_prefetch_refs.get("physical_env_relevant") else "",
+                action_prefetch_refs.get("social_env_text", "") if action_prefetch_refs.get("social_env_relevant") else "",
+                resolved_location if location_time_relevant else "",
+                time_str if location_time_relevant else "",
+                context_labels=_build_recall_context_labels(
+                    agent,
+                    activity=activity,
+                    time_str=time_str if location_time_relevant else "",
+                    location=resolved_location if location_time_relevant else "",
+                    commitment_level=_activity_commitment_level(activity),
+                ),
+            )
+            if action_recall.get("recollection"):
+                step_recollections.append(action_recall["recollection"])
+            action_refs = dict(action_prefetch_refs)
+            action_refs["memory_hint"] = action_recall.get("hint", "")
+            action_refs["recollection"] = action_recall.get("recollection", "")
+            action_refs["transient_thought"] = step.get("_transient_thought")
+            act, action_meta = choose_action(
+                agent,
+                activity,
+                actions[agent_id],
+                context=f"{activity} {perc} {plan_text}",
+                location_bias=location_bias,
+                location=resolved_location,
+                time_str=time_str,
+                recall_context=action_recall,
+                decision_refs=action_refs,
+                return_debug=True,
+            )
+            # K2: plugins may rewrite the selected action (filter
+            # semantics — with no subscribers the value passes through).
+            act = hook_bus.filter(
+                "action.selected",
+                act,
+                agent=agent,
+                activity=activity,
+                day=day,
+                time_str=time_str,
+                location=resolved_location,
+            )
+            outcome = f"在【{activity}】中执行了【{act}】"
+            # K3h: plugins may rewrite the outcome (real-work dispatch and
+            # artifact absorption ride this filter).
+            outcome = hook_bus.filter(
+                "action.outcome",
+                outcome,
+                agent=agent,
+                activity=activity,
+                action=act,
+                day=day,
+                time_str=time_str,
+                location=resolved_location,
+            )
+        step["_effective_activity"] = effective_activity
+        step["_act"] = act
+        step["_action_meta"] = action_meta
+        step["_outcome"] = outcome
+
+    def _stage_reflect(agent, step, sim):
+        effective_activity = step.get("_effective_activity", step.get("_activity", ""))
+        act = step.get("_act", "")
+        outcome = step.get("_outcome", "")
+        resolved_location = step.get("_resolved_location", "")
+        action_meta = step.get("_action_meta", {})
+        step_recollections = step.setdefault("_recollections", [])
+        reflection_recall = evoke_memory(
+            agent,
+            "reflection",
+            effective_activity,
+            act,
+            outcome,
+            time_str if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
+            context_labels=_build_recall_context_labels(
+                agent,
+                activity=effective_activity,
+                time_str=time_str if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
+                location=resolved_location if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
+                commitment_level=action_meta.get("commitment_level", _activity_commitment_level(effective_activity)),
+            ),
+        )
+        if reflection_recall.get("recollection"):
+            step_recollections.append(reflection_recall["recollection"])
+        refl = reflection(agent, outcome, recall_context=reflection_recall)
+        step["_refl_struct"] = refl
+        step["_refl_text"] = format_reflection_text(refl)
+        if HUMAN_REALISM_ENABLED:
+            update_needs(
+                agent,
+                time_str,
+                effective_activity,
+                cfg=HUMAN_REALISM_CONFIG,
+                changed=step.get("_changed", False),
+                travel=step.get("_travel", {}),
+            )
+
+    def _stage_update_state(agent, step, sim):
+        agent_env_events = step.get("_env_events", [])
+        policy_desc = step.get("policy_desc")
+        if agent_env_events:
+            for ev in agent_env_events:
+                inferred = infer_event_effect(agent, ev.get("description", ev.get("name", "")), ev.get("type", "event"))
+                for k, v in inferred.items():
+                    agent["state"][k] += v
+        # K3e: plugins apply their own state deltas here (life-event
+        # state_effects, ...), before social influence and the state update.
+        hook_bus.emit("state.effects", agent=agent, step=step, day=day, time_str=time_str)
+
+        if policy:
+            inferred = infer_event_effect(agent, policy_desc, "policy")
+            for k, v in inferred.items():
+                agent["state"][k] += v
+
+        social_influence(agent, agents_by_id)
+        update_state(agent)
+
+    def _stage_broadcast(agent, step, sim):
+        agent_id = agent["id"]
+        sent_remote_messages = []
+        if distributed_client.enabled:
+            sent_remote_messages = distributed_client.send_agent_messages(
+                agent,
+                day=day,
+                time_str=time_str,
+                activity=step.get("_effective_activity", ""),
+                reflection=step.get("_refl_text", ""),
+                outcome=step.get("_outcome", ""),
+            )
+            if sent_remote_messages:
+                sent_summary = "; ".join(
+                    f"to#{int(msg.get('to_agent', 0))}:{str(msg.get('text', ''))[:40]}"
+                    for msg in sent_remote_messages
+                    if isinstance(msg, dict)
+                )
+                if sent_summary:
+                    sent_log = (
+                        f"[DistributedOutbox {agent['name']} @ {time_str}] "
+                        f"{sent_summary}\n"
+                    )
+                    daily_logs[agent_id] += sent_log
+                    append_agent_log(agent, sent_log)
+                    vector_db_add_entry(
+                        agent_id,
+                        "distributed_out",
+                        sent_summary,
+                        sim_day=day,
+                        sim_time=time_str,
+                    )
+
+    def _stage_memorize(agent, step, sim):
+        agent_id = agent["id"]
+        scheduled_activity = step.get("scheduled_activity", "")
+        effective_activity = step.get("_effective_activity", "")
+        act = step.get("_act", "")
+        outcome = step.get("_outcome", "")
+        refl_text = step.get("_refl_text", "")
+        refl = step.get("_refl_struct", {})
+        plan = step.get("_plan_struct", {})
+        plan_text = step.get("_plan_text", "")
+        perc = step.get("_perception", "")
+        transient_thought = step.get("_transient_thought")
+        agent_env_events = step.get("_env_events", [])
+        agent_life_events = step.get("life_events", [])
+        policy_desc = step.get("policy_desc")
+        state_before = step.get("_state_before", {})
+        travel = step.get("_travel", {})
+        movement = step.get("_movement", {})
+        location = step.get("_location", "")
+        action_meta = step.get("_action_meta", {})
+        change_reason = step.get("_change_reason")
+        step_recollections = step.setdefault("_recollections", [])
+        if HUMAN_REALISM_ENABLED:
+            partners = list(agent.get("_recent_social_partners", []))
+            for sender_id in extract_sender_agent_ids(step.get("_inbox_messages", [])):
+                if sender_id not in partners:
+                    partners.append(sender_id)
+            signal = infer_interaction_signal(refl_text)
+            for pid in partners:
+                relationship_update(agent, pid, signal, HUMAN_REALISM_CONFIG)
+            state_after = dict(agent.get("state", {}))
+            delta = {}
+            for key, before_v in state_before.items():
+                after_v = state_after.get(key)
+                if isinstance(before_v, (int, float)) and isinstance(after_v, (int, float)):
+                    delta[key] = float(after_v) - float(before_v)
+            thought_intensity = (
+                float(transient_thought.get("intensity", 0.0))
+                if isinstance(transient_thought, dict)
+                else 0.0
+            )
+            event_intensity = min(
+                1.0,
+                0.2 * len(agent_env_events) + (0.2 if policy else 0.0) + 0.18 * thought_intensity,
+            )
+            recent_actions = [
+                e.get("action", "")
+                for e in agent.get("episodes", [])[-20:]
+                if isinstance(e, dict)
+            ]
+            novelty = 1.0 if act not in recent_actions else 0.2
+            priorities = agent.get("intentions", {}).get("priorities", [])
+            goal_relevance = 0.2
+            for p in priorities:
+                if p and (p in effective_activity or p in plan_text or p in refl_text):
+                    goal_relevance = 0.8
+                    break
+            if GOALS_ENABLED:
+                goal_relevance = max(
+                    goal_relevance,
+                    match_goal_relevance(
+                        agent.get("goals"),
+                        effective_activity,
+                        plan_text,
+                        refl_text,
+                        config=GOALS_CONFIG,
+                    ),
+                )
+            salience = compute_episode_salience(
+                delta.get("stress", 0.0),
+                event_intensity,
+                novelty,
+                goal_relevance,
+            )
+            tags = infer_episode_tags(
+                effective_activity,
+                act,
+                refl_text,
+                env_events=[ev.get("description", ev.get("name", "")) for ev in agent_env_events],
+                policy_event=policy_desc if policy else "",
+            )
+            need_snapshot = {
+                "energy": round(float(state_after.get("energy", 0.75)), 3),
+                "hunger": round(float(state_after.get("hunger", 0.25)), 3),
+                "social_need": round(float(state_after.get("social_need", 0.40)), 3),
+                "fatigue_debt": round(float(state_after.get("fatigue_debt", 0.20)), 3),
+                "self_control": round(float(state_after.get("self_control", 0.60)), 3),
+                "time_pressure": round(float(state_after.get("time_pressure", 0.25)), 3),
+            }
+            episode = {
+                "episode_id": str(uuid.uuid4()),
+                "day": day,
+                "time": time_str,
+                "scheduled_activity": scheduled_activity,
+                "final_activity": effective_activity,
+                "action": act,
+                "location": location,
+                "target_location": movement.get("target_location", ""),
+                "travel": travel,
+                "env_events": [ev.get("description", ev.get("name", "")) for ev in agent_env_events],
+                "life_events": [dict(event) for event in agent_life_events],
+                "policy_event": policy_desc if policy else "",
+                "social_partners": partners,
+                "perception": perc,
+                "plan": plan_text,
+                "plan_struct": plan,
+                "outcome": outcome,
+                "reflection": refl_text,
+                "reflection_struct": refl,
+                "transient_thought": transient_thought or {},
+                "state_before": state_before,
+                "state_after": state_after,
+                "need_snapshot": need_snapshot,
+                "delta": delta,
+                "tags": tags,
+                "recollections": list(step_recollections),
+                "salience": salience,
+                "valence": float(np.clip(delta.get("emotion", 0.0), -1.0, 1.0)),
+                "decision_driver": action_meta.get("decision_driver", "惯性延续"),
+                "change_reason": change_reason or "",
+                "commitment_level": action_meta.get("commitment_level", _activity_commitment_level(effective_activity)),
+                "expected_outcome": str(plan.get("expected_outcome", "")).strip(),
+                "created_at_day": day,
+            }
+            episode["growth_matches"] = []
+            episode["growth_progress"] = {"matches": [], "minutes": 0, "level_changes": {}}
+            # K3d: the interests plugin fills the growth keys and updates
+            # the agent's growth profile on this event; the empty defaults
+            # above keep the episode schema stable when it's disabled.
+            hook_bus.emit(
+                "episode.compose",
+                agent=agent,
+                episode=episode,
+                step_minutes=step_minutes,
+                day=day,
+                time_str=time_str,
+            )
+            agent.setdefault("episodes", []).append(episode)
+            update_habits_from_episode(agent, episode, HUMAN_REALISM_CONFIG)
+            append_agent_episode(agent_id, episode)
+            episode_text = (
+                f"Day {day} {time_str} {effective_activity}/{act} @ {location} "
+                f"driver={episode['decision_driver']} commitment={episode['commitment_level']} "
+                f"thought={format_transient_thought(transient_thought) if transient_thought else 'none'} "
+                f"needs={json.dumps(need_snapshot, ensure_ascii=False)} "
+                f"tags={','.join(tags)} salience={salience:.2f} reflection={refl_text}"
+            )
+            vector_db_add_entry(agent_id, "episode", episode_text, sim_day=day, sim_time=time_str)
+            agent["last_activity"] = effective_activity
+            agent["last_action"] = act
+            memory_review = maybe_review_memories(
+                agent,
+                day,
+                time_str,
+                recent_episode=episode,
+                llm_budget_ctx=llm_budget_by_agent.get(agent_id),
+            )
+        else:
+            memory_review = ""
+            agent["last_activity"] = effective_activity
+            agent["last_action"] = act
+        agent["last_reflection"] = refl_text
+        for metric in state_history[agent["id"]]:
+            state_history[agent["id"]][metric].append(agent["state"][metric])
+        step["_memory_review"] = memory_review
+
+    def _stage_record(agent, step, sim):
+        scheduled_activity = step.get("scheduled_activity", "")
+        effective_activity = step.get("_effective_activity", "")
+        act = step.get("_act", "")
+        outcome = step.get("_outcome", "")
+        refl_text = step.get("_refl_text", "")
+        refl = step.get("_refl_struct", {})
+        plan = step.get("_plan_struct", {})
+        plan_text = step.get("_plan_text", "")
+        perc = step.get("_perception", "")
+        transient_thought = step.get("_transient_thought")
+        step_env_context = step.get("_env_context", "")
+        changed = step.get("_changed", False)
+        change_reason = step.get("_change_reason")
+        location = step.get("_location", "")
+        resolved_location = step.get("_resolved_location", "")
+        movement = step.get("_movement", {})
+        travel = step.get("_travel", {})
+        action_meta = step.get("_action_meta", {})
+        memory_review = step.get("_memory_review", "")
+        step_recollections = step.setdefault("_recollections", [])
+
+        # --- activity header (fold RoutineChange into one line) ---
+        if changed:
+            reason_text = change_reason or "临时改变"
+            _activity_header = f"{scheduled_activity} → {effective_activity} ({reason_text})"
+            routine_line = f"RoutineChange: {scheduled_activity} -> {effective_activity} ({reason_text})\n"
+        else:
+            _activity_header = scheduled_activity
+            routine_line = ""
+
+        # --- optional lines (only rendered when non-empty) ---
+        recall_line = ""
+        unique_recollections = []
+        for item in step_recollections:
+            text = str(item).strip()
+            if text and text not in unique_recollections:
+                unique_recollections.append(text)
+        if unique_recollections:
+            recall_line = f"Recall: {' | '.join(unique_recollections)}\n"
+        transient_thought_line = ""
+        if transient_thought:
+            transient_thought_line = f"Thought: {format_transient_thought(transient_thought)}\n"
+        memory_review_line = f"Review: {memory_review}\n" if memory_review else ""
+        decision_line = ""
+        if action_meta.get("decision_driver"):
+            decision_line = (
+                f"Driver: {action_meta.get('decision_driver')} "
+                f"(commit={action_meta.get('commitment_level', '')})\n"
+            )
+        needs_line = ""
+        if HUMAN_REALISM_ENABLED:
+            needs_line = (
+                "Needs: "
+                f"nrg={agent['state'].get('energy', 0.75):.2f} "
+                f"hun={agent['state'].get('hunger', 0.25):.2f} "
+                f"soc={agent['state'].get('social_need', 0.40):.2f} "
+                f"fat={agent['state'].get('fatigue_debt', 0.20):.2f} "
+                f"ctrl={agent['state'].get('self_control', 0.60):.2f} "
+                f"tprs={agent['state'].get('time_pressure', 0.25):.2f}\n"
+            )
+
+        # --- compact location + travel (collapsed to 1 line) ---
+        _travel_status = travel.get("status", "stationary")
+        if _travel_status != "stationary":
+            _travel_info = (
+                f"  [{travel.get('mode', '?')} "
+                f"{travel.get('distance_km', 0.0):.1f}km "
+                f"{travel.get('minutes', 0)}min]"
+            )
+            _loc_line = f"Loc: {location} → {resolved_location}{_travel_info}\n"
+        else:
+            _travel_info = ""
+            _loc_line = f"Loc: {resolved_location}\n"
+
+        # --- env context (omitted when empty) ---
+        _env_line = f"Env: {step_env_context}\n" if step_env_context else ""
+
+        # -------------------------------------------------------
+        # Simple mode: one clean block per tick, Chinese-only,
+        # stripping LLM reasoning leakage and repeated boilerplate.
+        # Verbose mode: full details for debugging.
+        # -------------------------------------------------------
+        if _LOG_SIMPLE:
+            _env_simple = _clean_env_context(step_env_context)
+            _refl_simple = _clean_reflection(refl_text)
+            log = (
+                f"\n── [{agent['name']} @ {time_str}] {_activity_header} ──\n"
+                f"Loc: {resolved_location}{_travel_info}\n"
+                + (f"Env: {_env_simple}\n" if _env_simple else "")
+                + f"Act: {act}\n"
+                f"Refl: {_refl_simple}\n"
+            )
+        else:
+            log = (
+                f"\n── [{agent['name']} @ {time_str}] {_activity_header} ──\n"
+                f"{_loc_line}"
+                f"{_env_line}"
+                f"Perc: {perc}\n"
+                f"Plan: {plan_text}\n"
+                f"{transient_thought_line}"
+                f"{recall_line}"
+                f"Act: {act}  |  Out: {outcome}\n"
+                f"{decision_line}"
+                f"{needs_line}"
+                f"Refl: {refl_text}\n"
+                f"{memory_review_line}"
+            )
+        print(log)
+        daily_logs[agent["id"]] += log
+        append_agent_log(agent, log)
+        vector_db_add_entry(agent["id"], "log", log, sim_day=day, sim_time=time_str)
+        vector_db_add_entry(agent["id"], "plan", plan_text, sim_day=day, sim_time=time_str)
+        vector_db_add_entry(agent["id"], "reflection", refl_text, sim_day=day, sim_time=time_str)
+        vector_db_add_entry(agent["id"], "action", outcome, sim_day=day, sim_time=time_str)
+        step.update({
+            "perception": perc,
+            "plan": plan_text,
+            "plan_struct": plan,
+            "transient_thought": transient_thought or {},
+            "activity": effective_activity,
+            "action": act,
+            "outcome": outcome,
+            "reflection": refl_text,
+            "reflection_struct": refl,
+            "log": log,
+            "env_context": step_env_context,
+            "changed": changed,
+            "change_reason": change_reason,
+            "location": location,
+            "resolved_location": resolved_location,
+            "target_location": movement.get("target_location", ""),
+            "travel": travel,
+        })
+        if visualizer is not None:
+            frame_steps.append(
+                build_agent_step_payload(
+                    agent,
+                    time_str=time_str,
+                    location=location,
+                    resolved_location=resolved_location,
+                    target_location=movement.get("target_location", ""),
+                    scheduled_activity=scheduled_activity,
+                    activity=effective_activity,
+                    action=act,
+                    outcome=outcome,
+                    perception=perc,
+                    plan=plan_text,
+                    reflection=refl_text,
+                    changed=changed,
+                    change_reason=change_reason,
+                    travel=travel,
+                )
+            )
+
+    _builtin_stages = {
+        "prepare": _stage_prepare,
+        "perceive": _stage_perceive,
+        "interrupts": _stage_interrupts,
+        "plan": _stage_plan,
+        "adjust_activity": _stage_adjust_activity,
+        "move": _stage_move,
+        "select_action": _stage_select_action,
+        "reflect": _stage_reflect,
+        "update_state": _stage_update_state,
+        "broadcast": _stage_broadcast,
+        "memorize": _stage_memorize,
+        "record": _stage_record,
+    }
+    step_pipeline = StagePipeline.from_config(CONFIG.get("pipeline"), _builtin_stages)
+    if step_pipeline.stage_names != list(DEFAULT_AGENT_STEP_ORDER):
+        print(f"🧠 认知管线：{' → '.join(step_pipeline.stage_names)}")
+
+    def _run_fast_forward_step(
+        period, day_context, day_desc, daily_logs, day_env_events, day_env_context
+    ):
+        """Long-horizon fast-forward: compress the whole step into one brief
+        per agent (one LLM call/agent/step) instead of the tick megaloop.
+
+        ``period`` covers one day (``long_run.unit="day"``), one month or one
+        year. State / goals / relationships still evolve, but approximately:
+        the digest's clamped deltas are applied, memory + diary are written,
+        and the day-boundary hooks (growth/interests/economy) still fire so
+        the long run keeps drifting. Reuses ``base_schedule_map`` as the
+        作息骨架 context — no per-day routine LLM call is made in this mode.
+
+        A month/year step replays the day-boundary hooks in chunks of at most
+        ``long_run.hook_chunk_days`` days (:func:`plan_hook_chunks`) rather
+        than once, so a year books a year of rent and twelve monthly
+        settlements instead of one day's worth. The hooks are told the span
+        via ``period_days`` / ``coarse``; ``period_end`` marks the last chunk
+        so per-step LLM work (goal reviews) fires once per step, not once per
+        chunk.
+        """
+        schedule_map = base_schedule_map
+        day = period.end_day
+        # ``coarse`` means "this step ran no intra-day ticks", which is true of
+        # every fast-forward step including the day unit. Subsystems that
+        # normally accrue per tick (wage income) use it to book an approximate
+        # amount instead of silently earning nothing.
+        coarse = True
+        chunks = _ff_plan_hook_chunks(period, _ff_hook_chunk_days(CONFIG))
+        for agent in agents:
+            agent["current_day"] = day
+
+        def _emit_day_start(chunk_end, chunk_days, period_end):
+            hook_bus.emit(
+                "on_day_start",
+                day=chunk_end - chunk_days + 1,
+                config=CONFIG,
+                agents=agents,
+                agents_by_id=agents_by_id,
+                city_map=city_map,
+                city_map_text=city_map_text,
+                schedule_map=schedule_map,
+                actions=actions,
+                timeline=[],
+                daily_logs=daily_logs,
+                env_events=day_env_events,
+                env_context=day_env_context,
+                extension_state=extension_state,
+                period_days=chunk_days,
+                coarse=coarse,
+                period_end=period_end,
+            )
+
+        def _emit_day_end(chunk_end, chunk_days, period_end):
+            hook_bus.emit(
+                "on_day_end",
+                day=chunk_end,
+                config=CONFIG,
+                agents=agents,
+                agents_by_id=agents_by_id,
+                city_map=city_map,
+                city_map_text=city_map_text,
+                schedule_map=schedule_map,
+                actions=actions,
+                daily_logs=daily_logs,
+                state_history=state_history,
+                extension_state=extension_state,
+                period_days=chunk_days,
+                coarse=coarse,
+                period_end=period_end,
+            )
+
+        first_end, first_days = chunks[0]
+        _emit_day_start(first_end, first_days, len(chunks) == 1)
+
+        def _compute_digest(agent):
+            digest = _ff_simulate_agent_period(
+                agent,
+                period=period,
+                base_schedule=base_schedule_map.get(agent["id"]),
+                day_desc=day_desc,
+                goals_context=_goals_hint(agent),
+                env_events=day_env_events,
+                env_context=day_env_context,
+                agents_by_id=agents_by_id,
+                config=CONFIG,
+                llm_fn=call_llm,
+            )
+            return agent["id"], digest
+
+        # Digests are one independent LLM call per agent (like routine
+        # generation), so they ride the same concurrency knob.
+        _digest_workers = resolve_max_workers(
+            CONFIG, key="day_routine_workers", default=1
+        )
+        _digest_results = dict(
+            parallel_map(
+                _compute_digest,
+                agents,
+                max_workers=_digest_workers,
+                label=f"fast_forward_{period.unit}",
+            )
+        )
+
+        _ff_rand = _ff_randomness(CONFIG)  # full config; randomness_level unwraps long_run
+        _ff_fallbacks = []
+        _ff_delta_cap = _ff_max_state_delta(period.unit, CONFIG)
+        _ff_jitter = _ff_jitter_scale(period.unit)
+        _ff_empty_brief = "（平稳的一天）" if period.unit == "day" else "（这段时间平稳度过）"
+        span_desc = period.describe(day_desc)
+        agent_briefs = []
+        for agent in agents:
+            agent_id = agent["id"]
+            digest = _digest_results.get(agent_id) or {}
+            brief = str(digest.get("brief", "")).strip()
+            burst = bool(digest.get("burst"))
+            # Mark burst steps so the brief block and log read as eventful.
+            brief_disp = ("⚡ " + brief) if (burst and brief) else brief
+            if digest.get("fallback"):
+                # A placeholder must not read like a real, quiet period.
+                brief_disp = "⚠️ [占位·模型未产出] " + brief_disp
+                _ff_fallbacks.append(str(agent.get("name", agent_id)))
+            agent_briefs.append((agent.get("name", str(agent_id)), brief_disp))
+
+            # 1) approximate state deltas + randomness-driven volatility jitter
+            _ff_apply_state_changes(
+                agent, digest.get("state_changes", {}), max_delta=_ff_delta_cap
+            )
+            _ff_apply_random_jitter(
+                agent, randomness=_ff_rand, burst=burst, rng=random, scale=_ff_jitter
+            )
+
+            # 2) social signals → relationship nudges
+            for item in digest.get("social", []) or []:
+                try:
+                    neighbor_id = int(item.get("neighbor"))
+                except (TypeError, ValueError):
+                    continue
+                relationship_update(
+                    agent, neighbor_id, item.get("signal", "neutral"), HUMAN_REALISM_CONFIG
+                )
+
+            # 2b) relationship *trajectories*. A ping (`social`) is one
+            #     interaction — the right unit for a tick, noise over a year.
+            #     Over a long step what matters is the net drift, and whether
+            #     the circle itself reorganised.
+            _rel_moves = []
+            for move in digest.get("relationships", []) or []:
+                applied = apply_closeness_delta(
+                    agent,
+                    move.get("neighbor"),
+                    move.get("closeness_delta", 0.0),
+                    current_day=day,
+                    max_delta=_FF_REL_DELTA_CAP,
+                )
+                if applied:
+                    _rel_moves.append(
+                        f"#{applied['key']} {applied['before']:.2f}→{applied['after']:.2f}"
+                    )
+            for tie in digest.get("new_ties", []) or []:
+                if form_tie(
+                    agent,
+                    tie.get("neighbor"),
+                    role=tie.get("role", "acquaintance"),
+                    current_day=day,
+                    tie_origin="fast_forward",
+                ) is not None:
+                    _rel_moves.append(f"+#{tie.get('neighbor')}({tie.get('role')})")
+            if _rel_moves:
+                _rel_log = f"[Social {period.title}] {'；'.join(_rel_moves)}\n"
+                daily_logs[agent_id] += _rel_log
+                append_agent_log(agent, _rel_log)
+
+            # 3) next step's intentions (from the digest, if any)
+            intentions = digest.get("intentions") or {}
+            if isinstance(intentions, dict) and intentions:
+                intentions = dict(intentions)
+                intentions["day"] = day
+                agent["intentions"] = intentions
+
+            # 4) goal progress
+            if GOALS_ENABLED and isinstance(agent.get("goals"), dict) and agent["goals"]:
+                agent["goals"], goal_notes = apply_goal_progress(
+                    agent["goals"],
+                    digest.get("goal_progress", []),
+                    day,
+                    config=GOALS_CONFIG,
+                )
+                if goal_notes:
+                    print(f"🎯 {agent['name']} 的目标推进：{'；'.join(goal_notes)}")
+
+            # 5) memory lines for the step (a day yields one; a month/year
+            #    yields the milestone list, so memory density per simulated
+            #    month stays comparable across units)
+            memory_lines = [
+                str(line).strip()
+                for line in (digest.get("memories") or [digest.get("memory", "")])
+                if str(line or "").strip()
+            ]
+            for memory_line in memory_lines:
+                _append_memory_record(
+                    agent, memory_line, entry_type="memory", day=day, time_str="fast_forward"
+                )
+
+            # 6) step-end relationship decay + Dunbar prune. Decay is driven by
+            #    the day gap since last contact, so a month/year step decays a
+            #    month/year's worth in one call.
+            if HUMAN_REALISM_ENABLED:
+                decay_relationships(agent, current_day=day, cfg=HUMAN_REALISM_CONFIG)
+                enforce_dunbar(agent)
+
+            # 7) diary (deterministic fallback — no extra LLM call in fast mode)
+            diary_text = _fallback_daily_diary(
+                agent,
+                day,
+                day_context=day_context,
+                day_memory="；".join(memory_lines),
+                consolidation_text=brief,
+                intentions=agent.get("intentions", {}),
+            )
+            save_daily_diary(agent, day, diary_text)
+            vector_db_add_entry(
+                agent_id, "diary", diary_text, sim_day=day, sim_time="fast_forward_diary"
+            )
+
+            # 8) carry the brief forward as this agent's period history, so
+            #    the next step sees the arc instead of three stray memory
+            #    lines from one week of it.
+            if period.unit != "day":
+                _history = list(agent.get("_period_briefs") or [])
+                _history.append(f"{period.title}：{brief or '（平稳）'}")
+                agent["_period_briefs"] = _history[-6:]
+
+            # 9) log the brief + record state history
+            brief_log = f"[FastForward {period.title}] {brief_disp or _ff_empty_brief}\n"
+            daily_logs[agent_id] += brief_log
+            append_agent_log(agent, brief_log)
+            vector_db_add_entry(
+                agent_id,
+                "fast_forward",
+                f"[FastForward {period.title} {span_desc}] {brief}",
+                sim_day=day,
+                sim_time="fast_forward",
+            )
+            for metric in state_history.get(agent_id, {}):
+                if metric in agent["state"]:
+                    state_history[agent_id][metric].append(agent["state"][metric])
+
+            if STATEFUL:
+                save_agent_intentions(agent_id, agent.get("intentions", {}))
+                save_agent_relationships(agent_id, agent.get("relationships", {}))
+                if GOALS_ENABLED and isinstance(agent.get("goals"), dict) and agent["goals"]:
+                    save_agent_goals(
+                        agent_id, agent["goals"], CONFIG.get("memory_dir", "output/memory")
+                    )
+
+        # World-level brief block to the console + every agent log.
+        world_line = ""
+        if day_env_events:
+            world_line = "；".join(
+                _format_external_env_event(ev) for ev in day_env_events[:2]
+            )
+        if _ff_fallbacks:
+            print(
+                f"⚠️ {period.title}：{len(_ff_fallbacks)}/{len(agents)} 位居民的简报来自"
+                f"确定性占位（模型未产出可用结果）——{'、'.join(_ff_fallbacks[:5])}"
+                f"{'…' if len(_ff_fallbacks) > 5 else ''}。检查 provider 与日志。"
+            )
+        brief_block = _ff_render_brief(
+            period, agent_briefs, world_line=world_line, day_desc=day_desc
+        )
+        print(brief_block)
+
+        # Life events for the step. Fast-forward runs no ticks, so the
+        # tick-scoped life-event path never fires; this is where queued events
+        # get drained and where the digest's life moves (the coarse action
+        # space) become real events — state effects, aftermath, job rewriting.
+        hook_bus.emit(
+            "life.step",
+            day=day,
+            start_day=period.start_day,
+            period_days=period.days,
+            time_str="fast_forward",
+            agents=agents,
+            daily_logs=daily_logs,
+            moves_by_agent={
+                aid: (digest or {}).get("life_moves") or []
+                for aid, digest in _digest_results.items()
+            },
+        )
+        # Individual development: practice normally accrues per tick, so
+        # without this a fast-forward run can only *lose* skill.
+        hook_bus.emit(
+            "growth.step",
+            day=day,
+            period_days=period.days,
+            agents=agents,
+            daily_logs=daily_logs,
+            development_by_agent={
+                aid: (digest or {}).get("development") or []
+                for aid, digest in _digest_results.items()
+            },
+        )
+
+        # Step-boundary memory work: once per step, whatever the unit.
+        for agent in agents:
+            try:
+                run_daily_memory_lifecycle(
+                    agent, day=day, time_str="end_of_day", llm=call_llm, web_fetch_fn=None
+                )
+            except Exception as _lifecycle_exc:  # noqa: BLE001
+                print(f"⚠️ memory lifecycle hook failed for {agent.get('name')}: {_lifecycle_exc}")
+            hook_bus.emit("memory.consolidate", agent=agent, day=day)
+
+        # Day-boundary evolution hooks (growth decay / interests / economy),
+        # replayed chunk by chunk so the economy advances a full period.
+        _emit_day_end(first_end, first_days, len(chunks) == 1)
+        for position, (chunk_end, chunk_days) in enumerate(chunks[1:], start=2):
+            is_last = position == len(chunks)
+            _emit_day_start(chunk_end, chunk_days, is_last)
+            _emit_day_end(chunk_end, chunk_days, is_last)
+        if visualizer is not None:
+            visualizer.record_frame(
+                day=day,
+                time_str="fast_forward",
+                day_context=day_context,
+                env_context=day_env_context,
+                env_events=list(day_env_events or []),
+                agent_steps=[],
+                policy={},
+            )
+
+    # ----- PHASE 3: STEP LOOP — one iteration per day / month / year -----
+    # ``horizon`` is a list of `Period`s. At the default day granularity it is
+    # one period per day, so this is the classic day loop; at month/year
+    # granularity each iteration covers a whole period, which only the
+    # fast-forward branch below can handle — the tick megaloop plans an
+    # intra-day timeline, which has no meaning for a month. That is why a
+    # coarse unit forces LONG_RUN_ENABLED on above rather than being dropped
+    # here; the `else` is now only reachable if someone sets the global by hand.
+    step_unit = LONG_RUN_UNIT if LONG_RUN_ENABLED else "day"
+    horizon = _ff_plan_horizon(
+        start_day, SIM_DAYS, step_unit, start_date=SIM_START_DATE
+    )
+    for period in horizon:
+        day = period.end_day
+        sim_ctx.clock.start_day(day)
+        # K5: apply population interventions queued via
+        # controller.intervene("remove_agent", ...) at the day boundary —
+        # mid-tick removal would corrupt the step pipeline. Removed ids are
+        # also scrubbed from every remaining agent's social_neighbors so
+        # social stages don't dereference a gone agent.
+        _pending_removals = sim_ctx.plugin_state("population").pop("remove", [])
+        if _pending_removals:
+            _removed_ids = {int(x) for x in _pending_removals}
+            agents[:] = [a for a in agents if int(a["id"]) not in _removed_ids]
+            for _a in agents:
+                if isinstance(_a.get("social_neighbors"), list):
+                    _a["social_neighbors"] = [
+                        n for n in _a["social_neighbors"] if int(n) not in _removed_ids
+                    ]
+            sim_ctx.set_agents(agents)
+            agents_by_id = sim_ctx.agents_by_id
+            print(f"👋 已移除 agent：{sorted(_removed_ids)}（自 Day {day} 起）")
+        # ----- PHASE 3a: Per-day setup (day context, schedule/routine generation, action space) -----
+        # K3h: the real-work market day tick rides `on_day_start`.
         day_context = _resolve_day_context(
             day,
             start_weekday_idx=SIM_START_WEEKDAY_INDEX,
@@ -5902,11 +4392,29 @@ def run_simulation():
             f"{day_context.get('weekday_zh', '周一')} "
             f"{day_context.get('day_type_zh', '工作日')}"
         ).strip()
-        print(f"\n================= Day {day} ({day_desc}) =================")
+        step_desc = period.describe(day_desc)
+        # Coarse banners carry the step's last sim day too: it is what
+        # `gaworld.parallel.runner.latest_day` reads to report progress, and
+        # "Month 3" alone is a step index, not a day number.
+        banner = period.title if period.unit == "day" else f"{period.title} · Day {day}"
+        print(f"\n================= {banner} ({step_desc}) =================")
         if distributed_client.enabled:
             distributed_client.refresh_directory()
+        # K3e: off-screen ghost-event injection now rides `on_day_start`
+        # (gaworld/events/plugin.py), before the first tick's queue drain.
         daily_logs = defaultdict(str)
-        day_env_events = env_system.start_day(day, day_context=day_context, agents=agents)
+        # The environment is asked at the step's own scale: a month step gets
+        # structural drivers (policy, prices, industry, season), not one day's
+        # weather stretched over thirty.
+        day_env_events = env_system.start_day(
+            day,
+            day_context=day_context,
+            agents=agents,
+            span=(
+                {"days": period.days, "unit": period.unit, "label": step_desc}
+                if period.days > 1 else None
+            ),
+        )
         day_env_context = env_system.get_day_context_text()
         append_jsonl(
             env_timeline_path,
@@ -5920,7 +4428,7 @@ def run_simulation():
         )
         if day_env_events:
             env_lines = "\n".join(f"- {_format_external_env_event(ev)}" for ev in day_env_events)
-            env_header = f"\n[ExternalEnvironment Day {day} {day_desc}]\n{env_lines}\n"
+            env_header = f"\n[ExternalEnvironment {period.title} {step_desc}]\n{env_lines}\n"
             print(env_header.strip())
             for agent in agents:
                 daily_logs[agent["id"]] += env_header
@@ -5932,6 +4440,17 @@ def run_simulation():
                     sim_day=day,
                     sim_time="day_start",
                 )
+        # Long-horizon fast-forward: skip the per-day routine LLM pass, the
+        # intra-day tick megaloop and the normal day-end consolidation; a
+        # single per-agent digest carries the whole step — a day, a month or a
+        # year, depending on ``long_run.unit`` (see _fastforward.py).
+        if LONG_RUN_ENABLED:
+            _run_fast_forward_step(
+                period, day_context, day_desc, daily_logs, day_env_events, day_env_context
+            )
+            if STATEFUL:
+                _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
+            continue
         llm_budget_by_agent = {}
         daily_schedules = {}
         daily_routine_texts = {}
@@ -5955,6 +4474,7 @@ def run_simulation():
                     episodes,
                     HUMAN_REALISM_CONFIG,
                     budget,
+                    goals_context=_goals_hint(agent),
                 )
                 intentions["day"] = day
                 agent["intentions"] = intentions
@@ -5977,6 +4497,12 @@ def run_simulation():
                 day=day,
                 day_context=day_context,
             )
+            if TIME_GRID_SNAP:
+                # Pin the schedule to the shared time grid before anything
+                # downstream (routine text, wake time, autoregressive base,
+                # schedule map, master timeline) reads it, so all of them stay
+                # consistent and the timeline cannot grow with the population.
+                daily_schedule = snap_schedule_to_grid(daily_schedule, TIME_STEP_MINUTES)
             updated = False
             new_actions = actions[agent_id]
             for _, activity in daily_schedule:
@@ -5997,7 +4523,7 @@ def run_simulation():
         for agent_id, daily_schedule, action_space_updated in _routine_results:
             daily_schedules[agent_id] = daily_schedule
             if action_space_updated and STATEFUL:
-                save_agent_actions(agent_id, actions[agent_id])
+                save_action_space(agent_id, actions[agent_id])
             lines = [f"{t} {act}" for t, act in daily_schedule] if daily_schedule else ["(no schedule)"]
             routine_text = "\n".join(lines)
             daily_routine_texts[agent_id] = routine_text
@@ -6009,10 +4535,19 @@ def run_simulation():
             daily_wake_times[agent_id] = wake_time or (daily_schedule[0][0] if daily_schedule else None)
             daily_routine_logged[agent_id] = False
 
+        # Part D: carry today's plan forward as tomorrow's base so the schedule
+        # evolves day to day instead of resetting to the fixed archetype every
+        # morning. Day 1 still seeds from ``generate_schedule`` (the archetype).
+        if DAILY_PLAN_AUTOREGRESSIVE:
+            for agent_id, daily_schedule in daily_schedules.items():
+                if daily_schedule:
+                    base_schedule_map[agent_id] = [tuple(slot) for slot in daily_schedule]
+
         schedule_map = build_schedule_map(daily_schedules)
         timeline = build_master_timeline(daily_schedules, TIME_STEP_MINUTES)
         sleep_step = SECONDS_PER_DAY / (SIM_DAYS * max(len(timeline), 1))
         info_schedule = {}
+        curiosity_budget = {}
         daily_info_seen = defaultdict(set)
         daily_query_seen = defaultdict(set)
         preferred_sites_map = {}
@@ -6028,6 +4563,8 @@ def run_simulation():
                 preferred_sites_map[agent_id] = preferred_sites
                 agent["preferred_info_sites"] = preferred_sites
                 curiosity = _estimate_curiosity(agent)
+                ev_cfg = INFO_SEEK_CONFIG.get("event_driven", {})
+                curiosity_budget[agent["id"]] = int(ev_cfg.get("max_extra_seeks_per_day", 2))
                 if not INFO_SEEK_ENABLED:
                     continue
                 daily_chance = min(0.98, INFO_SEEK_BASE_CHANCE * curiosity + 0.05)
@@ -6044,6 +4581,8 @@ def run_simulation():
             # Reset daily travel cost counter
             if "locations" in agent:
                 agent["locations"]["daily_travel_cost"] = 0.0
+        # K3i: the P4 location-aversion recency decay rides `on_day_start`
+        # (SpatialPreferencesPlugin).
         hook_bus.emit(
             "on_day_start",
             day=day,
@@ -6061,25 +4600,17 @@ def run_simulation():
             extension_state=extension_state,
         )
 
+        # ----- PHASE 3b: STEP LOOP — the megaloop, runs once per timeline tick (default 10-30 min steps) -----
         for time_index, time_str in enumerate(timeline):
+            sim_ctx.clock.advance(time_str, time_index)
             step_minutes = _timeline_step_minutes(timeline, time_index)
             policy = next((p for p in POLICY_EVENTS if p["day"] == day and p["time"] == time_str), None)
-            due_life_events = drain_due_life_events(day, time_str, CONFIG)
             env_system.tick(day, time_str, agents)
             env_events = env_system.get_events()
             env_context = env_system.get_context_text()
+            # K3g: the per-tick map state refresh (sim time + occupancy)
+            # rides on_time_tick (gaworld/world/plugin.py).
             frame_steps = []
-            if due_life_events:
-                append_jsonl(
-                    env_timeline_path,
-                    {
-                        "scope": "life_event",
-                        "day": int(day),
-                        "date": day_context.get("sim_date", ""),
-                        "time": str(time_str),
-                        "events": due_life_events,
-                    },
-                )
             if env_events:
                 append_jsonl(
                     env_timeline_path,
@@ -6092,7 +4623,11 @@ def run_simulation():
                     },
                 )
             if background_text:
-                env_context = f"背景：{background_text} 当前环境事件：{env_context}"
+                # Local headlines rotate per sim-day (the cache itself refreshes
+                # on real time), so a long run keeps meeting new stories.
+                _news_block = _city_news_block(_city_context, day)
+                _bg = f"{background_text} {_news_block}".strip() if _news_block else background_text
+                env_context = f"背景：{_bg} 当前环境事件：{env_context}"
             hook_bus.emit(
                 "on_time_tick",
                 day=day,
@@ -6108,17 +4643,13 @@ def run_simulation():
                 env_events=env_events,
                 env_context=env_context,
                 policy=policy,
+                day_context=day_context,
+                env_timeline_path=env_timeline_path,
                 extension_state=extension_state,
             )
 
             distributed_inbox = {}
             if distributed_client.enabled:
-                if bool(OPENCLAW_CONFIG.get("push_tick_to_relay", True)):
-                    distributed_client.update_tick(
-                        day=day,
-                        time_str=time_str,
-                        background=f"{background_text} {env_context}".strip(),
-                    )
                 distributed_inbox = distributed_client.poll_messages(
                     local_agent_ids=[a["id"] for a in agents],
                     day=day,
@@ -6141,6 +4672,20 @@ def run_simulation():
                     append_agent_log(agent, header + routine_text + "\n")
                     daily_routine_logged[agent_id] = True
                 if time_str in info_schedule.get(agent_id, set()):
+                    scheduled_keywords = None
+                    if INFO_SEEK_CONFIG.get("contextual_keywords", True):
+                        _ctx = assemble_curiosity_context(
+                            agent,
+                            scheduled_activity=get_activity_for_time(schedule_map[agent_id], time_str),
+                            recent_events=[
+                                _format_external_env_event(ev) for ev in (env_events or [])
+                            ],
+                            day=day,
+                            time_str=time_str,
+                        )
+                        scheduled_keywords = propose_contextual_keywords(
+                            agent, _ctx, config=INFO_SEEK_CONFIG
+                        ) or None
                     _, info_log, result_url, query = info_seek_and_store(
                         agent,
                         day=day,
@@ -6150,6 +4695,7 @@ def run_simulation():
                         preferred_sites=preferred_sites_map.get(agent_id, []),
                         seen_urls=daily_info_seen[agent_id],
                         used_queries=daily_query_seen[agent_id],
+                        keywords=scheduled_keywords,
                         config=INFO_SEEK_CONFIG,
                     )
                     if query:
@@ -6160,6 +4706,23 @@ def run_simulation():
                         print(info_log)
                         daily_logs[agent_id] += info_log
                         append_agent_log(agent, info_log)
+                _maybe_curiosity_seek(
+                    agent,
+                    day=day,
+                    time_str=time_str,
+                    scheduled_activity=get_activity_for_time(schedule_map[agent_id], time_str),
+                    recent_events=[
+                        _format_external_env_event(ev) for ev in (env_events or [])
+                    ],
+                    news_cache=news_cache,
+                    news_sources=news_sources,
+                    preferred_sites=preferred_sites_map.get(agent_id, []),
+                    seen_urls=daily_info_seen[agent_id],
+                    used_queries=daily_query_seen[agent_id],
+                    curiosity_budget=curiosity_budget,
+                    config=INFO_SEEK_CONFIG,
+                    daily_logs=daily_logs,
+                )
                 if env_events:
                     for ev in env_events:
                         vector_db_add_entry(
@@ -6169,688 +4732,10 @@ def run_simulation():
                             sim_day=day,
                             sim_time=time_str,
                         )
-                agent_life_events = life_events_for_agent(due_life_events, agent_id)
-                if agent_life_events:
-                    _record_life_events_for_agent(
-                        agent,
-                        agent_life_events,
-                        day,
-                        time_str,
-                        daily_logs,
-                    )
-                agent_env_events = list(env_events or []) + [
-                    _life_event_as_env_event(event) for event in agent_life_events
-                ]
-                #act = random.choice(actions.get(activity, ["继续当前活动"]))
-                scheduled_activity = get_activity_for_time(schedule_map[agent_id], time_str)
-                inbox_messages = distributed_inbox.get(agent_id, [])
-                social_context = get_social_context(agent, agents_by_id)
-                inbox_context = format_inbox_context(
-                    inbox_messages,
-                    max_items=int(DISTRIBUTED_CONFIG.get("max_inbound_per_step", 3)),
-                )
-                if inbox_context:
-                    social_context = f"{social_context} {inbox_context}".strip()
-                    inbox_log = f"[DistributedInbox {agent['name']} @ {time_str}] {inbox_context}\n"
-                    daily_logs[agent_id] += inbox_log
-                    append_agent_log(agent, inbox_log)
-                    vector_db_add_entry(
-                        agent_id,
-                        "distributed_in",
-                        inbox_context,
-                        sim_day=day,
-                        sim_time=time_str,
-                    )
-
-                policy_desc = None
-                if policy:
-                    policy_desc = policy.get("description") or policy.get("name")
-                state_before = dict(agent.get("state", {}))
-                step_ctx = {
-                    "scheduled_activity": scheduled_activity,
-                    "activity": scheduled_activity,
-                    "social_context": social_context,
-                    "policy_desc": policy_desc,
-                    "life_events": agent_life_events,
-                }
-                hook_bus.emit(
-                    "on_agent_pre_step",
-                    day=day,
-                    time_str=time_str,
-                    config=CONFIG,
-                    agent=agent,
-                    agents=agents,
-                    agents_by_id=agents_by_id,
-                    city_map=city_map,
-                    city_map_text=city_map_text,
-                    schedule_map=schedule_map,
-                    actions=actions,
-                    env_events=agent_env_events,
-                    env_context=env_context,
-                    policy=policy,
-                    step=step_ctx,
-                    extension_state=extension_state,
-                )
-                scheduled_activity = step_ctx.get("scheduled_activity", scheduled_activity)
-                social_context = step_ctx.get("social_context", social_context)
-                policy_desc = step_ctx.get("policy_desc", policy_desc)
-                intervention_feed = {}
-                step_env_context = env_context
-                life_event_context = _format_life_event_context(agent_life_events)
-                if life_event_context:
-                    step_env_context = (
-                        f"{step_env_context}\n{life_event_context}"
-                        if step_env_context
-                        else life_event_context
-                    )
-                if INTERVENTION_ENABLED:
-                    intervention_feed = build_intervention_feed(
-                        agent,
-                        agents_by_id=agents_by_id,
-                        day=day,
-                        time_str=time_str,
-                        env_events=agent_env_events,
-                        policy_event=policy or policy_desc,
-                        news_items=news_cache[:5],
-                        config=INTERVENTION_CONFIG,
-                    )
-                    feed_context = intervention_feed.get("context_text", "")
-                    if feed_context:
-                        step_env_context = (
-                            f"{env_context}\n平台干预推荐：{feed_context}"
-                            if env_context
-                            else f"平台干预推荐：{feed_context}"
-                        )
-                        step_ctx["intervention_feed"] = intervention_feed
-                # Core cognition loop: perceive -> plan -> (maybe) change routine -> act -> reflect.
-                perc = perception(agent, time_str, social_context, step_env_context, policy_desc if policy else None)
-                # --- Dynamic behaviour system (replaces old transient thought) ---
-                _use_dynamic = CONFIG.get("dynamic_behavior", {}).get("enabled", True)
-                if _use_dynamic:
-                    transient_thought = dynamic_transient_thought(
-                        agent,
-                        time_str,
-                        scheduled_activity,
-                        perception_text=perc,
-                        env_events=agent_env_events,
-                        policy_desc=policy_desc,
-                        social_context=social_context,
-                        inbox_messages=inbox_messages,
-                        all_agents=agents,
-                        agents_by_id=agents_by_id,
-                        config=CONFIG,
-                    )
-                else:
-                    transient_thought = maybe_generate_transient_thought(
-                        agent,
-                        time_str,
-                        scheduled_activity,
-                        perc,
-                        env_events=agent_env_events,
-                        policy_desc=policy_desc,
-                        social_context=social_context,
-                        inbox_messages=inbox_messages,
-                    )
-                step_recollections = []
-                plan_commitment = _activity_commitment_level(scheduled_activity)
-                plan_prefetch_refs = _build_decision_reference_bundle(
-                    agent,
-                    scheduled_activity,
-                    time_str=time_str,
-                    location=agent.get("locations", {}).get("current", ""),
-                    env_context=step_env_context,
-                    env_events=agent_env_events,
-                    policy_desc=policy_desc,
-                    social_context=social_context,
-                )
-                plan_recall = evoke_memory(
-                    agent,
-                    "planning",
-                    scheduled_activity,
-                    perc,
-                    social_context if plan_prefetch_refs.get("social_network_relevant") else "",
-                    plan_prefetch_refs.get("physical_env_text", "") if plan_prefetch_refs.get("physical_env_relevant") else "",
-                    plan_prefetch_refs.get("social_env_text", "") if plan_prefetch_refs.get("social_env_relevant") else "",
-                    context_labels=_build_recall_context_labels(
-                        agent,
-                        activity=scheduled_activity,
-                        time_str=time_str if plan_prefetch_refs.get("location_time_relevant") else "",
-                        location=agent.get("locations", {}).get("current", "") if plan_prefetch_refs.get("location_time_relevant") else "",
-                        commitment_level=plan_commitment,
-                    ),
-                )
-                if plan_recall.get("recollection"):
-                    step_recollections.append(plan_recall["recollection"])
-                plan_refs = dict(plan_prefetch_refs)
-                plan_refs["memory_hint"] = plan_recall.get("hint", "")
-                plan_refs["recollection"] = plan_recall.get("recollection", "")
-                plan_refs["transient_thought"] = transient_thought
-                plan = planning(agent, perc, recall_context=plan_recall, decision_refs=plan_refs)
-                plan_text = format_plan_text(plan)
-                activity, change_reason, changed = maybe_adjust_activity(
-                    agent,
-                    time_str,
-                    scheduled_activity,
-                    perc,
-                    plan_text,
-                    step_env_context,
-                    agent_env_events,
-                    policy_desc,
-                    transient_thought=transient_thought,
-                    social_context=social_context,
-                )
-                # --- Dynamic behaviour system: apply if LLM didn't change ---
-                _dyn_result = transient_thought.get("dynamic_result") if isinstance(transient_thought, dict) else None
-                if _dyn_result and not changed and _dyn_result.get("changed"):
-                    activity = _dyn_result["activity"]
-                    change_reason = _dyn_result.get("reason", "动态行为系统触发")
-                    changed = True
-                # Apply mood delta from dynamic system
-                if _dyn_result and _dyn_result.get("mood_delta"):
-                    _mood_d = float(_dyn_result["mood_delta"])
-                    state = agent.get("state", {})
-                    state["emotion"] = max(0.0, min(1.0, float(state.get("emotion", 0.5)) + _mood_d))
-                # Apply schedule insertion from dynamic system
-                if _dyn_result and _dyn_result.get("schedule_insert") and changed:
-                    _si = _dyn_result["schedule_insert"]
-                    _sched_tuples = [(s.get("time", ""), s.get("activity", "")) if isinstance(s, dict) else s
-                                     for s in schedule_map.get(agent_id, [])]
-                    _new_sched = dynamic_insert_activity(
-                        _sched_tuples,
-                        _si["insert_time"],
-                        _si["activity"],
-                        duration_minutes=_si.get("duration_minutes", 30),
-                        resumable=True,
-                        original_activity=_si.get("original_activity", scheduled_activity),
-                    )
-                    # Convert back to schedule format used by the simulator
-                    schedule_map[agent_id] = [{"time": t, "activity": a} for t, a in _new_sched]
-                # Log social encounters from dynamic system
-                if _dyn_result and _dyn_result.get("social_encounters"):
-                    for _enc in _dyn_result["social_encounters"]:
-                        _LOG.debug("agent_%s social_encounter: %s", agent_id, _enc.get("activity", ""))
-
-                activity = step_ctx.get("activity", activity)
-                if activity != scheduled_activity and not changed:
-                    changed = True
-                    hook_reason = str(step_ctx.get("change_reason", "")).strip()
-                    if hook_reason:
-                        change_reason = hook_reason
-                if changed:
-                    schedule_map[agent_id] = apply_schedule_override(
-                        schedule_map[agent_id],
-                        time_str,
-                        activity,
-                    )
-                    updated = ensure_action_space_for_activity(agent, actions[agent_id], activity)
-                    if updated and STATEFUL:
-                        save_agent_actions(agent_id, actions[agent_id])
-
-                desired_location = resolve_location(agent, activity, time_str, city_map)
-                movement = move_agent(
-                    agent,
-                    desired_location=desired_location,
-                    activity=activity,
-                    time_str=time_str,
-                    step_minutes=step_minutes,
-                    city_map=city_map,
-                )
-                if STATEFUL:
-                    persist_agent_locations_if_changed(agent)
-                location = movement["display_location"]
-                resolved_location = movement["resolved_location"]
-                travel = movement["travel"]
-                effective_activity = activity
-                if travel.get("status") in {"departed", "in_transit"}:
-                    act = f"乘坐{travel.get('mode', '交通工具')}移动"
-                    action_meta = {
-                        "decision_driver": "时空约束",
-                        "commitment_level": _activity_commitment_level(activity),
-                        "scores": {act: {"weight": 1.0, "components": {}, "styles": ["quick"]}},
-                    }
-                    outcome = (
-                        f"从【{resolved_location}】前往【{movement['target_location']}】，"
-                        f"使用【{travel.get('mode', '未知方式')}】，路程约 {travel.get('distance_km', 0.0):.1f} km，"
-                        f"预计 {travel.get('minutes', 0)} 分钟"
-                    )
-                    location_bias = {}
-                    effective_activity = f"前往{movement['target_location']}"
-                else:
-                    location_bias = get_location_action_bias(
-                        agent,
-                        resolved_location,
-                        city_map_text,
-                        actions[agent_id],
-                    )
-                    location_time_relevant = _is_location_time_relevant(activity, time_str=time_str, location=resolved_location)
-                    action_prefetch_refs = _build_decision_reference_bundle(
-                        agent,
-                        activity,
-                        time_str=time_str,
-                        location=resolved_location,
-                        env_context=step_env_context,
-                        env_events=agent_env_events,
-                        policy_desc=policy_desc,
-                        social_context=social_context,
-                    )
-                    action_recall = evoke_memory(
-                        agent,
-                        "action",
-                        activity,
-                        perc,
-                        plan_text,
-                        social_context if action_prefetch_refs.get("social_network_relevant") else "",
-                        action_prefetch_refs.get("physical_env_text", "") if action_prefetch_refs.get("physical_env_relevant") else "",
-                        action_prefetch_refs.get("social_env_text", "") if action_prefetch_refs.get("social_env_relevant") else "",
-                        resolved_location if location_time_relevant else "",
-                        time_str if location_time_relevant else "",
-                        context_labels=_build_recall_context_labels(
-                            agent,
-                            activity=activity,
-                            time_str=time_str if location_time_relevant else "",
-                            location=resolved_location if location_time_relevant else "",
-                            commitment_level=_activity_commitment_level(activity),
-                        ),
-                    )
-                    if action_recall.get("recollection"):
-                        step_recollections.append(action_recall["recollection"])
-                    action_refs = dict(action_prefetch_refs)
-                    action_refs["memory_hint"] = action_recall.get("hint", "")
-                    action_refs["recollection"] = action_recall.get("recollection", "")
-                    action_refs["transient_thought"] = transient_thought
-                    act, action_meta = choose_action(
-                        agent,
-                        activity,
-                        actions[agent_id],
-                        context=f"{activity} {perc} {plan_text}",
-                        location_bias=location_bias,
-                        location=resolved_location,
-                        time_str=time_str,
-                        recall_context=action_recall,
-                        decision_refs=action_refs,
-                        return_debug=True,
-                    )
-                    outcome = f"在【{activity}】中执行了【{act}】"
-                    if real_work_runtime is not None:
-                        rw_outcome = real_work_runtime.router.maybe_dispatch(
-                            agent, activity=activity, chosen_action=act,
-                            sim_day=day, sim_time=time_str,
-                        )
-                        if rw_outcome:
-                            outcome = rw_outcome
-                        rw_done = real_work_runtime.absorb_for(
-                            agent, sim_day=day, sim_time=time_str,
-                        )
-                        if rw_done:
-                            outcome = f"{outcome}｜回收：{_rw_summarise(rw_done)}"
-                reflection_recall = evoke_memory(
-                    agent,
-                    "reflection",
-                    effective_activity,
-                    act,
-                    outcome,
-                    time_str if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
-                    context_labels=_build_recall_context_labels(
-                        agent,
-                        activity=effective_activity,
-                        time_str=time_str if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
-                        location=resolved_location if _is_location_time_relevant(effective_activity, time_str=time_str, location=resolved_location) else "",
-                        commitment_level=action_meta.get("commitment_level", _activity_commitment_level(effective_activity)),
-                    ),
-                )
-                if reflection_recall.get("recollection"):
-                    step_recollections.append(reflection_recall["recollection"])
-                refl = reflection(agent, outcome, recall_context=reflection_recall)
-                refl_text = format_reflection_text(refl)
-                if HUMAN_REALISM_ENABLED:
-                    update_needs(
-                        agent,
-                        time_str,
-                        effective_activity,
-                        cfg=HUMAN_REALISM_CONFIG,
-                        changed=changed,
-                        travel=travel,
-                    )
-
-                if agent_env_events:
-                    for ev in agent_env_events:
-                        inferred = infer_event_effect(agent, ev.get("description", ev.get("name", "")), ev.get("type", "event"))
-                        for k, v in inferred.items():
-                            agent["state"][k] += v
-                if agent_life_events:
-                    _apply_life_event_state_effects(agent, agent_life_events)
-
-                if policy:
-                    inferred = infer_event_effect(agent, policy_desc, "policy")
-                    for k, v in inferred.items():
-                        agent["state"][k] += v
-
-                social_influence(agent, agents_by_id)
-                update_state(agent)
-                intervention_metrics = {}
-                if INTERVENTION_ENABLED:
-                    intervention_metrics = update_agent_intervention_metrics(
-                        agent,
-                        feed=intervention_feed,
-                        action=act,
-                        outcome=outcome,
-                        reflection=refl_text,
-                        agents_by_id=agents_by_id,
-                        config=INTERVENTION_CONFIG,
-                    )
-                    source_counts = intervention_feed.get("source_counts", {}) if isinstance(intervention_feed, dict) else {}
-                    append_intervention_metrics(
-                        INTERVENTION_OUTPUT_DIR,
-                        {
-                            "day": day,
-                            "time": time_str,
-                            "agent_id": agent_id,
-                            "feed_items": len(intervention_feed.get("items", [])) if isinstance(intervention_feed, dict) else 0,
-                            "relational_items": source_counts.get("relational", 0),
-                            "personalized_items": source_counts.get("personalized", 0),
-                            "headline_items": source_counts.get("headline", 0),
-                            **intervention_metrics,
-                        },
-                    )
-                sent_remote_messages = []
-                if distributed_client.enabled:
-                    sent_remote_messages = distributed_client.send_agent_messages(
-                        agent,
-                        day=day,
-                        time_str=time_str,
-                        activity=effective_activity,
-                        reflection=refl_text,
-                        outcome=outcome,
-                    )
-                    if sent_remote_messages:
-                        sent_summary = "; ".join(
-                            f"to#{int(msg.get('to_agent', 0))}:{str(msg.get('text', ''))[:40]}"
-                            for msg in sent_remote_messages
-                            if isinstance(msg, dict)
-                        )
-                        if sent_summary:
-                            sent_log = (
-                                f"[DistributedOutbox {agent['name']} @ {time_str}] "
-                                f"{sent_summary}\n"
-                            )
-                            daily_logs[agent_id] += sent_log
-                            append_agent_log(agent, sent_log)
-                            vector_db_add_entry(
-                                agent_id,
-                                "distributed_out",
-                                sent_summary,
-                                sim_day=day,
-                                sim_time=time_str,
-                            )
-                if HUMAN_REALISM_ENABLED:
-                    # Capture state before relationship updates
-                    relationships_before = dict(agent.get("relationships", {}))
-                    partners = list(agent.get("_recent_social_partners", []))
-                    # Co-location encounter: add agents at the same location as potential social partners
-                    if resolved_location:
-                        colocated = [
-                            other_id for other_id, other in agents_by_id.items()
-                            if other_id != agent_id
-                            and other.get("locations", {}).get("current") == resolved_location
-                        ]
-                        for pid in colocated:
-                            if pid not in partners:
-                                partners.append(pid)
-                    for sender_id in extract_sender_agent_ids(inbox_messages):
-                        if sender_id not in partners:
-                            partners.append(sender_id)
-                    signal = infer_interaction_signal(refl_text)
-                    for pid in partners:
-                        relationship_update(agent, pid, signal, HUMAN_REALISM_CONFIG)
-                    # Capture post-relationship-update state for A/B logger
-                    step_ctx["relationships_after"] = dict(agent.get("relationships", {}))
-                    # Compute relationship_delta: direction + magnitude of change
-                    rel_delta = _compute_relationship_delta(relationships_before, step_ctx["relationships_after"])
-                    step_ctx["relationship_delta"] = rel_delta
-                    state_after = dict(agent.get("state", {}))
-                    delta = {}
-                    for key, before_v in state_before.items():
-                        after_v = state_after.get(key)
-                        if isinstance(before_v, (int, float)) and isinstance(after_v, (int, float)):
-                            delta[key] = float(after_v) - float(before_v)
-                    thought_intensity = (
-                        float(transient_thought.get("intensity", 0.0))
-                        if isinstance(transient_thought, dict)
-                        else 0.0
-                    )
-                    event_intensity = min(
-                        1.0,
-                        0.2 * len(agent_env_events) + (0.2 if policy else 0.0) + 0.18 * thought_intensity,
-                    )
-                    recent_actions = [
-                        e.get("action", "")
-                        for e in agent.get("episodes", [])[-20:]
-                        if isinstance(e, dict)
-                    ]
-                    novelty = 1.0 if act not in recent_actions else 0.2
-                    priorities = agent.get("intentions", {}).get("priorities", [])
-                    goal_relevance = 0.2
-                    for p in priorities:
-                        if p and (p in effective_activity or p in plan_text or p in refl_text):
-                            goal_relevance = 0.8
-                            break
-                    salience = compute_episode_salience(
-                        delta.get("stress", 0.0),
-                        event_intensity,
-                        novelty,
-                        goal_relevance,
-                    )
-                    tags = infer_episode_tags(
-                        effective_activity,
-                        act,
-                        refl_text,
-                        env_events=[ev.get("description", ev.get("name", "")) for ev in agent_env_events],
-                        policy_event=policy_desc if policy else "",
-                    )
-                    need_snapshot = {
-                        "energy": round(float(state_after.get("energy", 0.75)), 3),
-                        "hunger": round(float(state_after.get("hunger", 0.25)), 3),
-                        "social_need": round(float(state_after.get("social_need", 0.40)), 3),
-                        "fatigue_debt": round(float(state_after.get("fatigue_debt", 0.20)), 3),
-                        "self_control": round(float(state_after.get("self_control", 0.60)), 3),
-                        "time_pressure": round(float(state_after.get("time_pressure", 0.25)), 3),
-                    }
-                    episode = {
-                        "episode_id": str(uuid.uuid4()),
-                        "day": day,
-                        "time": time_str,
-                        "scheduled_activity": scheduled_activity,
-                        "final_activity": effective_activity,
-                        "action": act,
-                        "location": location,
-                        "target_location": movement["target_location"],
-                        "travel": travel,
-                        "env_events": [ev.get("description", ev.get("name", "")) for ev in agent_env_events],
-                        "life_events": [dict(event) for event in agent_life_events],
-                        "policy_event": policy_desc if policy else "",
-                        "social_partners": partners,
-                        "perception": perc,
-                        "plan": plan_text,
-                        "plan_struct": plan,
-                        "outcome": outcome,
-                        "reflection": refl_text,
-                        "reflection_struct": refl,
-                        "transient_thought": transient_thought or {},
-                        "state_before": state_before,
-                        "state_after": state_after,
-                        "need_snapshot": need_snapshot,
-                        "delta": delta,
-                        "tags": tags,
-                        "recollections": list(step_recollections),
-                        "salience": salience,
-                        "valence": float(np.clip(delta.get("emotion", 0.0), -1.0, 1.0)),
-                        "decision_driver": action_meta.get("decision_driver", "惯性延续"),
-                        "change_reason": change_reason or "",
-                        "commitment_level": action_meta.get("commitment_level", _activity_commitment_level(effective_activity)),
-                        "expected_outcome": str(plan.get("expected_outcome", "")).strip(),
-                        "created_at_day": day,
-                    }
-                    agent.setdefault("episodes", []).append(episode)
-                    update_habits_from_episode(agent, episode, HUMAN_REALISM_CONFIG)
-                    append_agent_episode(agent_id, episode)
-                    episode_text = (
-                        f"Day {day} {time_str} {effective_activity}/{act} @ {location} "
-                        f"driver={episode['decision_driver']} commitment={episode['commitment_level']} "
-                        f"thought={format_transient_thought(transient_thought) if transient_thought else 'none'} "
-                        f"needs={json.dumps(need_snapshot, ensure_ascii=False)} "
-                        f"tags={','.join(tags)} salience={salience:.2f} reflection={refl_text}"
-                    )
-                    vector_db_add_entry(agent_id, "episode", episode_text, sim_day=day, sim_time=time_str)
-                    agent["last_activity"] = effective_activity
-                    agent["last_action"] = act
-                    memory_review = maybe_review_memories(
-                        agent,
-                        day,
-                        time_str,
-                        recent_episode=episode,
-                        llm_budget_ctx=llm_budget_by_agent.get(agent_id),
-                    )
-                else:
-                    memory_review = ""
-                    agent["last_activity"] = effective_activity
-                    agent["last_action"] = act
-                agent["last_reflection"] = refl_text
-                for metric in state_history[agent["id"]]:
-                    state_history[agent["id"]][metric].append(agent["state"][metric])
-
-                # --- activity header (fold RoutineChange into one line) ---
-                if changed:
-                    reason_text = change_reason or "临时改变"
-                    _activity_header = f"{scheduled_activity} → {effective_activity} ({reason_text})"
-                    routine_line = f"RoutineChange: {scheduled_activity} -> {effective_activity} ({reason_text})\n"
-                else:
-                    _activity_header = scheduled_activity
-                    routine_line = ""
-
-                # --- optional lines (only rendered when non-empty) ---
-                recall_line = ""
-                unique_recollections = []
-                for item in step_recollections:
-                    text = str(item).strip()
-                    if text and text not in unique_recollections:
-                        unique_recollections.append(text)
-                if unique_recollections:
-                    recall_line = f"Recall: {' | '.join(unique_recollections)}\n"
-                transient_thought_line = ""
-                if transient_thought:
-                    transient_thought_line = f"Thought: {format_transient_thought(transient_thought)}\n"
-                memory_review_line = f"Review: {memory_review}\n" if memory_review else ""
-                decision_line = ""
-                if action_meta.get("decision_driver"):
-                    decision_line = (
-                        f"Driver: {action_meta.get('decision_driver')} "
-                        f"(commit={action_meta.get('commitment_level', '')})\n"
-                    )
-                needs_line = ""
-                if HUMAN_REALISM_ENABLED:
-                    needs_line = (
-                        "Needs: "
-                        f"nrg={agent['state'].get('energy', 0.75):.2f} "
-                        f"hun={agent['state'].get('hunger', 0.25):.2f} "
-                        f"soc={agent['state'].get('social_need', 0.40):.2f} "
-                        f"fat={agent['state'].get('fatigue_debt', 0.20):.2f} "
-                        f"ctrl={agent['state'].get('self_control', 0.60):.2f} "
-                        f"tprs={agent['state'].get('time_pressure', 0.25):.2f}\n"
-                    )
-
-                # --- compact location + travel (collapsed to 1 line) ---
-                _travel_status = travel.get("status", "stationary")
-                if _travel_status != "stationary":
-                    _travel_info = (
-                        f"  [{travel.get('mode', '?')} "
-                        f"{travel.get('distance_km', 0.0):.1f}km "
-                        f"{travel.get('minutes', 0)}min]"
-                    )
-                    _loc_line = f"Loc: {location} → {resolved_location}{_travel_info}\n"
-                else:
-                    _travel_info = ""
-                    _loc_line = f"Loc: {resolved_location}\n"
-
-                # --- env context (omitted when empty) ---
-                _env_line = f"Env: {step_env_context}\n" if step_env_context else ""
-
-                # -------------------------------------------------------
-                # Simple mode: one clean block per tick, Chinese-only,
-                # stripping LLM reasoning leakage and repeated boilerplate.
-                # Verbose mode: full details for debugging.
-                # -------------------------------------------------------
-                if _LOG_SIMPLE:
-                    _env_simple = _clean_env_context(step_env_context)
-                    _refl_simple = _clean_reflection(refl_text)
-                    log = (
-                        f"\n── [{agent['name']} @ {time_str}] {_activity_header} ──\n"
-                        f"Loc: {resolved_location}{_travel_info}\n"
-                        + (f"Env: {_env_simple}\n" if _env_simple else "")
-                        + f"Act: {act}\n"
-                        f"Refl: {_refl_simple}\n"
-                    )
-                else:
-                    log = (
-                        f"\n── [{agent['name']} @ {time_str}] {_activity_header} ──\n"
-                        f"{_loc_line}"
-                        f"{_env_line}"
-                        f"Perc: {perc}\n"
-                        f"Plan: {plan_text}\n"
-                        f"{transient_thought_line}"
-                        f"{recall_line}"
-                        f"Act: {act}  |  Out: {outcome}\n"
-                        f"{decision_line}"
-                        f"{needs_line}"
-                        f"Refl: {refl_text}\n"
-                        f"{memory_review_line}"
-                    )
-                print(log)
-                daily_logs[agent["id"]] += log
-                append_agent_log(agent, log)
-                vector_db_add_entry(agent["id"], "log", log, sim_day=day, sim_time=time_str)
-                vector_db_add_entry(agent["id"], "plan", plan_text, sim_day=day, sim_time=time_str)
-                vector_db_add_entry(agent["id"], "reflection", refl_text, sim_day=day, sim_time=time_str)
-                vector_db_add_entry(agent["id"], "action", outcome, sim_day=day, sim_time=time_str)
-                step_ctx.update({
-                    "perception": perc,
-                    "plan": plan_text,
-                    "plan_struct": plan,
-                    "transient_thought": transient_thought or {},
-                    "activity": effective_activity,
-                    "action": act,
-                    "outcome": outcome,
-                    "reflection": refl_text,
-                    "reflection_struct": refl,
-                    "log": log,
-                    "env_context": step_env_context,
-                    "intervention_metrics": intervention_metrics,
-                    "changed": changed,
-                    "change_reason": change_reason,
-                    "location": location,
-                    "resolved_location": resolved_location,
-                    "target_location": movement["target_location"],
-                    "travel": travel,
-                })
-                if visualizer is not None:
-                    frame_steps.append(
-                        build_agent_step_payload(
-                            agent,
-                            time_str=time_str,
-                            location=location,
-                            resolved_location=resolved_location,
-                            target_location=movement["target_location"],
-                            scheduled_activity=scheduled_activity,
-                            activity=effective_activity,
-                            action=act,
-                            outcome=outcome,
-                            perception=perc,
-                            plan=plan_text,
-                            reflection=refl_text,
-                            changed=changed,
-                            change_reason=change_reason,
-                            travel=travel,
-                        )
-                    )
+                # K2: the former ~770-line inline step body now runs as the
+                # configurable cognition pipeline (see gaworld/sim/pipeline.py).
+                step_ctx = {}
+                step_pipeline.run_step(agent, step_ctx, sim_ctx)
                 hook_bus.emit(
                     "on_agent_post_step",
                     day=day,
@@ -6864,8 +4749,8 @@ def run_simulation():
                     schedule_map=schedule_map,
                     actions=actions,
                     daily_logs=daily_logs,
-                    env_events=agent_env_events,
-                    env_context=step_env_context,
+                    env_events=step_ctx.get("_env_events", []),
+                    env_context=step_ctx.get("_env_context", env_context),
                     policy=policy,
                     step=step_ctx,
                     extension_state=extension_state,
@@ -6877,9 +4762,8 @@ def run_simulation():
                     time_str=time_str,
                     day_context=day_context,
                     env_context=env_context,
-                    env_events=list(env_events or []) + [
-                        _life_event_as_env_event(event) for event in due_life_events
-                    ],
+                    env_events=list(env_events or [])
+                    + hook_bus.collect("env.events.tick", day=day, time_str=time_str),
                     agent_steps=frame_steps,
                     policy=policy or {},
                 )
@@ -6887,6 +4771,7 @@ def run_simulation():
             if SIMULATE_REALTIME and sleep_step > 0:
                 time.sleep(sleep_step)
 
+        # ----- PHASE 3c: Day-end consolidation (memory review, daily summary, diary, episode persist) -----
         for agent in agents:
             day_consolidation_text = ""
             if HUMAN_REALISM_ENABLED:
@@ -6902,8 +4787,26 @@ def run_simulation():
                     day_eps,
                     HUMAN_REALISM_CONFIG,
                     budget,
+                    goals_context=_goals_hint(agent),
                 )
                 agent["intentions"] = consolidated.get("intentions", agent.get("intentions", {}))
+                if GOALS_ENABLED and isinstance(agent.get("goals"), dict) and agent["goals"]:
+                    agent["goals"], goal_notes = apply_goal_progress(
+                        agent["goals"],
+                        consolidated.get("goal_progress", []),
+                        day,
+                        config=GOALS_CONFIG,
+                    )
+                    if goal_notes:
+                        print(f"🎯 {agent['name']} 的目标推进：{'；'.join(goal_notes)}")
+                    if STATEFUL:
+                        save_agent_goals(
+                            agent_id, agent["goals"], CONFIG.get("memory_dir", "output/memory")
+                        )
+                # Day-end: decay role-aware relationships, prune Dunbar
+                # overflow. Both operate in place on agent["relationships"].
+                decay_relationships(agent, current_day=day, cfg=HUMAN_REALISM_CONFIG)
+                enforce_dunbar(agent)
                 if STATEFUL:
                     save_agent_intentions(agent_id, agent.get("intentions", {}))
                     save_agent_habits(agent_id, agent.get("habits", {}))
@@ -6946,29 +4849,28 @@ def run_simulation():
             daily_logs[agent["id"]] += diary_log
             append_agent_log(agent, diary_log)
             print(f"📓 {agent['name']} 的日记已写入：{diary_path}")
-            if PERSONAL_TWIN_ENABLED and bool(PERSONAL_TWIN_CONFIG.get("daily_self_update", True)):
-                twin_state, public_summary = apply_daily_twin_update(
-                    agent,
-                    PERSONAL_TWIN_CONFIG,
-                    day=day,
-                    day_memory=mem,
-                    diary_text=diary_text,
-                    intentions_text=intention_text(agent.get("intentions", {})),
-                )
-                if STATEFUL:
-                    save_agent_twin_state(agent["id"], twin_state)
-                print(f"🪞 {agent['name']} 的个人孪生公开摘要：{public_summary}")
-
-        # Save daily relationship network snapshot
-        _save_daily_network_snapshot(agents, variant_label="", day=day)
-
-        # Save daily relationship network snapshot
-        _save_daily_network_snapshot(agents, variant_label="", day=day)
-
-        # Apply relationship decay for agents with no recent interaction
+        # RAG enhancement day-tick: consolidation / decay / runtime
+        # absorption. Each step is independently flag-gated, so with
+        # default config this loop just checks three flags per agent
+        # and returns. ``web_fetch_fn=None`` means runtime absorption
+        # is skipped — the user can wire a search adapter later.
         for agent in agents:
-            apply_relationship_decay(agent, day)
-
+            try:
+                run_daily_memory_lifecycle(
+                    agent,
+                    day=day,
+                    time_str="end_of_day",
+                    llm=call_llm,
+                    web_fetch_fn=None,
+                )
+            except Exception as _lifecycle_exc:  # noqa: BLE001
+                print(f"⚠️ memory lifecycle hook failed for {agent.get('name')}: {_lifecycle_exc}")
+            # K3c: plugins run their own day-end memory passes here (e.g.
+            # the Skill library's experience-to-skill distillation).
+            hook_bus.emit("memory.consolidate", agent=agent, day=day)
+        # K3d: growth day-tick (decay + interest-set evolution) now rides
+        # `on_day_end` at priority=10 (gaworld/interests_plugin.py), keeping
+        # it ahead of the economy's config-registered day-end settlement.
         hook_bus.emit(
             "on_day_end",
             day=day,
@@ -6984,10 +4886,7 @@ def run_simulation():
             extension_state=extension_state,
         )
         if STATEFUL:
-            save_sim_state({
-                "last_day": day,
-                "memory_model_version": MEMORY_MODEL_VERSION,
-            })
+            _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
 
     print("\n✅ 模拟完成")
     if visualizer is not None:
@@ -7004,6 +4903,8 @@ def run_simulation():
         state_history=state_history,
         extension_state=extension_state,
     )
+    sim_ctx.registry.teardown_all(sim_ctx)
+    sim_ctx.recorder.close()
     visualize_social_network(agents, output_dir=NETWORK_OUTPUT_DIR)
     save_state_history(state_history, output_dir=STATE_OUTPUT_DIR)
     visualize_agent_state_changes(
@@ -7012,6 +4913,27 @@ def run_simulation():
         output_dir=STATE_OUTPUT_DIR,
         metrics=state_metrics,
     )
+
+    # End-of-simulation recap: per-agent structured block plus an LLM
+    # narrative covering days run, key events, top activities, state /
+    # emotion changes, growth deltas, memory + schedule + relationship
+    # shifts, and a read on how human-like the run felt. Wrapped so a
+    # failure here never reverses successful simulation work.
+    try:
+        last_day = day if "day" in locals() else start_day - 1
+        life_event_log = list_life_events(CONFIG)
+        summarize_simulation(
+            agents,
+            initial_snapshots,
+            state_history,
+            start_day,
+            last_day,
+            life_events=life_event_log,
+            env_timeline_path=env_timeline_path,
+            llm_fn=call_llm,
+        )
+    except Exception as exc:  # noqa: BLE001 - summary is best-effort
+        print(f"⚠️ 仿真总结生成失败：{exc}")
 
 
 # =========================================================
@@ -7023,12 +4945,6 @@ def _parse_question_list(value):
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
     return [v.strip() for v in str(value).splitlines() if v.strip()]
-
-def _sanitize_extra_text(text, max_chars=2000):
-    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(cleaned) > max_chars:
-        cleaned = cleaned[:max_chars]
-    return cleaned
 
 def _sanitize_timestamp_text(timestamp):
     if timestamp is None:
@@ -7306,6 +5222,11 @@ def _cli_interview_agent(agent_id, questions, context=None):
         seed_vector_db_from_memory(agent)
     else:
         agent["memory"] = []
+    agent["goals"] = (
+        load_agent_goals(agent["id"], CONFIG.get("memory_dir", "output/memory"))
+        if (STATEFUL and GOALS_ENABLED)
+        else {}
+    )
     _bootstrap_agent_external_rag(
         agent,
         news_cache=news_cache,
@@ -7388,6 +5309,16 @@ def _build_compare_overrides(scenario_dir, include_event, event_payload, args):
         overrides["sim_days"] = int(args.sim_days)
     if args.agent_ids:
         overrides["agent_ids"] = list(args.agent_ids)
+    if getattr(args, "fast", False):
+        # Fast mode: cut LLM calls per agent-day (deterministic cognition, skip
+        # daily summary/diary) and shrink the cohort. Trades fidelity for speed
+        # so local models can run longer horizons.
+        overrides["fos_fast_mode"] = {
+            "deterministic_cognition": True,
+            "skip_daily_summary": True,
+            "skip_daily_diary": True,
+        }
+        overrides.setdefault("agent_ids", [1, 2, 3])  # unless --agent-id was given
     if getattr(args, "llm_provider", None):
         routing = CONFIG.get("llm", {}).get("routing", {})
         task_map = routing.get("tasks", {})
@@ -7579,7 +5510,6 @@ def _write_comparison_report(output_root, event_payload, rows):
     return report_md, metrics_csv
 
 
-
 def _cli_compare_event(args):
     event_payload = {
         "day": int(args.event_day),
@@ -7594,6 +5524,16 @@ def _cli_compare_event(args):
     event_dir = os.path.join(root, "with_event")
     os.makedirs(baseline_dir, exist_ok=True)
     os.makedirs(event_dir, exist_ok=True)
+
+    # Stamp run metadata so downstream scoring can flag low-fidelity (--fast) runs.
+    with open(os.path.join(root, "run_meta.json"), "w", encoding="utf-8") as _meta:
+        json.dump({
+            "fast": bool(getattr(args, "fast", False)),
+            "sim_days": args.sim_days,
+            "seed": getattr(args, "seed", None),
+            "llm_provider": getattr(args, "llm_provider", None),
+            "event_name": str(args.event_name),
+        }, _meta, ensure_ascii=False, indent=2)
 
     baseline_overrides = _build_compare_overrides(
         baseline_dir,
@@ -7669,114 +5609,97 @@ def _cli_compare_event(args):
                 f"event={item['event_final']:.4f}, delta={item['delta_final']:.4f}"
             )
 
+def _cli_parallel_worlds(args):
+    """Run N worlds from a JSON experiment file.
 
-def _cli_personal_what_if(args):
-    scenario_title = str(args.scenario_title or f"what_if_agent_{int(args.agent_id)}").strip()
-    event_payload = {
-        "day": int(args.event_day),
-        "time": str(args.event_time),
-        "name": scenario_title,
-        "description": f"个人孪生 What-if 假设：{str(args.question).strip()}",
-    }
-    wrapper = argparse.Namespace(
-        event_day=event_payload["day"],
-        event_time=event_payload["time"],
-        event_name=event_payload["name"],
-        event_description=event_payload["description"],
-        sim_days=args.sim_days,
-        agent_ids=[int(args.agent_id)],
-        seed=int(args.seed),
-        llm_provider=args.llm_provider,
-        output_root=args.output_root,
-    )
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    slug = _sanitize_slug(scenario_title)
-    root = os.path.join(args.output_root, f"{ts}_{slug}")
-    baseline_dir = os.path.join(root, "baseline")
-    event_dir = os.path.join(root, "scenario")
-    os.makedirs(baseline_dir, exist_ok=True)
-    os.makedirs(event_dir, exist_ok=True)
+    ``compare-event`` stays as-is (two worlds, its own output layout, the
+    benchmark reads it); this is the generalised form for three or more
+    branches, and it shares its engine with the console's Parallel Worlds
+    panel so a spec written here opens there and vice versa.
+    """
+    from gaworld.parallel import ExperimentRunner, normalize_experiment, prepare_experiment
+    from gaworld.parallel.analysis import summarize_report
 
-    baseline_overrides = _build_compare_overrides(
-        baseline_dir,
-        include_event=False,
-        event_payload=event_payload,
-        args=wrapper,
-    )
-    event_overrides = _build_compare_overrides(
-        event_dir,
-        include_event=True,
-        event_payload=event_payload,
-        args=wrapper,
-    )
-    script_path = os.path.abspath(__file__)
-    python_bin = sys.executable
-    base_env = os.environ.copy()
-    env_without = dict(base_env)
-    env_with = dict(base_env)
-    env_without["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(baseline_overrides, ensure_ascii=False)
-    env_with["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(event_overrides, ensure_ascii=False)
+    with open(args.spec, encoding="utf-8") as f:
+        payload = json.load(f)
+    if args.sim_days is not None:
+        payload["sim_days"] = int(args.sim_days)
+    if args.seed is not None:
+        payload["seed"] = int(args.seed)
+    if args.llm_provider:
+        payload["llm_provider"] = args.llm_provider
+    if args.fast:
+        payload["fast"] = True
 
-    reset_without_log = os.path.join(baseline_dir, "reset.log")
-    reset_with_log = os.path.join(event_dir, "reset.log")
-    rc = _run_cli_subprocess([python_bin, script_path, "reset"], env_without, reset_without_log)
-    if rc != 0:
-        raise RuntimeError(f"基线场景 reset 失败，日志：{reset_without_log}")
-    rc = _run_cli_subprocess([python_bin, script_path, "reset"], env_with, reset_with_log)
-    if rc != 0:
-        raise RuntimeError(f"What-if 场景 reset 失败，日志：{reset_with_log}")
-
-    run_without_log = os.path.join(baseline_dir, "run.log")
-    run_with_log = os.path.join(event_dir, "run.log")
-    proc_without, file_without = _launch_cli_subprocess(
-        [python_bin, script_path, "run"],
-        env_without,
-        run_without_log,
+    spec = normalize_experiment(payload)
+    repo_root = os.path.dirname(os.path.abspath(__file__))
+    manifest = prepare_experiment(
+        spec, repo_root, output_root=args.output_root, base_config=CONFIG
     )
-    proc_with, file_with = _launch_cli_subprocess(
-        [python_bin, script_path, "run"],
-        env_with,
-        run_with_log,
-    )
-    code_without = proc_without.wait()
-    code_with = proc_with.wait()
-    file_without.close()
-    file_with.close()
-    if code_without != 0 or code_with != 0:
-        without_hint = _extract_run_failure_hint(run_without_log)
-        with_hint = _extract_run_failure_hint(run_with_log)
-        raise RuntimeError(
-            "个人 What-if 并行 simulation 运行失败。"
-            f"\n基线日志：{run_without_log}\n{without_hint}\n"
-            f"\n情景日志：{run_with_log}\n{with_hint}"
-        )
+    print(f"实验目录：{manifest['root']}")
+    for world in spec.worlds:
+        marker = "（基准）" if world.id == spec.baseline_id else ""
+        events = "；".join(
+            f"Day {item['day']} {item['time']} {item['name']}" for item in world.events
+        ) or "无事件"
+        print(f"  - {world.label}{marker}：{events}")
 
-    baseline_state_csv = os.path.join(baseline_overrides["state_output_dir"], "agent_state_history.csv")
-    event_state_csv = os.path.join(event_overrides["state_output_dir"], "agent_state_history.csv")
-    rows = _compose_comparison_rows(baseline_state_csv, event_state_csv)
-    report_md, metrics_csv = _write_comparison_report(root, event_payload, rows)
-    personal_report = _write_personal_what_if_report(
-        root,
-        question=args.question,
-        agent_id=args.agent_id,
-        event_payload=event_payload,
-        rows=rows,
-        baseline_dir=baseline_dir,
-        scenario_dir=event_dir,
+    runner = ExperimentRunner(manifest, repo_root, max_parallel=spec.max_parallel)
+    report = runner.run(
+        on_progress=lambda progress, message: print(f"[{progress:6.1%}] {message}")
     )
+    print("\n✅ 平行世界实验完成")
+    for line in summarize_report(report):
+        print(f"- {line}")
+    print(f"\n报告：{os.path.join(manifest['root'], 'divergence_summary.md')}")
 
-    print("\n✅ 个人 What-if simulation 完成")
-    print(f"输出目录: {root}")
-    print(f"通用报告: {report_md}")
-    print(f"个人报告: {personal_report}")
-    print(f"指标文件: {metrics_csv}")
 
 def _build_arg_parser():
     import argparse
     parser = argparse.ArgumentParser(description="GAWorld simulator")
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser("run", help="Run the full simulation")
+    run_cmd = subparsers.add_parser("run", help="Run the full simulation")
+    run_cmd.add_argument("--sim-days", type=int, default=None, help="Override simulation days")
+    run_cmd.add_argument(
+        "--sim-months",
+        type=int,
+        default=None,
+        help=(
+            "Run for N calendar months. Implies --fast-forward with a monthly "
+            "step unit unless --time-unit says otherwise."
+        ),
+    )
+    run_cmd.add_argument(
+        "--sim-years",
+        type=int,
+        default=None,
+        help=(
+            "Run for N calendar years. Implies --fast-forward with a yearly "
+            "step unit unless --time-unit says otherwise."
+        ),
+    )
+    run_cmd.add_argument(
+        "--time-unit",
+        choices=("day", "month", "year"),
+        default=None,
+        help=(
+            "Fast-forward step unit: one brief per agent per day (default), "
+            "per month, or per year. Coarser units are what make multi-year "
+            "horizons affordable. Implies --fast-forward."
+        ),
+    )
+    run_cmd.add_argument(
+        "--fast-forward",
+        action="store_true",
+        help=(
+            "Long-horizon fast-forward: compress each step into one per-agent "
+            "brief (one LLM call/agent/step) instead of the intra-day tick "
+            "loop. State/goals/relationships still evolve, approximately. Pairs "
+            "with a large --sim-days (e.g. 60, 600) or with --sim-months / "
+            "--sim-years."
+        ),
+    )
     subparsers.add_parser("reset", help="Reset simulation memory/logs/cache")
 
     interview = subparsers.add_parser("interview", help="Interview a specific agent by ID")
@@ -7877,27 +5800,39 @@ def _build_arg_parser():
         default="output/comparisons",
         help="Output root for comparison artifacts",
     )
-
-    personal_what_if = subparsers.add_parser(
-        "personal-what-if",
-        help="Run a personal-twin counterfactual simulation for one agent",
+    compare_event.add_argument(
+        "--fast",
+        action="store_true",
+        help="Fast mode: deterministic cognition + skip daily summary/diary + 3-agent cohort "
+             "(fewer LLM calls; trades fidelity for speed, e.g. for local models).",
     )
-    personal_what_if.add_argument("--agent-id", type=int, required=True, help="Target agent ID")
-    personal_what_if.add_argument("--question", required=True, help="What-if question in natural language")
-    personal_what_if.add_argument("--scenario-title", default=None, help="Optional scenario title")
-    personal_what_if.add_argument("--event-day", type=int, default=1, help="Injected scenario day index")
-    personal_what_if.add_argument("--event-time", default="09:00", help="Injected scenario time HH:MM")
-    personal_what_if.add_argument("--sim-days", type=int, default=None, help="Override simulation days")
-    personal_what_if.add_argument("--seed", type=int, default=42, help="Shared seed for both scenarios")
-    personal_what_if.add_argument(
+
+    parallel_worlds = subparsers.add_parser(
+        "parallel-worlds",
+        help="Run N parallel worlds from a JSON spec and report how far each drifts from the baseline",
+    )
+    parallel_worlds.add_argument(
+        "--spec",
+        required=True,
+        help='Experiment JSON: {"name":…, "worlds":[{"label":…, "events":[{"day":…,"time":…,'
+             '"name":…,"description":…}]}, …]}',
+    )
+    parallel_worlds.add_argument("--sim-days", type=int, default=None, help="Override simulation days")
+    parallel_worlds.add_argument("--seed", type=int, default=None, help="Random seed shared by every world")
+    parallel_worlds.add_argument(
         "--llm-provider",
         default=None,
-        help="Force both scenarios to use the same provider name",
+        help="Force every world to use the same provider name",
     )
-    personal_what_if.add_argument(
+    parallel_worlds.add_argument(
+        "--fast",
+        action="store_true",
+        help="Fast mode: deterministic cognition + skip daily summary/diary + 3-agent cohort",
+    )
+    parallel_worlds.add_argument(
         "--output-root",
-        default="output/personal_what_if",
-        help="Output root for personal what-if artifacts",
+        default="output/parallel_worlds",
+        help="Output root for experiment artifacts",
     )
 
     serve_viz = subparsers.add_parser(
@@ -7962,8 +5897,25 @@ def _cli_serve_viz(host="127.0.0.1", port=8000):
     from functools import partial
     from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
+    from gaworld.apps import replay_runs
+
     repo_root = os.path.dirname(os.path.abspath(__file__))
-    handler = partial(SimpleHTTPRequestHandler, directory=repo_root)
+
+    class VizHandler(SimpleHTTPRequestHandler):
+        """Static files plus the one API the replay page needs: the run list."""
+
+        def do_GET(self):
+            if self.path.split("?")[0] != "/api/replay/runs":
+                return super().do_GET()
+            payload = {"runs": replay_runs.list_runs(repo_root, VISUALIZATION_OUTPUT_DIR)}
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    handler = partial(VizHandler, directory=repo_root)
     page_url = f"http://{host}:{int(port)}/{VISUALIZATION_SITE_PATH}"
     print(f"可视化页面: {page_url}")
     print("按 Ctrl+C 停止服务。")
@@ -7977,7 +5929,7 @@ def _cli_serve_viz(host="127.0.0.1", port=8000):
 
 
 def _cli_serve_distributed(host=None, port=None, state_path=None, max_messages=None):
-    from distributed_comm_server import run_server
+    from gaworld.apps.distributed_comm_server import run_server
 
     distributed_cfg = CONFIG.get("distributed", {})
     server_cfg = distributed_cfg.get("server", {}) if isinstance(distributed_cfg.get("server"), dict) else {}
@@ -8041,8 +5993,8 @@ def _main():
         _cli_compare_event(args)
         return
 
-    if args.command == "personal-what-if":
-        _cli_personal_what_if(args)
+    if args.command == "parallel-worlds":
+        _cli_parallel_worlds(args)
         return
 
     if args.command == "serve-viz":
@@ -8050,7 +6002,7 @@ def _main():
         return
 
     if args.command == "dashboard":
-        from dashboard_server import run_server
+        from gaworld.apps.dashboard_server import run_server
 
         run_server(host=args.host, port=args.port)
         return
@@ -8063,6 +6015,41 @@ def _main():
             max_messages=args.max_messages,
         )
         return
+
+    global SIM_DAYS, LONG_RUN_ENABLED, LONG_RUN_CONFIG, LONG_RUN_UNIT
+
+    if getattr(args, "sim_days", None) is not None:
+        CONFIG["sim_days"] = int(args.sim_days)
+        SIM_DAYS = int(args.sim_days)
+
+    # --sim-months / --sim-years pick both the horizon and (unless overridden)
+    # the step unit; --time-unit sets the unit alone. Any of the three turns
+    # fast-forward on, since a month-long tick loop is not a thing.
+    _span_unit = None
+    _span_count = None
+    if getattr(args, "sim_years", None) is not None:
+        _span_unit, _span_count = "year", int(args.sim_years)
+    elif getattr(args, "sim_months", None) is not None:
+        _span_unit, _span_count = "month", int(args.sim_months)
+    _unit = getattr(args, "time_unit", None) or _span_unit
+    if _span_count is not None:
+        total_days = _ff_span_days(_span_unit, _span_count, start_date=SIM_START_DATE)
+        CONFIG["sim_days"] = total_days
+        SIM_DAYS = total_days
+    if _unit:
+        CONFIG.setdefault("long_run", {})["unit"] = _unit
+        LONG_RUN_UNIT = _unit
+
+    if getattr(args, "fast_forward", False) or _unit:
+        CONFIG.setdefault("long_run", {})["enabled"] = True
+        LONG_RUN_CONFIG = _long_run_config(CONFIG)
+        LONG_RUN_ENABLED = True
+        _unit_zh = {"day": "天", "month": "月", "year": "年"}[LONG_RUN_UNIT]
+        _steps = len(_ff_plan_horizon(1, SIM_DAYS, LONG_RUN_UNIT, start_date=SIM_START_DATE))
+        print(
+            f"⏩ 长时段快进模式已启用：{SIM_DAYS} 天 = {_steps} 个「{_unit_zh}」步，"
+            f"每步每个智能体生成一条简报（近似推进状态/目标/关系）。"
+        )
 
     run_simulation()
 

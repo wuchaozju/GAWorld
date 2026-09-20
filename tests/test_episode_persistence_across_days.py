@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 
-from experience_store import append_agent_episode, load_agent_episodes
+from gaworld.memory.experience import append_agent_episode, load_agent_episodes
 
 
 class TestEpisodePersistenceAcrossDays(unittest.TestCase):

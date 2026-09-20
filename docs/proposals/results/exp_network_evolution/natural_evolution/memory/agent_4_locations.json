@@ -1,0 +1,37 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Bridge Rd",
+  "destination": "Bridge Rd",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 4,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverside Fire Station",
+    "Riverside Bus Station",
+    "Riverside Park",
+    "Bridge Rd"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": true,
+  "arrival_time": "08:32",
+  "frequent_places": {
+    "Civic Square": 1,
+    "Playground": 1,
+    "Riverside Fire Station": 1,
+    "Bridge Rd": 1
+  },
+  "preferred_modes": {
+    "bike": 4
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.0,
+  "travel_distance_km": 0.456,
+  "depart_time": "08:28"
+}

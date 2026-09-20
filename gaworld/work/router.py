@@ -20,6 +20,10 @@ import uuid
 from typing import Any, Optional
 
 from gaworld.logging_setup import get_logger
+from gaworld.settings import CONFIG
+from gaworld.skills.prompt_helpers import relevant_skills_for_text, render_agent_skills
+from gaworld.skills.registry import SkillRegistry, get_default_registry
+from gaworld.skills.schemas import Skill
 from gaworld.work.market import (
     JobAlreadyTaken,
     JobMarket,
@@ -104,29 +108,60 @@ def _build_brief_text(
     title: str,
     description: str,
     chosen_action: str,
+    relevant_skills: list[Skill] | None = None,
 ) -> str:
     """Compose a labelled brief that adapters can parse.
 
     The labels (【任务】 etc.) are read by the adapter helpers to fish
-    out fields without a separate schema.
+    out fields without a separate schema. When ``relevant_skills`` is
+    non-empty, an extra 【可用技能】 block is appended; adapters that
+    inline ``brief_text`` into LLM prompts will pick this up for free.
     """
 
-    skills = "、".join(capabilities.skills[:4]) or "-"
+    skills_kw = "、".join(capabilities.skills[:4]) or "-"
     role_label = {
         "ui_designer": "设计师",
         "algorithm_engineer": "工程师",
         "content_creator": "创作者",
         "teacher_researcher": "研究者",
     }.get(capabilities.job_label, "执行者")
-    return (
+    base = (
         f"【{role_label}】{agent.get('name', '')}\n"
         f"【职业】{agent.get('job', '')}\n"
-        f"【风格关键词】{skills}\n"
+        f"【风格关键词】{skills_kw}\n"
         f"【调性】{capabilities.notes[:80]}\n"
         f"【任务】{title}\n"
         f"【动作】{chosen_action}\n"
         f"【简报】{description}"
     )
+    if relevant_skills:
+        skill_text = render_agent_skills(relevant_skills, max_skills=3, include_body=True)
+        if skill_text:
+            base += f"\n【可用技能】\n{skill_text}"
+    return base
+
+
+def _skills_for_action(
+    agent: dict[str, Any],
+    *,
+    registry: SkillRegistry | None,
+    action_text: str,
+    enabled: bool,
+) -> list[Skill]:
+    """Pick the top skills relevant to a chosen action.
+
+    Wrapped in a try/except so a misconfigured skill directory never
+    blocks work dispatch — the router falls back to behaving as before.
+    """
+    if not enabled or registry is None:
+        return []
+    try:
+        all_skills = registry.list_for_agent(agent)
+    except Exception:  # noqa: BLE001
+        return []
+    if not all_skills:
+        return []
+    return relevant_skills_for_text(all_skills, action_text, limit=3)
 
 
 class RealWorkRouter:
@@ -139,12 +174,22 @@ class RealWorkRouter:
         market: Optional[JobMarket],
         capabilities: dict[int, AgentCapabilities],
         config: dict[str, Any],
+        skill_registry: Optional[SkillRegistry] = None,
     ) -> None:
         self.queue = queue
         self.market = market
         self.capabilities = capabilities
         self.config = config or {}
         self._market_cfg = self.config.get("market", {}) if isinstance(self.config, dict) else {}
+        skills_cfg = CONFIG.get("skills", {}) if isinstance(CONFIG, dict) else {}
+        self._skills_enabled = bool(skills_cfg.get("inject_into_work_brief", True))
+        # Resolve lazily so tests that don't touch skills pay nothing.
+        self._skill_registry = skill_registry
+        if self._skills_enabled and self._skill_registry is None:
+            try:
+                self._skill_registry = get_default_registry()
+            except Exception:  # noqa: BLE001
+                self._skill_registry = None
 
     # ------------------------------------------------------------------
     def maybe_dispatch(
@@ -259,11 +304,19 @@ class RealWorkRouter:
         adapter = _DELIVERABLE_TO_ADAPTER.get(job.deliverable)
         if adapter is None:
             return None
+        action_hint = f"{job.title} {job.description}"
+        relevant = _skills_for_action(
+            agent,
+            registry=self._skill_registry,
+            action_text=action_hint,
+            enabled=self._skills_enabled,
+        )
         brief_text = _build_brief_text(
             agent, capabilities,
             title=job.title,
             description=job.description,
             chosen_action="接受平台订单并交付",
+            relevant_skills=relevant,
         )
         return WorkBrief(
             task_id=f"wt_{uuid.uuid4().hex[:10]}",
@@ -304,11 +357,18 @@ class RealWorkRouter:
             f"基于角色背景与当前活动【{activity}】自主推进，"
             f"输出一个 {deliverable} 类型的产物。"
         )
+        relevant = _skills_for_action(
+            agent,
+            registry=self._skill_registry,
+            action_text=f"{chosen_action} {activity}",
+            enabled=self._skills_enabled,
+        )
         brief_text = _build_brief_text(
             agent, capabilities,
             title=title,
             description=description,
             chosen_action=chosen_action,
+            relevant_skills=relevant,
         )
         brief = WorkBrief(
             task_id=f"wt_{uuid.uuid4().hex[:10]}",

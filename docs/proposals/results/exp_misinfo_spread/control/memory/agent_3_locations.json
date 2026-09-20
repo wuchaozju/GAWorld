@@ -1,0 +1,61 @@
+{
+  "home": "Building S-01",
+  "workplace": "Little River Daycare",
+  "current": "Westside Community Center",
+  "destination": "Westside Community Center",
+  "in_transit": false,
+  "transport_mode": "e-bike",
+  "travel_minutes": 11,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Willow Design Studio",
+    "South Block",
+    "Willow Grove Park",
+    "Riverside Night Market",
+    "West Block",
+    "Westside Community Center"
+  ],
+  "travel_cost": 0.34,
+  "rush_hour": false,
+  "arrival_time": "01:25",
+  "frequent_places": {
+    "Picnic Area": 2,
+    "Building S-01": 3,
+    "Riverwalk": 1,
+    "Civic Square": 3,
+    "Insurance Center": 2,
+    "Student Canteen": 2,
+    "East Pocket Park": 1,
+    "Aquatic Center": 2,
+    "Riverside Stadium": 1,
+    "Fitness Area": 1,
+    "Riverside Middle School": 1,
+    "Little River Daycare": 2,
+    "Corner Mart": 1,
+    "Central Block": 1,
+    "Building C-02": 1,
+    "Archives Building": 1,
+    "Riverside Tower": 1,
+    "Financial District": 1,
+    "Finance Plaza": 1,
+    "East Block": 1,
+    "Willow Design Studio": 2,
+    "Riverside Post Office": 1,
+    "C-02": 1,
+    "Westside Community Center": 1
+  },
+  "preferred_modes": {
+    "bike": 12,
+    "e-bike": 20,
+    "metro": 2
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.5800000000000001,
+  "travel_distance_km": 3.363,
+  "depart_time": "01:14"
+}

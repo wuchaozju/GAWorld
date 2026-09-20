@@ -1,0 +1,37 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Central Parking Lot",
+  "destination": "Central Parking Lot",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 5,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "East Loop",
+    "C-01 (Village Center)",
+    "Central Parking Lot"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": false,
+  "arrival_time": "01:19",
+  "frequent_places": {
+    "Riverwalk": 1,
+    "C-02": 1,
+    "East Loop": 17,
+    "Central Parking Lot": 17
+  },
+  "preferred_modes": {
+    "bike": 35,
+    "e-bike": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.0,
+  "travel_distance_km": 0.853,
+  "depart_time": "01:14"
+}

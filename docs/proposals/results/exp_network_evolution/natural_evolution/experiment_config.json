@@ -1,0 +1,12 @@
+{
+  "treatment": "natural_evolution",
+  "config": {
+    "homophily_weight": 1.0,
+    "event_disruption": false,
+    "bridge_creation": false,
+    "description": "自然演化30天"
+  },
+  "days": 14,
+  "seed": 42,
+  "timestamp": "2026-05-24T11:20:18.707081"
+}

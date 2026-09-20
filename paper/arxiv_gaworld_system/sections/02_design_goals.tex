@@ -1,0 +1,88 @@
+\section{Design Goals}
+\label{sec:design-goals}
+
+GAWorld is intended as a research instrument rather than a claim that a
+language model is, by itself, a valid population model.  Its design goals
+therefore concern properties that a researcher can inspect in the running
+system.  Each property below has a concrete mechanism in the present
+implementation and a boundary that prevents the mechanism from being read as
+an empirical guarantee.
+
+\subsection{Persistence across simulated time}
+
+An agent should carry consequences from one decision context into later ones,
+rather than being reconstructed from a stateless prompt at every tick.
+GAWorld combines a mutable state record with file-backed episodic memory,
+daily logs and diaries, schedules, and longer-lived relationship and growth
+records.  A stateful run restores the day counter and per-agent memories, while
+the memory lifecycle can retrieve, consolidate, summarize, and decay stored
+episodes.  This makes persistence testable: a researcher can inspect both the
+state before and after a tick and the files used in later recall.  Persistence
+does not establish psychological fidelity.  Several memories and summaries
+are language-model outputs, configuration can disable lifecycle operations,
+and the archived cross-phase evaluation discussed later in the paper is
+incomplete.
+
+\subsection{Situatedness in a shared world}
+
+Actions should be conditioned on where and when an agent acts and on what is
+locally observable.  The simulation clock exposes day, time, and tick index;
+the city map represents named locations and connections; and environment,
+local-physical, social, policy, and information mechanisms contribute context
+to the cognition loop.  Movement updates location before later stages use the
+new setting, and social influence is computed over the current network rather
+than over an unconstrained cast of characters.  This is situated computation,
+not a calibrated digital twin: map detail, physical dynamics, and agent access
+to information are abstractions selected by configuration.
+
+\subsection{Composability without concealing control flow}
+
+Researchers should be able to change an experimental mechanism without
+rewriting the complete agent loop.  GAWorld provides three bounded extension
+surfaces: a configurable stage sequence for cognition, an event bus with
+observe/contribute/filter semantics, and a registry for lifecycle-managed
+plugins.  The audited built-in set contains nine plugins: interventions,
+skills, interests, life events, economy, local physical perception, real work,
+dynamic behavior, and spatial preferences.  Composability is not unrestricted
+hot swapping: stages exchange a shared dictionary, while memory, environment,
+and social-network logic retain direct compatibility paths.
+
+\subsection{Controllability for counterfactual experiments}
+
+A research run should expose explicit points at which a scenario or
+intervention is introduced.  Configuration fixes profiles, city assets,
+random seed, mechanism flags, schedules, and policy events; the intervention
+plugin contributes a recommendation feed through the event bus and records
+its domain-specific metrics.  Baseline/event workflows can then align traces
+produced under different scenario specifications.  The kernel also defines a
+Controller API for validators and named runtime interventions.  Structured
+movement requests pass through its validator chain, and the standard runtime
+interventions update agent state, update live configuration, or queue agent
+removal with audit records.  Other selected actions are not universally
+mediated, so configuration, scheduled events, hooks, and experiment scripts
+remain important control surfaces.
+
+\subsection{Inspectability from decision to artifact}
+
+A claim about an artificial society should be traceable to artifacts below the
+level of a prose summary.  GAWorld writes per-agent logs and memories,
+environment timelines, state histories, plugin-owned outputs, and experiment
+comparisons; its interfaces expose portions of those records for inspection
+and replay.  The kernel Recorder additionally implements a clock-stamped JSONL
+stream and records Controller interventions and denials.  That unified stream
+is not yet the main action/trace path: the established simulator continues to
+write several specialized formats directly.  Inspection therefore requires
+an artifact ledger that names the producing path and schema, and replayability
+must not be inferred merely from the presence of logs.
+
+\subsection{Backward-compatible modularization}
+
+The system must remain usable while a monolithic research prototype is
+decomposed.  A typed \texttt{Agent} view shares, rather than copies, the legacy
+dictionary; \texttt{EventBus} preserves the legacy hook signature; and the
+12-stage pipeline was carved from the existing per-agent step while retaining
+the shared step dictionary.  These adapters allow migrated and legacy modules
+to coexist and make migration state observable.  They also retain weakly typed
+surfaces and shared mutable state.  Backward compatibility is thus a transition
+strategy, not evidence that modularization is complete or that every old
+configuration produces an identical trajectory.

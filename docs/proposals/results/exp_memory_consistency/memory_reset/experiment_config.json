@@ -1,0 +1,12 @@
+{
+  "treatment": "memory_reset",
+  "config": {
+    "reset_between_phases": true,
+    "delete_summaries": false,
+    "inject_conflict": false,
+    "description": "无记忆运行（reset后重新开始）"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-06-03T15:28:22.774875"
+}

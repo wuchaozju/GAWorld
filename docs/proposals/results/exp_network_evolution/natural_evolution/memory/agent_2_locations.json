@@ -1,0 +1,37 @@
+{
+  "home": "Building C-01",
+  "workplace": "Riverside Bank Branch",
+  "current": "C-01 (Village Center)",
+  "destination": "C-01 (Village Center)",
+  "in_transit": false,
+  "transport_mode": "bike",
+  "travel_minutes": 6,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Hangzhou Riverside Community Center",
+    "C-01 (Village Center)"
+  ],
+  "travel_cost": 0.0,
+  "rush_hour": true,
+  "arrival_time": "08:34",
+  "frequent_places": {
+    "Civic Square": 1,
+    "Building C-01": 1,
+    "Riverside Bank Branch": 1,
+    "Hangzhou Riverside Community Center": 1,
+    "C-01 (Village Center)": 1
+  },
+  "preferred_modes": {
+    "bike": 4,
+    "e-bike": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.26,
+  "travel_distance_km": 0.633,
+  "depart_time": "08:28"
+}

@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts GAWorldIntro ../output/video/gaworld-intro.mp4 --overwrite"
+    "render": "remotion render src/index.ts GAWorldTutorialCN ../output/video/gaworld-tutorial-cn.mp4 --overwrite",
+    "render:intro": "remotion render src/index.ts GAWorldIntro ../output/video/gaworld-intro.mp4 --overwrite",
+    "render:cn": "remotion render src/index.ts GAWorldTutorialCN ../output/video/gaworld-tutorial-cn.mp4 --overwrite",
+    "render:cn:voice": "REMOTION_ENABLE_VOICEOVER=1 remotion render src/index.ts GAWorldTutorialCN ../output/video/gaworld-tutorial-cn-voiceover.mp4 --overwrite"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.365",

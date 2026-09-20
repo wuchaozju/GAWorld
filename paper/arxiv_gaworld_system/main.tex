@@ -1,0 +1,73 @@
+\documentclass[10pt]{article}
+
+\usepackage[margin=0.85in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[round,authoryear]{natbib}
+\usepackage[colorlinks=true,allcolors=MidnightBlue]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\setlist{nosep}
+\graphicspath{{figures/}}
+\hypersetup{
+  pdftitle={GAWorld: Building Persistent and Situated LLM Agent Societies},
+  pdfauthor={},
+  pdfsubject={LLM-based artificial societies and multi-agent social simulation},
+  pdfkeywords={LLM agents, multi-agent systems, artificial societies, social simulation}
+}
+
+\title{GAWorld: Building Persistent and Situated LLM Agent Societies}
+\author{Author Name(s)\\Affiliation(s)\\\texttt{email@example.org}}
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+LLM agents are increasingly used to study social interaction, yet many
+demonstrations remain short-lived, weakly situated, or difficult to audit as
+scientific instruments.  We present GAWorld, research infrastructure for
+building persistent and situated LLM agent societies.  GAWorld connects
+profile-grounded agents, structured state, file-backed memory, planning,
+action, and reflection to a shared urban environment, social relations,
+economic and work processes, information exposure, and controlled
+interventions.  Its execution model combines a configurable cognition
+pipeline with event and plugin boundaries while preserving compatibility with
+directly integrated mechanisms during an incremental architectural migration.
+The system exposes command-line, web, interview, replay, distributed
+communication, and experiment-comparison interfaces, together with
+heterogeneous artifacts that permit inspection from aggregate summaries back
+to agent and subsystem traces.  We audit both the implementation and the
+existing result archive, using memory, policy, information, and
+economy--wellbeing cases to demonstrate research affordances and failure
+visibility.  These artifacts establish system capabilities, not population
+realism, causal policy effects, or prediction of real cities.  We therefore
+frame GAWorld as a modular instrument for constructing and auditing artificial
+society experiments, and make explicit the validation, reproducibility, and
+ethical work required before stronger social claims are warranted.
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_design_goals}
+\input{sections/03_related_work}
+\input{sections/04_agent_lifecycle}
+\input{sections/05_execution_architecture}
+\input{sections/06_memory_cognition}
+\input{sections/07_societal_substrate}
+\input{sections/08_experiment_workflow}
+\input{sections/09_interfaces_deployment}
+\input{sections/10_capability_cases}
+\input{sections/11_validation_boundaries}
+\input{sections/12_limitations_ethics_roadmap}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

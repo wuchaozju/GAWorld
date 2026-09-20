@@ -1,0 +1,99 @@
+{
+  "simulation_status": "analysis_complete",
+  "data_validation_status": "complete",
+  "paper_draft_status": "complete",
+  "review_status": "verified",
+  "analysis_agent": "agent_2",
+  "writing_agent": "agent_3",
+  "reviewing_agent": "agent_4",
+  "current_phase": 4,
+  "findings": {
+    "simulation_summary": {
+      "experiment": "macro_economy_wellbeing",
+      "total_steps": 580,
+      "days": 3,
+      "agents": 5,
+      "steps_per_day": 193,
+      "seed": 42,
+      "data_points_per_agent": 580,
+      "metrics_tracked": 20
+    },
+    "wellbeing_by_day": {
+      "emotion": {
+        "day_1": {"mean": 0.721, "min": 0.600, "max": 0.931, "trend": "rising"},
+        "day_2": {"mean": 0.738, "min": 0.630, "max": 0.915, "trend": "variable"},
+        "day_3": {"mean": 0.695, "min": 0.599, "max": 0.857, "trend": "declining"}
+      },
+      "stress": {
+        "day_1": {"mean": 0.312, "min": 0.097, "max": 0.566, "trend": "declining"},
+        "day_2": {"mean": 0.285, "min": 0.153, "max": 0.407, "trend": "stable"},
+        "day_3": {"mean": 0.378, "min": 0.250, "max": 0.401, "trend": "rising"}
+      },
+      "econ_security": {
+        "day_1": {"mean": 0.735, "min": 0.560, "max": 0.830, "trend": "rising"},
+        "day_2": {"mean": 0.768, "min": 0.635, "max": 0.829, "trend": "stable"},
+        "day_3": {"mean": 0.689, "min": 0.625, "max": 0.760, "trend": "declining"}
+      }
+    },
+    "wellbeing_by_phase": {
+      "emotion": {
+        "phase_1": {"mean": 0.721, "std": 0.089},
+        "phase_2": {"mean": 0.738, "std": 0.071},
+        "phase_3": {"mean": 0.695, "std": 0.082}
+      },
+      "stress": {
+        "phase_1": {"mean": 0.312, "std": 0.142},
+        "phase_2": {"mean": 0.285, "std": 0.068},
+        "phase_3": {"mean": 0.378, "std": 0.045}
+      },
+      "econ_security": {
+        "phase_1": {"mean": 0.735, "std": 0.082},
+        "phase_2": {"mean": 0.768, "std": 0.055},
+        "phase_3": {"mean": 0.689, "std": 0.048}
+      }
+    },
+    "cross_agent_comparison": {
+      "emotion": {
+        "agent_1": {"mean": 0.718, "trend_start": 0.62, "trend_end": 0.70},
+        "agent_2": {"mean": 0.725, "trend_start": 0.58, "trend_end": 0.73},
+        "agent_3": {"mean": 0.712, "trend_start": 0.65, "trend_end": 0.68},
+        "agent_4": {"mean": 0.731, "trend_start": 0.60, "trend_end": 0.75},
+        "agent_5": {"mean": 0.708, "trend_start": 0.55, "trend_end": 0.71}
+      },
+      "stress": {
+        "agent_1": {"mean": 0.328, "trend_start": 0.57, "trend_end": 0.38},
+        "agent_2": {"mean": 0.298, "trend_start": 0.52, "trend_end": 0.35},
+        "agent_3": {"mean": 0.345, "trend_start": 0.48, "trend_end": 0.40},
+        "agent_4": {"mean": 0.287, "trend_start": 0.55, "trend_end": 0.32},
+        "agent_5": {"mean": 0.312, "trend_start": 0.50, "trend_end": 0.36}
+      }
+    },
+    "key_patterns": [
+      "Emotion shows inverted-U pattern: rises Day 1-2, peaks, then declines Day 3",
+      "Stress follows U-shaped pattern: low in morning, increases toward end of simulation",
+      "Economic security peaks mid-simulation (Day 2) then declines",
+      "Individual variation: Agent 4 shows highest average emotion (0.731), Agent 5 lowest (0.708)",
+      "Stress convergence: All agents show decreasing stress from Day 1 to mid-simulation, then rising",
+      "Economic vulnerability: econ_security decline in Day 3 suggests economic stress accumulation"
+    ],
+    "income_statistics": {
+      "note": "Detailed income data not available in agent_state_history.csv; diaries contain qualitative records",
+      "diary_locations": [
+        "docs/proposals/results/exp_macro_economy/run_42/diaries/agent_1/",
+        "docs/proposals/results/exp_macro_economy/run_42/diaries/agent_2/",
+        "docs/proposals/results/exp_macro_economy/run_42/diaries/agent_3/",
+        "docs/proposals/results/exp_macro_economy/run_42/diaries/agent_4/",
+        "docs/proposals/results/exp_macro_economy/run_42/diaries/agent_5/"
+      ],
+      "diary_entries": 15,
+      "qualitative_themes": [
+        "Work-life balance concerns",
+        "Time pressure and scheduling conflicts",
+        "Recovery needs and fatigue management",
+        "Social interaction patterns"
+      ]
+    },
+    "data_source": "agent_state_history.csv (11601 lines, 5 agents, 20 metrics, 580 timesteps)"
+  },
+  "revisions": []
+}

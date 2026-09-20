@@ -1,0 +1,123 @@
+{
+  "morning|work|兼职": {
+    "action_counts": {
+      "在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。": 1
+    },
+    "preferred_action": "在小区公告栏或人力贩卖的告示牌上寻找手艺展示的机会（推进型）。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|暂时避雨躲困": {
+    "action_counts": {
+      "眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（参照旧记忆进行定位）。": 1
+    },
+    "preferred_action": "眼神游移，习惯性地在寻路时会回想起三十年前熟悉的街道拐角（参照旧记忆进行定位）。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|退回庇护所静待雨歇": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|home|回庇护所休养": {
+    "action_counts": {
+      "习惯性地找寻熟悉的固定物体或角落，将身体倚靠在看似坚实的结构上（维持型）。": 1
+    },
+    "preferred_action": "习惯性地找寻熟悉的固定物体或角落，将身体倚靠在看似坚实的结构上（维持型）。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "afternoon|public|寻找干燥遮蔽处": {
+    "action_counts": {
+      "用手习惯性地拍了拍身上的灰尘和雨水，调整坐姿，进入等待状态。（维持型）": 1
+    },
+    "preferred_action": "用手习惯性地拍了拍身上的灰尘和雨水，调整坐姿，进入等待状态。（维持型）",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|public|避雨找个地方歇脚": {
+    "action_counts": {
+      "仔细观察周围的建筑物底部和入口，寻找有没有结构稳定且能提供遮蔽的地方。": 1
+    },
+    "preferred_action": "仔细观察周围的建筑物底部和入口，寻找有没有结构稳定且能提供遮蔽的地方。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|work|避雨找个地方歇脚": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|home|避雨找个地方歇脚": {
+    "action_counts": {
+      "调整行进方向，优先避开积水较深或路面看起来摇晃的路段。(回避型)": 1
+    },
+    "preferred_action": "调整行进方向，优先避开积水较深或路面看起来摇晃的路段。(回避型)",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|兼职": {
+    "action_counts": {
+      "和几个核心邻居们聊天时，顺便了解一下当前的“活路”信息（社交/协调型）。": 1
+    },
+    "preferred_action": "和几个核心邻居们聊天时，顺便了解一下当前的“活路”信息（社交/协调型）。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "afternoon|public|找阴凉处休息": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "afternoon|public|寻找稳定庇护所": {
+    "action_counts": {
+      "与几位熟悉的老邻居围坐在一起，进行传统的家常交谈来稳定情绪。": 1
+    },
+    "preferred_action": "与几位熟悉的老邻居围坐在一起，进行传统的家常交谈来稳定情绪。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "afternoon|public|寻求稳妥庇护所": {
+    "action_counts": {
+      "将视线不断地聚焦于那些没有发生重大改造的老式建筑飞檐、牌匾或石阶。": 1
+    },
+    "preferred_action": "将视线不断地聚焦于那些没有发生重大改造的老式建筑飞檐、牌匾或石阶。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "afternoon|public|寻找遮庇等待天气好转": {
+    "action_counts": {
+      "询问旁边等候的邻居，聊起老街坊的变化。": 1
+    },
+    "preferred_action": "询问旁边等候的邻居，聊起老街坊的变化。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  },
+  "evening|public|找地方避雨": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "扫视四周环境，寻找小区管理处的公告栏或大门等传统集合点作为避雨目标（推进型）。": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 2
+  },
+  "night|public|找地方避雨": {
+    "action_counts": {
+      "抬起手臂和围巾作为临时的遮挡物，最小化暴露在雨中的时间（维护型）。": 1
+    },
+    "preferred_action": "抬起手臂和围巾作为临时的遮挡物，最小化暴露在雨中的时间（维护型）。",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 2
+  }
+}

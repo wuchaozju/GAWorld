@@ -1,0 +1,37 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Civic Square",
+  "destination": "Civic Square",
+  "in_transit": false,
+  "transport_mode": "e-bike",
+  "travel_minutes": 10,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Finance Plaza",
+    "Financial District",
+    "City Hall",
+    "Civic Square"
+  ],
+  "travel_cost": 0.22,
+  "rush_hour": true,
+  "arrival_time": "08:14",
+  "frequent_places": {
+    "Riverside Tower": 1,
+    "Student Canteen": 1,
+    "Finance Plaza": 1,
+    "Civic Square": 1
+  },
+  "preferred_modes": {
+    "e-bike": 4
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.9299999999999999,
+  "travel_distance_km": 2.153,
+  "depart_time": "08:04"
+}

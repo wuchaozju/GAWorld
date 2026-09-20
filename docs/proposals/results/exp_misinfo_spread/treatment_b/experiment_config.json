@@ -1,0 +1,17 @@
+{
+  "treatment": "treatment_b",
+  "config": {
+    "misinfo_seed": {
+      "text": "听说地铁下个月要涨价到10元了，大家赶紧去充值交通卡",
+      "target_agent_id": 1,
+      "day": 1,
+      "hour": 8
+    },
+    "intervention_enabled": true,
+    "high_diversity_mode": true,
+    "description": "误信息 + 强干预（高跨观点曝光）"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-05-16T16:18:45.565827"
+}

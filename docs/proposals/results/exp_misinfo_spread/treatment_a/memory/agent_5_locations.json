@@ -1,0 +1,45 @@
+{
+  "home": "Building C-02",
+  "workplace": "Riverside Tower",
+  "current": "Building C-02",
+  "destination": "Building C-02",
+  "in_transit": false,
+  "transport_mode": "metro",
+  "travel_minutes": 13,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Stadium Plaza",
+    "Riverside Stadium",
+    "Financial District",
+    "City Hall",
+    "Central Block",
+    "Building C-02"
+  ],
+  "travel_cost": 2.0,
+  "rush_hour": false,
+  "arrival_time": "11:57",
+  "frequent_places": {
+    "Basketball Court": 1,
+    "Building C-02": 2,
+    "City Hall": 1,
+    "Financial District": 2,
+    "Central Bank Annex": 3,
+    "Stadium Plaza": 2,
+    "Finance Plaza": 1,
+    "Riverside Tower": 1
+  },
+  "preferred_modes": {
+    "e-bike": 3,
+    "bike": 9,
+    "metro": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 2.41,
+  "travel_distance_km": 3.413,
+  "depart_time": "11:44"
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "slug": "梅湾村",
+  "name": "梅湾村",
+  "display_name": "梅湾村",
+  "created_at": "2026-09-15T15:17:56+00:00",
+  "place": {
+    "query": "梅湾村",
+    "name": "梅湾村",
+    "display_name": "梅湾村",
+    "lat": 30.2741,
+    "lng": 120.1551,
+    "bbox": [
+      30.2591,
+      120.13773132083256,
+      30.2891,
+      120.17246867916745
+    ],
+    "kind": "unknown",
+    "scale": "tiny",
+    "country": "",
+    "country_code": "",
+    "population": null,
+    "source": "offline",
+    "osm_id": null,
+    "osm_type": ""
+  },
+  "scale": "tiny",
+  "map": {
+    "mode": "virtual",
+    "virtual": "citymap.md"
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 250,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-15T15:17:56+00:00",
+      "action": "map.virtual",
+      "scale": "tiny",
+      "seed": 2681538819
+    },
+    {
+      "at": "2026-09-15T15:17:56+00:00",
+      "action": "environment",
+      "climate": "subtropical"
+    },
+    {
+      "at": "2026-09-15T15:17:56+00:00",
+      "action": "create",
+      "offline": true,
+      "source": "offline"
+    },
+    {
+      "at": "2026-09-15T15:17:56+00:00",
+      "action": "population.add",
+      "added": 30,
+      "total": 30,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-15T18:04:36+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 130,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-15T18:07:42+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 230,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-15T18:07:59+00:00",
+      "action": "population.add",
+      "added": 20,
+      "total": 250,
+      "preset": "cn_county_town",
+      "seed": 42,
+      "replace": false
+    }
+  ],
+  "updated_at": "2026-09-15T18:07:59+00:00"
+}

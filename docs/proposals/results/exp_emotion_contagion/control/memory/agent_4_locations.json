@@ -1,0 +1,53 @@
+{
+  "home": "Building C-02",
+  "workplace": "Finance Plaza",
+  "current": "Student Canteen",
+  "destination": "Riverside Port",
+  "in_transit": true,
+  "transport_mode": "e-bike",
+  "travel_minutes": 7,
+  "travel_progress": 0.2857142857142857,
+  "travel_route": [
+    "Student Canteen",
+    "Main Library",
+    "University District",
+    "Waterfront",
+    "Riverside Port"
+  ],
+  "travel_cost": 0.2,
+  "rush_hour": false,
+  "arrival_time": "22:43",
+  "frequent_places": {
+    "Civic Square": 2,
+    "Stadium Plaza": 1,
+    "Insurance Center": 1,
+    "Student Canteen": 3,
+    "Riverside Port": 1,
+    "Finance Plaza": 1,
+    "Marina Pier": 2,
+    "Riverwalk": 1,
+    "Air Traffic Control": 4,
+    "Boathouse": 2,
+    "Waterfront": 1,
+    "Sorting Center": 3,
+    "Central Bank Annex": 1,
+    "Cold Storage Facility": 1,
+    "Long Haul Truck Stop": 2,
+    "Building C-02": 1
+  },
+  "preferred_modes": {
+    "e-bike": 17,
+    "bike": 3,
+    "metro": 6,
+    "walk": 1
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 21.950000000000003,
+  "travel_distance_km": 1.963,
+  "depart_time": "22:36"
+}

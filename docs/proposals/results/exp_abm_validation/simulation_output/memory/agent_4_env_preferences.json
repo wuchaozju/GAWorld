@@ -1,0 +1,15 @@
+{
+  "avoid": {
+    "Stadium Plaza": {
+      "score": 0.9057,
+      "count": 1,
+      "reasons": [
+        "venue_closed"
+      ],
+      "last_day": 1,
+      "time_buckets": {
+        "morning": 0.9057
+      }
+    }
+  }
+}

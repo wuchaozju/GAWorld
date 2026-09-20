@@ -1,0 +1,12 @@
+{
+  "treatment": "memory_intact",
+  "config": {
+    "reset_between_phases": false,
+    "delete_summaries": false,
+    "inject_conflict": false,
+    "description": "完整记忆运行"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-06-01T10:51:38.215939"
+}

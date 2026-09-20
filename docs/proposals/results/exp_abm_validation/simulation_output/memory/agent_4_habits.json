@@ -1,0 +1,107 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "按原节奏继续当前安排": 2,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.222633984,
+    "last_updated_day": 1
+  },
+  "morning|public|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2,
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.2794565746688,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Riverside Port": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Finance Plaza": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Marina Pier": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 2
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.2051794796544,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Boathouse": {
+    "action_counts": {
+      "乘坐e-bike移动": 3
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Central Bank Annex": {
+    "action_counts": {
+      "乘坐metro移动": 3
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "evening|public|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 4,
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.34988896256,
+    "last_updated_day": 1
+  },
+  "evening|work|个人时间": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1,
+      "联系一下相关的人确认接下来的安排": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.16512000000000002,
+    "last_updated_day": 1
+  },
+  "evening|public|前往Westside Community Center": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "night|public|前往Riverwalk": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  }
+}

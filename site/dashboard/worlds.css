@@ -1,0 +1,188 @@
+/* Parallel Worlds panel — layered on studio.css, only what it does not have.
+   Charts are hand-written SVG for the same reason external.css states: this
+   directory has no build step and no vendored chart library, and a CDN one
+   would cost the dashboard its offline usability. */
+
+.pw-topmeta {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.7;
+}
+
+.pw-main {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 14px;
+}
+@media (max-width: 1180px) {
+  .pw-main { grid-template-columns: 1fr; }
+}
+
+.pw-design,
+.pw-observe { min-width: 0; display: grid; gap: 16px; }
+
+.pw-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.pw-card > h2 { margin: 0 0 10px; font-size: 16px; }
+.pw-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.pw-card-head h2 { margin: 0; font-size: 16px; }
+.pw-hint { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+.pw-warn { color: var(--red); }
+
+/* ---- shared settings ---- */
+.pw-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.pw-fields label { font-size: 11.5px; }
+.pw-fields .pw-wide { grid-column: 1 / -1; }
+.pw-check {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer;
+}
+/* styles.css stretches every input to 100% width; a checkbox or radio that
+   does that centres itself in its own row and reads as a stray dot. */
+.pw-check input[type="checkbox"],
+.pw-baseline-pick input[type="radio"] {
+  width: auto; min-height: auto; flex: none; margin: 0;
+}
+
+/* ---- presets ---- */
+.pw-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.pw-preset {
+  border: 1px dashed var(--line); background: transparent; cursor: pointer;
+  border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700;
+  color: var(--muted);
+}
+.pw-preset:hover { color: var(--green); border-color: var(--green); }
+
+/* ---- world cards ---- */
+.pw-worlds { display: grid; gap: 12px; }
+.pw-world {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--w-color, var(--green));
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+}
+.pw-world.is-baseline { background: rgba(19, 121, 91, 0.045); }
+.pw-world-top { display: flex; align-items: center; gap: 8px; }
+.pw-world-top input[type="text"] { flex: 1 1 auto; min-width: 0; font-weight: 700; }
+.pw-world-tools { display: flex; gap: 4px; }
+.pw-icon {
+  border: 1px solid var(--line); background: #fff; cursor: pointer;
+  border-radius: 6px; width: 28px; height: 28px; font-size: 13px; color: var(--muted);
+  display: grid; place-items: center;
+}
+.pw-icon:hover { color: var(--green); border-color: var(--green); }
+.pw-icon.is-danger:hover { color: var(--red); border-color: var(--red); }
+.pw-icon[disabled] { opacity: .35; cursor: not-allowed; }
+
+.pw-baseline-pick {
+  display: flex; align-items: center; gap: 6px;
+  margin: 8px 0 6px; font-size: 11.5px; font-weight: 700; color: var(--muted);
+}
+
+.pw-events { display: grid; gap: 8px; margin-top: 8px; }
+.pw-event {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+  background: var(--paper);
+  display: grid; gap: 6px;
+}
+.pw-event-row { display: grid; grid-template-columns: 62px 74px minmax(0, 1fr) 28px; gap: 6px; align-items: end; }
+.pw-event-row label { gap: 3px; font-size: 10.5px; }
+.pw-event textarea { min-height: 46px; resize: vertical; font-size: 12px; }
+.pw-empty { font-size: 12px; color: var(--muted); font-style: italic; padding: 4px 0; }
+.pw-addevent {
+  border: 1px dashed var(--line); background: transparent; cursor: pointer;
+  border-radius: 8px; padding: 6px; font-size: 12px; font-weight: 700; color: var(--muted);
+  width: 100%;
+}
+.pw-addevent:hover { color: var(--green); border-color: var(--green); }
+
+/* ---- legend ---- */
+.pw-legend { display: flex; flex-wrap: wrap; gap: 4px; }
+.pw-legend-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+  font-size: 11.5px; font-weight: 700; cursor: pointer; background: #fff; color: var(--ink);
+}
+.pw-legend-item.is-off { opacity: .38; text-decoration: line-through; }
+.pw-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* ---- charts ---- */
+.pw-svgwrap { width: 100%; overflow: hidden; }
+.pw-svgwrap svg { width: 100%; height: auto; display: block; }
+.pw-axis { fill: var(--muted); font-size: 10px; }
+.pw-grid { stroke: var(--line); stroke-width: 1; }
+.pw-eventline { stroke: var(--amber); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.pw-series { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.pw-series.is-baseline { stroke-dasharray: 5 3; }
+.pw-hit { fill: transparent; cursor: crosshair; }
+.pw-replays {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 8px; font-size: 11.5px; color: var(--muted); font-weight: 700;
+}
+.pw-replay {
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+  text-decoration: none; color: var(--green);
+}
+.pw-replay:hover { border-color: var(--green); background: var(--green-soft); }
+
+.pw-readout {
+  margin-top: 8px; font-size: 12px; color: var(--muted);
+  min-height: 20px; line-height: 1.7;
+}
+.pw-readout b { color: var(--ink); }
+.pw-node { cursor: pointer; }
+.pw-node-label { font-size: 11px; font-weight: 700; }
+
+/* ---- tables ---- */
+.pw-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.pw-table { max-height: 320px; overflow: auto; }
+.pw-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pw-table th {
+  position: sticky; top: 0; background: var(--card); z-index: 1;
+  text-align: left; padding: 6px 8px; font-size: 11px; color: var(--muted);
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.pw-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.pw-table tr:last-child td { border-bottom: none; }
+.pw-up { color: var(--green); font-weight: 700; }
+.pw-down { color: var(--red); font-weight: 700; }
+.pw-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.pw-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; min-width: 40px; }
+.pw-bar > span { display: block; height: 100%; }
+
+/* ---- footer / run ---- */
+.pw-foot {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 16px; padding: 12px 18px;
+  border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+}
+.pw-runstate { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.pw-progress { flex: 1 1 260px; display: grid; gap: 4px; min-width: 200px; }
+.pw-prow { display: grid; grid-template-columns: 110px 1fr 74px; gap: 8px; align-items: center; font-size: 11px; }
+.pw-prow .pw-plabel { color: var(--muted); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-prow .pw-pstate { text-align: right; color: var(--muted); }
+.pw-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pw-actions select { max-width: 260px; }
+.button.subtle { font-weight: 600; color: var(--muted); }
+.pw-error {
+  margin-top: 8px; font-size: 12px; color: var(--red);
+  white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow: auto;
+}

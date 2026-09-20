@@ -1,0 +1,37 @@
+{
+  "control": {
+    "treatment": "control",
+    "total_agents": 5,
+    "days": 2,
+    "avg_misinfo_risk": {
+      "1": 0.0,
+      "2": 0.0
+    },
+    "peak_misinfo_risk": 0.0,
+    "final_misinfo_risk": 0.0,
+    "avg_cross_viewpoint_exposure": 0.06656132013201317
+  },
+  "treatment_a": {
+    "treatment": "treatment_a",
+    "total_agents": 5,
+    "days": 1,
+    "avg_misinfo_risk": {
+      "1": 0.0
+    },
+    "peak_misinfo_risk": 0.0,
+    "final_misinfo_risk": 0.0,
+    "avg_cross_viewpoint_exposure": 0.06707317073170728
+  },
+  "treatment_b": {
+    "treatment": "treatment_b",
+    "total_agents": 5,
+    "days": 2,
+    "avg_misinfo_risk": {
+      "1": 0.0,
+      "2": 0.0
+    },
+    "peak_misinfo_risk": 0.0,
+    "final_misinfo_risk": 0.0,
+    "avg_cross_viewpoint_exposure": 0.06634615384615382
+  }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="analytics.page_title">GAWorld · 结果分析</title>
+  <meta name="description" data-i18n-content="analytics.meta_description" content="GAWorld 仿真结果可视化：状态变化、经济轨迹、社交网络、行为分布与事件时间线" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/analytics.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="kicker">GAWorld Analytics</p>
+        <h1 data-i18n="analytics.headline">仿真结果分析</h1>
+        <p class="hero-sub" data-i18n="analytics.hero_sub">状态变化 · 经济轨迹 · 社交网络 · 行为分布 · 事件时间线</p>
+      </div>
+      <div class="hero-status">
+        <label class="an-run-picker">
+          <span data-i18n="analytics.run">运行</span>
+          <select id="anRunSelect"></select>
+        </label>
+        <span id="anStatus" class="an-status is-busy" data-i18n="analytics.loading">加载中…</span>
+        <button id="anRefreshBtn" class="button small" data-i18n="analytics.refresh">刷新数据</button>
+        <details class="an-export" id="anExport">
+          <summary class="button small" data-i18n="analytics.export">导出结果</summary>
+          <div class="an-export-menu">
+            <button type="button" data-export="html"><span data-i18n="analytics.export_html">HTML 报告</span><em data-i18n="analytics.export_html_note">含全部图表，可离线打开 / 打印成 PDF</em></button>
+            <button type="button" data-export="json"><span data-i18n="analytics.export_json">原始数据 JSON</span><em data-i18n="analytics.export_json_note">接口原样返回，便于二次分析</em></button>
+            <button type="button" data-export="csv"><span data-i18n="analytics.export_csv">CSV 数据包（.zip）</span><em data-i18n="analytics.export_csv_note">逐表拆分，可导入 Excel / pandas</em></button>
+            <button type="button" data-export="md"><span data-i18n="analytics.export_md">Markdown 摘要</span><em data-i18n="analytics.export_md_note">文字版结论，可贴进论文 / 周报</em></button>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <p id="anRunNote" class="an-run-note" hidden></p>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Overview</p>
+          <h2 data-i18n="analytics.overview">运行总览</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.overview_hint" data-help="本次仿真产出的规模概览，以及变化最剧烈的状态指标（按全体智能体首末差值的均值排序）。可在页首切换要分析的运行：当前运行、历史归档运行或场景对比运行。"></span>
+      </div>
+      <div id="anOverview" class="an-kpis"></div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.top_movers">变化最显著的状态指标</h4></header>
+          <div id="anMovers"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.run_params">运行参数</h4></header>
+          <dl id="anRunMeta" class="an-meta"></dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Agent State</p>
+          <h2 data-i18n="analytics.state">智能体状态变化</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.state_hint" data-help="每个指标一张折线图，横轴为仿真采样步，纵轴为 [0,1] 归一化状态值，每条线是一位居民。下方为首末差值对比与最终状态雷达图。"></span>
+      </div>
+      <div class="an-pickers">
+        <div>
+          <span class="an-picker-label" data-i18n="analytics.pick_metric">状态指标</span>
+          <div id="anMetricPicker" class="an-chips"></div>
+        </div>
+        <div>
+          <span class="an-picker-label" data-i18n="analytics.pick_agent">居民</span>
+          <div id="anAgentPicker" class="an-chips"></div>
+        </div>
+      </div>
+      <div id="anStateGrid" class="an-grid"></div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.first_last">首末变化（起始 → 结束）</h4></header>
+          <div id="anStateDelta"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.final_profile">最终状态画像</h4></header>
+          <div id="anStateRadar"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Economy</p>
+          <h2 data-i18n="analytics.economy">经济轨迹</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.economy_hint" data-help="来自 output/economy 的逐日账本：资产、收支、储蓄与投资随天数的变化，以及最终财富排名与宏观周期状态。居民筛选沿用上方状态区的选择。"></span>
+      </div>
+      <div class="an-pickers">
+        <div>
+          <span class="an-picker-label" data-i18n="analytics.pick_econ">经济指标</span>
+          <div id="anEconSeriesPicker" class="an-chips"></div>
+        </div>
+      </div>
+      <div id="anEconGrid" class="an-grid"></div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.wealth_rank">最终财富排名</h4></header>
+          <div id="anEconWealth"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.macro">宏观与货币守恒</h4></header>
+          <dl id="anEconMacro" class="an-meta"></dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Social Graph</p>
+          <h2 data-i18n="analytics.social">社交关系网络</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.social_hint" data-help="大圆点为参与仿真的居民，小圆点为其亲属/熟人等背景关系。连线粗细表示亲密度，颜色深浅表示信任度。悬停可查看具体数值。"></span>
+      </div>
+      <div id="anSocialGraph" class="an-graph-wrap"></div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.dunbar">邓巴分层</h4></header>
+          <div id="anSocialTiers"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.roles">关系角色分布</h4></header>
+          <div id="anSocialRoles"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Behavior &amp; Space</p>
+          <h2 data-i18n="analytics.behavior">行为与空间分布</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.behavior_hint" data-help="居民实际去过的地点、出行方式偏好、按时段×情境累积的习惯强度热力图，以及日程活动的时间分布。"></span>
+      </div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.places">高频地点</h4></header>
+          <div id="anPlaces"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.modes">出行方式</h4></header>
+          <div id="anModes"></div>
+        </article>
+      </div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.heatmap">习惯强度热力图（时段 × 情境）</h4></header>
+          <div id="anHeatmap"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.hours">日程活动的时间分布</h4></header>
+          <div id="anHours"></div>
+        </article>
+      </div>
+      <article class="an-card">
+        <header class="an-card-head"><h4 data-i18n="analytics.habits">最强习惯</h4></header>
+        <div id="anHabits" class="an-table-wrap"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Events</p>
+          <h2 data-i18n="analytics.events">环境与政策事件</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.events_hint" data-help="按事件类型分泳道排列的时间线，圆点大小表示事件强度。可与上方状态曲线对照，观察事件冲击对居民状态的影响。"></span>
+      </div>
+      <div id="anEventTimeline"></div>
+      <div class="an-two">
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.event_types">事件类型分布</h4></header>
+          <div id="anEventTypes"></div>
+        </article>
+        <article class="an-card">
+          <header class="an-card-head"><h4 data-i18n="analytics.event_impacts">影响标签分布</h4></header>
+          <div id="anEventImpacts"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/analytics-export.js"></script>
+  <script src="/site/dashboard/analytics.js"></script>
+</body>
+</html>

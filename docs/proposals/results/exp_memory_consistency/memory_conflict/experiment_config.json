@@ -1,0 +1,12 @@
+{
+  "treatment": "memory_conflict",
+  "config": {
+    "reset_between_phases": false,
+    "delete_summaries": false,
+    "inject_conflict": true,
+    "description": "注入冲突记忆"
+  },
+  "days": 7,
+  "seed": 42,
+  "timestamp": "2026-06-03T15:34:49.598483"
+}

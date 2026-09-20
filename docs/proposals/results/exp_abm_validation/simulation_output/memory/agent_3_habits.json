@@ -1,0 +1,98 @@
+{
+  "night|public|睡前": {
+    "action_counts": {
+      "睡觉": 4
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.355246336,
+    "last_updated_day": 1
+  },
+  "morning|work|睡前": {
+    "action_counts": {
+      "睡觉": 2
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|睡前": {
+    "action_counts": {
+      "睡觉": 6
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.4542804987904,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Civic Square": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Riverwalk": {
+    "action_counts": {
+      "乘坐metro移动": 2
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|睡前": {
+    "action_counts": {
+      "睡觉": 6
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.4542804987904,
+    "last_updated_day": 1
+  },
+  "afternoon|work|前往Willow Design Studio": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|work|睡前": {
+    "action_counts": {
+      "睡觉": 2
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Civic Square": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "evening|work|睡前": {
+    "action_counts": {
+      "睡觉": 1
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|public|睡前": {
+    "action_counts": {
+      "睡觉": 8
+    },
+    "preferred_action": "睡觉",
+    "strength": 0.5381030141761945,
+    "last_updated_day": 1
+  },
+  "night|public|前往Insurance Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  }
+}

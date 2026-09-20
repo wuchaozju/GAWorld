@@ -1,0 +1,110 @@
+{
+  "night|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 1,
+      "按原节奏继续当前安排": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "联系一下相关的人确认接下来的安排",
+    "strength": 0.15217459200000003,
+    "last_updated_day": 1
+  },
+  "morning|public|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 2,
+      "联系一下相关的人确认接下来的安排": 2,
+      "先把眼前这件事往前推进一点": 1,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.20234832445439996,
+    "last_updated_day": 1
+  },
+  "morning|work|个人时间": {
+    "action_counts": {
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Riverwalk": {
+    "action_counts": {
+      "乘坐metro移动": 3
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "morning|public|前往Building C-01": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  },
+  "afternoon|public|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 2,
+      "按原节奏继续当前安排": 2,
+      "联系一下相关的人确认接下来的安排": 1,
+      "先把眼前这件事往前推进一点": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.2051794796544,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Stadium Plaza": {
+    "action_counts": {
+      "乘坐metro移动": 3
+    },
+    "preferred_action": "乘坐metro移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "afternoon|public|前往Sorting Center": {
+    "action_counts": {
+      "乘坐e-bike移动": 3
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.2991808,
+    "last_updated_day": 1
+  },
+  "evening|public|个人时间": {
+    "action_counts": {
+      "联系一下相关的人确认接下来的安排": 2,
+      "按原节奏继续当前安排": 1,
+      "先把眼前这件事往前推进一点": 3,
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先把眼前这件事往前推进一点",
+    "strength": 0.26827831168204797,
+    "last_updated_day": 1
+  },
+  "evening|work|个人时间": {
+    "action_counts": {
+      "按原节奏继续当前安排": 1
+    },
+    "preferred_action": "按原节奏继续当前安排",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "evening|home|个人时间": {
+    "action_counts": {
+      "先拖一会儿再说，顺手刷会儿手机": 1
+    },
+    "preferred_action": "先拖一会儿再说，顺手刷会儿手机",
+    "strength": 0.17200000000000001,
+    "last_updated_day": 1
+  },
+  "night|public|前往Civic Square": {
+    "action_counts": {
+      "乘坐e-bike移动": 2
+    },
+    "preferred_action": "乘坐e-bike移动",
+    "strength": 0.23824,
+    "last_updated_day": 1
+  }
+}

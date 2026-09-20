@@ -1,0 +1,44 @@
+{
+  "home": "Building C-01",
+  "workplace": "Central Block",
+  "current": "Building C-01",
+  "destination": "Building C-01",
+  "in_transit": false,
+  "transport_mode": "e-bike",
+  "travel_minutes": 6,
+  "travel_progress": 1.0,
+  "travel_route": [
+    "Riverwalk",
+    "Riverside Park",
+    "Central Block",
+    "Building C-01"
+  ],
+  "travel_cost": 0.17,
+  "rush_hour": false,
+  "arrival_time": "09:39",
+  "frequent_places": {
+    "Civic Square": 1,
+    "Stadium Plaza": 1,
+    "Financial District": 1,
+    "Willow Design Studio": 2,
+    "Willow Grove Park": 1,
+    "Central Bank Annex": 1,
+    "Basketball Court": 1,
+    "Central Block": 1,
+    "Riverwalk": 1,
+    "Building C-01": 1
+  },
+  "preferred_modes": {
+    "bike": 3,
+    "e-bike": 8
+  },
+  "commute_route": {
+    "mode": "",
+    "distance_km": 0.0,
+    "avg_minutes": 0,
+    "trip_count": 0
+  },
+  "daily_travel_cost": 0.5700000000000001,
+  "travel_distance_km": 1.74,
+  "depart_time": "09:33"
+}

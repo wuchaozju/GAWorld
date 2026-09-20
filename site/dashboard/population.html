@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="population.page_title">GAWorld · 人口与群体</title>
+  <meta name="description" data-i18n-content="population.meta_description" content="GAWorld 人口生成与群体模拟工作台" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/population.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="population.kicker">GAWorld 人口与群体</p>
+          <h1 data-i18n="population.headline">造一座小镇，然后让它运转起来</h1>
+          <p class="sub" data-i18n="population.sub">
+            设定人口结构 → 生成几百个居民 → 按群体低成本模拟 → 检查结果可不可信。
+            全程可以先不花钱试跑。
+          </p>
+        </div>
+      </div>
+      <div class="pop-topmeta" id="popTopMeta"></div>
+    </header>
+
+    <nav class="studio-steps" id="popSteps">
+      <button class="step is-active" data-step="1" data-i18n-title="population.step1_hint" title="选一个人口模板，设定规模和随机种子"><i>1</i><span data-i18n="population.step1">选模板</span></button>
+      <button class="step" data-step="2" data-i18n-title="population.step2_hint" title="设定年龄、家庭、就业、收入，然后生成这批人"><i>2</i><span data-i18n="population.step2">人口结构</span></button>
+      <button class="step" data-step="3" data-i18n-title="population.step3_hint" title="设定居民的情绪、压力、安全感等心理状态"><i>3</i><span data-i18n="population.step3">心理状态</span></button>
+      <button class="step" data-step="4" data-i18n-title="population.step4_hint" title="按群体模拟若干天，可选择使用哪个模型"><i>4</i><span data-i18n="population.step4">跑模拟</span></button>
+      <button class="step" data-step="5" data-i18n-title="population.step5_hint" title="用对照实验检查这次近似可不可信"><i>5</i><span data-i18n="population.step5">检查结果</span></button>
+    </nav>
+
+    <section class="studio-main">
+      <div class="pop-panel" id="popPanel">
+        <div class="pop-card"><p class="pop-hint" data-i18n="population.loading">正在加载…</p></div>
+      </div>
+      <aside class="pop-side">
+        <div class="pop-side-card">
+          <h3><span data-i18n="population.checkup">参数体检</span> <span class="pop-q" data-i18n-title="population.checkup_hint" title="纯数学检查，不会生成任何人，跟着滑块实时更新。参数互相矛盾时会告诉你该改哪一个。">?</span></h3>
+          <div id="popIssues" class="pop-issues"></div>
+        </div>
+        <div class="pop-side-card">
+          <h3 data-i18n="population.current_batch">当前这批人</h3>
+          <div id="popSummary" class="pop-summary"></div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="studio-foot">
+      <div class="pop-progress" id="popProgress"></div>
+      <div class="pop-actions">
+        <button class="btn ghost" id="popPrev" data-i18n="population.prev">← 上一步</button>
+        <button class="btn ghost" id="popNext" data-i18n="population.next">下一步 →</button>
+      </div>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/population.js"></script>
+</body>
+</html>

@@ -2,6 +2,16 @@ import unittest
 from unittest.mock import patch
 
 import generative_city_sim as sim
+from gaworld.sim import _action
+
+# ``patch.object(sim, ...)`` only intercepts a dependency when the function
+# under test also resolves that name from ``generative_city_sim``'s globals.
+# The refactor moved ``choose_action`` into ``gaworld.sim._action``, which looks
+# its dependencies up in its own module, so patching the re-export on ``sim``
+# cannot reach it. Retargeted rather than deleted: on today's code path
+# ``choose_action`` takes ``recall_context`` as an argument and never calls
+# ``retrieve_relevant_memories`` at all, so the stub is inert either way -- but
+# on ``_action`` it is at least in the right place if the path ever does.
 
 
 class TestRelationshipWeightedSocialContext(unittest.TestCase):
@@ -88,7 +98,7 @@ class TestRelationshipWeightedSocialContext(unittest.TestCase):
         with patch.object(sim, "STATEFUL", False), patch.object(
             sim, "HUMAN_REALISM_ENABLED", True
         ), patch.object(sim, "HUMAN_REALISM_CONFIG", behavior_cfg), patch.object(
-            sim, "retrieve_relevant_memories", return_value=[]
+            _action, "retrieve_relevant_memories", return_value=[]
         ):
             high_obligation_count = 0
             high_friction_count = 0
