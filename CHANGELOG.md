@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   只发完整行，文件被重置变短时从头读。
 - **Recorder 新表 `agent.step`**：每个 agent 每个 tick 一行精简记录（活动、动作、位置、是否改计划及原因），
   让事件流能实时跟随全城行动；长 LLM 文本不进这张表，仍留在 trace，避免记录体积随 prompt 膨胀。
+- **`/api/bench/*`：基准测试可从接口发起。** `gaworld_bench.py` 与 `rubric_bench.py` 作为后台任务运行，
+  日志与结果可轮询。两个脚本写固定的结果文件，所以一次只允许一个任务（其余返回 409），
+  且任务结束时把 scorecard 拷进任务记录——下一次运行覆盖结果文件后，本次分数仍可查。
+  请求体会变成命令行，因此只转发白名单选项，路径参数限制在仓库内。
 
 ## [Unreleased] — 2026-09-16 — 城市知识库：让城市真的影响居民
 

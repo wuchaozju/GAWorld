@@ -2408,6 +2408,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = kernel_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/bench/"):
+            from gaworld.apps import bench_api
+
+            payload, status = bench_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         # Population Studio / group mode live in their own module; this file is
         # already long enough without another subsystem's routes in it.
         if path.startswith("/api/population"):
@@ -2573,6 +2578,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import kernel_api
 
             body, status = kernel_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/bench/"):
+            from gaworld.apps import bench_api
+
+            body, status = bench_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path.startswith("/api/population"):
             from gaworld.apps import population_api
