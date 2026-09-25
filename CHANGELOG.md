@@ -37,6 +37,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`/api/economy/*`（只读）**：`overview` 复用 External Systems 已算好的货币系统数据；新增
   `loans`——从各居民快照的 `friend_debts` / `friend_credits` 拼出居民间借贷图，并核对每笔借贷
   双方记账是否一致（一边有一边无即是资金凭空产生或消失，如实报出而不抹平）；`ledger` 给出单人账本序列。
+- **`GET /api/openapi.json`**：上述对外接口的 OpenAPI 3.1 描述，可导入 Swagger UI / Postman 或生成客户端。
+  写成 Python 而非静态 JSON 以复用共享结构；测试会逐条请求文档里的路由，列了服务器没有的路径就失败，
+  防止文档与实现悄悄脱节。
 
 ## [Unreleased] — 2026-09-16 — 城市知识库：让城市真的影响居民
 

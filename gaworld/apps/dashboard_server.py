@@ -2468,6 +2468,10 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # Kernel surface: generic interventions + the SSE record stream
         # (gaworld/apps/kernel_api.py). The stream holds the connection open,
         # so it writes to the socket itself instead of returning JSON.
+        if path == "/api/openapi.json":
+            from gaworld.apps import openapi
+
+            return self._json_response(openapi.spec())
         if path == "/api/events/stream":
             from gaworld.apps import kernel_api
 
