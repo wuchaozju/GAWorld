@@ -204,6 +204,31 @@ Relay：
 http://<server>:8877/health
 ```
 
+## 访问控制（对外暴露前必读）
+
+Dashboard 以仓库根目录提供静态文件。以点开头的路径（`/.env`、`/.git/…`）一律返回 404，
+无需配置——此前它们可以被直接下载，其中 `.env` 含真实 API key。
+
+以 `--host 0.0.0.0` 暴露时，务必再设置访问令牌。令牌只从环境变量读取
+（不放进 `dashboard_config.json`，因为 `POST /api/config` 能改写那个文件）：
+
+```bash
+# nohup / 手动启动：启动前导出
+export GAWORLD_DASHBOARD_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+
+# systemd-user：写进 gaworld-dashboard.service 的 [Service] 段
+Environment=GAWORLD_DASHBOARD_TOKEN=<令牌>
+```
+
+设置后**所有**请求（API 与静态页）都需要令牌：
+
+- 浏览器：打开一次 `http://<host>:8766/?token=<令牌>`，服务端写入 HttpOnly、SameSite=Strict 的
+  cookie 并跳转去掉 URL 中的令牌，之后控制台正常使用（含 `/api/events/stream`）。
+- 脚本：`Authorization: Bearer <令牌>`。
+- 请求日志中的 `token=` 会被打码。
+
+未设置时行为与以前相同（不鉴权），适合只绑 `127.0.0.1` 的本机使用。
+
 ## 反向代理注意事项
 
 `/board` 页面依赖这些路径都转发到 8766：

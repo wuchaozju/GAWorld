@@ -1,5 +1,6 @@
 import atexit
 import csv
+import hmac
 import datetime
 import math
 import json
@@ -13,7 +14,8 @@ import uuid
 from copy import deepcopy
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from http.cookies import SimpleCookie
+from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -2346,6 +2348,73 @@ def _fos_export(payload: dict) -> dict:
 class DashboardHandler(SimpleHTTPRequestHandler):
     server_version = "GAWorldDashboard/0.1"
 
+    # -- access control ---------------------------------------------------
+    #
+    # Static files are served from the repo root, so without a filter `/.env`
+    # (live API keys) and `/.git/` are one GET away — and the deployment guide
+    # binds 0.0.0.0. Dot-paths are therefore refused unconditionally.
+    #
+    # Setting GAWORLD_DASHBOARD_TOKEN turns on a token for *every* request
+    # (API and static). Taken from the environment, not dashboard_config.json,
+    # because `POST /api/config` can rewrite that file. Browsers log in once
+    # with `/?token=…`, which sets an HttpOnly, SameSite=Strict cookie (so the
+    # console's own fetches and the SSE stream keep working, and other sites
+    # cannot ride it); scripts send `Authorization: Bearer …`.
+
+    AUTH_COOKIE = "gaworld_token"
+
+    def _deny(self, status, message):
+        if self.path.startswith("/api/"):
+            return self._json_response({"error": message}, status=status)
+        data = message.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
+
+    def _guard(self, path, query):
+        """Return True when the request was answered here (refused/redirected)."""
+        if not path.startswith("/api/") and any(
+            part.startswith(".") for part in path.split("/") if part
+        ):
+            self._deny(404, "Not found")
+            return True
+        token = os.environ.get("GAWORLD_DASHBOARD_TOKEN", "").strip()
+        if not token:
+            return False
+        params = parse_qs(query, keep_blank_values=True)
+        offered = (params.pop("token", [""]) or [""])[0]
+        if offered:
+            if not hmac.compare_digest(offered, token):
+                self._deny(401, "invalid token")
+                return True
+            rest = urlencode(params, doseq=True)
+            self.send_response(303)
+            self.send_header(
+                "Set-Cookie",
+                f"{self.AUTH_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict",
+            )
+            self.send_header("Location", path + (f"?{rest}" if rest else ""))
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return True
+        header = self.headers.get("Authorization", "")
+        if header.startswith("Bearer ") and hmac.compare_digest(header[7:].strip(), token):
+            return False
+        morsel = SimpleCookie(self.headers.get("Cookie", "")).get(self.AUTH_COOKIE)
+        if morsel is not None and hmac.compare_digest(morsel.value, token):
+            return False
+        self._deny(401, "authentication required: open /?token=<token> or send Authorization: Bearer <token>")
+        return True
+
+    def log_message(self, fmt, *args):
+        # The login URL carries the token in its query string; keep it out of logs.
+        message = re.sub(r"token=[^&\s]*", "token=***", fmt % args)
+        sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
+
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=REPO_ROOT, **kwargs)
 
@@ -2739,6 +2808,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if self._guard(path, parsed.query):
+            return
         if path.startswith("/api/"):
             try:
                 return self._handle_api_get(path, parse_qs(parsed.query))
@@ -2768,6 +2839,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if self._guard(path, parsed.query):
+            return
         # "/" is the project landing page — the intro and the way in to every
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
@@ -2785,6 +2858,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if self._guard(path, parsed.query):
+            return
         if path == "/api/todos/create-form":
             try:
                 _create_todo_item(self._read_form_body())

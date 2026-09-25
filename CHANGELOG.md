@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased] — 2026-09-25 — 通用干预 API 与实时事件流
 
+### Security
+
+- **Dashboard 不再下载 `/.env` 与 `/.git/`。** 静态文件以仓库根目录提供，任何人能访问端口就能
+  `GET /.env` 拿到真实 API key——而部署文档用的是 `--host 0.0.0.0`。以点开头的路径段现在一律 404。
+  **若曾以 0.0.0.0 对外运行过 dashboard，`.env` 里的 key 应视为已泄露并轮换。**
+- **可选访问令牌 `GAWORLD_DASHBOARD_TOKEN`**（仅环境变量——`POST /api/config` 能改写
+  `dashboard_config.json`，放那里等于能被接口改掉）。设置后 API 与静态页都需令牌：脚本用 Bearer，
+  浏览器用 `/?token=` 换 HttpOnly + SameSite=Strict cookie，控制台和 SSE 无需改动；日志里的令牌打码。
+  新增的干预、评测等写接口能改运行中的仿真、发起 LLM 调用，这是对外暴露它们的前提。
+
 ### Added
 
 - **`/api/interventions`：Controller 里注册的每个干预都能从 HTTP 调用。** 内核早有
