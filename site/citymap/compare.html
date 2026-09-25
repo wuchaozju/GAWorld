@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GAWorld · CityMap 对比 (旧 vs Mapbox)</title>
+<style>
+  :root{
+    --bg:#0c1118; --panel:#141a23; --panel-2:#1a222d; --ink:#e7ecf3;
+    --muted:#97a3b4; --line:#2c3644; --accent:#6ea8fe; --accent-2:#5cc2a8;
+    --warn:#ffb454; --good:#5cc2a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden;}
+  #app{display:grid;grid-template-rows:auto 1fr;height:100%;}
+  /* header */
+  header{padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.3px;}
+  header .city-pick{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;}
+  header select{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+    border-radius:7px;padding:4px 8px;font:inherit;}
+  header .spacer{flex:1;}
+  header a{color:var(--accent);text-decoration:none;font-size:12px;border:1px solid var(--line);
+    padding:4px 10px;border-radius:7px;}
+  header a:hover{border-color:var(--accent);}
+  /* split */
+  #split{display:grid;grid-template-columns:1fr 1fr;height:100%;min-height:0;}
+  .pane{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line);}
+  .pane:last-child{border-right:none;}
+  .pane .pane-head{padding:8px 14px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:8px;background:var(--panel-2);}
+  .pane .pane-head .dot{width:10px;height:10px;border-radius:50%;}
+  .pane.old .dot{background:var(--warn);}
+  .pane.new .dot{background:var(--good);}
+  .pane .pane-head h2{margin:0;font-size:12px;font-weight:600;}
+  .pane .pane-head .sub{color:var(--muted);font-size:11px;}
+  .pane .stage{position:relative;flex:1;min-height:0;background:#0c1118;}
+  .pane canvas{display:block;}
+  .pane .stage > div:not(.pop){position:absolute;inset:0;}
+  /* loading */
+  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:12px;}
+  /* legend */
+  .legend{position:absolute;left:12px;bottom:12px;background:rgba(20,25,33,.86);
+    border:1px solid var(--line);border-radius:9px;padding:9px 11px;max-width:230px;
+    backdrop-filter:blur(6px);font-size:11px;}
+  .legend .label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+  .legend .li{display:flex;align-items:center;gap:6px;margin:3px 0;}
+  .legend .sw{width:14px;height:8px;border-radius:2px;flex:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>地图改进对比</h1>
+    <div class="city-pick">
+      城市：<select id="city">
+        <option value="wuzhen">wuzhen (乌镇镇)</option>
+        <option value="default">default (杭州)</option>
+      </select>
+    </div>
+    <div class="city-pick">
+      Mapbox token：
+      <input id="token" placeholder="留空使用 MapLibre demo" style="background:var(--panel-2);color:var(--ink);
+        border:1px solid var(--line);border-radius:7px;padding:4px 8px;font:inherit;width:240px;" />
+    </div>
+    <div class="spacer"></div>
+    <a href="/site/citymap/mapbox.html" id="open-new">→ 打开全屏新版</a>
+    <a href="/site/citymap/index.html" id="open-old">→ 旧版自绘</a>
+  </header>
+  <div id="split">
+    <div class="pane old">
+      <div class="pane-head"><span class="dot"></span><h2>旧版：Canvas 自绘</h2>
+        <span class="sub">site/dashboard/citymap-view.js</span></div>
+      <div class="stage"><div class="loading" id="loading-old">加载中…</div></div>
+      <div class="legend">
+        <div class="label">图例（旧）</div>
+        <div class="li"><span class="sw" style="background:#7bb37a"></span>居住区</div>
+        <div class="li"><span class="sw" style="background:#e0a458"></span>商业区</div>
+        <div class="li"><span class="sw" style="background:#5a9bd4"></span>教育区</div>
+        <div class="li"><span class="sw" style="background:#d96c6c"></span>医疗区</div>
+        <div class="li"><span class="sw" style="background:#5cc2a8"></span>休闲区</div>
+        <div class="li"><span class="sw" style="background:#d4b95a"></span>交通枢纽</div>
+      </div>
+    </div>
+    <div class="pane new">
+      <div class="pane-head"><span class="dot"></span><h2>新版：Mapbox / MapLibre 矢量底图</h2>
+        <span class="sub">site/citymap/mapbox.html</span></div>
+      <div class="stage"><div class="loading" id="loading-new">加载中…</div></div>
+      <div class="legend">
+        <div class="label">图例（新）</div>
+        <div class="li"><span class="sw" style="background:#ffd166"></span>主干道</div>
+        <div class="li"><span class="sw" style="background:#9bd1ff"></span>次干道</div>
+        <div class="li"><span class="sw" style="background:#7a8aa0"></span>支路</div>
+        <div class="li"><span class="sw" style="background:#5fb1e8"></span>河流</div>
+        <div class="li"><span class="sw" style="background:#22d3a0"></span>居民</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Right pane: Mapbox / MapLibre view via iframe (fully isolated globals). -->
+<script>
+(function () {
+  const citySel = document.getElementById("city");
+  const tokenInput = document.getElementById("token");
+  const stageNew = document.querySelector(".pane.new .stage");
+  const stageOld = document.querySelector(".pane.old .stage");
+  const openNew = document.getElementById("open-new");
+  const openOld = document.getElementById("open-old");
+
+  // ---- Old pane: vanilla 2D canvas rendering, mirroring citymap-view.js
+  //      color scheme. Re-implemented inline (no module) so the compare view
+  //      is self-contained and works without a build step.
+  async function renderOld(city) {
+    stageOld.querySelector(".loading").textContent = "拉取数据…";
+    const r = await fetch("/api/city/map?city=" + encodeURIComponent(city));
+    if (!r.ok) {
+      stageOld.querySelector(".loading").textContent = "加载失败: HTTP " + r.status;
+      return;
+    }
+    const payload = await r.json();
+    const map = payload.map || {};
+    const nodes = (map.nodes || []).filter((n) => typeof n.lat === "number" && typeof n.lng === "number");
+    if (!nodes.length) {
+      stageOld.querySelector(".loading").textContent = "该城市没有节点数据";
+      return;
+    }
+    stageOld.querySelector(".loading").remove();
+    const canvas = document.createElement("canvas");
+    canvas.style.width = "100%"; canvas.style.height = "100%";
+    stageOld.appendChild(canvas);
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      const rect = stageOld.getBoundingClientRect();
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+    };
+    resize(); window.addEventListener("resize", resize);
+
+    // Convert nodes (lng/lat) → pixel coords with same lat→y, lng→x scheme
+    // used by the existing canvas renderer. Scale to fit, with margins.
+    const computeScale = () => {
+      let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+      for (const n of nodes) {
+        if (n.lng < minLng) minLng = n.lng; if (n.lat < minLat) minLat = n.lat;
+        if (n.lng > maxLng) maxLng = n.lng; if (n.lat > maxLat) maxLat = n.lat;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width - 40, h = rect.height - 40;
+      const sx = w / (maxLng - minLng || 1), sy = h / (maxLat - minLat || 1);
+      const s = Math.min(sx, sy);
+      const ox = (rect.width - (maxLng - minLng) * s) / 2;
+      const oy = (rect.height - (maxLat - minLat) * s) / 2;
+      return (lng, lat) => [ox + (lng - minLng) * s, oy + (maxLat - lat) * s];
+    };
+    const draw = () => {
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      const w = canvas.width / dpr, h = canvas.height / dpr;
+      ctx.fillStyle = "#0c1118"; ctx.fillRect(0, 0, w, h);
+      const proj = computeScale();
+
+      // Roads (simple lines)
+      const nodesById = {};
+      for (const n of nodes) nodesById[n.id] = n;
+      const edges = map.edges || [];
+      for (const e of edges) {
+        const a = nodesById[e.source || e.from || e.a];
+        const b = nodesById[e.target || e.to || e.b];
+        if (!a || !b) continue;
+        const t = e.road_type || e.type || "local";
+        ctx.strokeStyle = t === "arterial" ? "#ffd166" : t === "collector" ? "#9bd1ff" : "#7a8aa0";
+        ctx.lineWidth = t === "arterial" ? 2.4 : t === "collector" ? 1.8 : 1.0;
+        ctx.globalAlpha = t === "local" ? 0.55 : 0.85;
+        ctx.beginPath();
+        const [ax, ay] = proj(a.lng, a.lat); const [bx, by] = proj(b.lng, b.lat);
+        ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // River
+      const r = map.river;
+      if (r && r.path && r.path.length > 1) {
+        ctx.strokeStyle = "#5fb1e8"; ctx.lineWidth = 4; ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        r.path.forEach(([lng, lat], i) => {
+          const [x, y] = proj(lng, lat);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke(); ctx.globalAlpha = 1;
+      }
+
+      // Metro (dashed)
+      const nodesByName = {};
+      for (const n of nodes) if (n.name) nodesByName[n.name] = n;
+      const lines = map.metro_lines || [];
+      ctx.setLineDash([5, 4]);
+      for (const line of lines) {
+        const stops = (line.stops || []).map((n) => nodesByName[n]).filter(Boolean);
+        if (stops.length < 2) continue;
+        ctx.strokeStyle = line.color || "#8f5bd8"; ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        stops.forEach((s, i) => {
+          const [x, y] = proj(s.lng, s.lat);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // Nodes
+      const catStyle = map.category_style || {};
+      for (const n of nodes) {
+        const [x, y] = proj(n.lng, n.lat);
+        const style = catStyle[n.category] || {};
+        ctx.fillStyle = style.color || "#9aa3b2";
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#e7ecf3"; ctx.font = "11px -apple-system,PingFang SC,sans-serif";
+        ctx.fillText(n.name || "", x + 7, y + 4);
+      }
+    };
+    draw();
+    window.addEventListener("resize", draw);
+  }
+
+  // ---- New pane: iframe pointing at the new Mapbox view.
+  function renderNew(city, token) {
+    stageNew.querySelector(".loading").textContent = "加载底图…";
+    const oldIframe = stageNew.querySelector("iframe");
+    if (oldIframe) oldIframe.remove();
+    const params = new URLSearchParams({ city });
+    if (token) params.set("token", token);
+    const iframe = document.createElement("iframe");
+    iframe.src = "/site/citymap/mapbox.html?" + params.toString();
+    iframe.style.cssText = "width:100%;height:100%;border:0;display:block;background:#0c1118;";
+    iframe.onload = () => stageNew.querySelector(".loading").remove();
+    iframe.onerror = () => stageNew.querySelector(".loading").textContent = "iframe 加载失败";
+    stageNew.appendChild(iframe);
+  }
+
+  function refresh() {
+    const city = citySel.value;
+    const token = tokenInput.value.trim();
+    renderOld(city);
+    renderNew(city, token);
+    const p = new URLSearchParams({ city });
+    if (token) p.set("token", token);
+    openNew.href = "/site/citymap/mapbox.html?" + p.toString();
+    openOld.href = "/site/citymap/index.html";
+  }
+
+  citySel.addEventListener("change", refresh);
+  tokenInput.addEventListener("change", refresh);
+  // Persist token locally so the user does not retype every reload.
+  tokenInput.value = localStorage.getItem("gaworld.mapboxToken") || "";
+  tokenInput.addEventListener("change", () => localStorage.setItem("gaworld.mapboxToken", tokenInput.value));
+  refresh();
+})();
+</script>
+</body>
+</html>

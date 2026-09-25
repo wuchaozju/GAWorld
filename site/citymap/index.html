@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GAWorld · CityMap (Phaser)</title>
+<style>
+  :root {
+    --bg:#11151c; --panel:#1a2029; --panel-2:#222a35; --ink:#e7ecf3;
+    --muted:#97a3b4; --line:#2c3644; --accent:#6ea8fe; --accent-2:#5cc2a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden;}
+  #app{display:grid;grid-template-columns:1fr 312px;grid-template-rows:1fr auto;height:100%;}
+  #stage{position:relative;grid-row:1/3;grid-column:1;overflow:hidden;background:#0c0f14;}
+  #game{position:absolute;inset:0;}
+  #game canvas{display:block;}
+  #side{grid-row:1/3;grid-column:2;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;min-height:0;}
+  .side-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);}
+  .side-head h1{margin:0;font-size:15px;letter-spacing:.3px;}
+  .side-head .sub{color:var(--muted);font-size:11px;margin-top:2px;}
+  .side-body{padding:12px 16px;overflow-y:auto;flex:1;min-height:0;}
+  .group{margin-bottom:16px;}
+  .group>.label{color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-size:10px;margin-bottom:7px;}
+  .row{display:flex;align-items:center;gap:8px;margin:5px 0;}
+  .toggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
+  .toggle input{accent-color:var(--accent);}
+  .swatch{width:11px;height:11px;border-radius:3px;flex:none;}
+  .chip-list{display:flex;flex-wrap:wrap;gap:5px;}
+  .chip{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:999px;padding:3px 9px;font-size:11px;}
+  button,select{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+    border-radius:7px;padding:6px 10px;font:inherit;cursor:pointer;}
+  button:hover,select:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);color:#0b1018;border-color:var(--accent);font-weight:600;}
+  .file-btn{position:relative;overflow:hidden;}
+  .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  #transport{grid-row:2;grid-column:1;background:var(--panel);border-top:1px solid var(--line);
+    padding:9px 14px;display:flex;align-items:center;gap:12px;}
+  #transport.hidden{display:none;}
+  #scrub{flex:1;accent-color:var(--accent);}
+  .play{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;}
+  .clock{font-variant-numeric:tabular-nums;min-width:124px;}
+  .clock b{color:var(--accent-2);}
+  #tooltip{position:absolute;pointer-events:none;z-index:9;background:rgba(16,20,27,.96);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:250px;font-size:12px;
+    opacity:0;transition:opacity .08s;box-shadow:0 6px 24px rgba(0,0,0,.45);}
+  #tooltip .t-name{font-weight:600;margin-bottom:3px;}
+  #tooltip .t-row{color:var(--muted);display:flex;justify-content:space-between;gap:14px;}
+  #tooltip .t-row span:last-child{color:var(--ink);}
+  #hud{position:absolute;right:12px;top:12px;text-align:right;color:var(--muted);font-size:11px;
+    background:rgba(20,25,33,.7);border:1px solid var(--line);border-radius:8px;padding:6px 10px;}
+  #legend{position:absolute;left:12px;bottom:12px;background:rgba(20,25,33,.86);
+    border:1px solid var(--line);border-radius:9px;padding:9px 11px;max-width:230px;}
+  #legend .label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+  #legend .items{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;}
+  #legend .li{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+  #back-btn{position:absolute;left:12px;top:12px;z-index:9;display:none;}
+  #back-btn.show{display:inline-block;}
+  .slider{-webkit-appearance:none;height:4px;background:var(--line);border-radius:4px;flex:1;accent-color:var(--accent-2);}
+  .small{font-size:11px;color:var(--muted);}
+  .agent-pill{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;
+    background:var(--panel-2);border:1px solid var(--line);margin:4px 0;cursor:pointer;}
+  .agent-pill .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .agent-pill.sel{border-color:var(--accent);}
+  kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:11px;}
+  .empty-hint{color:var(--muted);text-align:center;padding:40px 20px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="game"></div>
+    <button id="back-btn" class="primary">← 返回地图</button>
+    <div id="tooltip"></div>
+    <div id="hud"></div>
+    <div id="legend"><div class="label">Land use</div><div class="items" id="legend-items"></div></div>
+  </div>
+
+  <aside id="side">
+    <div class="side-head">
+      <h1>GAWorld · CityMap</h1>
+      <div class="sub" id="map-meta">加载中…</div>
+    </div>
+    <div class="side-body">
+      <div class="group">
+        <div class="label">数据</div>
+        <div class="row">
+          <button class="file-btn">载入地图 JSON<input type="file" id="f-map" accept=".json,.geojson"></button>
+          <button class="file-btn">载入轨迹<input type="file" id="f-trace" accept=".json"></button>
+        </div>
+        <div class="small" id="data-status"></div>
+      </div>
+      <div class="group">
+        <div class="label">图层</div>
+        <label class="toggle"><input type="checkbox" id="l-terrain" checked> 地形底图</label>
+        <label class="toggle"><input type="checkbox" id="l-zone"> 土地利用分区</label>
+        <label class="toggle"><input type="checkbox" id="l-density"> 人口/建筑密度</label>
+        <label class="toggle"><input type="checkbox" id="l-roads" checked> 道路网络</label>
+        <label class="toggle"><input type="checkbox" id="l-metro" checked> 地铁线</label>
+        <label class="toggle"><input type="checkbox" id="l-river" checked> 河流 / 桥梁</label>
+        <label class="toggle"><input type="checkbox" id="l-nodes" checked> 场所节点</label>
+        <label class="toggle"><input type="checkbox" id="l-labels"> 节点标签</label>
+        <div class="row" style="margin-top:8px"><span class="small">overlay 透明度</span>
+          <input type="range" class="slider" id="overlay-alpha" min="0" max="100" value="55"></div>
+      </div>
+      <div class="group">
+        <div class="label">分类筛选</div>
+        <div class="chip-list" id="cat-filter"></div>
+      </div>
+      <div class="group">
+        <div class="label">Agents</div>
+        <div id="agent-list" class="empty-hint small">载入轨迹后显示</div>
+      </div>
+      <div class="group">
+        <div class="label">操作</div>
+        <div class="small">滚轮缩放 · 拖拽平移 · 悬停查看 · <kbd>双击节点</kbd> 进入室内 ·
+          <kbd>空格</kbd> 播放/暂停 · <kbd>R</kbd> 复位 · <kbd>Esc</kbd> 退出室内</div>
+        <div class="row" style="margin-top:8px"><button id="btn-fit">适配窗口</button></div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="transport" class="hidden">
+    <button class="play primary" id="btn-play">▶</button>
+    <input type="range" id="scrub" min="0" max="0" value="0">
+    <div class="clock" id="clock">Day — · <b>--:--</b></div>
+    <select id="speed">
+      <option value="600">0.5×</option><option value="300" selected>1×</option>
+      <option value="150">2×</option><option value="60">5×</option>
+    </select>
+  </div>
+</div>
+
+<script id="bootstrap-data" type="application/json">__EMBEDDED_MAP__</script>
+<script src="../vendor/phaser.min.js"></script>
+<script>
+__APP_JS__
+</script>
+</body>
+</html>

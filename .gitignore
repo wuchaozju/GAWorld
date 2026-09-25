@@ -156,6 +156,8 @@ celerybeat.pid
 !/site/mobile/**
 !/site/simviz/
 !/site/simviz/**
+!/site/citymap/
+!/site/citymap/**
 dashboard_config.json
 
 # mypy
@@ -197,6 +199,7 @@ cython_debug/
 /output/video/
 /output/
 data/twin_bindings.json
+data/moltbook_accounts.json
 
 # Local scratch / archives (not for version control)
 /tmp/
