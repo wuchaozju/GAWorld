@@ -55,12 +55,23 @@ class ProbePlugin(Plugin):
         PROBE["active_at_setup"] = list(ctx.registry.ids())
         ctx.bus.on("perception.compose", self._contribute_perception)
         ctx.bus.on("action.selected", self._filter_action)
+        ctx.controller.register_intervention("probe_mark", self._mark)
 
     def teardown(self, ctx):
         PROBE["teardown"] = PROBE.get("teardown", 0) + 1
 
+    def _mark(self, ctx, **kwargs):
+        PROBE["mark_applied_at"] = ctx.clock.time_str
+        return kwargs
+
     def _contribute_perception(self, hook_ctx):
         PROBE["perception_calls"] = PROBE.get("perception_calls", 0) + 1
+        if "mark_request" not in PROBE:
+            # Enqueue exactly as `POST /api/interventions/probe_mark` would,
+            # from mid-run: the simulator must pick it up at a later tick.
+            from gaworld.kernel import remote
+
+            PROBE["mark_request"] = remote.enqueue(remote.DEFAULT_PATH, "probe_mark", {"n": 1})
         PROBE.setdefault("perception_ctx_keys", set()).update(hook_ctx.keys())
         return [PERCEPTION_MARKER]
 
@@ -177,6 +188,27 @@ class TestPluginEndToEnd(unittest.TestCase):
 
         # 3. action.selected saw every chosen action.
         self.assertGreater(len(PROBE.get("actions_seen", [])), 0)
+
+        # 4. Every agent-step reached the Recorder stream `/api/events/stream`
+        #    tails, for both agents, with the activity that was actually done.
+        import json
+
+        with open(os.path.join("output", "records", "agent.step.jsonl"), encoding="utf-8") as f:
+            rows = [json.loads(line) for line in f if line.strip()]
+        self.assertEqual({r["agent_id"] for r in rows}, {4, 5})
+        self.assertTrue(all(r.get("activity") and r.get("_time") for r in rows))
+
+        # 5. The `/api/interventions` manifest was published and closed.
+        from gaworld.kernel import remote
+
+        manifest = remote.read(remote.DEFAULT_PATH)
+        self.assertFalse(manifest["active"])
+        self.assertIn("set_agent_state", manifest["registered"])
+
+        # 6. A request queued mid-run was applied by the running loop.
+        self.assertIn("mark_applied_at", PROBE)
+        done = remote.lookup(remote.DEFAULT_PATH, PROBE["mark_request"]["id"])
+        self.assertEqual((done["status"], done["result"]), ("applied", {"n": 1}))
 
 
 if __name__ == "__main__":

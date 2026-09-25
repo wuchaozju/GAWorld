@@ -2396,6 +2396,18 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         return {key: values[0] if values else "" for key, values in parsed.items()}
 
     def _handle_api_get(self, path, query):
+        # Kernel surface: generic interventions + the SSE record stream
+        # (gaworld/apps/kernel_api.py). The stream holds the connection open,
+        # so it writes to the socket itself instead of returning JSON.
+        if path == "/api/events/stream":
+            from gaworld.apps import kernel_api
+
+            return kernel_api.serve_stream(self, query)
+        if path == "/api/interventions" or path.startswith("/api/interventions/"):
+            from gaworld.apps import kernel_api
+
+            payload, status = kernel_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         # Population Studio / group mode live in their own module; this file is
         # already long enough without another subsystem's routes in it.
         if path.startswith("/api/population"):
@@ -2557,6 +2569,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def _handle_api_post(self, path):
         payload = self._read_json_body()
+        if path.startswith("/api/interventions/"):
+            from gaworld.apps import kernel_api
+
+            body, status = kernel_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
         if path.startswith("/api/population"):
             from gaworld.apps import population_api
 

@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-09-25 — 通用干预 API 与实时事件流
+
+### Added
+
+- **`/api/interventions`：Controller 里注册的每个干预都能从 HTTP 调用。** 内核早有
+  `controller.intervene(name, ...)` 和审计，但 dashboard 起的是子进程，外面够不着，
+  只有经济模块自己写了一条文件队列。现在 `gaworld/kernel/remote.py` 把这条路做成通用的：
+  仿真发布清单（pid + 注册名），HTTP 侧入队，仿真每个 tick 经 `intervene` 消费。
+  以后插件注册干预即自动获得接口，不再逐个加路由。存活按 pid 判断——崩溃的运行不会
+  清掉 `active` 标志，只看标志会接受永远不会被执行的请求；两进程读改写同一文件，
+  用 `fcntl` 锁防止入队被覆盖丢失。平行世界各自一份队列。
+- **`/api/events/stream`（SSE）**：推送 Recorder 各表的新增行，替代对单个 jsonl 的轮询。
+  Recorder 本来就是各插件共用的时间对齐事件流，所以只需在 HTTP 侧 tail，不改仿真。
+  只发完整行，文件被重置变短时从头读。
+- **Recorder 新表 `agent.step`**：每个 agent 每个 tick 一行精简记录（活动、动作、位置、是否改计划及原因），
+  让事件流能实时跟随全城行动；长 LLM 文本不进这张表，仍留在 trace，避免记录体积随 prompt 膨胀。
+
 ## [Unreleased] — 2026-09-16 — 城市知识库：让城市真的影响居民
 
 ### Added

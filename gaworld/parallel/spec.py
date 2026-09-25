@@ -271,6 +271,9 @@ def world_overrides(
         "diary_output_dir": os.path.join(world_dir, "diaries"),
         "life_events": {"event_dir": os.path.join(world_dir, "life_events")},
         "intervention": {"output_dir": os.path.join(world_dir, "intervention")},
+        # `/api/interventions` targets the main run only; each world keeps its
+        # own queue so concurrent worlds don't overwrite one manifest.
+        "kernel": {"interventions_path": os.path.join(world_dir, "kernel", "interventions.json")},
         "visualization": {
             "enabled": True,
             "output_dir": os.path.join(world_dir, "visualization"),

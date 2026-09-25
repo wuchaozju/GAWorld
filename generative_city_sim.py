@@ -63,6 +63,7 @@ from gaworld.behavior.dynamic import (
     insert_activity_into_schedule as dynamic_insert_activity,
 )
 from gaworld.kernel import ActionRequest, build_kernel
+from gaworld.kernel import remote as kernel_remote
 from gaworld.sim.pipeline import DEFAULT_AGENT_STEP_ORDER, StagePipeline
 from environment import EnvironmentSystem, RemoteEnvironmentClient
 from gaworld.llm.providers import call_llm
@@ -2807,6 +2808,8 @@ def run_simulation():
     if active_plugins:
         print(f"🧩 已装配插件：{', '.join(active_plugins)}")
     hook_bus.emit("agents.built", agents=agents, config=CONFIG)
+    # Dashboard → simulator intervention channel (`/api/interventions`).
+    kernel_remote.publish(sim_ctx)
     if PRINT_AGENT_PROFILE:
         print_agent_profiles([a["id"] for a in agents])
     start_day = 1
@@ -3976,6 +3979,24 @@ def run_simulation():
             "target_location": movement.get("target_location", ""),
             "travel": travel,
         })
+        # One compact row per agent-step on the shared Recorder stream, so
+        # `/api/events/stream?tables=agent.step` can follow the city live.
+        # The long LLM texts (perception/plan/reflection) stay in the trace.
+        if sim.recorder is not None:
+            sim.recorder.record(
+                "agent.step",
+                {
+                    "agent_id": agent.get("id"),
+                    "name": agent.get("name", ""),
+                    "scheduled_activity": scheduled_activity,
+                    "activity": effective_activity,
+                    "action": act,
+                    "location": resolved_location or location,
+                    "target_location": movement.get("target_location", ""),
+                    "changed": bool(changed),
+                    "change_reason": change_reason,
+                },
+            )
         if visualizer is not None:
             frame_steps.append(
                 build_agent_step_payload(
@@ -4362,6 +4383,9 @@ def run_simulation():
     for period in horizon:
         day = period.end_day
         sim_ctx.clock.start_day(day)
+        # Apply `/api/interventions` requests first, so a `remove_agent`
+        # queued from the dashboard is honoured by the removal pass below.
+        kernel_remote.drain(sim_ctx)
         # K5: apply population interventions queued via
         # controller.intervene("remove_agent", ...) at the day boundary —
         # mid-tick removal would corrupt the step pipeline. Removed ids are
@@ -4603,6 +4627,7 @@ def run_simulation():
         # ----- PHASE 3b: STEP LOOP — the megaloop, runs once per timeline tick (default 10-30 min steps) -----
         for time_index, time_str in enumerate(timeline):
             sim_ctx.clock.advance(time_str, time_index)
+            kernel_remote.drain(sim_ctx)
             step_minutes = _timeline_step_minutes(timeline, time_index)
             policy = next((p for p in POLICY_EVENTS if p["day"] == day and p["time"] == time_str), None)
             env_system.tick(day, time_str, agents)
@@ -4904,6 +4929,7 @@ def run_simulation():
         extension_state=extension_state,
     )
     sim_ctx.registry.teardown_all(sim_ctx)
+    kernel_remote.close(sim_ctx)
     sim_ctx.recorder.close()
     visualize_social_network(agents, output_dir=NETWORK_OUTPUT_DIR)
     save_state_history(state_history, output_dir=STATE_OUTPUT_DIR)
