@@ -2413,6 +2413,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = bench_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/economy/"):
+            from gaworld.apps import economy_api
+
+            payload, status = economy_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         # Population Studio / group mode live in their own module; this file is
         # already long enough without another subsystem's routes in it.
         if path.startswith("/api/population"):

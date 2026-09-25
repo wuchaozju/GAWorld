@@ -24,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   日志与结果可轮询。两个脚本写固定的结果文件，所以一次只允许一个任务（其余返回 409），
   且任务结束时把 scorecard 拷进任务记录——下一次运行覆盖结果文件后，本次分数仍可查。
   请求体会变成命令行，因此只转发白名单选项，路径参数限制在仓库内。
+- **`/api/economy/*`（只读）**：`overview` 复用 External Systems 已算好的货币系统数据；新增
+  `loans`——从各居民快照的 `friend_debts` / `friend_credits` 拼出居民间借贷图，并核对每笔借贷
+  双方记账是否一致（一边有一边无即是资金凭空产生或消失，如实报出而不抹平）；`ledger` 给出单人账本序列。
 
 ## [Unreleased] — 2026-09-16 — 城市知识库：让城市真的影响居民
 
