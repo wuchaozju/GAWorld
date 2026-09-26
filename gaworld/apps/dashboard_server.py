@@ -25,6 +25,7 @@ from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
 from gaworld.integrations.fos_prompt import generate_fos_prompt
+from gaworld.io.avatar import build_agent_avatar_svg
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard")
@@ -207,12 +208,14 @@ def _effective_config():
     """
     from gaworld.settings.defaults import build_default_config
     from gaworld.settings.overrides import load_env_override, load_environment_config
+    from gaworld.city.config import apply_city
 
     cfg = build_default_config()
     env_override = load_env_override()
     _deep_update(cfg, _dashboard_config())
     _deep_update(cfg, env_override)
     _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
+    apply_city(cfg, root=REPO_ROOT)
     _deep_update(cfg, env_override)
     return cfg
 
@@ -2034,14 +2037,23 @@ def _interview_agent(payload):
     }
 
 
-def _latest_trace_meta():
-    trace_path = os.path.join(REPO_ROOT, "output", "visualization", "simulation_trace.json")
-    latest_path = os.path.join(REPO_ROOT, "output", "visualization", "latest_frame.json")
+def _trace_payload():
+    output_dir = _effective_config().get("visualization", {}).get("output_dir", "output/visualization")
+    trace_path = os.path.join(REPO_ROOT, output_dir, "simulation_trace.json")
+    latest_path = os.path.join(REPO_ROOT, output_dir, "latest_frame.json")
     trace = _read_json_file(trace_path, {})
     latest = _read_json_file(latest_path, {})
     return {
-        "trace_meta": trace.get("meta", {}) if isinstance(trace, dict) else {},
-        "latest": latest,
+        "trace": trace if isinstance(trace, dict) else {},
+        "latest": latest if isinstance(latest, dict) else {},
+    }
+
+
+def _latest_trace_meta():
+    payload = _trace_payload()
+    return {
+        "trace_meta": payload["trace"].get("meta", {}),
+        "latest": payload["latest"],
     }
 
 
@@ -2601,6 +2613,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(_config_summary())
         if path == "/api/agents":
             return self._json_response({"agents": _agents_summary()})
+        if path.startswith("/api/agents/") and path.endswith("/avatar"):
+            agent = _agent_state(path.split("/")[3])
+            if agent is None:
+                return self._json_response({"error": "Agent not found"}, status=404)
+            data = build_agent_avatar_svg(agent).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if path == "/api/skills":
             return self._json_response({"skills": _skills_library()})
         if path.startswith("/api/agents/") and path.endswith("/profile"):
@@ -2655,6 +2678,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             )
         if path == "/api/trace/meta":
             return self._json_response(_latest_trace_meta())
+        if path == "/api/trace/data":
+            return self._json_response(_trace_payload())
         if path == "/api/replay/runs":
             return self._json_response({"runs": _replay_runs()})
         if path == "/api/life-events":

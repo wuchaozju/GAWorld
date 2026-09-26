@@ -148,6 +148,7 @@ celerybeat.pid
 /site
 !/site/
 /site/*
+!/site/tokens.css
 !/site/dashboard/
 !/site/dashboard/**
 !/site/console/

@@ -226,7 +226,8 @@ def sync_code(args, repo: Path) -> None:
 
 
 def install_dependencies(args, repo: Path) -> Path:
-    python_bin = Path(args.python).expanduser().resolve() if args.python else Path(sys.executable)
+    # Resolving a venv's interpreter symlink bypasses its pyvenv.cfg.
+    python_bin = Path(args.python).expanduser().absolute() if args.python else Path(sys.executable)
     venv_python = _venv_python(repo, args.venv)
     if not args.no_venv and not venv_python.exists():
         _run([str(python_bin), "-m", "venv", args.venv], cwd=repo, dry_run=args.dry_run)
@@ -267,7 +268,7 @@ def status(args) -> int:
     runtime_dir = (repo / args.runtime_dir).resolve()
     runtime_python = _venv_python(repo, args.venv)
     if args.no_venv or not runtime_python.exists():
-        runtime_python = Path(args.python).expanduser().resolve() if args.python else Path(sys.executable)
+        runtime_python = Path(args.python).expanduser().absolute() if args.python else Path(sys.executable)
     failed = False
     for spec in service_specs(args, str(runtime_python)):
         pid = None

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+import sys
 
 from gaworld.apps import deploy_services
 
@@ -71,3 +72,16 @@ def test_deployed_revision_path_is_relative_to_repo(tmp_path):
 
     assert path == repo / "runtime" / "services" / "deployed-rev"
     assert deploy_services._read_text(path) == "abc123"
+
+
+def test_explicit_venv_python_keeps_its_symlink(tmp_path, monkeypatch):
+    python = tmp_path / ".venv" / "bin" / "python"
+    python.parent.mkdir(parents=True)
+    python.symlink_to(sys.executable)
+    (tmp_path / "requirements.txt").write_text("", encoding="utf-8")
+    commands = []
+    monkeypatch.setattr(deploy_services, "_run", lambda command, **kw: commands.append(command))
+    args = _args(python=str(python), no_venv=True, venv=".venv", skip_install=False,
+                 requirements="requirements.txt", dry_run=False)
+    assert deploy_services.install_dependencies(args, tmp_path) == python
+    assert commands[0][:4] == [str(python), "-m", "pip", "install"]

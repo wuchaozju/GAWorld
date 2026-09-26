@@ -28,6 +28,9 @@ from gaworld.twin.backend import TwinBackend
 
 REPO_ROOT = str(Path(__file__).resolve().parents[2])
 MAX_BODY_BYTES = 1_000_000
+MOBILE_ASSETS = frozenset({
+    "index.html", "styles.css", "app.js", "core.js", "sw.js", "manifest.webmanifest",
+})
 
 
 def make_handler(backend):
@@ -45,7 +48,8 @@ def make_handler(backend):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if self.command != "HEAD":
+                self.wfile.write(body)
 
         def _reply(self, result):
             """Send a backend result, using its own status field."""
@@ -78,6 +82,23 @@ def make_handler(backend):
             return
 
         # -- routing ----------------------------------------------------
+
+        def _static(self, path, *, head_only=False):
+            if path in ("/", "/m", "/m/", "/site/mobile"):
+                return self._redirect("/site/mobile/")
+            asset = "index.html" if path == "/site/mobile/" else path.removeprefix("/site/mobile/")
+            mobile_root = (Path(REPO_ROOT) / "site/mobile").resolve()
+            target = (mobile_root / asset).resolve()
+            # Serve only the PWA bundle, never repository data or symlink targets.
+            if (not path.startswith("/site/mobile/") or asset not in MOBILE_ASSETS
+                    or target.parent != mobile_root or not target.is_file()):
+                return self._json({"error": "not found"}, status=404)
+            if head_only:
+                return super().do_HEAD()
+            return super().do_GET()
+
+        def do_HEAD(self):
+            return self._static(unquote(urlparse(self.path).path), head_only=True)
 
         def do_GET(self):
             parsed = urlparse(self.path)
@@ -116,9 +137,7 @@ def make_handler(backend):
             # relative, so the browser's base URL must actually be
             # /site/mobile/ — rewriting to the index while leaving the URL at
             # "/" makes every relative asset resolve to the wrong path.
-            if path in ("/", "/m", "/m/"):
-                return self._redirect("/site/mobile/")
-            return super().do_GET()
+            return self._static(path)
 
         def do_POST(self):
             parsed = urlparse(self.path)

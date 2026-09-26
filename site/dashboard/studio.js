@@ -135,7 +135,7 @@ function setAvatar(id, name) {
   const ph = placeholderAvatar(name);
   if (id == null) { img.src = ph; return; }
   img.onerror = () => { img.onerror = null; img.src = ph; };
-  img.src = `/output/visualization/avatars/agent_${Number(id)}.svg`;
+  img.src = `/api/agents/${Number(id)}/avatar`;
 }
 
 /* ---------- radar ---------- */

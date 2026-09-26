@@ -127,6 +127,12 @@
     const w = canvas.width;
     const h = canvas.height;
     ctx.clearRect(0, 0, w, h);
+    const outside = points.filter(function (p) { return p.out_of_map; }).length;
+    el("trailSummary").textContent = points.length
+      ? points.length + " 个位置点" + (points.length === 1 ? "，尚未形成路线" : "")
+        + (outside ? " · " + outside + " 个在仿真地图外" : "")
+      : "尚无有效位置记录";
+    el("replayButton").disabled = trailPoints.length < 2;
     if (!points.length) {
       ctx.fillStyle = "#97a3b4";
       ctx.font = "16px sans-serif";
@@ -316,12 +322,7 @@
           return showAgentGate();
         }
         renderSnapshot(snapshot.data);
-        /* Out-of-map points are real positions and belong on the trail. They
-         * used to be filtered out, which made a day spent away from the city
-         * look like a day with no movement at all. */
-        trailPoints = (trail.data.points || []).filter(function (p) {
-          return p.grid;
-        });
+        trailPoints = core.drawableTrailPoints(trail.data.points);
         drawTrail(trailPoints);
         renderLife(results[2].data || {});
         renderHistory((results[3].data || {}).reports || []);

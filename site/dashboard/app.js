@@ -173,9 +173,7 @@ function resolveAssetPath(assetPath) {
 }
 
 function getAgentAvatarPath(agentId) {
-  const meta = traceAgentMap().get(Number(agentId));
-  const fallbackPath = `/output/visualization/avatars/agent_${Number(agentId || 0)}.svg`;
-  return resolveAssetPath((meta && meta.avatar_path) || fallbackPath);
+  return `/api/agents/${Number(agentId)}/avatar`;
 }
 
 function loadAvatar(path) {
@@ -1634,9 +1632,11 @@ function allFrames() {
 
 async function loadTrace(showErrors = true) {
   try {
-    const response = await fetch(`/output/visualization/simulation_trace.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const trace = await response.json();
+    const payload = await api("/api/trace/data");
+    const trace = payload.trace || {};
+    if (Array.isArray(trace.agents)) {
+      trace.agents = trace.agents.map(agent => ({ ...agent, avatar_path: getAgentAvatarPath(agent.id) }));
+    }
     const generatedAt = trace.meta && trace.meta.generated_at;
     if (generatedAt && generatedAt !== state.traceGeneratedAt) {
       // New run: drop frames captured from the previous run.
@@ -1651,24 +1651,16 @@ async function loadTrace(showErrors = true) {
       renderSimRoster();
     }
     state.trace = trace;
+    const frame = payload.latest && payload.latest.frame;
+    if (frame && frame.index != null && Array.isArray(frame.agents)) {
+      state.liveFrames.set(Number(frame.index), frame);
+    }
   } catch (error) {
     if (showErrors) {
       els.traceStatus.textContent = __("trace.load_failed") + ": " + error.message;
       drawEmptyMap();
     }
     if (!state.trace) return;
-  }
-  try {
-    const response = await fetch(`/output/visualization/latest_frame.json?t=${Date.now()}`, { cache: "no-store" });
-    if (response.ok) {
-      const latest = await response.json();
-      const frame = latest && latest.frame;
-      if (frame && frame.index != null && Array.isArray(frame.agents)) {
-        state.liveFrames.set(Number(frame.index), frame);
-      }
-    }
-  } catch (_error) {
-    // latest_frame is best-effort; the flushed trace still renders.
   }
   const traceFrames = Array.isArray(state.trace.frames) ? state.trace.frames : [];
   const lastFlushed = traceFrames.length
@@ -1701,7 +1693,7 @@ function renderTrace() {
     } else {
       drawEmptyMap();
     }
-    if (state.trace) els.traceStatus.textContent = __("trace.initialized");
+    els.traceStatus.textContent = __(state.trace && state.trace.meta ? "trace.initialized" : "trace.waiting_data");
     return;
   }
   renderSelectedAgentAvatar();
@@ -2080,6 +2072,7 @@ document.addEventListener("locale-changed", function () {
   // Panel titles are translated by the i18n pass, so the buttons named after
   // them have to follow.
   relabelCollapseToggles();
+  refreshAgentOptionLabels();
   if (!state.memoryPayload) return;
   renderMemory();
   if (!els.rawModal.hidden) renderRawModal();

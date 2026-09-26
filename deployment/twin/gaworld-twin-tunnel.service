@@ -1,0 +1,14 @@
+[Unit]
+Description=GAWorld twin temporary HTTPS test tunnel
+After=network-online.target gaworld-twin.service
+Wants=gaworld-twin.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8767
+Restart=on-failure
+RestartSec=15
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

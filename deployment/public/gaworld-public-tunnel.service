@@ -1,0 +1,14 @@
+[Unit]
+Description=GAWorld complete platform temporary HTTPS tunnel
+After=network-online.target gaworld-public-gateway.service
+Wants=gaworld-public-gateway.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8780
+Restart=on-failure
+RestartSec=15
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

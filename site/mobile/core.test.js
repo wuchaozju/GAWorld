@@ -84,6 +84,29 @@ test("trailBounds on no points returns a usable unit box", () => {
   assert.ok(bounds.maxY > bounds.minY);
 });
 
+test("real GPS points remain drawable outside the simulation map", () => {
+  const point = {grid: {x: -50, y: 100}, has_location: true, out_of_map: true};
+  assert.deepEqual(core.drawableTrailPoints([point]), [point]);
+});
+
+test("activity-only and invalid positions never distort the trail", () => {
+  const valid = {grid: {x: 1, y: 2}, has_location: true};
+  const points = [
+    {grid: {x: -99999, y: -99999}, has_location: false, out_of_map: true},
+    {grid: {x: 1, y: NaN}, has_location: true},
+    {grid: {x: Infinity, y: 1}, has_location: true},
+    {grid: {x: 1}, has_location: true},
+    null, valid,
+  ];
+  assert.deepEqual(core.drawableTrailPoints(points), [valid]);
+});
+
+test("old API points remain compatible without inventing locations", () => {
+  const inside = {grid: {x: 1, y: 2}, out_of_map: false};
+  const outside = {grid: {x: -99999, y: -99999}, out_of_map: true};
+  assert.deepEqual(core.drawableTrailPoints([inside, outside]), [inside]);
+});
+
 
 test("projectPoint maps grid coordinates into canvas pixels", () => {
   const bounds = {minX: 0, maxX: 10, minY: 0, maxY: 10};

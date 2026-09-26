@@ -35,6 +35,18 @@ def _unauthorized():
     return dict(_UNAUTHORIZED)
 
 
+def _has_location(report):
+    loc = report.get("loc") or {}
+    try:
+        lat, lng = float(loc["lat"]), float(loc["lng"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    # Existing clients use (0, 0) for activity-only reports, not a GPS fix.
+    return (math.isfinite(lat) and math.isfinite(lng)
+            and -90 <= lat <= 90 and -180 <= lng <= 180
+            and (lat != 0 or lng != 0))
+
+
 class TwinBackend:
     """Composes geo/store/binding into the operations the server exposes."""
 
@@ -367,6 +379,7 @@ class TwinBackend:
                 "grid": item.get("grid"),
                 "node_id": item.get("node_id"),
                 "out_of_map": item.get("out_of_map"),
+                "has_location": _has_location(item),
                 "place": item.get("place", ""),
                 "loc": item.get("loc"),
                 "action_tag": item.get("action_tag"),
