@@ -127,6 +127,9 @@ def render_state_csv(people: list[Person]) -> str:
                 person.age,
                 person.hukou,
                 person.residence,
+                person.employment,
+                person.industry,
+                f"{person.income_monthly:.0f}",
                 *[f"{person.state[key]:.2f}" for key in STATE_VAR_KEYS],
             ]
         )

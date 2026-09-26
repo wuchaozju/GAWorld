@@ -48,6 +48,7 @@ VIRTUAL_MAP_NAME = "citymap.md"
 REAL_MAP_NAME = "map.geojson"
 ENVIRONMENT_NAME = "environment.json"
 KNOWLEDGE_NAME = "knowledge.json"
+LOCALE_NAME = "locale.json"
 NEWS_NAME = "news.json"
 STATE_CSV_NAME = "agents.csv"
 PROFILES_MD_NAME = "profiles.md"
@@ -135,6 +136,11 @@ class CityBundle:
     def knowledge_path(self) -> Path:
         """The city's economic / social profile (industries, priorities…)."""
         return self.directory / KNOWLEDGE_NAME
+
+    @property
+    def locale_path(self) -> Path:
+        """Naming, housing and residency conventions for this city's residents."""
+        return self.directory / LOCALE_NAME
 
     @property
     def news_path(self) -> Path:

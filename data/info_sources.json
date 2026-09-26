@@ -1,0 +1,42 @@
+{
+  "about": "居民可读的外部信息源。kind: news 新闻 / social 社交媒体 / professional 专业网站；channel 决定怎么抓取解析；topics 用于按职业与兴趣匹配（见 gaworld/infosources/diet.py）。抓不到的源只会记一条警告，改这个文件不用动代码。中文专业站大多没有公开 RSS，可用自建 RSSHub 路由（如 https://<你的 rsshub>/dxy/...）以 rss 渠道接入。",
+  "sources": [
+    {"id": "bbc_zhongwen", "name": "BBC 中文", "kind": "news", "channel": "rss", "url": "https://feeds.bbci.co.uk/zhongwen/simp/rss.xml", "topics": ["国际", "综合", "社会"], "lang": "zh"},
+    {"id": "nyt_cn", "name": "纽约时报中文网", "kind": "news", "channel": "rss", "url": "https://cn.nytimes.com/rss/", "topics": ["国际", "综合", "财经"], "lang": "zh"},
+    {"id": "zaobao_china", "name": "联合早报·中国", "kind": "news", "channel": "rss", "url": "https://www.zaobao.com/rss/realtime/china", "topics": ["综合", "社会", "财经", "政策"], "lang": "zh"},
+    {"id": "people_politics", "name": "人民网·时政", "kind": "news", "channel": "rss", "url": "http://www.people.com.cn/rss/politics.xml", "topics": ["政策", "社会", "综合"], "lang": "zh"},
+    {"id": "thepaper", "name": "澎湃新闻", "kind": "news", "channel": "page", "url": "https://www.thepaper.cn/", "topics": ["综合", "社会", "本地"], "lang": "zh", "weight": 0.8},
+    {"id": "bbc_world", "name": "BBC World", "kind": "news", "channel": "rss", "url": "https://feeds.bbci.co.uk/news/world/rss.xml", "topics": ["国际", "综合"], "lang": "en"},
+    {"id": "nyt_world", "name": "NYT World", "kind": "news", "channel": "rss", "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", "topics": ["国际", "综合"], "lang": "en"},
+    {"id": "guardian_world", "name": "The Guardian World", "kind": "news", "channel": "rss", "url": "https://www.theguardian.com/world/rss", "topics": ["国际", "综合", "社会"], "lang": "en"},
+    {"id": "aljazeera", "name": "Al Jazeera", "kind": "news", "channel": "rss", "url": "https://www.aljazeera.com/xml/rss/all.xml", "topics": ["国际", "综合"], "lang": "en"},
+    {"id": "cnbc_top", "name": "CNBC Top News", "kind": "news", "channel": "rss", "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html", "topics": ["财经", "商业", "国际"], "lang": "en"},
+
+    {"id": "weibo_hot", "name": "微博热搜", "kind": "social", "channel": "weibo_hot", "url": "https://weibo.com/ajax/side/hotSearch", "topics": ["热点", "社会", "娱乐"], "lang": "zh", "weight": 1.2},
+    {"id": "baidu_hot", "name": "百度热搜", "kind": "social", "channel": "baidu_hot", "url": "https://top.baidu.com/api/board?platform=wise&tab=realtime", "topics": ["热点", "社会"], "lang": "zh"},
+    {"id": "bilibili_popular", "name": "B站热门", "kind": "social", "channel": "bilibili_popular", "url": "https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1", "topics": ["娱乐", "文化", "科技", "热点"], "lang": "zh"},
+    {"id": "zhihu_daily", "name": "知乎每日精选", "kind": "social", "channel": "rss", "url": "https://www.zhihu.com/rss", "topics": ["社会", "文化", "科技", "热点"], "lang": "zh"},
+    {"id": "v2ex", "name": "V2EX", "kind": "social", "channel": "rss", "url": "https://www.v2ex.com/index.xml", "topics": ["科技", "互联网", "编程", "职场"], "lang": "zh"},
+    {"id": "reddit_worldnews", "name": "Reddit r/worldnews", "kind": "social", "channel": "reddit", "url": "https://www.reddit.com/r/worldnews/hot.json?limit=15", "topics": ["国际", "社会", "热点"], "lang": "en"},
+    {"id": "reddit_technology", "name": "Reddit r/technology", "kind": "social", "channel": "reddit", "url": "https://www.reddit.com/r/technology/hot.json?limit=15", "topics": ["科技", "互联网"], "lang": "en"},
+    {"id": "reddit_personalfinance", "name": "Reddit r/personalfinance", "kind": "social", "channel": "reddit", "url": "https://www.reddit.com/r/personalfinance/hot.json?limit=15", "topics": ["财经", "投资", "民生"], "lang": "en"},
+    {"id": "hackernews", "name": "Hacker News", "kind": "social", "channel": "hackernews", "url": "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=20", "topics": ["科技", "互联网", "编程", "学术"], "lang": "en"},
+
+    {"id": "jiqizhixin", "name": "机器之心", "kind": "professional", "channel": "rss", "url": "https://www.jiqizhixin.com/rss", "topics": ["人工智能", "科技", "学术"], "lang": "zh"},
+    {"id": "kr36", "name": "36氪", "kind": "professional", "channel": "rss", "url": "https://36kr.com/feed", "topics": ["商业", "科技", "互联网", "财经"], "lang": "zh"},
+    {"id": "huxiu", "name": "虎嗅", "kind": "professional", "channel": "rss", "url": "https://www.huxiu.com/rss/0.xml", "topics": ["商业", "互联网", "财经"], "lang": "zh"},
+    {"id": "sspai", "name": "少数派", "kind": "professional", "channel": "rss", "url": "https://sspai.com/feed", "topics": ["科技", "数码", "文化"], "lang": "zh"},
+    {"id": "geekpark", "name": "极客公园", "kind": "professional", "channel": "rss", "url": "https://www.geekpark.net/rss", "topics": ["科技", "互联网", "商业"], "lang": "zh"},
+    {"id": "solidot", "name": "Solidot 奇客", "kind": "professional", "channel": "rss", "url": "https://www.solidot.org/index.rss", "topics": ["科技", "学术", "科学"], "lang": "zh"},
+    {"id": "arxiv_cs_ai", "name": "arXiv cs.AI", "kind": "professional", "channel": "rss", "url": "https://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=15", "topics": ["学术", "人工智能", "科技"], "lang": "en"},
+    {"id": "arxiv_econ", "name": "arXiv econ.GN", "kind": "professional", "channel": "rss", "url": "https://export.arxiv.org/api/query?search_query=cat:econ.GN&sortBy=submittedDate&sortOrder=descending&max_results=15", "topics": ["学术", "经济", "财经"], "lang": "en"},
+    {"id": "nature_news", "name": "Nature", "kind": "professional", "channel": "rss", "url": "https://www.nature.com/nature.rss", "topics": ["学术", "科学", "医疗"], "lang": "en"},
+    {"id": "sciencedaily", "name": "ScienceDaily", "kind": "professional", "channel": "rss", "url": "https://www.sciencedaily.com/rss/top/science.xml", "topics": ["科学", "健康", "学术"], "lang": "en"},
+    {"id": "who_news", "name": "WHO News", "kind": "professional", "channel": "rss", "url": "https://www.who.int/rss-feeds/news-english.xml", "topics": ["医疗", "健康", "政策"], "lang": "en"},
+    {"id": "statnews", "name": "STAT News", "kind": "professional", "channel": "rss", "url": "https://www.statnews.com/feed/", "topics": ["医疗", "健康", "科学"], "lang": "en"},
+    {"id": "mit_tech_review", "name": "MIT Technology Review", "kind": "professional", "channel": "rss", "url": "https://www.technologyreview.com/feed/", "topics": ["科技", "人工智能", "科学"], "lang": "en"},
+    {"id": "edsurge", "name": "EdSurge", "kind": "professional", "channel": "rss", "url": "https://www.edsurge.com/articles_rss", "topics": ["教育"], "lang": "en"},
+    {"id": "marketwatch", "name": "MarketWatch", "kind": "professional", "channel": "rss", "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories", "topics": ["财经", "投资", "经济"], "lang": "en"},
+    {"id": "stackoverflow_blog", "name": "Stack Overflow Blog", "kind": "professional", "channel": "rss", "url": "https://stackoverflow.blog/feed/", "topics": ["编程", "科技"], "lang": "en"}
+  ]
+}

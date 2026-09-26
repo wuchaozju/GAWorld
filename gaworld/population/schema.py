@@ -74,6 +74,14 @@ STATE_VAR_KEYS: tuple[str, ...] = (
 )
 
 #: Column order of ``data/hangzhou_agents_state_init.csv``.
+#: ``employment``, ``industry`` and ``monthly_income`` are fitted by the
+#: synthesiser (employment through the IPF, income against a median/Gini
+#: target) and used to be dropped on the floor: the CSV carried neither, and
+#: income survived only as a sentence in the profile prose. Everything
+#: downstream therefore re-derived them by substring-matching the job title,
+#: which is how the ledger ended up disagreeing with the profile it was
+#: generated from. Readers must tolerate their absence — CSVs written before
+#: this do not have them.
 CSV_COLUMNS: tuple[str, ...] = (
     "id",
     "name",
@@ -81,6 +89,9 @@ CSV_COLUMNS: tuple[str, ...] = (
     "age",
     "hukou",
     "residence",
+    "employment",
+    "industry",
+    "monthly_income",
     *STATE_VAR_KEYS,
 )
 

@@ -58,6 +58,7 @@ Across days, the simulator accumulates:
 - Big Five (OCEAN) personality: every resident carries a set of O/C/E/A/N z scores that modulate behaviour through three independently switchable channels — `rules` (deterministic and zero-token: an additive style-fit component in action choice, bounded multipliers on interrupt threshold, spontaneity, social encounter probability, decision noise, impulse bypass and wealth drive, plus a personal emotion set point), `prompt` (anchor sentences injected into the daily-routine, activity-adjustment, goals and news prompts) and `voice` (anchor sentences in the diary only). Keeping the channels separate is what lets an experiment tell "the decisions changed" apart from "the prose changed". Traits are seeded once per run — authored offline into `data/agents_big5.csv` by sampling the five scores first and *then* rewriting each resident's profile prose from them (rather than scoring OCEAN out of prose that was written alongside the person-level state variables), or sampled from a correlated population prior when that file is absent — and never drift, since adult OCEAN change is ~0.1-0.2 SD per decade. An agent with no traits, or a channel switched off, behaves bit-identically to the pre-personality build
 - Households and family life: marital status sampled by age band x gender (never married / married / divorced / widowed); residents who match are married *inside the simulation* and **share one home node**, and everyone else gets off-screen family. Children, co-resident elders and flatmates follow. Household type (living alone / flatshare / with parents / cohabiting / couple / nuclear / single-parent / multigenerational) is a **read-out** of the assignment rather than a quota chosen up front. The household then drives the schedule (school runs, homework, elder care, being home for dinner), the ledger (childcare and elder support split by income, partners covering each other's cash shortfalls — all money-conserving), shared family events (one child's fever lands on both parents in the same tick) and in-household emotional contagion. Adjust the population-level distribution from the config panel, or pin one resident's family in Agent Studio so it survives across runs
 - Realistic location system with category-based spatial matching, transport cost calculation, rush-hour and weather effects, and commute memory
+- Leaving the city (business trips, family visits, holidays; **off by default**): the city stops being a closed box — residents go away for a few days and come back. Each of the three purposes is driven by a quantity the simulation already maintains: a **business trip** by occupation (sales, trade and consulting travel far more than a librarian) on working days, with work activity and therefore income continuing; a **family visit** by relationship obligation and days since last contact — the first outlet for a pressure the social layer raises daily and that previously had nowhere to go, so going resets the contact day and lets obligation fall again; a **holiday** by weekend plus liquid savings plus openness plus accumulated stress. Destinations are **real distances** (the digital twin's province-centre table and haversine against the map's own centre node), with rail or air legs by distance. While away a resident holds no place in the city, meets nobody here and adds nothing to the roads, and the household duty says so out loud instead of silently vanishing. Entirely rule-based, seeded and reproducible — no LLM call
 - Dynamic behavior system: mood-driven spontaneous urges, social encounter chains, need-based interrupts, environment event cascades, and commitment-aware schedule interruption
 - Physical environment perception and reactive replanning: per-node crowding / opening-hours awareness, anomaly detection, same-day interval replanning, and learned location-avoidance preferences
 - Interest and skill-growth system: per-agent hobbies, planned skills, practice time, growth progress, and schedule/work-choice influence — with power-law learning gains, streak momentum, milestone events, day-end forgetting decay, four-phase interest development, and social interest contagion
@@ -77,6 +78,7 @@ Across days, the simulator accumulates:
 - Population Studio: a 5-step dashboard panel for generating a population, running group mode over it, and reading the validation verdict, with live feasibility prechecks that name the conflicting knob
 - External Systems panel: observe and edit the world itself — the money system (macro cycle, sector pools, the daily money-conservation audit, wealth distribution and Gini), the external-environment generator, and the outward service connections. Config forms are generated from the config's own JSON shape (~150 knobs, and adding a knob needs no panel code), and a monetary intervention can be queued against a **running** simulation for it to consume at the next day boundary; injecting into a sector pool moves the conservation baseline with it, so the audit records a deliberate injection as an injection rather than as a leak
 - Parallel Worlds: fork one city into N histories that share the cohort, the seed, the horizon and the model, and differ only in what happens — each world carries its own event list (and optionally its own config patch, for a policy rather than an incident) and runs in a fully isolated memory / state / log tree. The report measures each world's distance from the baseline at every step, so it answers *when* two histories split rather than only how far apart they ended, and names the individual residents an intervention actually landed on. Designed and read interactively in the console's 平行世界 tab; every world's trace stays replayable frame by frame, and existing `compare-event` runs are adapted into the same view without being rewritten on disk
+- Playground: play a round against real residents. **Agent Arena** — put a group of residents through the same benchmark (a built-in bank or questions authored on the spot by an LLM), rank them by accuracy + median latency, keep the top K, flag the rest as eliminated, and refill from another city. **Persuasion** — pick one resident, ask a question with a position to take, note their answer, then chat within a turn limit and try to move them; at the end the same question is asked again and a judge model compares the first answer with the last one, counting only a **real change of conclusion** as a win (rewording, or conceding a point while holding the conclusion, does not count). Their job, personality and values go straight into the prompt, so the same argument lands differently on different people. Games live in memory and never write back to the city bundle
 - Distributed multi-machine mode with relay-based communication
 
 ## Architecture: Microkernel + Plugins
@@ -126,12 +128,14 @@ code.
 - `gaworld/memory/store.py`: agent memory, vector DB, schedule/action/location caches, log persistence
 - `gaworld/world/city_map.py`: graph, routes, transport costs, weather/rush-hour effects, category-based spatial queries, per-city projection anchors
 - `gaworld/world/local_physical.py`: per-node occupancy / opening-hours snapshots, crowd-surge anomaly detection, perception injection
+- `gaworld/world/away.py`: the single definition of "异地" (out of town) — a real GPS fix outside the map and a simulated trip write the same marker, because every reader of `locations["current"]` needs one answer to "is this a place on the map?"
 - `gaworld/memory/spatial_preferences.py`: learned location-avoidance preferences with recency decay and redirection
 - `gaworld/skills/`: reusable Skill library (registry, Markdown schemas, prompt injection, experience-to-skill consolidation)
 - `gaworld/env/system.py`: in-sim `EnvironmentSystem` (weather, events, intervention feed, anomaly tagging) and `RemoteEnvironmentClient`
 - `gaworld/cognition/realism.py`: realism helpers — intentions, habits, relationship update/weight, memory consolidation
 - `gaworld/behavior/dynamic.py`: dynamic behavior system (InterruptEngine, SpontaneityEngine, social chains, environment-event cascades)
 - `gaworld/social/network.py`: schema migration, off-screen ghosts, role-aware decay, Dunbar tiers
+- `gaworld/travel/`: leaving the city — `destination` (real distances, rail/air legs and fares), `trigger` (who goes and why: job, relationship obligation, weekend + cash + openness + stress), `itinerary` (the day away, per purpose), `plugin` (`TravelPlugin`). Off by default
 - `gaworld/economy/finance.py`: personal finance + macro cycles (tax, social insurance, Engel spending, investment, shock events)
 - `gaworld/policy/intervention.py`: PolicySim-style recommendation / exposure intervention metrics, stance, risk
 - `gaworld/events/life.py`: scheduled life events (birthday, illness, job change, off-screen ghost-event queue)
@@ -143,7 +147,7 @@ code.
 - `gaworld/population/`: parameterised population synthesis — `schema` (knob contract + feasibility precheck), `synth` (IPF + conditional sampling + income rank-transform), `network` (households, workplaces, homophily social graph), `report` (validation gate + review charts), `writer` (state CSV + profile Markdown + manifest)
 - `gaworld/group/`: cohort (group) simulation — `cohort` (partition, centroid **and** dispersion, mean-zero network coupling), `cohort_day` (one LLM call per cohort per day), `materialize` (focal / event / tail / audit selection, audit residual), `driver` (day loop + cost accounting), `metrics` + `validate` (the L1–L4 gate), `plugin` (observational cohort telemetry)
 - `gaworld/city/`: create a whole city from a place name — `geocode` (Nominatim → coordinates, bbox, scale), `osm` (Overpass fetch with mirror pinning and a wall-clock deadline), `procedural` (name-seeded fallback map), `environment` (climate- and scale-derived events + background), `bundle` (on-disk layout, manifest, registry), `agents` (bulk synthesis, single append, migration), `config` (point the simulator at a bundle), `knowledge` (researched industry/labour profile with grounded fallbacks), `news` (local-news cache gated on real time, served on sim time), `context` (the four channels through which city knowledge reaches agents)
-- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities) and `external_systems_api` (External Systems)
+- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities), `interview_api` (Group Interview), `external_systems_api` (External Systems), `arena_api`, `games_api`, `disaster_api` and `rumor_api` (Playground: the arena, persuasion, disaster mode and rumor spread)
 - `gaworld/io/`: HTTP guard with retry/backoff and HTML extraction
 - `gaworld/sim/`: extracted simulator sub-modules — `_utils`, `agents_loader`, `_schedule`, `_location`, `_cognition`, `_rag`, `_diary` (more slices coming as the legacy file shrinks)
 - `simulation_visualizer.py`, `avatar_generator.py`, `generate_agent_rag_seed.py`, `analyze_wellbeing.py`: standalone CLI tools (not imported by the runtime)
@@ -154,7 +158,7 @@ code.
 - `scripts/`: launch and developer utilities
 - `docs/`: tutorials, integration notes, design docs, refactor history (`REFACTOR_PLAN.md`, `REFACTOR_BASELINE.md`, `PROJECT_STRUCTURE.md`)
 - `gaworld/parallel/`: parallel-world experiments — `spec` (world/event validation + per-world isolation overrides), `runner` (forks N worlds through a small pool, tracks progress), `analysis` (per-step divergence, split points, per-agent movers)
-- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + Cities `city.html` + External Systems `external.html` + Parallel Worlds `worlds.html`)
+- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + Cities `city.html` + Group Interview `survey.html` + External Systems `external.html` + Parallel Worlds `worlds.html` + Playground `games.html` / Arena `arena.html` / Persuasion `persuade.html` / Disaster Mode `disaster.html` / Rumor Spread `rumor.html`)
 - `site/simviz/`: playback viewer
 - `output/`: generated artifacts
 
@@ -356,6 +360,17 @@ the environment event pools and the `background` prompt at that bundle — witho
 reasoning as though they were still in Hangzhou. The same operations are available in the console's
 **城市 / Cities** tab.
 
+**Residents of any city are readable without switching to it**, straight from the bundle:
+`GET /api/city/catalogue` (the pickable cities, including the default world, with head counts),
+`GET /api/city/agents?city=<slug>&q=&limit=&offset=` (a searchable, paged resident list — omit
+`city` for the default world) and `GET /api/city/agent?city=<slug>&id=<n>` (one resident: identity,
+the nine state seeds, and the profile text). The Cities panel lists them and Agent Studio's city
+picker browses them, but **only the currently selected city's residents are editable** — agent ids
+restart at 1 in every city while memory, Big Five traits, social ties and finances are one flat
+per-id namespace belonging to the running city, so a cross-city edit would write onto somebody
+else. These reads reuse the population parser in `gaworld/interview/roster.py` rather than adding a
+second one that drifts from the profile format.
+
 The older single-map generator is still there for when you just want a different map and do not care
 which real place it corresponds to:
 
@@ -401,7 +416,7 @@ The local dashboard provides:
 - simulation start / stop
 - trace playback
 - per-agent memory inspection
-- interview execution
+- interview execution (single agent, and the Group Interview panel for a whole crowd)
 - run log viewing
 
 The dashboard stores local overrides in `dashboard_config.json`.
@@ -478,6 +493,39 @@ Backend API (delegated from `dashboard_server.py` to `gaworld/apps/population_ap
 | POST | `/api/population/validate` | run the L1–L4 validation gate |
 
 Generation and simulation are asynchronous jobs, so a 500-person town does not block the browser.
+
+### Group Interview
+
+Where the single-agent interview answers "what does resident #31 think?", this panel answers the
+survey question: *what does this **population** think, and does the answer split by city, age or
+hukou?* Console tab (**群体采访 / Group Interview**) or directly at
+`http://127.0.0.1:8766/site/dashboard/survey.html`. Three steps:
+
+1. **Pick respondents** — individual residents *and* cohort group agents, **across cities** in one
+   session. The roster is read straight from the city bundles, so cross-city picking is possible at
+   all; cohorts are partitioned along axes that actually survive on disk (age band, hukou, gender,
+   district). The side rail shows respondents, people represented, and **model calls** before you
+   spend any.
+2. **Write questions** — each one typed `open` / `choice` / `boolean`, with options and optional
+   multi-select, and each one may carry an image or a URL.
+3. **Read results** — per-question summary, option tallies, cross-tabs, every answer verbatim,
+   "ask a follow-up", and "download full Markdown".
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/interview/roster` | cities, residents, cohorts, axes and available models — one request |
+| POST | `/api/interview/plan` | validate and report what the round will cost, without spending it |
+| POST | `/api/interview/run` | start a round → `job_id` |
+| GET | `/api/interview/jobs/{id}` | poll progress / result |
+| GET | `/api/interview/sessions` | past sessions |
+| GET | `/api/interview/sessions/{id}` | one session in full |
+| GET | `/api/interview/sessions/{id}/export` | the Markdown document |
+| POST | `/api/interview/delete` | drop a session |
+
+All routes carry a trailing segment, which leaves the older single-agent `POST /api/interview`
+(Agent Studio's interview box) exactly as it was. A round is a background job that spawns one
+child process per city; sessions live in `output/interviews/<session_id>/`. Tutorial:
+[`docs/GROUP_INTERVIEW_TUTORIAL.md`](./docs/GROUP_INTERVIEW_TUTORIAL.md).
 
 ### External Systems
 
@@ -564,6 +612,94 @@ floor, and a real effect has to clear it.
 
 Full walkthrough: [Parallel Worlds Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese).
 
+### Playground
+
+Every other panel *observes* these residents; this one lets you play against them. Console tab
+(**游戏场 / Playground**) or directly at `http://127.0.0.1:8766/site/dashboard/games.html`.
+Four games live in the hub today:
+
+**Agent Arena** (`arena.html`): pick a group of residents and a set of tasks (10 built-in ones
+covering math, general knowledge, logic, reading and translation, or let an LLM author a fresh
+set), run the round, and read the leaderboard — accuracy first, median latency as the tiebreak.
+Enter a top-K to keep and everyone below it is flagged as eliminated; refill from another city or
+through the bulk-import panel. Elimination is an in-memory marker: profiles are never deleted.
+
+**Persuasion** (`persuade.html`): pick an opponent and ask a question **with a position to take**
+(for or against, move or stay). Their first answer is the baseline for the whole game. Chat within
+the turn limit you set; the last turn settles the game automatically, or hit "re-ask & settle" to
+stop early. The judge compares only the first and last answers, and counts a win only when the
+core conclusion actually moved.
+
+Their job, personality, daily life and values go into the prompt as a block, and the reply prompt
+states plainly that they hold their ground unless an argument really fits their situation and
+values — without that line the model simply agrees with the player and the game has no difficulty.
+So the same argument lands differently on different people: someone who "pays limited attention to
+public affairs" needs a completely different pitch from someone who weighs the public good heavily.
+
+**Rumor Spread** (`rumor.html`): write a rumor, hand it to two residents, and watch it move
+through the people they know.
+
+One thing to be clear about: **a city bundle stores no ties between residents.** Those only grow
+during a simulation run, what lands in `output/memory/` is mostly off-screen ghosts, and none of it
+records which city it belongs to (agent #13 is a different person in every city). So this game
+*derives* the network from the roster instead: same block = neighbours (0.55), same block and
+surname = kin (0.9), same trade or school = 0.5, same age across blocks = a weak tie (0.25), six
+ties per resident at most. The non-work buckets ("unemployed", "retired", "student") never count as
+colleagues — otherwise a quarter of a typical bundle shares one office. The graph is free: it is
+drawn as you tick people, with no model call.
+
+Each resident answers with one small JSON object: a belief level (0-100), one of four moves
+(forward / ask around / debunk / sit on it), and a line they would say. **The model picks the verb;
+the graph picks the recipients** — a forward reaches up to four contacts who have not heard it,
+asking around reaches the closest one (which is itself a way the rumor spreads), a debunk reaches
+everyone. Letting the model name recipients only invites hallucinated names. Everyone speaks once,
+except a believer who is then told to their face that it is false — without that exception,
+debunking would be a move with no consequences.
+
+The prompt carries the same kind of clause the persuasion game needed: **not everyone verifies.**
+Asked neutrally, all seven residents answer "let me check with my friend at the bank"; with that
+line, the same cast produces both "believed it at 72% and forwarded it" and "ignored it, the group
+chat is full of this stuff".
+
+**Disaster Mode** (`disaster.html`): pick a batch of residents (12 at most), pick a disaster —
+earthquake, epidemic, war, flood, blackout, or one you write yourself — and play it out stage by
+stage. Each resident is asked once per stage and answers in a small JSON object: one action out of
+a fixed six (flee / hoard / help others / ask for help / carry on / seek news) plus what they
+actually do, a panic level (1-5), whether they have room to help anyone else, and one line they
+would say out loud. The fixed vocabulary is what lets the histogram fall out of the answers with
+no extra judge call; a reply that cannot be parsed degrades to "other" and costs one cell, not the
+run.
+
+From the second stage on, the prompt carries one more line — "the people around you: 4 hoarded
+supplies, 2 fled" — assembled from the previous stage's statistics, with no extra model call.
+Without it every stage is an independent draw and the interesting part of a disaster (people
+copying each other, or pointedly not) never appears. The result is a per-stage action histogram,
+average panic and help rate, a card per resident, and a closing city digest.
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/games/agents?city=` | selectable opponents (empty `city` = the default world) |
+| POST | `/api/games/persuasion/start` | opening question; returns the full session |
+| POST | `/api/games/persuasion/say` | one chat turn; settles the game when the last turn is used |
+| POST | `/api/games/persuasion/settle` | re-ask + judge, `outcome ∈ {success, failed}` |
+| GET | `/api/games/persuasion/sessions[/<id>]` | list games / replay one |
+| GET | `/api/games/disaster/catalogue` | the disaster bank (earthquake, epidemic, war, flood, blackout) and the limits |
+| POST | `/api/games/disaster/run` | start a run; returns `{job_id}` |
+| GET | `/api/games/disaster/jobs/<id>` | progress while running, the whole run once done |
+| GET | `/api/games/disaster/runs` | runs finished in this process (20 at most) |
+| GET | `/api/games/rumor/catalogue` | the rumor bank and the limits |
+| GET | `/api/games/rumor/graph?city=&agent_ids=` | derived network preview (**no model call**) |
+| POST | `/api/games/rumor/run` | release a rumor; returns `{job_id}` |
+| GET | `/api/games/rumor/jobs/<id>` | progress, then the diffusion tree and the stats |
+
+A persuasion game costs `1 + turns + 2` model calls (8 at the default of 5 turns) and the turn
+limit is capped at 20; a disaster run costs `residents × stages + 1`; a rumor run is capped at
+`residents × 2 + 1` regardless of how many rounds it plays. State lives in memory only (50
+persuasion sessions, 20 disaster runs, 20 rumor runs) and is cleared when the dashboard
+restarts — the playground is a sandbox, and it should not change the people in the city.
+
+Full walkthrough: [Playground Tutorial](./docs/PLAYGROUND_TUTORIAL.md) (in Chinese).
+
 ## Mobile Digital Twin
 
 Connect a phone to a running GAWorld server, report your real location and activity, and have one
@@ -637,6 +773,7 @@ Important fields:
 - `economy`: personal finance settings (tax brackets, social insurance rates, Engel curve, investment incl. `market_correlation`, macro cycle, shocks, sector pools `sectors`, credit line `credit`, payment routing `routing`, friend loans `friend_loans`)
 - `interests`: per-agent hobby and skill-growth settings (enable switch, item cap, insert tendency, progress persistence, day-end forgetting `decay`, interest-set `evolution`)
 - `dynamic_behavior`: dynamic behavior system settings (enabled flag)
+- `travel`: leaving the city (**default off**) — per-purpose triggers and trip lengths (`business` / `family` / `leisure`), `max_away_share`, `fare_per_km`, `daily_surcharge`, `seed`
 - `environment.local_physical` / `environment.anomaly` / `environment.replan` / `environment.spatial_preferences`: physical-perception and reactive-replanning switches and thresholds
 - `skills`: reusable Skill library settings (global dir, cognition/work-brief injection, per-prompt cap)
 - `memory.skill_consolidation`: experience-to-Skill distillation settings (enabled, cadence, lookback, min episodes)
@@ -1076,10 +1213,13 @@ Generated artifacts are written under `output/`, including:
 - [Social Network — Design](./docs/SOCIAL_NETWORK_DESIGN.md) · [Tutorial](./docs/SOCIAL_NETWORK_TUTORIAL.md)
 - [Family / Households — Design](./docs/FAMILY_DESIGN.md) (in Chinese; marital sampling, co-residence, family duties and spending, the override layer and the Studio editor)
 - [Group Simulation — Tutorial](./docs/GROUP_SIMULATION_TUTORIAL.md) · [Design](./docs/GROUP_AGENT_DESIGN.md) (population synthesis, cohort mode, the L1–L4 validation gate)
+- [Group Interview — Tutorial](./docs/GROUP_INTERVIEW_TUTORIAL.md) (in Chinese; asking one question set to many respondents across cities — typed questions and their tallies, image/URL material and how it degrades, follow-up rounds, reading the breakdowns, the HTTP surface)
 - [External Systems — Tutorial](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md) (in Chinese; observing and editing the money system, the external environment and outward services, plus runtime intervention)
 - [Parallel Worlds — Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese; multi-branch counterfactuals — designing an experiment, reading the divergence charts, dose-response designs, and why to run a placebo world first)
+- [Playground — Tutorial](./docs/PLAYGROUND_TUTORIAL.md) (in Chinese; the arena's ranking and retention, how persuasion is judged, how disaster mode is played out, the HTTP API, and how to add a game) · [Agent Arena — Tutorial](./docs/ARENA_TUTORIAL.md) (in Chinese)
 - [Big Five (OCEAN) Personality — Design](./docs/proposals/2026-08-20-big-five-personality.md) (the three independent channels, the effect-size and collinearity merge gates, and the offline trait calibration pass)
 - [Mobile Digital Twin](./docs/TWIN_MOBILE.md) (in Chinese; running the phone client over an HTTPS tunnel, invite-code binding, the mirror / perception / calibration channels, and why the twin server is a separate process from the dashboard)
+- [API Reference](./docs/API_REFERENCE.md) (every HTTP endpoint on Dashboard / Twin / Agent Relay / External Environment, every CLI subcommand, and the Python entry points for embedding GAWorld in your own script)
 - [Project Structure](./docs/PROJECT_STRUCTURE.md)
 - [Repository Guidelines](./AGENTS.md)
 - [Changelog](./CHANGELOG.md)

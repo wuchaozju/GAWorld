@@ -1,0 +1,2085 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "香港",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 22.281833,
+   "lng": 114.158283,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.009708009
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1582784,
+     22.2818286
+    ]
+   },
+   "properties": {
+    "name": "中環",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1644982,
+     22.2789208
+    ]
+   },
+   "properties": {
+    "name": "金鐘",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1559371,
+     22.2769349
+    ]
+   },
+   "properties": {
+    "name": "半山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1117117,
+     22.22557
+    ]
+   },
+   "properties": {
+    "name": "榕樹灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2159129,
+     22.2143908
+    ]
+   },
+   "properties": {
+    "name": "赤柱",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1869671,
+     22.267237
+    ]
+   },
+   "properties": {
+    "name": "跑馬地",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1564209,
+     22.2489071
+    ]
+   },
+   "properties": {
+    "name": "香港仔",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1945411,
+     22.287385
+    ]
+   },
+   "properties": {
+    "name": "炮台山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1989737,
+     22.2906565
+    ]
+   },
+   "properties": {
+    "name": "北角",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1870669,
+     22.2809029
+    ]
+   },
+   "properties": {
+    "name": "銅鑼灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2161441,
+     22.2837776
+    ]
+   },
+   "properties": {
+    "name": "康山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2500334,
+     22.2331673
+    ]
+   },
+   "properties": {
+    "name": "石澳",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.150208,
+     22.2865158
+    ]
+   },
+   "properties": {
+    "name": "上環",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1420862,
+     22.286121
+    ]
+   },
+   "properties": {
+    "name": "西營盤",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1357494,
+     22.2858761
+    ]
+   },
+   "properties": {
+    "name": "石塘咀",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1312705,
+     22.2047065
+    ]
+   },
+   "properties": {
+    "name": "索罟灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2507334,
+     22.3022793
+    ]
+   },
+   "properties": {
+    "name": "調景嶺",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2535265,
+     22.3162654
+    ]
+   },
+   "properties": {
+    "name": "茅湖仔",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.259633,
+     22.3087855
+    ]
+   },
+   "properties": {
+    "name": "將軍澳",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2606472,
+     22.3267555
+    ]
+   },
+   "properties": {
+    "name": "魷魚灣村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2659053,
+     22.316671
+    ]
+   },
+   "properties": {
+    "name": "坑口",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2578082,
+     22.3226302
+    ]
+   },
+   "properties": {
+    "name": "寶林",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.169005,
+     22.3049
+    ]
+   },
+   "properties": {
+    "name": "官涌",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1904697,
+     22.3815527
+    ]
+   },
+   "properties": {
+    "name": "沙田",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2379644,
+     22.2656067
+    ]
+   },
+   "properties": {
+    "name": "柴灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2502079,
+     22.2637273
+    ]
+   },
+   "properties": {
+    "name": "小西灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2129202,
+     22.285795
+    ]
+   },
+   "properties": {
+    "name": "鰂魚涌",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1134699,
+     22.3716605
+    ]
+   },
+   "properties": {
+    "name": "荃灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0298584,
+     22.3331668
+    ]
+   },
+   "properties": {
+    "name": "欣澳",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0471362,
+     22.3154014
+    ]
+   },
+   "properties": {
+    "name": "竹篙灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1863163,
+     22.3068983
+    ]
+   },
+   "properties": {
+    "name": "紅磡",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1741181,
+     22.298872
+    ]
+   },
+   "properties": {
+    "name": "尖沙咀",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1922198,
+     22.2828836
+    ]
+   },
+   "properties": {
+    "name": "天后",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1953895,
+     22.3971416
+    ]
+   },
+   "properties": {
+    "name": "火炭",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2016303,
+     22.3832635
+    ]
+   },
+   "properties": {
+    "name": "圓洲角",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1777601,
+     22.373056
+    ]
+   },
+   "properties": {
+    "name": "大圍",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1931508,
+     22.2779085
+    ]
+   },
+   "properties": {
+    "name": "大坑",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1999443,
+     22.3486715
+    ]
+   },
+   "properties": {
+    "name": "慈雲山",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1506667,
+     22.2699166
+    ]
+   },
+   "properties": {
+    "name": "山頂",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2215064,
+     22.2824457
+    ]
+   },
+   "properties": {
+    "name": "西灣河",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2196075,
+     22.3261225
+    ]
+   },
+   "properties": {
+    "name": "佐敦谷",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1290095,
+     22.3609551
+    ]
+   },
+   "properties": {
+    "name": "葵涌",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1724833,
+     22.2790146
+    ]
+   },
+   "properties": {
+    "name": "灣仔",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.209576,
+     22.335359
+    ]
+   },
+   "properties": {
+    "name": "牛池灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1095848,
+     22.2284385
+    ]
+   },
+   "properties": {
+    "name": "澳仔",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1103956,
+     22.2292152
+    ]
+   },
+   "properties": {
+    "name": "牙較灣",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1135609,
+     22.2352448
+    ]
+   },
+   "properties": {
+    "name": "北角舊村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1136489,
+     22.2371774
+    ]
+   },
+   "properties": {
+    "name": "北角新村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.166672,
+     22.2483146
+    ]
+   },
+   "properties": {
+    "name": "黃竹坑",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2342628,
+     22.3912341
+    ]
+   },
+   "properties": {
+    "name": "梅子林村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.167406,
+     22.333653
+    ]
+   },
+   "properties": {
+    "name": "石硤尾",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1865742,
+     22.3404231
+    ]
+   },
+   "properties": {
+    "name": "橫頭磡",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.124949,
+     22.2052893
+    ]
+   },
+   "properties": {
+    "name": "蘆鬚城",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2351061,
+     22.2397363
+    ]
+   },
+   "properties": {
+    "name": "爛泥灣村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2353486,
+     22.2338108
+    ]
+   },
+   "properties": {
+    "name": "東丫背村",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0440718,
+     22.3130783
+    ]
+   },
+   "properties": {
+    "name": "美國小鎮大街",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0396732,
+     22.3123759
+    ]
+   },
+   "properties": {
+    "name": "幻想世界",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1666014,
+     22.3042356
+    ]
+   },
+   "properties": {
+    "name": "柯士甸",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1649267,
+     22.3036814
+    ]
+   },
+   "properties": {
+    "name": "香港西九龍",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1876486,
+     22.3169748
+    ]
+   },
+   "properties": {
+    "name": "土瓜灣",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1589572,
+     22.2775978
+    ]
+   },
+   "properties": {
+    "name": "花園道",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1844066,
+     22.2730955
+    ]
+   },
+   "properties": {
+    "name": "聖保祿天主教小學",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1848528,
+     22.272072
+    ]
+   },
+   "properties": {
+    "name": "St Pauls Secondary",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2167245,
+     22.3346288
+    ]
+   },
+   "properties": {
+    "name": "保良局百周年學校",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1527585,
+     22.2673122
+    ]
+   },
+   "properties": {
+    "name": "山頂小學",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1674945,
+     22.2423905
+    ]
+   },
+   "properties": {
+    "name": "Canadian International School of Hong Kong",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1405262,
+     22.3376482
+    ]
+   },
+   "properties": {
+    "name": "播道神學院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1389648,
+     22.3366375
+    ]
+   },
+   "properties": {
+    "name": "地利亞修女紀念學校(吉利徑)",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1658779,
+     22.2486083
+    ]
+   },
+   "properties": {
+    "name": "漢鼎書院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1828384,
+     22.2804194
+    ]
+   },
+   "properties": {
+    "name": "學而思",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1737054,
+     22.3169545
+    ]
+   },
+   "properties": {
+    "name": "Dr. Sackmann' Language Classes",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2098159,
+     22.381555
+    ]
+   },
+   "properties": {
+    "name": "香港駕駛學院（沙田安全駕駛中心）",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1618689,
+     22.2465019
+    ]
+   },
+   "properties": {
+    "name": "聖神修院神哲學院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1923916,
+     22.2792301
+    ]
+   },
+   "properties": {
+    "name": "Miss Joey English",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1521263,
+     22.2855149
+    ]
+   },
+   "properties": {
+    "name": "The Mixing Bowl",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1199045,
+     22.3705112
+    ]
+   },
+   "properties": {
+    "name": "周卓明護士學校",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1798664,
+     22.3008684
+    ]
+   },
+   "properties": {
+    "name": "酒店及旅遊業管理學院",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1651382,
+     22.2424864
+    ]
+   },
+   "properties": {
+    "name": "Asia Int'n Marine School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1493252,
+     22.283055
+    ]
+   },
+   "properties": {
+    "name": "Jan's Learning Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.15008,
+     22.2828716
+    ]
+   },
+   "properties": {
+    "name": "Woodland Jr. Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1485988,
+     22.2430001
+    ]
+   },
+   "properties": {
+    "name": "Monkey Tree",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.154004,
+     22.2433971
+    ]
+   },
+   "properties": {
+    "name": "Harvest Education Centre",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1753082,
+     22.3003836
+    ]
+   },
+   "properties": {
+    "name": "Parkland",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1730116,
+     22.2772889
+    ]
+   },
+   "properties": {
+    "name": "灣仔電腦城",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1710892,
+     22.318523
+    ]
+   },
+   "properties": {
+    "name": "旺角電腦中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2399032,
+     22.263464
+    ]
+   },
+   "properties": {
+    "name": "柴灣街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.160783,
+     22.32946
+    ]
+   },
+   "properties": {
+    "name": "北河街街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1701435,
+     22.3176237
+    ]
+   },
+   "properties": {
+    "name": "星際城市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1705053,
+     22.31735
+    ]
+   },
+   "properties": {
+    "name": "荷李活購物中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2191819,
+     22.320962
+    ]
+   },
+   "properties": {
+    "name": "樂華南邨街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2398074,
+     22.3026976
+    ]
+   },
+   "properties": {
+    "name": "Lucky Market (Kwong Tin Estate)",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.23882,
+     22.2920058
+    ]
+   },
+   "properties": {
+    "name": "鯉魚門街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1890094,
+     22.3292118
+    ]
+   },
+   "properties": {
+    "name": "九龍城街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2682184,
+     22.3184689
+    ]
+   },
+   "properties": {
+    "name": "富寧花園街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1864297,
+     22.373657
+    ]
+   },
+   "properties": {
+    "name": "秦石街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1873145,
+     22.3428659
+    ]
+   },
+   "properties": {
+    "name": "市薈坊",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1756468,
+     22.3779114
+    ]
+   },
+   "properties": {
+    "name": "美林街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0283102,
+     22.2068288
+    ]
+   },
+   "properties": {
+    "name": "長洲街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1498237,
+     22.2860824
+    ]
+   },
+   "properties": {
+    "name": "上環街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2487768,
+     22.2624156
+    ]
+   },
+   "properties": {
+    "name": "本灣市場",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1566713,
+     22.2503591
+    ]
+   },
+   "properties": {
+    "name": "漁光道街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1847474,
+     22.2809336
+    ]
+   },
+   "properties": {
+    "name": "東角",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1145342,
+     22.3688641
+    ]
+   },
+   "properties": {
+    "name": "楊屋道街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1989396,
+     22.2921799
+    ]
+   },
+   "properties": {
+    "name": "渣華道街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1784652,
+     22.3003917
+    ]
+   },
+   "properties": {
+    "name": "新文華中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.131942,
+     22.3637641
+    ]
+   },
+   "properties": {
+    "name": "葵涌中心",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.162833,
+     22.3219184
+    ]
+   },
+   "properties": {
+    "name": "大角咀街市",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1427312,
+     22.3357707
+    ]
+   },
+   "properties": {
+    "name": "曼坊",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1767835,
+     22.2768595
+    ]
+   },
+   "properties": {
+    "name": "新世紀廣場",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1852026,
+     22.2815629
+    ]
+   },
+   "properties": {
+    "name": "名店坊",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1068185,
+     22.3435241
+    ]
+   },
+   "properties": {
+    "name": "美景花園商場",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1873541,
+     22.3064745
+    ]
+   },
+   "properties": {
+    "name": "Planet Square",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1973139,
+     22.3791321
+    ]
+   },
+   "properties": {
+    "name": "花園城第1期",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1765318,
+     22.2708788
+    ]
+   },
+   "properties": {
+    "name": "姻緣石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.183816,
+     22.282598
+    ]
+   },
+   "properties": {
+    "name": "怡和午砲",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2555394,
+     22.2535401
+    ]
+   },
+   "properties": {
+    "name": "歌連臣角砲台探射燈碉堡",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0535291,
+     22.3320294
+    ]
+   },
+   "properties": {
+    "name": "花瓶石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2125152,
+     22.2181952
+    ]
+   },
+   "properties": {
+    "name": "赤柱市集",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.192126,
+     22.257631
+    ]
+   },
+   "properties": {
+    "name": "Pillbox PB3",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1917075,
+     22.2424449
+    ]
+   },
+   "properties": {
+    "name": "Middle Spur AOP",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.19518,
+     22.2610317
+    ]
+   },
+   "properties": {
+    "name": "Pillbox JLO1",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2561908,
+     22.1609358
+    ]
+   },
+   "properties": {
+    "name": "蒲台島石刻",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2487864,
+     22.2461941
+    ]
+   },
+   "properties": {
+    "name": "大浪灣石刻",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2175929,
+     22.2063001
+    ]
+   },
+   "properties": {
+    "name": "犀牛石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1453687,
+     22.2051698
+    ]
+   },
+   "properties": {
+    "name": "Old School",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2449752,
+     22.4031629
+    ]
+   },
+   "properties": {
+    "name": "馬鞍山礦場",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2462356,
+     22.3964178
+    ]
+   },
+   "properties": {
+    "name": "獨木舟石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2644625,
+     22.3377461
+    ]
+   },
+   "properties": {
+    "name": "天一泉",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.1746421,
+     22.2525533
+    ]
+   },
+   "properties": {
+    "name": "黃竹坑石刻",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2275598,
+     22.3895339
+    ]
+   },
+   "properties": {
+    "name": "陽元石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0396562,
+     22.2061938
+    ]
+   },
+   "properties": {
+    "name": "人頭石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0406296,
+     22.2056758
+    ]
+   },
+   "properties": {
+    "name": "玉璽石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.0326804,
+     22.2078342
+    ]
+   },
+   "properties": {
+    "name": "長洲石刻",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2505963,
+     22.1646736
+    ]
+   },
+   "properties": {
+    "name": "響螺石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2584763,
+     22.1649607
+    ]
+   },
+   "properties": {
+    "name": "巫氏古宅",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2589836,
+     22.1579857
+    ]
+   },
+   "properties": {
+    "name": "僧人石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2569498,
+     22.1578182
+    ]
+   },
+   "properties": {
+    "name": "佛手崖",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     114.2587804,
+     22.1580645
+    ]
+   },
+   "properties": {
+    "name": "靈龜上山石",
+    "category": "leisure",
+    "kind": "place"
+   }
+  }
+ ]
+}

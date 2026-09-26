@@ -26,8 +26,11 @@ from __future__ import annotations
 import csv
 import json
 import os
+import signal
 import sys
 import tempfile
+import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -300,6 +303,50 @@ class RunnerTests(unittest.TestCase):
                 self.assertTrue(
                     os.path.exists(os.path.join(tmp, entry["state_csv"])), entry["state_csv"]
                 )
+
+
+    @unittest.skipUnless(hasattr(signal, "SIGSTOP"), "no SIGSTOP on this platform")
+    def test_pause_suspends_the_world_processes_and_resume_lets_them_finish(self):
+        """A world is a subprocess, so pausing it has to be a real SIGSTOP —
+        a flag would only be read between days the simulator never yields."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stub = os.path.join(tmp, "stub_sim.py")
+            with open(stub, "w", encoding="utf-8") as handle:
+                handle.write(
+                    "import json, os, sys, time\n"
+                    "ov = json.loads(os.environ['GAWORLD_CONFIG_OVERRIDES'])\n"
+                    "if sys.argv[1] == 'reset':\n"
+                    "    sys.exit(0)\n"
+                    "for d in range(1, 200):\n"
+                    "    print('================= Day %d (x) =====' % d, flush=True)\n"
+                    "    time.sleep(0.05)\n"
+                )
+            experiment = spec_mod.normalize_experiment(BASIC_PAYLOAD)
+            manifest = runner.prepare_experiment(experiment, tmp)
+            live = runner.ExperimentRunner(manifest, tmp, max_parallel=2, script_path=stub)
+            thread = threading.Thread(target=live.run, daemon=True)
+            thread.start()
+
+            log = os.path.join(tmp, next(iter(manifest["worlds"].values()))["run_log"])
+            deadline = time.time() + 10
+            while time.time() < deadline and not (os.path.exists(log) and os.path.getsize(log)):
+                time.sleep(0.05)
+
+            self.assertTrue(live.pause())
+            self.assertTrue(live.snapshot()["paused"])
+            time.sleep(0.3)  # let any in-flight write land
+            frozen = os.path.getsize(log)
+            time.sleep(0.6)
+            self.assertEqual(os.path.getsize(log), frozen, "a paused world kept running")
+
+            live.resume()
+            self.assertFalse(live.snapshot()["paused"])
+            time.sleep(0.4)
+            self.assertGreater(os.path.getsize(log), frozen)
+
+            live.stop()  # also proves a paused run can still be stopped
+            thread.join(timeout=20)
+            self.assertFalse(thread.is_alive())
 
 
 class _TempRepo:

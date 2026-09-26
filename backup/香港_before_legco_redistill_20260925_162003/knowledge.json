@@ -1,0 +1,37 @@
+{
+  "name": "香港",
+  "summary": "特别行政区，搜索结果均聚焦旅游相关信息。",
+  "industries": [
+    {
+      "name": "旅游业",
+      "weight": 1.0,
+      "trend": "stable",
+      "note": "搜索结果中所有条目均围绕香港旅游攻略及旅游发展局首页信息，可见旅游是主要呈现的产业。"
+    }
+  ],
+  "priorities": [
+    "发展旅游推广与服务"
+  ],
+  "labor_demand": [],
+  "sources": [
+    {
+      "title": "香港 特别行政区_百度百科",
+      "url": "https://baike.baidu.com/item/香港特别行政区/24510970"
+    },
+    {
+      "title": "去过 香港 不下30次，总结一份超全的玩法攻略 - 知乎",
+      "url": "https://zhuanlan.zhihu.com/p/697719377"
+    },
+    {
+      "title": "首頁 | 香港 旅遊發展局 - Hong Kong Tourism Board",
+      "url": "https://www.discoverhongkong.com/tc/index.html"
+    },
+    {
+      "title": "首页 | 香港 旅游发展局",
+      "url": "https://www.discoverhongkong.cn/index.html"
+    }
+  ],
+  "source": "web",
+  "built_at": "2026-09-18T04:17:12+00:00",
+  "schema_version": "1.0"
+}

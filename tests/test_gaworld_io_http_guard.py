@@ -12,6 +12,7 @@ from gaworld.io.http_guard import (
     FailureCache,
     GuardedSession,
     HostRateLimiter,
+    TRANSPORT_STATUS,
     UserAgentRotator,
     get_default_session,
     reset_default_session,
@@ -79,6 +80,14 @@ class TestFailureCache(unittest.TestCase):
         rec_c = cache.is_blocked("https://c")
         self.assertGreater(rec_a.expires_at, rec_b.expires_at)
         self.assertGreaterEqual(rec_b.expires_at, rec_c.expires_at - 0.5)
+
+    def test_transport_failure_backs_off_longer_than_default(self):
+        cache = FailureCache(default_ttl=1, transport_ttl=30)
+        cache.remember("https://unreachable", TRANSPORT_STATUS)
+        cache.remember("https://teapot", 418)
+        rec_transport = cache.is_blocked("https://unreachable")
+        rec_default = cache.is_blocked("https://teapot")
+        self.assertGreater(rec_transport.expires_at, rec_default.expires_at)
 
 
 class TestGuardedSession(unittest.TestCase):

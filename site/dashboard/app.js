@@ -34,6 +34,19 @@ const state = {
   // Null until the first fetch; `{available:false}` once we know a run has
   // not produced any yet.
   family: null,
+  // The city /api/agents actually serves, captured once at load (see
+  // loadConfig): that data is resolved from disk at server start and does not
+  // move until a restart, even though the toolbar's city picker (and
+  // state.config.city) can change immediately on save. null until the first
+  // loadConfig() call.
+  runningCity: null,
+  // True while the "人物设定" card is previewing a city other than
+  // runningCity — a read-only mode mirroring Agent Studio's cross-city
+  // browsing (see city-agents.js), since memory/family/big5/finance are keyed
+  // by agent id *within* one city and would misattribute under a foreign id.
+  browsing: false,
+  browsedCity: null,
+  browsedAgents: [],
 };
 
 const els = {
@@ -80,6 +93,8 @@ const els = {
   familyOverview: document.getElementById("familyOverview"),
   familyDetail: document.getElementById("familyDetail"),
   refreshFamilyBtn: document.getElementById("refreshFamilyBtn"),
+  homeDetail: document.getElementById("homeDetail"),
+  refreshHomeBtn: document.getElementById("refreshHomeBtn"),
   interviewContext: document.getElementById("interviewContext"),
   interviewQuestions: document.getElementById("interviewQuestions"),
   interviewBtn: document.getElementById("interviewBtn"),
@@ -128,6 +143,16 @@ const els = {
 // the shared CityMapView module, used identically by the simviz replay tab.
 const mapView = new CityMapView(els.mapCanvas, {
   getSelectedAgentId: () => state.selectedAgentId,
+  // Home-mode hook: the map renderer highlights the selected agent's home
+  // node and stamps a 🏠 badge on agents that are currently at home.
+  // Sourced from the cached trace roster so we don't refetch every render.
+  getSelectedAgentHome: () => {
+    const id = Number(state.selectedAgentId);
+    if (!id) return null;
+    const traceAgents = (state.trace && Array.isArray(state.trace.agents)) ? state.trace.agents : [];
+    const found = traceAgents.find((a) => Number(a.id) === id);
+    return found ? found.home || null : null;
+  },
   // Deferred: this runs at module scope, before the locale file lands.
   emptyText: () => __("trace.waiting_data"),
 });
@@ -237,7 +262,9 @@ function syncRunButtons() {
     els.randomnessInput,
     els.routineRandomnessInput,
   ].forEach((el) => { el.disabled = running; });
-  if (els.toggleSimBtn) els.toggleSimBtn.disabled = running;
+  // Also off while browsing a foreign city: its ids collide by number with
+  // the running roster, so "join sim" would add the wrong resident.
+  if (els.toggleSimBtn) els.toggleSimBtn.disabled = running || state.browsing;
   document.body.classList.toggle("is-running", running);
 }
 
@@ -412,6 +439,12 @@ async function loadConfig() {
   state.config = await api("/api/config");
   const cfg = state.config;
   renderCityChoices(cfg.cities || [], cfg.city || "");
+  // Captured from the picker's own (post-fallback) value, not cfg.city
+  // directly: a saved city that no longer exists falls back to the default
+  // world the same way the server does when it resolves paths at start, so
+  // this has to agree with that fallback rather than the raw, possibly-stale
+  // slug.
+  if (state.runningCity == null) state.runningCity = els.citySelect ? els.citySelect.value : "";
   els.agentIdsInput.value = (cfg.agent_ids || []).join(",");
   const span = cfg.sim_span || { unit: "day", count: cfg.sim_days || 1 };
   els.simDaysInput.value = span.count || 1;
@@ -445,10 +478,24 @@ function fillProviderSelect(select, providers, selected) {
   });
 }
 
+// The agent roster below (the "Agent IDs" picker and the avatar strip) is
+// read once at server start and does not follow a city switch — the server
+// process resolves its CSV/profile paths once, at import, the same
+// constraint Agent Studio's cross-city browsing works around. So a save that
+// actually changes the city gets a restart notice instead of the roster
+// silently staying on the old city's residents.
 async function saveConfig() {
+  const previousCity = state.config ? state.config.city || "" : "";
   await api("/api/config", { method: "POST", body: JSON.stringify(configPayloadFromForm()) });
   await loadConfig();
-  message(__("config.saved"));
+  const newCity = state.config.city || "";
+  if (newCity !== previousCity) {
+    const cityInfo = (state.config.cities || []).find((city) => city.slug === newCity);
+    const cityName = cityInfo ? cityInfo.display_name : __("sim.city_default");
+    message(__f("sim.city_switch_notice", { name: cityName }));
+  } else {
+    message(__("config.saved"));
+  }
 }
 
 // The toolbar "Agent IDs" input is the single source of truth for which
@@ -464,12 +511,17 @@ function configuredIdSet() {
 
 function refreshAgentOptionLabels() {
   const configured = configuredIdSet();
-  Array.from(els.agentSelect.options).forEach((option) => {
-    const agent = state.agents.find((item) => Number(item.id) === Number(option.value));
-    if (!agent) return;
-    const inSim = configured.has(Number(agent.id));
-    option.textContent = `${inSim ? "▶ " : ""}${String(agent.id).padStart(2, "0")} · ${agent.name}${inSim ? __("agent.in_sim_suffix") : ""}`;
-  });
+  // The "▶ in sim" markers only mean something for the running city's roster;
+  // while browsing, agentSelect holds a foreign city's ids, which collide by
+  // number with the running config's agent_ids and would mislabel here.
+  if (!state.browsing) {
+    Array.from(els.agentSelect.options).forEach((option) => {
+      const agent = state.agents.find((item) => Number(item.id) === Number(option.value));
+      if (!agent) return;
+      const inSim = configured.has(Number(agent.id));
+      option.textContent = `${inSim ? "▶ " : ""}${String(agent.id).padStart(2, "0")} · ${agent.name}${inSim ? __("agent.in_sim_suffix") : ""}`;
+    });
+  }
   updateToggleSimBtn();
   renderSimRoster();
 }
@@ -523,6 +575,10 @@ async function selectAgent(agentId) {
   renderSimRoster();
   renderTrace();
   renderFamilyDetail();
+  // The home panel is independent of the agent detail payload: it pulls
+  // its own /api/home/<id> so a click on a different agent updates the panel
+  // without re-downloading the heavy /detail blob.
+  loadHome(id);
   try {
     await loadProfile();
     await loadMemory();
@@ -553,13 +609,10 @@ function toggleSelectedAgentInSim() {
   }));
 }
 
-async function loadAgents() {
-  const payload = await api("/api/agents");
-  state.agents = payload.agents || [];
-  if (!state.selectedAgentId && state.agents.length) {
-    const configured = state.agents.find((agent) => agent.configured);
-    state.selectedAgentId = (configured || state.agents[0]).id;
-  }
+// Populate agentSelect from the running city's roster (state.agents). Split
+// out of loadAgents() so exiting a city-browse preview can restore the picker
+// without refetching data that is already cached.
+function renderRunningAgentOptions() {
   els.agentSelect.innerHTML = "";
   state.agents.forEach((agent) => {
     const option = document.createElement("option");
@@ -569,7 +622,109 @@ async function loadAgents() {
     els.agentSelect.appendChild(option);
   });
   refreshAgentOptionLabels();
+}
+
+async function loadAgents() {
+  const payload = await api("/api/agents");
+  state.agents = payload.agents || [];
+  if (!state.selectedAgentId && state.agents.length) {
+    const configured = state.agents.find((agent) => agent.configured);
+    state.selectedAgentId = (configured || state.agents[0]).id;
+  }
+  renderRunningAgentOptions();
   renderSelectedAgentAvatar();
+}
+
+/* ------------------------------------------------------- city browse mode
+ * The toolbar's city picker can point anywhere, but /api/agents (and every
+ * per-agent endpoint memory/family/big5/finance rely on) only ever serves
+ * runningCity's residents until the server restarts. Picking a different
+ * city here previews that city's roster read-only — identity + profile text
+ * only — instead of silently mixing a foreign agent's name into the running
+ * city's memory/family data. Same split Agent Studio uses (see city-agents.js
+ * and studio.js's pickCity/browseCity).
+ */
+
+function cityView() {
+  return window.GAWorldCityAgents;
+}
+
+function isForeignCitySelected() {
+  if (!els.citySelect) return false;
+  return els.citySelect.value !== (state.runningCity || "");
+}
+
+async function handleCitySelectionChange() {
+  updateCityHint();
+  if (isForeignCitySelected()) {
+    await enterCityBrowse(els.citySelect.value);
+  } else if (state.browsing) {
+    exitCityBrowse();
+  }
+}
+
+async function enterCityBrowse(slug) {
+  state.browsing = true;
+  if (els.toggleSimBtn) els.toggleSimBtn.disabled = true;
+  els.profileView.innerHTML = `<p class="muted-line">${__("sd.loading")}</p>`;
+  const payload = await api("/api/city/agents?city=" + encodeURIComponent(slug));
+  state.browsedCity = payload.city;
+  state.browsedAgents = payload.agents || [];
+  const firstId = state.browsedAgents.length ? state.browsedAgents[0].id : null;
+  els.agentSelect.innerHTML = cityView().agentOptions(state.browsedAgents, firstId);
+  if (firstId == null) {
+    els.selectedAgentAvatar.removeAttribute("src");
+    els.selectedAgentAvatar.alt = "";
+    els.profileView.innerHTML = cityView().browseNotice(state.browsedCity) +
+      `<p class="section-note">${__("sd.browse_empty")}</p>`;
+    bindBrowseUseCityBtn();
+    return;
+  }
+  await browseCityAgent(slug, firstId);
+}
+
+async function browseCityAgent(slug, id) {
+  const detail = await api(`/api/city/agent?city=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`);
+  state.browsedCity = detail.city;
+  els.agentSelect.value = String(id);
+  const view = cityView();
+  const rows = view.identityRows(detail.agent, detail.city)
+    .map(([label, value]) => `<tr><th>${view.esc(label)}</th><td>${view.esc(value)}</td></tr>`).join("");
+  els.profileView.innerHTML = view.browseNotice(detail.city) +
+    `<table class="ca-kv">${rows}</table>` +
+    renderMarkdown(detail.agent.profile_text || "");
+  // Not getAgentAvatarPath(): that resolves through the *running* trace, which
+  // would show whoever holds this number in the actual run, not this
+  // resident. The plain per-id fallback file is the closest thing to a
+  // city-agnostic avatar this build has.
+  els.selectedAgentAvatar.src = `/output/visualization/avatars/agent_${Number(id)}.svg`;
+  els.selectedAgentAvatar.alt = `${detail.agent.name || `Agent ${id}`} avatar`;
+  bindBrowseUseCityBtn();
+}
+
+function bindBrowseUseCityBtn() {
+  const btn = document.getElementById("caUseCityBtn");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    try {
+      await saveConfig();
+    } catch (error) {
+      message(error.message, "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function exitCityBrowse() {
+  state.browsing = false;
+  state.browsedCity = null;
+  state.browsedAgents = [];
+  if (els.toggleSimBtn) els.toggleSimBtn.disabled = Boolean(state.running);
+  renderRunningAgentOptions();
+  renderSelectedAgentAvatar();
+  renderProfileView();
 }
 
 function selectedLifeEventTemplate() {
@@ -805,6 +960,28 @@ async function loadFamily() {
     state.family = { available: false, error: error.message };
   }
   renderFamilyCard();
+}
+
+async function loadHome(agentId) {
+  const id = agentId != null ? Number(agentId) : Number(state.selectedAgentId);
+  if (!id || !els.homeDetail) return;
+  try {
+    const payload = await api(`/api/home/${id}`);
+    state.home = payload;
+  } catch (error) {
+    // 404 means the agent has no home design yet — treat that as an empty
+    // state rather than an error message.
+    state.home = { has_home: false, error: error.message };
+  }
+  renderHomePanel();
+}
+
+function renderHomePanel() {
+  if (!els.homeDetail) return;
+  if (typeof window.HomePanel !== "object" || !window.HomePanel) {
+    return;
+  }
+  window.HomePanel.render(state.home, { root: els.homeDetail, t });
 }
 
 function renderFamilyCard() {
@@ -1689,7 +1866,11 @@ function initFrameJson() {
 function bindEvents() {
   initCollapsibles();
   initFrameJson();
-  if (els.citySelect) els.citySelect.addEventListener("change", updateCityHint);
+  if (els.citySelect) {
+    els.citySelect.addEventListener("change", () => {
+      handleCitySelectionChange().catch((error) => message(error.message, "error"));
+    });
+  }
   // applyTranslations() rewrites the Agent IDs placeholder from
   // data-i18n-placeholder, and the console's cross-frame locale sync fires it
   // *after* loadConfig — so re-assert the per-city range once it has run.
@@ -1716,7 +1897,13 @@ function bindEvents() {
     message(__("msg.status_refreshed"));
   }));
   els.exportRunLogBtn.addEventListener("click", exportRunLog);
-  els.agentSelect.addEventListener("change", () => selectAgent(els.agentSelect.value));
+  els.agentSelect.addEventListener("change", () => {
+    if (state.browsing) {
+      browseCityAgent(els.citySelect.value, els.agentSelect.value).catch((error) => message(error.message, "error"));
+    } else {
+      selectAgent(els.agentSelect.value);
+    }
+  });
   if (els.simRosterList) {
     els.simRosterList.addEventListener("click", (event) => {
       const chip = event.target.closest(".roster-chip");
@@ -1732,13 +1919,23 @@ function bindEvents() {
   });
   if (els.toggleSimBtn) els.toggleSimBtn.addEventListener("click", toggleSelectedAgentInSim);
   els.refreshAgentBtn.addEventListener("click", withBusy(els.refreshAgentBtn, async () => {
-    await loadProfile();
+    if (state.browsing) {
+      await browseCityAgent(els.citySelect.value, els.agentSelect.value);
+    } else {
+      await loadProfile();
+    }
     message(__("msg.profile_refreshed"));
   }));
   if (els.refreshFamilyBtn) {
     els.refreshFamilyBtn.addEventListener("click", withBusy(els.refreshFamilyBtn, async () => {
       await loadFamily();
       message(__("msg.family_refreshed"));
+    }));
+  }
+  if (els.refreshHomeBtn) {
+    els.refreshHomeBtn.addEventListener("click", withBusy(els.refreshHomeBtn, async () => {
+      await loadHome();
+      message(__("msg.home_refreshed", "居家模式已刷新"));
     }));
   }
   els.reloadMemoryBtn.addEventListener("click", withBusy(els.reloadMemoryBtn, async () => {

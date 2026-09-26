@@ -86,7 +86,8 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
         "behavior",
         news_settings,
         "新闻与主动检索",
-        "居民从外界读到什么：刷新闻的概率、主动上网搜索的频率和搜索引擎、抓回来的正文"
+        "居民从外界读到什么：新闻 / 社交媒体 / 专业网站的信息源清单和每个人的「信息食谱」"
+        "怎么从中挑出来、刷新闻的概率、主动上网搜索的频率和搜索引擎、抓回来的正文"
         "有多少会写进记忆。",
     ),
     (
@@ -135,8 +136,8 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
         "integrations",
         integration_settings,
         "扩展与真实工作",
-        "仿真往外接的部分：自定义扩展钩子、多人协作会话、以及把「工作」类活动派给本地"
-        "适配器真的产出文件的 real_work 子系统。",
+        "仿真往外接的部分：自定义扩展钩子、多人协作会话、把「工作」类活动派给本地"
+        "适配器真的产出文件的 real_work 子系统，以及让居民上 Moltbook 发帖的 moltbook 集成。",
     ),
 )
 
@@ -179,9 +180,10 @@ SECTION_EN: dict[str, tuple[str, str]] = {
     ),
     "news": (
         "News and active search",
-        "What residents read from outside: the chance of checking the news, how often "
-        "they search the web and with which engine, and how much of the fetched text "
-        "reaches their memory.",
+        "What residents read from outside: the registry of news / social / trade "
+        "sources and how each resident's media diet is drawn from it, the chance of "
+        "checking the news, how often they search the web and with which engine, and "
+        "how much of the fetched text reaches their memory.",
     ),
     "intervention": (
         "Recommendation and intervention",
@@ -217,8 +219,9 @@ SECTION_EN: dict[str, tuple[str, str]] = {
     "integrations": (
         "Extensions and real work",
         "Where the simulation reaches outward: custom extension hooks, multi-agent "
-        "collaboration sessions, and the real_work subsystem that hands “work” "
-        "activities to a local adapter and gets actual files back.",
+        "collaboration sessions, the real_work subsystem that hands “work” "
+        "activities to a local adapter and gets actual files back, and the moltbook "
+        "integration that lets residents post on the agent social network.",
     ),
 }
 
@@ -389,6 +392,9 @@ LABELS_EN: dict[str, str] = {
     "random_action_chance": "Random action chance",
     "max_override_bonus": "Override bonus cap",
     "concurrency": "Concurrency",
+    "run_manifest": "Run manifest",
+    "html_report": "HTML report",
+    "partial_write": "Partial manifest at start",
     "day_routine_workers": "Schedule generation workers",
     "external_rag": "External information injection",
     "bootstrap": "Cold-start injection",
@@ -402,6 +408,30 @@ LABELS_EN: dict[str, str] = {
     "runtime_absorb": "Keep absorbing during the run",
     "daily_quota_per_agent": "Per-resident daily quota",
     "local_physical": "Local environment perception",
+    "home": "Per-agent home design + at-home perception",
+    "home.llm_enrich": "Polish the procedural home via LLM",
+    "home.record_observations": "Append per-tick home observations",
+    "home.inject_into_perception": "Add the home snippet to perception",
+    "record_occupancy": "Record where everyone is",
+    "travel.business": "Business travel",
+    "travel.leisure": "Leisure travel",
+    "use_profile_income": "Use the income the profile states",
+    "profile_income_jitter": "Income jitter",
+    "location_assignment": "Home & workplace assignment",
+    "location_assignment.mode": "Assignment mode",
+    "workplace_candidates": "Workplace candidates (0 = all)",
+    "home_candidates": "Home candidates (0 = all)",
+    "distance_decay": "Distance decay (workplace)",
+    "home_distance_decay": "Distance decay (home)",
+    "traffic": "Road congestion",
+    "traffic.alpha": "BPR alpha",
+    "traffic.beta": "BPR beta",
+    "traffic.decay": "Congestion carry-over",
+    "agents_represent": "Travellers per resident",
+    "max_congestion": "Congestion ceiling",
+    "mode_pcu": "Car-equivalents per mode",
+    "road_capacity": "Capacity by road class",
+    "suppress_rush_hour_mult": "Stand down the static rush-hour multiplier",
     "crowd_busy_ratio": "Busy threshold",
     "crowd_packed_ratio": "Packed threshold",
     "inject_into_perception": "Inject into perception context",
@@ -425,6 +455,21 @@ LABELS_EN: dict[str, str] = {
     "use_llm": "Generate with an LLM",
     "news": "News and search",
     "sources_path": "Source list",
+    "cache_ttl_hours": "Homepage cache TTL (real hours)",
+    "sources": "Information sources",
+    "registry_path": "Source registry",
+    "feed_cache_path": "Feed cache",
+    "ttl_hours": "Fetch interval (real hours)",
+    "per_source_limit": "Items kept per source",
+    "feed_visit_ratio": "Read-own-feeds ratio",
+    "full_read": "Fetch the article body",
+    "full_read_min_chars": "Body fetch threshold (chars)",
+    "diet": "Media diet",
+    "max_sources": "Sources per resident",
+    "en_weight": "Foreign-language weight",
+    "search_api": "Search API keys",
+    "brave_api_key_env": "Brave key env var",
+    "tavily_api_key_env": "Tavily key env var",
     "use_cache_first": "Prefer the cache",
     "daily_chance": "Daily reading chance",
     "max_reads_per_day": "Max reads per day",
@@ -523,6 +568,15 @@ LABELS_EN: dict[str, str] = {
     "hunger": "Hunger",
     "social_need": "Social",
     "dynamic_behavior": "Dynamic behaviour",
+    "travel": "Leaving the city",
+    "max_away_share": "Max share away",
+    "fare_per_km": "Fare per km",
+    "daily_surcharge": "Daily cost away",
+    "obligation_threshold": "Obligation threshold",
+    "daily_prob_over_threshold": "Daily chance once due",
+    "min_cash_months": "Cash floor (months)",
+    "base_daily_prob": "Base daily chance",
+    "rail": "Rail", "air": "Air",
     "extensions": "Extension hooks",
     "strict": "Strict mode",
     "hooks": "Hook table",
@@ -555,6 +609,15 @@ LABELS_EN: dict[str, str] = {
     "max_taken_per_agent_per_day": "Jobs taken per resident per day",
     "browse_probability_base": "Base browsing chance",
     "expire_after_sim_days": "Expire after (days)",
+    "moltbook": "Moltbook",
+    "accounts_path": "Accounts file",
+    "moltbook.log_dir": "Action log directory",
+    "submolt": "Default submolt",
+    "min_post_interval_seconds": "Min seconds between posts",
+    "compose_with_llm": "Model writes the post",
+    "read_feed": "Read the feed after posting",
+    "feed_limit": "Feed posts read",
+    "timeout_seconds": "Request timeout (s)",
     "auto_replenish": "Auto-replenish",
     "replenish_threshold": "Replenish threshold",
     "external_hooks": "External hooks",
@@ -606,6 +669,7 @@ LABELS_EN: dict[str, str] = {
     "macro": "Macro cycle",
     "initial_inflation_rate": "Initial inflation rate",
     "initial_unemployment_rate": "Initial unemployment rate",
+    "unemployment_from_agents": "Count unemployment from the residents",
     "cycle_phase_duration_days": "Phase duration range (days)",
     "phases": "Phase order",
     "phase_effects": "Per-phase effects",
@@ -1020,13 +1084,32 @@ MANUAL_HELP_EN: dict[str, str] = {
         "Worker threads during daily schedule generation. Bounded by what the model server "
         "can take concurrently."
     ),
+    "run_manifest": (
+        "Structured end-of-run summary written under output/run_manifests/: git commit, "
+        "dependency versions, seed, effective config, LLM stats, and artefact index. Six "
+        "months later this is what tells you which run produced which output."
+    ),
+    "run_manifest.enabled": "Whether to write the JSON manifest at all.",
+    "run_manifest.output_dir": "Where the JSON (and optional HTML) go.",
+    "run_manifest.html_report": (
+        "Also render a single-file HTML report next to the JSON. Self-contained; opens "
+        "offline with a double-click."
+    ),
+    "run_manifest.partial_write": (
+        "Snapshot a partial manifest at run start. Costs nothing on success; on a crash it "
+        "leaves a breadcrumb showing what the run was about to do."
+    ),
     "llm": (
         "Multi-backend model configuration: `providers` lists what is available, `routing` "
         "decides which task goes where."
     ),
     "llm.providers": (
         "The list of available model backends. Keys are injected through environment "
-        "variables, never written here."
+        "variables, never written here. A backend may also declare `vision: true|false` "
+        "to say whether it accepts image input; absent that, it is guessed from the "
+        "model name. Only the group interview reads it, and it reads it *before* "
+        "attaching a picture, so a text-only model gets the caption and says so "
+        "instead of returning an opaque 400."
     ),
     "llm.routing": "How tasks are handed to models.",
     "llm.routing.default": (
@@ -1048,9 +1131,73 @@ MANUAL_HELP_EN: dict[str, str] = {
     "llm_timeout": (
         "Legacy global timeout (seconds). New code uses each provider's own timeout."
     ),
+    "economy.use_profile_income": (
+        "Pay each resident the income their own profile states, instead of working "
+        "a salary out from their job title. With this off the ledger and the "
+        "resident's self-description disagree — measured across 326 residents they "
+        "correlated at only 0.31, the ledger paid 1.39x the stated figure at the "
+        "median, and the income spread the population was built with was flattened. "
+        "A profile that states no income falls back to the job band either way."
+    ),
+    "economy.profile_income_jitter": (
+        "How far a salary may sit either side of the stated figure, so a town is not "
+        "made of exact round numbers. 0 pays the stated figure exactly."
+    ),
+    "location_assignment": (
+        "Where residents end up living and working. \"nearest\" gives everyone with "
+        "the same kind of job the closest matching building, which piles most of the "
+        "town into a handful of addresses and leaves most roads empty. \"gravity\" "
+        "picks among nearby candidates, favouring larger places and closer ones. "
+        "Changing this changes who lives and works where, so earlier runs are not "
+        "directly comparable."
+    ),
+    "traffic": (
+        "Whether the roads get busy. Trips agents actually made this tick are added up "
+        "per road, and a road carrying more than it can handle slows the next trip "
+        "down. Off by default — switching it on changes every journey time, so runs "
+        "made before and after are not comparable."
+    ),
+    "traffic.agents_represent": (
+        "How many real travellers one simulated resident stands for. The population is "
+        "a sample, so at 1 the roads are always empty and nothing ever gets congested. "
+        "This is a modelling dial, not a fact about the town: never argue a result from "
+        "one value of it — show that the result holds across a range."
+    ),
+    "traffic.suppress_rush_hour_mult": (
+        "The old fixed peak-hour slowdown is a stand-in for the very thing this layer "
+        "now works out from actual traffic. Leave this on, or peak hours are penalised "
+        "twice. Taxi peak fares are a pricing rule and are unaffected either way."
+    ),
     "local_physical": (
         "What a resident perceives about where they are: how crowded it is, whether it is "
         "open. With this off they know nothing about their surroundings."
+    ),
+    "local_physical.record_occupancy": (
+        "Write the head count per location, every tick, to output/records. The perception "
+        "loop already works this out and then throws it away; this keeps it. Off by default "
+        "\u2014 it is one row per tick and nothing but the Track B redistribution analysis "
+        "reads it."
+    ),
+    "home": (
+        "Designs each agent's home (rooms, furniture, ambiance) and feeds an at-home "
+        "snippet (current room + lighting/sound/temperature/tidiness) into perception "
+        "when the resident is actually at their home node. Procedural and deterministic by "
+        "default so two runs with the same seed produce the same homes; ``llm_enrich`` "
+        "optionally polishes furniture names and the home's overall vibe."
+    ),
+    "home.llm_enrich": (
+        "Polish the procedural home with a single LLM call per agent (furniture names + a "
+        "one-line vibe). Off by default \u2014 the procedural output is already useful and "
+        "the polish call does not affect at-home observation, only the prose."
+    ),
+    "home.inject_into_perception": (
+        "Whether to inject the at-home room/ambiance line into the agent's perception "
+        "context. Off keeps the snapshot recorded but out of the prompt."
+    ),
+    "home.record_observations": (
+        "Append one observation row per tick to ``output/home/agent_<id>.jsonl``. The "
+        "loop already computes the snapshot for perception; this keeps it for downstream "
+        "analysis (the at-home dashboard panel reads the same file)."
     ),
     "anomaly": (
         "What counts as an “anomaly”. Ordinary rain and small market moves do not; extreme "
@@ -1075,6 +1222,50 @@ MANUAL_HELP_EN: dict[str, str] = {
     "news.info_seek": (
         "Active search: not only what they happen to see, but what they go looking for. This "
         "is the bulk of the network requests."
+    ),
+    "news.info_seek.search_api": (
+        "Which environment variables hold the Brave / Tavily API keys. The keys "
+        "themselves live in .env or the environment, never here."
+    ),
+    "news.cache_ttl_hours": (
+        "How often the homepages in the source list are re-fetched, in real hours. "
+        "Restarting a run ten times in an afternoon does not change the homepages ten times."
+    ),
+    "news.sources": (
+        "The information-source layer: news RSS, Reddit / Hacker News, the Weibo / Baidu / "
+        "Bilibili hot lists and trade sites, all in one registry. Every resident gets a "
+        "media diet drawn from it by job, interests, platform dependence and openness; an "
+        "active search reads from the diet first, then falls back to the homepage cache or "
+        "a web search. Off = only the homepage list and search, as before."
+    ),
+    "news.sources.registry_path": (
+        "The source registry (JSON). Adding a feed, dropping a site this network cannot "
+        "reach, or retagging a source is an edit here, not a code change."
+    ),
+    "news.sources.ttl_hours": (
+        "How often one source is really fetched again, in real hours. However fast the "
+        "simulation runs, the news only changes a few times an afternoon."
+    ),
+    "news.sources.per_source_limit": "Items kept per source; new ones push out old ones.",
+    "news.sources.feed_visit_ratio": (
+        "Chance that one active search reads the resident's own sources; the rest go to the "
+        "homepage cache / web search. 1 = diet only, 0 = the source layer is effectively off."
+    ),
+    "news.sources.full_read": (
+        "When a feed excerpt is short, fetch the article body before reading. Hot lists and "
+        "Reddit are never fetched — those links open onto a login wall."
+    ),
+    "news.sources.full_read_min_chars": "Excerpts shorter than this trigger the body fetch.",
+    "news.sources.diet": (
+        "How a media diet is drawn: job → domain tags, interest keywords, platform "
+        "dependence scaling the social share, openness widening the diet towards "
+        "unrelated and foreign-language sources. Written to output/infosources/diets.json."
+    ),
+    "news.sources.diet.max_sources": "Sources per resident. More means a thinner share each.",
+    "news.sources.diet.en_weight": (
+        "Base weight of a source in a language the resident does not read natively. 0.5 "
+        "gives an equally relevant English source half the chance of a Chinese one; high "
+        "openness raises it."
     ),
     "news.info_seek.engines": (
         "Search engines tried in order. `x` needs a token configured; without one it is "
@@ -1159,6 +1350,41 @@ MANUAL_HELP_EN: dict[str, str] = {
         "Spontaneous impulses, chance encounters, need-driven interruptions and "
         "environment-triggered changes of plan — off makes people look very regimented."
     ),
+    "travel": (
+        "Residents leave town for a few days — a business trip, a visit to family in "
+        "another province, a holiday — and come back. While away they hold no place in "
+        "the city, meet nobody here, and add nothing to the roads. Off by default: it "
+        "changes who is present on any given day, so earlier runs are not comparable."
+    ),
+    "travel.max_away_share": (
+        "Ceiling on how many residents may be out of town at once. Without it three "
+        "independent triggers can empty the city."
+    ),
+    "travel.family.obligation_threshold": (
+        "How much relationship obligation makes an in-person visit due. Obligation "
+        "towards neglected family already rises every day; this is what finally spends it."
+    ),
+    "travel.family.daily_prob_over_threshold": (
+        "Once obligation is past the threshold, the chance of actually setting off on "
+        "any given day. People go within the week; they do not leave the moment the "
+        "guilt lands."
+    ),
+    "travel.business.base_daily_prob": (
+        "Base chance of a work trip on a weekday, then modulated by occupation — sales, "
+        "trade and consulting run far above the average."
+    ),
+    "travel.leisure.min_cash_months": (
+        "Nobody travels for pleasure while liquid savings cover fewer months of spending "
+        "than this."
+    ),
+    "travel.daily_surcharge": (
+        "Daily lodging and eating-out cost while away, settled through the economy's "
+        "conserved spending channel."
+    ),
+    "travel.fare_per_km": (
+        "One-way fare per kilometre (rail or air). A modelling guess: it decides whether "
+        "a trip is expensive, and supports no conclusion of its own."
+    ),
     "extensions": (
         "Custom extension hooks, written as \"module:function\". With `strict` on, a hook "
         "that fails to load aborts the run instead of being skipped silently."
@@ -1189,6 +1415,27 @@ MANUAL_HELP_EN: dict[str, str] = {
     "real_work.market": "A simulated job market: residents can browse it and take on tasks.",
     "real_work.external_hooks": (
         "Forward tasks to an external webhook or MCP service. Blank keeps everything local."
+    ),
+    "moltbook": (
+        "Moltbook, the social network for AI agents. Which residents are connected is decided "
+        "per resident in Agent Studio (step 7); this block says how a connected resident "
+        "behaves. Every call it makes is recorded under log_dir."
+    ),
+    "moltbook.enabled": (
+        "Off keeps every resident off Moltbook for the next run, whatever the per-resident "
+        "switches say."
+    ),
+    "moltbook.min_post_interval_seconds": (
+        "Wall-clock spacing between two posts by the same resident. Moltbook allows one per 30 "
+        "minutes; simulated days that fall inside the gap are folded into the next post."
+    ),
+    "moltbook.compose_with_llm": (
+        "On, the model writes the day up in the resident's own voice (one call per post). Off "
+        "posts a plain digest of the day's actions."
+    ),
+    "moltbook.read_feed": (
+        "After posting, read the top of the feed and record what was seen — so the log shows "
+        "what the resident read, not just what it wrote."
     ),
     "economy": (
         "The full rule set for money. What you change here is the starting condition of the "
@@ -1244,6 +1491,13 @@ MANUAL_HELP_EN: dict[str, str] = {
     "economy.macro.initial_inflation_rate": (
         "The annual inflation rate. Note it acts only on the spending side — wages do not "
         "follow, so over a long run residents can afford steadily less."
+    ),
+    "economy.macro.unemployment_from_agents": (
+        "Work the unemployment figure out by counting who actually holds a job, "
+        "instead of letting it drift on its own. With this off the town can report "
+        "5.2% unemployment while every resident is employed. Nothing in the "
+        "simulation reads the figure either way, so this only decides whether the "
+        "number you are shown is true. Retirees and students stay out of the count."
     ),
     "economy.macro.initial_unemployment_rate": (
         "A business-climate indicator; on its own it costs nobody their job. What actually "
@@ -1725,9 +1979,26 @@ MANUAL_HELP: dict[str, str] = {
     "spontaneity": "自发性：会不会突然冒出念头、临时起意做点别的。压力、疲劳、饥饿都会把这些概率往上推。",
     "concurrency": "并行度。默认串行以保证同种子可复现；开并行会快，但日内顺序不再严格一致。",
     "concurrency.day_routine_workers": "每日日程生成阶段的并发线程数。受限于模型服务端的并发能力。",
+    "run_manifest": (
+        "运行清单：结束时把 git commit、依赖版本、seed、effective config、LLM 调用统计、"
+        "artefacts 索引写到 output/run_manifests/。半年后翻回来能立刻回想起是哪一次跑出来的。"
+    ),
+    "run_manifest.enabled": "是否写清单。",
+    "run_manifest.output_dir": "清单落盘路径（JSON、可选 HTML）。",
+    "run_manifest.html_report": (
+        "同时渲染一份自包含的 HTML 报告（无外部依赖、可离线双击打开）。"
+    ),
+    "run_manifest.partial_write": (
+        "开跑时先写一份 partial 清单：正常结束不需要，异常崩溃时能留下线索。"
+    ),
     # ---- 语言模型 ----
     "llm": "多后端模型配置：providers 是可用后端清单，routing 决定哪个任务派给谁。",
-    "llm.providers": "可用的模型后端清单。密钥通过环境变量注入，不写在这里。",
+    "llm.providers": (
+        "可用的模型后端清单。密钥通过环境变量注入，不写在这里。每个后端还可以写 "
+        "`vision: true|false` 声明它收不收图片；不写就按模型名启发式判断。只有群体采访会读它，"
+        "而且是在**挂图片之前**读——纯文本模型于是拿到图片说明并被标注为降级，"
+        "而不是回一个看不懂的 400。"
+    ),
     "llm.routing": "任务怎么派给模型。",
     "llm.routing.default": "没有单独指定的任务都用这个后端。它决定了绝大部分成本。",
     "llm.routing.tasks": "给个别任务单独指定后端，比如把排日程这种量大又不需要聪明的活派给便宜的本地模型。",
@@ -1736,6 +2007,13 @@ MANUAL_HELP: dict[str, str] = {
     "llm_timeout": "旧版全局超时（秒）。新代码用各 provider 自己的 timeout。",
     # ---- 环境 ----
     "local_physical": "居民对当前所在地点的感知：挤不挤、开没开门。关掉后人对周围环境一无所知。",
+    "local_physical.record_occupancy": "把每一步每个地点的人数写进 output/records。感知循环本来就算了这个数，算完就扔，这里只是把它留下来。默认关——每步一行，而且目前只有 Track B 的重分布分析会读它。",
+    "economy.use_profile_income": "按居民简历上写的收入给他发工资，而不是照职业名再算一个。关掉的话，账本和这个人的自我描述是两回事——实测 326 人相关系数只有 0.31，账本中位数比简历高 39%，人口本来的贫富差距也被抹平了。简历上没写收入的人，两种设置下都回落到按职业估算。",
+    "economy.profile_income_jitter": "工资可以在简历那个数上下浮动多少，免得整座城的收入都是整数。设 0 就严格照简历发。",
+    "location_assignment": "居民最后住在哪、在哪上班。\u300cnearest\u300d是原来的做法：同一类职业都被派去最近的那栋楼，结果整座镇挤在少数几个地址里，大部分路上一个人都没有。\u300cgravity\u300d改成在附近的候选里挑，容量大的、离得近的更容易被选中。改这个会改变谁住哪、谁在哪上班，所以之前的运行结果不能直接拿来比。",
+    "traffic": "路上堵不堵。把这一步里居民实际走过的路按路段累加，某段路承载超过通行能力，下一步走这条路就会变慢。默认关——打开后每一趟出行的时长和花费都会变，打开前后的运行结果不可直接比较。",
+    "traffic.agents_represent": "一个仿真居民代表多少真实出行者。仿真人口是抽样，填 1 的话路上永远是空的，拥堵根本不会发生。这是个建模旋钮，不是这座城的事实：不要拿某一个取值下的结果去立论，要证明结论在一段取值范围内都成立。",
+    "traffic.suppress_rush_hour_mult": "旧的固定高峰减速倍数，是对「高峰期路上更慢」的静态代替，而这正是本层现在要从真实车流算出来的东西。保持打开，否则高峰被罚两次。打车的高峰加价是计价规则，不受影响。",
     "anomaly": "什么才算「异常」。普通的下雨和小幅行情波动不算；极端天气、突发事故、高严重度事件才算。这里只调「怎么判定异常」，判定之后反应有多大是写死在行为代码里的。",
     "distributed": "多机联跑：本机负责哪些居民、对端有哪些、消息怎么中继。单机跑用不到。",
     # ---- 新闻 ----
@@ -1744,7 +2022,19 @@ MANUAL_HELP: dict[str, str] = {
     "news.daily_chance": "每位居民每天看新闻的概率。",
     "news.max_reads_per_day": "每人每天最多读几条，防止一个人刷一整天。",
     "news.info_seek": "主动检索：不只是被动刷到，还会自己去搜。这是联网请求的大头。",
-    "news.info_seek.engines": "按顺序尝试的搜索引擎。x 需要配 Token，没配会被静默跳过。",
+    "news.info_seek.engines": "按顺序尝试的搜索引擎，谁先有结果用谁。x 要配 Token、brave / tavily 要配 API key，没配会被静默跳过；ddg 不用密钥；baidu / google / bing 是爬结果页，最不可靠，放最后兜底。",
+    "news.info_seek.search_api": "brave / tavily 的密钥从哪个环境变量读。密钥本身写在 .env 或环境里，不写在这。",
+    "news.cache_ttl_hours": "源清单里那些首页多久重抓一次（真实小时）。一下午重启十次仿真，首页并没有变十次。",
+    "news.sources": "信息源层：新闻站 RSS、Reddit / Hacker News、微博 / 百度 / B站热榜、专业网站，都登记在注册表里；每位居民按职业、兴趣、平台依赖和开放性分到一份「信息食谱」，主动检索时先从自己的食谱里读，再退回首页缓存或搜索。关掉就回到只有首页清单和搜索的老路。",
+    "news.sources.registry_path": "信息源注册表（JSON）。加一个 RSS、删一个本网络抓不到的站、改标签，都改这个文件，不用动代码。",
+    "news.sources.ttl_hours": "同一个源多久真的重新抓一次，按真实时间算。仿真跑得再快，一个下午里新闻也就更新这么几次。",
+    "news.sources.per_source_limit": "每个源在缓存里最多留几条，新的顶掉旧的。",
+    "news.sources.feed_visit_ratio": "一次主动检索有多大概率去读自己的信息源，其余走首页缓存 / 上网搜索。1 = 只看自己的食谱，0 = 等于关掉信息源层。",
+    "news.sources.full_read": "信息流里的摘要太短时，去把文章正文抓回来再读。热榜和 Reddit 不抓——那些链接打开是登录墙。",
+    "news.sources.full_read_min_chars": "摘要短于多少字才去抓正文。",
+    "news.sources.diet": "信息食谱怎么分配：职业匹配领域标签、兴趣词、平台依赖度放大社交媒体的份额、开放性把食谱拓宽到不对口和外语的源。结果写在 output/infosources/diets.json。",
+    "news.sources.diet.max_sources": "每位居民的食谱里最多几个源。多了每个源分到的概率就薄。",
+    "news.sources.diet.en_weight": "非母语信息源的基础权重。0.5 表示同样对口的英文源只有中文源一半的机会；开放性高的人会往上抬。",
     # ---- 干预 ----
     "intervention.enabled": "关掉后推荐与干预这一层完全不参与，信息流按原样呈现。",
     "intervention.exposure_control": "把毒性/不实内容的曝光压下去。阈值越低压得越狠。",
@@ -1767,6 +2057,14 @@ MANUAL_HELP: dict[str, str] = {
     "human_realism.behavior.commitment_weights": "高/中/低承诺度的活动各有多难被打断。",
     "human_realism.behavior.need_weights": "精力、饥饿、社交需求三者谁更容易打断当前活动。",
     "dynamic_behavior": "自发冲动、偶遇、需求打断、环境触发的临时改变——关掉后人会显得很按部就班。",
+    "travel": "居民会离开本市几天：出差、去外省探亲、旅行，然后回来。在外期间他不占本市任何地点、不与本市任何人照面、也不上本市的路。默认关闭——它改变每天城里还剩多少人，开启前后的 run 不可比。",
+    "travel.max_away_share": "同一天最多允许多少比例的居民在外。没有这个上限，三个触发叠加会把城市掏空。",
+    "travel.daily_surcharge": "在外每天的住宿与外食开销，走经济系统的守恒支出通道结算。",
+    "travel.fare_per_km": "每公里票价（高铁／飞机），单程。这是建模猜测值，只决定一趟出行贵不贵，不支撑任何结论。",
+    "travel.business.base_daily_prob": "工作日出差的基础概率，再按职业调制——销售、外贸、咨询远高于平均。",
+    "travel.family.obligation_threshold": "关系责任感涨到多少就该回去看看。对疏于联系的家人，这个量本来每天都在涨却无处可去，探亲是它唯一的出口。",
+    "travel.family.daily_prob_over_threshold": "越过责任感阈值之后，每天真正动身的概率。人是在一周内回去，不是内疚落地当天就走。",
+    "travel.leisure.min_cash_months": "流动储蓄低于这么多个月的开销就不去旅行。",
     # ---- 集成 ----
     "extensions": "自定义扩展钩子，写成 \"模块:函数\"。strict 打开时钩子加载失败会直接终止，而不是静默跳过。",
     "collaboration": "多人协作会话（讨论、合作任务）的并发数、上下文长度和重试次数。",
@@ -1778,6 +2076,11 @@ MANUAL_HELP: dict[str, str] = {
     "real_work.task_timeout_seconds": "单个任务的超时。卡住的任务会在这之后被放弃。",
     "real_work.market": "模拟的接活市场：居民可以去浏览并接任务。",
     "real_work.external_hooks": "把任务转发到外部 webhook 或 MCP 服务。留空表示只在本地跑。",
+    "moltbook": "Moltbook：AI 智能体的社交网络。哪些居民接进去在智能体工作台（第 7 步）逐人决定；这里只管接进去之后怎么表现。它发出的每一次调用都记在 log_dir 下。",
+    "moltbook.enabled": "关掉后下一次运行所有居民都不上 Moltbook，不管逐人开关怎么设。",
+    "moltbook.min_post_interval_seconds": "同一居民两次发帖之间的真实时间间隔。Moltbook 限制 30 分钟一帖；落在间隔里的仿真日会并进下一篇帖子，不会丢。",
+    "moltbook.compose_with_llm": "开着时由模型用居民自己的口吻把这一天写成帖子（每帖一次调用）；关掉则发一份当天行动的原样摘要。",
+    "moltbook.read_feed": "发完帖顺手读一遍信息流前几篇并记下来——记录里因此既有他说了什么，也有他看到了什么。",
     # ---- 经济 ----
     "economy": "钱的全套规则。这里改的是下一次运行的初始条件；要动正在跑的那一轮，去「外部系统 → 货币系统」排一次干预。",
     "economy.enabled": "关掉后居民没有账户、不发工资也不花钱，经济这一层完全不参与。",
@@ -1793,6 +2096,7 @@ MANUAL_HELP: dict[str, str] = {
     "economy.credit": "信贷：能借多少（按月收入的倍数）、年利率多少。利率越高，欠债的人越难翻身。",
     "economy.macro": "宏观周期：扩张 → 顶峰 → 收缩 → 谷底循环。不同阶段的涨薪和裁员概率不一样。",
     "economy.macro.initial_inflation_rate": "年通胀率。注意它只作用在支出侧——工资不跟涨，所以长期跑下来居民会越来越买不起东西。",
+    "economy.macro.unemployment_from_agents": "失业率按「到底有多少人真的有工作」统计出来，而不是让它自己随机漂。关掉的话，会出现全城人人有工作、面板上却写着 5.2% 失业的情况。仿真里没有任何东西读这个数，所以它只决定你看到的数字是不是真的。退休和在读学生不计入。",
     "economy.macro.initial_unemployment_rate": "一个景气指标，本身不会让谁丢工作；真正决定裁员的是各阶段的 layoff_risk。",
     "economy.shocks": "个体层面的意外：裁员、涨薪、医疗急症。概率是每人每期的。",
     "economy.routing": "居民花出去的钱流向谁：商户的劳动分成进企业池，房租进房东，其余按规则分配。",
@@ -1949,6 +2253,7 @@ LABELS: dict[str, str] = {
     "impulse_activity_chance": "冲动行为概率", "random_action_chance": "随机行为概率",
     "max_override_bonus": "覆盖加成上限",
     "concurrency": "并行度", "day_routine_workers": "日程生成并发数",
+    "run_manifest": "运行清单", "html_report": "HTML 报告", "partial_write": "开跑时写 partial",
     "external_rag": "外部信息注入", "bootstrap": "冷启动注入", "use_seed_script": "使用种子脚本",
     "only_when_empty": "仅在为空时", "profile_items": "画像条数", "web_items": "网络条数",
     "use_web_search": "使用联网搜索", "prefer_cached_news": "优先用缓存新闻",
@@ -1956,6 +2261,15 @@ LABELS: dict[str, str] = {
     "daily_quota_per_agent": "每人每日配额",
     # 环境 / 感知
     "local_physical": "本地环境感知", "crowd_busy_ratio": "拥挤阈值", "crowd_packed_ratio": "爆满阈值",
+    "record_occupancy": "记录每个人在哪",
+    "use_profile_income": "按简历上的收入发薪", "profile_income_jitter": "收入抖动幅度",
+    "location_assignment": "住处与工作地分配", "location_assignment.mode": "分配方式",
+    "workplace_candidates": "工作地候选数(0=不限)", "home_candidates": "住处候选数(0=不限)",
+    "distance_decay": "距离衰减指数(工作地)", "home_distance_decay": "距离衰减指数(住处)",
+    "traffic": "道路拥堵", "traffic.alpha": "BPR alpha", "traffic.beta": "BPR beta",
+    "traffic.decay": "拥堵遗留权重", "agents_represent": "一个居民代表多少出行者",
+    "max_congestion": "拥堵倍数上限", "mode_pcu": "各出行方式折算车当量",
+    "road_capacity": "各等级道路通行能力", "suppress_rush_hour_mult": "让静态高峰倍数让位",
     "inject_into_perception": "注入感知上下文", "crowd_anomaly_ratio": "异常拥挤阈值",
     "crowd_anomaly_jump": "拥挤突增阈值",
     "anomaly": "异常判定", "intraday_threshold": "日内突发阈值",
@@ -1966,6 +2280,14 @@ LABELS: dict[str, str] = {
     "server": "中继服务端", "max_messages": "消息上限", "use_llm": "使用 LLM 生成",
     # 新闻
     "news": "新闻与检索", "sources_path": "源清单", "use_cache_first": "优先用缓存",
+    "cache_ttl_hours": "首页缓存刷新间隔(真实小时)",
+    "sources": "信息源", "registry_path": "信息源注册表", "feed_cache_path": "信息流缓存",
+    "ttl_hours": "抓取间隔(真实小时)", "per_source_limit": "每源保留条数",
+    "feed_visit_ratio": "看自己信息源的比例", "full_read": "抓取正文",
+    "full_read_min_chars": "摘要短于多少字才抓正文", "diet": "信息食谱",
+    "max_sources": "每人信息源数", "en_weight": "外语信息源权重",
+    "search_api": "搜索 API 密钥", "brave_api_key_env": "Brave 密钥环境变量",
+    "tavily_api_key_env": "Tavily 密钥环境变量",
     "daily_chance": "每日阅读概率", "max_reads_per_day": "每日最多阅读",
     "memory_excerpt_chars": "写入记忆的摘录长度", "user_agent": "User-Agent",
     "info_seek": "主动检索", "base_daily_chance": "每日基准概率", "max_seeks_per_day": "每日最多检索",
@@ -2011,6 +2333,13 @@ LABELS: dict[str, str] = {
     "high": "高", "medium": "中", "low": "低", "avoidance_bonus_scale": "回避加成系数",
     "need_weights": "需求权重", "energy": "精力", "hunger": "饥饿", "social_need": "社交",
     "dynamic_behavior": "动态行为",
+    # 离城出行
+    "travel": "离开本市", "max_away_share": "在外人数上限", "fare_per_km": "每公里票价",
+    "daily_surcharge": "在外日均开销",
+    "travel.business": "出差", "travel.leisure": "旅行",
+    "obligation_threshold": "责任感阈值", "daily_prob_over_threshold": "越线后每日概率",
+    "min_cash_months": "现金下限（月）", "base_daily_prob": "基础日概率",
+    "rail": "高铁", "air": "飞机",
     # 集成
     "extensions": "扩展钩子", "strict": "严格模式", "hooks": "钩子表",
     "collaboration": "协作会话", "sessions_dir": "会话目录",
@@ -2027,6 +2356,10 @@ LABELS: dict[str, str] = {
     "browse_probability_base": "浏览基础概率", "expire_after_sim_days": "过期天数",
     "auto_replenish": "自动补货", "replenish_threshold": "补货阈值",
     "external_hooks": "外部钩子", "webhook_url": "Webhook 地址", "mcp_server": "MCP 服务",
+    "moltbook": "Moltbook", "accounts_path": "账号文件", "moltbook.log_dir": "行动记录目录",
+    "submolt": "默认版块", "min_post_interval_seconds": "发帖最小间隔(秒)",
+    "compose_with_llm": "由模型写帖子", "read_feed": "发帖后浏览信息流", "feed_limit": "浏览条数",
+    "timeout_seconds": "请求超时(秒)",
     # LLM
     "llm": "语言模型", "providers": "可用后端", "routing": "任务路由",
     "default": "默认后端", "tasks": "按任务指定", "model_name": "旧版模型名",
@@ -2049,7 +2382,7 @@ LABELS: dict[str, str] = {
     "credit": "信贷", "credit_limit_months": "授信月数", "annual_interest_rate": "年利率",
     "hardship_liquidity_months": "困难期流动性月数", "min_spend_factor": "最低消费系数",
     "macro": "宏观周期", "initial_inflation_rate": "初始通胀率",
-    "initial_unemployment_rate": "初始失业率", "cycle_phase_duration_days": "阶段时长区间（天）",
+    "initial_unemployment_rate": "初始失业率", "unemployment_from_agents": "失业率按居民实际统计", "cycle_phase_duration_days": "阶段时长区间（天）",
     "phases": "阶段顺序", "phase_effects": "各阶段效应", "income_mult": "收入乘数",
     "expense_mult": "支出乘数", "layoff_risk": "裁员概率", "raise_chance": "涨薪概率",
     "industry_conditions": "行业景气度", "expansion": "扩张期", "peak": "顶峰期",

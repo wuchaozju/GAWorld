@@ -79,6 +79,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 大五人格（OCEAN）：每位居民带一组 O/C/E/A/N 的 z 分数，通过三条可独立开关的通道影响行为——`rules`（确定性、零 token：动作选择里的加性 style-fit 分量，中断阈值 / 自发行为 / 社交偶遇概率 / 决策噪声 / 冲动绕过 / 财富驱动上的有界乘子，以及个人情绪基准点）、`prompt`（把人格锚句注入日程生成、活动调整、目标与新闻 prompt）、`voice`（锚句只进日记 prompt）。三条通道分开，才能让实验把「决策变了」和「文风变了」分开归因。特质在构建智能体时一次性种入——有 `data/agents_big5.csv` 就用离线生成的值（**先独立采样五维分数，再据此改写每个人 profile 里的行为描述**，而不是从 profile 文本反推分数），没有就从带相关结构的人口先验采样——且运行期间不漂移（成年人的 OCEAN 每十年只变 0.1–0.2 个标准差）。没有特质的智能体、或被关掉的通道，行为与加人格之前**逐位一致**
 - 家庭与户：按年龄段 × 性别抽样婚姻状态（未婚/已婚/离异/丧偶），匹配得上的居民在仿真内配成夫妻并**共享同一个住处**，配不上的补场外家人；子女、同住长辈、合租室友随之生成。户型（独居/合租/与父母同住/未婚同居/夫妻二人/核心家庭/单亲/三代同堂）是分配结果的**读数**而不是预设配额。家庭进入日程（接送、陪写作业、照料老人、回家吃晚饭）、账本（育儿与赡养开销按收入分摊、伴侣互相补现金缺口，全程货币守恒）、事件（一件家事同一 tick 落到全家人身上）与户内情绪传染；可在配置面板调整整体分布，也可在 Agent Studio 里逐人精确指定并跨运行生效
 - 真实位置系统：基于类别的空间匹配、出行成本计算、高峰时段和天气影响、通勤记忆
+- 离开本市（出差 / 探亲 / 旅行，**默认关**）：城市不再是封闭的盒子——居民会离开几天再回来。三类出行各由系统里已有的量驱动：出差看职业（销售 / 外贸 / 咨询远高于图书管理员）在工作日触发、活动仍是工作因而收入照常；探亲由关系 obligation 与距上次联系的天数触发——这是社交模块每天都在抬高、此前却**无处可去**的那个量的第一个出口，回去一趟会重置联系日并让 obligation 回落；旅行要周末 + 够用的流动储蓄 + 大五开放性 + 累积压力。目的地是**真实距离**（复用数字孪生的省级中心点与 haversine，起点取地图自身的几何中心节点），按距离分高铁 / 飞机定时长与票价。在外期间不占本市任何地点的拥挤度、不与本市任何人构成共处、不上本市的路，家庭责任改为明说「你不在家」而非静默消失。全程纯规则、按种子可复现，不调用 LLM
 - 动态行为系统：情绪驱动的即兴行为、社交偶遇链、需求中断、环境事件连锁反应、承诺度感知的日程中断
 - 物理环境感知与反应式重规划：节点级拥挤度 / 营业时间感知、异常检测、当日受影响区间重排、习得的地点规避偏好
 - 兴趣爱好与技能成长系统：为每个智能体生成兴趣、计划发展的技能、练习时间、成长进度，并影响日程、行动、工作和生活选择——含幂律学习曲线、连击动量、里程碑事件、日终遗忘衰减、兴趣发展四阶段与社交兴趣传染
@@ -98,6 +99,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - Population Studio：5 步 dashboard 面板，生成人口 → 群体模拟 → 阅读验证结论，并带实时可行性预检（参数冲突时直接指出该动哪个旋钮）
 - 外部系统观测台：观察并编辑世界本身——货币系统（宏观周期、部门池、每日货币守恒审计、财富分布与基尼）、外部环境生成器、对外服务连接。配置表单按配置自身的 JSON 形状生成（约 150 个旋钮，加旋钮不用改面板），并可对**跑着的**仿真排一次货币干预，由仿真在下一个日边界消费；给部门池注资会同步移动守恒基准，因此审计把有意的注资记成注资而不是漏钱
 - 平行世界实验台：把一座城市分叉成 N 段历史——共用同一批居民、同一个随机种子、同一个天数与模型，唯一的区别是发生了什么。每个世界带自己的事件表（也可以带自己的 config 补丁，对应「政策」而非「事件」），跑在完全隔离的记忆 / 状态 / 日志目录里。报告逐步测量每个世界与基准的距离，因此能回答两段历史**从哪一步开始分叉**，而不只是终局差了多少，并指出这件事真正落在了哪些居民身上。在控制台的「平行世界」标签页里交互式设计与查看；每个世界的轨迹仍可逐帧回放，已有的 compare-event 结果也会被适配进同一个视图，无需在磁盘上改写
+- 游戏场：拿真实居民当对手玩一局。**斗兽场**——一组居民同台答题（内置题库或 LLM 现场出题），按正确率 + 中位耗时排座次，留存 Top-K、其余淘汰、再从别的城市补人。**说服游戏**——挑一个居民问一个有立场的问题记下他的答案，在设定的最大轮数内跟他聊天试图说服；结束时复问同一个问题，裁判模型比较首尾两个答案，**核心结论真的变了**才算说服成功（措辞变化、让步但结论不变都不算）。他的职业、性格与价值观直接进提示词，所以同一套说辞对不同的人效果不同。对局只在内存里，不写回城市包。见 [`docs/PLAYGROUND_TUTORIAL.md`](./docs/PLAYGROUND_TUTORIAL.md)
 - 多机分布式 relay 通信模式
 
 ## 项目结构
@@ -126,10 +128,12 @@ GAWorld/
 │   ├── sim/                       # 仿真子模块（schedule、location、cognition、rag…）
 │   ├── skills/                    # 可复用 Skill 库（registry、Markdown schema、提示注入、经验提炼）
 │   ├── social/network.py          # 社交网络（衰减、Dunbar 分层、ghost 事件）
+│   ├── travel/                    # 离开本市（destination、trigger、itinerary + plugin.py：出差 / 探亲 / 旅行）
 │   ├── work/                      # 工作任务系统（queue、market、router、adapters）
 │   ├── city/                      # 从地名造城（地理编码、OSM 抓取、程序化兜底、城市包）
 │   ├── world/city_map.py          # 城市地图（图结构、路线、出行成本、空间查询）
 │   ├── world/local_physical.py    # 局部物理感知（占用 / 营业快照、人流骤增异常、感知注入）
+│   ├── world/away.py              # 「异地」的唯一定义（数字孪生的真实位置与仿真出行共用同一个标记）
 │   ├── hooks.py                   # 生命周期钩子（HookBus）
 │   ├── interests.py               # 兴趣与成长画像
 │   └── logging_setup.py           # 日志配置
@@ -158,9 +162,9 @@ GAWorld/
 - `gaworld/population/`：参数化人口合成——`schema`（旋钮契约 + 可行性预检）、`synth`（IPF + 条件采样 + 收入秩变换）、`network`（家庭、工作单位、同质性社交图）、`report`（校验门 + 复核图表）、`writer`（状态 CSV + profile MD + manifest）
 - `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（观测型 cohort 遥测）
 - `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）、`knowledge`（联网搜集的产业与就业画像，带分层兜底）、`news`（按真实时间抓取、按仿真时间投喂的本地新闻）、`context`（城市知识影响居民的四条通道统一出口）
-- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及三个面板后端 `population_api`（Population Studio）、`city_api`（城市）与 `external_systems_api`（外部系统观测台）
+- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及各面板后端 `population_api`（Population Studio）、`city_api`（城市）、`interview_api`（群体采访）、`external_systems_api`（外部系统观测台）、`arena_api`、`games_api`、`disaster_api` 与 `rumor_api`（游戏场：斗兽场 / 说服游戏 / 灾害模式 / 谣言扩散局）
 - `gaworld/parallel/`：平行世界实验——`spec`（世界/事件校验 + 各世界磁盘隔离的配置覆盖）、`runner`（用小型进程池分叉 N 个世界并跟踪进度）、`analysis`（逐步偏离度、分叉点、逐人影响）
-- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 外部系统 `external.html` + 平行世界 `worlds.html`）
+- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 群体采访 `survey.html` + 外部系统 `external.html` + 平行世界 `worlds.html` + 游戏场 `games.html` / 斗兽场 `arena.html` / 说服游戏 `persuade.html` / 灾害模式 `disaster.html` / 谣言扩散局 `rumor.html`）
 - `site/simviz/`：轨迹回放页面
 - `output/`：生成结果
 
@@ -357,6 +361,16 @@ python -m gaworld.city use 绍兴柯桥
 `background` 提示词会整体指向该城市包——最后这项不换掉的话，新城市里的智能体
 会一边住在柯桥、一边以为自己还在杭州。同样的操作也在控制台的 **城市** 标签页里。
 
+**任意一座城市的居民都可以不切换就查看**，直接读城市包：
+`GET /api/city/catalogue`（可选城市列表，含**默认世界**与人数）、
+`GET /api/city/agents?city=<slug>&q=&limit=&offset=`（可搜索、分页的居民列表，
+`city` 省略即默认世界）、`GET /api/city/agent?city=<slug>&id=<n>`
+（单个居民：身份 + 九个状态变量 + profile 原文）。城市面板会列出他们，
+Agent Studio 的城市选择器也能浏览，但**只有当前运行城市的居民可以编辑**——
+编号在每座城市各自从 1 开始，而记忆、大五人格、社交与财务是**按编号存放的一个扁平
+命名空间**、属于当前运行的那座城，跨城市编辑会写到别人身上。这些读取复用
+`gaworld/interview/roster.py` 里的人口解析，不新增一份会和 profile 格式脱节的副本。
+
 只想换张地图、不在乎它对应哪个真实地方，旧的单地图生成器仍然可用：
 
 ```bash
@@ -400,7 +414,7 @@ python -m gaworld.group.validate --size 100 --days 14 --network-coupling 0.7
 - 启动 / 停止仿真
 - 查看轨迹回放
 - 查看单个智能体记忆
-- 执行访谈
+- 执行访谈（单个智能体，以及「群体采访」面板问一群人）
 - 查看运行日志
 
 dashboard 会把本地覆盖参数写入 `dashboard_config.json`。
@@ -473,6 +487,35 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 
 生成与模拟都是异步 job，500 人的生成不会把浏览器卡住。
 
+### 群体采访
+
+单人访谈回答的是「31 号居民怎么想」，这个面板回答的是另一个问题：
+**「这群人怎么想，答案会不会按城市／年龄／户籍分化」**。控制台 tab（**群体采访**）或
+`http://127.0.0.1:8766/site/dashboard/survey.html`。三步：
+
+1. **选受访者** —— 个体居民**和** cohort 群体智能体，一场会话里**可跨城市**。
+   名单直接读自城市 bundle，跨城市才成立；群体按磁盘上真实存在的维度划分
+   （年龄段、户籍、性别、片区）。右栏在花钱之前就显示受访者数、代表人数和**模型调用次数**。
+2. **出题** —— 每题选题型（开放题／选择题／是非题），选择题填选项、可允许多选；
+   每题可附一张图片或一个网址。
+3. **看结果** —— 每题的摘要、选项统计、分组分布、每个人的原话，以及「继续追问」
+   和「下载完整 Markdown」。
+
+| 方法 | 接口 | 用途 |
+|------|------|------|
+| GET | `/api/interview/roster` | 城市、居民、群体、划分维度与可用模型——一次请求拿齐 |
+| POST | `/api/interview/plan` | 校验并回报这一轮要花多少，不花钱 |
+| POST | `/api/interview/run` | 起一轮 → `job_id` |
+| GET | `/api/interview/jobs/{id}` | 轮询进度 / 结果 |
+| GET | `/api/interview/sessions` | 历史会话 |
+| GET | `/api/interview/sessions/{id}` | 一次会话的全部内容 |
+| GET | `/api/interview/sessions/{id}/export` | Markdown 文档 |
+| POST | `/api/interview/delete` | 删一次会话 |
+
+所有路径都带尾段，原来的单人采访端点 `POST /api/interview`（Agent Studio 的采访框）
+因此**完全没有变**。跑一轮是后台任务，按城市一个子进程；会话落在
+`output/interviews/<session_id>/`。详见[群体采访教程](./docs/GROUP_INTERVIEW_TUTORIAL.md)。
+
 ### 外部系统观测台
 
 前两个面板对着 agent，这个面板对着**世界本身**。控制台 tab（**外部系统**）或
@@ -543,6 +586,77 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 安慰剂的偏离度就是噪声底噪，真实效应必须明显高过它。
 
 完整教程见 [平行世界教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)。
+
+### 游戏场
+
+前面的面板都在**观察**这些居民，这个面板让你**下场跟他们玩**。控制台「**游戏场**」页签，或直接打开
+`http://127.0.0.1:8766/site/dashboard/games.html`。大厅里目前四个游戏：
+
+**斗兽场**（`arena.html`）：勾一组居民、勾一批题（内置 10 道覆盖数学 / 常识 / 逻辑 / 阅读 / 翻译，
+也可以让 LLM 现场出题），跑完按正确率 + 中位耗时排座次；填一个 Top-K 就把其余的人标记为淘汰，
+再从别的城市拉人或走批量导入补齐。淘汰只是内存里的标记，不会动城市包里的档案。
+
+**说服游戏**（`persuade.html`）：挑一个对手，问一个**有立场可选**的问题（支持还是反对、搬还是不搬），
+记下他的第一答案；然后在设定的最大轮数内跟他聊天，想办法说动他。最后一轮用完会自动复问，
+也可以随时点「复问并结算」提前收手。裁判模型只比较首尾两个答案，**核心结论真的变了**才算赢——
+措辞变了、让步了但结论没变，一律判没说动。
+
+他的职业、性格、日常与价值观整段进提示词，而回应的提示词里写死了「理由不够贴合你的处境和价值观
+就坚持己见，不要为了客气而附和」——没有这句，模型会一路顺着玩家走，这个游戏就没有难度了。
+所以同一套说辞对不同的人效果不同：一个「对公共事务关注有限」的人和一个把公共利益看得很重的人，
+需要的是完全不同的说法。
+
+**谣言扩散局**（`rumor.html`）：写一条传闻，交给两个居民，看它沿着熟人关系往外走。
+
+这里有个必须说清楚的事实：**城市包里没有居民之间的关系边**。熟人关系是仿真跑起来之后才长出来的，
+落盘在 `output/memory/` 的多半还是 ghost（城外的亲友），而且没有城市归属——agent #13 在两座城里
+是两个人。所以这个游戏按档案**确定性地推导**一张图：同小区＝邻居（0.55），同小区同姓＝亲属（0.9），
+同行 / 同学各 0.5，跨小区的同龄人＝弱关系（0.25），每人最多留 6 条边。
+「无业 / 退休 / 学生」这几个大桶不算同事——不然一个典型城市包里四分之一的人会变成同一个办公室的。
+图是免费的：勾人的时候右边就画出来，不花任何模型调用。
+
+每个人只回一个小 JSON：信任度 0-100 + 四选一的做法（转发 / 私下求证 / 辟谣 / 不管）+ 一句原话。
+**模型决定传不传，图决定传给谁**——转发落到最多 4 个还没听说的熟人，私下求证落到最亲近的那一个
+（"求证"本身也是一种扩散），辟谣落到所有熟人。让模型自己点名字只会带来编造的人名。
+每人只开口一次，例外是"信了之后被人当面辟谣"的人可以再开口一次；没有这个例外，辟谣就是个没有后果的选项。
+
+提示词里有一句和说服游戏同源的约束：**不是每个人都会先去核实**。中性地问，七个人会给出七个一模一样的
+「我先问问在银行上班的朋友」；加上这句，同一批人里才会同时出现"信 72% 直接转发"的和"不管，群里天天有"的。
+
+---
+
+**灾害模式**（`disaster.html`）：勾一批居民（最多 12 人），选一场灾难——地震、疫情、战争、洪水、
+大停电，或者自己写一个——然后分幕推演。每个人每一幕只问一次，要求返回一个小 JSON：
+从**避险逃离 / 囤积物资 / 救助他人 / 求助求援 / 照常生活 / 打探消息**里选一类行动，
+外加具体做法、恐慌值（1-5）、顾不顾得上别人、一句原话。行动落在固定词表里，所以分布图不用再花一次钱
+去分类；解析失败的那一条降级成「其他」，只毁一格，不毁整场。
+
+第二幕起，提示词里会多一句「你看到身边的人：4 人囤积物资、2 人避险逃离」——这行是从上一幕的统计里
+直接拼出来的，不额外调用模型。没有它，每一幕都是独立抽样，灾难里最值得看的东西（从众、跟风抢购，
+或者偏偏有人不跟）根本不会出现。跑完给出逐幕的行动分布、平均恐慌与互助率、每个人的卡片，
+最后一次调用写一段城市简报。
+
+| 方法 | 端点 | 用途 |
+|------|------|------|
+| GET | `/api/games/agents?city=` | 可选对手列表（`city` 留空 = 默认世界） |
+| POST | `/api/games/persuasion/start` | 开局：问第一个问题，返回完整 session |
+| POST | `/api/games/persuasion/say` | 聊一轮；用完最后一轮时连带结算 |
+| POST | `/api/games/persuasion/settle` | 复问 + 裁判，`outcome ∈ {success, failed}` |
+| GET | `/api/games/persuasion/sessions[/<id>]` | 对局列表 / 单局回看 |
+| GET | `/api/games/disaster/catalogue` | 灾难库（地震 / 疫情 / 战争 / 洪水 / 大停电）与各项上限 |
+| POST | `/api/games/disaster/run` | 开一场推演，返回 `{job_id}` |
+| GET | `/api/games/disaster/jobs/<id>` | 进度；跑完 `result` 是整场推演 |
+| GET | `/api/games/disaster/runs` | 本次运行跑过的场次（最多 20 场） |
+| GET | `/api/games/rumor/catalogue` | 传闻库与各项上限 |
+| GET | `/api/games/rumor/graph?city=&agent_ids=` | 关系图预览（**不花模型调用**） |
+| POST | `/api/games/rumor/run` | 放出一条传闻，返回 `{job_id}` |
+| GET | `/api/games/rumor/jobs/<id>` | 进度；跑完 `result` 含传播树与统计 |
+
+说服游戏一局的成本是 `1 + 轮数 + 2` 次模型调用（默认 5 轮 = 8 次），轮数上限锁在 20；
+灾害模式一场是 `人数 × 幕数 + 1` 次；谣言局封顶 `人数 × 2 + 1` 次，与轮数无关。
+对局只存在内存里（说服 50 局 / 灾害 20 场 / 谣言 20 场），重启 dashboard 就清空——它是个沙盒，不该改变城市里的人。
+
+完整教程见 [游戏场教程](./docs/PLAYGROUND_TUTORIAL.md)。
 
 ## 手机端数字孪生
 
@@ -615,6 +729,7 @@ CONFIG["pipeline"]["agent_step"] = [
 - `economy`：个人财务配置（税率表、社保费率、恩格尔曲线、投资参数含 `market_correlation`、宏观周期、冲击事件、部门池 `sectors`、信贷 `credit`、支付路由 `routing`、熟人借贷 `friend_loans`）
 - `interests`：兴趣爱好与技能成长配置（启用开关、成长项上限、日程插入倾向、进度持久化、日终遗忘衰减 `decay`、兴趣集演化 `evolution`）
 - `dynamic_behavior`：动态行为系统配置（启用开关）
+- `travel`：离开本市（**默认关**）——三类出行各自的触发与天数（`business` / `family` / `leisure`）、在外人数上限 `max_away_share`、票价 `fare_per_km`、在外日均开销 `daily_surcharge`、种子 `seed`
 - `environment.local_physical` / `environment.anomaly` / `environment.replan` / `environment.spatial_preferences`：物理感知与反应式重规划的开关与阈值
 - `skills`：可复用 Skill 库配置（全局目录、认知 / work brief 注入、单提示上限）
 - `memory.skill_consolidation`：经验 → Skill 提炼配置（启用、周期、回看天数、最少 episode 数）
@@ -1049,10 +1164,13 @@ LLM 调用之前完成决策。
 - [社交网络 — 设计](./docs/SOCIAL_NETWORK_DESIGN.md) · [教程](./docs/SOCIAL_NETWORK_TUTORIAL.md)
 - [家庭系统 — 设计](./docs/FAMILY_DESIGN.md)（婚姻抽样、共居、家庭日程与账目、覆盖层与工作台编辑面板）
 - [群体模拟 — 教程](./docs/GROUP_SIMULATION_TUTORIAL.md) · [设计](./docs/GROUP_AGENT_DESIGN.md)（人口合成、cohort 模式、L1–L4 验证门）
+- [群体采访 — 教程](./docs/GROUP_INTERVIEW_TUTORIAL.md)（跨城市问一群人：题型与统计、图片/网址材料及其降级、连续追问、分组分布怎么读、HTTP 接口）
 - [外部系统 — 教程](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md)（货币系统、外部环境、对外服务的观察与编辑，以及运行时干预）
 - [平行世界 — 教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)（多分支反事实实验：设计实验、读分叉与偏离图、剂量反应设计，以及为什么要先跑安慰剂世界）
+- [游戏场 — 教程](./docs/PLAYGROUND_TUTORIAL.md)（斗兽场排座次与留存、说服游戏的判定规则与 HTTP 接口、怎么加一个新游戏） · [斗兽场 — 教程](./docs/ARENA_TUTORIAL.md)
 - [大五人格（OCEAN）— 设计](./docs/proposals/2026-08-20-big-five-personality.md)（三条独立通道、效应量与共线性两道合入门、离线特质标定）
 - [手机端数字孪生](./docs/TWIN_MOBILE.md)（通过 HTTPS 隧道让手机连上、邀请码绑定、镜像/感知/标定三条通道，以及为什么孪生服务必须与控制台分进程）
+- [API 参考](./docs/API_REFERENCE.md)（Dashboard / Twin / Agent Relay / External Environment 全部 HTTP 端点、所有 CLI 子命令，以及把 GAWorld 嵌入自己脚本的 Python 入口）
 - [项目结构](./docs/PROJECT_STRUCTURE.md)
 - [仓库规范](./AGENTS.md)
 - [更新日志](./CHANGELOG.md)

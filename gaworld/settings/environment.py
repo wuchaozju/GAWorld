@@ -10,6 +10,77 @@ def environment_settings() -> dict[str, Any]:
         # Local physical perception (P0): wires the city map's per-node
         # occupancy / opening-hours state — previously dead code — into the
         # cognition loop so agents perceive their *current* surroundings.
+        # Endogenous road congestion (P1): the city map's per-edge travel-time
+        # multiplier — read by ``travel_plan`` since day one, never written —
+        # is now recomputed each tick from the trips agents actually made.
+        # Off by default: it changes every trip's duration and cost, so runs
+        # from before it was switched on are not comparable.
+        # How a resident picks a way to travel. "scored" weighs every feasible
+        # mode against the others by travel time plus fare converted to time at
+        # the traveller's own value of time — the standard discrete-choice
+        # form, and the only version in which a car owner can drive a short
+        # trip. Off because it is not calibrated: its comfort parameters
+        # outnumber the published shares available to fit them against.
+        "mode_choice": {
+            "scored": False,
+        },
+        # Who has a bike or an e-bike. Cars were modelled; the thing most
+        # people actually ride was not, so every resident was treated as
+        # having one and the cheapest, quickest option was always available.
+        # Anchor: China's e-bike stock passed 400 million in 2024 against
+        # ~1.41 billion people (~0.28 each, all ages); ownership among
+        # working-age commuters runs higher than that.
+        "two_wheeler_ownership": {
+            "enabled": True,
+            "pivot_income_multiple": 0.35,
+            "spread": 1.1,
+            "riding_age": 16,
+        },
+        # Who can choose to drive. Mode choice had no ownership test at all,
+        # so a 6-10km trip without metro access simply became a car trip.
+        # Ownership rises with income on a logistic in log-income, with the
+        # 50% point at a multiple of *this* population's median so the same
+        # numbers carry over to a richer or poorer town.
+        "car_ownership": {
+            "enabled": True,
+            "pivot_income_multiple": 1.2,
+            "spread": 0.55,
+            "driving_age": 18,
+        },
+        "traffic": {
+            "enabled": False,
+            # BPR link performance function: t = t0 * (1 + alpha*(v/c)^beta).
+            # The standard parameterisation; beta=4 gives "free until ~80% of
+            # capacity, then a cliff" without any extra thresholding.
+            "alpha": 0.15,
+            "beta": 4.0,
+            # How many real travellers one simulated agent stands for. The
+            # population is a *sample*, so at 1.0 the volume/capacity ratio is
+            # ~0 and congestion never happens. This is a MODELLING KNOB, not a
+            # demographic fact — results that depend on the absolute level of
+            # congestion must be argued across a range of values, not at one.
+            "agents_represent": 1.0,
+            # Ceiling on the multiplier, so beta=4 cannot produce absurd trips.
+            "max_congestion": 3.0,
+            # Weight of the previous tick's congestion when blending in this
+            # tick's. Keeps jams easing off instead of snapping to free flow.
+            "decay": 0.5,
+            # Passenger-car equivalents per transport mode. Walking and metro
+            # are off-road; a bus takes more road space than a car.
+            "mode_pcu": {
+                "car": 1.0, "taxi": 1.0, "bus": 2.0,
+                "e-bike": 0.2, "bike": 0.2, "walk": 0.0, "metro": 0.0,
+            },
+            # One-direction capacity in PCU per hour, by road class.
+            "road_capacity": {
+                "arterial": 1800.0, "collector": 900.0, "local": 400.0, "road": 900.0,
+            },
+            # RUSH_HOUR_TIME_MULT is a static stand-in for peak-hour slowdown
+            # — the very thing modelled here. Leaving both on counts it twice,
+            # so the time-side multiplier steps aside while this layer is on.
+            # (The taxi rush-hour surcharge is a fare rule and is unaffected.)
+            "suppress_rush_hour_mult": True,
+        },
         "local_physical": {
             "enabled": True,
             # Crowding labels are derived from occupancy / capacity.
@@ -21,6 +92,27 @@ def environment_settings() -> dict[str, Any]:
             # packed *and* occupancy jumped sharply versus the previous tick.
             "crowd_anomaly_ratio": 0.9,
             "crowd_anomaly_jump": 0.25,
+            # Write the per-tick occupancy the perception loop already computes
+            # to the recorder. Off by default: it is one row per tick and only
+            # the Track B redistribution analysis reads it.
+            "record_occupancy": False,
+        },
+        # P5: per-agent home design + at-home perception. Default-on so a
+        # fresh checkout ships with every resident having a home; turn it
+        # off (or set ``enabled=False``) if a run is comparing apples to
+        # apples against the pre-P5 baseline.
+        "home": {
+            "enabled": True,
+            # Seed for the procedural home generator. Deterministic per agent
+            # id, so two runs with the same seed produce the same homes.
+            "seed": 42,
+            # When on, the procedural home gets passed through an LLM that
+            # polishes furniture names and writes a one-line ``vibe``.
+            "llm_enrich": False,
+            # Inject the at-home room/ambiance line into perception prompts.
+            "inject_into_perception": True,
+            # Append one observation row per tick to ``output/home/agent_<id>.jsonl``.
+            "record_observations": True,
         },
         # Anomaly modelling (P2): promotes "异常" to a first-class signal on
         # top of the continuous ``severity``. Routine fluctuations (ordinary

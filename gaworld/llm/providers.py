@@ -10,6 +10,7 @@ import requests
 
 from gaworld.settings import CONFIG
 from gaworld.logging_setup import get_logger
+from gaworld.llm.stats import GLOBAL_STATS
 
 _LOG = get_logger("gaworld.llm")
 
@@ -204,7 +205,7 @@ class OllamaProvider:
             return bool(self.vision)
         return _model_looks_multimodal(self.model)
 
-    def call(self, prompt, system=None, temperature=None, images=None):
+    def call(self, prompt, system=None, temperature=None, images=None, max_tokens=None):
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -216,8 +217,13 @@ class OllamaProvider:
             payload["images"] = [item["data"] for item in cleaned]
         if system:
             payload["system"] = system
+        options = {}
         if temperature is not None:
-            payload["options"] = {"temperature": float(temperature)}
+            options["temperature"] = float(temperature)
+        if max_tokens is not None:
+            options["num_predict"] = int(max_tokens)
+        if options:
+            payload["options"] = options
 
         def _do() -> str:
             try:
@@ -287,7 +293,7 @@ class OpenAIProvider:
             return bool(self.vision)
         return _model_looks_multimodal(self.model)
 
-    def call(self, prompt, system=None, temperature=None, images=None):
+    def call(self, prompt, system=None, temperature=None, images=None, max_tokens=None):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -318,8 +324,9 @@ class OpenAIProvider:
             "model": self.model,
             "messages": messages,
         }
-        if self.max_tokens is not None:
-            payload["max_tokens"] = self.max_tokens
+        effective_max_tokens = self.max_tokens if max_tokens is None else int(max_tokens)
+        if effective_max_tokens is not None:
+            payload["max_tokens"] = effective_max_tokens
         # A per-call temperature wins over the provider default: an experiment
         # that needs T=1 sampling must not be silently pinned to the config's
         # T=0.2, which would collapse the draw-to-draw variation it measures.
@@ -398,7 +405,7 @@ class OpenAIProvider:
             data = r.json()
             choice = (data.get("choices") or [{}])[0]
             _note_truncated(
-                f"openai:{self.model}", choice.get("finish_reason"), self.max_tokens
+                f"openai:{self.model}", choice.get("finish_reason"), effective_max_tokens
             )
             return data["choices"][0]["message"]["content"]
 
@@ -506,7 +513,7 @@ class AnthropicProvider:
             return bool(self.vision)
         return _model_looks_multimodal(self.model)
 
-    def call(self, prompt, system=None, temperature=None, images=None):
+    def call(self, prompt, system=None, temperature=None, images=None, max_tokens=None):
         if not self.api_key:
             env_names = ", ".join(self.api_key_envs) or "ANTHROPIC_API_KEY"
             raise ValueError(f"Anthropic provider API key not found. Set one of: {env_names}")
@@ -533,7 +540,7 @@ class AnthropicProvider:
             content = prompt
         payload = {
             "model": self.model,
-            "max_tokens": self.max_tokens,
+            "max_tokens": self.max_tokens if max_tokens is None else int(max_tokens),
             "messages": [{"role": "user", "content": content}],
         }
         effective_system = system or self.system
@@ -591,10 +598,10 @@ class AnthropicProvider:
                         block_types=[
                             block.get("type") for block in data.get("content", []) if isinstance(block, dict)
                         ],
-                        max_tokens=self.max_tokens,
+                        max_tokens=payload["max_tokens"],
                     )
                 _note_truncated(
-                    f"anthropic:{self.model}", data.get("stop_reason"), self.max_tokens
+                    f"anthropic:{self.model}", data.get("stop_reason"), payload["max_tokens"]
                 )
                 return text
             except requests.exceptions.HTTPError as exc:
@@ -814,6 +821,7 @@ class LLMRouter:
         temperature=None,
         allow_fallback=True,
         images=None,
+        max_tokens=None,
     ):
         chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
         if not allow_fallback:
@@ -834,6 +842,8 @@ class LLMRouter:
             overrides["system"] = system
         if temperature is not None:
             overrides["temperature"] = temperature
+        if max_tokens is not None:
+            overrides["max_tokens"] = max_tokens
         cleaned_images = _clean_images(images)
         if cleaned_images:
             overrides["images"] = cleaned_images
@@ -849,6 +859,12 @@ class LLMRouter:
                 if not str(result or "").strip():
                     raise _empty_completion(provider_name)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
+                GLOBAL_STATS.record(
+                    task=task or "",
+                    provider=provider_name,
+                    latency_ms=elapsed_ms,
+                    ok=True,
+                )
                 log.debug(
                     "llm.call ok id=%s provider=%s fallback_index=%d task=%s agent=%s "
                     "prompt_chars=%d completion_chars=%d latency_ms=%d",
@@ -864,6 +880,16 @@ class LLMRouter:
                 return result
             except Exception as exc:
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
+                # Record the failure attempt. A subsequent fallback
+                # provider will record its own outcome; we still want
+                # the failing attempt to show up in the failure count
+                # so that operators see the true rate.
+                GLOBAL_STATS.record(
+                    task=task or "",
+                    provider=provider_name,
+                    latency_ms=elapsed_ms,
+                    ok=False,
+                )
                 log.warning(
                     "llm.call err id=%s provider=%s fallback_index=%d task=%s agent=%s "
                     "prompt_chars=%d latency_ms=%d error=%s",
@@ -950,6 +976,7 @@ def call_llm(
     temperature=None,
     allow_fallback=True,
     images=None,
+    max_tokens=None,
 ):
     """Public helper for model calls used across the simulator.
 
@@ -973,6 +1000,12 @@ def call_llm(
     entries, forwarded only when non-empty so provider-shaped test doubles
     whose ``call`` takes the prompt alone keep working. Check
     :func:`provider_supports_images` first — this function does not.
+
+    ``max_tokens`` raises (or lowers) the output cap for one call. The
+    configured default suits this simulator's usual turn — one event, one
+    decision, a short profile — so a caller that needs a whole structured
+    document has to say so, or the provider truncates it mid-JSON and every
+    parser downstream sees malformed input rather than a budget problem.
     """
     return LLM_ROUTER.call(
         prompt,
@@ -983,6 +1016,7 @@ def call_llm(
         temperature=temperature,
         allow_fallback=allow_fallback,
         images=images,
+        max_tokens=max_tokens,
     )
 
 

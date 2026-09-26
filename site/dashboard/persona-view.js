@@ -108,11 +108,22 @@
       voice.certainty && t("v_certainty", "确定性") + "：" + voice.certainty,
     ].filter(Boolean);
 
+    /* "No framework" has two causes and they call for opposite actions:
+       thin evidence means go find better sources, an unusable model answer
+       means press the button again. Saying "the material is too thin" when the
+       model simply returned broken JSON sends the operator the wrong way. */
+    const broke = p.framework_error
+      ? '<p class="pd-warn">' + esc(p.framework_error) + "</p>"
+      : "";
+
     return (
       '<div class="pd-card">' +
+      broke +
       "<h4>" + esc(t("models", "心智模型")) + "</h4>" +
       (models ? "<ul class='pd-models'>" + models + "</ul>"
-              : '<p class="pd-empty">' + esc(t("no_models", "材料不足以支撑跨领域复现的心智模型。")) + "</p>") +
+              : '<p class="pd-empty">' + esc(p.framework_error
+                  ? t("models_failed", "这一轮没能提炼出来（见上）。")
+                  : t("no_models", "材料不足以支撑跨领域复现的心智模型。")) + "</p>") +
       "<h4>" + esc(t("heuristics", "决策启发式")) + "</h4>" +
       (heuristics ? "<ul>" + heuristics + "</ul>"
                   : '<p class="pd-empty">' + esc(t("no_heuristics", "未提炼出可复用的决策规则。")) + "</p>") +

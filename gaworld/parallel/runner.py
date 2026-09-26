@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -205,6 +206,10 @@ class ExperimentRunner:
         self._lock = threading.Lock()
         self._procs: dict[str, subprocess.Popen] = {}
         self._stop = threading.Event()
+        #: Set = running. Cleared by :meth:`pause`, which also suspends the
+        #: world processes themselves; the event only gates *new* worlds.
+        self._go = threading.Event()
+        self._go.set()
         self._states: dict[str, dict[str, Any]] = {
             world_id: {
                 "id": world_id,
@@ -283,6 +288,7 @@ class ExperimentRunner:
                 )
                 return
 
+        self._wait_until_go()
         if self._stop.is_set():
             self._set(world_id, status="stopped", finished_at=time.time())
             return
@@ -343,6 +349,7 @@ class ExperimentRunner:
             "worlds": states,
             "progress": min(1.0, advanced / total) if total else 0.0,
             "running": any(state["status"] == "running" for state in states),
+            "paused": self.paused,
             "sim_days": self.sim_days,
         }
 
@@ -355,8 +362,53 @@ class ExperimentRunner:
             if day is not None:
                 self._set(world_id, day=day)
 
+    @property
+    def paused(self) -> bool:
+        return not self._go.is_set()
+
+    def _signal_procs(self, sig: int) -> None:
+        with self._lock:
+            procs = list(self._procs.values())
+        for proc in procs:
+            if proc.poll() is not None:
+                continue
+            try:
+                os.kill(proc.pid, sig)
+            except OSError:  # it exited between the poll and the signal
+                _LOG.debug("could not signal world process %s", proc.pid, exc_info=True)
+
+    def pause(self) -> bool:
+        """Hold the run: suspend the live worlds and queue the rest.
+
+        A world is a subprocess running a full simulation, so pausing it means
+        SIGSTOP — there is no cooperative checkpoint to ask it to stop at. On
+        a platform without SIGSTOP the running worlds finish and only the
+        queued ones wait, which this reports by returning ``False``.
+        """
+        self._go.clear()
+        sig = getattr(signal, "SIGSTOP", None)
+        if sig is None:
+            return False
+        self._signal_procs(sig)
+        return True
+
+    def resume(self) -> None:
+        sig = getattr(signal, "SIGCONT", None)
+        if sig is not None:
+            self._signal_procs(sig)
+        self._go.set()
+
+    def _wait_until_go(self) -> None:
+        """Block while paused. Stopping wins over pausing, so a paused run can
+        always be stopped."""
+        while not self._stop.is_set() and not self._go.wait(0.5):
+            pass
+
     def stop(self) -> None:
         self._stop.set()
+        # A suspended process ignores SIGTERM until it is continued, so lift
+        # the pause before asking anything to exit.
+        self.resume()
         with self._lock:
             procs = list(self._procs.items())
         for world_id, proc in procs:
@@ -380,6 +432,9 @@ class ExperimentRunner:
 
         def worker() -> None:
             while not self._stop.is_set():
+                self._wait_until_go()
+                if self._stop.is_set():
+                    return
                 with cursor:
                     world_id = next(queue, None)
                 if world_id is None:
@@ -404,9 +459,10 @@ class ExperimentRunner:
             if on_progress:
                 snap = self.snapshot()
                 done = sum(1 for w in snap["worlds"] if w["status"] in {"done", "error", "stopped"})
+                message = f"已完成 {done}/{len(snap['worlds'])} 个世界"
                 on_progress(
                     snap["progress"] * 0.95,
-                    f"已完成 {done}/{len(snap['worlds'])} 个世界",
+                    f"已暂停 · {message}" if snap["paused"] else message,
                 )
             time.sleep(1.0)
         for thread in threads:

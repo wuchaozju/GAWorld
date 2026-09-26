@@ -103,7 +103,8 @@
 }
 
 .city-field input,
-.city-field select {
+.city-field select,
+.city-field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 7px 9px;
@@ -115,10 +116,68 @@
   border-radius: 8px;
 }
 
+.city-field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
 .city-field input:focus,
-.city-field select:focus {
+.city-field select:focus,
+.city-field textarea:focus {
   outline: 2px solid var(--accent, #0e7a58);
   outline-offset: -1px;
+}
+
+/* Two ways to answer "which city?" — look one up, or describe one. A segmented
+   control rather than a checkbox: they are alternatives, not a modifier. */
+.city-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-soft, #f3f4f6);
+  border-radius: 9px;
+}
+
+.city-mode {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted, #6b7280);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.city-mode.is-active {
+  color: var(--ink, #111827);
+  background: var(--bg, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* The virtual-mode fields are a hidden container, so they need the same gap
+   the form grid gives its own children. */
+#cityVirtualFields {
+  display: grid;
+  gap: 10px;
+}
+
+#cityVirtualFields[hidden] {
+  display: none;
+}
+
+.city-sketch-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.city-sketch-preview img {
+  max-width: 160px;
+  max-height: 120px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
 }
 
 .city-check {
@@ -348,4 +407,29 @@
   .city-side {
     position: static;
   }
+}
+
+/* ---- 城市居民列表（city-agents.js，与 Agent Studio 共用渲染） ---- */
+.city-agents-bar { margin-bottom: 8px; }
+.city-agents-bar input {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--line, #d8ded9);
+  border-radius: 8px; font: inherit; background: #fff;
+}
+.city-agents { max-height: 420px; overflow: auto; }
+.ca-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ca-table th {
+  position: sticky; top: 0; background: #fff; text-align: left; font-weight: 500;
+  color: var(--muted, #6b7280); font-size: 11.5px; padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--line, #d8ded9); white-space: nowrap;
+}
+.ca-table td { padding: 6px 8px 6px 0; border-bottom: 1px dashed rgba(0, 0, 0, 0.06); }
+.ca-table tbody tr:hover { background: rgba(19, 121, 91, 0.05); }
+/* Job text is the one free-form column; keep it from pushing the table wide. */
+.ca-job { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-open { color: #13795b; font-size: 12px; white-space: nowrap; }
+.ca-empty { font-size: 12.5px; color: var(--muted, #6b7280); font-style: italic; }
+
+@media (prefers-color-scheme: dark) {
+  .city-agents-bar input, .ca-table th { background: var(--panel, #1a1f1c); }
+  .ca-open { color: #6ee7b7; }
 }

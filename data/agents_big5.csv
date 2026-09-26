@@ -1,4 +1,4 @@
-id,name,o,c,e,a,n,source,unstated,redundant
+﻿id,name,o,c,e,a,n,source,unstated,redundant
 1,李泽宇,-0.3453,0.482,-1.1309,-0.5874,1.9001,sampled_authored,,
 2,周婉清,-0.3029,0.0478,2.3058,2.146,-0.1062,sampled_authored,,
 3,陈一航,1.158,0.1112,1.8421,0.7608,-0.9284,sampled_authored,,
@@ -50,3 +50,6 @@ id,name,o,c,e,a,n,source,unstated,redundant
 49,罗俊杰,1.7298,0.1393,0.9758,-0.4427,0.2981,sampled_authored,,
 50,许知夏,0.4613,0.5956,-0.4119,0.4683,0.5245,sampled_authored,,
 51,内田有纪,-0.1949,1.0397,0.7572,-0.4128,-0.4178,sampled_authored,,
+61,鲁迅,1.8000,1.4000,-0.6000,-1.2000,0.8000,persona_distilled,,
+62,孙宇晨,1.0000,0.0000,1.2000,0.0000,0.3000,persona_distilled,,
+63,郁建兴,-1.2000,-1.5000,-0.1000,-0.8000,-1.0000,persona_distilled,,

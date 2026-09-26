@@ -106,6 +106,27 @@ def simulation_settings() -> dict[str, Any]:
         "csv_path": "data/hangzhou_agents_state_init.csv",
         "md_path": "data/hangzhou_profiles_with_names.md",
         "map_path": "data/citymap.md",
+        # Where residents live and work on the map. "nearest" was the original
+        # behaviour: take the closest node matching the job's category, which
+        # sends everyone with the same kind of job to the same building —
+        # measured on the default map, 56% of commuters at one node and 89%
+        # of the road network carrying nothing. "gravity" samples instead,
+        # weighting a node by its capacity and against its distance, so large
+        # employers draw more people and distant ones fewer.
+        # NB: this changes who lives and works where, so runs made before it
+        # are not directly comparable.
+        "location_assignment": {
+            "mode": "gravity",
+            # 0 = no cap. A fixed top-k cuts the candidate pool at whatever
+            # distance the k-th nearest node happens to sit at, which on the
+            # default map hid 8 of 20 residential blocks behind a 3 km line
+            # drawn across a 19 km city. The search radius and the gravity
+            # weight are the limits that mean something.
+            "workplace_candidates": 0,
+            "home_candidates": 0,
+            "distance_decay": 1.5,
+            "home_distance_decay": 0.5,
+        },
         # Map mode: "virtual" = procedural grid map from `map_path`;
         # "real" = real Hangzhou geography from the OSM bundle at `real_map_path`
         # (generate it with `python3 scripts/dev/fetch_hangzhou_osm.py`).
@@ -325,5 +346,23 @@ def simulation_settings() -> dict[str, Any]:
         "concurrency": {
             "enabled": False,
             "day_routine_workers": 1,
+        },
+        # Structured run manifest + HTML report (S4).
+        # A cheap end-of-run summary that fixes what the JSON logs alone
+        # cannot: git commit, dependency versions, seed, effective config,
+        # LLM stats, and the shape of everything written under output/.
+        # See gaworld/core/run_manifest.py.
+        "run_manifest": {
+            "enabled": True,
+            # Where the JSON + HTML land. Relative paths resolve from
+            # the process cwd.
+            "output_dir": "output/run_manifests",
+            # Also render a single-file HTML report next to the JSON.
+            # The report is self-contained (no CDN, no scripts) and can
+            # be opened offline.
+            "html_report": True,
+            # Snapshot a partial manifest at run start so a crashed run
+            # still leaves a breadcrumb.
+            "partial_write": True,
         },
     }

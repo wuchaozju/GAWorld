@@ -25,6 +25,14 @@
 (function () {
   "use strict";
 
+  // Every console page loads this file, which makes it the one place to mark
+  // "I am hosted inside the console shell" for CSS. The shell already shows
+  // the brand and the current view's name, so an embedded page compacts its
+  // own header (styles.css / page-shell.css `html.is-embedded`).
+  try {
+    if (window.top !== window) document.documentElement.classList.add("is-embedded");
+  } catch (_) { /* cross-origin parent: treat as embedded-unknown, leave as is */ }
+
   const STORAGE_KEY = "gaworld-lang";
   const MESSAGE_TYPE = "gaworld-locale";
   const DEFAULT_LOCALE = "zh-CN";

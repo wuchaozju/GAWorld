@@ -1,0 +1,63 @@
+{
+  "name": "芝加哥",
+  "summary": "芝加哥是美国第三大城市和北美五大湖区城市群的核心城市，拥有巨大的经济规模。",
+  "industries": [
+    {
+      "name": "贸易投资",
+      "weight": 0.3,
+      "trend": "stable",
+      "note": "搜索结果提及存在'贸易投资合作联合工作组'的内容，显示其在贸易和投资方面有重点活动。"
+    },
+    {
+      "name": "区域经济",
+      "weight": 0.4,
+      "trend": "stable",
+      "note": "搜索结果提及芝加哥的经济规模与特点，表明其是一个大型经济体。"
+    }
+  ],
+  "priorities": [
+    "贸易投资合作",
+    "维持北美五大湖区城市群的核心地位",
+    "保持巨大的经济规模（GDP超9300亿美元）"
+  ],
+  "labor_demand": [
+    "无搜索结果提供本地紧缺的技能或岗位信息"
+  ],
+  "sources": [
+    {
+      "title": "芝加哥 - 百度百科",
+      "url": "http://www.baidu.com/link?url=Io8FOiQoeZe8waX3T2nYCd0Vs_CUXkQOx04EDMrWaL_PWDh-Cucc7ydqj6wOaFiQKHHpZJ_VZDUPkHqNwikLkauR5xfD3yx5QCMJWhOF0K3"
+    },
+    {
+      "title": "中国市与美国 芝加哥市 贸易投资合作联合工作组内容页",
+      "url": "http://www.baidu.com/link?url=mUjBpnJ0eyXPT7DiEZD3VA6LQQ3UBZgTCoPPcjF_M0V9M8KIEhBqAHIVUxXMCjSo6saLDh8lxWA1hVnLVBKU5JQZ7vLRJMqRiswUwftXica"
+    },
+    {
+      "title": "芝加哥 都会区940万人口,GDP超9300亿美元,武汉1386万人是多少?",
+      "url": "http://www.baidu.com/link?url=Jm8Ib--xxOGjtGTmJ1G2fS-axeTDV7ehXm4KT0CMMKxNtUPrTUyv40Qjg85BBHeDGeCh0fi4xvZ6Zwpixo038Y7y7BtIMbubx0Bse0wHYqi"
+    },
+    {
+      "title": "芝加哥经济 规模与特点全解析",
+      "url": "http://www.baidu.com/link?url=Io8FOiQoeZe8waX3T2nYCdRDfBKj9VXQSU6ncyUUaptaHSjLyFZ6o-ooBZaIqKMJBSPveHyEB-xlUvHFvY7xLl6KZI3y7QYh1dhO-W9Qyb0ubOxEBxmCg5oE-4CCoqwC"
+    },
+    {
+      "title": "芝加哥 （美国第三大城市、北美五大湖区城市群核心城市 ...",
+      "url": "https://baike.baidu.com/item/芝加哥/9600"
+    },
+    {
+      "title": "美国第三大城市 芝加哥 ，放在中国相当于什么水平？",
+      "url": "https://www.sohu.com/a/944176090_121164925"
+    },
+    {
+      "title": "City of Chicago",
+      "url": "https://www.chicago.gov/city/en.html"
+    },
+    {
+      "title": "芝加哥 ，是一个怎样的城市？ - 知乎",
+      "url": "https://zhuanlan.zhihu.com/p/626970071"
+    }
+  ],
+  "source": "web",
+  "built_at": "2026-09-22T01:20:44+00:00",
+  "schema_version": "1.0"
+}

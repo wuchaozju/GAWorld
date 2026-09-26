@@ -24,6 +24,7 @@
       <div class="top-actions">
         <a class="button" href="/#dashboard" target="_top" data-i18n="studio.back">← 返回控制台</a>
         <button id="newAgentBtn" class="button" data-i18n="studio.new">＋ 新建</button>
+        <button id="bulkImportBtn" class="button" data-i18n="studio.bulk_import">＋ 批量导入</button>
         <button id="distillBtn" class="button" data-i18n="studio.distill">＋ 从真人蒸馏</button>
         <button id="saveBtn" class="button primary" data-i18n="studio.save">保存</button>
         <button id="runBtn" class="button steel" data-i18n="studio.run">运行仿真</button>
@@ -45,6 +46,10 @@
       <!-- Persistent subject rail -->
       <aside class="subject panel">
         <div class="subject-head">
+          <label class="field">
+            <span><span data-i18n="studio.pick_city">选择城市</span> <span class="help-tip" data-i18n-help="studio.pick_city_hint" data-help="切换要查看哪座城市的居民。只有“当前运行城市”的居民可以编辑：智能体编号在每座城市里各自从 1 开始，而记忆、大五人格、社交与财务都按编号存放，跨城市读会张冠李戴。"></span></span>
+            <select id="citySelect"></select>
+          </label>
           <label class="field">
             <span><span data-i18n="studio.pick_agent">选择居民</span> <span class="help-tip" data-i18n-help="studio.pick_agent_hint" data-help="选择要查看或编辑的居民，右侧表单会载入其对应设定；也可点右上角“＋ 新建”创建新居民。"></span></span>
             <select id="agentSelect"></select>
@@ -75,10 +80,23 @@
       <span id="footMsg" class="foot-msg"></span>
     </footer>
   </main>
+
+  <!-- Bulk import modal (rendered on demand by import.js) -->
+  <div id="importModal" class="imp-modal" hidden aria-hidden="true" role="dialog" aria-labelledby="importTitle">
+    <div class="imp-modal-box" id="importModalBox">
+      <div class="imp-modal-head">
+        <h3 id="importTitle" data-i18n="studio.bulk_import_title">批量导入居民</h3>
+        <button class="button mini" id="importClose" data-i18n-title="studio.close" title="关闭">×</button>
+      </div>
+      <div id="importBody"></div>
+    </div>
+  </div>
   <script src="/site/dashboard/i18n.js"></script>
   <script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/city-agents.js"></script>
   <script src="/site/dashboard/persona-view.js"></script>
   <script src="/site/dashboard/persona.js"></script>
   <script src="/site/dashboard/studio.js"></script>
+  <script src="/site/dashboard/import.js"></script>
 </body>
 </html>

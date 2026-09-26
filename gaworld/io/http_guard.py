@@ -125,6 +125,10 @@ class UserAgentRotator:
 # Failure cache
 # ---------------------------------------------------------------------
 
+#: Synthetic status for a transport-level failure (DNS, TLS, connect, timeout).
+TRANSPORT_STATUS = 599
+
+
 @dataclass
 class _FailureRecord:
     status: int
@@ -138,12 +142,16 @@ class FailureCache:
 
     Different status classes have different cooldowns so e.g. a 429
     backs off briefly while a permanent 404 sits in the cache for an
-    hour.
+    hour. A transport failure (``TRANSPORT_STATUS``) usually means the
+    host is unreachable from this network — DNS hijack, blocked TLS,
+    no route — which rarely clears within a minute, so it backs off for
+    ten rather than re-warning on every tick.
     """
 
     default_ttl: float = 60.0
     permanent_ttl: float = 3600.0
     transient_ttl: float = 30.0
+    transport_ttl: float = 600.0
     permanent_statuses: frozenset[int] = field(default_factory=lambda: frozenset({401, 403, 404, 410, 451}))
     transient_statuses: frozenset[int] = field(default_factory=lambda: frozenset({408, 425, 429, 500, 502, 503, 504}))
     _records: dict[str, _FailureRecord] = field(default_factory=dict)
@@ -168,6 +176,8 @@ class FailureCache:
             ttl = self.permanent_ttl
         elif status in self.transient_statuses:
             ttl = self.transient_ttl
+        elif status == TRANSPORT_STATUS:
+            ttl = self.transport_ttl
         else:
             ttl = self.default_ttl
         ttl = max(0.0, float(ttl))
@@ -190,6 +200,20 @@ class FailureCache:
 # ---------------------------------------------------------------------
 # Combined session
 # ---------------------------------------------------------------------
+
+#: host → CA bundle path, for servers that send an incomplete certificate
+#: chain. Browsers and curl recover by chasing the issuer URL in the leaf;
+#: ``requests`` does not, and the fetch dies with "unable to get local issuer
+#: certificate". Registering a bundle that contains the missing intermediate
+#: *completes* the chain — verification stays on, which is the whole point of
+#: doing it this way instead of passing ``verify=False`` at the callsite.
+_HOST_CA_BUNDLES: dict[str, str] = {}
+
+
+def register_ca_bundle(host: str, bundle: str) -> None:
+    """Use *bundle* to verify TLS for *host* on every guarded request."""
+    _HOST_CA_BUNDLES[str(host or "").lower()] = str(bundle)
+
 
 class GuardedSession:
     """Thin wrapper around :class:`requests.Session` enforcing the guards."""
@@ -265,9 +289,10 @@ class GuardedSession:
                 headers=merged_headers,
                 timeout=timeout,
                 allow_redirects=allow_redirects,
+                verify=_HOST_CA_BUNDLES.get(host, True),
             )
         except requests.RequestException as exc:
-            self.failure_cache.remember(url, 599, reason=str(exc)[:160])
+            self.failure_cache.remember(url, TRANSPORT_STATUS, reason=str(exc)[:160])
             raise
 
         # 4. Cache failures
@@ -315,6 +340,7 @@ __all__ = [
     "FailureCache",
     "GuardedSession",
     "HostRateLimiter",
+    "TRANSPORT_STATUS",
     "UserAgentRotator",
     "get_default_session",
     "reset_default_session",

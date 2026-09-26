@@ -35,7 +35,9 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `gaworld/events/plugin.py` (life events), `gaworld/economy/plugin.py`,
   `gaworld/world/plugin.py` (local physical + spatial preferences),
   `gaworld/work/plugin.py` (real work), `gaworld/behavior/plugin.py`
-  (dynamic behavior).
+  (dynamic behavior), `gaworld/moltbook/plugin.py` (moltbook: a connected
+  resident's day becomes a post on the agent social network; every call is
+  recorded under `output/moltbook/`).
 - Authoring guide + event catalog: [`PLUGIN_AUTHORING.md`](PLUGIN_AUTHORING.md).
 
 ## Active Runtime
@@ -53,6 +55,21 @@ CLI/backward-compat entrypoints until their callers have been migrated.
 - `gaworld/settings/`: focused configuration fragments assembled into the legacy `CONFIG` dict.
 - `gaworld/core/`: typed core abstractions used by new code.
 - `gaworld/io/`: IO helpers such as HTTP guards and web scraping.
+- `gaworld/infosources/`: what residents read from outside the city, typed.
+  `schema.py` (`Source` = news / social / professional × a fetch channel × domain
+  tags; `InfoItem`), `registry.py` (`data/info_sources.json`), `channels.py`
+  (RSS/Atom incl. the arXiv API, Reddit JSON, Hacker News, the Weibo / Baidu /
+  Bilibili hot lists, plain page — pure parsers plus one guarded fetch),
+  `feed.py` (the real-time-TTL cache under `output/infosources/` and the
+  process-wide runtime the news pipeline reads), `diet.py` (deterministic
+  per-resident media diet from job → domain tags, interest keywords,
+  `platform_dependence` and Big Five openness; item picking), `search.py`
+  (DuckDuckGo / Brave / Tavily providers for the `web_search` engine chain),
+  `plugin.py` (`InfoSourcesPlugin`: refresh + diets on `agents.built` /
+  `on_day_start`). `gaworld/sim/_news.py` reads the diet through
+  `agent["ext"]["infosources"]` and the feed through `feed.runtime()`, so the
+  simulator's call sites are unchanged. CLI: `python -m gaworld.infosources`.
+  Design: `docs/proposals/2026-09-19-agent-information-sources.md`.
 - `gaworld/interests.py`: per-agent interest and skill-growth profile derivation, persistence, matching, progress updates, day-end forgetting decay, and interest-set evolution (retirement + social contagion).
 - `gaworld/work/`: real-work task routing, queueing, adapters, and market data.
 - `gaworld/family/`: households as a first-class entity. `schema.py` owns the
@@ -123,6 +140,25 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `plugin.py` (`GroupPlugin`, observational cohort telemetry).
   CLIs: `python -m gaworld.group`, `python -m gaworld.group.validate`.
   Design + measured results: [`GROUP_AGENT_DESIGN.md`](GROUP_AGENT_DESIGN.md).
+- `gaworld/interview/`: the group interview — one question set asked of many
+  respondents at once, where a respondent is an individual resident *or* a
+  `gaworld.group` cohort, possibly in another city. `schema.py` is the whole
+  data model and the only place that trusts raw input; `roster.py` enumerates
+  respondents by reading city bundles directly (a *catalogue*, so it needs no
+  map, memory store or vector DB, and `industry` is deliberately absent because
+  it is never written to disk); `prompt.py` builds one turn and parses the
+  answer back into countable form; `attachments.py` resolves URLs and images
+  once, in the parent, and records any degradation; `runner.py` builds personas
+  serially (the memory store holds a *process-global* SQLite connection) and
+  fans the model calls out over a thread pool; `aggregate.py` tallies and
+  cross-tabs; `report.py` renders the self-contained Markdown document;
+  `store.py` owns `output/interviews/<session_id>/`; `session.py` orchestrates a
+  round across cities; `local.py` is the only module that touches the simulator.
+  Cross-city work runs as one child process per city — `build_agent` and the
+  memory store read module-level paths, so switching cities inside one process
+  would mean mutating global config under a thread pool. CLI (one city's share):
+  `python -m gaworld.interview`.
+  See [`GROUP_INTERVIEW_TUTORIAL.md`](GROUP_INTERVIEW_TUTORIAL.md).
 - `gaworld/parallel/`: parallel-world (multi-branch counterfactual) experiments —
   a *fork* of the existing run, not a change to it, so single runs are
   unaffected by construction. `spec.py` validates an experiment (2–8 worlds,
@@ -140,6 +176,24 @@ CLI/backward-compat entrypoints until their callers have been migrated.
 - `gaworld/skills/`: per-agent Skill subsystem — global library at `data/skills/`, private skills under `output/memory/agent_<id>_skills/`, and experience-to-skill consolidation. See [`SKILL_SYSTEM.md`](SKILL_SYSTEM.md).
 - `gaworld/world/local_physical.py`: per-node occupancy / opening-hours snapshots and crowd-surge anomaly detection injected into perception. See [`physical_env_perception_changelog.md`](physical_env_perception_changelog.md).
 - `gaworld/memory/spatial_preferences.py`: learned location-avoidance preferences (recency-decayed), persisted to `output/memory/agent_<id>_env_preferences.json`.
+- `gaworld/world/away.py`: the single definition of what "异地" means. Both a
+  real GPS fix outside the map (`gaworld/twin`) and a simulated trip
+  (`gaworld/travel`) write the same marker into `locations["current"]`,
+  because every downstream reader of that field needs one answer to "is this
+  a place on the map?". Only the simulated kind carries an itinerary, and
+  that asymmetry is load-bearing: a real position is the user's fact, so
+  nothing may send them home. The label is display text — never route from it.
+- `gaworld/travel/`: residents leave the city for a few days and come back.
+  `destination.py` (real distances: the twin's province-centre table and
+  `haversine_km` against the map's own centre node; rail/air legs and fares),
+  `trigger.py` (who goes and why — job for a business trip, relationship
+  obligation for a family visit, weekend + cash + openness + stress for a
+  holiday; pure, seeded, no LLM), `itinerary.py` (the day away, per purpose),
+  `plugin.py` (`TravelPlugin`: rewrite the day on `on_day_start`, blank the
+  destination on `location.resolve`, say so on `perception.compose`). Off by
+  default — it changes who is present in the city, so earlier runs are not
+  comparable. Design:
+  `docs/proposals/2026-09-19-agents-leaving-the-city.md`.
 - `gaworld/collaboration/`: Dashboard agent collaboration subsystem —
   reciprocal friendship persistence (`relationships.py`), independently
   runnable and observable discussions (`discussion.py`), cooperation
@@ -157,7 +211,33 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `dashboard_server.py` only gains a prefix-forwarding branch for
   `/api/population/*` rather than another subsystem's routes. It reads path
   constants from `dashboard_server` at call time, because the dashboard tests
-  monkeypatch those constants onto a temp directory. `replay_runs.py` enumerates
+  monkeypatch those constants onto a temp directory. `city_api.py` is the Cities
+  backend — create / populate / select a city, plus the **read-only cross-city
+  resident reads** (`/api/city/catalogue`, `/api/city/agents`,
+  `/api/city/agent`) that let the panel and Agent Studio browse a city the
+  simulator is not currently pointed at. Those reads go through
+  `gaworld.interview.roster` rather than a second population parser, and they
+  are read-only on purpose: agent ids restart at 1 per city while memory, Big
+  Five, social and finance are one flat per-id namespace owned by the running
+  city. `interview_api.py` is the
+  group-interview backend, another delegate: its routes all live under
+  `/api/interview/` **with a trailing segment**, which leaves the older
+  single-agent `POST /api/interview` (Agent Studio's interview box) untouched. A
+  round is a job rather than a request handler, because 80 respondents × 5
+  questions is 400 model calls and no browser waits for that. `arena_api.py`,
+  `games_api.py`, `disaster_api.py` and `rumor_api.py` back the playground: the
+  arena keeps its older `/api/arena/*` namespace (moving it would break existing
+  callers), while every other game hangs off `/api/games/<game>/*` —
+  `games_api.py` implements persuasion and forwards the `disaster` and `rumor`
+  prefixes to their own modules, which are big enough to want their own files. It
+  also owns what they share: `persona_block()` (the profile preamble every game
+  prompts with) and `first_json_object()` (pulling a structured reply out of
+  whatever the model actually said). All of them keep their state in memory and
+  never write to a city bundle — a game is an evaluation sandbox, not a run — and
+  all take their LLM entry points as injectable parameters so the tests are
+  network-free. The arena, disaster mode and the rumor game run a round as a job
+  (contestants × tasks, residents × stages, residents × 2); persuasion answers
+  each request inline, because one chat turn is a single round trip. `replay_runs.py` enumerates
   every replayable trace on disk (live, `<visualization>/runs/<run_id>/` archives,
   scenario output trees) for the replay page's run picker; it reads only the head
   of each trace, because a listing must not parse a hundred multi-megabyte files.
@@ -180,7 +260,8 @@ CLI/backward-compat entrypoints until their callers have been migrated.
 - `data/hangzhou_agents_state_init.csv`: seed state values.
 - `data/hangzhou_profiles_with_names.md`: seed agent profiles.
 - `data/citymap.md`: default city map.
-- `data/news_source.md` and `data/news_cache.json`: news/RAG seed material.
+- `data/news_source.md` and `data/news_cache.json`: news/RAG seed material (the legacy homepage list).
+- `data/info_sources.json`: the typed information-source registry (news / social / professional) residents' media diets are drawn from.
 - `data/environment_config.json`: environment-server override input.
 - `data/skills/*.md`: global Skill library — Markdown + YAML frontmatter, shared by every agent.
 
@@ -199,6 +280,14 @@ New code that needs config assembly should prefer `gaworld.settings`.
     (`events.jsonl`), and cooperation Markdown under `artifacts/`; the root
     is configurable through `CONFIG["collaboration"]["sessions_dir"]`.
   - `output/work/`: real-work artifacts, capability cache, queue/market event logs.
+  - `output/infosources/feed.json`: recent items per registered information source
+    (refreshed on real time); `output/infosources/diets.json`: every resident's
+    media diet for the current run.
+  - `output/records/travel.depart.jsonl` / `travel.return.jsonl`: one row per
+    trip out of the city and back, with the whole itinerary (purpose,
+    destination, distance, mode, fare, home node, dates). The only
+    externally visible quantity this subsystem produces — without it "who is
+    out of town today" is a number nothing can see.
   - `output/economy/interventions.json`: the External Systems panel's queue of
     macro/sector changes. Consumed by `gaworld/economy/finance.py` at each
     simulated day boundary — the one channel available for mid-run monetary
@@ -214,17 +303,30 @@ New code that needs config assembly should prefer `gaworld.settings`.
     node headless render tests — `population.test.js` for the input steps and
     `population-verdict.test.js`, which drives the verdict card with a verbatim
     validator payload so a renamed field in Python cannot silently blank it);
+    Cities (`city.html`, whose resident list lives in `city-agents.js` with the
+    `city-agents.test.js` node test, shared with Agent Studio's city picker);
     the cooperation
-    lifecycle/artifact page (`collaboration.html`); and External Systems
+    lifecycle/artifact page (`collaboration.html`); Group Interview
+    (`survey.html` — 3-step respondent picking / question authoring / results,
+    backed by `gaworld/apps/interview_api.py`; its renderers live in
+    `survey-charts.js` as pure DOM-free functions with the
+    `survey-charts.test.js` node test, and every display string is injected by
+    the host page so the bilingual UI never prints Chinese chrome into an
+    English locale); and External Systems
     (`external.html` — observe/edit the money system, the external-environment
     generator and the outward service connections, backed by
     `gaworld/apps/external_systems_api.py`, with the `external.test.js` node
-    headless render test). Charts are hand-written SVG:
+    headless render test); and the playground (`games.html` — a static hub of
+    game cards, so adding a game is a card plus a page rather than another
+    backend registry — leading to the arena (`arena.html`) and the persuasion
+    game (`persuade.html`), which share `games.css`). Charts are hand-written SVG:
     this tree has no build step and vendors no chart library, and a CDN
     dependency would cost the dashboard its offline usability.
   - `site/console/`: unified console whose exact `合作任务` tab opens
     `/site/dashboard/collaboration.html`, whose `人口与群体` tab opens
-    `/site/dashboard/population.html` and whose `外部系统` tab opens
+    `/site/dashboard/population.html`, whose `群体采访` tab opens
+    `/site/dashboard/survey.html`, whose `游戏场` tab opens
+    `/site/dashboard/games.html` and whose `外部系统` tab opens
     `/site/dashboard/external.html`.
 - `video/`: Remotion video project.
 - `tmp/`: local temporary/generated scratch content.

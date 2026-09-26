@@ -1,0 +1,760 @@
+{
+  "schema_version": "1.0",
+  "slug": "香港",
+  "name": "香港",
+  "display_name": "香港, 中国",
+  "created_at": "2026-09-18T04:12:32+00:00",
+  "place": {
+    "query": "香港",
+    "name": "香港",
+    "display_name": "香港, 中国",
+    "lat": 22.2818333,
+    "lng": 114.1582831,
+    "bbox": [
+      22.1518333,
+      114.02828310000001,
+      22.411833299999998,
+      114.2882831
+    ],
+    "kind": "city",
+    "scale": "large",
+    "country": "中国",
+    "country_code": "cn",
+    "population": 7534200,
+    "source": "nominatim",
+    "osm_id": 20044132,
+    "osm_type": "relation"
+  },
+  "scale": "large",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 22.281833,
+      "lng": 114.158283,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.009708009
+    },
+    "nodes": 138
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 190,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-18T04:12:32+00:00",
+      "action": "map.virtual",
+      "scale": "large",
+      "seed": 2861514666
+    },
+    {
+      "at": "2026-09-18T04:16:43+00:00",
+      "action": "map.real",
+      "nodes": 138,
+      "bbox": [
+        22.1518333,
+        114.02828310000001,
+        22.411833299999998,
+        114.2882831
+      ]
+    },
+    {
+      "at": "2026-09-18T04:16:43+00:00",
+      "action": "environment",
+      "climate": "tropical"
+    },
+    {
+      "at": "2026-09-18T04:17:12+00:00",
+      "action": "knowledge",
+      "source": "web",
+      "industries": [
+        "旅游业"
+      ]
+    },
+    {
+      "at": "2026-09-18T04:17:12+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim"
+    },
+    {
+      "at": "2026-09-18T04:17:12+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_tier1_district",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 101,
+      "name": "李慧瓊",
+      "total": 101
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 102,
+      "name": "陳克勤",
+      "total": 102
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 103,
+      "name": "梁美芬",
+      "total": 103
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 104,
+      "name": "何俊賢",
+      "total": 104
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 105,
+      "name": "陳恒鑌",
+      "total": 105
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 106,
+      "name": "葛珮帆",
+      "total": 106
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 107,
+      "name": "吳永嘉",
+      "total": 107
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 108,
+      "name": "何君堯",
+      "total": 108
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 109,
+      "name": "周浩鼎",
+      "total": 109
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 110,
+      "name": "邵家輝",
+      "total": 110
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 111,
+      "name": "陳振英",
+      "total": 111
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 112,
+      "name": "劉業強",
+      "total": 112
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 113,
+      "name": "鄭泳舜",
+      "total": 113
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 114,
+      "name": "李浩然",
+      "total": 114
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 115,
+      "name": "李惟宏",
+      "total": 115
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 116,
+      "name": "李梓敬",
+      "total": 116
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 117,
+      "name": "李鎮強",
+      "total": 117
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 118,
+      "name": "吳秋北",
+      "total": 118
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 119,
+      "name": "吳傑莊",
+      "total": 119
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 120,
+      "name": "周小松",
+      "total": 120
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 121,
+      "name": "林哲玄",
+      "total": 121
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 122,
+      "name": "林振昇",
+      "total": 122
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 123,
+      "name": "林琳",
+      "total": 123
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 124,
+      "name": "林筱魯",
+      "total": 124
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 125,
+      "name": "邱達根",
+      "total": 125
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 126,
+      "name": "姚柏良",
+      "total": 126
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 127,
+      "name": "梁子穎",
+      "total": 127
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 128,
+      "name": "梁文廣",
+      "total": 128
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 129,
+      "name": "陳仲尼",
+      "total": 129
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 130,
+      "name": "陳沛良",
+      "total": 130
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 131,
+      "name": "陳勇",
+      "total": 131
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 132,
+      "name": "陳祖恆",
+      "total": 132
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 133,
+      "name": "陳家珮",
+      "total": 133
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 134,
+      "name": "陳曼琪",
+      "total": 134
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 135,
+      "name": "陳紹雄",
+      "total": 135
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 136,
+      "name": "陳凱欣",
+      "total": 136
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 137,
+      "name": "陳穎欣",
+      "total": 137
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 138,
+      "name": "陳學鋒",
+      "total": 138
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 139,
+      "name": "黃國",
+      "total": 139
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 140,
+      "name": "楊永杰",
+      "total": 140
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 141,
+      "name": "管浩鳴",
+      "total": 141
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 142,
+      "name": "鄧飛",
+      "total": 142
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 143,
+      "name": "鄧家彪",
+      "total": 143
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 144,
+      "name": "劉智鵬",
+      "total": 144
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 145,
+      "name": "霍啟剛",
+      "total": 145
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 146,
+      "name": "簡慧敏",
+      "total": 146
+    },
+    {
+      "at": "2026-09-18T04:46:52+00:00",
+      "action": "agent.add",
+      "agent_id": 147,
+      "name": "嚴剛",
+      "total": 147
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 148,
+      "name": "何敬康",
+      "total": 148
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 149,
+      "name": "陳永光",
+      "total": 149
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 150,
+      "name": "黃錦輝",
+      "total": 150
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 151,
+      "name": "卜國明",
+      "total": 151
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 152,
+      "name": "方國珊",
+      "total": 152
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 153,
+      "name": "文頴怡",
+      "total": 153
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 154,
+      "name": "朱立威",
+      "total": 154
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 155,
+      "name": "江旻憓",
+      "total": 155
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 156,
+      "name": "伍煥傑",
+      "total": 156
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 157,
+      "name": "吳英鵬",
+      "total": 157
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 158,
+      "name": "吳錦華",
+      "total": 158
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 159,
+      "name": "李家駒",
+      "total": 159
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 160,
+      "name": "李廣宇",
+      "total": 160
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 161,
+      "name": "林偉全",
+      "total": 161
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 162,
+      "name": "林偉江",
+      "total": 162
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 163,
+      "name": "林銘鋒",
+      "total": 163
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 164,
+      "name": "姚祖輝",
+      "total": 164
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 165,
+      "name": "姚銘",
+      "total": 165
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 166,
+      "name": "范凱傑",
+      "total": 166
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 167,
+      "name": "范駿華",
+      "total": 167
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 168,
+      "name": "洪錦鉉",
+      "total": 168
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 169,
+      "name": "陳文宜",
+      "total": 169
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 170,
+      "name": "陳宗彝",
+      "total": 170
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 171,
+      "name": "陳祖光",
+      "total": 171
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 172,
+      "name": "陳博智",
+      "total": 172
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 173,
+      "name": "陳曉峰",
+      "total": 173
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 174,
+      "name": "郭芙蓉",
+      "total": 174
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 175,
+      "name": "莊家彬",
+      "total": 175
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 176,
+      "name": "莊豪鋒",
+      "total": 176
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 177,
+      "name": "張培剛",
+      "total": 177
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 178,
+      "name": "梁進",
+      "total": 178
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 179,
+      "name": "黃永威",
+      "total": 179
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 180,
+      "name": "黃浩明",
+      "total": 180
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 181,
+      "name": "黃錦良",
+      "total": 181
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 182,
+      "name": "植潔鈴",
+      "total": 182
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 183,
+      "name": "葉傲冬",
+      "total": 183
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 184,
+      "name": "劉文君",
+      "total": 184
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 185,
+      "name": "樓家強",
+      "total": 185
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 186,
+      "name": "鄧銘心",
+      "total": 186
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 187,
+      "name": "鍾奇峰",
+      "total": 187
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 188,
+      "name": "魏明德",
+      "total": 188
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 189,
+      "name": "譚鎮國",
+      "total": 189
+    },
+    {
+      "at": "2026-09-18T04:46:53+00:00",
+      "action": "agent.add",
+      "agent_id": 190,
+      "name": "蘇紹聰",
+      "total": 190
+    },
+    {
+      "at": "2026-09-25T08:19:25+00:00",
+      "action": "agent.redistill",
+      "count": 3,
+      "source": "persona",
+      "scope": "legco"
+    },
+    {
+      "at": "2026-09-25T09:11:18+00:00",
+      "action": "agent.redistill",
+      "count": 73,
+      "source": "persona",
+      "scope": "legco"
+    },
+    {
+      "at": "2026-09-25T09:21:43+00:00",
+      "action": "agent.redistill",
+      "count": 90,
+      "source": "persona",
+      "scope": "legco"
+    },
+    {
+      "at": "2026-09-25T09:36:04+00:00",
+      "action": "agent.redistill",
+      "count": 90,
+      "source": "persona",
+      "scope": "legco"
+    },
+    {
+      "at": "2026-09-25T09:36:32+00:00",
+      "action": "agent.redistill",
+      "count": 90,
+      "source": "persona",
+      "scope": "legco"
+    }
+  ],
+  "updated_at": "2026-09-25T09:36:32+00:00"
+}

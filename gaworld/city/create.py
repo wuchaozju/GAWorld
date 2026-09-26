@@ -1,4 +1,4 @@
-"""Turn a place name into a complete city bundle on disk.
+"""Turn a place name — or a description of one — into a city bundle on disk.
 
 The pipeline is deliberately degradable — each stage has a fallback, because a
 village nobody has mapped and a laptop with no network should both still give
@@ -8,6 +8,16 @@ you a city you can simulate:
       → geocode (Nominatim)            ── fails ──▶ synthetic place record
       → real map (Overpass/OSM)        ── fails ──▶ procedural map only
       → procedural map                 (always written: prompt context + fallback)
+      → environment config
+      → manifest
+
+A city that does not exist takes the second route.  Nothing to geocode and
+nothing to fetch, so the evidence is whatever the user supplied and an LLM does
+the design work that Nominatim and Overpass do for a real place:
+
+    description and/or sketch
+      → imagine (LLM)                  ── fails ──▶ procedural map by name
+      → climate and economy from the same pass
       → environment config
       → manifest
 """
@@ -23,7 +33,9 @@ from gaworld.city import bundle as bundle_mod
 from gaworld.city.bundle import CityBundle, city_root, new_manifest, slugify
 from gaworld.city.environment import build_environment
 from gaworld.city.geocode import GeocodeError, Place, geocode, offline_place
+from gaworld.city.imagine import ImagineError, ImaginedCity, imagine_city
 from gaworld.city.knowledge import CityProfile, build_from_map, build_from_web, map_category_counts
+from gaworld.city.locale import build_locale
 from gaworld.city.osm import OSMError, fetch_bundle
 from gaworld.city.procedural import generate_citymap, seed_from_name
 from gaworld.logging_setup import get_logger
@@ -94,6 +106,38 @@ def default_llm(prompt: str) -> str:
     return call_llm(prompt, task="city_knowledge")
 
 
+#: Output budget for one city design. A dozen districts with their places,
+#: roads, industries and labour demand runs to ~3–4k tokens of JSON; the
+#: providers' 512-token default cuts that off mid-object, and a truncated
+#: design is indistinguishable from a model that answered badly.
+DESIGN_MAX_TOKENS = 8000
+
+
+def default_design_llm(prompt: str, *, images: list[dict[str, str]] | None = None) -> str:
+    """The model call behind an imagined city. Separate task key from knowledge:
+    designing a city wants a larger, image-capable model than summarising one."""
+    from gaworld.llm.providers import call_llm
+
+    return call_llm(prompt, task="city_design", images=images, max_tokens=DESIGN_MAX_TOKENS)
+
+
+def sketch_requires_vision() -> None:
+    """Raise unless the model a sketch would route to can actually see it.
+
+    Checked before the call rather than after: a text-only backend handed an
+    image part either 400s with the provider's own opaque message, or — worse —
+    answers from the place name alone and returns a city that has nothing to do
+    with the picture the user drew.
+    """
+    from gaworld.llm.providers import provider_supports_images
+
+    if not provider_supports_images(task="city_design"):
+        raise CityCreationError(
+            "当前配置的模型不支持图片输入，无法按草图建城。"
+            "请在「配置」面板把 city_design 指向一个多模态模型，或改用文字描述创建。"
+        )
+
+
 def build_knowledge(
     city: CityBundle,
     place: Place,
@@ -137,6 +181,10 @@ def create_city(
     search_fn: Callable[[str], list[dict[str, str]]] | None = None,
     llm_fn: Callable[[str], str] | None = None,
     seed: int | None = None,
+    description: str = "",
+    images: list[dict[str, str]] | None = None,
+    design_llm_fn: Callable[..., str] | None = None,
+    locale_llm_fn: Callable[[str], str] | None = None,
 ) -> CityBundle:
     """Create a city bundle for *name* and return it.
 
@@ -148,10 +196,24 @@ def create_city(
         Overwrite an existing bundle with the same slug.
     overpass
         Injection point for the Overpass client (tests / custom mirrors).
+    description, images
+        Either one switches the city to the *imagined* route: the place is not
+        looked up at all, and an LLM designs the map, climate and economy from
+        what the user supplied.  ``images`` are ``{"media_type", "data"}``
+        entries as :func:`gaworld.llm.providers.call_llm` takes them.
+        ``offline`` is not consulted on this route — there is no network fetch
+        in it to skip, only the model call the description exists to make.
+    design_llm_fn
+        Injection point for that model call (tests / a pinned model).
+    locale_llm_fn
+        Injection point for the locale research call (see
+        :mod:`gaworld.city.locale`).
     """
     label = str(name or "").strip()
     if not label:
         raise CityCreationError("a place name is required")
+    imagined_from = str(description or "").strip()
+    is_imagined = bool(imagined_from or images)
 
     city_slug = slugify(slug or label)
     directory = city_root(root) / city_slug
@@ -164,8 +226,36 @@ def create_city(
             f"city {city_slug!r} already exists at {directory}; pass force=True to overwrite"
         )
 
-    place = resolve_place(label, offline=offline, scale=scale, geocode_fn=geocode_fn)
     map_seed = seed if seed is not None else seed_from_name(city_slug)
+
+    imagined: ImaginedCity | None = None
+    if is_imagined:
+        if images:
+            sketch_requires_vision()
+        try:
+            imagined = imagine_city(
+                label,
+                description=imagined_from,
+                images=images,
+                scale=scale,
+                seed=map_seed,
+                llm_fn=design_llm_fn or default_design_llm,
+            )
+        except ImagineError as exc:
+            # The name still gets a city out of the procedural generator — but
+            # say so rather than handing back something that ignores the
+            # description and looks like it honoured it.
+            _LOG.warning("could not imagine %s (%s); falling back to the procedural map", label, exc)
+            raise CityCreationError(f"{exc}。可改用真实地名创建，或稍后重试。") from exc
+
+    if imagined is not None:
+        # Nothing to geocode: the place is invented. The record is synthetic,
+        # anchored at the latitude its climate implies so the environment layer
+        # gives a described tropical island typhoons rather than Hangzhou drizzle.
+        place = offline_place(label, scale=imagined.scale, lat=imagined.latitude)
+        place = Place(**{**place.to_dict(), "bbox": place.bbox, "source": "imagined"})
+    else:
+        place = resolve_place(label, offline=offline, scale=scale, geocode_fn=geocode_fn)
 
     directory.mkdir(parents=True, exist_ok=True)
     city = CityBundle(
@@ -179,11 +269,26 @@ def create_city(
         ),
     )
 
-    # 1. Procedural map — always written. It doubles as the LLM prompt context
+    # 1. Virtual map — always written. It doubles as the LLM prompt context
     #    and as the fallback if the real bundle is ever deleted.
-    spec = generate_citymap(place.name or label, scale=place.scale, seed=map_seed)
-    city.virtual_map_path.write_text(spec, encoding="utf-8")
-    city.record("map.virtual", scale=place.scale, seed=map_seed)
+    if imagined is not None:
+        city.virtual_map_path.write_text(imagined.spec, encoding="utf-8")
+        city.manifest["imagined"] = {
+            "source": imagined.source,
+            "description": imagined_from,
+            "summary": imagined.summary,
+            "climate": imagined.climate,
+        }
+        city.record(
+            "map.imagined",
+            source=imagined.source,
+            scale=imagined.scale,
+            districts=len(imagined.districts),
+        )
+    else:
+        spec = generate_citymap(place.name or label, scale=place.scale, seed=map_seed)
+        city.virtual_map_path.write_text(spec, encoding="utf-8")
+        city.record("map.virtual", scale=place.scale, seed=map_seed)
 
     # 2. Real map — best effort, and only when the coordinates are real.
     #    A place that failed to geocode carries a *synthetic* bbox around the
@@ -214,19 +319,29 @@ def create_city(
             }
             city.record("map.real", nodes=node_count, bbox=list(place.bbox))
 
-    # 3. Environment.
+    # 3. Environment. An imagined city's own summary goes in as the note: it is
+    #    the only place the volcano and the coral reef are written down, and
+    #    without it the background prompt would describe a generic tropical town.
+    environment = build_environment(
+        place, seed=map_seed, note=imagined.summary if imagined else ""
+    )
     city.environment_path.write_text(
-        json.dumps(build_environment(place, seed=map_seed), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(environment, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    city.record("environment", climate=build_environment(place)["climate"])
+    city.record("environment", climate=environment["climate"])
 
     # 4. Knowledge base — what the city *is* economically. Best effort, and
     #    never fatal: a city with no industry profile still simulates fine, it
-    #    just does not steer its residents' careers.
-    profile = build_knowledge(
-        city, place, offline=offline, search_fn=search_fn, llm_fn=llm_fn
-    )
+    #    just does not steer its residents' careers. An imagined city already
+    #    has one from the design pass; searching the web for a place that does
+    #    not exist would at best find nothing and at worst find a real homonym.
+    if imagined is not None and imagined.profile is not None and not imagined.profile.is_empty:
+        profile = imagined.profile
+    else:
+        profile = build_knowledge(
+            city, place, offline=offline or is_imagined, search_fn=search_fn, llm_fn=llm_fn
+        )
     city.knowledge_path.write_text(
         json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
@@ -236,7 +351,16 @@ def create_city(
         industries=[i.name for i in profile.top_industries()],
     )
 
-    city.record("create", offline=offline, source=place.source)
+    # 5. Locale — what this city's residents are called, and how their housing
+    #    and residency read. Skipped for an invented city, whose prompt would
+    #    have no real administrative chain to reason from ("南城街道, 东莞市,
+    #    广东省, 中国" is the whole point), and for an offline build, where the
+    #    model call is as unavailable as the map fetch. Either way the city
+    #    keeps the mainland default until someone runs
+    #    ``python -m gaworld.city locale <city> --rebuild``.
+    build_locale(city, place, offline=offline or is_imagined, llm_fn=locale_llm_fn)
+
+    city.record("create", offline=offline, source=place.source, imagined=is_imagined)
     city.save()
     _LOG.info("created city %s at %s (map_mode=%s)", city_slug, directory, city.map_mode)
     return city

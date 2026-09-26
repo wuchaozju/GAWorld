@@ -16,10 +16,11 @@
         <div class="brand-mark">GA</div>
         <div class="brand-copy">
           <p class="kicker" data-i18n="city.kicker">GAWorld 城市</p>
-          <h1 data-i18n="city.headline">给一个地名，造一座城</h1>
+          <h1 data-i18n="city.headline">给一个地名，或一段描述，造一座城</h1>
           <p class="sub" data-i18n="city.sub">
-            输入真实地名 → 自动获取地理坐标与 OpenStreetMap 路网 → 生成地图与环境 → 往城里添加智能体。
+            真实地名 → 自动获取地理坐标与 OpenStreetMap 路网 → 生成地图与环境 → 往城里添加智能体。
             地名查不到或没有网络时，会按地名确定性地程序化生成。
+            也可以切到「虚拟城市」，用一段描述或一张拓扑草图造一座本来不存在的城。
           </p>
         </div>
       </div>
@@ -31,10 +32,35 @@
         <div class="city-card">
           <h3 data-i18n="city.create_title">新建城市</h3>
           <form id="cityCreateForm" class="city-form">
+            <!-- Which question the form is asking: "where is this place?" or
+                 "what would this place be like?". The two routes share every
+                 field below the fold, so a toggle rather than a second form. -->
+            <div class="city-modes" role="radiogroup" data-i18n-aria="city.source_label">
+              <button type="button" class="city-mode is-active" data-mode="real"
+                      role="radio" aria-checked="true" data-i18n="city.source_real">真实地名</button>
+              <button type="button" class="city-mode" data-mode="virtual"
+                      role="radio" aria-checked="false" data-i18n="city.source_virtual">虚拟城市</button>
+            </div>
             <label class="city-field">
-              <span data-i18n="city.field_name">地名</span>
+              <span id="cityNameLabel" data-i18n="city.field_name">地名</span>
               <input type="text" id="cityName" required data-i18n-placeholder="city.name_ph" placeholder="绍兴柯桥 / Kyoto / 柳溪村" />
             </label>
+            <div id="cityVirtualFields" hidden>
+              <label class="city-field">
+                <span data-i18n="city.field_description">城市描述</span>
+                <textarea id="cityDescription" rows="4" data-i18n-placeholder="city.description_ph"
+                          placeholder="热带火山岛上的小城，靠渔业和潜水旅游为生，北边是火山，港口在西南角。"></textarea>
+              </label>
+              <label class="city-field">
+                <span data-i18n="city.field_sketch">拓扑草图（可选）</span>
+                <input type="file" id="citySketch" accept="image/png,image/jpeg,image/gif,image/webp" />
+              </label>
+              <div class="city-sketch-preview" id="citySketchPreview" hidden>
+                <img id="citySketchImage" alt="" />
+                <button type="button" class="btn ghost" id="citySketchClear"
+                        data-i18n="city.sketch_clear">移除</button>
+              </div>
+            </div>
             <div class="city-row">
               <label class="city-field">
                 <span data-i18n="city.field_scale">规模</span>
@@ -59,12 +85,12 @@
                 <input type="number" id="citySeed" data-i18n-placeholder="city.seed_ph" placeholder="留空 = 按地名" />
               </label>
             </div>
-            <label class="city-check">
+            <label class="city-check" id="cityOfflineField">
               <input type="checkbox" id="cityOffline" />
               <span data-i18n="city.field_offline">离线模式（跳过联网查询，纯程序化生成）</span>
             </label>
             <button class="btn primary" type="submit" id="cityCreateBtn" data-i18n="city.create_btn">创建城市</button>
-            <p class="city-note" data-i18n="city.create_note">
+            <p class="city-note" id="cityCreateNote" data-i18n="city.create_note">
               联网创建需要访问 Nominatim 与 Overpass，通常 20–60 秒。
             </p>
           </form>
@@ -104,6 +130,20 @@
           <div id="cityKnowledgeStatus" class="city-status" role="status" aria-live="polite"></div>
         </div>
 
+        <!-- The residents of whichever city is selected. Read-only here on
+             purpose: this page owns "which cities exist and who lives in
+             them", while editing one resident is Agent Studio's job — the
+             row's link hands the city and the id over to it. -->
+        <div class="city-card" id="cityAgentsCard" hidden>
+          <h3><span data-i18n="city.agents_title">城市居民</span>
+            <span class="city-map-name" id="cityAgentsCount"></span></h3>
+          <div class="city-agents-bar">
+            <input type="search" id="cityAgentsSearch" data-i18n-placeholder="city.agents_search_ph"
+                   placeholder="按姓名 / 职业 / 编号搜索" />
+          </div>
+          <div id="cityAgents" class="city-agents"></div>
+        </div>
+
         <div class="city-card">
           <h3 data-i18n="city.list_title">已有城市</h3>
           <div id="cityList" class="city-list">
@@ -117,7 +157,10 @@
           <h3 data-i18n="city.detail_title">城市详情</h3>
           <div id="cityDetail" class="city-detail"></div>
 
+          <p id="cityDefaultWorldNote" class="city-hint" hidden
+             data-i18n="city.default_world_note">默认世界是 data/ 下的原始数据集，暂不支持在这里新增或迁入智能体。</p>
 
+          <div id="cityWriteForms">
           <h4 data-i18n="city.add_population_title">批量添加居民</h4>
           <form id="cityPopForm" class="city-form">
             <div class="city-row">
@@ -193,6 +236,7 @@
             </label>
             <button class="btn" type="submit" data-i18n="city.migrate_btn">迁入</button>
           </form>
+          </div>
 
           <div id="cityActionStatus" class="city-status" role="status" aria-live="polite"></div>
         </div>
@@ -206,6 +250,7 @@
   <!-- The same renderer the console map panel and the simviz replay use, so a
        city previewed here looks exactly like it will when it runs. -->
   <script src="/site/dashboard/citymap-view.js"></script>
+  <script src="/site/dashboard/city-agents.js"></script>
   <script src="/site/dashboard/city.js"></script>
 </body>
 </html>

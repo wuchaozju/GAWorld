@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-09-26 — 游戏场：谣言扩散局
+
+### Added
+
+- **`gaworld/apps/rumor_api.py`** — 游戏场的第四个游戏。一条传闻交给两个居民，沿着熟人关系往外走，产出传播树。内置五条传闻（自来水污染 / 银行要倒闭 / 粮价翻倍 / 学校要搬 / 台风瞒报），也接受自定义。
+- **按档案推导的关系图** — 城市包里**没有**居民之间的边（熟人关系只在仿真跑起来后才长出来，落盘的多半是城外 ghost，且没有城市归属，agent id 跨城重号）。所以 `build_graph()` 从名册确定性地推：同小区＝邻居 0.55，同小区同姓＝亲属 0.9，同行 / 同学 0.5，跨小区同龄＝弱关系 0.25；每人限 6 条边（否则一个小区就是完全图）；「无业 / 退休 / 学生」不算同事。同一批人永远画出同一张图。
+- **`GET /api/games/rumor/graph`** — 关系图预览，**零模型调用**，前端每次改勾选都调它：图在花钱之前就看得见，孤立的人也直接列出来。
+- **模型决定传不传，图决定传给谁** — 回复只是 `{belief, action, say}`，`action` 四选一；转发落到最多 4 个还没听说的熟人，私下求证落到最亲近的那一个（求证本身也是扩散），辟谣落到所有熟人。每人只开口一次，例外是"信了之后被当面辟谣"的人——没有这个例外，辟谣就是个没有后果的选项。开销因此封在 `人数 × 2 + 1`。
+- **`site/dashboard/rumor.html` + `rumor.js`** — 居民按小区分组勾选（「🎲 随机两个小区」），右边是圆周布局的 SVG 关系网：灰线＝关系、箭头＝传播（实线转发 / 虚线求证 / 绿色辟谣）、节点按"没听说 / 信了 / 不信"着色，可按轮次筛。另有四个总览指标、逐轮扩散条、每人卡片与原话、一段传播简报。
+- **`tests/test_rumor_api.py`**（33 个测试）— 覆盖图的推导规则与度数上限、传播与目标选择、"只开口一次 + 辟谣例外"、种子默认落在两个簇、孤立者永远收不到、坏返回值不扩散、统计与 HTTP 契约。
+
+### Changed
+
+- **`games_api.first_json_object()`（新）** — 扫括号深度而不是正则取 `{...}`。实跑中遇到模型多打一个 `}`，贪婪正则会吞掉它然后整条解析失败；非贪婪又会在第一个 `}` 断开嵌套对象。灾害模式与谣言局的解析都改走它，**同一个缺陷一并修掉**。
+- **`games_api.list_agents()`** — 多返回一个 `residence`（小区）。谣言局的居民列表按小区分组，因为关系（以及传闻）是顺着住址走的。已有调用方忽略多出来的字段。
+- **`rumor_api` 的提示词顶住"得体"默认答案** — 中性提问时七个居民会给出七个一模一样的「我先问问在银行上班的朋友」，和说服游戏里模型一路附和是同一个毛病。提示词明写「不是每个人都会先去核实」并把选择推回人格之后，同一批人里才同时出现"信 72% 直接转发"和"不管，群里天天有"。
+
+### Notes
+
+- 关系图是**推导**的，不是仿真长出来的。想用真实的仿真关系，需要先解决 `output/memory/` 的城市归属问题——目前那里的 `agent_N_relationships.json` 没有城市标记，跨城混用会张冠李戴。
+- 解析失败的那个人降级成「其他」、信任度 0、**不往下传**：谣言不会从一次解析失败里传出去。
+
+## [Unreleased] — 2026-09-26 — 游戏场：灾害模式
+
+### Added
+
+- **`gaworld/apps/disaster_api.py`** — 游戏场的第三个游戏。选一批居民（≤ 12 人）+ 一场灾难，分幕推演每个人的反应。内置五场灾难（地震 / 疫情 / 战争 / 洪水 / 大停电），每场三幕，按「过了多久、什么停掉了」递进；也接受自定义灾难（名称 + 一行一幕的情境）。每人每幕**一次**模型调用，返回 `{action, detail, panic, help, say}`，`action` 限定在六类行动词表里——所以行动分布图不需要额外的裁判调用。聚合出逐幕的行动分布、平均恐慌、最高恐慌与互助率，最后一次调用写一段城市简报。
+- **「身边人」进提示词** — 从第二幕起，提示词里加一句「你看到身边的人：4 人囤积物资、2 人避险逃离」，直接由上一幕的统计拼出，不额外调用模型。没有这句每一幕都是独立抽样，从众与分化看不出来。每个人同时看到自己前几幕的行动，所以行为是连贯的。
+- **`/api/games/disaster/*`** — `GET catalogue`（灾难库 + 上限）、`POST run`（→ `{job_id}`，后台作业带进度）、`GET jobs/<id>`（进度 / 整场结果）、`GET runs`（本进程跑过的场次，≤ 20）。`games_api.handle_get` / `handle_post` 里两行前缀转发，URL 命名空间不变。
+- **`site/dashboard/disaster.html` + `disaster.js`** — 左边选城市 / 灾难 / 幕数 / 居民（带「🎲 随机 6 人」），右边是推演结果：城市简报、四个总览指标、每一幕的情境原文 + 行动分布条 + 每个人的卡片（行动标签 / 做法 / 原话 / 恐慌值 / 是否顾得上别人）。样式并入 `games.css`，大厅加一张卡片，中英文案进 `locales/{zh-CN,en}.json`。
+- **`tests/test_disaster_api.py`**（22 个测试）— 覆盖逐幕逐人调用顺序、幕数夹取、提示词里的档案 / 历史 / 人群行、坏返回值的降级、简报失败不影响整场、聚合数值、六类行动的映射、自定义灾难解析，以及 HTTP 的 400/404 契约与 `games_api` 的转发。
+
+### Changed
+
+- **`gaworld/apps/games_api.py`** — `_persona_block()` 改为公开的 `persona_block()`（灾害模式要用同一份 persona 前言），并在两个 handler 顶部转发 `/api/games/disaster/` 前缀。行为不变。
+
+### Notes
+
+- 一场的开销是 `人数 × 幕数 + 1` 次模型调用，顺序执行（与斗兽场一致）。6 人 2 幕 = 13 次。
+- 解析不了的返回值降级成 `其他` + 恐慌值 3，原文留在卡片上——宁可毁一格，不毁整场。
+- 和游戏场其它游戏一样：状态只在内存里，重启即清空，永远不写回城市 bundle。
+
+## [Unreleased] — 2026-09-25 — 结构化 run manifest + HTML report (S4)
+
+### Added
+
+- **`gaworld/core/run_manifest.py`** — structured end-of-run summary written under `output/run_manifests/<slug>.json`. Captures git commit + dirty flag, Python + platform + hostname, dependency versions (via `importlib.metadata`, no imports), curated `CONFIG` subset (verbatim scalars + enable-block summaries), `agent_ids` / `sim_days` / `random_seed`, LLM stats folded in via a bound `LLMCallStats`, and an `artefacts` index of the output tree. `partial_write` snapshots a breadcrumb at run start so a crashed run still leaves something behind; the successful `finalise()` cleans it up.
+- **`gaworld/core/run_report.py`** — single-file HTML report next to the JSON. Self-contained (no CDN, no scripts), opens with a double-click, HTML-escapes hostile config values. Above-the-fold summary: outcome badge, duration, sim_days × agents, LLM call count. Sections: environment strip, LLM stats (by task + by provider, with avg latency), artefacts (largest per subdir), curated config, recent events, notes.
+- **`gaworld/llm/stats.py`** — thread-safe `LLMCallStats` with `record()` and `snapshot()`. Process-wide `GLOBAL_STATS` is what the router now writes to. `mark_run_start()` lets a run bracket its own calls against dashboard warmup traffic.
+- **`CONFIG["run_manifest"]`** — new config block, defaults `{enabled: True, output_dir: "output/run_manifests", html_report: True, partial_write: True}`. Documented in `gaworld/settings/config_docs.py` (EN long, ZH long, ZH short, EN short).
+- **New tests** — `tests/test_gaworld_run_manifest.py` (18 tests) covers manifest shape, API key redaction, LLM stats folding, partial-file lifecycle, HTML rendering (dirty git, failed-badge colour, hostile-string escaping), and `LLMCallStats` isolation semantics.
+
+### Changed
+
+- **`gaworld/llm/providers.py`** — `LLMRouter.call` now writes every attempt (success and failure) into `GLOBAL_STATS`. Zero cost when nothing calls `snapshot()`; adds latency in the microsecond range per call.
+- **`generative_city_sim.run_simulation`** — creates a manifest at the top of the run and, after the existing `on_simulation_end` recap, writes the JSON + HTML. All wrapped in guards so a manifest failure never regresses a completed simulation.
+
+### Notes
+
+- Disable the whole thing with `run_manifest.enabled = False` — the router still records stats but nothing is written.
+- The curated `_CONFIG_KEYS_VERBATIM` / `_CONFIG_ENABLE_BLOCKS` allow-lists keep secrets out of the manifest: `api_key` / `api_key_env` / `authorization_scheme` etc. are never dumped verbatim. Add a key to `_CONFIG_KEYS_VERBATIM` only after confirming it can be printed in a bug report.
+
 ## [Unreleased] — 2026-09-25 — 通用干预 API 与实时事件流
 
 ### Security
@@ -18,6 +80,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **游戏场（`/site/dashboard/games.html`）：和居民玩一局的统一入口。** 斗兽场从控制台工具栏的
+  一个按钮收进了大厅，接口一个没动（仍是 `/api/arena/*`）；新游戏统一挂 `/api/games/<game>/`。
+  控制台侧栏「实验」组新增一项。
+- **说服游戏（`/api/games/persuasion/*`）**：挑一个居民，问一个有立场的问题记下他的答案，
+  在设定的最大轮数内跟他聊，结束时复问同一个问题——裁判 LLM 比较首尾两个答案，
+  **核心结论真的变了**才算说服成功（措辞变化、让步但结论不变一律不算）。
+  居民的回应 prompt 里写死了「理由不够贴合你的处境和价值观就坚持己见」，
+  否则模型会一路顺着玩家走，游戏没有难度。档案取自 `interview.roster`，
+  性格与价值观直接决定谁好说服。会话只在内存里（≤ 50 局），不写回城市 bundle。
 - **`/api/interventions`：Controller 里注册的每个干预都能从 HTTP 调用。** 内核早有
   `controller.intervene(name, ...)` 和审计，但 dashboard 起的是子进程，外面够不着，
   只有经济模块自己写了一条文件队列。现在 `gaworld/kernel/remote.py` 把这条路做成通用的：
@@ -30,6 +101,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   只发完整行，文件被重置变短时从头读。
 - **Recorder 新表 `agent.step`**：每个 agent 每个 tick 一行精简记录（活动、动作、位置、是否改计划及原因），
   让事件流能实时跟随全城行动；长 LLM 文本不进这张表，仍留在 trace，避免记录体积随 prompt 膨胀。
+- **信息源层接进接口**：`/api/infosources/{sources,feed,diets,reads}` 只读查看注册表、抓取缓存、
+  每位居民的信息接触结构和阅读记录；新干预 `inject_info_item` 把一条内容置顶到某个源。
+  注入项只保存在插件内存里、每次刷新后重新置顶——刷新会从磁盘重载缓存，若写进磁盘缓存，
+  一条人为编造的"新闻"就会漏进以后的运行。无真实链接时用 `gaworld://injected/<n>`，
+  既让按日去重生效，又不会触发抓取全文。每次信息流阅读写入 `infosources.read`（含居民的反应），
+  注入内容的传播路径因此可查。
 - **`/api/bench/*`：基准测试可从接口发起。** `gaworld_bench.py` 与 `rubric_bench.py` 作为后台任务运行，
   日志与结果可轮询。两个脚本写固定的结果文件，所以一次只允许一个任务（其余返回 409），
   且任务结束时把 scorecard 拷进任务记录——下一次运行覆盖结果文件后，本次分数仍可查。
@@ -40,6 +117,317 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`GET /api/openapi.json`**：上述对外接口的 OpenAPI 3.1 描述，可导入 Swagger UI / Postman 或生成客户端。
   写成 Python 而非静态 JSON 以复用共享结构；测试会逐条请求文档里的路由，列了服务器没有的路径就失败，
   防止文档与实现悄悄脱节。
+
+### Fixed
+
+- **斗兽场「开始斗兽」跑不起来**：`POST /api/arena/run` 返回的是裸的 job id 字符串，
+  而前端读 `data.job_id`，于是一直轮询 `/api/arena/jobs/undefined`，进度条永远停在 0%。
+  改为返回 `{"job_id": ...}`。
+
+## [Unreleased] — 2026-09-19 — 智能体可以离开本城市：出差 · 探亲 · 旅行
+
+### Added
+
+- **`gaworld/travel/`：居民会离开本市几天，然后回来。** 「外地」在这个仓里本来就不缺，
+  缺的是位移：社交层给每位居民生成了住在外省的 ghost 亲友（`social/network.py:359`
+  的 `city` 字段），并且在 `mother` / `father` / `close_friend` 的允许渠道里明写着
+  `"visit"`（`:51-76`），家庭层每周还会派一条「抽空给父母打个电话**或回去看看**」
+  （`family/duties.py:150-153`）——但 ghost「从不参与在仿真内的共处循环」，那句话的
+  后半截从来无法执行。现在可以了。
+- **三类出行，三个不同的驱动量，都取自系统已有的状态**（`travel/trigger.py`）：
+  **出差**按职业（销售 / 外贸 / 咨询远高于图书管理员）在工作日触发，活动仍是工作，
+  收入照常（`_is_income_activity` 认活动不认地点）；**探亲**由关系 `obligation` +
+  距上次联系的天数触发——`decay_relationships` 每天都在抬高这个量而它本来无处可去，
+  探亲是它第一个出口，回去一趟会重置 `last_contact_day` 并让 obligation 回落；
+  **旅行**要周末 + 够用的流动储蓄 + 大五开放性 + 累积压力。**不设统一的「出行概率」旋钮**：
+  三件事受不同力驱动，合成一个数就谁也不代表。全部为纯规则、按种子可复现，不调用 LLM。
+- **目的地是真实距离**（`travel/destination.py`）：复用孪生的 34 个省级中心点与
+  `haversine_km`（`twin/places.py`，离线设计），起点取地图自身的几何中心节点（节点本来
+  就带真实 `lat`/`lng`）。按距离分高铁 / 飞机两档定时长与票价——票价系数是 (c) 类建模
+  猜测，只决定一趟出行贵不贵，不支撑任何结论。探亲优先去 ghost 档案里写的那座城市。
+- **`gaworld/world/away.py`：「异地」只有一个定义。** 数字孪生（真人 GPS 落在地图外）
+  与仿真出行都会写同一个 `locations["current"]` 标记，因为下游每一个读它的地方都需要
+  同一个答案。只有仿真出行带 `agent["ext"]["travel"]` 行程——这个不对称是有意的：
+  真人的位置由真人决定，代码不得把他「送回家」。
+- **配置 `CONFIG["travel"]`**（面板标签与 hover 说明已中英双语登记）：`enabled`
+  **默认关**（它改变每天城里还剩多少人，开启前后的 run 不可比）、`max_away_share`
+  （在外人数上限，防止三个触发叠加把城市掏空）、`daily_surcharge`（在外每日住宿与外食，
+  走 `charge_external_expense` 守恒结算；往返票在出发当天一次性记账）、三类出行各自的
+  概率与天数。`tests/test_travel_away.py`（40 条，无网络、无 LLM）。
+- 提案：`docs/proposals/2026-09-19-agents-leaving-the-city.md`。**`generative_city_sim.py`
+  零改动**——出发日改写 `on_day_start` 携带的可变 `schedule_map`（主时间轴不用动），
+  离城期间由 `location.resolve` 过滤器（最低优先级，谁也别想把不在场的人放回地图上）
+  清空目的地，`move_agent` 因此走 `target == origin` 的 `stationary` 分支。
+
+### Fixed
+
+- **共处判定会把所有外地人凑成一堆。** `detect_co_located_agents`
+  （`behavior/dynamic.py:537`）对 `locations["current"]` 做字符串相等，而「异地」是展示
+  文本不是节点 id：两个毫不相干的人同在北京（甚至只是都没有地名、都写作「异地」）会被
+  判为**并肩站在一起**，进而互相触发社交打断。现在两侧都排除离城者。
+- **占用度会凭空造出人群。** `update_occupancy_from_agents`
+  （`world/local_physical.py:74`）会把「异地（北京）」当成一个地点计数写进
+  `node_occupancy`。人不在本市，就不该出现在本市任何房间里。
+- **本地环境快照会描述一座人不在的城市。** `local_physical_state` 对离城者照样输出
+  「……此刻冷清；当地天气晴」——那是本市的天气。现在返回空快照。
+- **家庭责任会无声消失。** 离城时 `at_home` 自然变 `False`，同住家人的责任段落直接不再
+  出现——方向对，但静默。现在改为明说「你不在家，家里的事这几天得由家人顶着」。
+
+## [Unreleased] — 2026-09-19 — 外部信息源：新闻 · 社交媒体 · 专业网站 · 搜索
+
+### Added
+
+- **`gaworld/infosources/`：居民读外界的信息源层。** `Source`（news / social /
+  professional 三类 × rss / reddit / hackernews / weibo_hot / baidu_hot /
+  bilibili_popular / page 七种渠道 × 领域标签）登记在 `data/info_sources.json`
+  （37 个免登录源），`feed.refresh` 按**真实小时** TTL 抓进
+  `output/infosources/feed.json`——与 `city/news.py` 同一套两个时钟的处理，仿真跑多快
+  都不会把 RSS 抓穿。
+- **信息食谱（media diet）。** `diet.build_media_diet` 按职业 → 领域标签（社区医生 →
+  医疗 / 健康，程序员 → 科技 / 编程 / 人工智能）、兴趣词（含股票→投资一类别名）、
+  `platform_dependence`（放大社交媒体份额）、大五开放性（拓宽到不对口与外语源）给每位
+  居民一份确定性的加权源列表，存 `agent["ext"]["infosources"]["diet"]`，全体写到
+  `output/infosources/diets.json`。`InfoSourcesPlugin`（`agents.built` /
+  `on_day_start` / `on_simulation_end`）负责刷新与分配；`generative_city_sim.py`
+  零改动。
+- **`_choose_info_target` 的 `feed` 模式。** 主动检索先按 `feed_visit_ratio`（默认
+  0.6）从食谱里抽一个源、源内按兴趣词 + 新鲜度挑一条，摘要短于 200 字就抓正文
+  （热榜 / Reddit 除外，那些链接是登录墙）；记忆条目多一行
+  `渠道：专业网站 · WHO News`，反应提示词写明「浏览自己常看的信息源」。老模式的
+  记忆格式逐字不变。食谱里的新闻 / 专业站域名同时进 `site:` 检索候选。
+- **搜索引擎链加 `ddg`（免密钥）、`brave`（`BRAVE_SEARCH_API_KEY`）、`tavily`
+  （`TAVILY_API_KEY`）**，形状与 `x` 引擎一致：没配就静默落到下一个。默认顺序
+  `x → ddg → brave → tavily → baidu → google → bing`。
+- CLI `python -m gaworld.infosources list / refresh / show <id> / diet --job …`；
+  配置 `CONFIG["news"]["sources"]`（面板标签与 hover 说明已登记）；
+  `tests/test_infosources.py`（无网络）。
+
+### Fixed
+
+- `load_news_sources` 的正则在 raw string 里写成 `[^\\s)]`，排除的是字母 `s` 而不是
+  空白：`https://news.baidu.com/` 被读成 `https://new`，其余行一路读到下一行，
+  `data/news_cache.json` 里因此只有 `"https://www.reddit.com/\nhttp"` 两条垃圾——
+  整份源清单从未正确加载过。已修，并给首页缓存加 `news.cache_ttl_hours`（默认 6
+  真实小时）的门，`fetched_at` 改为完整 ISO 时间戳。
+
+## [Unreleased] — 2026-09-19 — AI 社会科学家（阶段一）：方案 → 预注册协议 → 平行世界 → 假设判定 → 报告
+
+### Added
+
+- **研究闭环（研究工作台方案下方「转成研究」）。** 一份方案被编译成机器可读的**预注册协议**：
+  每个条件就是一个平行世界（事件表 + config 补丁），每条假设是「指标 + 处理条件 vs 对照条件 +
+  方向 + 最小效应 + 聚合方式」，指标只能选自可测量目录 `gaworld/research/measures.py`
+  （阶段一 = 状态指标）；选不到的假设被丢弃并写进 `dropped`，而不是带进一次永远测不到的运行。
+- **两道闸门。** 跑前：处理条件、可评估假设、事件显形时间、模型调用量预算（全模式按
+  `group.driver` 的 198 次/人/天估，快进 1 次）。跑后：每个世界都要有状态数据、每个指标要有方差
+  （早期实验里 `misinformation_risk` 恒 0 仍写结论的那类问题，这里会直接列进报告）。
+- **copilot 默认、autopilot 可选。** 研究是状态机 `protocol → approved → running → evaluated → reported`，
+  默认停在 `protocol` 等人批准；`autopilot=true` 只跳过点击，不跳过检查。一次只跑一项研究（同平行世界面板）。
+- **判定在代码里，解读在模型里。** `evaluate.py` 按固定规则给每条假设 supported / contradicted /
+  inconclusive / unmeasured，附判定依据；安慰剂世界自动补进协议，它相对基准的偏差就是噪声底线；单种子又无安慰剂最高只能到 inconclusive。
+  `interpret.py` 把数字表交给模型要 findings / limitations / next_studies，挂不上假设 id 的结论标为不作数；模型失败不影响报告。
+- 新文件 `gaworld/research/{measures,protocol,backends,evaluate,interpret,report,study}.py`；
+  `research_api.py` 加 `/api/research/studies*`；面板加研究卡片与右栏「研究」列表；每个种子的世界落在
+  `output/parallel_worlds/study_<id>_s<seed>/`，「平行世界」页签照常能开。设计见
+  `docs/proposals/2026-09-19-ai-social-scientist.md`。
+- `tests/test_research_study.py`：目录、编译与丢弃、跑前检查、映射到 ExperimentSpec、四种判定、报告、存储、HTTP 阶段流转（含 autopilot、409、解读失败不阻断）。
+
+## [Unreleased] — 2026-09-19 — Moltbook：智能体工作台里一个开关，把居民接上智能体社交网络并记下他在那儿做的每件事
+
+### Added
+
+- **智能体工作台第 7 步「复核 · 部署」新增 Moltbook 卡片。** 一个开关：打开即为这位居民在
+  Moltbook（AI 智能体的社交网络）注册账号，卡片给出认领链接与验证码——认领要人在浏览器里做，
+  认领前 Moltbook 不接受它发帖，所以卡片上有「刷新状态」。关掉开关账号保留（Moltbook 用户名
+  唯一，丢了密钥就找不回这个号），再打开只是把标志翻回去。密钥只存在服务端
+  `data/moltbook_accounts.json`（已加入 `.gitignore`），接口只吐掩码提示。
+- **`gaworld/moltbook/plugin.py`：连上的居民，每个仿真日结束变成一篇帖子。** `on_agent_post_step`
+  把当步的活动 / 动作 / 反思 / 地点攒进缓冲，`on_day_end` 由模型用他的口吻写成标题＋正文
+  （没模型就发原样摘要），随后读一遍信息流前几篇。Moltbook 限制 30 分钟一帖，而面板里一个
+  仿真日只有 10 秒：赶不上的日子**并进下一篇**而不是丢掉；被拒绝的发帖同样等一个间隔再试。
+  发帖后若附带验证题，交给模型作答并回 `/verify`。快进 / 按月按年的运行没有逐步 tick，
+  改用 `daily_logs` 里的阶段简报。
+- **他在 Moltbook 上的每一步都有记录。** 注册、状态、发帖、浏览、验证、失败逐条写进
+  `output/moltbook/agent_<id>/actions.jsonl`（卡片按时间倒序列出最近 20 条）和
+  `output/records/moltbook.actions.jsonl`（统一事件流，可与其他插件对齐时间线）。
+- `gaworld/apps/moltbook_api.py`：`city_api` 式委托模块——`GET /api/moltbook/agent?id=`、
+  `POST /api/moltbook/toggle`、`POST /api/moltbook/refresh`。`CONFIG["moltbook"]`
+  （「扩展与真实工作」分区）：`base_url` / `submolt` / `min_post_interval_seconds` /
+  `compose_with_llm` / `read_feed` / `feed_limit`；`enabled` 是总闸。
+- `tests/test_moltbook.py`（33 例）：账号存储、客户端请求形状与错误封装、记录文件、插件三个钩子
+  （间隔折叠、未认领不发、拒绝退避、模型代笔与验证题、快进简报）、面板接口、两份语言包。
+
+## [Unreleased] — 2026-09-19 — 研究工作台：一个想法或一篇论文 → GAWorld 实施方案
+
+### Added
+
+- **研究工作台（主页独立入口 → 控制台「研究工作台」页签 → `/site/dashboard/research.html`）。**
+  写一个基于 GAWorld 的研究想法，或贴进一篇社会科学论文（可从 .txt / .md / .pdf 读入，
+  PDF 需 `pypdf`），选一个模型（与仿真运行同一份 provider 列表，默认按配置路由），
+  模型对照 **`docs/FEATURES.md` 的功能目录** 做分析，产出：研究问题与假设、论文摘要、
+  可行性判定、「研究需要 → GAWorld 功能 → 用法 → 入口」映射表、实验设计（城市 / 人口 /
+  时间跨度 / 条件 / 事件 / 指标）、逐步实施步骤（带命令与页签）、可信度检验、局限与替代、
+  成本估算；保存到 `output/research/<id>.json`，可下载 Markdown。
+- `gaworld/research/workbench.py`：提示词在调用时读功能目录，目录改了下一次分析就跟着变；
+  模型输出 JSON 而不是文档，逐字段校验后再渲染——同 `city/imagine.py` 的理由。
+  `gaworld/apps/research_api.py`：`interview_api` 式委托模块，分析是后台任务
+  （`POST /api/research/analyze` → `GET /api/research/jobs/<id>`），一次调用带整份目录和
+  一篇论文，本地模型要跑几分钟，不该让浏览器请求等。
+- `tests/test_research_workbench.py`（24 例）：提示词、校验、Markdown、存储、HTTP 表面。
+
+## [Unreleased] — 2026-09-19 — 虚拟城市：给一段描述或一张草图，造一座不存在的城
+
+### Added
+
+- **`gaworld/city/imagine.py`：描述 / 拓扑草图 → 可跑仿真的城市包。**
+  真实地方由 Nominatim 和 Overpass 回答「这地方长什么样」；虚构地方没有可查的
+  地理，这一层让大模型来做同一份工作。`create_city(description=..., images=...)`
+  换掉地理编码与 OSM 两级，其余（环境、知识库、人口）完全不变。
+  CLI：`python -m gaworld.city create "翡翠屿" --description "…"` / `--image 草图.png`；
+  面板：「新建城市」顶部的**真实地名 / 虚拟城市**切换。
+- **模型输出 JSON，不是 `citymap.md`。** 直接让它写指令格式，换来的失败模式是
+  「解析出半座城，而且没人发现」。渲染交给 `procedural.render_citymap()`——
+  从原先的 `generate_citymap` 里抽出来，两条路径共用一个写手，
+  免得模型设计的城和兜底生成的城在格式上悄悄分叉。
+- 校验层刻意宽容：越界坐标夹回 0–1、生造的分类落到 `mixed`、重名城区丢掉、
+  没连路的城区补一条（不可达的城区意味着在那上班的人回不了家）、两站的「地铁」
+  当作没有。只有**一个城区都没有**才报错——静默退回程序化会给用户一座忽略了
+  描述、却看起来像照做了的城。
+- 描述里的气候和产业来自**同一次**调用：`climate` 换算成代表纬度喂给环境层
+  （「热带火山岛」于是真的会下台风），产业写进 `knowledge.json` 并标
+  `source: imagined` 而非 `web`——虚构城市不联网搜产业，搜一个不存在的地方，
+  最坏的结果是搜到一个同名的真实地方。城市自己那句 summary 进 `background`
+  提示词，否则火山和珊瑚礁一个字也到不了居民面前。
+- 草图走 `call_llm(images=...)` 现有的图片通道，**先查 `provider_supports_images`**：
+  文本模型收到图片不是 400 就是照着地名瞎编一座，两种都比明确报错糟。
+- `tests/test_city_imagine.py`（20 例）+ `test_city_api.py` 的草图上传解码（6 例）。
+  文档见 [`CITY_TUTORIAL.md` §2.5](docs/CITY_TUTORIAL.md)。
+
+### Fixed
+
+- **`@node` 不写 x/y 会让地图加载器崩溃**（`gaworld/world/city_map.py`）。
+  `_parse_map_file` 把缺失的坐标存成 `None` 而不是不存键，于是
+  `spec.get("x", default_x)` 把 `None` 交给了 `float()`。修法照抄同文件里
+  显式节点兜底分支已有的 `is not None` 写法。这条路径原先没有调用者，
+  现在有了：中文地名必须显式声明分类（`infer_category` 认的是英文关键词，
+  否则「鱼市」「社区卫生站」全归到 `mixed`，连带拿错营业时间和人流密度），
+  而声明分类的节点不该同时被钉死位置——街区排布仍归地图层。
+
+### Changed
+
+- `call_llm` / 三个 provider 的 `call()` 新增可选 `max_tokens`，按既有
+  `system` / `temperature` 的「只转发调用方真正设了的值」写法接入。
+  城市设计一次要几千 token，provider 默认的 512 会把 JSON 从中间截断——
+  仓库里那条 `_note_truncated` 警告说的正是这件事，但此前没有任何调用方
+  能在单次调用里抬高预算。
+- `build_environment(..., note=...)`：把一句只属于这座城的话追加进 `background`
+  与外部环境生成器的上下文。
+
+## [Unreleased] — 2026-09-18 — 跨城市看居民：能看，但只有当前城市能改
+
+### Added
+
+- **`GET /api/city/catalogue` / `agents` / `agent`：不切换城市也能看它的居民。**
+  直接读城市包（`data/cities/<slug>/`），不经过 `dashboard_server` 在进程启动时
+  解析好的那一套路径——那套路径永远只指向配置选中的那一座城。列表可按姓名/职业/
+  编号搜索并分页（默认 200 条/页，上限 2000），单个居民给身份、九个状态变量和
+  profile 原文。`city` 省略即**默认世界**（它是一份真实人口，不是缺参数）。
+- 读取复用 `gaworld.interview.roster` 的 `load_population` / `profile_block` /
+  `city_catalogue`，**不新增第二份人口文件解析器**——群体采访面板先需要跨城市读，
+  这里接着用同一份，格式改动只需改一处。
+- 每个居民 payload 都带一枚**城市图章**（slug / 短名 / 是否当前运行城市）：
+  编号只在城市**内部**唯一，#1 每座城市都有，一个不说明来自哪座城的居民列表
+  正是这枚图章要防的误会。选择器用城市包的短 `name` 而不是 `display_name`——
+  地理编码回来的是「乌镇镇, 桐乡市, 嘉兴市, 浙江省, 314501, 中国」，
+  那串在城市卡片上是对的，在下拉框里没法读。
+- 面板：「城市」页签左栏下部的**城市居民**列表（`site/dashboard/city-agents.js`，
+  带 node 测试），以及 Agent Studio 左上的**选择城市**——**非当前城市只读**，
+  面板明说为什么：编号每城各自从 1 开始，而记忆 / 大五人格 / 社交 / 财务是
+  按编号存放的一个扁平命名空间、属于当前运行那座城，跨城市编辑会写到别人身上。
+  要改别城的居民，先「设为当前城市」再重启面板服务（`csv_path` / `md_path`
+  在进程启动时解析一次，不热切换）。
+- `tests/test_city_api.py` 补 112 行；文档见 [`CITY_TUTORIAL.md`](docs/CITY_TUTORIAL.md)
+  的「在 Agent Studio 里看别的城市」。
+
+---
+
+## [Unreleased] — 2026-09-18 — 群体采访：问一群人，然后能统计他们的答案
+
+### Added
+
+- **`gaworld/interview/`：群体采访。** 一次问一群受访者同一套问题——受访者可以是个体居民，
+  **也可以是 `gaworld.group` 的 cohort 群体智能体**，并且**一场会话可以跨城市**。
+  它不是在单人采访外面套一个循环，四处都是结构性差别：
+  - **题型是一等的**（`open` / `choice` / `boolean`）。选择题和是非题的回答被解析回
+    选项标签并**计数**，不是留成一堆散文。解析对形式宽容（```json 围栏、前置客套话、
+    「B. 不支持」都能读）、对内容严格：**答了选项之外的东西标记为未解析、原话仍进文档、
+    但不计入统计**，并写明有多少份。硬塞进某个桶等于替受访者编了一个意见；
+    悄悄丢掉则在不说明的情况下缩小了分母——那正是一份调查用三份有效回答宣称
+    「100% 支持」的方式。
+  - **两种计数都报**：`受访者` 与 `代表人数`（一个 8 人的 cohort 算 8 人）。
+    混了个体和群体智能体之后，不加权的数字讲的是抽样设计，不是人口。
+  - **分组分布**按城市／年龄段／性别／户籍／片区交叉，每组按**自己的**有效回答归一化；
+    **只分化了样本的维度才画**——一座城市的调查画一张只有一根柱子的「按城市」图，
+    等于请读者去看一个根本没测过的分布。
+  - **连续提问**：一次调用 = 一位受访者 × 一个问题，每一题的提问里回放**他自己**
+    前面的问答；可以继续追问新一轮，问题编号跨轮连续。这份记忆只在会话记录里，
+    **不写 episodic memory**——采访是对人口的观测，不是干预，
+    一次「居民记得被调查过」的运行和一次没有的运行是两个不同的实验。
+  - **一份自带出处的 Markdown**：摘要 → 统计 → 每个人的原话，外加哪些没成功。
+    一份悄悄省掉六位解析失败居民的文档，是一份夸大了自己样本的文档。
+- **多模态输入。** `gaworld/llm/providers.py` 补上真正的图片输入，三种线格式各自对齐：
+  OpenAI 的 `image_url` data URL、Anthropic 的 `image` source block（图片在文字**之前**）、
+  Ollama 的裸 base64 `images` 数组。provider 可声明 `vision: true|false`，
+  不声明则按模型名启发式判断；**判断为不支持时图片降级成说明文字并在回答上留标记**，
+  模型当场拒绝图片则去掉图片重问一次并记下来。网址走现有的正文抽取器，
+  **在父进程里抓一次给所有人**——否则每个子进程各抓一遍，
+  更糟的是第 1 位和第 40 位受访者可能读到了不同版本的页面。
+- **按城市一个子进程**（`python -m gaworld.interview`，环境变量
+  `GAWORLD_CONFIG_OVERRIDES={"city": slug}`）。`build_agent`、记忆库、向量库读的都是
+  配置加载时定好的模块级路径，一个进程里换城市等于在线程池底下改全局配置。
+  进度按 JSON Lines 走 stdout，结果写 `--out` 文件——不是写 stdout，
+  因为某个 import 的一行警告就能把它弄脏。
+- **面板**：控制台「群体采访」页签（`site/dashboard/survey.html`，三步：选受访者 → 出题 →
+  看结果），图表与统计块在 `survey-charts.js` 里做成无 DOM 的纯函数（`node` 可单测），
+  全部文案由宿主页注入，所以英文界面不会突然冒出中文。开跑前先
+  `POST /api/interview/plan` 把「要问多少人、多少次调用」显示出来——
+  80 人 × 5 题是 400 次模型调用，用户有权在花掉它之前看到这个数。
+- 后端 `gaworld/apps/interview_api.py`（delegate 模块）：`/api/interview/**` 全部带尾段，
+  原来的单人采访端点 `POST /api/interview`（Agent Studio 的采访框）**没有变**。
+  一轮是 job 而不是请求处理：400 次调用没有浏览器会等。
+  同一时间只允许一轮——两轮同时往一个会话文件追加会写坏记录。
+- 会话落在 `output/interviews/<session_id>/`，**刻意不在 `output/cities/<slug>/` 下**：
+  别的运行产物属于某一座城市的历史，一次跨城市的会话不属于其中任何一座。
+- 教程 [`docs/GROUP_INTERVIEW_TUTORIAL.md`](docs/GROUP_INTERVIEW_TUTORIAL.md)；
+  测试 131 条（采访 122 + provider 图片输入 9）加 `survey-charts.test.js` 的 25 条断言，
+  其中 `test_interview_end_to_end.py` 起一个本地 OpenAI 兼容 stub 端点，
+  跑真实子进程、真实 `build_agent`、真实提示词——下面第一条 Fixed 就是它发现的，
+  别处全绿。
+
+### Fixed
+
+- **受访者档案不能在工作线程里构建。** 构建一位居民会 seed 向量库，而
+  `gaworld/memory/store.py` 持有的是**进程级单个** SQLite 连接，
+  于是每位受访者都以 "SQLite objects created in a thread can only be used in that
+  same thread" 失败。改成**档案串行构建、提问循环并发**：时间本来就花在等 HTTP 上，
+  并发放在那儿才有意义。（另一条路是把记忆库改成线程安全，
+  影响面远超这个功能该承担的范围。）由端到端测试发现。
+- **base64 图片会留在 `session.json` 里。** 那个文件每次追问、每次面板打开会话都要
+  **整份**读出来，一张 3MB 的照片于是变成每一次读取里的 4MB 字符串，
+  面板还要把它再传回浏览器（而浏览器本来就有这张图）。改为存成
+  `round-<n>/images/` 下的文件，附件记一个仍然可解析的路径。
+- 默认世界的 slug 是空字符串，和面板「全部城市」的哨兵值撞了——`<select>` 把两个选项
+  渲染成同一个 value，于是选「全部城市」静默地等于选「默认世界」。
+
+### Docs
+
+- `README.md` / `README.zh-CN.md`（能力清单、Dashboard 面板与接口表、文档索引）、
+  `docs/FEATURES.md`、`docs/TUTORIAL.md`、`docs/TUTORIAL.v2.md`（§10.1 与 §12.6、
+  输出文件地图、命令速查表）、`docs/PROJECT_STRUCTURE.md`、`AGENTS.md`、
+  `site/dashboard/docs.js`（文档面板清单）、`site/index.html`（入口卡片）、
+  以及 `config_docs.py` 里新增的 `llm.providers.*.vision` 说明。
+
+---
 
 ## [Unreleased] — 2026-09-16 — 城市知识库：让城市真的影响居民
 

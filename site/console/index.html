@@ -9,24 +9,18 @@
 </head>
 <body>
   <header class="console-bar">
-    <div class="brand">
+    <button type="button" class="nav-toggle" id="navToggle" aria-controls="sidebar" aria-expanded="true" data-i18n-title="console.collapse_nav" title="收起导航">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" href="/" data-i18n-title="console.home_title" title="返回首页">
       <span class="brand-mark">GA</span>
       <span class="brand-name">GAWorld Console</span>
+    </a>
+    <div class="crumb" id="crumb" aria-live="polite">
+      <span class="crumb-group" id="crumbGroup"></span>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <strong class="crumb-view" id="crumbView"></strong>
     </div>
-    <nav class="tabs" id="tabs" role="tablist" aria-label="views">
-      <button class="tab" role="tab" data-tab="dashboard"><span data-i18n="nav.dashboard">控制台</span><span class="en">Dashboard</span></button>
-      <button class="tab" role="tab" data-tab="simviz"><span data-i18n="nav.simviz">仿真回放</span><span class="en">Simulation</span></button>
-      <button class="tab" role="tab" data-tab="city"><span data-i18n="nav.city">城市</span><span class="en">Cities</span></button>
-      <button class="tab" role="tab" data-tab="worlds"><span data-i18n="nav.worlds">平行世界</span><span class="en">Parallel Worlds</span></button>
-      <button class="tab" role="tab" data-tab="analytics"><span data-i18n="nav.analytics">结果分析</span><span class="en">Analytics</span></button>
-      <button class="tab" role="tab" data-tab="studio"><span data-i18n="nav.studio">智能体工作台</span><span class="en">Agent Studio</span></button>
-      <button class="tab" role="tab" data-tab="population"><span data-i18n="nav.population">人口与群体</span><span class="en">Population</span></button>
-      <button class="tab" role="tab" data-tab="survey"><span data-i18n="nav.survey">群体采访</span><span class="en">Group Interview</span></button>
-      <button class="tab" role="tab" data-tab="collaboration"><span data-i18n="nav.collaboration">合作任务</span><span class="en">Cooperation</span></button>
-      <button class="tab" role="tab" data-tab="external"><span data-i18n="nav.external">外部系统</span><span class="en">External</span></button>
-      <button class="tab" role="tab" data-tab="settings"><span data-i18n="nav.settings">配置</span><span class="en">Settings</span></button>
-      <button class="tab" role="tab" data-tab="docs"><span data-i18n="nav.docs">文档</span><span class="en">Docs</span></button>
-    </nav>
     <div class="bar-right">
       <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
       <div class="lang-switch" role="group" data-i18n-aria="lang.switch_label" aria-label="切换语言">
@@ -35,7 +29,99 @@
       </div>
     </div>
   </header>
-  <main class="frames" id="frames"></main>
+
+  <div class="console-body">
+    <!-- The views, grouped by the stage of a study they belong to. The same
+         five groups, in the same order, are the landing page's 功能入口. -->
+    <nav class="sidebar" id="sidebar" aria-label="views">
+      <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical">
+        <section class="nav-group">
+          <h2 class="nav-group-label"><span data-i18n="nav.group_build">构建</span><span class="en">Build</span></h2>
+          <button class="tab" role="tab" data-tab="city">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V7h5v14M11 21V11h5v10M16 21v-6h3v6M8 10h1M8 13h1M8 16h1"/></svg>
+            <span class="tab-text"><span data-i18n="nav.city">城市</span><span class="en">Cities</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="population">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2a5 5 0 0 1 6 4.8"/></svg>
+            <span class="tab-text"><span data-i18n="nav.population">人口与群体</span><span class="en">Population</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="studio">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span class="tab-text"><span data-i18n="nav.studio">智能体工作台</span><span class="en">Agent Studio</span></span>
+          </button>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-label"><span data-i18n="nav.group_run">运行</span><span class="en">Run</span></h2>
+          <button class="tab" role="tab" data-tab="dashboard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.dashboard">控制台</span><span class="en">Dashboard</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="simviz">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z"/></svg>
+            <span class="tab-text"><span data-i18n="nav.simviz">仿真回放</span><span class="en">Simulation</span></span>
+          </button>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-label"><span data-i18n="nav.group_experiment">实验</span><span class="en">Experiment</span></h2>
+          <button class="tab" role="tab" data-tab="worlds">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.2v9.6M18 10.2c0 4.4-12 2.6-12 6.6"/></svg>
+            <span class="tab-text"><span data-i18n="nav.worlds">平行世界</span><span class="en">Parallel Worlds</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="collaboration">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.collaboration">合作任务</span><span class="en">Cooperation</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="games">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18.5 14.5h.01"/></svg>
+            <span class="tab-text"><span data-i18n="nav.games">游戏场</span><span class="en">Playground</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="survey">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.survey">群体采访</span><span class="en">Group Interview</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="external">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+            <span class="tab-text"><span data-i18n="nav.external">外部系统</span><span class="en">External</span></span>
+          </button>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-label"><span data-i18n="nav.group_analyze">分析</span><span class="en">Analyze</span></h2>
+          <button class="tab" role="tab" data-tab="analytics">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M11 20V6M17 20v-10M3 20h18"/></svg>
+            <span class="tab-text"><span data-i18n="nav.analytics">结果分析</span><span class="en">Analytics</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="research">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7.5 15h9"/></svg>
+            <span class="tab-text"><span data-i18n="nav.research">研究工作台</span><span class="en">Research</span></span>
+          </button>
+        </section>
+
+        <section class="nav-group">
+          <h2 class="nav-group-label"><span data-i18n="nav.group_system">系统</span><span class="en">System</span></h2>
+          <button class="tab" role="tab" data-tab="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            <span class="tab-text"><span data-i18n="nav.settings">配置</span><span class="en">Settings</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="docs">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg>
+            <span class="tab-text"><span data-i18n="nav.docs">文档</span><span class="en">Docs</span></span>
+          </button>
+        </section>
+      </div>
+    </nav>
+    <div class="nav-backdrop" id="navBackdrop" hidden></div>
+
+    <main class="frames" id="frames">
+      <div class="frame-loading" id="frameLoading" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span data-i18n="console.loading_view">正在载入视图…</span>
+      </div>
+    </main>
+  </div>
+
   <script src="/site/dashboard/i18n.js"></script>
   <script src="/site/console/console.js"></script>
 </body>

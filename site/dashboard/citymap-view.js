@@ -66,6 +66,11 @@
       this.ctx = canvas.getContext("2d");
       this.avatarBase = opts.avatarBase || "/output/visualization/";
       this.getSelectedAgentId = opts.getSelectedAgentId || (() => null);
+      // Home-mode hook: returns the home-node id for the selected agent (or
+      // null). The renderer draws a soft orange ring around that node so a
+      // viewer can find "where does this person live?" without opening any
+      // panel. Optional — callers that don't wire it just lose the ring.
+      this.getSelectedAgentHome = opts.getSelectedAgentHome || (() => null);
       // May be a function: the locale file loads after this constructor runs,
       // so a caller translating the string has to defer it to render time or
       // it paints the untranslated key. The default defers for the same reason.
@@ -222,6 +227,12 @@
         c.fillRect(x - r, y - r, r * 2, r * 2);
       });
 
+      // Home-mode highlight: a soft orange ring around the selected agent's
+      // home node. Drawn after the dots so it sits on top, before the
+      // landmark labels so the existing label-priority logic still wins
+      // when the home node is also a famous landmark.
+      this._drawHomeHighlight(map.nodes, layout);
+
       this._drawLandmarks(map.nodes, layout);
 
       if (frame) {
@@ -260,6 +271,58 @@
         c.fillText(text, bx + 4, by + bh / 2);
         shown += 1;
       }
+    }
+
+    _drawHomeHighlight(nodesArr, layout) {
+      // Soft orange halo around the selected agent's home node. Off when no
+      // selection, no home, or the home node isn't in the current map.
+      const homeId = typeof this.getSelectedAgentHome === "function"
+        ? this.getSelectedAgentHome()
+        : null;
+      if (!homeId) return;
+      const node = nodesArr.find((n) => (n.id === homeId || n.label === homeId));
+      if (!node) return;
+      const c = this.ctx;
+      const w = this._nodeWorld(node, layout);
+      const [x, y] = this._toScreen(w[0], w[1]);
+      c.save();
+      c.strokeStyle = "rgba(214, 124, 56, 0.85)";
+      c.lineWidth = 2;
+      c.setLineDash([4, 3]);
+      c.beginPath(); c.arc(x, y, 11, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = "rgba(214, 124, 56, 0.35)";
+      c.lineWidth = 1;
+      c.beginPath(); c.arc(x, y, 16, 0, Math.PI * 2); c.stroke();
+      c.setLineDash([]);
+      c.restore();
+    }
+
+    _isAgentAtHome(agent) {
+      // An agent is "at home" when their current location equals their home
+      // node — same definition the HomeEnvironmentPlugin uses internally.
+      const home = String(agent.home || "").trim();
+      const current = String(agent.resolved_location || agent.location || "").trim();
+      if (!home || !current) return false;
+      return home === current;
+    }
+
+    _drawHomeBadge(c, x, y, radius) {
+      // A small "🏠" badge anchored bottom-right of the avatar. We use the
+      // emoji glyph directly so it follows the system font stack instead of
+      // shipping a custom icon.
+      const bx = x + radius * 0.78;
+      const by = y + radius * 0.78;
+      c.save();
+      c.fillStyle = "rgba(255, 254, 249, 0.96)";
+      c.beginPath(); c.arc(bx, by, 9, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = "rgba(20, 121, 91, 0.85)";
+      c.lineWidth = 1.4;
+      c.beginPath(); c.arc(bx, by, 9, 0, Math.PI * 2); c.stroke();
+      c.font = '11px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillText("🏠", bx, by + 1);
+      c.restore();
     }
 
     _drawTrails(framesUpTo, nodes, layout) {
@@ -336,6 +399,8 @@
       c.strokeStyle = selected ? color : "#fffef9";
       c.lineWidth = selected ? 4 : 3;
       c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.stroke();
+      // home-mode badge: small 🏠 on agents who are actually at their home node
+      if (this._isAgentAtHome(agent)) this._drawHomeBadge(c, x, y, radius);
       // name pill
       const name = agent.name || String(agent.agent_id);
       c.font = '600 13px "Noto Sans SC", "Microsoft YaHei", sans-serif';

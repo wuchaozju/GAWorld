@@ -38,6 +38,14 @@
 .brand-copy h1 { font-family: Georgia, "Noto Serif SC", serif; font-size: 28px; margin-top: 4px; }
 .brand-copy .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 
+/* Hosted inside the console shell (html.is-embedded is set by i18n.js): the
+   shell already carries the GA mark and names the view, so the page header
+   drops its duplicate mark and tightens up. */
+html.is-embedded .studio-shell { padding-top: 12px; }
+html.is-embedded .studio-top { padding: 12px 18px; }
+html.is-embedded .brand-mark { display: none; }
+html.is-embedded .brand-copy h1 { font-size: 22px; }
+
 /* ---- Step rail ---- */
 .step {
   flex: 1 1 auto; min-width: 118px;

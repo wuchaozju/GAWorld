@@ -34,7 +34,72 @@ from gaworld.world.city_map import (
     travel_plan as build_travel_plan,
 )
 
+from gaworld.settings import CONFIG
 from gaworld.sim._utils import _minutes_to_time_str, _time_str_to_minutes
+
+# Home / workplace assignment. "nearest" is the original behaviour, kept so a
+# run can be compared against one made before this existed.
+# 0 = no cap: consider every node of the right category inside the search
+# radius. A fixed top-k cuts the pool at whatever distance the k-th nearest
+# node happens to sit — measured on the default map, 8 of 20 residential
+# blocks were never candidates because the cut landed at 3.06 km on a map
+# 19 km across. The radius and the gravity weight are the real limits.
+_NO_CAP = 10 ** 6
+_DEFAULT_LOCATION_ASSIGNMENT = {
+    "mode": "gravity",
+    "workplace_candidates": 0,
+    "home_candidates": 0,
+    # Workplaces decay with distance *from home* — that is the real force
+    # shortening commutes. Homes decay with distance from the city centre,
+    # which is a much weaker preference and is not the same statement, so it
+    # gets its own, gentler exponent. Sharing one value made two of twenty-one
+    # residential blocks house 44% of the town purely because they sit 250m
+    # from the centre.
+    "distance_decay": 1.5,
+    "home_distance_decay": 0.5,
+}
+
+
+def _candidate_cap(value: Any) -> int:
+    try:
+        cap = int(value)
+    except (TypeError, ValueError):
+        return _NO_CAP
+    return cap if cap > 0 else _NO_CAP
+
+
+def _assignment_cfg() -> dict[str, Any]:
+    cfg = CONFIG.get("location_assignment", {})
+    merged = dict(_DEFAULT_LOCATION_ASSIGNMENT)
+    if isinstance(cfg, dict):
+        merged.update({k: v for k, v in cfg.items() if k in merged})
+    return merged
+
+
+def _gravity_pick(city_map: Any, candidates: list, decay: float, rng=None) -> str:
+    """Pick one candidate with probability proportional to size / distance^decay.
+
+    Taking the *nearest* match instead sends everyone whose job maps to the
+    same category into the same building. On the default map that put 56% of
+    commuters at one node and left 89% of the road network carrying no
+    traffic at all, which makes any spatial quantity measured on it
+    meaningless. Weighting by a node's capacity is the standard gravity form:
+    large employers draw more people, distant ones draw fewer.
+    """
+    weights = []
+    for node_id, distance in candidates:
+        node = node_by_name(city_map, node_id)
+        size = float(node.get("capacity", 1) or 1) if node else 1.0
+        span = (1.0 + max(0.0, float(distance))) ** max(0.0, float(decay))
+        weights.append(max(1e-6, size / span))
+    picker = rng or random
+    threshold = picker.random() * sum(weights)
+    cumulative = 0.0
+    for (node_id, _distance), weight in zip(candidates, weights):
+        cumulative += weight
+        if cumulative >= threshold:
+            return node_id
+    return candidates[-1][0]
 
 # ---------------------------------------------------------------------------
 # Location lookup primitives.
@@ -90,16 +155,19 @@ def _infer_workplace(
 
     # Search from home or a central location
     origin = home_node or _central_origin(city_map)
+    cfg = _assignment_cfg()
     candidates = resolve_best_location(
-        city_map, origin, categories, top_k=3, max_radius_km=20.0
+        city_map, origin, categories,
+        top_k=_candidate_cap(cfg["workplace_candidates"]), max_radius_km=20.0,
     )
     if candidates:
-        # Pick the closest one that is in the location set
-        for node_id, _dist in candidates:
-            if node_id in location_set:
-                return node_id
-        # If slug mismatch, still return the first candidate
-        return candidates[0][0]
+        # Prefer candidates that really exist in the location set, but a slug
+        # mismatch must not empty the pool.
+        known = [pair for pair in candidates if pair[0] in location_set]
+        pool = known or candidates
+        if str(cfg["mode"]) == "gravity":
+            return _gravity_pick(city_map, pool, cfg["distance_decay"])
+        return pool[0][0]
 
     # Fallback: legacy hardcoded names
     return _pick_first_available(
@@ -115,16 +183,20 @@ def _infer_home(agent: dict[str, Any], city_map: Any) -> str:
     Falls back to legacy hardcoded names then random selection.
     """
     location_set = set(city_all_locations(city_map))
+    cfg = _assignment_cfg()
     residential = resolve_best_location(
-        city_map, _central_origin(city_map), ["residential"], top_k=10, max_radius_km=30.0
+        city_map, _central_origin(city_map), ["residential"],
+        top_k=_candidate_cap(cfg["home_candidates"]), max_radius_km=30.0,
     )
     if residential:
-        # Introduce mild randomness so not all agents live in the same block
-        pool = residential[:min(5, len(residential))]
-        node_id, _ = random.choice(pool)
-        if node_id in location_set:
-            return node_id
-        return residential[0][0]
+        known = [pair for pair in residential if pair[0] in location_set]
+        pool = known or residential
+        if str(cfg["mode"]) == "gravity":
+            # Same reasoning as the workplace side: a flat choice over the five
+            # most central blocks packs the whole town into five addresses.
+            return _gravity_pick(city_map, pool, cfg["home_distance_decay"])
+        node_id, _ = random.choice(pool[:min(5, len(pool))])
+        return node_id
 
     # Fallback
     candidates = ["Central Block", "North Block", "South Block"]
@@ -151,6 +223,7 @@ def assign_agent_locations(agent: dict[str, Any], city_map: Any) -> dict[str, An
         "travel_minutes": 0,
         "travel_progress": 1.0,
         "travel_route": [home],
+        "travel_congestion": 1.0,
         "travel_cost": 0.0,
         "rush_hour": False,
         "arrival_time": "",
@@ -280,6 +353,7 @@ def move_agent(
                 "minutes": int(locations.get("travel_minutes", 0) or 0),
                 "progress": float(locations.get("travel_progress", 0.0) or 0.0),
                 "route": locations.get("travel_route", []),
+                "congestion": float(locations.get("travel_congestion", 1.0) or 1.0),
                 "status": "in_transit",
             },
             "just_arrived": just_arrived,
@@ -306,6 +380,7 @@ def move_agent(
                 "minutes": 0,
                 "progress": 1.0,
                 "route": [origin],
+                "congestion": 1.0,
                 "status": "stationary",
             },
             "just_arrived": False,
@@ -328,6 +403,7 @@ def move_agent(
     locations["travel_cost"] = travel_cost
     locations["rush_hour"] = is_rush
     locations["travel_route"] = travel.get("route", [origin, target])
+    locations["travel_congestion"] = float(travel.get("congestion", 1.0) or 1.0)
     locations["depart_time"] = time_str
     locations["arrival_time"] = arrival_time
 
@@ -348,6 +424,7 @@ def move_agent(
                 "route": travel.get("route", [origin, target]),
                 "cost": travel_cost,
                 "rush_hour": is_rush,
+                "congestion": float(travel.get("congestion", 1.0) or 1.0),
                 "status": "arrived",
             },
             "just_arrived": True,
@@ -369,6 +446,7 @@ def move_agent(
             "route": travel.get("route", [origin, target]),
             "cost": travel_cost,
             "rush_hour": is_rush,
+            "congestion": float(travel.get("congestion", 1.0) or 1.0),
             "status": "departed",
         },
         "just_arrived": False,

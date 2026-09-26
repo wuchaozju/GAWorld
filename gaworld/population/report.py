@@ -278,7 +278,7 @@ def build_report(
         ),
         "migrant_share": _delta(
             spec.demography.migrant_share,
-            sum(1 for p in people if p.hukou != "本地") / max(size, 1),
+            sum(1 for p in people if p.is_migrant) / max(size, 1),
         ),
         "employment_rate": _delta(
             spec.education_work.employment_rate,

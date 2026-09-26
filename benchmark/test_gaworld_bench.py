@@ -175,3 +175,53 @@ class TestFastFlag(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAnchorScope(unittest.TestCase):
+    """City-wide anchors must not score a district run.
+
+    ``data/citymap.md`` is ~19x15 km of one Hangzhou district, where over half
+    of commutes are under 5 km; the commuting anchors describe Hangzhou as a
+    whole. Across the whole distance-decay range the district reproduces the
+    city's within-5 km share (52.3% vs 52%) but tops out at a 5.94 km mean
+    against the city's 8.1 km — the tail does not exist on that map. Scoring
+    one against the other measures the mismatch, not the model.
+    """
+
+    def test_every_anchor_declares_a_scope(self):
+        for key, anchor in gb.ANCHORS.items():
+            with self.subTest(anchor=key):
+                self.assertIn("scope", anchor, f"{key} has no declared scope")
+
+    def test_the_commuting_anchors_are_out_of_scope(self):
+        for key in ("commute_minutes", "transit_share"):
+            self.assertNotIn(gb.ANCHORS[key]["scope"], gb.SCORED_SCOPES)
+
+    def test_the_economic_anchors_are_still_scored(self):
+        for key in ("engel_coefficient", "savings_rate", "wealth_gini"):
+            self.assertIn(gb.ANCHORS[key]["scope"], gb.SCORED_SCOPES)
+
+    def test_an_out_of_scope_anchor_is_reported_but_not_scored(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "economy").mkdir()
+            (root / "economy" / "wealth_snapshot.csv").write_text(
+                "engel_coefficient,savings_rate\n0.29,0.34\n0.28,0.36\n", encoding="utf-8")
+            commute = root / "commute"
+            commute.mkdir()
+            (commute / "commute.csv").write_text(
+                "avg_travel_time\n12.0\n13.0\n", encoding="utf-8")
+            result = gb.track_a_macro_fit(root)
+
+        self.assertEqual(result.get("sim_scope"), "district")
+        self.assertIn("engel_coefficient", result["metrics"])
+        if "commute_minutes" in result.get("context_metrics", {}):
+            row = result["context_metrics"]["commute_minutes"]
+            self.assertIsNone(row["score"])
+            self.assertIn("context only", row["note"])
+        # Whatever the extractor found, no out-of-scope anchor may be scored.
+        for key in result["metrics"]:
+            self.assertIn(gb.ANCHORS[key]["scope"], gb.SCORED_SCOPES)

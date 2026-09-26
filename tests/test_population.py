@@ -479,7 +479,12 @@ class WriterTests(unittest.TestCase):
     def setUpClass(cls):
         cls.result = _generate(size=200, seed=13, name="unittown")
 
-    def test_csv_columns_match_the_reference_file_exactly(self):
+    def test_csv_carries_every_column_the_reference_corpus_has(self):
+        """The contract is that ``build_agent`` loads a generated population
+        exactly as it loads the reference one, so the generated header must be
+        a *superset* of the reference — not identical to it. The synthesiser
+        additionally carries employment / industry / monthly_income, which it
+        fits and the hand-written corpus never had."""
         header = render_state_csv(self.result.people).splitlines()[0]
         self.assertEqual(list(CSV_COLUMNS), header.split(","))
 
@@ -487,7 +492,22 @@ class WriterTests(unittest.TestCase):
         reference = root / "data" / "hangzhou_agents_state_init.csv"
         if reference.exists():
             with open(reference, encoding="utf-8-sig") as fh:
-                self.assertEqual(fh.readline().strip().split(","), list(CSV_COLUMNS))
+                reference_columns = fh.readline().strip().split(",")
+            missing = [c for c in reference_columns if c not in CSV_COLUMNS]
+            self.assertEqual([], missing, f"generated CSV lost reference columns: {missing}")
+
+    def test_the_fitted_dimensions_reach_the_csv(self):
+        """They are fitted and then have to survive the trip out of the module:
+        dropping them is what made every consumer re-derive them from the job
+        title instead."""
+        rows = render_state_csv(self.result.people).splitlines()
+        header = rows[0].split(",")
+        for column in ("employment", "industry", "monthly_income"):
+            self.assertIn(column, header)
+        values = dict(zip(header, rows[1].split(",")))
+        self.assertIn(values["employment"], {"employed", "unemployed", "not_in_labor_force"})
+        self.assertTrue(values["industry"])
+        self.assertGreaterEqual(float(values["monthly_income"]), 0.0)
 
     def test_profiles_are_parseable_by_the_simulator_parser(self):
         import re

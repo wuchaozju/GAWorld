@@ -19,13 +19,52 @@ def news_settings() -> dict[str, Any]:
             "max_chars": 2000,
             "memory_excerpt_chars": 600,
             "user_agent": "GAWorld/1.0",
+            # The homepage cache (sources_path → cache_path) is re-fetched only
+            # when its newest entry is older than this many real hours.
+            "cache_ttl_hours": 6.0,
+            # Typed information sources (gaworld/infosources): RSS/Atom feeds,
+            # Reddit / Hacker News, Weibo / Baidu / Bilibili hot lists, trade
+            # sites. Each resident gets a media diet — a weighted subset of the
+            # registry chosen by job, interests, platform dependence and
+            # openness — and an info-seek draws from it before falling back to
+            # the homepage cache or a web search.
+            "sources": {
+                "enabled": True,
+                "registry_path": "data/info_sources.json",
+                "feed_cache_path": "output/infosources/feed.json",
+                # Real hours between fetches of one source; sim time is irrelevant.
+                "ttl_hours": 6.0,
+                "per_source_limit": 15,
+                "timeout": 10,
+                # Chance that an info-seek reads from the diet rather than the
+                # legacy path (homepage cache / web search).
+                "feed_visit_ratio": 0.6,
+                # Fetch the article body when the feed excerpt is shorter than
+                # this many characters (hot lists and Reddit are never fetched).
+                "full_read": True,
+                "full_read_min_chars": 200,
+                "diet": {
+                    "max_sources": 8,
+                    # Multiplier for sources in a language the resident does not
+                    # read natively; openness widens it.
+                    "en_weight": 0.5,
+                },
+            },
             "info_seek": {
                 "enabled": True,
                 "base_daily_chance": 0.55,
                 "max_seeks_per_day": 3,
                 "preferred_sites_per_agent": 6,
                 "prefer_source_visit_ratio": 0.55,
-                "engines": ["x", "baidu", "google", "bing"],
+                # Tried in order until one returns results. x needs a token,
+                # ddg is keyless, brave / tavily need an API key (below) and are
+                # skipped silently without one; the last three scrape result
+                # pages and are the least reliable.
+                "engines": ["x", "ddg", "brave", "tavily", "baidu", "google", "bing"],
+                "search_api": {
+                    "brave_api_key_env": "BRAVE_SEARCH_API_KEY",
+                    "tavily_api_key_env": "TAVILY_API_KEY",
+                },
                 "max_results": 4,
                 "timeout": 8,
                 "content_timeout": 8,
@@ -219,5 +258,50 @@ def human_realism_settings() -> dict[str, Any]:
         },
         "dynamic_behavior": {
             "enabled": True,
+        },
+        # Leaving the city: business trips, family visits, holidays. Residents
+        # already have off-screen kin in other provinces and a standing duty to
+        # "go back and see them" — this is the displacement that makes it
+        # actionable. Off by default: it changes who is present in the city on
+        # any given day, so earlier runs are not comparable.
+        "travel": {
+            "enabled": False,
+            # Own seed, so departures stay reproducible even when the run has
+            # no global seed. Mirrors the family / personality blocks.
+            "seed": 20260919,
+            # Ceiling on how many residents may be out of town at once. Without
+            # it three independent triggers can empty the city and the social
+            # density the rest of the simulation depends on collapses.
+            "max_away_share": 0.15,
+            # Yuan per km, one way. MODELLING GUESSES (mechanism class (c)):
+            # they set how expensive a trip is, not the shape of any mechanism,
+            # and no result may rest on their absolute level.
+            "fare_per_km": {"rail": 0.45, "air": 0.75},
+            # Hotel and eating out, per day away, charged through the economy's
+            # conserving expense path.
+            "daily_surcharge": 180.0,
+            "business": {
+                # Per working day, before the job multiplier. A salesperson
+                # travels several times more than a librarian.
+                "base_daily_prob": 0.004,
+                "days": [2, 4],
+            },
+            "family": {
+                # Relationship obligation that makes an in-person visit due.
+                # `decay_relationships` raises it daily on neglected kin ties
+                # and nothing could ever spend it; this is the outlet.
+                "obligation_threshold": 0.72,
+                # Crossing the threshold makes a visit likely, not immediate —
+                # people go within the week, not on the day the guilt lands.
+                "daily_prob_over_threshold": 0.18,
+                "days": [2, 5],
+            },
+            "leisure": {
+                "base_daily_prob": 0.02,
+                # Liquid savings, in months of spending, below which nobody
+                # takes a holiday.
+                "min_cash_months": 1.5,
+                "days": [3, 7],
+            },
         },
     }

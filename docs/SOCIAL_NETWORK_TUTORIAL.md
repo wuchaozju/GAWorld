@@ -191,6 +191,13 @@ python -m unittest \
 
 ---
 
+> **obligation 现在有出口了。** 本模块每天给疏于联系的亲友抬高 `obligation`，
+> 而在很长一段时间里这个量**只能涨**——它没有任何行为后果。
+> 打开 `CONFIG["travel"]["enabled"]` 之后，越过阈值会把人真的拉去那座城市探亲，
+> 回来时 `last_contact_day` 重置、closeness 上升、obligation 回落。
+> 角色表里那个一直写着却从未落成一次位移的 `visit` 渠道，指的就是这件事。
+> 见[完整教程 5.9 节](TUTORIAL.v2.md#59-离开本市出差--探亲--旅行)。
+
 ## 9. 已知限制 / 不在本期范围
 
 - Ghost ↔ Ghost 之间的关系暂未建模（妈妈和阿姨之间是否处得来）。

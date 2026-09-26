@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="arena.page_title">GAWorld · 斗兽场</title>
+  <meta name="description" data-i18n-content="arena.meta_description" content="GAWorld Agent Arena — 用 benchmark 任务给一组智能体打分，按正确率 + 速度排序，按 Top-K 留存 / 淘汰 / 补充。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/arena.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell arena-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="arena.kicker">GAWorld Agent Arena</p>
+          <h1 data-i18n="arena.headline">斗兽场：让一组居民在 Benchmark 里决出胜负</h1>
+          <p class="sub" data-i18n="arena.sub">
+            选一组居民 → 选一批任务（内置题库 / LLM 自动出题） → 跑 → 看排行榜 → 留存 Top-K → 补充新选手。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="arena.back">← 返回游戏场</a>
+        <button id="arenaRefreshBtn" class="button" data-i18n="arena.refresh">刷新</button>
+      </div>
+    </header>
+
+    <section class="arena-grid">
+      <!-- Left column: contest setup -->
+      <aside class="arena-side panel">
+        <h3 data-i18n="arena.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="arena.city_label">目标城市</span>
+          <select id="arenaCitySelect"></select>
+        </label>
+
+        <div class="arena-block">
+          <h4 data-i18n="arena.contestants">选手（最多勾 12 人）</h4>
+          <p class="arena-hint" data-i18n="arena.contestants_hint">从当前城市的居民里挑。被淘汰的会被灰掉。</p>
+          <div class="arena-toolbar">
+            <button class="button" id="arenaPickAll" data-i18n="arena.pick_all">全选</button>
+            <button class="button" id="arenaPickNone" data-i18n="arena.pick_none">清空</button>
+          </div>
+          <ul id="arenaContestants" class="arena-list"></ul>
+        </div>
+
+        <div class="arena-block">
+          <h4 data-i18n="arena.tasks_title">任务</h4>
+          <p class="arena-hint" data-i18n="arena.tasks_hint">勾选内置题目，或点「随机出题」让 LLM 现生成。</p>
+          <div class="arena-toolbar">
+            <button class="button" id="arenaPickTasksAll" data-i18n="arena.pick_all">全选</button>
+            <button class="button" id="arenaPickTasksNone" data-i18n="arena.pick_none">清空</button>
+            <button class="button" id="arenaGenerateBtn" data-i18n="arena.generate">🎲 随机出题</button>
+          </div>
+          <ul id="arenaTasks" class="arena-list arena-task-list"></ul>
+          <div id="arenaCustomTasks" class="arena-custom"></div>
+        </div>
+
+        <div class="arena-actions">
+          <button id="arenaRunBtn" class="button primary" data-i18n="arena.run">开始斗兽</button>
+        </div>
+      </aside>
+
+      <!-- Right column: live arena -->
+      <section class="arena-main panel">
+        <header class="arena-main-head">
+          <div>
+            <h3 data-i18n="arena.section_live">实时战况</h3>
+            <p id="arenaStatus" class="arena-status" data-i18n="arena.idle">空闲</p>
+          </div>
+          <div class="arena-progress">
+            <div class="bar"><span id="arenaBar" style="width:0%"></span></div>
+            <span id="arenaPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <section class="arena-main-section">
+          <h4 data-i18n="arena.leaderboard">排行榜</h4>
+          <div class="arena-leaderboard" id="arenaLeaderboard"></div>
+        </section>
+
+        <section class="arena-main-section arena-survivors">
+          <div class="row">
+            <h4 data-i18n="arena.survivors">留存</h4>
+            <label class="inline-field">
+              <span data-i18n="arena.topk_label">保留 Top-K</span>
+              <input id="arenaTopK" type="number" min="1" max="12" value="3" />
+            </label>
+            <button id="arenaApplyTopKBtn" class="button" data-i18n="arena.apply_topk">应用留存</button>
+          </div>
+          <div id="arenaSurvivors" class="arena-tag-list"></div>
+        </section>
+
+        <section class="arena-main-section arena-refill">
+          <h4 data-i18n="arena.refill">补充新选手</h4>
+          <p class="arena-hint" data-i18n="arena.refill_hint">从其他城市 pull，或在「批量导入」面板里上传新文件后回来。</p>
+          <div class="refill-toolbar">
+            <input id="arenaFromCity" type="text" placeholder="source city slug, e.g. 香港" />
+            <input id="arenaRefillN" type="number" min="1" max="20" value="3" />
+            <button id="arenaRefillBtn" class="button" data-i18n="arena.refill_btn">从该城市拉 N 人</button>
+          </div>
+          <p id="arenaRefillMsg" class="arena-status"></p>
+          <a class="button ghost" href="/site/dashboard/studio.html#bulk-import" target="_top" data-i18n="arena.refill_import">↗ 打开「批量导入」补一批</a>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/city-agents.js"></script>
+  <script src="/site/dashboard/arena.js"></script>
+</body>
+</html>

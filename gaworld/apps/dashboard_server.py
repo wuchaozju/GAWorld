@@ -1491,6 +1491,7 @@ def _agent_detail(agent_id):
         return None
     profile = _agent_profile(agent_id) or {}
     memory = _memory_payload(agent_id)
+    home = _agent_home_payload(agent_id)
 
     def _count(value):
         return len(value) if isinstance(value, (list, dict)) else 0
@@ -1532,6 +1533,31 @@ def _agent_detail(agent_id):
         "openclaw": openclaw,
         "cognition": _cognition_snapshot(capabilities, growth, memory_counts, rag),
         "agent_card": _agent_card(identity, capabilities, private_skills, growth, openclaw),
+        "home": home,
+    }
+
+
+def _agent_home_payload(agent_id):
+    """Best-effort home block for the agent-detail payload.
+
+    Defers to :mod:`gaworld.apps.home_api` so the writer (the plugin) and
+    the reader (this endpoint) cannot drift. Returns ``{"has_home": False}``
+    when no design exists yet — the front-end treats that as the empty
+    state rather than as a 404."""
+    try:
+        from gaworld.apps import home_api
+    except ImportError:  # pragma: no cover - import is always available
+        return {"has_home": False}
+    payload, status = home_api.handle_get(f"/api/home/{int(agent_id)}", {})
+    if status != 200 or not isinstance(payload, dict):
+        return {"has_home": False}
+    summary = payload.get("summary") or {}
+    design = payload.get("design") or {}
+    return {
+        "has_home": True,
+        "summary": summary,
+        "design": design,
+        "recent_observations": (payload.get("observations") or [])[-30:],
     }
 
 
@@ -2414,7 +2440,6 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         message = re.sub(r"token=[^&\s]*", "token=***", fmt % args)
         sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=REPO_ROOT, **kwargs)
 
@@ -2481,6 +2506,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = kernel_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/infosources/"):
+            from gaworld.apps import infosources_api
+
+            payload, status = infosources_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path.startswith("/api/bench/"):
             from gaworld.apps import bench_api
 
@@ -2498,6 +2528,23 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             payload, status = population_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/import"):
+            from gaworld.apps import import_api
+
+            payload, status = import_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/arena"):
+            from gaworld.apps import arena_api
+
+            payload, status = arena_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        # 游戏场 (playground). The arena keeps its own older namespace; every
+        # other game hangs off /api/games/<game>/.
+        if path.startswith("/api/games/"):
+            from gaworld.apps import games_api
+
+            payload, status = games_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path.startswith("/api/family"):
             from gaworld.apps import family_api
 
@@ -2509,6 +2556,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import interview_api
 
             payload, status = interview_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/research/"):
+            from gaworld.apps import research_api
+
+            payload, status = research_api.handle_get(path, query)
             return self._json_response(payload, status=status)
         if path.startswith("/api/persona/"):
             from gaworld.apps import persona_api
@@ -2534,6 +2586,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import city_api
 
             payload, status = city_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/moltbook"):
+            from gaworld.apps import moltbook_api
+
+            payload, status = moltbook_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/home"):
+            from gaworld.apps import home_api
+
+            payload, status = home_api.handle_get(path, query)
             return self._json_response(payload, status=status)
         if path == "/api/config":
             return self._json_response(_config_summary())
@@ -2667,6 +2729,21 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
             body, status = population_api.handle_post(path, payload)
             return self._json_response(body, status=status)
+        if path.startswith("/api/import"):
+            from gaworld.apps import import_api
+
+            body, status = import_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/arena"):
+            from gaworld.apps import arena_api
+
+            body, status = arena_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/games/"):
+            from gaworld.apps import games_api
+
+            body, status = games_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
         if path.startswith("/api/family"):
             from gaworld.apps import family_api
 
@@ -2678,6 +2755,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import interview_api
 
             body, status = interview_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/research/"):
+            from gaworld.apps import research_api
+
+            body, status = research_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path.startswith("/api/persona/"):
             from gaworld.apps import persona_api
@@ -2703,6 +2785,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import city_api
 
             body, status = city_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
+        if path.startswith("/api/moltbook"):
+            from gaworld.apps import moltbook_api
+
+            body, status = moltbook_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path == "/api/config":
             return self._json_response(_save_config_patch(payload))

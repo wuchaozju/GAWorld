@@ -543,8 +543,12 @@ def _make_node_from_spec(name, spec, default_kind, default_district, default_x, 
     spec = spec or {}
     kind = spec.get("kind", default_kind)
     district = spec.get("district", default_district)
-    grid_x = float(spec.get("x", default_x))
-    grid_y = float(spec.get("y", default_y))
+    # `_parse_map_file` stores a missing x/y as None, not as an absent key, so
+    # `spec.get("x", default_x)` would hand float() a None. An @node that only
+    # declares a category — the way a place inside a hub's block states what it
+    # is without pinning where it sits — must keep its laid-out position.
+    grid_x = float(spec.get("x") if spec.get("x") is not None else default_x)
+    grid_y = float(spec.get("y") if spec.get("y") is not None else default_y)
     parent = _slug(spec.get("parent", default_parent)) if spec.get("parent", default_parent) else ""
     base_lat, base_lng, lat_per_km, lng_per_km = _origin_params(origin)
     x_km = grid_x * KM_PER_GRID_X
@@ -1167,6 +1171,120 @@ def _route_congestion(city_map, route):
     return sum(factors) / len(factors) if factors else 1.0
 
 
+# How far someone will walk to reach a metro station at either end.
+# Not exposed as a knob: sweeping it over 0.5-1.2 km moves the resulting
+# transit share by well under a point, so there is nothing to tune.
+METRO_ACCESS_KM = 0.8
+
+
+def metro_is_usable(city_map, origin, target, access_km=METRO_ACCESS_KM):
+    """Whether the metro could actually carry this trip.
+
+    Asking whether the *road route* passes a metro stop is a different
+    question — a station you drive past is not a station you can ride from.
+    On the default map 95.5% of commutes "passed" one of ten stations, so
+    every trip over 3 km came out as metro and bus, car and taxi ended up
+    with no share at all, which makes the transit-share anchor unmeasurable.
+
+    The metro is an option when both ends sit within walking distance of
+    stops on one line, and those are not the same stop.
+    """
+    for line in city_map.get("metro_lines", []) or []:
+        stops = line.get("stops", []) or []
+        near_origin = {s for s in stops if distance_between(city_map, origin, s) <= access_km}
+        near_target = {s for s in stops if distance_between(city_map, target, s) <= access_km}
+        if near_origin and near_target and near_origin != near_target:
+            return True
+    return False
+
+
+# --- Generalised-cost mode choice -------------------------------------------
+# The distance ladder answered "how far is it" with a single mode, so a car
+# owner making a 3 km trip could not drive: the car branch existed only in the
+# 6-10 km band. That pinned private motorised travel at ~6.6% of commutes
+# against a 20-24% target implied by Hangzhou's two published shares
+# (47.6% transit of motorised, >70% green travel, which together also bound
+# how far the correction may go). Scoring modes against one another instead is
+# the standard discrete-choice form: pick the lowest generalised cost, being
+# travel time plus fare converted to time at the traveller's own value of
+# time. Income therefore does the work it does in reality — a high earner
+# takes the taxi a low earner cycles past — using the income the profile
+# already states.
+
+#: Longest trip each mode plausibly serves, in km. Beyond this the mode is not
+#: offered at all (nobody walks 8 km to work).
+MODE_RANGE_KM = {
+    "walk": 3.0, "bike": 8.0, "e-bike": 12.0,
+    "bus": 40.0, "metro": 60.0, "car": 80.0, "taxi": 80.0,
+}
+
+#: Minutes of inconvenience charged on top of travel time, standing for the
+#: effort a mode costs beyond the clock: exposure, luggage, parking hunting.
+MODE_COMFORT_PENALTY_MIN = {
+    "walk": 0.0, "bike": 2.0, "e-bike": 1.0,
+    "bus": 4.0, "metro": 3.0, "car": 3.0, "taxi": 0.0,
+}
+
+#: Fraction of the hourly wage a minute of travel is worth. 0.5 is the usual
+#: commuting figure in the appraisal literature.
+VALUE_OF_TIME_WAGE_SHARE = 0.5
+#: Fallback hourly wage when a resident's income is unknown (CNY/hour).
+DEFAULT_HOURLY_WAGE = 35.0
+#: Ordering used to break exact ties, so the choice stays reproducible.
+_MODE_TIE_ORDER = ("walk", "bike", "e-bike", "bus", "metro", "car", "taxi")
+
+
+def _value_of_time(agent):
+    """CNY per minute this resident implicitly puts on travel time."""
+    income = 0.0
+    try:
+        income = float(agent.get("monthly_income") or 0.0)
+    except (TypeError, ValueError):
+        income = 0.0
+    hourly = income / (8.0 * 22.0) if income > 0 else DEFAULT_HOURLY_WAGE
+    return max(0.05, hourly * VALUE_OF_TIME_WAGE_SHARE / 60.0)
+
+
+def _feasible_modes(agent, city_map, origin, target, distance_km, metro_ok):
+    modes = []
+    for mode, reach in MODE_RANGE_KM.items():
+        if distance_km > reach:
+            continue
+        if mode == "metro" and not metro_ok:
+            continue
+        if mode == "car" and not agent.get("has_car"):
+            continue
+        if mode in ("bike", "e-bike") and not agent.get("has_two_wheeler", True):
+            continue
+        modes.append(mode)
+    return modes or ["walk"]
+
+
+def _score_modes(agent, city_map, origin, target, distance_km, metro_ok,
+                 weather=None, road_factor=1.0):
+    """Generalised cost per feasible mode, in minutes. Lower is better."""
+    profile = " ".join([str(agent.get("job", "")),
+                        str(agent.get("daily_life", "")),
+                        str(agent.get("personality", ""))])
+    likes_walking = any(k in profile for k in ["散步", "步行", "慢生活"])
+    vot = _value_of_time(agent)
+    adj = WEATHER_MODE_ADJUSTMENTS.get(str(weather or ""), {})
+    scored = {}
+    for mode in _feasible_modes(agent, city_map, origin, target, distance_km, metro_ok):
+        minutes = estimate_travel_minutes(mode, distance_km, road_factor=road_factor)
+        fare = calc_transport_cost(mode, distance_km)
+        penalty = MODE_COMFORT_PENALTY_MIN.get(mode, 2.0)
+        # A weather weight below 1 means the mode is unpleasant now; charge the
+        # shortfall as extra minutes rather than vetoing the mode outright.
+        weight = float(adj.get(mode, 1.0)) if adj else 1.0
+        if weight < 1.0:
+            penalty += (1.0 / max(0.05, weight) - 1.0) * 6.0
+        if likes_walking and mode in ("walk", "bike"):
+            penalty -= 4.0
+        scored[mode] = minutes + fare / vot + penalty
+    return scored
+
+
 def choose_transport_mode(agent, city_map, origin, target, activity=None,
                           weather=None):
     """Choose the best transport mode considering distance, profile, route,
@@ -1188,27 +1306,49 @@ def choose_transport_mode(agent, city_map, origin, target, activity=None,
     profile = " ".join([str(agent.get("job", "")),
                         str(agent.get("daily_life", "")),
                         str(agent.get("personality", ""))])
-    route = shortest_path(city_map, origin, target)
-    metro_stop_set = {stop for line in city_map.get("metro_lines", [])
-                      for stop in line.get("stops", [])}
-    route_uses_metro = (len(route) >= 2
-                        and any(_slug(stop) in metro_stop_set for stop in route))
+    route_uses_metro = metro_is_usable(city_map, origin, target)
 
-    # --- distance-based rule selection (baseline) ---
+    if mode_choice_is_scored(city_map):
+        scored = _score_modes(agent, city_map, origin, target, distance_km,
+                              route_uses_metro, weather=weather)
+        best = min(scored.values())
+        # Deterministic tie-break, so a run reproduces exactly.
+        for candidate in _MODE_TIE_ORDER:
+            if candidate in scored and scored[candidate] <= best + 1e-9:
+                return candidate, distance_km
+        return next(iter(scored)), distance_km
+
+    # --- distance-based rule selection (legacy ladder) ---
     if distance_km <= 0.35:
         mode = "walk"
     elif distance_km <= 1.2:
-        mode = "walk" if any(k in profile for k in ["散步", "步行", "慢生活"]) else "bike"
+        if any(k in profile for k in ["散步", "步行", "慢生活"]) or not agent.get("has_two_wheeler", True):
+            mode = "walk"
+        else:
+            mode = "bike"
     elif distance_km <= 3.2:
-        mode = "e-bike"
+        # The band that used to *be* the ownership assumption.
+        mode = "e-bike" if agent.get("has_two_wheeler", True) else "bus"
     elif route_uses_metro and distance_km >= 3.0:
         mode = "metro"
     elif distance_km <= 6.0:
         mode = "bus" if "transit" in categories or "通勤" in str(activity or "") else "e-bike"
     elif distance_km <= 10.0:
-        mode = "metro" if route_uses_metro or "transit" in categories else "car"
+        if route_uses_metro or "transit" in categories:
+            mode = "metro"
+        else:
+            # No ownership test here is what pinned the car share to whatever
+            # the geometry produced, and the transit share to 100% of it.
+            mode = "car" if agent.get("has_car") else "bus"
     else:
-        mode = "taxi" if any(k in str(target or "") for k in ["Airport", "Rail", "Station"]) else "metro"
+        if any(k in str(target or "") for k in ["Airport", "Rail", "Station"]):
+            mode = "taxi"
+        elif route_uses_metro:
+            mode = "metro"
+        else:
+            # A long trip with neither a car nor a metro is a taxi, not a
+            # car that does not exist.
+            mode = "car" if agent.get("has_car") else "taxi"
 
     # --- weather adjustment ---
     # If bad weather significantly penalises the chosen open-air mode,
@@ -1274,7 +1414,7 @@ def travel_plan(agent, city_map, origin, target, activity=None,
     minutes = estimate_travel_minutes(mode, distance_km, road_factor=road_factor)
     is_rush = is_rush_hour(time_str) if time_str else False
     if is_rush:
-        minutes = max(1, int(round(minutes * RUSH_HOUR_TIME_MULT)))
+        minutes = max(1, int(round(minutes * rush_hour_time_mult(city_map))))
     # Apply any dynamic per-edge congestion the upper layer has set.
     congestion = _route_congestion(city_map, route)
     if congestion and congestion != 1.0:
@@ -1635,6 +1775,56 @@ def get_edge_congestion(city_map, a, b):
 
 def clear_congestion(city_map):
     _runtime(city_map)["edge_congestion"] = {}
+
+
+def set_mode_choice(city_map, scored):
+    """Choose between the generalised-cost model and the legacy ladder."""
+    _runtime(city_map)["mode_choice_scored"] = bool(scored)
+
+
+def mode_choice_is_scored(city_map):
+    """Whether this map scores modes against one another. **Off by default.**
+
+    The scored model is structurally right — it is the only version in which
+    a car owner can drive a 3 km trip — but it is not calibrated, and it
+    cannot be calibrated against the shares available: seven comfort
+    parameters against three numbers is badly underdetermined, and fitting
+    them would spend both anchors at once. What it did establish is that the
+    simulation assumes universal two-wheeler access (see the run recorded in
+    the congestion proposal §13). Switch on deliberately, for experiments.
+
+    Read-only: never materialises the runtime dict, because this is consulted
+    on every trip.
+    """
+    if not isinstance(city_map, dict):
+        return False
+    return bool(city_map.get("runtime", {}).get("mode_choice_scored", False))
+
+
+def set_rush_hour_time_mult(city_map, factor):
+    """Override this map's rush-hour travel-time multiplier.
+
+    ``RUSH_HOUR_TIME_MULT`` is a *static proxy* for "the roads are slower at
+    peak". When the traffic layer models that slowdown from actual flow, the
+    proxy must step aside or the same congestion is counted twice. Only the
+    travel-*time* side is overridden; ``RUSH_HOUR_TAXI_SURCHARGE`` is a fare
+    rule, not a congestion model, and is left alone."""
+    _runtime(city_map)["rush_hour_time_mult"] = max(1.0, float(factor))
+
+
+def rush_hour_time_mult(city_map):
+    """Effective rush-hour travel-time multiplier (the static default unless
+    overridden). Read-only: never materialises the runtime dict, because
+    ``travel_plan`` calls this on every trip."""
+    if not isinstance(city_map, dict):
+        return RUSH_HOUR_TIME_MULT
+    value = city_map.get("runtime", {}).get("rush_hour_time_mult")
+    if value is None:
+        return RUSH_HOUR_TIME_MULT
+    try:
+        return max(1.0, float(value))
+    except (TypeError, ValueError):
+        return RUSH_HOUR_TIME_MULT
 
 
 def set_node_occupancy(city_map, node_id, count):

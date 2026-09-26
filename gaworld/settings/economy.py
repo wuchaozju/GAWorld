@@ -121,6 +121,10 @@ def economy_settings() -> dict[str, Any]:
                 "enabled": True,
                 "initial_inflation_rate": 0.025,
                 "initial_unemployment_rate": 0.052,
+                # Report unemployment by counting the agents, instead of letting the
+                # figure drift on its own RNG. Nothing consumes it either way, so this
+                # only decides whether the number shown is true.
+                "unemployment_from_agents": True,
                 "cycle_phase_duration_days": (60, 180),
                 "phases": ["expansion", "peak", "contraction", "trough"],
                 "phase_effects": {
@@ -193,6 +197,12 @@ def economy_settings() -> dict[str, Any]:
             "rent_income_ratio": 0.22,
             "daily_utilities_cost": 12.0,
             "base_living_cost_per_hour": 6.0,
+            # Take the income a resident's profile states as the anchor for
+            # their salary, instead of re-rolling one from the job text. Off
+            # restores the pre-2026-09 behaviour; either way a profile with no
+            # stated income falls back to the job band.
+            "use_profile_income": True,
+            "profile_income_jitter": 0.08,
             "min_hourly_income": 8.0,
             "income_volatility": 0.25,
             "target_work_hours_per_day": 7.0,

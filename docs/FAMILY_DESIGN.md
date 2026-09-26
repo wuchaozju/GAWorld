@@ -134,7 +134,7 @@ prompt 省 token，代码保证一致性。
 | `on_simulation_start` | 写入亲属关系边、清理矛盾 ghost | `agents.built` 之后仿真会**重置/重载** `agent["relationships"]` 再去问 LLM 要场外名单；写早了会被静默丢弃 |
 | `on_day_start` | 投递家庭事件 | 事件在当天 tick 中被 drain |
 | `on_day_end`（priority `-10`） | 家庭记账、伴侣补窟窿、预算算**明天**的家庭责任 | 经济插件 priority 0，家庭要在它结完账之后；日程是在 `on_day_start` **之前**生成的，所以责任要提前一天算好 |
-| `perception.sections` | 家庭状况 + 此刻谁在家 | 只影响感知 prompt 内部段落，不污染环境上下文 |
+| `perception.sections` | 家庭状况 + 此刻谁在家；人离城时改说「你不在家，家里的事得由家人顶着」 | 只影响感知 prompt 内部段落，不污染环境上下文。离城时 `at_home` 本来就会变 `False`、责任段落自然消失——方向对但**静默**，所以改成明说（见 [`proposals/2026-09-19-agents-leaving-the-city.md`](proposals/2026-09-19-agents-leaving-the-city.md)） |
 | `state.effects` | 户内情绪传染 | 在社会影响与状态更新之前 |
 
 插件是**降级而不是失败**：没有经济运行时就不记账，没有事件队列就不发事件，

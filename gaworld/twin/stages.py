@@ -23,14 +23,16 @@ import time
 
 from gaworld.memory.experience import append_agent_episode
 from gaworld.twin import store
+from gaworld.world.away import AWAY_PREFIX, away_label
 
 
 PLUGIN_ID = "twin"
 
-#: Marks a location that is real but outside the simulated city. Downstream
-#: code that resolves map nodes must tolerate it — it is deliberately not a
-#: node id, because the agent genuinely is not at one.
-AWAY_PREFIX = "异地"
+#: Re-exported for the callers that imported it from here. The definition
+#: moved to :mod:`gaworld.world.away` once simulated trips started producing
+#: the same marker: what "异地" means to the rest of the world has to be one
+#: answer, not two.
+__all__ = ["AWAY_PREFIX", "twin_mirror", "twin_perceive"]
 
 # Reported tag -> the activity label the simulation uses.
 TAG_ACTIVITY = {
@@ -131,7 +133,7 @@ def twin_mirror(agent, step, sim, now_ts=None):
     # location and poison the calibration corpus.
     if snapshot.get("out_of_map"):
         place = str(snapshot.get("place") or "").strip()
-        location = AWAY_PREFIX + (f"（{place}）" if place else "")
+        location = away_label(place)
     else:
         location = snapshot.get("node_id")
 
@@ -187,7 +189,7 @@ def twin_perceive(agent, step, sim):
             where = record["node_id"]
         else:
             place = str(record.get("place") or "").strip()
-            where = AWAY_PREFIX + (f"（{place}）" if place else "")
+            where = away_label(place)
         note = str(record.get("note", "")).strip()
         lines.append(f"你在现实中于【{where}】{activity}" + (f"：{note}" if note else ""))
 

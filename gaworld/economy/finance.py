@@ -72,6 +72,8 @@ DEFAULT_ECONOMY_CONFIG = {
     },
 
     # --- Salary & income ---
+    "use_profile_income": True,
+    "profile_income_jitter": 0.08,
     "min_hourly_income": 8.0,
     "income_volatility": 0.25,
     "target_work_hours_per_day": 7.0,
@@ -190,6 +192,10 @@ DEFAULT_ECONOMY_CONFIG = {
         "enabled": True,
         "initial_inflation_rate": 0.025,    # annual
         "initial_unemployment_rate": 0.052,
+        # Report unemployment by counting the agents, instead of letting the
+        # figure drift on its own RNG. Nothing consumes it either way, so this
+        # only decides whether the number shown is true.
+        "unemployment_from_agents": True,
         "cycle_phase_duration_days": (60, 180),  # how long each phase lasts
         "phases": ["expansion", "peak", "contraction", "trough"],
         "phase_effects": {
@@ -961,6 +967,14 @@ EMPLOYMENT_EVENT_KEYS = ("job_change", "unemployment", "retirement")
 #: Job text an agent carries while unemployed. Deliberately matches the
 #: 失业/待业 keywords in JOB_INCOME_BANDS and NON_EMPLOYED_JOBS, so the income
 #: band and every downstream keyword read agree on the state.
+#: Labour-force vocabulary. The economy writes "retired" when an agent
+#: retires mid-run; the population synthesiser writes "not_in_labor_force"
+#: for retirees, students and homemakers alike. Both mean outside the labour
+#: force, so both stay out of the unemployment rate's denominator.
+EMPLOYED_STATUS = "employed"
+UNEMPLOYED_STATUS = "unemployed"
+OUT_OF_LABOUR_FORCE_STATUSES = frozenset({"retired", "not_in_labor_force", "student"})
+
 UNEMPLOYED_JOB_TEXT = "待业中"
 
 #: Job text an agent carries once retired, and the share of their previous
@@ -1804,13 +1818,23 @@ def _init_agent_economy(agent, cfg, context):
     wealth_drive = _infer_wealth_drive(agent)
     state = agent.get("state", {}) if isinstance(agent, dict) else {}
 
-    # Base hourly income
-    base_hourly_income = _rng.uniform(low, high) * (0.75 + 0.55 * income_skill)
-    base_hourly_income = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0), base_hourly_income)
-
-    # Derive gross monthly salary from hourly
     work_hours = _to_float(cfg.get("work_hours_per_day", 8), 8)
     work_days  = _to_float(cfg.get("work_days_per_month", 22), 22)
+
+    # Anchor on the income the profile states, when it states one. Re-rolling
+    # it from the job text is what made the ledger disagree with the agent's
+    # own self-description and threw away the population synthesiser's
+    # calibrated income distribution (Gini 0.414 -> 0.348).
+    stated_income = _to_float(agent.get("monthly_income"), 0.0)
+    use_stated = bool(cfg.get("use_profile_income", True)) and stated_income > 0
+    if use_stated:
+        jitter = abs(_to_float(cfg.get("profile_income_jitter", 0.08), 0.08))
+        gross_monthly = stated_income * _rng.uniform(1.0 - jitter, 1.0 + jitter)
+        base_hourly_income = gross_monthly / max(1.0, work_hours * work_days)
+    else:
+        base_hourly_income = _rng.uniform(low, high) * (0.75 + 0.55 * income_skill)
+    base_hourly_income = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0), base_hourly_income)
+    # Recomputed after the floor so the two never drift apart.
     gross_monthly = base_hourly_income * work_hours * work_days
 
     # Calculate net salary with tax & social insurance
@@ -2183,6 +2207,52 @@ def _accrue_coarse_income(econ, cfg, days, sectors):
     return amount
 
 
+def _employment_status(agent):
+    """An agent's labour-force status, from the field or failing that the job."""
+    status = str((agent or {}).get("employment", "") or "").strip().lower()
+    if status:
+        return status
+    job = str((agent or {}).get("job", "") or "").strip()
+    if job == UNEMPLOYED_JOB_TEXT:
+        return UNEMPLOYED_STATUS
+    if job == RETIRED_JOB_TEXT:
+        return "retired"
+    return EMPLOYED_STATUS
+
+
+def labour_force_snapshot(agents):
+    """Who is actually working, counted from the agents themselves.
+
+    ``macro.unemployment_rate`` used to be an independent number drifting on
+    its own RNG, so the model could report 5.2% unemployment while every
+    single agent held a job. Nothing ever read it — ``config_docs`` already
+    says as much ("a business-cycle indicator; layoff_risk is what actually
+    costs jobs") — so turning it into a read-out changes no behaviour, only
+    whether the reported figure is true.
+
+    The rate is unemployed / labour force (the ILO definition), which keeps
+    retirees, students and homemakers out of the denominator instead of
+    silently counting them as employed.
+    """
+    employed = unemployed = outside = 0
+    for agent in agents or []:
+        status = _employment_status(agent)
+        if status == UNEMPLOYED_STATUS:
+            unemployed += 1
+        elif status in OUT_OF_LABOUR_FORCE_STATUSES:
+            outside += 1
+        else:
+            employed += 1
+    labour_force = employed + unemployed
+    return {
+        "employed": employed,
+        "unemployed": unemployed,
+        "not_in_labor_force": outside,
+        "labour_force": labour_force,
+        "unemployment_rate": round(unemployed / labour_force, 4) if labour_force else 0.0,
+    }
+
+
 # ---------------------------------------------------------------------------
 # 16. HOOK: on_day_start
 # ---------------------------------------------------------------------------
@@ -2199,6 +2269,14 @@ def on_day_start(context):
     macro_state = runtime.get("macro", {})
     for _ in range(days):
         _advance_macro_cycle(macro_state, cfg)
+    # The phase walk still runs (leaving the RNG stream untouched); its
+    # unemployment guess is then replaced by what the agents actually are.
+    if bool(cfg.get("macro", {}).get("unemployment_from_agents", True)):
+        snapshot = labour_force_snapshot(context.get("agents", []))
+        if snapshot["labour_force"] > 0:
+            macro_state["unemployment_rate"] = snapshot["unemployment_rate"]
+        macro_state["labour_force"] = snapshot
+
     runtime["sim_day_counter"] = runtime.get("sim_day_counter", 0) + days
 
     # Dashboard-queued interventions land *after* the cycle advance, so an

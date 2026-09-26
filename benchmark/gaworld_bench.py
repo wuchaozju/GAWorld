@@ -46,18 +46,35 @@ SIMULATOR = PROJECT_ROOT / "generative_city_sim.py"
 COMPARISONS_OUT = PROJECT_ROOT / "output" / "comparisons"
 
 # ── Track A: real-world anchors (城镇口径). See design doc §2 / §6. ───────────
+#
+# ``scope`` says which statistical population an anchor describes. An anchor
+# whose scope is not the one being simulated is reported but **not scored**:
+# ``data/citymap.md`` covers roughly 19 x 15 km of one Hangzhou district,
+# where more than half of all commutes are under 5 km, while the commuting
+# figures below describe Hangzhou as a whole. Measured across the whole
+# distance-decay range the district reproduces the city's "within 5 km" share
+# (52.3% vs 52%) but cannot reach its mean commute distance (5.94 km at best
+# vs 8.1 km) — the tail simply does not exist on a 19 km map. Scoring the
+# district against city figures measures the mismatch, not the model.
+# See the congestion proposal §15.
 ANCHORS = {
-    "engel_coefficient": {"value": 0.288, "tol": 0.15,
+    "engel_coefficient": {"value": 0.288, "tol": 0.15, "scope": "national_urban",
                           "source": "国家统计局2024公报 (城镇28.8%)"},
-    "savings_rate":      {"value": 0.35, "tol": 0.30,
+    "savings_rate":      {"value": 0.35, "tol": 0.30, "scope": "national_urban",
                           "source": "2024 口径敏感, 区间30-43%"},
-    "commute_minutes":   {"value": 34.5, "tol": 0.25,
+    "commute_minutes":   {"value": 34.5, "tol": 0.25, "scope": "city_wide",
                           "source": "2024中国主要城市通勤监测报告 (杭州)"},
-    "transit_share":     {"value": 0.476, "tol": 0.25,
+    "transit_share":     {"value": 0.476, "tol": 0.25, "scope": "city_wide",
                           "source": "杭州市交通运输局2024"},
-    "wealth_gini":       {"value": 0.70, "tol": 0.30,
+    "wealth_gini":       {"value": 0.70, "tol": 0.30, "scope": "national_urban",
                           "source": "CHFS/瑞信财富报告: 中国家庭财富Gini≈0.6-0.75"},
 }
+
+#: Scope of the population actually being simulated. Anchors outside it are
+#: context, not criteria.
+SIM_SCOPE = "district"
+#: Scopes an anchor may carry and still be scored against a district run.
+SCORED_SCOPES = frozenset({"national_urban", "district"})
 
 # ── Track C: known-sign interventions (metrics present in comparison_metrics.csv) ─
 # Each maps an intervention dir name -> (state metric, expected delta sign).
@@ -167,15 +184,24 @@ def track_a_macro_fit(output_dir: Path) -> dict:
             metrics["commute_minutes"] = statistics.fmean(vals)
 
     scored = {}
+    context = {}
     for key, sim in metrics.items():
         a = ANCHORS[key]
         rel_err = abs(sim - a["value"]) / a["value"]
-        s = clamp01(1 - rel_err / a["tol"])
-        scored[key] = {"sim": round(sim, 4), "anchor": a["value"],
-                       "rel_err": round(rel_err, 4), "score": round(s, 4),
-                       "source": a["source"]}
+        row = {"sim": round(sim, 4), "anchor": a["value"],
+               "rel_err": round(rel_err, 4), "scope": a.get("scope", "unknown"),
+               "source": a["source"]}
+        if a.get("scope") in SCORED_SCOPES:
+            row["score"] = round(clamp01(1 - rel_err / a["tol"]), 4)
+            scored[key] = row
+        else:
+            # Reported so the number stays visible, kept out of the score so a
+            # scope mismatch cannot masquerade as model error.
+            row["score"] = None
+            row["note"] = f"scope {a.get('scope')} != sim scope {SIM_SCOPE}; context only"
+            context[key] = row
 
-    if not scored:
+    if not scored and not context:
         return {"track": "A", "status": "n/a",
                 "note": "no economy/wealth_snapshot.csv found"}
 
@@ -191,12 +217,21 @@ def track_a_macro_fit(output_dir: Path) -> dict:
                             "pass": max_drift <= 0.01}
 
     s_vals = [m["score"] for m in scored.values()]
-    score = statistics.fmean(s_vals)
-    passed = score >= 0.6 and all(s > 0 for s in s_vals)
+    score = statistics.fmean(s_vals) if s_vals else 0.0
+    passed = bool(s_vals) and score >= 0.6 and all(s > 0 for s in s_vals)
     if conservation is not None:
         passed = passed and conservation["pass"]
     result = {"track": "A", "status": "ok", "score": round(score, 4),
-              "pass": passed, "metrics": scored, "n_samples": n_samples}
+              "pass": passed, "metrics": scored, "n_samples": n_samples,
+              "sim_scope": SIM_SCOPE}
+    if context:
+        # Out-of-scope anchors ride along as context so the numbers stay
+        # visible without steering the score.
+        result["context_metrics"] = context
+    if not s_vals:
+        result["status"] = "no_in_scope_anchors"
+        result["note"] = ("every anchor found is out of scope for a "
+                          f"{SIM_SCOPE} run; see the congestion proposal §15")
     if conservation is not None:
         result["conservation"] = conservation
     return result
@@ -653,6 +688,14 @@ def _report_track_a(t: dict) -> tuple[list[str], list[str]]:
     n = t.get("n_samples")
     if n:
         lines.append(f"样本：{n} 个 agent 快照。")
+    ctx = t.get("context_metrics", {})
+    if ctx:
+        lines.append(
+            f"口径不符、仅作参考（仿真口径：{t.get('sim_scope', '?')}）："
+            + "、".join(
+                f"`{k}` sim {m['sim']} vs {m['anchor']}（{m['scope']}）"
+                for k, m in sorted(ctx.items())
+            ) + "。这些数字不参与打分——拿片区去比全市，量的是口径差不是模型误差。")
     metrics = t.get("metrics", {})
     worst = None
     for key, m in sorted(metrics.items(), key=lambda kv: kv[1]["score"]):

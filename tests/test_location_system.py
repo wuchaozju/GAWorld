@@ -15,7 +15,9 @@ import os
 import random
 import unittest
 
+from gaworld.world import city_map as city_map_module
 from gaworld.world.city_map import (
+    metro_is_usable,
     AREA_PRICE_LEVEL,
     RUSH_HOUR_PERIODS,
     TRANSPORT_FARES,
@@ -360,3 +362,133 @@ class TestTravelPlan(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _metro_map():
+    """One line with two stops 6 km apart, plus a node nowhere near it."""
+    import tempfile
+
+    content = (
+        "# City Map\n"
+        "@node: West End | kind=hub | category=transit | x=0.0 | y=0.0 | capacity=500\n"
+        "@node: Midtown | kind=hub | category=commerce | x=3.0 | y=0.0 | capacity=500\n"
+        "@node: East End | kind=hub | category=transit | x=6.0 | y=0.0 | capacity=500\n"
+        "@node: Outpost | kind=hub | category=residential | x=3.0 | y=9.0 | capacity=500\n"
+        "@metro: M1 | stops=West End > East End\n"
+        "\n- City: Demo\n  - Hub: Midtown\n"
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "m.md")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        return load_city_map(path)
+
+
+class TestMetroUsability(unittest.TestCase):
+    """Whether the metro can carry a trip — not whether the road passes a stop.
+
+    The original test scanned the driving route for any metro stop. On the
+    default map that matched 95.5% of commutes against ten stations, so every
+    trip over 3 km came out as metro and bus, car and taxi never got a single
+    one. A share that is always 100% cannot be compared against an anchor.
+    """
+
+    def setUp(self):
+        self.city_map = _metro_map()
+
+    def test_both_ends_on_one_line(self):
+        self.assertTrue(metro_is_usable(self.city_map, "West End", "East End"))
+
+    def test_one_end_off_the_network(self):
+        self.assertFalse(metro_is_usable(self.city_map, "West End", "Outpost"))
+
+    def test_the_same_stop_at_both_ends_is_not_a_ride(self):
+        self.assertFalse(metro_is_usable(self.city_map, "West End", "West End"))
+
+    def test_driving_past_a_station_is_not_access(self):
+        """Midtown sits on the road between the two stops but is 3 km from
+        either — the old route scan counted exactly this case as metro."""
+        self.assertFalse(metro_is_usable(self.city_map, "Midtown", "Outpost"))
+
+    def test_walking_radius_widens_access(self):
+        self.assertFalse(metro_is_usable(self.city_map, "Midtown", "East End"))
+        self.assertTrue(metro_is_usable(self.city_map, "Midtown", "East End", access_km=4.0))
+
+    def test_a_map_with_no_metro_is_never_usable(self):
+        self.assertFalse(metro_is_usable({"nodes": {}, "metro_lines": []}, "A", "B"))
+
+
+class TestModeChoiceWithoutMetroAccess(unittest.TestCase):
+    def test_a_long_trip_with_no_metro_is_a_car_trip(self):
+        """Previously this returned metro regardless, which is what left the
+        car share at exactly zero. The car now also requires owning one —
+        a resident without a car takes a taxi (see test_car_ownership)."""
+        city_map = _metro_map()
+        agent = {"job": "工程师", "daily_life": "", "personality": "", "has_car": True}
+        mode, _ = choose_transport_mode(agent, city_map, "Midtown", "Outpost")
+        self.assertEqual(mode, "car")
+
+
+class TestScoredModeChoice(unittest.TestCase):
+    """Generalised-cost mode choice — off by default, and why.
+
+    The distance ladder gave the car branch only to the 6-10 km band, so a car
+    owner making a 3 km trip could not drive. Scoring modes against one another
+    fixes that by construction. It is not switched on because it cannot be
+    calibrated against what is published: seven comfort parameters against
+    three shares.
+    """
+
+    def setUp(self):
+        self.city_map = _metro_map()
+
+    def _agent(self, **extra):
+        agent = {"job": "工程师", "daily_life": "", "personality": ""}
+        agent.update(extra)
+        return agent
+
+    def test_the_ladder_is_still_the_default(self):
+        self.assertFalse(city_map_module.mode_choice_is_scored(self.city_map))
+        self.assertFalse(city_map_module.mode_choice_is_scored(None))
+
+    def test_the_switch_takes_effect(self):
+        city_map_module.set_mode_choice(self.city_map, True)
+        self.assertTrue(city_map_module.mode_choice_is_scored(self.city_map))
+
+    def test_a_car_owner_can_drive_a_short_trip(self):
+        """The whole point: under the ladder this was unreachable."""
+        city_map_module.set_mode_choice(self.city_map, True)
+        scored = city_map_module._score_modes(
+            self._agent(has_car=True, monthly_income=60000.0),
+            self.city_map, "West End", "Midtown", 3.0, False)
+        self.assertIn("car", scored)
+
+    def test_someone_without_a_car_is_never_offered_one(self):
+        scored = city_map_module._score_modes(
+            self._agent(has_car=False), self.city_map, "West End", "Midtown", 8.0, False)
+        self.assertNotIn("car", scored)
+
+    def test_nobody_is_offered_a_metro_that_cannot_carry_them(self):
+        scored = city_map_module._score_modes(
+            self._agent(), self.city_map, "Midtown", "Outpost", 9.0, False)
+        self.assertNotIn("metro", scored)
+
+    def test_a_high_earner_values_time_more(self):
+        """Income is what makes the taxi worth it to one person and not another."""
+        rich = city_map_module._value_of_time(self._agent(monthly_income=80000.0))
+        poor = city_map_module._value_of_time(self._agent(monthly_income=3000.0))
+        self.assertGreater(rich, poor)
+        self.assertGreater(city_map_module._value_of_time(self._agent()), 0.0)
+
+    def test_nobody_is_offered_a_walk_across_the_city(self):
+        scored = city_map_module._score_modes(
+            self._agent(), self.city_map, "West End", "Outpost", 30.0, False)
+        self.assertNotIn("walk", scored)
+        self.assertTrue(scored, "some mode must always remain feasible")
+
+    def test_the_choice_is_deterministic(self):
+        city_map_module.set_mode_choice(self.city_map, True)
+        agent = self._agent(has_car=True, monthly_income=9000.0)
+        picks = {city_map_module.choose_transport_mode(
+            agent, self.city_map, "West End", "East End")[0] for _ in range(20)}
+        self.assertEqual(len(picks), 1)

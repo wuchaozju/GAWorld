@@ -146,7 +146,8 @@
     "svc.news", "svc.probe", "svc.status", "tab.currency", "tab.environment",
     "tab.services", "tasks", "tax", "technology", "tile.drift", "tile.gini",
     "tile.indebted", "tile.inflation", "tile.money_total", "tile.phase",
-    "tile.price_index", "tile.unemployment", "timeout", "top_k", "trough",
+    "tile.price_index", "tile.unemployment", "timeout", "top_k",
+    "traffic.congested_ticks", "traffic.peak", "traffic.peak_flow", "trough",
     "use_cache_first", "weather_states", "willingness_factor", "year_end_bonus_enabled",
     "year_end_bonus_months",
   ];
@@ -498,11 +499,51 @@
 
   /* --------------------------------------------------- observe: environment */
 
+  function renderTrafficCard(traffic) {
+    if (!traffic || !traffic.available) {
+      return '<div class="ext-card"><h2>' + esc(__("ext.traffic_title")) + "</h2>" +
+        '<p class="ext-hint">' + __("ext.traffic_off") + "</p></div>";
+    }
+    // "Never congested" is the reading that matters on a small population:
+    // it means every trip ran at free flow, not that the model is quiet.
+    var quiet = !traffic.ever_congested;
+    var rows = (traffic.ticks || []).slice().reverse().slice(0, 12).map(function (tick) {
+      var busiest = (tick.busiest || []).map(function (item) {
+        return '<span class="ext-badge">' + esc(String(item.edge).replace("||", " ↔ ")) +
+          " ×" + esc(fixed(item.factor, 2)) + "</span>";
+      }).join("");
+      return '<div class="ext-event"><div class="ext-event-head">' +
+        "<b>" + esc(__f("ext.env_day", { day: tick._day })) + " " + esc(tick._time || "") + "</b>" +
+        '<span class="ext-badge">' + esc(__f("ext.traffic_edges", {
+          congested: tick.edges_congested, loaded: tick.edges_loaded,
+        })) + "</span>" +
+        '<span class="ext-badge">' + esc(__f("ext.traffic_flow", { pcu: tick.flow_pcu })) + "</span>" +
+        busiest + "</div></div>";
+    }).join("");
+
+    return (
+      '<div class="ext-card"><h2>' + esc(__("ext.traffic_title")) + "</h2>" +
+      '<p class="ext-lede">' + __f("ext.traffic_lede", { path: esc(traffic.records_path) }) + "。</p>" +
+      tiles([
+        { label: __("ext.traffic_peak"), value: fixed(traffic.peak_congestion, 2) + "×",
+          help: "traffic.peak", warn: quiet },
+        { label: __("ext.traffic_congested_ticks"),
+          value: traffic.congested_ticks + " / " + traffic.tick_count,
+          help: "traffic.congested_ticks", warn: quiet },
+        { label: __("ext.traffic_peak_flow"), value: fixed(traffic.peak_flow_pcu, 1),
+          help: "traffic.peak_flow" },
+      ]) +
+      (quiet ? '<p class="ext-hint">' + __("ext.traffic_never") + "</p>" : rows) +
+      "</div>"
+    );
+  }
+
   function renderEnvironmentObserve(data) {
     var rt = data.runtime;
     if (!rt.available) {
       return '<div class="ext-card"><h2>' + esc(__("ext.env_title")) + "</h2>" +
-        '<p class="ext-hint">' + __("ext.env_empty") + "</p></div>";
+        '<p class="ext-hint">' + __("ext.env_empty") + "</p></div>" +
+        renderTrafficCard(data.traffic);
     }
 
     var counts = rt.event_type_counts || {};
@@ -551,7 +592,8 @@
       "</div>" +
       '<div class="ext-card"><h2>' +
       esc(__f("ext.env_recent_title", { days: (rt.days || []).length })) + "</h2>" +
-      (days || '<p class="ext-hint">' + esc(__("ext.env_no_events")) + "</p>") + "</div>"
+      (days || '<p class="ext-hint">' + esc(__("ext.env_no_events")) + "</p>") + "</div>" +
+      renderTrafficCard(data.traffic)
     );
   }
 

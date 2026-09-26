@@ -114,6 +114,17 @@ test("a framework with nothing in it says why", () => {
   assert.ok(html.includes("未提炼出可复用的决策规则"));
 });
 
+test("a framework the model failed to produce is not blamed on the evidence", () => {
+  // Thin sources and a broken model answer call for opposite actions — go find
+  // better sources, versus press the button again.
+  const html = view.frameworkCard({
+    mental_models: [], heuristics: [], voice: {},
+    framework_error: "模型两次都没有返回可解析的思维框架，可以重试一次。",
+  });
+  assert.ok(html.includes("可以重试一次"));
+  assert.ok(!html.includes("材料不足以支撑"), "that would send the operator the wrong way");
+});
+
 test("a mental model with no evidence is called out", () => {
   const html = view.frameworkCard({ mental_models: [{ name: "空模型", gist: "没有依据" }] });
   assert.ok(html.includes("未给出依据"));

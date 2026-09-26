@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from gaworld.population.locale import LocaleProfile
 from gaworld.population.network import (
     HouseholdRecord,
     WorkplaceRecord,
@@ -46,15 +47,21 @@ class GeneratedPopulation:
         )
 
 
-def generate_population(spec: PopulationSpec) -> GeneratedPopulation:
+def generate_population(
+    spec: PopulationSpec, *, locale: LocaleProfile | None = None
+) -> GeneratedPopulation:
     """Run the full pipeline: sample → structure → validate → report.
 
     Feasibility issues are attached rather than raised. The caller decides
     whether an infeasible-but-clamped spec is acceptable; the panel, for
     instance, wants to render the conflict alongside a preview.
+
+    ``locale`` decides what residents are *called* and how their housing and
+    residency read; it defaults to mainland China.  Only the sampler consumes
+    it — households, workplaces and the social graph are culture-free.
     """
     feasibility = check_feasibility(spec)
-    people, fit_report = synthesize_people(spec)
+    people, fit_report = synthesize_people(spec, locale=locale)
     households = build_households(spec, people)
     workplaces = build_workplaces(spec, people)
     neighbours = build_social_graph(spec, people, households, workplaces)

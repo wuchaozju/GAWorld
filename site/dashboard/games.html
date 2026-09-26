@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="games.page_title">GAWorld · 游戏场</title>
+  <meta name="description" data-i18n-content="games.meta_description" content="GAWorld 游戏场 — 和城里的智能体玩一局：斗兽场比答题，说服游戏比嘴皮子，灾害模式看他们在灾难里怎么选。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="games.kicker">GAWorld Playground</p>
+          <h1 data-i18n="games.headline">游戏场：和城里的智能体玩一局</h1>
+          <p class="sub" data-i18n="games.sub">
+            每个游戏都拿真实居民当对手——他们的职业、性格、价值观都会影响结果。选一个开始。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/#dashboard" target="_top" data-i18n="games.back">← 返回控制台</a>
+      </div>
+    </header>
+
+    <section class="games-grid">
+      <a class="game-card panel" href="/site/dashboard/arena.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🏟️</span>
+        <h3 data-i18n="games.arena_title">斗兽场</h3>
+        <p class="game-tagline" data-i18n="games.arena_tagline">
+          选一组居民同台答题：数学、常识、逻辑、阅读、翻译。按正确率 + 中位耗时排座次，留存 Top-K，其余淘汰，再从别的城市补人。
+        </p>
+        <span class="game-meta" data-i18n="games.arena_meta">1 局 · 多名选手 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/persuade.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🗣️</span>
+        <h3 data-i18n="games.persuade_title">说服游戏</h3>
+        <p class="game-tagline" data-i18n="games.persuade_tagline">
+          挑一个居民，问他一个问题，记下他的回答；然后在限定轮数内跟他聊，想办法说动他。结束时复问同一个问题——答案真的变了，你就赢了。
+        </p>
+        <span class="game-meta" data-i18n="games.persuade_meta">1 局 · 1 名对手 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/disaster.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🌪️</span>
+        <h3 data-i18n="games.disaster_title">灾害模式</h3>
+        <p class="game-tagline" data-i18n="games.disaster_tagline">
+          选一批居民，扔进一场灾难——地震、疫情、战争、洪水、大停电，或者你自己写的。灾难分幕推进，每个人按自己的处境决定逃、囤、救人还是照常过；第二幕起他们还会看到身边人的选择。
+        </p>
+        <span class="game-meta" data-i18n="games.disaster_meta">1 场 · 最多 12 人 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/rumor.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">📣</span>
+        <h3 data-i18n="games.rumor_title">谣言扩散局</h3>
+        <p class="game-tagline" data-i18n="games.rumor_tagline">
+          写一条传闻，交给两个居民，看它沿着熟人关系往外走——谁转发、谁私下求证、谁站出来辟谣。关系网按档案推导（同小区、同行、同龄），传播树、信任度和"防火墙"都画在图上。
+        </p>
+        <span class="game-meta" data-i18n="games.rumor_meta">1 场 · 最多 14 人 · 需要 LLM</span>
+      </a>
+    </section>
+
+    <p class="games-foot" data-i18n="games.foot">
+      想加新游戏？后端写一个 /api/games/&lt;game&gt;/ 分支，前端加一个页面和这里的一张卡片。见 docs/PLAYGROUND_TUTORIAL.md。
+    </p>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+</body>
+</html>

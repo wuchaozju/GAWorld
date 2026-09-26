@@ -250,6 +250,23 @@ label.field, .field-row { margin-bottom: 12px; }
 .fam-group > b { font-size: 12.5px; }
 .fam-toggle { display: flex; align-items: center; gap: 7px; cursor: pointer; }
 .fam-toggle .section-note { margin: 0; }
+
+/* ---- Moltbook（step 7）：moltbookCard() ---- */
+.mb-claim {
+  margin: 8px 0 12px; padding: 8px 10px; font-size: 12px; line-height: 1.7;
+  border-left: 3px solid #d6a81e; background: #fffdf5; color: var(--ink);
+  display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+}
+.mb-claim p { margin: 0; flex: 1 1 100%; }
+.mb-actions { list-style: none; margin: 4px 0 8px; padding: 0; font-size: 12px; }
+.mb-row {
+  display: grid; grid-template-columns: 52px 118px 1fr; gap: 8px; padding: 5px 0;
+  border-bottom: 1px dashed var(--line); line-height: 1.5;
+}
+.mb-row.is-error .mb-sum { color: var(--red); }
+.mb-kind { font-weight: 600; }
+.mb-when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.mb-sum { word-break: break-word; }
 .fam-radios { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 4px; }
 .fam-radio { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
 .goal-mini.goal-check { flex-direction: row; align-items: center; gap: 6px; }
@@ -366,12 +383,12 @@ label.field, .field-row { margin-bottom: 12px; }
 .pd-card ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.75; }
 .pd-card p { font-size: 13px; line-height: 1.75; }
 .pd-basics { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.pd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.pd-table th {
+.pd-table, .ca-kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pd-table th, .ca-kv th {
   text-align: left; vertical-align: top; width: 92px; padding: 5px 8px 5px 0;
   color: var(--muted); font-weight: 500; white-space: nowrap;
 }
-.pd-table td { padding: 5px 0; line-height: 1.7; }
+.pd-table td, .ca-kv td { padding: 5px 0; line-height: 1.7; }
 
 /* Provenance is rendered beside the claims, never folded away — a decisive
    profile built from two snippets has to look like one. */
@@ -402,4 +419,70 @@ label.field, .field-row { margin-bottom: 12px; }
   .pd-msg.ok, .pd-open { color: #6ee7b7; }
   .pd-msg.err { color: #fca5a5; }
   .pd-warn { color: #fcd34d; }
+}
+
+/* ---- 跨城市浏览（只读）：city-agents.js + studio.js browseBody() ---- */
+.browse-id { color: var(--muted); font-size: 14px; font-weight: 400; }
+.browse-seeds { list-style: none; padding: 0; margin: 10px 0 0; font-size: 12.5px; }
+.browse-seeds li {
+  display: flex; justify-content: space-between; gap: 10px; padding: 3px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, .06);
+}
+.browse-seeds b { font-variant-numeric: tabular-nums; }
+/* The notice is the panel's explanation of why nothing here can be edited, so
+   it sits above the content rather than at the bottom as a footnote. */
+.ca-notice {
+  border: 1px solid rgba(180, 83, 9, .35); background: rgba(180, 83, 9, .07);
+  color: #92400e; border-radius: 8px; padding: 10px 12px; margin: 0 0 14px;
+  font-size: 12px; line-height: 1.7;
+}
+.ca-notice b { display: block; margin-bottom: 2px; }
+.ca-notice p { margin: 0 0 8px; }
+.step.is-locked { opacity: .45; pointer-events: none; }
+
+/* ---- Bulk import modal ---- */
+.imp-modal { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center;
+  background: rgba(23, 33, 29, .55); padding: 20px; }
+.imp-modal-box { width: min(960px, 100%); max-height: 92vh; overflow: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-lg); padding: 18px; }
+.imp-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.imp-modal-head h3 { font-family: Georgia, "Noto Serif SC", serif; font-size: 18px; margin: 0; }
+.imp-step { display: none; }
+.imp-step.is-active { display: block; }
+.imp-step h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.imp-step .hint { color: var(--muted); font-size: 12px; margin-bottom: 10px; line-height: 1.6; }
+.imp-drop { border: 2px dashed var(--line); border-radius: 10px; padding: 28px 18px;
+  text-align: center; background: #fafaf7; transition: background .15s; }
+.imp-drop.is-drag { background: #f1f5f1; border-color: #2f5d50; }
+.imp-drop p { margin: 4px 0; color: var(--muted); font-size: 13px; }
+.imp-drop strong { color: var(--ink); }
+.imp-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12.5px; }
+.imp-table th, .imp-table td { border-bottom: 1px solid rgba(0,0,0,.06); padding: 6px 8px; text-align: left; }
+.imp-table th { background: #f5f4ef; font-weight: 600; }
+.imp-table select { width: 100%; padding: 3px 4px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+.imp-toggle { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.imp-toggle input[type=checkbox] { width: 16px; height: 16px; }
+.imp-toggle label { font-size: 13px; cursor: pointer; }
+.imp-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.imp-actions .button { padding: 6px 14px; font-size: 13px; }
+.imp-actions .button[disabled] { opacity: .4; cursor: not-allowed; }
+.imp-progress { display: flex; align-items: center; gap: 10px; }
+.imp-progress .bar { flex: 1; height: 8px; background: #e8e6df; border-radius: 4px; overflow: hidden; }
+.imp-progress .bar > span { display: block; height: 100%; background: #2f5d50; transition: width .2s; }
+.imp-status { font-size: 12px; color: var(--muted); }
+.imp-status.is-error { color: #b91c1c; }
+.imp-status.is-success { color: #166534; }
+.imp-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+.imp-summary .stat { border: 1px solid var(--line); border-radius: 8px; padding: 8px; text-align: center; background: #fafaf7; }
+.imp-summary .stat .n { font-family: Georgia, serif; font-size: 22px; color: var(--ink); }
+.imp-summary .stat .l { font-size: 11px; color: var(--muted); }
+.imp-warn { font-size: 12px; color: #92400e; background: rgba(251, 191, 36, .15); border: 1px solid rgba(180, 83, 9, .25); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }
+
+@media (prefers-color-scheme: dark) {
+  .ca-notice { color: #fcd34d; }
+  .imp-modal-box { background: #1a1f1b; }
+  .imp-drop { background: #232927; }
+  .imp-table th { background: #2a302d; }
+  .imp-progress .bar { background: #2a302d; }
 }

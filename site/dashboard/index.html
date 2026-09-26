@@ -7,6 +7,7 @@
   <meta name="description" data-i18n-content="meta.description" content="GAWorld 本地仿真控制台" />
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/interaction.css" />
+  <link rel="stylesheet" href="/site/dashboard/home.css" />
 </head>
 <body>
   <main class="shell">
@@ -85,6 +86,7 @@
         </div>
         <div class="button-row toolbar-actions">
           <a href="/#studio" target="_top" class="button" data-i18n="btn.agent_studio">Agent Studio ↗</a>
+          <a href="/site/dashboard/games.html" target="_top" class="button" data-i18n-title="btn.games_hint" title="游戏场：和城里的智能体玩一局。斗兽场比答题，说服游戏比嘴皮子。"><span data-i18n="btn.games">游戏场</span> ↗</a>
           <a href="/#settings" target="_top" class="button" data-i18n-title="btn.all_settings_hint" title="打开配置中心：本项目的全部配置项集中在那里，每一项都有说明。"><span data-i18n="btn.all_settings">全部配置</span> ↗</a>
           <button id="saveConfigBtn" class="button" data-i18n="btn.save_config">保存配置</button>
           <button id="runBtn" class="button primary" data-i18n="btn.run_simulation">运行仿真</button>
@@ -174,6 +176,20 @@
           </div>
           <div id="familyOverview" class="family-overview"></div>
           <div id="familyDetail" class="family-detail" data-i18n-empty="family.empty" data-empty="尚无家庭数据——完整跑过一轮仿真后，这里会显示每位居民的家庭。"></div>
+        </section>
+
+        <section class="panel home-panel">
+          <div class="section-head">
+            <div>
+              <p class="kicker" data-i18n="home.kicker">Home Mode</p>
+              <h2 data-i18n="home.title">居家模式</h2>
+            </div>
+            <div class="head-actions">
+              <span class="help-tip" data-i18n-help="home.title_hint" data-help="每位居民的居家环境：户型、家具、整体气质；以及他/她每次在家时所在的房间、当时的氛围（光线/声音/气味/体感/整洁度）。点击地图上头像旁的 🏠 标记或选中头像，会自动定位到对应居家记录。"></span>
+              <button id="refreshHomeBtn" class="button ghost" data-i18n="btn.refresh">刷新</button>
+            </div>
+          </div>
+          <div id="homeDetail" class="home-overview" data-i18n-empty="home.empty" data-empty="尚无居家模式数据。运行一次仿真后，这里会显示每位居民的居家环境。"></div>
         </section>
 
         <section class="panel collapsible is-collapsed">
@@ -432,6 +448,8 @@
   <script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/collaboration-core.js"></script>
   <script src="/site/dashboard/citymap-view.js"></script>
+  <script src="/site/dashboard/city-agents.js"></script>
+  <script src="/site/dashboard/home.js"></script>
   <script src="/site/dashboard/app.js"></script>
   <script src="/site/dashboard/interaction.js"></script>
 </body>

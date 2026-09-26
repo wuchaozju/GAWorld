@@ -50,12 +50,44 @@ def _selected_city() -> str:
     return str(config.get("city") or "") if isinstance(config, dict) else ""
 
 
+def _default_summary() -> dict[str, Any] | None:
+    """Bundle-shaped summary for the default world (``data/`` originals).
+
+    It has no ``city.json`` manifest — it predates the bundle format — so it
+    is synthesised from the roster and the running config rather than loaded
+    from disk like a real bundle. Returns ``None`` when the default dataset
+    itself is missing, the same condition ``city_catalogue`` checks.
+    """
+    from gaworld.interview.roster import DEFAULT_CITY_LABEL, city_catalogue
+    from gaworld.settings import CONFIG
+
+    row = next((item for item in city_catalogue() if not item["slug"]), None)
+    if row is None:
+        return None
+    return {
+        "slug": "",
+        "name": DEFAULT_CITY_LABEL,
+        "display_name": DEFAULT_CITY_LABEL,
+        "scale": None,
+        "map_mode": str(CONFIG.get("map_mode") or "virtual"),
+        "population": row["count"],
+        "place": {},
+        "created_at": None,
+        "updated_at": None,
+        "directory": None,
+    }
+
+
 def overview() -> dict[str, Any]:
     """Every city plus which one the simulator is currently pointed at."""
     selected = _selected_city()
+    cities = [bundle.summary() for bundle in list_cities()]
+    default_summary = _default_summary()
+    if default_summary is not None:
+        cities.insert(0, default_summary)
     return {
         "selected": selected,
-        "cities": [bundle.summary() for bundle in list_cities()],
+        "cities": cities,
         "scales": sorted(SCALE_BBOX_HALF_DEG),
         "presets": sorted(PRESETS),
         "max_population_per_request": MAX_POPULATION_PER_REQUEST,
@@ -63,12 +95,144 @@ def overview() -> dict[str, Any]:
 
 
 def detail(ref: str) -> dict[str, Any]:
+    if not ref:
+        from gaworld.settings import CONFIG
+
+        summary = _default_summary()
+        if summary is None:
+            raise CityNotFoundError("默认世界没有可用的居民数据")
+        return {
+            **summary,
+            "districts": [],
+            "history": [],
+            "paths": {
+                "map_mode": summary["map_mode"],
+                "map_path": CONFIG.get("map_path", "data/citymap.md"),
+                "real_map_path": CONFIG.get("real_map_path", "data/hangzhou_real.geojson"),
+                "csv_path": CONFIG.get("csv_path", "data/hangzhou_agents_state_init.csv"),
+                "md_path": CONFIG.get("md_path", "data/hangzhou_profiles_with_names.md"),
+            },
+        }
     bundle = resolve_city(ref)
     return {
         **bundle.summary(),
         "districts": city_districts(bundle),
         "history": bundle.manifest.get("history", []),
         "paths": bundle.paths_for_config(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Residents, per city
+#
+# Read-only, and read from the *bundle* rather than through the simulator's
+# globals: ``dashboard_server`` resolves its CSV and Markdown paths once at
+# import, so everything it serves is the one city the config points at. These
+# two endpoints are what let the city panel list a city's residents and Agent
+# Studio look at another city's without a restart.
+#
+# The population reader lives in ``gaworld.interview.roster`` because the group
+# interview panel needed cross-city reads first; it handles bundles and the
+# default world (slug ``""``) alike. Importing it here keeps one parser for the
+# population files rather than a second copy that drifts.
+# ---------------------------------------------------------------------------
+
+#: A page of residents. Large enough that most cities arrive in one request,
+#: small enough that a 5000-person city does not ship a megabyte of JSON to
+#: render a list nobody will scroll to the end of.
+AGENT_PAGE_SIZE = 200
+
+
+#: Pickers and stamps use the bundle's short ``name``, not ``display_name``:
+#: a geocoded place arrives as "乌镇镇, 桐乡市, 嘉兴市, 浙江省, 314501, 中国",
+#: which is the right thing on the city card and unreadable in a dropdown.
+def _city_label(slug: str) -> str:
+    if not slug:
+        from gaworld.interview.roster import DEFAULT_CITY_LABEL
+
+        return DEFAULT_CITY_LABEL
+    return resolve_city(slug).name
+
+
+def _city_stamp(slug: str) -> dict[str, Any]:
+    """Which city this payload is about, and whether it is the running one.
+
+    Every resident payload carries it because agent ids are only unique
+    *within* a city: #1 exists in every one of them. A panel that showed a
+    resident without saying which city it came from would invite exactly the
+    confusion this stamp prevents.
+    """
+    return {"slug": slug, "name": _city_label(slug), "selected": _selected_city() == slug}
+
+
+def catalogue() -> dict[str, Any]:
+    """Every city that has residents to show, default world first."""
+    from gaworld.interview.roster import city_catalogue
+
+    short = {bundle.slug: bundle.name for bundle in list_cities()}
+    cities = [
+        {**entry, "name": short.get(entry["slug"], entry["name"]), "display_name": entry["name"]}
+        for entry in city_catalogue()
+    ]
+    return {"cities": cities, "selected": _selected_city()}
+
+
+def agents(
+    ref: str = "",
+    *,
+    query: str = "",
+    limit: int = AGENT_PAGE_SIZE,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """Residents of *ref* — ``""`` is the default world, not an error."""
+    from gaworld.interview.roster import load_population
+
+    if ref:
+        ref = resolve_city(ref).slug  # 404s here rather than returning an empty list
+    people = load_population(ref)
+    needle = str(query or "").strip().lower()
+    if needle:
+        people = [
+            person
+            for person in people
+            if needle in str(person.get("name", "")).lower()
+            or needle in str(person.get("job", "")).lower()
+            or needle in str(person.get("residence", "")).lower()
+            or needle == str(person.get("id"))
+        ]
+    try:
+        limit = max(1, min(int(limit), 2000))
+    except (TypeError, ValueError):
+        limit = AGENT_PAGE_SIZE
+    try:
+        offset = max(0, int(offset))
+    except (TypeError, ValueError):
+        offset = 0
+    return {
+        "city": _city_stamp(ref),
+        "matched": len(people),
+        "offset": offset,
+        "limit": limit,
+        "agents": people[offset : offset + limit],
+    }
+
+
+def agent(ref: str, agent_id: Any) -> dict[str, Any]:
+    """One resident: identity, the nine state seeds, and the profile text."""
+    from gaworld.interview.roster import load_population, profile_block
+
+    if ref:
+        ref = resolve_city(ref).slug
+    try:
+        wanted = int(str(agent_id).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"agent id 无效：{agent_id!r}") from None
+    person = next((row for row in load_population(ref) if row["id"] == wanted), None)
+    if person is None:
+        raise CityNotFoundError(f"城市「{_city_label(ref)}」里没有 #{wanted} 这位居民")
+    return {
+        "city": _city_stamp(ref),
+        "agent": {**person, "profile_text": profile_block(ref, wanted)},
     }
 
 
@@ -109,6 +273,10 @@ def city_map(ref: str) -> dict[str, Any]:
         "map": payload,
         "meta": {
             "mode": mode,
+            # Both an imagined and a name-seeded city run on a virtual map, but
+            # calling a described one "procedurally generated" in the panel
+            # misattributes the work the user's description actually did.
+            "imagined": bool(bundle.manifest.get("imagined")),
             "source": source.name,
             "nodes": len(nodes),
             "edges": len(payload.get("edges") or []),
@@ -203,6 +371,37 @@ def refresh_news(payload: dict[str, Any]) -> dict[str, Any]:
     return city_news(bundle.slug)
 
 
+#: Largest sketch we will forward to a model, as base64 characters (~6 MB of
+#: image). Past this the request is a screenshot of a whole desktop, not a city
+#: diagram, and it would cost a long upload to get a worse answer than a crop.
+MAX_SKETCH_B64 = 8_000_000
+
+
+def _sketch_images(payload: dict[str, Any]) -> list[dict[str, str]]:
+    """The uploaded sketch as ``call_llm`` wants it, or an empty list.
+
+    The browser hands over a data URL; everything else here is a guard against
+    it being something other than an image.
+    """
+    raw = str(payload.get("image") or "").strip()
+    if not raw:
+        return []
+    media_type = "image/png"
+    if raw.startswith("data:"):
+        header, _, data = raw.partition(",")
+        if not data:
+            raise CityCreationError("图片数据不完整，请重新上传")
+        declared = header[5:].split(";")[0].strip()
+        if declared:
+            media_type = declared
+        raw = data
+    if not media_type.startswith("image/"):
+        raise CityCreationError(f"只支持图片文件，收到的是 {media_type}")
+    if len(raw) > MAX_SKETCH_B64:
+        raise CityCreationError("图片太大了，请压缩到 6MB 以内再上传")
+    return [{"media_type": media_type, "data": raw}]
+
+
 def create(payload: dict[str, Any]) -> dict[str, Any]:
     name = str(payload.get("name") or "").strip()
     if not name:
@@ -211,6 +410,8 @@ def create(payload: dict[str, Any]) -> dict[str, Any]:
     if size > MAX_POPULATION_PER_REQUEST:
         raise AgentError(f"单次最多生成 {MAX_POPULATION_PER_REQUEST} 人")
 
+    description = str(payload.get("description") or "").strip()
+    images = _sketch_images(payload)
     bundle = create_city(
         name,
         slug=str(payload.get("slug") or "") or None,
@@ -218,13 +419,15 @@ def create(payload: dict[str, Any]) -> dict[str, Any]:
         offline=bool(payload.get("offline", False)),
         force=bool(payload.get("force", False)),
         seed=payload.get("seed"),
+        description=description,
+        images=images or None,
     )
     result: dict[str, Any] = {"city": bundle.summary()}
     if size > 0:
         result["population"] = add_population(
             bundle,
             size=size,
-            preset=str(payload.get("preset") or "cn_county_town"),
+            preset=str(payload.get("preset") or "") or None,
             seed=payload.get("seed"),
         )
         result["city"] = bundle.summary()
@@ -241,7 +444,7 @@ def populate(payload: dict[str, Any]) -> dict[str, Any]:
     result = add_population(
         bundle,
         size=size,
-        preset=str(payload.get("preset") or "cn_county_town"),
+        preset=str(payload.get("preset") or "") or None,
         seed=payload.get("seed"),
         replace=bool(payload.get("replace", False)),
     )
@@ -337,16 +540,41 @@ def remove(payload: dict[str, Any]) -> dict[str, Any]:
     return {"removed": str(removed), "cleared_selection": was_selected}
 
 
+def _one(query: Any, key: str, default: str = "") -> str:
+    """First value of a repeatable query parameter, or *default*."""
+    if not isinstance(query, dict):
+        return default
+    raw = query.get(key)
+    if isinstance(raw, list):
+        return str(raw[0]).strip() if raw else default
+    return str(raw).strip() if raw is not None else default
+
+
 def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
     """Route ``/api/city/*`` GETs. Returns ``(payload, status)``."""
     try:
         if path in ("/api/city", "/api/city/", "/api/city/overview"):
             return overview(), 200
         if path in ("/api/city/detail", "/api/city/detail/"):
-            ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
-            if not ref:
-                return {"error": "city is required"}, 400
-            return detail(ref), 200
+            # No `city` means the default world, same as `/api/city/agents`
+            # below — it is a real population, not a missing argument.
+            return detail(_one(query, "city")), 200
+        if path in ("/api/city/catalogue", "/api/city/catalogue/"):
+            return catalogue(), 200
+        # No `city` means the default world here, not a missing argument: it is
+        # a real population and the panels have to be able to ask for it.
+        if path in ("/api/city/agents", "/api/city/agents/"):
+            return agents(
+                _one(query, "city"),
+                query=_one(query, "q"),
+                limit=_one(query, "limit") or AGENT_PAGE_SIZE,
+                offset=_one(query, "offset") or 0,
+            ), 200
+        if path in ("/api/city/agent", "/api/city/agent/"):
+            agent_id = _one(query, "id")
+            if not agent_id:
+                return {"error": "id is required"}, 400
+            return agent(_one(query, "city"), agent_id), 200
         if path in ("/api/city/map", "/api/city/map/"):
             ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
             if not ref:
@@ -364,6 +592,8 @@ def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
             return city_news(ref), 200
     except CityNotFoundError as exc:
         return {"error": str(exc)}, 404
+    except ValueError as exc:
+        return {"error": str(exc)}, 400
     except Exception as exc:  # a panel read must never take the dashboard down
         _LOG.warning("city GET %s failed: %s", path, exc)
         return {"error": f"读取失败：{exc}"}, 500
@@ -398,4 +628,14 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": f"操作失败：{exc}"}, 500
 
 
-__all__ = ["city_map", "city_news", "handle_get", "handle_post", "knowledge", "overview"]
+__all__ = [
+    "agent",
+    "agents",
+    "catalogue",
+    "city_map",
+    "city_news",
+    "handle_get",
+    "handle_post",
+    "knowledge",
+    "overview",
+]

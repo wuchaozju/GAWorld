@@ -30,6 +30,7 @@ from typing import Any
 
 import numpy as np
 
+from gaworld.population.locale import DEFAULT_LOCALE, LocaleProfile, compose_name
 from gaworld.population.schema import (
     AGE_BAND_RANGES,
     AGE_BANDS,
@@ -77,30 +78,14 @@ NON_EMPLOYED_JOBS: dict[str, tuple[str, ...]] = {
     "homemaker": ("无业，家庭照料为主",),
 }
 
-SURNAMES: tuple[str, ...] = tuple(
-    "王李张刘陈杨黄赵吴周徐孙马朱胡郭何高林罗郑梁谢宋唐许韩冯邓曹彭曾"
-    "肖田董袁潘于蒋蔡余杜叶程苏魏吕丁任沈姚卢姜崔钟谭陆汪范金石廖贾夏韦付方白邹孟熊秦邱侯江尹薛闫段雷黎史陶毛贺顾龙万钱严覃武戴莫孔向汤"
-)
-GIVEN_CHARS_M: tuple[str, ...] = tuple(
-    "伟强磊军洋勇杰涛明超platform".replace("platform", "")
-    + "峰鹏华健旭辉宇泽宸轩浩然睿钦擎柏迅骏昊霖坤锐晨凯彬帆亮航嘉承",
-)
-GIVEN_CHARS_F: tuple[str, ...] = tuple(
-    "芳娜敏静秀丽艳娟霞香月莹雪琳婷玲燕红梅倩颖岚妍晴柔宁菲萱瑶琪韵怡цвет".replace("цвет", "")
-    + "涵瑾露岑荷薇",
-)
-GIVEN_CHARS_NEUTRAL: tuple[str, ...] = tuple("安然嘉一之子川舟野知行同和平新望初文")
-
-RESIDENCE_SUFFIXES: tuple[str, ...] = (
-    "商品房",
-    "合租",
-    "老小区",
-    "青年公寓",
-    "改造社区",
-    "居住区",
-    "社区",
-    "自住房",
-)
+#: Name and housing pools now live in :mod:`gaworld.population.locale`, where
+#: they can vary per city. These aliases are the mainland-China defaults, kept
+#: importable because ``gaworld.city.agents`` and the tests reach for them.
+SURNAMES: tuple[str, ...] = DEFAULT_LOCALE.surnames
+GIVEN_CHARS_M: tuple[str, ...] = DEFAULT_LOCALE.given_male
+GIVEN_CHARS_F: tuple[str, ...] = DEFAULT_LOCALE.given_female
+GIVEN_CHARS_NEUTRAL: tuple[str, ...] = DEFAULT_LOCALE.given_neutral
+RESIDENCE_SUFFIXES: tuple[str, ...] = DEFAULT_LOCALE.residence_suffixes
 
 
 # ---------------------------------------------------------------------------
@@ -585,6 +570,11 @@ class Person:
     job: str
     income_monthly: float
     is_gig: bool
+    #: Whether ``hukou`` is anything other than the locale's *local* tier.
+    #: Carried explicitly because the label itself varies by locale ("本地" in
+    #: China, "本市" in the US), so downstream code cannot compare it to a
+    #: fixed string.
+    is_migrant: bool
     state: dict[str, float]
     household_id: int = -1
     household_role: str = ""
@@ -600,22 +590,17 @@ class Person:
         return AGE_BANDS[-1]
 
 
-def _make_names(spec: PopulationSpec, genders: list[str]) -> list[str]:
+def _make_names(spec: PopulationSpec, genders: list[str], locale: LocaleProfile) -> list[str]:
     rng = derive_rng(spec.seed, "name")
     used: set[str] = set()
     names: list[str] = []
     for gender in genders:
-        pool = GIVEN_CHARS_M if gender == "男" else GIVEN_CHARS_F
-        pool = pool + GIVEN_CHARS_NEUTRAL
         for _ in range(200):
-            surname = SURNAMES[rng.integers(len(SURNAMES))]
-            length = 1 if rng.random() < 0.35 else 2
-            given = "".join(pool[rng.integers(len(pool))] for _ in range(length))
-            candidate = f"{surname}{given}"
+            candidate = compose_name(locale, gender == "男", rng)
             if candidate not in used:
                 break
         else:  # pragma: no cover - only if the name pools are exhausted
-            candidate = f"{surname}{given}{len(names)}"
+            candidate = f"{candidate}{len(names)}"
         used.add(candidate)
         names.append(candidate)
     return names
@@ -657,7 +642,7 @@ def _sample_state(
         if bits["employment"] == "unemployed":
             values["econ_security"] -= 0.20
             values["stress"] += 0.15
-        if bits["hukou"] != "本地":
+        if bits["is_migrant"]:
             values["city_identity"] -= 0.18
             values["mobility_intent"] += 0.15
         if bits["is_gig"]:
@@ -675,12 +660,19 @@ def _sample_state(
     return {key: float(np.clip(value, 0.0, 1.0)) for key, value in values.items()}
 
 
-def synthesize_people(spec: PopulationSpec) -> tuple[list[Person], dict[str, Any]]:
+def synthesize_people(
+    spec: PopulationSpec, *, locale: LocaleProfile | None = None
+) -> tuple[list[Person], dict[str, Any]]:
     """Generate ``spec.size`` residents and a fitting report.
 
     The report carries the IPF convergence details and target-vs-achieved
     marginals so the panel can show which knob had to give.
+
+    ``locale`` supplies the cultural layer — names, housing forms, residency
+    tiers.  It defaults to mainland China, which is what every caller got
+    before locales existed.
     """
+    locale = locale or DEFAULT_LOCALE
     age_shares, achieved_median_age = solve_age_band_shares(spec)
     targets = _target_marginals(spec, age_shares)
     table, ipf_report = ipf_fit(_seed_table(spec), targets)
@@ -736,12 +728,15 @@ def synthesize_people(spec: PopulationSpec) -> tuple[list[Person], dict[str, Any
     migrant_ids = set(
         hukou_rng.choice(spec.size, size=min(n_migrants, spec.size), replace=False, p=migrant_p).tolist()
     )
+    local, same_region, other_region, foreign = locale.residency
     for i, bits in enumerate(bits_list):
         if i in migrant_ids:
             roll = hukou_rng.random()
-            bits["hukou"] = "省内" if roll < 0.25 else ("外国" if roll > 0.99 else "外省")
+            bits["hukou"] = same_region if roll < 0.25 else (foreign if roll > 0.99 else other_region)
+            bits["is_migrant"] = True
         else:
-            bits["hukou"] = "本地"
+            bits["hukou"] = local
+            bits["is_migrant"] = False
 
     # Income: rank-transform an attribute-driven score so the requested median
     # and Gini hold exactly while income still correlates with attributes.
@@ -760,7 +755,7 @@ def synthesize_people(spec: PopulationSpec) -> tuple[list[Person], dict[str, Any
             ranks[idx] = (rank + 0.5) / len(order)
 
     people: list[Person] = []
-    names = _make_names(spec, [bits["gender"] for bits in bits_list])
+    names = _make_names(spec, [bits["gender"] for bits in bits_list], locale)
     for i, bits in enumerate(bits_list):
         if bits["employment"] == "employed":
             income = income_quantile(
@@ -792,7 +787,8 @@ def synthesize_people(spec: PopulationSpec) -> tuple[list[Person], dict[str, Any
             job = NON_EMPLOYED_JOBS["homemaker"][0]
 
         district = districts[int(geo_rng.choice(len(districts), p=district_p))]
-        suffix = RESIDENCE_SUFFIXES[geo_rng.integers(len(RESIDENCE_SUFFIXES))]
+        suffixes = locale.residence_suffixes
+        suffix = suffixes[geo_rng.integers(len(suffixes))]
         state = _sample_state(
             spec, bits, float(ranks[i]) if bits["employment"] == "employed" else 0.35, state_rng
         )
@@ -812,6 +808,7 @@ def synthesize_people(spec: PopulationSpec) -> tuple[list[Person], dict[str, Any
                 job=job,
                 income_monthly=round(float(income), 2),
                 is_gig=bits["is_gig"],
+                is_migrant=bits["is_migrant"],
                 state=state,
             )
         )

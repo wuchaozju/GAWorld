@@ -4,6 +4,7 @@ import math
 import os
 import re
 import sqlite3
+import threading
 import time
 import zlib
 from collections import OrderedDict, deque
@@ -25,7 +26,22 @@ VECTOR_DB_MAX_CHARS = int(CONFIG.get("vector_db_max_chars", 2000))
 LOG_CACHE_MAX_BLOCKS = int(CONFIG.get("log_cache_max_blocks", 24))
 LOG_CACHE_MAX_ACTIONS = int(CONFIG.get("log_cache_max_actions", 32))
 
-_VECTOR_DB_CONN = None
+#: One sqlite connection **per thread**, not one shared connection.
+#:
+#: The main loop runs its per-agent stages through
+#: ``gaworld.core.runner.parallel_map`` when ``CONFIG["concurrency"]`` is on,
+#: and daily-routine generation recalls memories, so this module is entered
+#: from worker threads. A single shared connection fails there twice over: it
+#: raises ``ProgrammingError`` (thread-bound) without ``check_same_thread``,
+#: and ``InterfaceError: bad parameter or other API misuse`` with it, because
+#: concurrent statements trample one connection's cursor state. Per-thread
+#: connections also make ``with conn:`` mean what it reads like — it commits
+#: that thread's transaction and nobody else's. WAL is what lets them share
+#: the file. (Congestion proposal §16.7.)
+_VECTOR_DB_LOCAL = threading.local()
+#: Every connection handed out, so teardown can close them all.
+_VECTOR_DB_CONNS: list = []
+_VECTOR_DB_CONNS_LOCK = threading.Lock()
 _VECTOR_DB_READY = False
 _LOG_CACHE = {}
 
@@ -403,13 +419,14 @@ def _sanitize_memory_text(text, max_chars=VECTOR_DB_MAX_CHARS):
 
 
 def _vector_db_connect():
-    global _VECTOR_DB_CONN
-    if _VECTOR_DB_CONN is not None:
-        return _VECTOR_DB_CONN
+    """The calling thread's connection, opened on first use."""
+    conn = getattr(_VECTOR_DB_LOCAL, "conn", None)
+    if conn is not None and getattr(_VECTOR_DB_LOCAL, "path", None) == VECTOR_DB_PATH:
+        return conn
     dir_path = os.path.dirname(VECTOR_DB_PATH)
     if dir_path:
         os.makedirs(dir_path, exist_ok=True)
-    _VECTOR_DB_CONN = sqlite3.connect(VECTOR_DB_PATH, timeout=30)
+    conn = sqlite3.connect(VECTOR_DB_PATH, timeout=30)
     # Concurrency / durability tuning:
     # - WAL allows readers to proceed during writes, eliminating most
     #   "database is locked" errors when several agents flush at once.
@@ -420,25 +437,36 @@ def _vector_db_connect():
     # network mounts), we keep the default journaling mode rather than
     # crash the simulator.
     try:
-        _VECTOR_DB_CONN.execute("PRAGMA journal_mode=WAL")
-        _VECTOR_DB_CONN.execute("PRAGMA synchronous=NORMAL")
-        _VECTOR_DB_CONN.execute("PRAGMA temp_store=MEMORY")
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA temp_store=MEMORY")
     except sqlite3.Error:
         # Pragmas are advisory; carry on with defaults.
         pass
-    return _VECTOR_DB_CONN
+    _VECTOR_DB_LOCAL.conn = conn
+    _VECTOR_DB_LOCAL.path = VECTOR_DB_PATH
+    with _VECTOR_DB_CONNS_LOCK:
+        _VECTOR_DB_CONNS.append(conn)
+    return conn
 
 
 def _close_vector_db():
-    global _VECTOR_DB_CONN, _VECTOR_DB_READY
-    if _VECTOR_DB_CONN is None:
-        return
-    try:
-        _VECTOR_DB_CONN.close()
-    except sqlite3.Error as exc:
-        # Connection is being torn down anyway; just leave a breadcrumb.
-        _LOG.debug("vector db close failed: %s", exc)
-    _VECTOR_DB_CONN = None
+    """Close every connection handed out, from whichever thread calls.
+
+    Tests repoint ``VECTOR_DB_PATH`` at a fresh temp file between cases, so a
+    worker thread's connection to the previous file must not survive.
+    """
+    global _VECTOR_DB_READY
+    with _VECTOR_DB_CONNS_LOCK:
+        conns, _VECTOR_DB_CONNS[:] = list(_VECTOR_DB_CONNS), []
+    for conn in conns:
+        try:
+            conn.close()
+        except sqlite3.Error as exc:
+            # Connection is being torn down anyway; just leave a breadcrumb.
+            _LOG.debug("vector db close failed: %s", exc)
+    _VECTOR_DB_LOCAL.conn = None
+    _VECTOR_DB_LOCAL.path = None
     _VECTOR_DB_READY = False
 
 

@@ -2,7 +2,7 @@
 ``GET /api/openapi.json``.
 
 Scope: the programmatic surface meant for other systems — kernel interventions,
-the record stream, benchmarks and economy. The console's
+the record stream, information sources, benchmarks and economy. The console's
 own panel routes (population studio, arena, family editor, …) are not listed
 yet; see docs/API_REFERENCE.md for those.
 
@@ -102,7 +102,8 @@ def spec() -> dict[str, Any]:
                                "simulation tick through `controller.intervene` and audited to the "
                                "`controller.intervention` record table. Built-ins: `set_agent_state` "
                                "(agent_id, key, value), `update_config` (path, value), `remove_agent` "
-                               "(agent_id), `inject_life_event`; plugins may register more — see `GET /api/interventions`.",
+                               "(agent_id), `inject_life_event`, `inject_info_item` (source_id, title, "
+                               "excerpt?, url?); plugins may register more — see `GET /api/interventions`.",
                 "parameters": [_p("key", "Registered intervention name")],
                 "requestBody": {"required": False, "content": {"application/json": {"schema": {"type": "object"}}}},
                 "responses": {
@@ -121,12 +122,25 @@ def spec() -> dict[str, Any]:
                 "description": "Every row appended to `output/records/<table>.jsonl` after the connection "
                                "opens is sent as one event whose `event:` is the table name and `data:` "
                                "the row JSON. Common tables: `agent.step`, `controller.intervention`, "
-                               "`controller.intervention_failed`, `traffic.tick`. Keep-alive comment every 15 s.",
+                               "`controller.intervention_failed`, `infosources.injected`, "
+                               "`infosources.read`, `traffic.tick`. Keep-alive comment every 15 s.",
                 "parameters": [_q("tables", "Comma-separated table names to include (default: all)")],
                 "responses": {"200": {"description": "Event stream",
                                       "content": {"text/event-stream": {"schema": {"type": "string"}}}}},
             },
         },
+        # -- information sources -------------------------------------------
+        "/api/infosources/sources": {"get": _get("Source registry with cache counts", "infosources")},
+        "/api/infosources/feed": {"get": _get(
+            "Cached items", "infosources",
+            params=[_q("source_id", "Only this source"), _q("limit", "Max items", {"type": "integer", "default": 20})])},
+        "/api/infosources/diets": {"get": _get(
+            "Residents' media diets", "infosources", params=[_q("agent_id", "Only this resident")],
+            errors={"404": _err("No diet for that resident")})},
+        "/api/infosources/reads": {"get": _get(
+            "Feed reads (`infosources.read`), newest first", "infosources",
+            params=[_q("url", "Item URL, e.g. gaworld://injected/1"), _q("source_id", "Source"),
+                    _q("agent_id", "Resident"), _q("limit", "Max rows", {"type": "integer", "default": 100})])},
         # -- benchmarks ------------------------------------------------------
         "/api/bench/run": {"post": {
             "tags": ["bench"],
@@ -182,7 +196,7 @@ def spec() -> dict[str, Any]:
         },
         "servers": [{"url": "http://127.0.0.1:8766"}],
         "security": [{}, {"bearer": []}, {"cookie": []}],
-        "tags": [{"name": n} for n in ("kernel", "bench", "economy", "meta")],
+        "tags": [{"name": n} for n in ("kernel", "infosources", "bench", "economy", "meta")],
         "paths": paths,
         "components": {
             "schemas": {"Error": {"type": "object", "properties": {"error": {"type": "string"}},

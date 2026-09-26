@@ -25,13 +25,17 @@ import json
 import os
 import random
 import re
-import time
 from collections import defaultdict
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import requests
 
+from gaworld.infosources import diet as _diet
+from gaworld.infosources import feed as _feed
+from gaworld.infosources.schema import KIND_LABELS_ZH
+from gaworld.infosources.search import API_ENGINES, api_search
 from gaworld.io.web_scrape import (
     extract_meta_description as _extract_meta_content,
     extract_news_main_content as _extract_news_main_content,
@@ -100,13 +104,13 @@ def load_news_sources(path: str | None) -> list[str]:
             text = f.read()
     except OSError:
         return []
-    # Preserved verbatim from the legacy source — these are double-backslashed
-    # in the original (not a typo on our end), matching e.g. literal `\(...\)`
-    # patterns that some upstream profile markdown apparently emits. The second
-    # findall catches everything else so the over-escape rarely matters in
-    # practice. Do NOT "fix" this during the extraction.
-    urls = re.findall(r"\\((https?://[^)\\s]+)\\)", text)
-    urls.extend(re.findall(r"https?://[^\\s)]+", text))
+    # Markdown links first (``[text](https://…)``), then bare URLs. The legacy
+    # patterns were double-escaped inside raw strings, so ``[^\\s)]`` excluded
+    # the *letter* ``s`` rather than whitespace: ``https://news.baidu.com/``
+    # loaded as ``https://new`` and every other line ran on into the next one,
+    # which is why the cache only ever held two junk entries.
+    urls = re.findall(r"\((https?://[^)\s]+)\)", text)
+    urls.extend(re.findall(r"https?://[^\s)\]]+", text))
     cleaned: list[str] = []
     seen: set[str] = set()
     for url in urls:
@@ -147,6 +151,26 @@ def load_news_cache(path: str | None) -> list[dict[str, str]]:
     return cleaned
 
 
+def _news_cache_is_fresh(items: list[dict[str, str]], ttl_hours: float) -> bool:
+    """Whether the newest ``fetched_at`` stamp is within ``ttl_hours`` (real time)."""
+    if ttl_hours <= 0 or not items:
+        return False
+    now = datetime.now(UTC)
+    for item in items:
+        stamp = str(item.get("fetched_at", "")).strip()
+        if not stamp:
+            continue
+        try:
+            fetched = datetime.fromisoformat(stamp)
+        except ValueError:
+            continue
+        if fetched.tzinfo is None:
+            fetched = fetched.replace(tzinfo=UTC)
+        if (now - fetched).total_seconds() < ttl_hours * 3600.0:
+            return True
+    return False
+
+
 def update_news_cache(
     path: str,
     sources: list[str],
@@ -155,6 +179,10 @@ def update_news_cache(
     config = config or {}
     existing = load_news_cache(path)
     if not sources:
+        return existing
+    # A run can be restarted many times in one afternoon; the homepages have not
+    # changed in between. Same real-time gate as the feed cache.
+    if _news_cache_is_fresh(existing, float(config.get("cache_ttl_hours", 0) or 0)):
         return existing
     timeout = int(config.get("timeout", 8))
     max_chars = int(config.get("max_chars", 2000))
@@ -179,7 +207,7 @@ def update_news_cache(
             "url": url,
             "title": title,
             "text": excerpt,
-            "fetched_at": time.strftime("%Y-%m-%d"),
+            "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
         })
     if not items:
         return existing
@@ -367,8 +395,79 @@ def _build_agent_preferred_sites(
         domain_scores[domain] += 0.5 + score
     for domain in fallback_domains:
         domain_scores[domain] += 0.2
+    for entry in _diet.diet_of(agent):
+        # The resident's own news / trade sites also become ``site:`` search
+        # candidates. Social hot lists stay out: ``site:weibo.com`` searches
+        # return login walls, not posts.
+        domain = str(entry.get("domain", "")).strip()
+        if domain and entry.get("kind") in ("news", "professional"):
+            domain_scores[domain] += 0.4 + float(entry.get("weight", 0.0) or 0.0)
     ranked = sorted(domain_scores.items(), key=lambda x: (-x[1], x[0]))
     return [domain for domain, _ in ranked[:max(1, int(max_sites))]]
+
+
+#: Channels whose item URLs are search / app pages rather than articles — a
+#: full-text fetch of those returns a login wall or a JS shell, never the post.
+_NO_FULL_READ_CHANNELS = {"weibo_hot", "baidu_hot", "bilibili_popular", "reddit"}
+
+
+def _feed_target(
+    agent: dict[str, Any],
+    *,
+    interests: list[str],
+    seen_urls: set[str],
+    config: dict[str, Any],
+) -> dict[str, Any] | None:
+    """One item from the resident's media diet, in the ``_choose_info_target`` shape.
+
+    ``None`` when the plugin is not running, the resident has no diet, the
+    ``feed_visit_ratio`` dice chose the legacy path, or everything is seen.
+    """
+    rt = _feed.runtime()
+    diet = _diet.diet_of(agent)
+    if rt is None or not diet:
+        return None
+    settings = rt.settings or {}
+    if random.random() >= float(settings.get("feed_visit_ratio", 0.6)):
+        return None
+    picked = _diet.pick_item(diet, rt.cache, interests=interests, seen_urls=seen_urls, rng=random)
+    if not picked:
+        return None
+    entry, item, score, matched = picked
+    source = rt.sources.get(item.source_id)
+    channel = source.channel if source else ""
+    content = item.excerpt or item.title
+    if (
+        settings.get("full_read", True)
+        and item.url.startswith(("http://", "https://"))
+        and len(content) < int(settings.get("full_read_min_chars", 200))
+        and channel not in _NO_FULL_READ_CHANNELS
+        and _domain_from_url(item.url) not in _SNIPPET_ONLY_DOMAINS
+    ):
+        full = fetch_news_excerpt(
+            item.url,
+            timeout=int(config.get("content_timeout", config.get("timeout", 8))),
+            max_chars=int(config.get("content_max_chars", 2000)),
+            user_agent=str(config.get("user_agent", "GAWorld/1.0")),
+        )
+        if full:
+            content = full
+    kind = source.kind if source else item.kind
+    return {
+        "mode": "feed",
+        "query": "",
+        "engine": "",
+        "url": item.url or (source.url if source else ""),
+        "title": item.title,
+        "content": content,
+        "score": score,
+        "matched": matched,
+        "source_id": item.source_id,
+        "source_name": str(entry.get("name") or (source.name if source else item.source_id)),
+        "kind": kind,
+        "kind_label": KIND_LABELS_ZH.get(kind, kind),
+        "channel": channel,
+    }
 
 
 def _choose_info_target(
@@ -398,6 +497,12 @@ def _choose_info_target(
                 seen_urls=seen_urls,
                 config=config,
             )
+
+    # The resident's own feeds come first: that is what "checking the news"
+    # means for most people. The dice inside decide how often it wins.
+    feed_target = _feed_target(agent, interests=interests, seen_urls=seen_urls, config=config)
+    if feed_target:
+        return feed_target
 
     preferred_cache = []
     for item in news_cache or []:
@@ -527,6 +632,14 @@ def _web_search_target(
 # 3. Acquisition pipelines (each writes one memory record + log line)
 # ---------------------------------------------------------------------------
 
+#: How the reaction prompt names each acquisition mode.
+_MODE_LABELS = {
+    "feed": "浏览自己常看的信息源",
+    "direct_source": "直接访问源站",
+    "web_search": "上网搜索",
+}
+
+
 def info_seek_and_store(
     agent: dict[str, Any],
     day: int | None = None,
@@ -561,6 +674,11 @@ def info_seek_and_store(
     mode = target.get("mode", "direct_source")
     query = target.get("query", "")
     engine = target.get("engine", "")
+    # "社交媒体 · 微博热搜" — only feed targets know which channel they came from.
+    channel_line = ""
+    if target.get("source_name"):
+        kind_label = str(target.get("kind_label") or target.get("kind") or "").strip()
+        channel_line = " · ".join(part for part in (kind_label, str(target["source_name"])) if part)
 
     # Note: legacy source joins with literal "\n" (backslash-n), not a real
     # newline. Almost certainly a bug-in-source, but per Surgical Changes we
@@ -576,7 +694,8 @@ def info_seek_and_store(
 角色资料：
 {profile_text}
 
-你本次的信息获取方式：{mode}
+你本次的信息获取方式：{_MODE_LABELS.get(mode, mode)}
+渠道：{channel_line or "N/A"}
 检索词：{query or "N/A"}
 来源：{title or "N/A"} ({url})
 内容摘要：
@@ -598,12 +717,28 @@ def info_seek_and_store(
     preferred_text = ", ".join(preferred_sites or []) if preferred_sites else "N/A"
     memory_entry = (
         f"[{stamp}] 信息获取：{mode}\n"
-        f"偏好站点：{preferred_text}\n"
+        + (f"渠道：{channel_line}\n" if channel_line else "")
+        + f"偏好站点：{preferred_text}\n"
         f"检索词：{query or 'N/A'}\n"
         f"来源：{title or 'N/A'} ({url})\n"
         f"内容：{memory_excerpt}\n"
         f"想法：{thought}"
     )
+    rt = _feed.runtime()
+    if mode == "feed" and rt is not None and rt.recorder is not None:
+        # Who read which item, and what they made of it: the trail an injected
+        # item (`inject_info_item`) leaves as it spreads.
+        rt.recorder.record(
+            "infosources.read",
+            {
+                "agent_id": agent.get("id"),
+                "name": agent.get("name", ""),
+                "source_id": target.get("source_id", ""),
+                "title": title,
+                "url": url,
+                "thought": thought,
+            },
+        )
     agent["memory"].append(memory_entry)
     save_agent_memory(agent)
     vector_db_add_entry(agent["id"], "info_seek", memory_entry, sim_day=day, sim_time=time_str or "info_seek")
@@ -611,6 +746,7 @@ def info_seek_and_store(
     log = f"""
 [InfoSeek {agent['name']} @ {time_str}]
 Mode: {mode}
+Source: {channel_line or "N/A"}
 Query: {query or "N/A"}
 Engine: {engine or "N/A"}
 PreferredSites: {preferred_text}
@@ -777,6 +913,11 @@ def web_search(
             x_results = x_mcp_search(query, config=config)
             if x_results:
                 return "x", x_results
+            continue
+        if engine_name in API_ENGINES:
+            api_results = api_search(engine_name, query, config=config)
+            if api_results:
+                return engine_name, api_results
             continue
         search_url = search_urls.get(engine_name)
         if not search_url:

@@ -106,6 +106,16 @@
       tags: ["group", "population", "人口", "群体"],
     },
     {
+      id: "group-interview",
+      path: "/docs/GROUP_INTERVIEW_TUTORIAL.md",
+      title: "群体采访教程",
+      en: "Group Interview",
+      group: "专题教程",
+      summary: "跨城市问一群智能体同一套问题：选择题/是非题会被统计，可附图片和网址，能连续追问，最后导出完整文档。",
+      en_summary: "Ask one question set to many agents across cities: choice and yes-no answers are tallied, images and URLs can be attached, follow-up rounds keep continuity, and the whole thing exports as one document.",
+      tags: ["interview", "survey", "采访", "访谈", "问卷", "统计", "多模态", "群体"],
+    },
+    {
       id: "social-network",
       path: "/docs/SOCIAL_NETWORK_TUTORIAL.md",
       title: "社交网络教程",
@@ -134,6 +144,16 @@
       summary: "同一批人换一件事：多分支反事实实验怎么设计、怎么读分叉图、为什么先跑安慰剂。",
       en_summary: "Same people, one different event: designing multi-branch counterfactuals, reading the fork diagram, and why to run a placebo first.",
       tags: ["parallel", "counterfactual", "平行世界", "对照", "反事实"],
+    },
+    {
+      id: "playground",
+      path: "/docs/PLAYGROUND_TUTORIAL.md",
+      title: "游戏场教程",
+      en: "Playground",
+      group: "专题教程",
+      summary: "和居民玩一局：斗兽场按 benchmark 排座次并留存 Top-K，说服游戏在限定轮数内劝他改口，复问时答案真的变了才算赢。",
+      en_summary: "Play a round against the residents: the Arena ranks them on a benchmark and keeps the top K, while Persuasion gives you a turn limit to change one resident's mind — only a real change on the re-ask counts as a win.",
+      tags: ["playground", "arena", "persuasion", "game", "游戏场", "斗兽场", "说服", "对局"],
     },
     {
       id: "openclaw",
@@ -244,6 +264,16 @@
       summary: "五维人格怎么从性格段落离线标定并冻结、规则/提示词/日记三条通道各改变什么、以及为什么运行期不漂移。",
       en_summary: "How the five dimensions are calibrated offline from the personality prose and frozen, what each of the rule/prompt/diary channels changes, and why nothing drifts at run time.",
       tags: ["design", "personality", "big five", "ocean", "人格", "设计"],
+    },
+    {
+      id: "api-reference",
+      path: "/docs/API_REFERENCE.md",
+      title: "API 参考",
+      en: "API Reference",
+      group: "开发与扩展",
+      summary: "Dashboard / Twin / Agent Relay / External Environment 全部 HTTP 端点、所有 CLI 子命令，以及把 GAWorld 嵌入自己脚本的 Python 入口。",
+      en_summary: "Every HTTP endpoint on Dashboard / Twin / Agent Relay / External Environment, every CLI subcommand, and the Python entry points for embedding GAWorld in your own script.",
+      tags: ["api", "http", "cli", "python", "embed", "嵌入", "接口"],
     },
   ];
   /* i18n-exempt-end */

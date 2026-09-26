@@ -113,6 +113,33 @@ def _jobs_by_id(md_path: Path) -> dict[int, str]:
     return jobs
 
 
+def profile_block(slug: str, agent_id: int) -> str:
+    """One resident's profile Markdown, read straight from *slug*'s bundle.
+
+    Lives here rather than in the city panel because this module already owns
+    the knowledge of how a city's population files are laid out — the CSV, the
+    Markdown, and the fact that ``""`` means the default world rather than a
+    bundle. A second parser elsewhere would be a second thing to keep in step
+    with the profile format.
+
+    Returns ``""`` when the file or the block is missing: a resident with no
+    profile is a real state (the CSV row can exist alone), and the caller
+    renders that as "no profile" rather than failing the whole read.
+    """
+    _csv_path, md_path = city_paths(slug)
+    try:
+        text = md_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+    matches = list(_PROFILE_SPLIT_RE.finditer(text))
+    for index, match in enumerate(matches):
+        if int(match.group(1)) != int(agent_id):
+            continue
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        return text[match.start() : end].strip() + "\n"
+    return ""
+
+
 def load_population(slug: str) -> list[dict[str, Any]]:
     """Agent-shaped dicts for one city, read straight from its bundle.
 

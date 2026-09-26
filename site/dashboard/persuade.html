@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="persuade.page_title">GAWorld · 说服游戏</title>
+  <meta name="description" data-i18n-content="persuade.meta_description" content="GAWorld 说服游戏 — 问一个居民一个问题，在限定轮数内聊天试图说服他；复问时答案改变即说服成功。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="persuade.kicker">GAWorld Playground · Persuasion</p>
+          <h1 data-i18n="persuade.headline">说服游戏：你能让他改口吗</h1>
+          <p class="sub" data-i18n="persuade.sub">
+            选一个对手 → 提一个问题 → 记下他的第一答案 → 限定轮数内聊天 → 复问同一个问题，答案真的变了就算赢。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="persuade.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="persuade-grid">
+      <!-- Left column: set up one game -->
+      <aside class="persuade-side panel">
+        <h3 data-i18n="persuade.section_setup">开一局</h3>
+
+        <label class="field">
+          <span data-i18n="persuade.city_label">城市</span>
+          <select id="pCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="persuade.agent_label">对手</span>
+          <select id="pAgent"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="persuade.question_label">问题</span>
+          <textarea id="pQuestion" data-i18n-placeholder="persuade.question_placeholder" placeholder="例如：如果社区要在你家楼下建一个垃圾中转站，你支持吗？"></textarea>
+        </label>
+        <p class="persuade-hint" data-i18n="persuade.question_hint">
+          问题要有明确立场可选（支持 / 反对、搬 / 不搬），复问时才判得出他有没有改口。
+        </p>
+
+        <label class="field">
+          <span data-i18n="persuade.max_turns_label">最大聊天轮数</span>
+          <input id="pMaxTurns" type="number" min="1" max="20" value="5" />
+        </label>
+        <p class="persuade-hint" data-i18n="persuade.max_turns_hint">
+          用完最后一轮会自动复问结算。中途想收手，点「复问并结算」。
+        </p>
+
+        <div class="persuade-actions">
+          <button id="pStartBtn" class="button primary" data-i18n="persuade.start">开始这一局</button>
+        </div>
+
+        <section class="persuade-history">
+          <h4 data-i18n="persuade.history">最近对局</h4>
+          <ul id="pHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="persuade-main panel">
+        <header class="persuade-main-head">
+          <div>
+            <h3 data-i18n="persuade.section_board">对局</h3>
+            <p id="pStatus" class="persuade-status" data-i18n="persuade.idle">还没开局</p>
+          </div>
+          <div class="persuade-turns">
+            <span data-i18n="persuade.turns_left">剩余轮数</span>
+            <b id="pTurnsLeft">—</b>
+          </div>
+        </header>
+
+        <div id="pBoard" hidden>
+          <div class="persuade-question">
+            <span class="label" data-i18n="persuade.the_question">问题</span>
+            <p id="pQuestionEcho"></p>
+          </div>
+          <div id="pChat" class="persuade-chat"></div>
+
+          <div class="persuade-compose">
+            <textarea id="pMessage" data-i18n-placeholder="persuade.message_placeholder" placeholder="说点能打动他的话…（Ctrl/⌘ + Enter 发送）"></textarea>
+            <div class="stack">
+              <button id="pSendBtn" class="button primary" data-i18n="persuade.send">发送</button>
+              <button id="pSettleBtn" class="button" data-i18n="persuade.settle">复问并结算</button>
+            </div>
+          </div>
+
+          <div id="pVerdict" class="persuade-verdict" hidden></div>
+        </div>
+
+        <p id="pIdle" class="persuade-idle" data-i18n="persuade.idle_hint">左边选个对手、写个问题，点「开始这一局」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/persuade.js"></script>
+</body>
+</html>

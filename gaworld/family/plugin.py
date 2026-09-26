@@ -38,6 +38,8 @@ from gaworld.family.schema import family_config
 from gaworld.family.ties import apply_family_ties, reconcile_ghost_kin
 from gaworld.kernel import Plugin
 from gaworld.logging_setup import get_logger
+from gaworld.travel import itinerary as travel_itinerary
+from gaworld.world import away
 
 _LOG = get_logger("gaworld.family.plugin")
 
@@ -341,6 +343,12 @@ class FamilyPlugin(Plugin):
         if not section:
             return None
         duty = agent.get("family_today") or ""
+        # Out of town, `at_home` is False and the duty line disappears on its
+        # own — correct, but silent. Say it instead: the household did not stop
+        # needing doing just because this member is away.
+        trip = away.trip_of(agent)
+        if trip:
+            return section + "\n" + travel_itinerary.absence_line(trip)
         return section + ("\n" + duty if duty and at_home else "")
 
     # -- state --------------------------------------------------------------

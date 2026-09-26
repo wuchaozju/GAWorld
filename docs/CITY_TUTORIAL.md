@@ -14,6 +14,7 @@
 - [2. 造城这条流水线](#2-造城这条流水线)
 - [3. 往城里加智能体的三条路](#3-往城里加智能体的三条路)
 - [3.5 城市知识库：让城市影响居民](#35-城市知识库让城市影响居民)
+- [3.6 居民的地方特征：locale.json](#36-居民的地方特征localejson)
 - [4. 切换当前城市](#4-切换当前城市)
 - [5. 城市包的目录结构](#5-城市包的目录结构)
 - [6. 面板导览](#6-面板导览)
@@ -60,7 +61,7 @@ python -m gaworld.city use 绍兴柯桥
 python generative_city_sim.py run --sim-days 7
 ```
 
-没有网络、或者地名是虚构的：
+没有网络：
 
 ```bash
 python -m gaworld.city create "柳溪村" --offline --scale tiny --size 100
@@ -68,6 +69,18 @@ python -m gaworld.city create "柳溪村" --offline --scale tiny --size 100
 
 `--offline` 跳过一切联网查询，完全按地名**确定性**地程序化生成——
 同一个地名永远得到同一座城，适合写测试和复现实验。
+
+想要一座**本来就不存在**的城，给它一段描述或一张草图：
+
+```bash
+python -m gaworld.city create "翡翠屿" \
+    --description "热带火山岛上的小城，靠渔业和潜水旅游为生，北边是火山，港口在西南角"
+
+python -m gaworld.city create "翡翠屿" --image ~/sketches/island.png
+```
+
+这和 `--offline` 是两回事：`--offline` 只是不联网，城的样子仍然由地名的哈希决定，
+描述里的火山和渔港不会出现在图上。`--description` / `--image` 走的是另一条流水线（见 2.5）。
 
 ---
 
@@ -82,6 +95,17 @@ python -m gaworld.city create "柳溪村" --offline --scale tiny --size 100
  ├─ 程序化地图  ← 始终生成
  ├─ 环境配置
  └─ city.json 清单
+```
+
+虚构城市没有可查的地理，所以换一条：Nominatim 和 Overpass 为真实地方做的事，
+这里由一次大模型调用来做。
+
+```
+描述 / 草图
+ ├─ imagine（LLM 出 JSON 设计）──失败──→ 报错，不静默退回程序化
+ ├─ 渲染成同一份 citymap.md
+ ├─ 气候与产业来自同一次调用
+ └─ city.json 清单（place.source = imagined）
 ```
 
 ### 2.1 地理编码决定了「这是多大的地方」
@@ -121,6 +145,45 @@ Nominatim 返回的 `addresstype`（`village` / `town` / `city` / `province`…�
 默认的 background 写着「中国·杭州」，不换掉的话，
 新城市里的智能体会一边住在柯桥、一边以为自己在杭州。
 
+### 2.5 虚构城市：描述 / 草图 → 城
+
+`--description` 或 `--image`（面板上是「新建城市」顶部的**虚拟城市**切换）
+让大模型来做 Nominatim 和 Overpass 为真实地方做的那份工作。
+
+**模型输出的是 JSON，不是 `citymap.md`。** 直接让它写指令格式，
+换来的失败模式是「解析出半座城，而且没人发现」；出 JSON 则每个字段都能校验、能兜底。
+校验层刻意写得很宽容——模型编了个不存在的分类、把坐标写到 0–1 之外、
+或者忘了连某个城区的路——代价应该是城市朴素一点，而不是创建失败：
+
+| 模型的毛病 | 处理 |
+|---|---|
+| 分类不在词表里 | 落到 `mixed` |
+| 坐标越界 | 夹到 0–1 |
+| 城区重名 | 丢掉后一个（否则会在地图层合并成一个节点，把地点一起带走） |
+| 某个城区没连路 | 挂一条 collector 上去——不可达的城区意味着在那上班的人回不了家 |
+| 地铁只有两站 | 当作没有地铁 |
+| 一个城区都没有 | 报错。这时候静默退回程序化，会给你一座忽略了描述、却看起来像照做了的城 |
+
+坐标约定写死在提示词里：**x=0 最西、x=1 最东；y=0 最南、y=1 最北**。
+地图层的 `+y` 也是北，所以两边不需要翻转——描述里「北边是火山」，火山就在图的上方。
+
+**中文地名要显式声明分类。** `infer_category` 认的是英文关键词，
+所以「鱼市」「社区卫生站」全都会归到 `mixed`，连带拿错营业时间和人流密度。
+因此每个小地点都额外写一行 `@node: 鱼市 | kind=place | category=commerce`——
+只带分类、不带坐标，位置仍然交给地图层的街区排布算法。
+
+气候和产业来自**同一次**调用：描述里的「热带火山岛」变成 `climate=tropical`，
+再换算成一个代表纬度喂给环境层，于是这座城真的会下台风；
+「靠渔业和潜水旅游为生」变成 `knowledge.json` 里的产业，
+`source` 标成 `imagined` 而不是 `web`——下游任何一处都能分清哪些是查来的、哪些是编的。
+虚构城市**不会**去联网搜产业：搜一个不存在的地方，最好的结果是什么都搜不到，
+最坏的结果是搜到一个同名的真实地方。
+
+> **两个前提。** 草图需要多模态模型；路由到的模型不支持图片输入时会**直接报错**，
+> 不会假装看过图。在「配置」面板给 provider 加 `"vision": true`，或把 `city_design`
+> 路由到多模态后端。另外城市设计的输出有几千 token，这一处调用会自己申请
+> `max_tokens=8000`——provider 默认的 512 会把 JSON 从中间截断。
+
 ---
 
 ## 3. 往城里加智能体的三条路
@@ -130,12 +193,20 @@ Nominatim 返回的 `addresstype`（`village` / `town` / `city` / `province`…�
 ### 3.1 批量合成居民
 
 ```bash
-python -m gaworld.city add-agents 绍兴柯桥 --size 200 --preset cn_county_town
+python -m gaworld.city add-agents 绍兴柯桥 --size 200
 ```
 
 复用 `gaworld.population` 的完整管线（IPF 采样、家庭、工作单位、社交图），
 但把 `geography.district_weights` 换成**这座城市真实存在的行政区**，
 所以居民的住所写出来是「兰亭街道·自住房」而不是「余杭·商品房」。
+
+居民**叫什么、住什么、算哪里人**，跟着这座城的 `locale.json` 走（见 3.6），
+所以美国的城市生成 `Jessica Smith，本市户籍，居住于 Oak Ridge·独栋住宅`，
+东莞生成 `陈家俊，外省户籍，居住于 新安·工厂宿舍`。
+
+`--preset` 现在可以**不给**：不给就用这座城调研出来的人口结构
+（东莞的外来人口占比 0.62，美国郊区 0.14）。给了就以你给的为准——
+显式选了 `aging_community` 就是要老龄社区，不该被调研结果覆盖。
 
 默认**追加**；`--replace` 才是替换。注意追加的一批有自己的家庭和社交图，
 不会和先前那批织在一起——要整座城互相连通，就一次生成完。
@@ -248,6 +319,53 @@ python -m gaworld.city news 绍兴柯桥 --force            # 强制抓
 
 ---
 
+## 3.6 居民的地方特征：`locale.json`
+
+知识库回答「这地方是干什么的」，locale 回答「**住在这儿的人叫什么**」。
+
+在这之前，人口合成器把中国的一套写死了：全国通用的百家姓、户籍四档
+本地/省内/外省/外国、商品房/老小区这套居住形态。于是拿 `us_suburb` 模板建的
+美国城市，统计上像美国，人却是中国的——「王伟，28，本地户籍，住 西古山·商品房」。
+
+建城时会额外发一次 LLM 调研，产出 `locale.json`：
+
+| 字段 | 管什么 | 中国内地 | 美国郊区 |
+|---|---|---|---|
+| `surnames` / `given_*` | 姓名池 | 王李张刘陈…… | Smith / Johnson…… |
+| `given_mode` | 名字怎么拼 | `compose`（姓 + 1~2 字） | `whole`（完整的名） |
+| `residency` | 户籍四档 | 本地 / 省内 / 外省 / 外国 | 本市 / 本州 / 外州 / 外国 |
+| `residence_suffixes` | 居住形态 | 商品房 / 老小区 / 合租 | 独栋住宅 / 联排住宅 / 出租公寓 |
+| `suggested_overrides` | 人口结构建议 | —— | 中位年龄 39、外来占比 0.14 |
+
+**姓氏是按城市查的，不是按国家。** 广东该以陈黄梁林罗为主，
+而不是照搬全国百家姓；东莞这种制造业城市的外来人口占比要到 0.6 以上。
+
+```bash
+python -m gaworld.city locale 东莞长安              # 看这座城现在用的是什么
+python -m gaworld.city locale 东莞长安 --rebuild    # 重新调研（建城前就有的城用这个补上）
+```
+
+### 3.6.1 只本地化名字，不本地化档案
+
+人物小传、职衔仍然是中文，这是刻意的：
+
+- `gaworld/sim/agents_loader.py` 的 `parse_profile` 用
+  `**基础信息**：…NN岁，…户籍，居住…` 这个形状的正则读档案；
+- `gaworld/economy/finance.py` 靠**中文关键词**（运营 / 销售 / 工程师）
+  反推行业和收入区间。
+
+把职衔换成英文，这两条契约当场就断，而且是静默地断——行业会全部落到兜底分类。
+所以 `residency` 哪怕在美国城市也还是中文词（本市/本州/外州），只是**语义**对了。
+
+### 3.6.2 调研失败就退回内地默认值，并且说出来
+
+locale 调研和知识库一样是 best-effort，从不阻断建城。失败、离线建城、
+虚构城市这三种情况都退回内地默认池——也就是这个功能存在之前的行为——
+并在 `city.json` 的 history 里记一条 `locale.default`。
+所以一座美国城市如果满屏 `王伟`，是查得到原因的，不是玄学。
+
+---
+
 ## 4. 切换当前城市
 
 三个入口，写的是同一个开关（`dashboard_config.json` 的 `"city"`）：
@@ -340,6 +458,7 @@ data/cities/<slug>/
 ├── map.geojson               真实 OSM 地图（抓取成功才有）
 ├── environment.json          环境事件 + background
 ├── knowledge.json            城市画像（产业、发展重点、紧缺岗位、来源链接）
+├── locale.json               居民的姓名池、居住形态、户籍分档、人口结构建议
 ├── news.json                 本地新闻缓存（按真实时间刷新）
 ├── agents.csv                人口状态（utf-8-sig，仿真器契约）
 ├── profiles.md               人物小传
@@ -379,8 +498,30 @@ data/cities/<slug>/
 不会出现"预览一张、跑另一张"。地图在服务端按 `(路径, mtime)` 缓存，
 重新生成城市会自动失效。
 
+**左栏下部**（选中城市后出现）：**城市居民**。这座城的人口，直接从城市包里读，
+所以不必先切成当前城市就能看。支持按姓名 / 职业 / 住所 / 编号搜索，每行的「在工作台查看」
+带着 `?city=<slug>&agent=<id>` 跳进 Agent Studio——**编号必须跟着城市一起走**，
+理由见 [Agent IDs 是按城市各自编号的](#agent-ids-是按城市各自编号的)。
+
 **右栏**（选中城市后出现）：详情（坐标、地图来源、来源、行政区）、
 「用这座城市运行」/「删除城市」、以及三个加 agent 的表单。
+
+### 在 Agent Studio 里看别的城市
+
+工作台左上角的「选择城市」可以切到任意一座城，列出它的居民、看每个人的身份、
+九个状态变量和 profile 原文。
+
+**但只有「当前运行城市」的居民可以编辑**，其余城市是只读的，面板会明说为什么：
+
+- 编号在每座城市各自从 1 开始；
+- 而记忆（`output/memory/agent_<id>*.json`）、大五人格（`data/agents_big5.csv`）、
+  社交与财务都是**按编号存放的一个扁平命名空间**，属于当前运行的那座城；
+- 跨城市读这些数据会张冠李戴——把 A 城 3 号的记忆显示在 B 城 3 号名下，
+  而且看不出来。
+
+要编辑另一座城的居民，先用面板上的「设为当前城市」（等价于 `POST /api/city/select`
+或 CLI 的 `python -m gaworld.city use <city>`），**然后重启面板服务**：
+`dashboard_server` 在进程启动时解析一次 `csv_path` / `md_path`，不会热切换。
 
 > 地图放在**宽的左栏**而不是详情面板旁边：380px 的侧栏里一座 174 个地点的城糊成一团。
 
@@ -394,6 +535,7 @@ data/cities/<slug>/
 python -m gaworld.city create <地名> [--slug S] [--scale tiny|small|medium|large|metro]
                                      [--offline] [--force] [--seed N]
                                      [--size N] [--preset P]
+                                     [--description "…"] [--image 草图.png]
 python -m gaworld.city list [--json]
 python -m gaworld.city show <city>
 python -m gaworld.city add-agents <city> --size N [--preset P] [--seed N] [--replace]
@@ -402,6 +544,7 @@ python -m gaworld.city add-agent  <city> --name N --age A [--gender] [--job]
 python -m gaworld.city migrate <city> --agent-id N [--from-city C | --from-csv F --from-md F]
                                       [--keep-residence]
 python -m gaworld.city knowledge <city> [--rebuild] [--offline]
+python -m gaworld.city locale    <city> [--rebuild]
 python -m gaworld.city news <city> [--refresh] [--force] [--ttl-hours H]
 python -m gaworld.city use <city> [--clear]
 python -m gaworld.city delete <city> --yes
@@ -415,6 +558,9 @@ python -m gaworld.city delete <city> --yes
 |---|---|---|
 | GET | `/api/city` | 城市列表 + 当前选中 + 可选规模/模板 |
 | GET | `/api/city/detail?city=<slug>` | 单座城市详情（含行政区、history、解析出的路径） |
+| GET | `/api/city/catalogue` | 可选城市列表（含**默认世界**，带人数），给城市/居民选择器用 |
+| GET | `/api/city/agents?city=<slug>&q=&limit=&offset=` | 该城居民列表（读城市包，不经过运行配置）；`city` 省略 = 默认世界 |
+| GET | `/api/city/agent?city=<slug>&id=<n>` | 单个居民：身份 + 九个状态变量 + profile 原文 |
 | GET | `/api/city/map?city=<slug>` | 地图渲染数据（tile_map + 节点 + 路网 + 河流 + 地铁），按 mtime 缓存 |
 | GET | `/api/city/knowledge?city=<slug>` | 城市画像 + 四条通道各自的实际产出 |
 | POST | `/api/city/knowledge` | `{city, offline?}` 重建画像 |
@@ -422,7 +568,7 @@ python -m gaworld.city delete <city> --yes
 | POST | `/api/city/news` | `{city, force?, ttl_hours?}` 刷新新闻 |
 | GET | `/api/config` | 含 `city`（当前）与 `cities`（可选列表，带人数与地图模式） |
 | POST | `/api/run/start` | `config.city` 指定这次运行在哪座城；未知 slug 或 Agent IDs 越界返回 400 |
-| POST | `/api/city/create` | `{name, scale?, offline?, force?, seed?, size?, preset?}` |
+| POST | `/api/city/create` | `{name, scale?, offline?, force?, seed?, size?, preset?}`；给了 `description` 或 `image`（data URL）就走虚构路线 |
 | POST | `/api/city/population` | `{city, size, preset?, seed?, replace?}` |
 | POST | `/api/city/agent` | `{city, name, age, gender?, job?, ...}` |
 | POST | `/api/city/migrate` | `{city, agent_id, from_city?, rehome?}` |

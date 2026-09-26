@@ -43,9 +43,10 @@ import math
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
-# Leaf import: gaworld.personality.traits is stdlib-only, so this module keeps
-# its "no heavy dependencies" property.
+# Leaf imports: both are stdlib-only, so this module keeps its "no heavy
+# dependencies" property.
 from gaworld.personality.traits import trait_modifier, traits_of
+from gaworld.world.away import is_away_location
 
 try:
     import numpy as np  # type: ignore
@@ -533,9 +534,15 @@ def detect_co_located_agents(
     all_agents: List[Dict],
     agents_by_id: Dict,
 ) -> List[Dict]:
-    """Find other agents at the same location this time step."""
+    """Find other agents at the same location this time step.
+
+    Out-of-town agents are excluded on both sides. The away marker is display
+    text, not a node id, so two residents on unrelated trips can carry the
+    same string ("异地", or "异地（北京）" for the same province) and would
+    otherwise be judged to be standing next to each other.
+    """
     my_loc = agent.get("locations", {}).get("current", "")
-    if not my_loc:
+    if not my_loc or is_away_location(my_loc):
         return []
     my_id = agent.get("id")
     co_located = []
@@ -543,6 +550,8 @@ def detect_co_located_agents(
         if other.get("id") == my_id:
             continue
         other_loc = other.get("locations", {}).get("current", "")
+        if is_away_location(other_loc):
+            continue
         if other_loc == my_loc and not other.get("locations", {}).get("in_transit"):
             co_located.append(other)
     return co_located

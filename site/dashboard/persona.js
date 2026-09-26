@@ -46,8 +46,21 @@
       options || {}
     ));
     var payload = await res.json().catch(function () { return {}; });
-    if (!res.ok || payload.error) throw new Error(payload.error || ("HTTP " + res.status));
+    /* Only the HTTP status decides, never `payload.error`: a job record
+     * legitimately *carries* an `error` field (the traceback of the job that
+     * failed) and arrives with 200. Treating that as a failed request threw
+     * `new Error({type, detail})`, and the panel showed the job's real reason
+     * as "[object Object]". Same rule as worlds.js, the other job poller. */
+    if (!res.ok) throw new Error(errorText(payload) || ("HTTP " + res.status));
     return payload;
+  }
+
+  /** A server error can be a string or a {type, detail} record; say something. */
+  function errorText(payload) {
+    var raw = (payload || {}).error;
+    if (!raw) return "";
+    if (typeof raw === "string") return raw;
+    return String(raw.detail || raw.type || JSON.stringify(raw));
   }
 
   function say(message, tone) {

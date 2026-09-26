@@ -16,10 +16,12 @@ GAWorld/
 │   ├── env/                  # 环境系统（system.py）
 │   ├── events/               # 生命事件（life.py + plugin.py）
 │   ├── family/               # 家庭与户（assign/overrides/ties/duties/finance/events + plugin.py）
+│   ├── infosources/          # 外部信息源（registry/channels/feed/diet/search + plugin.py：新闻/社交/专业站 → 每人信息食谱）
 │   ├── interview/            # 群体采访（schema/roster/prompt/runner/aggregate/report/store/session；__main__ 为按城市的子进程）
 │   ├── io/                   # IO 工具（avatar.py, http_guard.py, web_scrape.py）
 │   ├── llm/                  # LLM 提供商（providers.py）
 │   ├── memory/               # 记忆系统（store, experience, consolidation, decay, …）
+│   ├── moltbook/             # Moltbook 集成（accounts/client/log + plugin：居民上智能体社交网络发帖，行动逐条记录）
 │   ├── persona/              # 真人蒸馏（research/distill/render/store：姓名或网址 → 居民 + 思维框架）
 │   ├── personality/          # 大五人格 OCEAN 特质（traits/anchors + plugin.py，默认开启）
 │   ├── policy/               # 干预策略（intervention.py + plugin.py）
@@ -27,8 +29,9 @@ GAWorld/
 │   ├── skills/               # 技能系统（schemas, registry, consolidation + plugin.py）
 │   ├── sim/                  # 仿真逻辑（pipeline.py 认知管线, _action, _cognition, …）
 │   ├── social/               # 社交网络（network.py）
+│   ├── travel/               # 离开本市（destination/trigger/itinerary + plugin.py：出差/探亲/旅行，默认关）
 │   ├── work/                 # 工作模块（router, queue, market, adapters + plugin.py）
-│   ├── world/                # 城市地图（city_map.py + plugin.py：物理感知/空间偏好）
+│   ├── world/                # 城市地图（city_map.py + plugin.py：物理感知/空间偏好/道路拥堵；away.py 定义「异地」）
 │   ├── hooks.py              # 旧版生命周期钩子（HookBus，兼容层；新代码用 kernel/bus.py）
 │   ├── interests.py          # 兴趣与成长档案（+ interests_plugin.py）
 │   └── logging_setup.py      # 日志配置
@@ -62,6 +65,19 @@ GAWorld/
   `/api/interview/*`. One round is split into one child process per city:
   - `python -m gaworld.interview --spec round.json --out answers.json`
   - Sessions land in `output/interviews/<session_id>/`; docs in `docs/GROUP_INTERVIEW_TUTORIAL.md`
+- Play a round against residents (游戏场): the dashboard hub at `/site/dashboard/games.html`.
+  The arena keeps its own `/api/arena/*`; every other game hangs off `/api/games/<game>/*`:
+  - persuasion — ask a question, chat within a turn limit, re-ask and let a judge model decide
+    whether the position really moved
+  - disaster mode — a batch of residents live through a disaster stage by stage; each answers in
+    structured JSON (action / panic / help / quote), so the histogram needs no judge call.
+    Implemented in `gaworld/apps/disaster_api.py`; `games_api` only forwards the prefix
+  - rumor spread — a rumor travels a network derived from the roster (same block / surname /
+    trade / age; no simulation run needed). The model picks the verb (forward, ask around,
+    debunk, sit on it), the graph picks the recipients, and the run reports the diffusion tree.
+    Implemented in `gaworld/apps/rumor_api.py`
+  Games keep their state in memory and never write to a city bundle.
+  Docs in `docs/PLAYGROUND_TUTORIAL.md`
 - Build a resident from a real person (真人蒸馏): Agent Studio → **＋ 从真人蒸馏**, backed by
   `/api/persona/*`. A name or a URL is searched, read and distilled into a sourced portrait
   (identity + state + Big Five + mental models / heuristics / expression DNA / limits):
@@ -80,6 +96,13 @@ GAWorld/
   - Cities live in `data/cities/<slug>/`; `use` writes `{"city": slug}` into
     `dashboard_config.json`, which repoints `map_path` / `csv_path` / `md_path`, the
     environment events and the background prompt at that bundle.
+  - Residents of *any* city are readable without switching to it, straight from the
+    bundle: `GET /api/city/agents?city=<slug>` / `GET /api/city/agent?city=<slug>&id=<n>`
+    (`city` omitted = the default world). The 城市 panel lists them; Agent Studio's city
+    picker browses them **read-only** — agent ids restart at 1 in every city while
+    memory, Big Five, social and finance are one flat per-id namespace belonging to the
+    running city, so editing across cities would write onto somebody else. Docs in
+    `docs/CITY_TUTORIAL.md`.
 
 There is no build step beyond installing Python dependencies.
 

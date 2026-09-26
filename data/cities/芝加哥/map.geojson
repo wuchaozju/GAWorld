@@ -1,0 +1,2475 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "芝加哥",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 41.875562,
+   "lng": -87.624421,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.012064405
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7450563,
+     41.8730877
+    ]
+   },
+   "properties": {
+    "name": "Mandell",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7022908,
+     41.849024
+    ]
+   },
+   "properties": {
+    "name": "South Lawndale",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5611575,
+     41.7480905
+    ]
+   },
+   "properties": {
+    "name": "Cheltenham",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.680763,
+     41.9395557
+    ]
+   },
+   "properties": {
+    "name": "Bricktown",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6287114,
+     41.9048559
+    ]
+   },
+   "properties": {
+    "name": "Gold Coast",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6791716,
+     41.9687674
+    ]
+   },
+   "properties": {
+    "name": "Ravenswood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6325508,
+     41.8180891
+    ]
+   },
+   "properties": {
+    "name": "Fuller Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7494991,
+     41.8061435
+    ]
+   },
+   "properties": {
+    "name": "Archer Limits",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.599493,
+     41.7794786
+    ]
+   },
+   "properties": {
+    "name": "Woodlawn",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7364471,
+     41.953365
+    ]
+   },
+   "properties": {
+    "name": "Irving Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6782331,
+     41.935938
+    ]
+   },
+   "properties": {
+    "name": "Hamlin Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6989421,
+     41.8189217
+    ]
+   },
+   "properties": {
+    "name": "Brighton Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7261852,
+     41.811404
+    ]
+   },
+   "properties": {
+    "name": "Archer Heights",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6390546,
+     41.7709977
+    ]
+   },
+   "properties": {
+    "name": "Becks Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7454914,
+     41.8903078
+    ]
+   },
+   "properties": {
+    "name": "Moreland",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6639578,
+     41.9833576
+    ]
+   },
+   "properties": {
+    "name": "Edgewater",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6736638,
+     41.8316997
+    ]
+   },
+   "properties": {
+    "name": "McKinley Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7292227,
+     41.8805878
+    ]
+   },
+   "properties": {
+    "name": "West Garfield Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.677835,
+     41.9936428
+    ]
+   },
+   "properties": {
+    "name": "Winchester-Hood Garden Homes",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6564403,
+     41.8075333
+    ]
+   },
+   "properties": {
+    "name": "New City",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6828288,
+     41.7569778
+    ]
+   },
+   "properties": {
+    "name": "Forest Hill",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.647832,
+     41.9216992
+    ]
+   },
+   "properties": {
+    "name": "Lincoln Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6667177,
+     41.7780891
+    ]
+   },
+   "properties": {
+    "name": "West Englewood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6717364,
+     41.9647553
+    ]
+   },
+   "properties": {
+    "name": "East Ravenswood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6739509,
+     41.9828138
+    ]
+   },
+   "properties": {
+    "name": "West Edgewater",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5953256,
+     41.7547566
+    ]
+   },
+   "properties": {
+    "name": "Cornell",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6648733,
+     41.8047789
+    ]
+   },
+   "properties": {
+    "name": "Back of the Yards",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6219955,
+     41.8425333
+    ]
+   },
+   "properties": {
+    "name": "South Commons",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7208917,
+     41.9805872
+    ]
+   },
+   "properties": {
+    "name": "North Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7411657,
+     41.8141992
+    ]
+   },
+   "properties": {
+    "name": "Sleepy Hollow",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6412401,
+     41.8502673
+    ]
+   },
+   "properties": {
+    "name": "South Branch Addition",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5979908,
+     41.8090764
+    ]
+   },
+   "properties": {
+    "name": "Kenwood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6953339,
+     41.9283654
+    ]
+   },
+   "properties": {
+    "name": "Maplewood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6056353,
+     41.8236135
+    ]
+   },
+   "properties": {
+    "name": "Oakland",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6331383,
+     41.8516579
+    ]
+   },
+   "properties": {
+    "name": "华埠",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7365621,
+     41.924378
+    ]
+   },
+   "properties": {
+    "name": "Hermosa",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7067636,
+     41.9283727
+    ]
+   },
+   "properties": {
+    "name": "Logan Square",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6400539,
+     41.9214214
+    ]
+   },
+   "properties": {
+    "name": "Mid-North District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6619944,
+     41.7467004
+    ]
+   },
+   "properties": {
+    "name": "South Englewood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7464629,
+     41.9269383
+    ]
+   },
+   "properties": {
+    "name": "Kelvyn Grove",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5582116,
+     41.7572993
+    ]
+   },
+   "properties": {
+    "name": "Windsor Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.683113,
+     41.9947539
+    ]
+   },
+   "properties": {
+    "name": "Granville Gardens",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6964408,
+     41.7750332
+    ]
+   },
+   "properties": {
+    "name": "Chicago Lawn",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6181046,
+     41.7697562
+    ]
+   },
+   "properties": {
+    "name": "Park Manor",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7112994,
+     41.9388273
+    ]
+   },
+   "properties": {
+    "name": "Avondale",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5939244,
+     41.7944464
+    ]
+   },
+   "properties": {
+    "name": "Hyde Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6750512,
+     41.775589
+    ]
+   },
+   "properties": {
+    "name": "South Lynn",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6172724,
+     41.8139226
+    ]
+   },
+   "properties": {
+    "name": "Grand Boulevard",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6794449,
+     41.9778687
+    ]
+   },
+   "properties": {
+    "name": "Bowmanville",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6458836,
+     41.7797559
+    ]
+   },
+   "properties": {
+    "name": "Englewood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7159915,
+     41.9703294
+    ]
+   },
+   "properties": {
+    "name": "Albany Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.72172,
+     41.7936439
+    ]
+   },
+   "properties": {
+    "name": "Elsdon",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7244978,
+     41.7939217
+    ]
+   },
+   "properties": {
+    "name": "West Elsdon",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7028328,
+     41.8808657
+    ]
+   },
+   "properties": {
+    "name": "East Garfield Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6861661,
+     41.9014213
+    ]
+   },
+   "properties": {
+    "name": "West Town",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7461185,
+     41.8441269
+    ]
+   },
+   "properties": {
+    "name": "Cicero",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6473136,
+     41.8604155
+    ]
+   },
+   "properties": {
+    "name": "Halsted Street",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7069025,
+     41.8882254
+    ]
+   },
+   "properties": {
+    "name": "Kedzie",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6681783,
+     41.9170269
+    ]
+   },
+   "properties": {
+    "name": "Clybourn",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6850211,
+     41.8577983
+    ]
+   },
+   "properties": {
+    "name": "Western Avenue",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6216823,
+     41.8689956
+    ]
+   },
+   "properties": {
+    "name": "Museum Campus/11th Street",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.587881,
+     41.766049
+    ]
+   },
+   "properties": {
+    "name": "Stony Island",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5776266,
+     41.7661442
+    ]
+   },
+   "properties": {
+    "name": "Bryn Mawr",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5656394,
+     41.7651609
+    ]
+   },
+   "properties": {
+    "name": "South Shore",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5533724,
+     41.752789
+    ]
+   },
+   "properties": {
+    "name": "79th Street (Cheltenham)",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5515695,
+     41.7457139
+    ]
+   },
+   "properties": {
+    "name": "83rd Street (South Chicago)",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7402747,
+     41.9487136
+    ]
+   },
+   "properties": {
+    "name": "Grayland",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7035753,
+     41.7489324
+    ]
+   },
+   "properties": {
+    "name": "Wrightwood",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6164754,
+     41.851689
+    ]
+   },
+   "properties": {
+    "name": "McCormick Place",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5871893,
+     41.8014328
+    ]
+   },
+   "properties": {
+    "name": "51st-53rd Street (Hyde Park)",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5877553,
+     41.7925061
+    ]
+   },
+   "properties": {
+    "name": "55th-56th-57th Street",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5889215,
+     41.7873718
+    ]
+   },
+   "properties": {
+    "name": "59th Street (University of Chicago)",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6390928,
+     41.8786411
+    ]
+   },
+   "properties": {
+    "name": "Chicago Union Station",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6711658,
+     41.9116991
+    ]
+   },
+   "properties": {
+    "name": "Annunciation School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6653289,
+     41.7850334
+    ]
+   },
+   "properties": {
+    "name": "Assumption School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7144476,
+     41.8430881
+    ]
+   },
+   "properties": {
+    "name": "Saint Agnes of Bohemia School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6942903,
+     41.938676
+    ]
+   },
+   "properties": {
+    "name": "Concordia School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7305723,
+     41.9388309
+    ]
+   },
+   "properties": {
+    "name": "DeVry University",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7243804,
+     41.8645053
+    ]
+   },
+   "properties": {
+    "name": "Ebenezer School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6708263,
+     41.7723239
+    ]
+   },
+   "properties": {
+    "name": "Golgotha School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7271494,
+     41.8407688
+    ]
+   },
+   "properties": {
+    "name": "Grace School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6642304,
+     41.903121
+    ]
+   },
+   "properties": {
+    "name": "Holy Trinity High School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6226674,
+     41.8198516
+    ]
+   },
+   "properties": {
+    "name": "Horner School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7052798,
+     41.7846309
+    ]
+   },
+   "properties": {
+    "name": "Nazareth School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7466852,
+     41.9442419
+    ]
+   },
+   "properties": {
+    "name": "Midwest Christian Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7520928,
+     41.8050517
+    ]
+   },
+   "properties": {
+    "name": "Our Lady of the Snows School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6703331,
+     41.9319766
+    ]
+   },
+   "properties": {
+    "name": "Saint Alphonsus High School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6947946,
+     41.8153439
+    ]
+   },
+   "properties": {
+    "name": "Peace Lutheran School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6780251,
+     41.9598132
+    ]
+   },
+   "properties": {
+    "name": "Pilgrim Lutheran School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7515541,
+     41.8772929
+    ]
+   },
+   "properties": {
+    "name": "Chicago Jesuit Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6719092,
+     41.9832481
+    ]
+   },
+   "properties": {
+    "name": "Saint Gregory High School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7486305,
+     41.8601653
+    ]
+   },
+   "properties": {
+    "name": "Saint Anthony School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6339386,
+     41.7750338
+    ]
+   },
+   "properties": {
+    "name": "Saint Benedict School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6706109,
+     41.9319766
+    ]
+   },
+   "properties": {
+    "name": "Saint Bonaventure School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7019283,
+     41.8508276
+    ]
+   },
+   "properties": {
+    "name": "Our Lady of Tepeyac High School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6241906,
+     41.8853638
+    ]
+   },
+   "properties": {
+    "name": "Cityscape Counseling",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.683373,
+     41.9030846
+    ]
+   },
+   "properties": {
+    "name": "Saint Mary of Nazareth Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.622027,
+     41.8962599
+    ]
+   },
+   "properties": {
+    "name": "Ann & Robert H. Lurie Children's Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6710508,
+     41.973141
+    ]
+   },
+   "properties": {
+    "name": "Thorek Memorial Hospital Andersonville",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7119398,
+     41.8756198
+    ]
+   },
+   "properties": {
+    "name": "RML Specialty Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6929705,
+     41.961547
+    ]
+   },
+   "properties": {
+    "name": "Kindred Hospital Chicago (North Campus)",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6994118,
+     41.9753672
+    ]
+   },
+   "properties": {
+    "name": "Swedish Covenant Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6225104,
+     41.846578
+    ]
+   },
+   "properties": {
+    "name": "Insight Hospital & Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6378063,
+     41.9345085
+    ]
+   },
+   "properties": {
+    "name": "Saint Joseph Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6499931,
+     41.9671462
+    ]
+   },
+   "properties": {
+    "name": "Louis A. Weiss Memorial Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5848067,
+     41.7569501
+    ]
+   },
+   "properties": {
+    "name": "Jackson Park Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6922202,
+     41.7691196
+    ]
+   },
+   "properties": {
+    "name": "Holy Cross Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6036927,
+     41.7901902
+    ]
+   },
+   "properties": {
+    "name": "University of Chicago Medicine Campus",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6506917,
+     41.9703296
+    ]
+   },
+   "properties": {
+    "name": "Chicago Lakeshore Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6333894,
+     41.7786014
+    ]
+   },
+   "properties": {
+    "name": "Saint Bernard Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6941992,
+     41.8618114
+    ]
+   },
+   "properties": {
+    "name": "Mount Sinai Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6137653,
+     41.8030644
+    ]
+   },
+   "properties": {
+    "name": "Provident Hospital of Cook County",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6777937,
+     41.8702819
+    ]
+   },
+   "properties": {
+    "name": "Jesse Brown VA Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7204294,
+     41.8906204
+    ]
+   },
+   "properties": {
+    "name": "Garfield Park Behavioral Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6951374,
+     41.86206
+    ]
+   },
+   "properties": {
+    "name": "Schwab Rehabilitation Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6973844,
+     41.855046
+    ]
+   },
+   "properties": {
+    "name": "Saint Anthony Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5692426,
+     41.7489755
+    ]
+   },
+   "properties": {
+    "name": "South Shore Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6301003,
+     41.8834847
+    ]
+   },
+   "properties": {
+    "name": "Christkindlmarket",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6538197,
+     41.9361561
+    ]
+   },
+   "properties": {
+    "name": "Sheffield Market & Deli",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6917149,
+     41.902611
+    ]
+   },
+   "properties": {
+    "name": "Mercado del Pueblo",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6874301,
+     41.9666517
+    ]
+   },
+   "properties": {
+    "name": "Lincoln Square Farmers Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6335907,
+     41.9158214
+    ]
+   },
+   "properties": {
+    "name": "Farmer's Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5908436,
+     41.7842791
+    ]
+   },
+   "properties": {
+    "name": "61st Street Farmers Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.650239,
+     41.8804041
+    ]
+   },
+   "properties": {
+    "name": "Green City Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7249358,
+     41.7981065
+    ]
+   },
+   "properties": {
+    "name": "Super Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6555985,
+     41.9733225
+    ]
+   },
+   "properties": {
+    "name": "Argyle Night Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6354856,
+     41.8885329
+    ]
+   },
+   "properties": {
+    "name": "Merchandise Mart",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.625663,
+     41.899597
+    ]
+   },
+   "properties": {
+    "name": "900 North Michigan",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.622929,
+     41.8980076
+    ]
+   },
+   "properties": {
+    "name": "Water Tower Place",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6287108,
+     41.8838634
+    ]
+   },
+   "properties": {
+    "name": "Block 37 Shops",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6385853,
+     41.8688381
+    ]
+   },
+   "properties": {
+    "name": "Southgate Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.736877,
+     41.7560335
+    ]
+   },
+   "properties": {
+    "name": "Ford City Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7019309,
+     41.8436452
+    ]
+   },
+   "properties": {
+    "name": "Little Village Discount Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5881973,
+     41.7966399
+    ]
+   },
+   "properties": {
+    "name": "Hyde Park Shopping Center",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6237453,
+     41.8844834
+    ]
+   },
+   "properties": {
+    "name": "Millennium Station/Pedway",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6400397,
+     41.8689222
+    ]
+   },
+   "properties": {
+    "name": "The Maxwell",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.62497,
+     41.891431
+    ]
+   },
+   "properties": {
+    "name": "The Shops at North Bridge",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6405322,
+     41.8838584
+    ]
+   },
+   "properties": {
+    "name": "MetraMarket",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6225172,
+     41.8891445
+    ]
+   },
+   "properties": {
+    "name": "Shoreline Sightseeing",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6358868,
+     41.8785046
+    ]
+   },
+   "properties": {
+    "name": "SkyDeck Chicago Willis Tower",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6307011,
+     41.8806113
+    ]
+   },
+   "properties": {
+    "name": "Weather Bell",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6075786,
+     41.8912454
+    ]
+   },
+   "properties": {
+    "name": "The Wave Wall",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6246298,
+     41.8796145
+    ]
+   },
+   "properties": {
+    "name": "Begin Route 66",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7097748,
+     41.85296
+    ]
+   },
+   "properties": {
+    "name": "Gallager",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5916871,
+     41.7996231
+    ]
+   },
+   "properties": {
+    "name": "Obama Kissing Rock",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6339882,
+     41.9229477
+    ]
+   },
+   "properties": {
+    "name": "Dwarf Crocodile",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6340967,
+     41.9232763
+    ]
+   },
+   "properties": {
+    "name": "Klipspringer",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6130245,
+     41.867919
+    ]
+   },
+   "properties": {
+    "name": "Dolphin",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6130031,
+     41.8673317
+    ]
+   },
+   "properties": {
+    "name": "Beluga",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6132257,
+     41.8674176
+    ]
+   },
+   "properties": {
+    "name": "Sea Lion",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6132034,
+     41.8678633
+    ]
+   },
+   "properties": {
+    "name": "Sea Otter",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6132033,
+     41.8675992
+    ]
+   },
+   "properties": {
+    "name": "Penguins",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6187848,
+     41.762502
+    ]
+   },
+   "properties": {
+    "name": "Al Capone's House",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6983895,
+     41.8856307
+    ]
+   },
+   "properties": {
+    "name": "Waller Apartments",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.5812474,
+     41.7918808
+    ]
+   },
+   "properties": {
+    "name": "U-505 Submarine",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.636323,
+     41.8788896
+    ]
+   },
+   "properties": {
+    "name": "The Ledge",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6256125,
+     41.8891219
+    ]
+   },
+   "properties": {
+    "name": "Wendella Tours - Dock 3",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6259394,
+     41.8889311
+    ]
+   },
+   "properties": {
+    "name": "Wendella Tours - Dock 4",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6246397,
+     41.8892215
+    ]
+   },
+   "properties": {
+    "name": "Wendella Tours - Michigan Avenue",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6228616,
+     41.8903401
+    ]
+   },
+   "properties": {
+    "name": "Museum of Ice Cream",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.7200512,
+     41.8523211
+    ]
+   },
+   "properties": {
+    "name": "Castle Car Wash",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6216288,
+     41.8889774
+    ]
+   },
+   "properties": {
+    "name": "Odyssey Chicago River",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.577683,
+     41.7595916
+    ]
+   },
+   "properties": {
+    "name": "Michelle Obama's Childhood Home",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -87.6090681,
+     41.8919035
+    ]
+   },
+   "properties": {
+    "name": "Flyover",
+    "category": "leisure",
+    "kind": "place"
+   }
+  }
+ ]
+}

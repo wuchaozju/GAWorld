@@ -1,0 +1,34 @@
+{
+  "city": "芝加哥",
+  "climate": "temperate",
+  "background": "美国;美國·芝加哥。大城市，温带气候。当地经济与就业结构与其规模相称，居民对物价、就业与公共服务的变化较为敏感；社会秩序稳定。",
+  "environment": {
+    "enabled": true,
+    "event_chance": 0.6,
+    "max_events_per_tick": 2,
+    "natural_events": [
+      "阴雨天气，气温偏低",
+      "强冷空气南下，降温明显",
+      "早晨霜冻，道路结冰",
+      "大风降温，体感寒冷",
+      "空气质量良好，适宜出行"
+    ],
+    "social_events": [
+      "主干道交通拥堵",
+      "地铁运营延误",
+      "城市马拉松导致道路封闭",
+      "大型演出，周边人流密集",
+      "商圈促销活动，客流激增"
+    ]
+  },
+  "external_environment": {
+    "enabled": true,
+    "seed": 1094883664,
+    "max_events_per_tick": 3,
+    "generator": {
+      "mode": "llm",
+      "history_days": 3,
+      "description": "美国;美國的芝加哥，大城市，温带气候，季节性天气变化明显；常住人口约 2,746,388 人；当地经济与就业结构随规模而定，居民对物价、就业与公共服务变化敏感。"
+    }
+  }
+}

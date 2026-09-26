@@ -47,7 +47,26 @@ def parse_profile(block: str) -> dict[str, Any]:
     p["daily_life"] = _extract(r"\*\*日常生活与生活习惯\*\*：(.+)")
     p["values"] = _extract(r"\*\*价值观与公共事务态度\*\*：(.+)")
     p["work_style"] = p["job"]
+    # The income the profile states about itself. Written by the population
+    # synthesiser (and by hand in the older corpus) but never read until now,
+    # so the economy re-rolled a salary from the job text instead and the two
+    # disagreed — r=0.305 across 326 residents, with the ledger paying 1.39x
+    # the stated figure at the median and flattening the income Gini from
+    # 0.468 to 0.348. Phrasings vary ("月收入约 9,117 元", "目前月收入约12,000元"),
+    # and "无固定收入" correctly yields None.
+    p["monthly_income"] = _extract_income(block)
     return p
+
+
+def _extract_income(block: str) -> float | None:
+    """Monthly income in CNY as the profile states it, or None."""
+    match = re.search(r"月收入[约为是：:\s]*([0-9][0-9,，]*)\s*元", block)
+    if not match:
+        return None
+    try:
+        return float(match.group(1).replace(",", "").replace("，", ""))
+    except ValueError:
+        return None
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,382 @@
+/* Agent Arena — uses the same chrome as Population / City / Settings:
+ * page-shell.css already gives us .studio-shell / .studio-top / .panel /
+ * .button. arena.css only defines what those classes don't.
+ *
+ * Layout pattern mirrors Population Studio: a 2-column grid where the left
+ * side is sticky and the right side scrolls with .panel sections. Both
+ * columns reuse .panel from page-shell.
+ *
+ * Color rule: every color must come from site/tokens.css. The CSS variables
+ * declared in tokens.css are the only place the palette lives.
+ */
+
+:root {
+  /* Local aliases — populated from the global tokens. The fallback values
+     are intentionally identical so a missing tokens.css never desyncs. */
+  --arena-bg-soft: var(--green-soft, #e3f2ea);
+  --arena-divider: var(--line, #dde6de);
+  --arena-muted: var(--muted, #616f67);
+  --arena-ink: var(--ink, #1a2420);
+  --arena-card: var(--card, #ffffff);
+  --arena-danger: var(--red, #c04545);
+  --arena-success-soft: color-mix(in srgb, var(--green, #0e7a58) 12%, transparent);
+  --arena-danger-soft: color-mix(in srgb, var(--red, #c04545) 12%, transparent);
+}
+
+.arena-shell { padding: 0; }
+
+/* ---- 2-column layout (mirrors .studio-main in studio.css) ---- */
+.arena-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 420px) 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px 0 0;
+}
+@media (max-width: 980px) {
+  .arena-grid { grid-template-columns: 1fr; }
+}
+
+.arena-side { position: sticky; top: 12px; }
+@media (max-width: 980px) {
+  .arena-side { position: static; }
+}
+
+.arena-side h3,
+.arena-main h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.arena-block { margin-top: 16px; }
+
+/* ---- Section headings inside .panel — matches Population's pattern ---- */
+.arena-block > h4,
+.arena-main-section > h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--arena-muted);
+}
+
+/* ---- Hint / lede copy — same gray as Population's .pop-hint ---- */
+.arena-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--arena-muted);
+}
+
+/* ---- Reusable card group (mirrors .pop-card) ---- */
+.arena-card {
+  background: var(--arena-card);
+  border: 1px solid var(--arena-divider);
+  border-radius: var(--radius-sm, 8px);
+  padding: 12px 14px;
+}
+
+/* Checkbox styling now lives in styles.css (project baseline) so every
+   page inherits it — we only need to override the per-page specifics here,
+   and currently we have none. */
+
+/* ---- Toolbar buttons (use existing .button, just constrain size) ---- */
+.arena-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.arena-toolbar .button {
+  min-height: 33px;
+  padding: 0 11px;
+  font-size: 13px;
+}
+
+/* ---- Contestant / task list (mirrors Population's pill list) ---- */
+.arena-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--arena-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--arena-card);
+}
+.arena-list li {
+  border-radius: 6px;
+  font-size: 13px;
+  transition: background-color .12s;
+}
+.arena-list li + li { margin-top: 2px; }
+.arena-list li:hover { background: var(--arena-bg-soft); }
+.arena-list li.is-eliminated { opacity: .55; }
+.arena-list li.is-eliminated:hover { background: var(--arena-danger-soft); }
+.arena-list li.arena-list-empty {
+  padding: 14px 12px;
+  color: var(--arena-muted);
+  text-align: center;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.arena-list label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  width: 100%;
+}
+.arena-list .name { font-weight: 500; color: var(--arena-ink); }
+.arena-list .meta {
+  color: var(--arena-muted);
+  font-size: 11.5px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ---- Tag chip — mirrors Population's pill style ---- */
+.arena-tag {
+  background: var(--arena-danger-soft);
+  color: var(--arena-danger);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  letter-spacing: .02em;
+}
+.arena-tag.is-success {
+  background: var(--arena-success-soft);
+  color: var(--green-deep, #0a4a37);
+}
+
+/* ---- Number input (matches .pop-field input styling) ---- */
+.arena-survivors input[type="number"],
+.refill-toolbar input[type="number"],
+.refill-toolbar input[type="text"] {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--arena-divider);
+  border-radius: var(--radius-sm, 8px);
+  font: inherit;
+  background: var(--arena-card);
+  transition: border-color .12s, box-shadow .12s;
+}
+.arena-survivors input[type="number"]:focus-visible,
+.refill-toolbar input:focus-visible {
+  outline: none;
+  border-color: var(--green, #0e7a58);
+  box-shadow: 0 0 0 3px rgba(14, 122, 88, .2);
+}
+
+/* ---- Bottom action row ---- */
+.arena-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--arena-divider);
+}
+
+/* ---- Right column: progress + sections ---- */
+.arena-main-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--arena-divider);
+}
+.arena-main-section:first-of-type { border-top: none; padding-top: 0; margin-top: 12px; }
+
+.arena-main-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.arena-progress { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.arena-progress .bar {
+  flex: 1;
+  height: 8px;
+  background: var(--paper, #eef3ee);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.arena-progress .bar > span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--green-deep, #0a4a37), var(--green, #0e7a58));
+  transition: width .25s ease;
+}
+.arena-progress .pct {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--arena-muted);
+  min-width: 36px; text-align: right;
+}
+
+/* ---- Leaderboard: drop <table> for a card-style list that matches the
+   rest of the dashboard (which never uses <table> either) ---- */
+.arena-leaderboard {
+  display: grid;
+  gap: 6px;
+}
+.arena-leaderboard-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 110px 90px 80px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--arena-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--arena-card);
+  font-size: 13px;
+  transition: background-color .12s, border-color .12s;
+}
+.arena-leaderboard-row:hover { background: var(--arena-bg-soft); }
+.arena-leaderboard-row.is-eliminated {
+  background: var(--arena-danger-soft);
+  border-color: color-mix(in srgb, var(--arena-danger) 25%, transparent);
+  color: var(--arena-muted);
+}
+.arena-leaderboard-row .rank {
+  color: var(--arena-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.arena-leaderboard-row .name { font-weight: 500; color: var(--arena-ink); }
+.arena-leaderboard-row .acc b { color: var(--arena-ink); }
+.arena-leaderboard-row .acc .meta {
+  color: var(--arena-muted);
+  font-size: 11.5px;
+  margin-left: 4px;
+}
+.arena-leaderboard-row .latency {
+  color: var(--arena-muted);
+  font-variant-numeric: tabular-nums;
+}
+.arena-leaderboard-row .row-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.arena-leaderboard-row.is-eliminated .name { color: var(--arena-muted); }
+.arena-leaderboard-empty {
+  padding: 18px;
+  text-align: center;
+  color: var(--arena-muted);
+  font-size: 13px;
+  border: 1px dashed var(--arena-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+}
+@media (max-width: 720px) {
+  .arena-leaderboard-row {
+    grid-template-columns: 28px minmax(0, 1fr) 90px;
+    grid-template-areas:
+      "rank name   actions"
+      "rank acc    latency";
+    row-gap: 4px;
+  }
+  .arena-leaderboard-row .rank { grid-area: rank; }
+  .arena-leaderboard-row .name { grid-area: name; }
+  .arena-leaderboard-row .acc { grid-area: acc; }
+  .arena-leaderboard-row .latency { grid-area: latency; }
+  .arena-leaderboard-row .row-actions { grid-area: actions; }
+}
+
+/* ---- Top-K retain row ---- */
+.arena-survivors .row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.arena-survivors .inline-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--arena-muted);
+}
+.arena-survivors .inline-field input { width: 64px; }
+
+.arena-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+}
+.arena-tag-list .arena-tag.is-success { padding: 3px 10px; font-size: 12px; }
+.arena-tag-list .is-empty {
+  color: var(--arena-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* ---- Refill toolbar ---- */
+.refill-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.refill-toolbar input[type="text"] { flex: 1 1 220px; min-width: 160px; }
+
+/* ---- Inline status — mirrors Population's .pop-issue pattern ---- */
+.arena-status {
+  font-size: 12.5px;
+  padding: 0;
+  border-radius: 0;
+  margin: 0;
+  line-height: 1.5;
+  transition: color .12s;
+}
+.arena-status.is-error { color: var(--arena-danger); }
+.arena-status.is-success { color: var(--green-deep, #0a4a37); }
+.arena-status.is-pending { color: var(--arena-muted); }
+
+/* ---- "Import via bulk" link button (uses .button.ghost from page-shell) ---- */
+.arena-refill .button.ghost {
+  margin-top: 6px;
+}
+
+/* ---- Custom tasks sub-section ---- */
+.arena-custom {
+  margin-top: 10px;
+}
+.arena-custom h5 {
+  margin: 8px 0 6px;
+  font-size: 11px;
+  color: var(--arena-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ---- Dark mode — every value derives from the global tokens ---- */
+@media (prefers-color-scheme: dark) {
+  .arena-list { background: var(--card, #1a1f1b); border-color: var(--line, #2a302d); }
+  .arena-list li:hover { background: var(--arena-bg-soft); }
+  .arena-progress .bar { background: var(--paper, #eef3ee); }
+  .arena-leaderboard-row {
+    background: var(--card, #1a1f1b);
+    border-color: var(--line, #2a302d);
+  }
+  .arena-leaderboard-row:hover { background: var(--arena-bg-soft); }
+  .arena-leaderboard-row.is-eliminated {
+    background: var(--arena-danger-soft);
+    border-color: color-mix(in srgb, var(--arena-danger) 30%, transparent);
+  }
+  .arena-leaderboard-empty {
+    border-color: var(--line, #2a302d);
+    color: var(--arena-muted);
+  }
+  .arena-survivors input[type="number"],
+  .refill-toolbar input {
+    background: var(--card, #1a1f1b);
+    border-color: var(--line, #2a302d);
+  }
+  .arena-custom h5 { color: var(--arena-muted); }
+}

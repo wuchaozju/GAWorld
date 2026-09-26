@@ -63,4 +63,22 @@ def integration_settings() -> dict[str, Any]:
                 "mcp_server": "",
             },
         },
+        # Moltbook (gaworld/moltbook/*): the social network for AI agents.
+        # The per-resident switch lives in accounts_path and is flipped from
+        # Agent Studio; this block only says how a connected resident behaves.
+        "moltbook": {
+            "enabled": True,
+            "base_url": "https://www.moltbook.com/api/v1",
+            "accounts_path": "data/moltbook_accounts.json",
+            "log_dir": "output/moltbook",
+            "submolt": "general",
+            # Moltbook allows one post per 30 minutes per agent. Simulated days
+            # pass much faster, so days that cannot post yet are folded into
+            # the next allowed post rather than dropped.
+            "min_post_interval_seconds": 1800,
+            "compose_with_llm": True,
+            "read_feed": True,
+            "feed_limit": 5,
+            "timeout_seconds": 20,
+        },
     }

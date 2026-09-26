@@ -119,11 +119,31 @@ def job_status(job_id: str) -> dict[str, Any] | None:
 # ---------------------------------------------------------------------------
 
 
+#: The framework prompt asks for three mental models with quoted evidence plus
+#: nine state seeds — three thousand characters of JSON before a reasoning
+#: model's thinking block is counted. ``providers._build`` falls back to 512
+#: when a configured provider omits ``max_tokens`` (which ``dashboard_config``'s
+#: own MiniMax entry does), and every distillation then arrived truncated:
+#: ``parse_json_object`` repaired what it could and the rest of the framework
+#: was simply missing. Stated here rather than left to configuration because it
+#: is a property of *these prompts*, not of the deployment.
+#: Matched to ``settings.llm``'s own MiniMax default rather than trimmed to
+#: what the answer needs: on a reasoning model the ``thinking`` block is
+#: charged against the same budget, so a ceiling sized for the JSON alone is
+#: spent before the text block starts and the caller receives "".
+DISTILL_MAX_TOKENS = 16384
+
+
 def _llm_fn(provider: str | None = None):
     from gaworld.llm.providers import call_llm
 
     def call(prompt: str) -> str:
-        return call_llm(prompt, task="persona_distill", provider=provider or None) or ""
+        return call_llm(
+            prompt,
+            task="persona_distill",
+            provider=provider or None,
+            max_tokens=DISTILL_MAX_TOKENS,
+        ) or ""
 
     return call
 
@@ -144,6 +164,7 @@ def _distill_now(subject: str, provider: str | None, progress: Any) -> dict[str,
             subject,
             search_fn=research_mod.default_search_fn(_news_config()),
             fetch_fn=research_mod.default_fetch_fn(),
+            wiki_fn=research_mod.default_wiki_fn(),
             progress=lambda f, m: progress(0.05 + 0.45 * f, m),
         )
         profile = distill_mod.distill(

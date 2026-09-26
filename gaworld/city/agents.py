@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from gaworld.city.bundle import CityBundle
+from gaworld.city.locale import load_locale
 from gaworld.city.procedural import districts_from_spec
 from gaworld.logging_setup import get_logger
 from gaworld.population.generate import generate_population
@@ -165,7 +166,7 @@ def add_population(
     city: CityBundle,
     *,
     size: int = 100,
-    preset: str = "cn_county_town",
+    preset: str | None = None,
     seed: int | None = None,
     replace: bool = False,
     overrides: dict[str, Any] | None = None,
@@ -181,21 +182,33 @@ def add_population(
     stays well-conditioned over (currently 20–5000).  The returned dict reports
     both ``requested`` and the ``added`` count so a caller asking for 8 people
     can see that it actually got 20.
+
+    The city's researched locale (``locale.json``, see
+    :mod:`gaworld.city.locale`) always supplies the naming, housing and
+    residency layer.  Its *demographic* suggestions are weaker: they apply only
+    when ``preset`` is ``None``, because a caller who asked for
+    ``aging_community`` means it, and they sit under ``overrides`` either way.
     """
+    locale = load_locale(city)
     districts = city_districts(city)
     raw: dict[str, Any] = {
-        "preset": preset,
+        "preset": preset or "cn_county_town",
         "size": int(size),
         "name": city.slug,
         "geography": {"district_weights": {district: 1.0 / len(districts) for district in districts}},
     }
+    if preset is None:
+        # Safe as a shallow update: the locale only ever suggests demography /
+        # education_work / income, and ``normalize_spec`` deep-merges each of
+        # those partial sections onto the preset's own.
+        raw.update(locale.suggested_overrides)
     if seed is not None:
         raw["seed"] = int(seed)
     if overrides:
         raw.update(overrides)
 
     spec = normalize_spec(raw)
-    result = generate_population(spec)
+    result = generate_population(spec, locale=locale)
     if not result.ok:
         blocking = [f.to_dict() for f in result.findings if getattr(f, "level", "") == "error"]
         raise AgentError(f"population generation failed validation: {blocking or result.findings}")
@@ -228,7 +241,15 @@ def add_population(
         json.dumps(result.report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     total = _sync_count(city)
-    city.record("population.add", added=added, total=total, preset=preset, seed=spec.seed, replace=replace)
+    city.record(
+        "population.add",
+        added=added,
+        total=total,
+        preset=spec.preset,
+        locale=locale.code,
+        seed=spec.seed,
+        replace=replace,
+    )
     city.save()
     _LOG.info("added %d residents to %s (total %d)", added, city.slug, total)
     return {
@@ -253,19 +274,30 @@ def _render_single_profile(agent_id: int, fields: dict[str, Any]) -> str:
 
     The ``**基础信息**：…，NN岁，…居住…，`` punctuation is a parsing contract,
     not decoration — see ``gaworld/sim/agents_loader.py``.
+
+    ``education_income`` and ``social_network`` override the two lines this
+    function used to state on its own authority. The defaults describe an
+    ordinary new arrival, which is right for a hand-added resident and wrong
+    for anyone the caller actually researched: stamping "目前没有工资性收入"
+    and "新迁入居民" onto a distilled public figure is a factual claim the
+    caller never made and could not previously suppress.
     """
     state = fields["state"]
     income = fields.get("income_monthly") or 0
     income_text = f"月收入约 {income:,.0f} 元" if income else "目前没有工资性收入"
+    education_income = (
+        fields.get("education_income") or f"{fields['education']}学历，{income_text}。"
+    )
+    social_network = fields.get("social_network") or "新迁入居民，当前社会关系较少。"
     return (
         f"\n## Profile {agent_id:02d}｜{fields['name']}\n"
         f"**基础信息**：{fields['gender']}，{fields['age']}岁，{fields['hukou']}户籍，"
         f"居住于{fields['residence']}。\n\n"
-        f"**教育与收入背景**：{fields['education']}学历，{income_text}。\n\n"
+        f"**教育与收入背景**：{education_income}\n\n"
         f"**职业与工作节奏**：{fields['job']}\n\n"
         f"**性格与情绪特征**：{fields['personality']}\n\n"
         f"**日常生活与生活习惯**：{fields['daily_life']}\n\n"
-        f"**社交网络情况**：新迁入居民，当前社会关系较少。\n\n"
+        f"**社交网络情况**：{social_network}\n\n"
         f"**价值观与公共事务态度**：{fields['values']}\n\n"
         f"**研究增强变量初始化**：\n"
         f"- policy_sensitivity：{state['policy_sensitivity']:.2f}\n"
@@ -290,9 +322,11 @@ def add_agent(
     residence: str | None = None,
     education: str = "本科",
     income_monthly: float = 0.0,
+    education_income: str = "",
     personality: str = "性格平和，情绪起伏不大，遇事偏向先观察再行动。",
     daily_life: str = "作息规律，日常以工作、家务和少量社交为主。",
     values: str = "对公共事务关注有限，除非直接影响到自己的生活才会去了解。",
+    social_network: str = "",
     state: dict[str, float] | None = None,
     seed: int | None = None,
 ) -> dict[str, Any]:
@@ -333,10 +367,12 @@ def add_agent(
         "residence": residence,
         "education": education,
         "income_monthly": float(income_monthly),
+        "education_income": education_income,
         "job": job,
         "personality": personality,
         "daily_life": daily_life,
         "values": values,
+        "social_network": social_network,
         "state": resolved_state,
     }
     block = _render_single_profile(agent_id, fields)

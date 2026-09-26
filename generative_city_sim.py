@@ -17,6 +17,7 @@ from html import unescape
 
 from gaworld.settings import CONFIG
 from gaworld.core.runner import parallel_map, resolve_max_workers
+from gaworld.core.run_manifest import start_manifest
 # Growth-profile lifecycle moved to gaworld.interests_plugin (K3d); only
 # the inline read-side consumers remain (schedule prompt context + matching).
 from gaworld.interests import format_growth_context, match_growth_items
@@ -920,6 +921,10 @@ def build_agent(agent_id, df, city_map=None):
         "gender": row.get("gender", ""),
         "hukou": row.get("hukou", ""),
         "residence": row.get("residence", ""),
+        # Fitted by the population synthesiser. Absent on hand-written or
+        # pre-2026-09 corpora, where the profile prose remains the only source.
+        "employment": _safe_text(row.get("employment", "")),
+        "industry": _safe_text(row.get("industry", "")),
         "state": {
             "emotion": float(row["emotion"]),
             "stress": float(row["stress"]),
@@ -942,6 +947,14 @@ def build_agent(agent_id, df, city_map=None):
         "memory": [],
         "social_neighbors": []
     }
+    # The CSV figure is the synthesiser's own number; the profile prose is a
+    # rendering of it, so prefer the column when the corpus has one.
+    csv_income = str(row.get("monthly_income", "") or "").strip()
+    if csv_income:
+        try:
+            agent["monthly_income"] = float(csv_income)
+        except ValueError:
+            pass
     if city_map is None:
         city_map = load_city_map(MAP_PATH)
     init_agent_locations(agent, city_map)
@@ -2788,6 +2801,23 @@ def run_simulation():
                 RANDOM_SEED,
                 exc,
             )
+    # Start-of-run manifest (S4). Bootstraps a partial file so a crash
+    # still leaves a breadcrumb; the final JSON + HTML are written after
+    # the on_simulation_end hook below.
+    _manifest_cfg = CONFIG.get("run_manifest", {}) if isinstance(CONFIG, dict) else {}
+    _manifest_enabled = bool(_manifest_cfg.get("enabled", True))
+    _manifest_builder = None
+    if _manifest_enabled:
+        try:
+            from gaworld.llm.stats import GLOBAL_STATS as _LLM_STATS
+
+            _LLM_STATS.mark_run_start()
+            _manifest_builder = start_manifest(config=CONFIG)
+            _manifest_builder.bind_llm_stats(_LLM_STATS)
+            _manifest_builder.event("run_started", agent_ids=list(AGENT_IDS or []), sim_days=SIM_DAYS)
+        except Exception as _exc:  # noqa: BLE001 — manifest must never crash a run
+            _LOG.warning("run_manifest start failed: %s", _exc)
+            _manifest_builder = None
     df = pd.read_csv(CSV_PATH)
     city_map = load_city_map(MAP_PATH)
     city_map_text = load_city_map_text(MAP_PATH)
@@ -4960,6 +4990,22 @@ def run_simulation():
         )
     except Exception as exc:  # noqa: BLE001 - summary is best-effort
         print(f"⚠️ 仿真总结生成失败：{exc}")
+
+    # End-of-run manifest (S4). Additive, best-effort: a failure here
+    # must never take a successful simulation with it. See
+    # gaworld/core/run_manifest.py for the layout.
+    if _manifest_builder is not None:
+        try:
+            _manifest_builder.event("run_finished")
+            if bool(_manifest_cfg.get("html_report", True)):
+                json_path, html_path = _manifest_builder.finalise_and_report(outcome="ok")
+                print(f"📋 run manifest: {json_path}")
+                print(f"📄 run report:   {html_path}")
+            else:
+                json_path = _manifest_builder.finalise(outcome="ok")
+                print(f"📋 run manifest: {json_path}")
+        except Exception as exc:  # noqa: BLE001 — never crash a finished run
+            print(f"⚠️ run manifest write failed: {exc}")
 
 
 # =========================================================

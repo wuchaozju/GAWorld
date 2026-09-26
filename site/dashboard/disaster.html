@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="disaster.page_title">GAWorld · 灾害模式</title>
+  <meta name="description" data-i18n-content="disaster.meta_description" content="GAWorld 灾害模式 — 选一批居民、选一场灾难（地震 / 疫情 / 战争 / 洪水 / 大停电），分阶段推演他们各自的反应。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="disaster.kicker">GAWorld Playground · Disaster</p>
+          <h1 data-i18n="disaster.headline">灾害模式：灾难来了，他们各自会怎么做</h1>
+          <p class="sub" data-i18n="disaster.sub">
+            选一批居民 → 选一场灾难 → 分阶段推演。每个人按自己的处境做决定，第二幕起还会看到身边人的选择。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="disaster.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: set up one run -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="disaster.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="disaster.city_label">城市</span>
+          <select id="dCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="disaster.disaster_label">灾难</span>
+          <select id="dDisaster"></select>
+        </label>
+        <p id="dDisasterHint" class="disaster-hint"></p>
+
+        <div id="dCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="disaster.custom_name_label">灾难名称</span>
+            <input id="dCustomName" type="text" data-i18n-placeholder="disaster.custom_name_placeholder" placeholder="例如：化工厂爆炸" />
+          </label>
+          <label class="field">
+            <span data-i18n="disaster.custom_stages_label">情境（一行一幕）</span>
+            <textarea id="dCustomStages" data-i18n-placeholder="disaster.custom_stages_placeholder" placeholder="凌晨化工厂起火，方圆两公里闻到刺鼻气味…&#10;六小时后，官方要求下风向居民撤离…"></textarea>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="disaster.stage_count_label">推演几幕</span>
+          <input id="dStageCount" type="number" min="1" max="3" value="2" />
+        </label>
+        <p class="disaster-hint" data-i18n="disaster.stage_count_hint">
+          一幕 = 每个人一次模型调用。总开销 = 人数 × 幕数 + 1（结尾的城市简报）。
+        </p>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="disaster.agents_title">参演居民</span> <b id="dPicked">0</b></h4>
+          <p class="disaster-hint" data-i18n="disaster.agents_hint">最多 12 人。人越杂，分化越明显。</p>
+          <div class="disaster-toolbar">
+            <button class="button" id="dPickRandom" data-i18n="disaster.pick_random">🎲 随机 6 人</button>
+            <button class="button" id="dPickNone" data-i18n="disaster.pick_none">清空</button>
+          </div>
+          <ul id="dAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="dRunBtn" class="button primary" data-i18n="disaster.run">开始推演</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="disaster.history">最近推演</h4>
+          <ul id="dHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="dTitle" data-i18n="disaster.section_board">推演</h3>
+            <p id="dStatus" class="disaster-status" data-i18n="disaster.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="dBar" style="width:0%"></span></div>
+            <span id="dPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="dResult" hidden>
+          <section id="dSummaryBox" class="disaster-summary" hidden>
+            <h4 data-i18n="disaster.summary">城市简报</h4>
+            <p id="dSummary"></p>
+          </section>
+
+          <div id="dOverall" class="disaster-overall"></div>
+          <div id="dTimeline" class="disaster-timeline"></div>
+        </div>
+
+        <p id="dIdle" class="disaster-idle" data-i18n="disaster.idle_hint">左边选城市、灾难和几个居民，点「开始推演」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/disaster.js"></script>
+</body>
+</html>

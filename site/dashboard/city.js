@@ -13,13 +13,24 @@
 
   var state = {
     overview: null,
-    selected: "",
+    // null = nothing picked yet; "" is a real slug once picked — the default
+    // world. The two must stay distinguishable or every check below that
+    // means "no city chosen" would also swallow the default world.
+    selected: null,
     detail: null,
     busy: false,
     mapView: null,
     mapToken: 0,
     knowledge: null,
+    agents: null,      // payload of /api/city/agents for the selected city
+    agentsToken: 0,    // guards against a slow search landing after a newer one
+    agentsQuery: "",
+    agentsTimer: null, // debounce for the search box
+    createMode: "real", // "real" = look the place up; "virtual" = invent it
+    sketch: "",         // data URL of the uploaded topology sketch, if any
   };
+
+  var agentsView = window.GAWorldCityAgents;
 
   function el(id) { return document.getElementById(id); }
 
@@ -120,9 +131,13 @@
       var active = city.slug === state.selected ? " is-active" : "";
       var inUse = city.slug === state.overview.selected
         ? '<span class="city-badge is-use">' + esc(__("city.badge_running")) + "</span>" : "";
+      // An imagined city runs on a virtual map like a name-seeded one, but the
+      // place record is what says which of the two it is.
       var mode = city.map_mode === "real"
         ? '<span class="city-badge is-real">' + esc(__("city.badge_real")) + "</span>"
-        : '<span class="city-badge">' + esc(__("city.badge_procedural")) + "</span>";
+        : '<span class="city-badge">' + esc(__(
+            (city.place || {}).source === "imagined"
+              ? "city.badge_imagined" : "city.badge_procedural")) + "</span>";
       return (
         '<button type="button" class="city-item' + active + '" data-slug="' + esc(city.slug) + '">' +
           '<div class="city-item-head"><b>' + esc(city.name) + "</b>" + mode + inUse + "</div>" +
@@ -155,9 +170,13 @@
     var rows = [
       [__("city.kv_place"), detail.display_name],
       [__("city.kv_scale"), detail.scale],
-      [__("city.kv_map"), __(detail.map_mode === "real" ? "city.map_real" : "city.map_procedural")],
+      [__("city.kv_map"), __(
+        detail.map_mode === "real" ? "city.map_real"
+          : (place.source === "imagined" ? "city.map_imagined" : "city.map_procedural"))],
       [__("city.kv_coords"), place.lat != null ? place.lat.toFixed(4) + ", " + place.lng.toFixed(4) : "—"],
-      [__("city.kv_source"), __(place.source === "nominatim" ? "city.source_online" : "city.source_offline")],
+      [__("city.kv_source"), __(
+        place.source === "nominatim" ? "city.source_online"
+          : (place.source === "imagined" ? "city.source_imagined" : "city.source_offline"))],
       [__("city.kv_agents"), detail.population],
       [__("city.kv_districts"), (detail.districts || []).slice(0, 6).join("、")],
     ];
@@ -171,14 +190,27 @@
         '<button type="button" class="btn' + (inUse ? " ghost" : " primary") + '" id="cityUseBtn">' +
           esc(__(inUse ? "city.stop_using" : "city.use_for_run")) +
         "</button>" +
-        '<button type="button" class="btn danger" id="cityDeleteBtn">' +
-          esc(__("city.delete")) + "</button>" +
+        // The default world has no bundle directory to delete — deleting it
+        // is not a supported action, so the button is left out rather than
+        // offered and then rejected by the server.
+        (detail.slug
+          ? '<button type="button" class="btn danger" id="cityDeleteBtn">' +
+            esc(__("city.delete")) + "</button>"
+          : "") +
       "</div>";
 
     el("cityUseBtn").addEventListener("click", function () {
       onSelectForRun(inUse ? { clear: true } : { city: detail.slug });
     });
-    el("cityDeleteBtn").addEventListener("click", onDelete);
+    var deleteBtn = el("cityDeleteBtn");
+    if (deleteBtn) deleteBtn.addEventListener("click", onDelete);
+
+    // Adding, generating, or migrating residents all write into a bundle
+    // directory; the default world predates the bundle format and has none.
+    var writeForms = el("cityWriteForms");
+    if (writeForms) writeForms.hidden = !detail.slug;
+    var defaultNote = el("cityDefaultWorldNote");
+    if (defaultNote) defaultNote.hidden = Boolean(detail.slug);
 
     fillOptions(
       el("migrateFrom"),
@@ -242,7 +274,8 @@
       setMapOverlay("");
       var meta = payload.meta || {};
       var bits = [
-        __(meta.mode === "real" ? "city.map_real" : "city.map_procedural"),
+        __(meta.mode === "real" ? "city.map_real"
+           : (meta.imagined ? "city.map_imagined" : "city.map_procedural")),
         meta.nodes + " " + __("city.map_nodes"),
         meta.edges + " " + __("city.map_edges"),
       ];
@@ -350,10 +383,72 @@
     };
   }
 
+  // ---------------------------------------------------------- residents
+
+  /* The list is read from the city's own bundle, so it works for a city that
+     is not the one the simulator is pointed at. Clicking a resident hands the
+     city *and* the id to Agent Studio — an id alone would be ambiguous, since
+     every city numbers its residents from 1. */
+  function renderAgents() {
+    var card = el("cityAgentsCard");
+    var node = el("cityAgents");
+    var count = el("cityAgentsCount");
+    if (!card || !node) return;
+    if (state.selected == null) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+    if (!state.agents) {
+      node.innerHTML = '<p class="city-hint">' + esc(__("city.loading")) + "</p>";
+      if (count) count.textContent = "";
+      return;
+    }
+    // A failed read must not render as "this city has no residents" — that is
+    // a statement about the city, and we do not know it.
+    if (state.agents.error) {
+      if (count) count.textContent = "";
+      node.innerHTML = '<p class="city-status is-error">' + esc(state.agents.error) + "</p>";
+      return;
+    }
+    if (count) count.textContent = agentsView.countLabel(state.agents);
+    node.innerHTML = agentsView.agentTable(state.agents, function (person) {
+      return "/site/dashboard/studio.html?city=" +
+        encodeURIComponent(state.agents.city.slug) + "&agent=" + encodeURIComponent(person.id);
+    });
+  }
+
+  async function loadAgents(slug) {
+    var token = (state.agentsToken += 1);
+    state.agents = null;
+    renderAgents();
+    if (slug == null) return;
+    try {
+      var payload = await api(
+        "/api/city/agents?city=" + encodeURIComponent(slug) +
+        (state.agentsQuery ? "&q=" + encodeURIComponent(state.agentsQuery) : "")
+      );
+      if (token !== state.agentsToken) return; // a newer search already landed
+      state.agents = payload;
+    } catch (error) {
+      if (token !== state.agentsToken) return;
+      state.agents = { city: { slug: slug }, matched: 0, agents: [], error: error.message };
+    }
+    renderAgents();
+  }
+
+  function onAgentsSearch(event) {
+    state.agentsQuery = String(event.target.value || "").trim();
+    if (state.agentsTimer) clearTimeout(state.agentsTimer);
+    // Typing a name should not fire one request per keystroke at a CSV read.
+    state.agentsTimer = setTimeout(function () { loadAgents(state.selected); }, 250);
+  }
+
   function render() {
     renderTopMeta();
     renderList();
     renderDetail();
+    renderAgents();
   }
 
   // --------------------------------------------------------------- actions
@@ -361,19 +456,28 @@
   async function loadOverview() {
     state.overview = await api("/api/city");
     fillOptions(el("cityScale"), state.overview.scales, __("city.scale_auto"));
-    fillOptions(el("cityPreset"), state.overview.presets, null, "cn_county_town");
-    fillOptions(el("popPreset"), state.overview.presets, null, "cn_county_town");
+    // No preferred value: the blank option is the default, and it means "let
+    // the city's researched locale pick the demographic shape". An explicit
+    // preset still wins over the locale's suggestion server-side.
+    fillOptions(el("cityPreset"), state.overview.presets, __("city.preset_auto"));
+    fillOptions(el("popPreset"), state.overview.presets, __("city.preset_auto"));
     render();
   }
 
   async function loadDetail(slug) {
     state.selected = slug;
-    state.detail = slug ? await api("/api/city/detail?city=" + encodeURIComponent(slug)) : null;
+    // A search typed against one city must not silently filter the next one.
+    state.agentsQuery = "";
+    if (el("cityAgentsSearch")) el("cityAgentsSearch").value = "";
+    // "" is the default world, a real selection — not "nothing selected"
+    // (every caller here passes an actual slug string, never null/undefined).
+    state.detail = await api("/api/city/detail?city=" + encodeURIComponent(slug));
     render();
     // Not awaited: the detail card and its forms are usable immediately, and
     // building a real map server-side takes a moment.
     loadMap(slug);
     loadKnowledge(slug);
+    loadAgents(slug);
   }
 
   function numberOrNull(id) {
@@ -383,6 +487,55 @@
     return isFinite(parsed) ? parsed : null;
   }
 
+  /* Creation mode. The two routes ask for different evidence — a name to look
+     up, or a description to design from — but produce the same bundle, so only
+     the inputs that are meaningless in the other mode are hidden. */
+  function setCreateMode(mode) {
+    state.createMode = mode === "virtual" ? "virtual" : "real";
+    var virtual = state.createMode === "virtual";
+    Array.prototype.forEach.call(document.querySelectorAll(".city-mode"), function (button) {
+      var active = button.dataset.mode === state.createMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-checked", active ? "true" : "false");
+    });
+    el("cityVirtualFields").hidden = !virtual;
+    // Nothing to skip fetching when there is nothing to fetch: an invented
+    // city never touches Nominatim or Overpass in the first place.
+    el("cityOfflineField").hidden = virtual;
+    el("cityNameLabel").textContent = __(virtual ? "city.field_city_name" : "city.field_name");
+    el("cityName").placeholder = __(virtual ? "city.virtual_name_ph" : "city.name_ph");
+    el("cityCreateNote").textContent = __(virtual ? "city.virtual_note" : "city.create_note");
+  }
+
+  function readSketch(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.onerror = function () { reject(new Error(__("city.sketch_failed"))); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onSketchPicked(event) {
+    var file = event.target.files && event.target.files[0];
+    if (!file) { clearSketch(); return; }
+    try {
+      state.sketch = await readSketch(file);
+      el("citySketchImage").src = state.sketch;
+      el("citySketchPreview").hidden = false;
+    } catch (error) {
+      clearSketch();
+      status(el("cityCreateStatus"), error.message, "error");
+    }
+  }
+
+  function clearSketch() {
+    state.sketch = "";
+    el("citySketch").value = "";
+    el("citySketchImage").removeAttribute("src");
+    el("citySketchPreview").hidden = true;
+  }
+
   async function onCreate(event) {
     event.preventDefault();
     if (state.busy) return;
@@ -390,25 +543,44 @@
     var name = el("cityName").value.trim();
     if (!name) { status(node, __("city.need_name"), "error"); return; }
 
+    var virtual = state.createMode === "virtual";
+    var description = virtual ? el("cityDescription").value.trim() : "";
+    // The name alone is not a brief: without either input the server would
+    // have nothing to design from and would quietly build a generic city.
+    if (virtual && !description && !state.sketch) {
+      status(node, __("city.need_brief"), "error");
+      return;
+    }
+
     setBusy(true);
-    status(node, __(el("cityOffline").checked ? "city.generating" : "city.geocoding"), "busy");
+    status(node, __(
+      virtual ? "city.imagining" : (el("cityOffline").checked ? "city.generating" : "city.geocoding")
+    ), "busy");
     try {
       var result = await post("/api/city/create", {
         name: name,
         scale: el("cityScale").value || null,
-        offline: el("cityOffline").checked,
+        offline: !virtual && el("cityOffline").checked,
         size: Number(el("citySize").value) || 0,
         preset: el("cityPreset").value,
         seed: numberOrNull("citySeed"),
+        description: description,
+        image: virtual ? state.sketch : "",
       });
       var city = result.city;
-      var mode = __(city.map_mode === "real" ? "city.mode_real" : "city.mode_procedural");
+      var mode = __(
+        city.map_mode === "real" ? "city.mode_real"
+          : (virtual ? "city.mode_imagined" : "city.mode_procedural")
+      );
       status(node, result.population
         ? __f("city.created_with_pop", {
             name: city.name, mode: mode, count: result.population.total,
           })
         : __f("city.created", { name: city.name, mode: mode }), "ok");
       el("cityCreateForm").reset();
+      // reset() leaves a file input's picked file and our copy of it behind.
+      clearSketch();
+      setCreateMode(state.createMode);
       // reset() snaps every select back to its first option, so re-apply the
       // preferred defaults rather than leaving "aging_community" selected.
       await loadOverview();
@@ -472,7 +644,7 @@
     try {
       await post("/api/city/delete", { city: state.detail.slug });
       state.detail = null;
-      state.selected = "";
+      state.selected = null;
       status(node, __("city.deleted"), "ok");
       await loadOverview();
     } catch (error) {
@@ -486,6 +658,11 @@
 
   function bind() {
     el("cityCreateForm").addEventListener("submit", onCreate);
+    Array.prototype.forEach.call(document.querySelectorAll(".city-mode"), function (button) {
+      button.addEventListener("click", function () { setCreateMode(button.dataset.mode); });
+    });
+    el("citySketch").addEventListener("change", onSketchPicked);
+    el("citySketchClear").addEventListener("click", clearSketch);
     el("cityKnowledgeRebuild").addEventListener(
       "click", knowledgeAction("/api/city/knowledge", {}, "city.knowledge_building"));
     el("cityKnowledgeOffline").addEventListener(
@@ -497,6 +674,8 @@
       var item = event.target.closest(".city-item");
       if (item) loadDetail(item.dataset.slug);
     });
+
+    el("cityAgentsSearch").addEventListener("input", onAgentsSearch);
 
     el("cityPopForm").addEventListener("submit", agentAction(
       "/api/city/population",
@@ -551,6 +730,7 @@
 
   async function init() {
     bind();
+    setCreateMode("real");
     try {
       await loadOverview();
     } catch (error) {
@@ -564,6 +744,9 @@
      messages are left alone: re-translating "✓ 已删除" after the fact would be
      rewriting a record of something that already happened. */
   document.addEventListener("locale-changed", function () {
+    // The three labels setCreateMode writes depend on the mode, so data-i18n
+    // alone cannot restore them — they have to be re-applied for the mode.
+    setCreateMode(state.createMode);
     if (!state.overview) return;
     fillOptions(el("cityScale"), state.overview.scales, __("city.scale_auto"));
     render();

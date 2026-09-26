@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="rumor.page_title">GAWorld · 谣言扩散局</title>
+  <meta name="description" data-i18n-content="rumor.meta_description" content="GAWorld 谣言扩散局 — 把一条传闻交给几个居民，看它沿着熟人关系扩散：谁信、谁传、谁挡住了它。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="rumor.kicker">GAWorld Playground · Rumor</p>
+          <h1 data-i18n="rumor.headline">谣言扩散局：一条传闻能走多远</h1>
+          <p class="sub" data-i18n="rumor.sub">
+            写一条传闻，交给两个人，看它沿着熟人关系往外走。谁转发、谁去求证、谁站出来辟谣——网络图会告诉你它在哪里被挡住了。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="rumor.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: set up one run -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="rumor.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="rumor.city_label">城市</span>
+          <select id="rCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="rumor.rumor_label">传闻</span>
+          <select id="rRumor"></select>
+        </label>
+        <p id="rRumorText" class="disaster-hint"></p>
+
+        <div id="rCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="rumor.custom_title_label">标题</span>
+            <input id="rCustomTitle" type="text" data-i18n-placeholder="rumor.custom_title_placeholder" placeholder="例如：菜场要拆" />
+          </label>
+          <label class="field">
+            <span data-i18n="rumor.custom_text_label">内容</span>
+            <textarea id="rCustomText" data-i18n-placeholder="rumor.custom_text_placeholder" placeholder="像在群里传的那样写一句话：听说…"></textarea>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="rumor.rounds_label">最多传几轮</span>
+          <input id="rRounds" type="number" min="1" max="5" value="3" />
+        </label>
+        <p class="disaster-hint" data-i18n="rumor.rounds_hint">
+          每人最多开口一次（被辟谣说动的信谣者多一次）。所以开销上限是 人数 × 2 + 1，不随轮数涨。
+        </p>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="rumor.agents_title">参演居民</span> <b id="rPicked">0</b></h4>
+          <p class="disaster-hint" data-i18n="rumor.agents_hint">
+            关系图是按档案推导的：同小区＝邻居，同小区同姓＝亲属，同行、同学、同龄各算一种。挑同一个小区的人，图才连得起来。
+          </p>
+          <div class="disaster-toolbar">
+            <button class="button" id="rPickBlock" data-i18n="rumor.pick_block">🎲 随机两个小区</button>
+            <button class="button" id="rPickNone" data-i18n="rumor.pick_none">清空</button>
+          </div>
+          <ul id="rAgents" class="disaster-list"></ul>
+          <p id="rGraphHint" class="disaster-hint"></p>
+        </div>
+
+        <label class="field">
+          <span data-i18n="rumor.seeds_label">最先听到的人</span>
+          <select id="rSeeds" multiple size="4"></select>
+        </label>
+        <p class="disaster-hint" data-i18n="rumor.seeds_hint">不选＝自动挑关系最多的两个人。按住 ⌘/Ctrl 多选。</p>
+
+        <div class="disaster-actions">
+          <button id="rRunBtn" class="button primary" data-i18n="rumor.run">放出这条传闻</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="rumor.history">最近几场</h4>
+          <ul id="rHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="rTitle" data-i18n="rumor.section_board">扩散</h3>
+            <p id="rStatus" class="disaster-status" data-i18n="rumor.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="rBar" style="width:0%"></span></div>
+            <span id="rPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <section class="rumor-net">
+          <div class="rumor-net-head">
+            <h4 data-i18n="rumor.network">关系网</h4>
+            <div id="rRoundTabs" class="rumor-round-tabs"></div>
+          </div>
+          <div id="rGraph" class="rumor-graph"></div>
+          <p class="rumor-legend" data-i18n="rumor.legend">
+            灰线＝熟人关系（粗细＝亲疏）｜实线箭头＝转发｜虚线箭头＝私下求证｜绿色箭头＝辟谣｜
+            节点：空心＝没听说，红＝信了，绿＝不信
+          </p>
+        </section>
+
+        <div id="rResult" hidden>
+          <section id="rSummaryBox" class="disaster-summary" hidden>
+            <h4 data-i18n="rumor.summary">传播简报</h4>
+            <p id="rSummary"></p>
+          </section>
+
+          <div id="rOverall" class="disaster-overall"></div>
+          <div id="rRoundBars" class="rumor-rounds"></div>
+          <div id="rCards" class="disaster-cards"></div>
+        </div>
+
+        <p id="rIdle" class="disaster-idle" data-i18n="rumor.idle_hint">左边挑一个小区的几个人，选一条传闻，点「放出这条传闻」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/rumor.js"></script>
+</body>
+</html>

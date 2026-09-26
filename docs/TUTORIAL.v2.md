@@ -18,12 +18,14 @@
 5. [既有特性详解](#5-既有特性详解)
     - [5.7 家庭与户](#57-家庭与户)
     - [5.8 大五人格](#58-大五人格)
+    - [5.9 离开本市：出差 / 探亲 / 旅行](#59-离开本市出差--探亲--旅行)
 6. [新特性一：物理环境感知与反应式重规划](#6-新特性一物理环境感知与反应式重规划)
 7. [新特性二：可复用 Skill 库](#7-新特性二可复用-skill-库)
 8. [新特性三：真实工作任务系统](#8-新特性三真实工作任务系统)
 9. [事件对照实验](#9-事件对照实验)
     - [9.1 平行世界：两个以上分支](#91-平行世界两个以上分支)
 10. [访谈与 RAG 注入](#10-访谈与-rag-注入)
+    - [10.1 群体采访：一次问一群人](#101-群体采访一次问一群人)
 11. [分布式 relay：多机通信](#11-分布式-relay多机通信)
 12. [Dashboard 使用指南](#12-dashboard-使用指南)
     - [12.1 Agent Studio（单智能体构建/查看器）](#121-agent-studio单智能体构建查看器)
@@ -31,6 +33,7 @@
     - [12.3 外部系统观测台（货币 / 环境 / 对外服务）](#123-外部系统观测台)
     - [12.4 平行世界实验台](#124-平行世界实验台)
     - [12.5 家庭：看板卡片与工作台编辑面板](#125-家庭看板卡片与工作台编辑面板)
+    - [12.6 群体采访面板](#126-群体采访面板)
 13. [大规模人群：人口合成与群体模拟](#13-大规模人群人口合成与群体模拟)
 14. [配置与开关总表](#14-配置与开关总表)
 15. [输出文件地图](#15-输出文件地图)
@@ -539,6 +542,92 @@ python scripts/big5_effect_ceiling.py                         # 复核幅度
 
 ---
 
+### 5.9 离开本市：出差 / 探亲 / 旅行
+
+开关 `CONFIG["travel"]["enabled"]`（**默认 OFF**）。插件 id `travel`。
+
+在这个特性之前，城市是一个封闭的盒子：N 个居民，永远 N 个人在场。
+
+但「外地」在仿真里本来就存在，只是**只能想、不能去**：
+
+- 社交层给每位居民生成了住在外省的场外亲友，档案里明写着他们在哪座城市；
+- 这些关系的允许渠道里就有 `visit`（探望）；
+- 家庭层每周还会派一条日常责任——「抽空给爸妈打个电话**或回去看看**」。
+
+后半句从来无法执行。本特性补的就是这一步：位移本身。
+
+**谁会走、为什么走**（`gaworld/travel/trigger.py`）。这里刻意**不设一个统一的
+「出行概率」旋钮**——出差、探亲、旅行受三种不同的力驱动，合成一个数就谁也不代表。
+三个驱动量全部取自系统里已有的状态：
+
+| 类型 | 驱动量 | 在外做什么 | 收入 |
+|---|---|---|---|
+| **出差** | 职业（销售 / 外贸 / 咨询远高于图书管理员）+ 工作日 | 活动仍是「工作」 | 照常 |
+| **探亲** | 关系 `obligation` + 距上次联系的天数 | 陪家人、帮着料理家里的事 | 无 |
+| **旅行** | 周末 + 够用的流动储蓄 + 大五开放性 + 累积压力 | 逛、吃、走走看看 | 无 |
+
+**探亲这条是核心。** 社交模块的 `decay_relationships` 每天都在给疏于联系的亲人抬高
+`obligation`（那个「愧疚」信号），而这个量此前**没有任何出口**——它只能一直涨。
+现在它有了：越过阈值会把人拉回老家，回去一趟重置 `last_contact_day`、抬高 closeness、
+让 obligation 落下来。这是一个闭环，而不是又多了一次采样。
+
+**目的地是真实距离。** 复用数字孪生的 34 个省级中心点与 `haversine_km`（离线设计，
+不联网），起点取地图自身的几何中心节点——地图上每个节点本来就带真实经纬度。
+按距离分两档：1200 km 以内高铁，以外飞机（另加 2 小时地面时间）。
+探亲会优先去场外亲人档案里写的那座城市。
+
+> 票价系数（高铁 0.45 元/km、飞机 0.75 元/km）是**建模猜测**，只决定一趟出行贵不贵，
+> 不支撑任何结论。
+
+**在外期间会发生什么**（这部分是本特性真正的工作量）：
+
+| 方面 | 行为 |
+|---|---|
+| 位置 | `locations["current"]` 写成「异地（北京）」。它是**展示文本，不是节点 id**——不占本市任何地点的拥挤度 |
+| 相遇 | 不与本市任何人构成共处对，**也不与另一个同样在外地的人**（两个毫不相干的人同在北京会共用同一个标签，不排除就会被判成并肩站着） |
+| 交通 | move 阶段走「原地不动」分支，不产生通勤票价，也不给道路拥堵贡献流量 |
+| 本地环境 | 「身边的物理环境」快照转静默——否则它会把**本市**的天气报给人在北京的居民 |
+| 家庭 | 同住责任自然消失（人不在家），但改为**明说**「你不在家，家里的事这几天得由家人顶着」，而不是静默蒸发 |
+| 感知 | 每个 tick 都告诉他：「你现在不在本市，人在北京（探亲第 2 天，还有 3 天回去）」 |
+| 账 | 往返票在出发当天一次性记账，在外每天按 `daily_surcharge` 记住宿与外食；全部走经济模块的守恒支出通道 |
+
+**回来不是瞬移。** 行程里单独记着 `home_node`（真实节点名），回程从它重建。
+这一点看起来多余，其实是整个特性最容易踩的坑：地图的寻路函数对一个不存在的起点
+**不报错**，而是返回「空路线、0 公里」——直接从标签算回程，会得到一趟免费、
+一个 tick 就到家的旅程，而且完全静默。
+
+**全程纯规则、按种子可复现，不调用 LLM。** 谁在第几天去了哪里，同一个种子跑两次完全一致。
+
+**常用旋钮**（配置面板 →「离开本市」相关项，或直接改 `CONFIG["travel"]`）：
+
+```python
+CONFIG["travel"]["enabled"] = True                             # 打开（默认关）
+CONFIG["travel"]["max_away_share"] = 0.15                      # 同一天最多多少人在外
+CONFIG["travel"]["family"]["obligation_threshold"] = 0.72      # 多愧疚才动身
+CONFIG["travel"]["business"]["base_daily_prob"] = 0.004        # 出差基础概率（再按职业调制）
+CONFIG["travel"]["leisure"]["min_cash_months"] = 1.5           # 存款不够就不旅行
+CONFIG["travel"]["daily_surcharge"] = 180.0                    # 在外日均开销
+CONFIG["travel"]["seed"] = 20260919                            # 换一批出发日
+```
+
+**怎么观察它生效**：
+
+- 日志里出现 `[Travel Day 12] 出发去北京（探亲，3 天，1123 km，飞机）` 与 `[Travel Day 15] 从北京回到本市`；
+- 产物 `output/records/travel.depart.jsonl` / `travel.return.jsonl`，每行一整份行程；
+- 感知文本里出现「你现在不在本市，人在……」。
+
+⚠️ **默认关是有原因的**：它改变每天城里还剩多少人，进而改变相遇密度与社交动力学。
+**开启前后的 run 不可比**，和货币改造、道路拥堵是同一类。
+
+⚠️ **一个已知的简化**：探亲 / 旅行期间没有「工作」活动，按经济模块的判定
+（认活动不认地点）就不产生小时收入。对月薪制居民这是**错的**（带薪年假）。
+改对要动薪资结算路径，暂未做——在此之前，任何依赖离城期间收入的结论都不成立。
+
+设计与踩过的坑见
+[`docs/proposals/2026-09-19-agents-leaving-the-city.md`](proposals/2026-09-19-agents-leaving-the-city.md)。
+
+---
+
 ## 6. 新特性一：物理环境感知与反应式重规划
 
 > 模块：`gaworld/world/local_physical.py`、`gaworld/memory/spatial_preferences.py`。
@@ -808,6 +897,40 @@ worlds/<world_id>/ ...     ← 每个世界一棵完整的仿真产物树（含 
 python generative_city_sim.py interview --agent-id 31 --question "你今天为什么选择这个行动？"
 python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt
 ```
+
+### 10.1 群体采访：一次问一群人
+
+单人访谈回答的是「31 号居民怎么想」。要回答「**这群人**怎么想、答案会不会按城市／年龄／
+户籍分化」，用控制台的「群体采访」页签（`/site/dashboard/survey.html`）。它和单人访谈的
+差别是结构性的，不是套个循环：
+
+| | 单人访谈 | 群体采访 |
+|---|---|---|
+| 受访者 | 一位居民 | 多位居民 **＋** cohort 群体智能体，**可跨城市** |
+| 题型 | 自由问答 | 开放题／选择题／是非题（后两者会被**统计**） |
+| 材料 | 纯文本 | 可附**图片**（真进模型）与**网址**（抓正文） |
+| 连续性 | 一次一批 | 逐题作答，答后面时看得见自己前面的回答；可多轮追问 |
+| 产出 | stdout 上的 JSON | 会话落盘 + 统计 + 分组分布 + 一份完整 Markdown |
+
+三步：选受访者 → 出题 → 看结果（然后可追问，或下载文档）。开跑前面板会先显示
+**这一轮要花多少次模型调用**（受访者数 × 问题数）——80 人 × 5 题是 400 次。
+
+两个值得知道的性质：
+
+- **采访不写入智能体的长期记忆。** 它是对人口的一次观测，不是干预：一次「居民记得
+  自己被调查过」的运行和一次没有的运行是两个不同的实验，这不该作为提问的副作用发生。
+- **选择题答了选项之外的东西不会被硬塞进某个桶**，而是标记为未解析、原话仍进文档、
+  但不计入统计，并写明有多少份——否则就是替受访者编了一个意见，或者在不说明的情况下
+  缩小了分母。
+
+某一座城市那一份也可以单独跑（面板就是按城市分进程调用它的）：
+
+```bash
+python -m gaworld.interview --spec round.json --out answers.json
+```
+
+完整教程（受访者池、题型、多模态降级、追问、分组分布怎么读、HTTP 接口、落盘位置）见
+[群体采访教程](GROUP_INTERVIEW_TUTORIAL.md)。
 
 **注入外部知识**（改变认知）：
 
@@ -1129,6 +1252,28 @@ Agent Studio 造一个居民，Population Studio 造一座小镇并按群体模�
 后端 `gaworld/apps/family_api.py`：`GET /api/family/overview`（卡片）、
 `GET /api/family/preview?agent_id=N`（编辑器）、`POST /api/family/override`。
 
+### 12.6 群体采访面板
+
+控制台「群体采访」页签 → `/site/dashboard/survey.html`。三步：
+
+1. **选受访者** — 城市下拉可选「全部城市」或某一座；名单直接读自城市 bundle
+   （`data/cities/<slug>/`），所以能跨城市混选。除个体居民外还能勾 **cohort 群体
+   智能体**（按「群体划分维度」划分，可选 年龄段／户籍／性别／片区），一位群体智能体
+   一次回答代表整群人。右栏实时显示受访者数、代表人数和**模型调用次数**。
+2. **出题** — 每题选题型（开放题／选择题／是非题），选择题填选项并可允许多选；
+   每题可附图片或网址；可选回答用的模型。
+3. **看结果** — 每题给摘要、选项统计（受访者数 / 代表人数 / 占比）、按城市/年龄段/
+   性别/户籍/片区的分组分布（只画真的分化了样本的维度），下面是每位受访者的原话。
+   「继续追问」在同一会话里再问一轮，「下载完整 Markdown」导出文档。
+
+跑一轮是**后台任务**：按城市一个子进程，进度条带每一步的说明。同一时间只允许一轮
+（两轮同时往一个会话文件追加会写坏记录）。
+
+后端 `gaworld/apps/interview_api.py`：`GET /api/interview/roster`、
+`POST /api/interview/plan` / `run`、`GET /api/interview/jobs/<id>`、
+`GET /api/interview/sessions[/<id>[/export]]`。会话落在
+`output/interviews/<session_id>/`。详见[群体采访教程](GROUP_INTERVIEW_TUTORIAL.md)。
+
 ---
 
 ## 13. 大规模人群：人口合成与群体模拟
@@ -1214,6 +1359,7 @@ CONFIG["time_grid_snap"] = True    # 默认 False
 | `interests` | 兴趣 / 技能成长（开关、上限、插入倾向、持久化、日终衰减 `decay`、兴趣集演化 `evolution`） |
 | `personality` | **新**：大五人格（OCEAN，插件 `big_five`，默认 ON）——`channels` 分 `rules` / `prompt` / `voice` 三条通道开关，`strength=0` 即对照组，另有 `style_fit_amplitude` / `modifier_band` / `residual_ratio`、锚句渲染 `prompt.*`、个人情绪基准线 `emotion_baseline.*`、无标定文件时的人群先验 `sampling.*`，见 [5.8](#58-大五人格) |
 | `dynamic_behavior` | 动态行为系统开关 |
+| `travel` | **新**：离开本市——出差 / 探亲 / 旅行的触发、目的地、天数、票价与在外开销，`max_away_share` 是在外人数上限（**默认 OFF**，开启前后的 run 不可比），见 [5.9](#59-离开本市出差--探亲--旅行) |
 | `environment.local_physical` / `.anomaly` / `.replan` / `.spatial_preferences` | **新**：物理感知与反应式重规划 |
 | `external_environment` | 外部环境生成器：四类事件的日概率、天气池、生成方式（`llm` / 规则）、日内突发（面板可编辑，见 [12.3](#123-外部系统观测台)） |
 | `external_environment_service` / `environment_server` / `external_rag` / `news` | 对外服务连接：远端环境服务、外部信息注入、新闻源（面板可编辑并可即时探测连通性） |
@@ -1249,12 +1395,16 @@ output/
 ├── intervention/intervention_metrics.csv
 ├── network/     social_network.png
 ├── records/     family.{summary,household,agent,finance}.jsonl  ← 新：家庭结构与家庭开支
+│                travel.{depart,return}.jsonl                 ← 新：离城出行（谁、去哪、几天、多少钱）
 │                （以及其它插件的统一事件流）
 ├── traits/      agent_traits.csv        ← 新：本次运行实际生效的五维人格分、来源与启用通道
 │                calibration_audit.csv   ← 新：标定脚本产出的审计表
 ├── visualization/ simulation_trace.json、latest_frame.json
 ├── work/        capabilities.json、queue.jsonl、market.jsonl、agent_<id>/<task_id>/  ← 新
 ├── comparisons/ <事件名>/comparison_summary.md、comparison_metrics.csv
+├── interviews/  <session_id>/session.json、report.md          ← 新：群体采访
+│                <session_id>/round-<n>/（每城市的任务与原始回答、附的图片）
+│                跨城市的会话不属于任何一座城，所以不在 output/cities/ 下
 └── parallel_worlds/ <实验名>/divergence_summary.md、divergence_metrics.csv  ← 新：平行世界
                      report.json、experiment.json、worlds/<world_id>/（每个世界一棵完整产物树）
 ```
@@ -1302,6 +1452,7 @@ python generative_city_sim.py serve-distributed --host 0.0.0.0 --port 8877
 
 # 访谈 / RAG / 创建
 python generative_city_sim.py interview --agent-id 31 --question "..."
+python -m gaworld.interview --spec round.json --out answers.json   # 群体采访：某城市那一份
 python generative_city_sim.py rag-add --agent-id 31 --text "..."
 python generative_city_sim.py rag-import --agent-id 31 --file ...
 python generative_city_sim.py create-agent-from-social --url "..."

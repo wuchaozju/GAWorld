@@ -12,6 +12,14 @@ can show real progress across two stages instead of one long stall. It also
 mirrors ``nuwa``'s own split between research review (Phase 1.5) and synthesis
 (Phase 2).
 
+The framework schema is ordered **shortest field first, mental models last**,
+which is not cosmetic. The answer is the longest thing this pipeline asks for,
+and a local model runs out of room part-way through it more often than not.
+Whatever is cut off is cut off the *end*, so the order decides what survives:
+with the models first, one truncated answer cost every state seed, the voice
+and the anti-patterns; with them last, the same truncation costs one mental
+model. :func:`parse_json_object` closes the brackets on what did arrive.
+
 The sourcing rule is inherited from :mod:`gaworld.city.knowledge` and stated in
 both prompts: **only what the evidence supports**. Empty is a legal answer;
 invention is not. What the model could not ground is reported back as
@@ -123,6 +131,9 @@ class PersonaProfile:
     evidence_pages: int = 0
     evidence_items: int = 0
     confidence: str = "low"  # high | medium | low
+    #: Set when the framework call itself failed, as opposed to the evidence
+    #: being too thin to support one. Rendered so the operator can retry.
+    framework_error: str = ""
     built_at: str = ""
     schema_version: str = SCHEMA_VERSION
     #: Set once the persona has been deployed as a resident, so the panel can
@@ -251,11 +262,46 @@ def clamp_big5(values: Any) -> dict[str, float]:
     return out
 
 
+def _close_unbalanced(blob: str) -> str:
+    """Close a JSON object that stops in the middle, or return ``""``.
+
+    The framework answer is the longest thing this pipeline asks a model for —
+    three mental models with quoted evidence runs past three thousand
+    characters — and a cut-off answer is unparseable by one bracket. Rather
+    than throw the whole distillation away, shut the open brackets and let the
+    partial framework through; what is missing is missing, which the panel
+    already knows how to render.
+    """
+    stack: list[str] = []
+    in_string = escaped = False
+    for ch in blob:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch in "{[":
+            stack.append("}" if ch == "{" else "]")
+        elif ch in "}]" and stack:
+            stack.pop()
+    if not stack and not in_string:
+        return ""  # balanced already — the parse failed for some other reason
+    patched = blob + ('"' if in_string else "")
+    patched = re.sub(r"[,\s]*$", "", patched)
+    return patched + "".join(reversed(stack))
+
+
 def parse_json_object(text: str) -> dict[str, Any]:
     """Pull the first JSON object out of a model answer.
 
     Same shape as ``gaworld.city.knowledge._parse_json_object``: models fence
-    their JSON about half the time and prepend a sentence the other half.
+    their JSON about half the time and prepend a sentence the other half. This
+    one also repairs an answer that was cut off mid-object.
     """
     if not isinstance(text, str) or not text.strip():
         return {}
@@ -264,11 +310,37 @@ def parse_json_object(text: str) -> dict[str, Any]:
     if not blob:
         match = re.search(r"\{.*\}", text, re.S)
         blob = match.group(0) if match else ""
-    try:
-        data = json.loads(blob)
-    except (json.JSONDecodeError, TypeError):
-        return {}
-    return data if isinstance(data, dict) else {}
+    if not blob:
+        # No closing brace anywhere: take everything from the first one and let
+        # the repair below decide whether it can be salvaged.
+        start = text.find("{")
+        blob = text[start:] if start >= 0 else ""
+    for candidate in (blob, _close_unbalanced(blob)):
+        if not candidate:
+            continue
+        try:
+            data = json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return {}
+
+
+def _ask_json(llm_fn: Callable[[str], str], prompt: str, *, attempts: int = 2) -> dict[str, Any]:
+    """Ask for a JSON answer, once more if the first one does not parse.
+
+    Worth the extra call: the model these prompts actually reach is whatever
+    the router falls back to, and a local model asked for a long structured
+    answer gets it right most of the time rather than every time. One retry
+    turns "the framework came back empty" from routine into rare.
+    """
+    for attempt in range(1, max(1, attempts) + 1):
+        parsed = parse_json_object(llm_fn(prompt) or "")
+        if parsed:
+            return parsed
+        _LOG.warning("persona: unparseable model answer (attempt %d/%d)", attempt, attempts)
+    return {}
 
 
 def _utcnow() -> str:
@@ -319,7 +391,7 @@ _DOSSIER_PROMPT = """你在为一个社会仿真系统建立**真实人物档案
   "unknown_fields": ["材料不足、你留空了的字段名"]
 }}"""
 
-_FRAMEWORK_PROMPT = """你在提炼一个真实人物的**思维框架**——不是他说过什么，而是他**怎么想**。
+_STYLE_PROMPT = """你在提炼一个真实人物的**表达方式、价值观与仿真参数**。
 
 对象：{name}
 档案：{summary}
@@ -327,24 +399,22 @@ _FRAMEWORK_PROMPT = """你在提炼一个真实人物的**思维框架**——�
 检索材料：
 {evidence}
 
-提炼规则：
-- 心智模型 = 此人在**两个以上不同话题**里反复使用的同一套看法。只在一个场合出现过的，降级成决策启发式；材料撑不起来的，直接不写。
-- 宁少勿多：3 个有证据的模型，远好于 7 个凑数的。材料不足时给 0-2 个，并在 boundaries 里说明。
-- 每个心智模型的 evidence 必须引用材料中的具体事实或原话，不要复述模型名。
-- 决策启发式写成「如果X，则Y」。
+规则：
+- 只使用材料支持的判断，材料没提到的字段留空字符串或空数组。
 - 反模式 = 此人明确反对的做法。矛盾就保留矛盾，不要和稀泥。
 - boundaries = 这份蒸馏**做不到**什么（信息截止、公开表达与真实想法的差距、材料偏向某一时期等）。
+- 每个字符串 40 字以内。
 
-同时给出仿真种子：
+仿真种子：
 - state 是 9 个 [0,1] 变量，0.5 为中性。按材料推断此人相对于普通人的位置，没依据的维度就给 0.5。
 - big5 是五个 z 分数，范围 -2.5 到 2.5，0 为平均水平。
 
 只输出 JSON：
 {{
-  "mental_models": [
-    {{"name": "模型名", "gist": "一句话说明", "evidence": ["材料中的具体依据"], "limits": "这个模型在什么情况下失效"}}
-  ],
-  "heuristics": [{{"rule": "如果X，则Y", "example": "对应的具体事例"}}],
+  "state": {{"emotion": 0.5, "stress": 0.5, "econ_security": 0.5, "city_identity": 0.5,
+             "policy_sensitivity": 0.5, "platform_dependence": 0.5, "risk_preference": 0.5,
+             "voice_propensity": 0.5, "mobility_intent": 0.5}},
+  "big5": {{"o": 0.0, "c": 0.0, "e": 0.0, "a": 0.0, "n": 0.0}},
   "voice": {{
     "sentences": "句式偏好", "vocabulary": "高频词与专属术语", "rhythm": "先结论还是先铺垫",
     "humor": "幽默方式，或\\"不幽默\\"", "certainty": "「我不确定」型还是「很明显」型",
@@ -354,11 +424,30 @@ _FRAMEWORK_PROMPT = """你在提炼一个真实人物的**思维框架**——�
   "anti_patterns": ["此人明确反对的行为或思维方式，2-5条"],
   "tensions": ["价值观之间的内在冲突，0-3条"],
   "lineage": ["受谁影响、与谁同路，0-5条"],
-  "boundaries": ["这份蒸馏的局限，2-4条"],
-  "state": {{"emotion": 0.5, "stress": 0.5, "econ_security": 0.5, "city_identity": 0.5,
-             "policy_sensitivity": 0.5, "platform_dependence": 0.5, "risk_preference": 0.5,
-             "voice_propensity": 0.5, "mobility_intent": 0.5}},
-  "big5": {{"o": 0.0, "c": 0.0, "e": 0.0, "a": 0.0, "n": 0.0}}
+  "boundaries": ["这份蒸馏的局限，2-4条"]
+}}"""
+
+_MODELS_PROMPT = """你在提炼一个真实人物的**心智模型**——不是他说过什么，而是他**怎么想**。
+
+对象：{name}
+档案：{summary}
+
+检索材料：
+{evidence}
+
+提炼规则：
+- 心智模型 = 此人在**两个以上不同话题**里反复使用的同一套看法。只在一个场合出现过的，降级成决策启发式；材料撑不起来的，直接不写。
+- 宁少勿多：**最多 3 个**有证据的模型，远好于 7 个凑数的。材料不足时给 0-2 个。
+- 每个模型的 evidence 最多 2 条、每条 40 字以内，引用材料中的具体事实，不要整段照抄原文。
+- 决策启发式写成「如果X，则Y」，最多 4 条。
+- gist 与 limits 各 40 字以内。
+
+只输出 JSON：
+{{
+  "mental_models": [
+    {{"name": "模型名", "gist": "一句话说明", "evidence": ["材料中的具体依据"], "limits": "这个模型在什么情况下失效"}}
+  ],
+  "heuristics": [{{"rule": "如果X，则Y", "example": "对应的具体事例"}}]
 }}"""
 
 
@@ -381,7 +470,11 @@ def distill(
     have no way to tell it apart from a real one.
     """
     if dossier.is_empty:
-        raise DistillError("没有检索到任何可用材料")
+        raise DistillError(
+            f"没有检索到关于「{dossier.name or dossier.subject}」的可用材料。"
+            "百科没有词条，搜索引擎也没给出可读结果（抓取到的多是结果页自身的链接）。"
+            "可以直接填这个人的主页/访谈页网址，或换一个更完整的姓名。"
+        )
 
     def note(fraction: float, message: str) -> None:
         if progress:
@@ -391,25 +484,34 @@ def distill(
     name = dossier.name or dossier.subject
 
     note(0.1, "建立档案…")
-    facts = parse_json_object(llm_fn(_DOSSIER_PROMPT.format(name=name, evidence=evidence)))
+    facts = _ask_json(llm_fn, _DOSSIER_PROMPT.format(name=name, evidence=evidence))
     if not facts:
-        raise DistillError("模型没有返回可解析的档案")
+        raise DistillError("模型没有返回可解析的档案，请重试或换一个模型")
     if facts.get("off_topic") is True:
         raise DistillError(f"检索到的材料与「{name}」无关，请改用更具体的姓名或直接给出网址")
 
     resolved = _text(facts.get("name"), 40) or name
-    note(0.55, "提炼思维框架…")
-    framework = parse_json_object(
-        llm_fn(
-            _FRAMEWORK_PROMPT.format(
-                name=resolved,
-                summary=_text(facts.get("summary"), 120) or "（无）",
-                evidence=evidence,
-            )
-        )
+    summary = _text(facts.get("summary"), 120) or "（无）"
+
+    note(0.45, "提炼表达与参数…")
+    style = _ask_json(llm_fn, _STYLE_PROMPT.format(name=resolved, summary=summary, evidence=evidence))
+    note(0.7, "提炼心智模型…")
+    models = _ask_json(llm_fn, _MODELS_PROMPT.format(name=resolved, summary=summary, evidence=evidence))
+    framework = {**style, **models}
+
+    # An empty framework has two very different causes, and the panel must not
+    # blame the wrong one: thin evidence is a fact about the sources, while an
+    # unusable model answer is a fact about this run and worth retrying.
+    missing = [
+        label
+        for label, ok in (("表达与参数", bool(style)), ("心智模型", bool(models)))
+        if not ok
+    ]
+    framework_error = (
+        f"模型没有返回可解析的{ '、'.join(missing) }，可以重试一次。" if missing else ""
     )
-    if not framework:
-        _LOG.warning("persona framework call returned nothing parseable for %s", resolved)
+    if framework_error:
+        _LOG.warning("persona framework incomplete for %s: %s", resolved, missing)
 
     slugify = slugify_fn or _default_slugify
     profile = PersonaProfile.from_dict(
@@ -444,6 +546,7 @@ def distill(
             "evidence_pages": dossier.page_count,
             "evidence_items": len(dossier.documents),
             "confidence": confidence_for(dossier),
+            "framework_error": framework_error,
             "built_at": _utcnow(),
         }
     )

@@ -63,12 +63,17 @@ FACTS = {
     "unknown_fields": ["education_income"],
 }
 
-FRAMEWORK = {
+#: The framework is asked for in two smaller calls — short fields and seeds
+#: first, mental models second — because one long answer kept arriving cut off.
+MODELS = {
     "mental_models": [
         {"name": "订单即信号", "gist": "从订单结构反推行业周期", "evidence": ["2023年他据此提前减产"], "limits": "只在自有渠道成立"},
         {"name": "不加杠杆", "gist": "现金流优先于扩张", "evidence": ["拒绝了一笔并购"], "limits": ""},
     ],
     "heuristics": [{"rule": "如果账期超过90天，则不接单", "example": "2022年拒绝一家大客户"}],
+}
+
+STYLE = {
     "voice": {"sentences": "短句", "vocabulary": "行业术语多", "rhythm": "先结论", "humor": "不幽默",
               "certainty": "「我不确定」型", "phrases": ["先看单子"]},
     "values_ranked": ["稳", "信用", "家里人"],
@@ -79,6 +84,8 @@ FRAMEWORK = {
     "state": {"emotion": 0.6, "stress": 2.0, "econ_security": -1, "risk_preference": 0.2},
     "big5": {"o": 0.3, "c": 9.0, "e": -0.4, "a": 0.1, "n": -5},
 }
+
+FRAMEWORK = {**STYLE, **MODELS}
 
 
 def scripted_llm(*answers):
@@ -99,7 +106,7 @@ def build_profile() -> PersonaProfile:
     )
     return distill_mod.distill(
         dossier,
-        llm_fn=scripted_llm(json.dumps(FACTS), json.dumps(FRAMEWORK)),
+        llm_fn=scripted_llm(json.dumps(FACTS), json.dumps(STYLE), json.dumps(MODELS)),
         slugify_fn=lambda name: "li-mou",
     )
 
@@ -151,6 +158,95 @@ class TestResearch(unittest.TestCase):
         with self.assertRaises(ValueError):
             research_mod.research("  ", search_fn=fake_search(), fetch_fn=fake_fetch())
 
+    def test_engine_chrome_is_dropped_before_it_reaches_the_model(self):
+        """Bing answers a scraped query with its own click-tracking links.
+
+        Those arrive with plausible titles attached to whatever the result page
+        was advertising, so they look like evidence and are not. Letting them
+        through made the model rule the material off-topic, which reported a
+        broken scrape as "this is about somebody else".
+        """
+        junk = [
+            {"url": "https://www.bing.com/ck/a?!&&p=abc", "title": "Microsoft 365 for Individuals", "snippet": "Shop Microsoft"},
+            {"url": "https://www.google.com/url?q=x", "title": "Some redirect", "snippet": "x"},
+            {"url": "https://example.com/real", "title": "真实报道", "snippet": "他长期做纺织外贸"},
+        ]
+        dossier = research_mod.research(
+            "李某", search_fn=fake_search(default=junk), fetch_fn=fake_fetch(), max_queries=1, max_pages=0
+        )
+        self.assertEqual(["https://example.com/real"], [d.url for d in dossier.documents])
+
+    def test_baidu_result_redirects_are_kept_because_they_resolve(self):
+        hits = [{"url": "https://www.baidu.com/link?url=abc", "title": "百度结果", "snippet": ""}]
+        dossier = research_mod.research(
+            "李某", search_fn=fake_search(default=hits), fetch_fn=fake_fetch(), max_queries=1, max_pages=1
+        )
+        self.assertEqual(1, len(dossier.documents))
+        self.assertEqual("page", dossier.documents[0].kind)
+
+    def test_a_hit_that_never_loaded_is_not_counted_as_evidence(self):
+        hits = [{"url": "https://www.baidu.com/link?url=abc", "title": "标题而已", "snippet": ""}]
+        dossier = research_mod.research(
+            "李某",
+            search_fn=fake_search(default=hits),
+            fetch_fn=lambda url: ("", ""),  # the page would not load
+            max_queries=1,
+            max_pages=1,
+        )
+        self.assertEqual([], dossier.documents)
+        self.assertTrue(dossier.is_empty)
+
+    def test_the_encyclopedia_is_consulted_first_and_read_as_a_page(self):
+        wiki = research_mod.Document(
+            title="李某（zh.wikipedia.org）", url="https://zh.wikipedia.org/wiki/李某",
+            text="李某，纺织外贸经营者。", kind="page", query="wikipedia",
+        )
+        dossier = research_mod.research(
+            "李某", search_fn=fake_search(), fetch_fn=fake_fetch(),
+            wiki_fn=lambda name: wiki, max_queries=1, max_pages=0,
+        )
+        self.assertEqual(wiki.url, dossier.documents[0].url)
+        self.assertIn("纺织外贸", dossier.brief())
+
+    def test_an_unreachable_encyclopedia_does_not_end_the_run(self):
+        def exploding(name):
+            raise RuntimeError("wiki unreachable")
+
+        dossier = research_mod.research(
+            "李某", search_fn=fake_search(), fetch_fn=fake_fetch(),
+            wiki_fn=exploding, max_queries=1, max_pages=0,
+        )
+        self.assertFalse(dossier.is_empty, "the engines' results should still be there")
+
+    def test_a_lone_article_gets_the_whole_evidence_budget(self):
+        """One good source must not be truncated to its opening paragraph.
+
+        That is the common case — an encyclopedia article and nothing else —
+        and a flat per-document cap handed the model only the biography, so it
+        had nothing to distil a mental model from.
+        """
+        long_text = "甲" * 5000
+        dossier = research_mod.Dossier(subject="李某", name="李某")
+        dossier.documents.append(research_mod.Document(title="词条", url="u", text=long_text, kind="page"))
+        self.assertGreater(len(dossier.brief()), 4000)
+
+    def test_the_budget_is_shared_when_there_are_many_sources(self):
+        dossier = research_mod.Dossier(subject="李某", name="李某")
+        for i in range(10):
+            dossier.documents.append(
+                research_mod.Document(title=f"t{i}", url=f"u{i}", text="乙" * 5000, kind="page")
+            )
+        brief = dossier.brief(total_chars=9000)
+        self.assertLess(len(brief), 12000, "ten long pages must not blow the prompt budget")
+        self.assertEqual(10, brief.count("["), "every source should still be represented")
+
+    def test_a_subject_with_no_article_is_simply_searched(self):
+        dossier = research_mod.research(
+            "李某", search_fn=fake_search(), fetch_fn=fake_fetch(),
+            wiki_fn=lambda name: None, max_queries=1, max_pages=0,
+        )
+        self.assertEqual(1, len(dossier.documents))
+
 
 class TestDistill(unittest.TestCase):
     def test_profile_carries_identity_and_framework(self):
@@ -192,15 +288,18 @@ class TestDistill(unittest.TestCase):
         dossier.documents.append(research_mod.Document(title="t", url="u", text="一点点", kind="snippet"))
         profile = distill_mod.distill(
             dossier,
-            llm_fn=scripted_llm(json.dumps(FACTS), json.dumps(FRAMEWORK)),
+            llm_fn=scripted_llm(json.dumps(FACTS), json.dumps(STYLE), json.dumps(MODELS)),
             slugify_fn=lambda n: "x",
         )
         self.assertEqual("low", profile.confidence)
         self.assertTrue(any("人工复核" in b for b in profile.boundaries))
 
-    def test_empty_dossier_raises(self):
-        with self.assertRaises(DistillError):
+    def test_empty_dossier_raises_and_points_at_the_way_out(self):
+        with self.assertRaises(DistillError) as ctx:
             distill_mod.distill(research_mod.Dossier(subject="李某", name="李某"), llm_fn=scripted_llm("{}"))
+        # "no material" must not read like "this person does not exist": the
+        # usual cause is a blocked or broken scrape, and the URL field works.
+        self.assertIn("网址", str(ctx.exception))
 
     def test_off_topic_material_raises_instead_of_inventing(self):
         dossier = research_mod.research("李某", search_fn=fake_search(), fetch_fn=fake_fetch(), max_pages=1)
@@ -221,7 +320,7 @@ class TestDistill(unittest.TestCase):
         self.assertTrue(profile.boundaries)
 
     def test_prompts_forbid_filling_gaps_from_general_knowledge(self):
-        llm = scripted_llm(json.dumps(FACTS), json.dumps(FRAMEWORK))
+        llm = scripted_llm(json.dumps(FACTS), json.dumps(STYLE), json.dumps(MODELS))
         dossier = research_mod.research("李某", search_fn=fake_search(), fetch_fn=fake_fetch(), max_pages=1)
         distill_mod.distill(dossier, llm_fn=llm)
         self.assertIn("只使用材料中出现的信息", llm.prompts[0])
@@ -229,6 +328,36 @@ class TestDistill(unittest.TestCase):
 
     def test_fenced_json_is_parsed(self):
         self.assertEqual({"a": 1}, distill_mod.parse_json_object('前言\n```json\n{"a": 1}\n```'))
+
+    def test_an_answer_cut_off_mid_object_is_repaired(self):
+        """The framework answer is long and sometimes arrives truncated.
+
+        Losing the whole distillation to one missing bracket is the wrong
+        trade: what arrived is usable and what did not is visibly absent.
+        """
+        cut = '```json\n{"mental_models": [{"name": "订单即信号", "gist": "从订单反推周期"}], "heuristics": [{"rule": "如果账期超过90天'
+        parsed = distill_mod.parse_json_object(cut)
+        self.assertEqual("订单即信号", parsed["mental_models"][0]["name"])
+
+    def test_repair_does_not_invent_a_result_from_prose(self):
+        self.assertEqual({}, distill_mod.parse_json_object("抱歉，我无法回答这个问题。"))
+        self.assertEqual({}, distill_mod.parse_json_object(""))
+
+    def test_an_unparseable_answer_is_retried_once(self):
+        llm = scripted_llm("不是 JSON", json.dumps({"ok": 1}))
+        self.assertEqual({"ok": 1}, distill_mod._ask_json(llm, "p"))
+        self.assertEqual(2, len(llm.prompts))
+
+    def test_a_framework_the_model_could_not_produce_is_reported_as_such(self):
+        dossier = research_mod.research("李某", search_fn=fake_search(), fetch_fn=fake_fetch(), max_pages=1)
+        profile = distill_mod.distill(
+            dossier, llm_fn=scripted_llm(json.dumps(FACTS), "跑偏了", "还是跑偏了")
+        )
+        self.assertEqual([], profile.mental_models)
+        self.assertIn("重试", profile.framework_error)
+
+    def test_a_framework_that_worked_carries_no_error(self):
+        self.assertEqual("", build_profile().framework_error)
 
     def test_round_trip_through_dict(self):
         profile = build_profile()

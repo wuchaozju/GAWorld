@@ -8,6 +8,10 @@ Examples::
     # no network / fictional place: build everything procedurally
     python -m gaworld.city create "Willow Hollow" --offline --scale tiny
 
+    # a city that does not exist: an LLM designs it from a description or a sketch
+    python -m gaworld.city create "翡翠屿" --description "热带火山岛，靠渔业和潜水旅游为生，北边是火山"
+    python -m gaworld.city create "翡翠屿" --image ~/sketches/island.png
+
     # fill it with people, then add one named resident
     python -m gaworld.city add-agents 绍兴柯桥 --size 200 --preset cn_county_town
     python -m gaworld.city add-agent 绍兴柯桥 --name 林素 --age 34 --job "社区医生"
@@ -23,6 +27,7 @@ Examples::
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import sys
 from pathlib import Path
@@ -32,6 +37,7 @@ from gaworld.city.bundle import CityNotFoundError, delete_city, list_cities, res
 from gaworld.city.create import CityCreationError, build_knowledge, create_city, default_search
 from gaworld.city.geocode import SCALE_BBOX_HALF_DEG, Place
 from gaworld.city.knowledge import CityProfile
+from gaworld.city.locale import build_locale, load_locale
 from gaworld.city.news import DEFAULT_TTL_HOURS
 from gaworld.city.news import load as news_load
 from gaworld.city.news import refresh as news_refresh
@@ -56,10 +62,22 @@ def _build_parser() -> argparse.ArgumentParser:
     create.add_argument("--slug", help="Directory name to use (defaults to a slug of the place name)")
     create.add_argument("--scale", choices=sorted(SCALE_BBOX_HALF_DEG), help="Override the inferred size")
     create.add_argument("--offline", action="store_true", help="Skip geocoding and OSM; build procedurally")
+    create.add_argument(
+        "--description",
+        help="Invent the city from this description instead of looking the name up",
+    )
+    create.add_argument(
+        "--image",
+        help="Invent the city from a topology sketch (path to a PNG/JPEG); needs a vision model",
+    )
     create.add_argument("--force", action="store_true", help="Overwrite an existing city with this slug")
     create.add_argument("--seed", type=int, help="Seed for the procedural layout")
     create.add_argument("--size", type=int, help="Also generate this many residents")
-    create.add_argument("--preset", choices=sorted(PRESETS), default="cn_county_town")
+    create.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        help="Population preset; omit to follow the city's researched locale",
+    )
 
     listing = sub.add_parser("list", help="List every city bundle")
     listing.add_argument("--json", action="store_true", help="Emit JSON instead of a table")
@@ -70,7 +88,11 @@ def _build_parser() -> argparse.ArgumentParser:
     population = sub.add_parser("add-agents", help="Bulk-synthesise residents into a city")
     population.add_argument("city")
     population.add_argument("--size", type=int, default=100)
-    population.add_argument("--preset", choices=sorted(PRESETS), default="cn_county_town")
+    population.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        help="Population preset; omit to follow the city's researched locale",
+    )
     population.add_argument("--seed", type=int)
     population.add_argument("--replace", action="store_true", help="Replace rather than append")
 
@@ -98,6 +120,10 @@ def _build_parser() -> argparse.ArgumentParser:
     know.add_argument("--rebuild", action="store_true", help="Research the city again")
     know.add_argument("--offline", action="store_true", help="Rebuild from map statistics only")
 
+    loc = sub.add_parser("locale", help="Show or rebuild how a city's residents are named")
+    loc.add_argument("city")
+    loc.add_argument("--rebuild", action="store_true", help="Research the locale again")
+
     news_cmd = sub.add_parser("news", help="Show or refresh a city's local news")
     news_cmd.add_argument("city")
     news_cmd.add_argument("--refresh", action="store_true", help="Fetch now if the cache is stale")
@@ -115,6 +141,26 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+#: Sketch extension → the media type a provider expects. Anything else is
+#: rejected rather than guessed: a mislabelled part fails at the API boundary
+#: with a message about the request, not about the file.
+_SKETCH_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                 ".gif": "image/gif", ".webp": "image/webp"}
+
+
+def _load_sketch(path: str | None) -> list[dict[str, str]] | None:
+    if not path:
+        return None
+    source = Path(path)
+    media_type = _SKETCH_TYPES.get(source.suffix.lower())
+    if media_type is None:
+        raise CityCreationError(
+            f"unsupported sketch format {source.suffix!r}; use one of "
+            + ", ".join(sorted(_SKETCH_TYPES))
+        )
+    return [{"media_type": media_type, "data": base64.b64encode(source.read_bytes()).decode("ascii")}]
+
+
 def _cmd_create(args: argparse.Namespace) -> int:
     city = create_city(
         args.name,
@@ -123,6 +169,8 @@ def _cmd_create(args: argparse.Namespace) -> int:
         offline=args.offline,
         force=args.force,
         seed=args.seed,
+        description=args.description or "",
+        images=_load_sketch(args.image),
     )
     print(f"✓ created {city.slug} at {city.directory}")
     print(f"  map: {city.map_mode}  scale: {city.manifest.get('scale')}")
@@ -250,6 +298,38 @@ def _cmd_knowledge(args: argparse.Namespace) -> int:
     return 0
 
 
+def _place_from_manifest(city) -> Place:
+    """Rebuild the geocoded :class:`Place` a bundle was created from.
+
+    ``bbox`` round-trips through JSON as a list, and ``Place`` declares it a
+    tuple; the difference matters because the geocode helpers unpack it.
+    """
+    raw = dict(city.manifest.get("place") or {})
+    raw["bbox"] = tuple(raw.get("bbox") or (0, 0, 0, 0))
+    return Place(**raw)
+
+
+def _cmd_locale(args: argparse.Namespace) -> int:
+    city = resolve_city(args.city)
+    if args.rebuild:
+        locale = build_locale(city, _place_from_manifest(city))
+        city.save()
+    else:
+        locale = load_locale(city)
+    print(f"{city.display_name}  [{locale.code} · {locale.label} · {locale.source}]")
+    # A CJK surname pool reads as a run of characters; a western one needs
+    # separators or "SmithJohnsonWilliams" comes out.
+    separator = "" if locale.given_mode == "compose" else ", "
+    print("  姓氏  " + separator.join(locale.surnames[:12]))
+    print("  户籍  " + " / ".join(locale.residency))
+    print("  居住  " + " / ".join(locale.residence_suffixes[:6]))
+    if locale.suggested_overrides:
+        print("  人口  " + json.dumps(locale.suggested_overrides, ensure_ascii=False))
+    if locale.source == "builtin":
+        print("  （尚未调研，用的是内地默认值 — 加 --rebuild 重新研究）")
+    return 0
+
+
 def _cmd_news(args: argparse.Namespace) -> int:
     city = resolve_city(args.city)
     if args.refresh or args.force:
@@ -299,6 +379,7 @@ _COMMANDS = {
     "add-agent": _cmd_add_agent,
     "migrate": _cmd_migrate,
     "knowledge": _cmd_knowledge,
+    "locale": _cmd_locale,
     "news": _cmd_news,
     "use": _cmd_use,
     "delete": _cmd_delete,

@@ -275,6 +275,51 @@ def currency_runtime() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+_TRAFFIC_TICKS = 96
+
+
+def traffic_runtime() -> dict[str, Any]:
+    """Road congestion over the recent ticks, from ``traffic.tick.jsonl``.
+
+    Written only while ``CONFIG["traffic"]["enabled"]`` is on, so an absent
+    file means the layer is off — which is a different statement from "the
+    roads were clear" and is reported as such.
+    """
+    records_dir = str(getattr(_ds(), "RECORDS_DIR", os.path.join("output", "records")))
+    path = os.path.join(records_dir, "traffic.tick.jsonl")
+    rows: list[dict[str, Any]] = []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(record, dict):
+                    rows.append(record)
+    except OSError:
+        return {"available": False, "ticks": []}
+
+    recent = rows[-_TRAFFIC_TICKS:]
+    peaks = [_num(row.get("congestion_max"), 1.0) for row in rows]
+    congested = [row for row in rows if int(row.get("edges_congested", 0) or 0) > 0]
+    return {
+        "available": True,
+        "ticks": recent,
+        "tick_count": len(rows),
+        "congested_ticks": len(congested),
+        "peak_congestion": round(max(peaks), 3) if peaks else 1.0,
+        "peak_flow_pcu": round(max(_num(r.get("flow_pcu")) for r in rows), 1) if rows else 0.0,
+        # The reading that matters most on a small population: if this is 0,
+        # the roads never filled up and every trip ran at free flow.
+        "ever_congested": bool(congested),
+        "records_path": os.path.relpath(path, _ds().REPO_ROOT),
+    }
+
+
 def environment_runtime() -> dict[str, Any]:
     """Recent days of the generated external-environment timeline."""
     path = os.path.join(_environment_dir(), "timeline.jsonl")
@@ -462,6 +507,7 @@ def overview() -> dict[str, Any]:
         "environment": {
             "config": environment_config,
             "runtime": environment_runtime(),
+            "traffic": traffic_runtime(),
         },
         "services": {
             "config": services_config,

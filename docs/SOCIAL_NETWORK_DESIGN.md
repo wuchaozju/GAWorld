@@ -186,6 +186,12 @@
 
 ## 附录 A — 角色速查表
 
+> 带 `visit` 渠道的角色（父母、祖父母、挚友、导师…）现在是**真的能被探望的**：
+> 打开 `CONFIG["travel"]["enabled"]` 后，`obligation` 越过阈值会把居民拉出这座城市，
+> 去 ghost 档案 `city` 字段写的那座城市住几天，回来时 `last_contact_day` 重置、
+> obligation 回落。在此之前 `obligation` 只能单调上涨——它没有任何出口。
+> 见 [`proposals/2026-09-19-agents-leaving-the-city.md`](proposals/2026-09-19-agents-leaving-the-city.md)。
+
 | role | category | decay_rate | obligation_base | protected | channels |
 | --- | --- | ---: | ---: | :-: | --- |
 | `mother` | kin | 0.001 | 0.80 | ✓ | call, visit |

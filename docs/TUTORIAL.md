@@ -90,6 +90,11 @@ python generative_city_sim.py interview --agent-id 31 --question "你今天为�
 python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt
 ```
 
+要一次问**一群人**同一套问题（可跨城市、选择题会被统计、可附图片和网址、能连续追问、
+最后导出一份完整文档），用控制台的「群体采访」页签：
+`http://127.0.0.1:8766/site/dashboard/survey.html`，
+详见[群体采访教程](GROUP_INTERVIEW_TUTORIAL.md)。
+
 ## 6. 注入外部信息（可选）
 
 给某个 Agent 添加一条外部知识：
@@ -209,6 +214,10 @@ python -m gaworld.group.validate --size 100 --days 14 --network-coupling 0.7
 Dashboard 里对应「人口与群体」页签。完整教程见
 [群体模拟教程](GROUP_SIMULATION_TUTORIAL.md)。
 
+如果人口结构要来自你手上的真实业务数据（CRM / 问卷 / 注册表），
+打开 Agent Studio 顶栏点「＋ 批量导入」即可；支持 CSV / xlsx / JSONL，
+可选「匿名化」与「扩容」两个开关。详见[批量导入教程](BULK_IMPORT_TUTORIAL.md)。
+
 ## 12. 想改的不是某个人，是整个世界？
 
 通胀几个点、政府池有没有钱、今天下不下雨、外部信息从哪来——这些都不属于任何一个 agent，
@@ -280,10 +289,51 @@ python scripts/big5_effect_ceiling.py                         # 复核幅度
 
 完整说明见[完整教程 5.8 节](TUTORIAL.v2.md#58-大五人格)。
 
-## 15. 想扩展 GAWorld？
+## 15. 想让居民离开这座城市？
+
+默认**不开**。打开 `CONFIG["travel"]["enabled"] = True`，居民就会离开几天再回来——
+出差、回老家探亲、或者出去玩。
+
+为什么值得打开：这个仓里「外地」本来就存在，只是去不了。社交模块早就给每位居民
+生成了住在外省的场外亲友（档案里写着城市），家庭模块每周还会派一条
+「抽空给爸妈打个电话**或回去看看**」——后半句从来无法执行。
+
+三类出行各看一个不同的量：**出差**看职业（销售、外贸、咨询远比图书管理员多），
+**探亲**看对家人的愧疚感涨到了多少（社交模块每天都在抬高它，此前无处可去），
+**旅行**看周末 + 存款 + 性格里的开放性 + 最近有多累。目的地是真实距离算出来的，
+远的坐飞机、近的坐高铁，票价和时长都跟着距离走。
+
+人在外地时：不占本市任何地点、不与本市任何人照面、不上本市的路，
+家里的责任会明说「你不在家，这几天得由家人顶着」。
+
+```python
+CONFIG["travel"]["enabled"] = True
+CONFIG["travel"]["max_away_share"] = 0.15   # 同一天最多多少人在外，防止城市被掏空
+```
+
+⚠️ 它改变每天城里还剩多少人，**开启前后的 run 不可比**。
+
+完整说明见[完整教程 5.9 节](TUTORIAL.v2.md#59-离开本市出差--探亲--旅行)。
+
+## 16. 想扩展 GAWorld？
 
 所有子系统都运行在微内核插件接口上：写一个 `gaworld.kernel.Plugin`
 子类 + `CONFIG["plugins"]` 一行声明即可加新子系统，不用改核心代码；
 认知管线（感知 → 计划 → 行动 → 反思等 12 阶段）的消融与定制也只是
 改 `CONFIG["pipeline"]`。完整指南见
 [插件作者指南](PLUGIN_AUTHORING.md)与[完整教程第 18 章](TUTORIAL.v2.md#18-微内核插件架构扩展-gaworld)。
+
+## 相关教程索引
+
+| 场景 | 教程 |
+| --- | --- |
+| 从零创建一座城市 | [城市教程](CITY_TUTORIAL.md) |
+| 从头按模板合成几百居民 | [群体模拟教程](GROUP_SIMULATION_TUTORIAL.md) |
+| **把外部用户表批量导入为居民** | **[批量导入教程](BULK_IMPORT_TUTORIAL.md)** |
+| 从真实人物蒸馏心智模型 | [真人蒸馏教程](PERSONA_DISTILL_TUTORIAL.md) |
+| 跨城市采样同一群居民 | [平行世界教程](PARALLEL_WORLDS_TUTORIAL.md) |
+| 给一群人发问卷并聚合 | [群体采访教程](GROUP_INTERVIEW_TUTORIAL.md) |
+| 接入外部系统 / ERP / 客服工单 | [外部系统教程](EXTERNAL_SYSTEMS_TUTORIAL.md) |
+| 调整居民之间的社交网络 | [社交网络教程](SOCIAL_NETWORK_TUTORIAL.md) |
+| 给一组居民跑 benchmark 决出留存与淘汰 | [斗兽场教程](ARENA_TUTORIAL.md) |
+| 和居民玩一局（说服游戏等） | [游戏场教程](PLAYGROUND_TUTORIAL.md) |

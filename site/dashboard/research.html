@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="research.page_title">GAWorld · 研究工作台</title>
+  <meta name="description" data-i18n-content="research.meta_description" content="GAWorld 研究工作台：提出一个研究想法或一篇社会科学论文，由大模型分析如何用 GAWorld 的功能实现它，并产出实施方案" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/research.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="research.kicker">GAWorld 研究工作台</p>
+          <h1 data-i18n="research.headline">把研究想法变成可执行的仿真方案</h1>
+          <p class="sub" data-i18n="research.sub">
+            写下一个研究想法，或上传一篇社会科学论文（先解读论文，你审阅修改后再设计实验）→ 选一个模型 →
+            它对照 GAWorld 的功能目录做分析，给出研究问题、功能映射、几种可选的实验设计、实施步骤与局限 → 下载成 Markdown。
+          </p>
+        </div>
+      </div>
+      <div class="rw-topmeta" id="rwTopMeta"></div>
+    </header>
+
+    <section class="studio-main rw-main">
+      <div class="rw-panel">
+        <div class="rw-card" id="rwForm">
+          <h3 data-i18n="research.material_title">1 · 研究材料</h3>
+          <p class="rw-hint" data-i18n="research.material_hint">想法可以只是一两段话；论文贴摘要就够用，贴全文会更准。方案只会引用功能目录里确实存在的功能，做不到的会写进「局限与替代」。</p>
+
+          <div class="rw-kind" role="radiogroup" data-i18n-aria="research.kind_label" aria-label="材料类型">
+            <label class="rw-kind-opt"><input type="radio" name="rwKind" value="idea" checked /><span data-i18n="research.kind_idea">研究想法</span></label>
+            <label class="rw-kind-opt"><input type="radio" name="rwKind" value="paper" /><span data-i18n="research.kind_paper">一篇论文</span></label>
+          </div>
+
+          <label class="rw-field">
+            <span data-i18n="research.title_label">标题（可选）</span>
+            <input id="rwTitle" type="text" data-i18n-placeholder="research.title_ph" placeholder="例如：租金补贴对邻里交往的影响" />
+          </label>
+
+          <label class="rw-field">
+            <span id="rwTextLabel" data-i18n="research.text_label">内容</span>
+            <textarea id="rwText" rows="12" data-i18n-placeholder="research.text_ph_idea" placeholder="例如：我想研究在一座 500 人的县城里，给低收入家庭发放租金补贴之后，他们的社交圈会不会扩大、压力会不会下降；和不发补贴的世界比较。"></textarea>
+          </label>
+
+          <div class="rw-upload">
+            <label class="rw-upload-btn">
+              <input type="file" id="rwFile" accept=".txt,.md,.markdown,.pdf" />
+              <span data-i18n="research.upload_label">从文件读入（.txt / .md / .pdf）</span>
+            </label>
+            <span class="rw-upload-hint" id="rwFileHint"></span>
+            <span class="rw-count" id="rwCount"></span>
+          </div>
+
+          <div class="rw-row">
+            <label class="rw-field rw-field-model">
+              <span data-i18n="research.model_label">分析用的模型</span>
+              <select id="rwProvider"></select>
+            </label>
+            <button class="btn" id="rwRun" data-i18n="research.run">生成实施方案</button>
+          </div>
+          <button type="button" class="rw-skip" id="rwSkipDigest" hidden data-i18n="research.skip_digest">跳过解读，直接生成方案</button>
+          <p class="rw-progress" id="rwProgress" aria-live="polite"></p>
+        </div>
+
+        <div class="rw-card rw-digest" id="rwDigest" hidden></div>
+        <div class="rw-card rw-result" id="rwResult" hidden></div>
+        <div class="rw-card rw-study" id="rwStudy" hidden></div>
+      </div>
+
+      <aside class="rw-side">
+        <div class="rw-side-card">
+          <h3 data-i18n="research.history">历史方案</h3>
+          <div id="rwHistory" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.studies">研究</h3>
+          <p class="rw-hint" data-i18n="research.studies_hint">把一份方案编译成预注册协议，批准后按种子跑平行世界，跑完由代码判定每条假设，再由模型解读。</p>
+          <div id="rwStudies" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.how_title">它是怎么工作的</h3>
+          <p class="rw-hint" data-i18n="research.how_body">每次分析是一次模型调用：提示词里带着仓库 docs/FEATURES.md 的功能目录和你的材料，模型只能在目录范围内做映射。改了目录，下一次分析就跟着变。</p>
+          <p class="rw-hint" id="rwCatalogue"></p>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/research.js"></script>
+</body>
+</html>

@@ -149,18 +149,30 @@ def background_for(place: Place) -> str:
     )
 
 
-def build_environment(place: Place, *, enabled: bool = True, seed: int | None = None) -> dict[str, Any]:
+def build_environment(
+    place: Place, *, enabled: bool = True, seed: int | None = None, note: str = ""
+) -> dict[str, Any]:
     """The ``environment.json`` fragment for a city bundle.
 
     Shaped as a partial config: the keys merge over ``data/environment_config.json``
     so a bundle only overrides what is genuinely place-specific.
+
+    ``note`` is a sentence about *this* city that latitude and scale cannot
+    supply — an imagined city's own summary. It is appended to both the agent
+    background and the event generator's context, because a city whose defining
+    feature is a volcano should have residents who know that and weather that
+    reflects it.
     """
     climate = climate_of(place.lat)
     social_bucket = SCALE_TO_SOCIAL.get(place.scale, "medium")
+    # The note is a sentence the model wrote, so it usually punctuates itself;
+    # appending unconditionally gives "……为生。。".
+    summary = str(note).strip()
+    extra = (summary if summary[-1:] in "。.!?！？" else summary + "。") if summary else ""
     return {
         "city": place.name,
         "climate": climate,
-        "background": background_for(place),
+        "background": background_for(place) + extra,
         "environment": {
             "enabled": bool(enabled),
             "event_chance": 0.6,
@@ -175,7 +187,7 @@ def build_environment(place: Place, *, enabled: bool = True, seed: int | None = 
             "generator": {
                 "mode": "llm",
                 "history_days": 3,
-                "description": describe(place),
+                "description": describe(place) + extra,
             },
         },
     }

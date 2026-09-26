@@ -1,0 +1,202 @@
+/* Home Mode panel — at-a-glance home design + per-tick activity observation. */
+
+.home-panel .home-overview { margin-top: 6px; }
+
+.home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.home-summary-item {
+  background: var(--surface-alt, rgba(245, 244, 232, 0.55));
+  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.home-summary-item .home-summary-label {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-summary-item .home-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink, #111827);
+  margin-top: 2px;
+}
+
+.home-rooms {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.home-room {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.home-room.is-current {
+  border-color: rgba(190, 116, 41, 0.6);
+  box-shadow: 0 0 0 2px rgba(190, 116, 41, 0.16);
+}
+
+.home-room .home-room-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.home-room .home-room-name {
+  font-weight: 650;
+  color: var(--ink, #111827);
+}
+
+.home-room .home-room-size {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+}
+
+.home-room-furniture {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+}
+
+.home-room-activities {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.home-room-tag {
+  background: rgba(20, 121, 91, 0.10);
+  color: #13795b;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.home-vibe {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(20, 121, 91, 0.08);
+  border-left: 3px solid rgba(20, 121, 91, 0.6);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: var(--ink, #111827);
+}
+
+.home-vibe .home-vibe-label {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.home-ambiance {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.home-ambiance-item {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+}
+
+.home-ambiance-item .home-ambiance-label {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  margin-bottom: 2px;
+}
+
+.home-ambiance-item .home-ambiance-value {
+  font-size: 13px;
+  color: var(--ink, #111827);
+}
+
+.home-observations {
+  margin-top: 14px;
+  border-top: 1px dashed var(--line-soft, rgba(0, 0, 0, 0.1));
+  padding-top: 12px;
+}
+
+.home-observations-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.home-observations-title {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted, #6b7280);
+}
+
+.home-observations-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+}
+
+.home-observation-row {
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 56px 56px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line-soft, rgba(0, 0, 0, 0.05));
+}
+
+.home-observation-row:last-child {
+  border-bottom: none;
+}
+
+.home-observation-row.is-out {
+  color: var(--muted, #6b7280);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.home-observation-row .home-obs-day,
+.home-observation-row .home-obs-time {
+  color: var(--muted, #6b7280);
+  font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+}
+
+.home-observation-row .home-obs-room {
+  font-weight: 600;
+  color: var(--green-deep, #13795b);
+}
+
+.home-empty {
+  padding: 12px;
+  color: var(--muted, #6b7280);
+  font-size: 13px;
+  text-align: center;
+}

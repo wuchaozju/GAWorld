@@ -39,14 +39,18 @@ button, input, select, textarea { font: inherit; }
   color: #f2faf6;
   box-shadow: var(--shadow-lg);
 }
+/* A quiet dot grid fading in from the right. This used to be the graphical
+   abstract PNG at 14% opacity, whose garbled machine-drawn labels showed
+   through on a wide hero. */
 .hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/site/assets/gaworld-graphical-abstract.png") right center / cover no-repeat;
-  opacity: 0.14;
-  -webkit-mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
-  mask-image: linear-gradient(90deg, transparent 25%, #000 70%);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.55) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  opacity: 0.35;
+  -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 30%, #000 100%);
   pointer-events: none;
 }
 .hero-copy { position: relative; }
@@ -54,10 +58,15 @@ button, input, select, textarea { font: inherit; }
 .hero h1 {
   margin: 6px 0 8px;
   font-size: 34px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.02em;
   color: #ffffff;
 }
+/* Hosted inside the console shell, whose bar already names the view: the
+   hero drops to a title strip rather than a billboard. */
+html.is-embedded .hero { padding: 16px 24px; }
+html.is-embedded .hero h1 { margin: 4px 0 4px; font-size: 24px; }
+html.is-embedded .shell { padding-top: 14px; }
 .hero-sub { margin: 0; color: rgba(240, 250, 245, 0.82); font-size: 14px; }
 .hero-status {
   position: relative;
@@ -85,13 +94,13 @@ button, input, select, textarea { font: inherit; }
   margin: 0;
   color: var(--green);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 h1, h2, h3 { margin: 0; line-height: 1.15; }
-h2 { margin-top: 4px; font-size: 20px; font-weight: 900; }
+h2 { margin-top: 4px; font-size: 20px; font-weight: 800; }
 h3 { font-size: 13px; color: var(--steel); }
 p { color: var(--muted); line-height: 1.7; }
 
@@ -138,7 +147,7 @@ p { color: var(--muted); line-height: 1.7; }
 .schedule-run { display: flex; gap: 8px; align-items: center; }
 .schedule-run input { width: auto; }
 
-label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 800; }
+label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
 input, select, textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -156,6 +165,71 @@ input:disabled, select:disabled, textarea:disabled { opacity: 0.55; background: 
 input, select { min-height: 40px; padding: 0 10px; }
 textarea { padding: 11px 12px; line-height: 1.6; resize: vertical; }
 input[type="range"] { accent-color: var(--green); min-height: auto; border: none; background: transparent; box-shadow: none; }
+
+/* ------------------------------------------------------------ checkbox --
+   The browser default checkbox is grey-on-white with no padding control
+   and lands off-grid in flex containers. The whole dashboard shares this
+   style — arena, studio, population, settings — so it lives here, not in
+   any per-page stylesheet.
+   */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  background: var(--card);
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+input[type="checkbox"]:hover { border-color: var(--green); }
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(14, 122, 88, .25);
+}
+input[type="checkbox"]:checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px; top: 0px;
+  width: 5px; height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+input[type="checkbox"]:indeterminate {
+  background: var(--green);
+  border-color: var(--green);
+}
+input[type="checkbox"]:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 3px; top: 6px;
+  width: 8px; height: 2px;
+  background: #fff;
+  border: none;
+  transform: none;
+}
+input[type="checkbox"]:disabled {
+  background: var(--paper);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+input[type="checkbox"]:disabled:checked {
+  background: var(--muted);
+  border-color: var(--muted);
+}
 
 .checkline {
   min-height: 40px;
@@ -186,7 +260,7 @@ input[type="range"] { accent-color: var(--green); min-height: auto; border: none
   padding: 0 14px;
   background: #ffffff;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.06s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
@@ -653,6 +727,23 @@ body.is-running .map-panel { border-color: rgba(14, 122, 88, 0.55); box-shadow: 
 .md-body li { margin: 3px 0; color: var(--ink); font-size: 13.5px; line-height: 1.7; }
 .md-body strong { color: var(--ink); font-weight: 800; }
 .md-body code { background: var(--green-soft); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+
+/* ---- city-browse preview (a foreign city shown read-only in profile-view;
+   same markup/classes as Agent Studio's browse mode, see city-agents.js) ---- */
+.ca-notice {
+  border: 1px solid rgba(180, 83, 9, .35); background: rgba(180, 83, 9, .07);
+  color: #92400e; border-radius: 8px; padding: 10px 12px; margin: 0 0 14px;
+  font-size: 12px; line-height: 1.7;
+}
+.ca-notice b { display: block; margin-bottom: 2px; }
+.ca-notice p { margin: 0 0 8px; }
+.ca-kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ca-kv th {
+  text-align: left; vertical-align: top; width: 92px; padding: 5px 8px 5px 0;
+  color: var(--muted); font-weight: 500; white-space: nowrap;
+}
+.ca-kv td { padding: 5px 0; line-height: 1.7; }
+.profile-view .muted-line, .profile-view .section-note { color: var(--muted); font-size: 13px; margin: 0; }
 
 /* ------------------------------------------------------- frame JSON caption */
 

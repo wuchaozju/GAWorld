@@ -59,6 +59,17 @@ const store = {
   big5Dirty: false, // sliders moved but not yet written to the seed CSV
   big5Loading: false, // guards the lazy fetch against retry loops
   personaSlug: null, // set when the draft came out of 真人蒸馏 (see save())
+  moltbook: null, // { enabled, status, name, claim_url, actions, ... } from /api/moltbook/agent (step 7)
+  moltbookLoading: false, // guards the lazy fetch against retry loops
+  /* Cross-city browsing. `cities` is the catalogue, `runningCity` the slug the
+   * simulator is pointed at, `cityRef` the one being looked at. They differ
+   * only in browse mode, which is read-only — see browseBody() for why. */
+  cities: [],
+  runningCity: "",
+  cityRef: "",
+  browsing: false,
+  browsed: null, // { city, agent } from /api/city/agent
+  browsedList: [], // rows from /api/city/agents, for the resident picker
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -203,6 +214,7 @@ async function selectAgent(id) {
   store.memPick = null;
   store.familyPreview = null;
   store.familyDraft = null;
+  store.moltbook = null; // fetched lazily by moltbookCard() when step 7 renders
   $("#saveHint").textContent = __("sd.loaded");
   renderSubject();
   renderStep();
@@ -215,6 +227,145 @@ async function selectAgent(id) {
   store.big5Draft = null;
   store.big5Dirty = false;
   loadBig5().then(() => { if (store.step === 2) renderStep(); });
+}
+
+/* ---------- cross-city browsing ----------
+ *
+ * Agent Studio edits the city the simulator is pointed at: `dashboard_server`
+ * resolves its CSV and profile paths once, at import. So another city's
+ * residents can be *read* here — straight from that city's bundle, via
+ * /api/city/agents — but not edited, and the panels keyed by agent id
+ * (memory, Big Five, social, finance) are hidden while browsing: every city
+ * numbers its residents from 1, those files are one flat per-id namespace, and
+ * showing them for a city that is not running would be showing somebody else's
+ * data under this resident's name.
+ */
+const cityView = () => window.GAWorldCityAgents;
+
+async function loadCities() {
+  const payload = await api("/api/city/catalogue");
+  store.cities = payload.cities || [];
+  store.runningCity = payload.selected || "";
+  // A config pointing at a deleted city falls back to the default world when
+  // the simulator loads it; the picker has to agree, or the city actually
+  // being edited would be shown as read-only.
+  if (!store.cities.some((c) => String(c.slug) === store.runningCity)) store.runningCity = "";
+  if (!store.cityRef) store.cityRef = store.runningCity;
+  const sel = $("#citySelect");
+  sel.innerHTML = cityView().cityOptions(store.cities, store.cityRef);
+  sel.value = store.cityRef;
+}
+
+function cityEntry(slug) {
+  return store.cities.find((c) => String(c.slug) === String(slug)) || { slug, name: slug };
+}
+
+/** Switch the panel to `slug`, in edit mode when it is the running city. */
+async function pickCity(slug) {
+  store.cityRef = String(slug || "");
+  store.browsing = store.cityRef !== store.runningCity;
+  store.creating = false;
+  store.personaSlug = null;
+  if (!store.browsing) {
+    store.browsed = null;
+    store.currentId = null;
+    await loadAgents();
+    setEditingChrome(true);
+    if (store.currentId != null) await selectAgent(store.currentId);
+    else renderStep();
+    return;
+  }
+  setEditingChrome(false);
+  await browseCity(store.cityRef);
+}
+
+async function browseCity(slug, wantedId) {
+  const payload = await api("/api/city/agents?city=" + encodeURIComponent(slug));
+  store.browsedList = payload.agents || [];
+  const first = store.browsedList.length ? store.browsedList[0].id : null;
+  const pick = store.browsedList.some((p) => String(p.id) === String(wantedId)) ? wantedId : first;
+  $("#agentSelect").innerHTML = cityView().agentOptions(store.browsedList, pick);
+  if (pick == null) {
+    store.browsed = { city: payload.city, agent: null };
+    renderSubject();
+    renderStep();
+    return;
+  }
+  await browseAgent(pick);
+}
+
+async function browseAgent(id) {
+  $("#saveHint").textContent = __("sd.loading");
+  store.browsed = await api(
+    "/api/city/agent?city=" + encodeURIComponent(store.cityRef) + "&id=" + encodeURIComponent(id)
+  );
+  $("#agentSelect").value = String(id);
+  $("#saveHint").textContent = __("sd.browse_readonly");
+  renderSubject();
+  renderStep();
+}
+
+/** Buttons that write are pointless (and misleading) while browsing. */
+function setEditingChrome(editable) {
+  ["saveBtn", "runBtn", "newAgentBtn", "distillBtn"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !editable;
+  });
+  // Bulk import stays enabled in browse mode: it operates on the *city*, not
+  // on the agent currently being viewed, and disabling it would make the
+  // button look broken in the agent-picker list.
+  document.querySelectorAll(".step").forEach((b) => b.classList.toggle("is-locked", !editable));
+}
+
+/** The read-only body: identity, the nine seeds, and the profile. */
+function browseBody() {
+  const view = cityView();
+  const city = (store.browsed && store.browsed.city) || cityEntry(store.cityRef);
+  const agent = store.browsed && store.browsed.agent;
+  if (!agent) {
+    return `<h2 class="section-title">${esc(city.name || "")}</h2>
+      ${view.browseNotice(city)}
+      <p class="section-note">${esc(__("sd.browse_empty"))}</p>`;
+  }
+  const rows = view.identityRows(agent, city)
+    .map(([label, value]) => `<tr><th>${esc(label)}</th><td>${esc(value)}</td></tr>`).join("");
+  const seeds = STATE_VARS.map((v) => `<li><span>${esc(varLabel(v))}</span><b>${clamp01(agent.state[v.key]).toFixed(2)}</b></li>`).join("");
+  return `
+    <h2 class="section-title">${esc(agent.name || "")} <span class="browse-id">#${esc(agent.id)}</span></h2>
+    ${view.browseNotice(city)}
+    <div class="cols side">
+      <div>
+        <div class="card">
+          <h3>${esc(__("sd.identity"))}</h3>
+          <table class="ca-kv">${rows}</table>
+        </div>
+        <div class="card">
+          <h3>${esc(__("sd.profile"))}</h3>
+          <div class="profile-md md-body" data-empty="${esc(__("sd.profile_empty"))}">${renderMarkdown(agent.profile_text)}</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>${esc(__("sd.state_glance"))}</h3>
+        <div class="viz-wrap">${radarSVG(agent.state, true)}</div>
+        <ul class="browse-seeds">${seeds}</ul>
+      </div>
+    </div>`;
+}
+
+function bindBrowseStep() {
+  const use = $("#caUseCityBtn");
+  if (use) use.addEventListener("click", useBrowsedCity);
+}
+
+/** Point the simulator at the city being browsed. Takes effect on restart. */
+async function useBrowsedCity() {
+  try {
+    foot(__("sd.city_switching"));
+    await api("/api/city/select", { method: "POST", body: JSON.stringify({ city: store.cityRef }) });
+    foot(__f("sd.city_switched", { name: cityEntry(store.cityRef).name }), "ok");
+  } catch (err) {
+    foot(__("sd.city_switch_failed") + err.message, "err");
+  }
 }
 
 function startCreate() {
@@ -242,6 +393,18 @@ function startCreate() {
 
 /* ---------- subject rail ---------- */
 function renderSubject() {
+  if (store.browsing) {
+    const agent = (store.browsed && store.browsed.agent) || null;
+    const city = (store.browsed && store.browsed.city) || cityEntry(store.cityRef);
+    setAvatar(null, agent ? agent.name : "");
+    $("#subjectName").textContent = agent ? agent.name : "—";
+    $("#subjectMeta").textContent = agent
+      ? [city.name, `#${agent.id}`, agent.gender, agent.age ? __f("sd.age_years", { n: agent.age }) : "", agent.residence].filter(Boolean).join(" · ")
+      : city.name || "";
+    const state = agent ? agent.state : {};
+    $("#miniRadar").outerHTML = `<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
+    return;
+  }
   const dr = store.draft;
   if (!dr) return;
   const idt = dr.identity;
@@ -266,6 +429,7 @@ function field(label, inputHTML) {
 }
 
 function renderStep() {
+  if (store.browsing) { $("#stepBody").innerHTML = browseBody(); bindBrowseStep(); return; }
   if (!store.draft) { $("#stepBody").innerHTML = `<p class="section-note">${esc(__("sd.pick_resident"))}</p>`; return; }
   setActiveStepButton();
   const fn = [null, stepIdentity, stepState, stepSkills, stepMemory, stepSocial, stepBehavior, stepReview][store.step];
@@ -1479,6 +1643,135 @@ async function saveFinance() {
   }
 }
 
+/* ---------- Moltbook (step 7) ----------
+ *
+ * The switch that puts this resident on Moltbook, the agent social network.
+ * Flipping it on registers an account server-side and hands back a claim link
+ * the operator must open; the simulator then posts the resident's day and the
+ * card lists everything the resident did there, newest first. The api key
+ * stays on the server — the card only ever sees a masked hint.
+ */
+const MB_KINDS = ["register", "status", "post", "comment", "upvote", "feed", "verify", "error"];
+const mbKindLabel = (kind) => (MB_KINDS.indexOf(kind) >= 0 ? __(`sd.mb_kind.${kind}`) : String(kind || ""));
+const mbStatusLabel = (status) => ({
+  unregistered: __("sd.mb_status_unregistered"),
+  pending_claim: __("sd.mb_status_pending"),
+  claimed: __("sd.mb_status_claimed"),
+}[status] || String(status || "?"));
+
+async function loadMoltbook() {
+  if (store.creating || store.currentId == null) { store.moltbook = null; return; }
+  const id = store.currentId;
+  store.moltbookLoading = true;
+  try {
+    const payload = await api(`/api/moltbook/agent?id=${id}`);
+    if (store.currentId === id) store.moltbook = payload;
+  } catch (err) {
+    if (store.currentId === id) store.moltbook = { error: err.message };
+  } finally {
+    store.moltbookLoading = false;
+  }
+}
+
+function mbActionRow(row) {
+  const when = row.day != null
+    ? `Day ${row.day} ${row.time || ""}`.trim()
+    : (row.ts ? new Date(Number(row.ts) * 1000).toLocaleString() : "");
+  return `<li class="mb-row${row.ok === false ? " is-error" : ""}">
+    <span class="mb-kind">${esc(mbKindLabel(row.kind))}</span>
+    <span class="mb-when">${esc(when)}</span>
+    <span class="mb-sum">${esc(row.summary || "")}</span></li>`;
+}
+
+function moltbookCard() {
+  const head = `<h3>${esc(__("sd.mb_title"))}</h3><p class="section-note">${esc(__("sd.mb_hint"))}</p>`;
+  if (store.creating) {
+    return `<div class="card">${head}<p class="section-note">${esc(__("sd.mb_create_note"))}</p></div>`;
+  }
+  const mb = store.moltbook;
+  if (!mb) {
+    // Same lazy pattern as the family and Big Five cards: render once
+    // without it so the step is never blank, again when it lands.
+    if (!store.moltbookLoading) loadMoltbook().then(() => { if (store.step === 7) renderStep(); });
+    return `<div class="card">${head}<p class="section-note">${esc(__("sd.mb_loading"))}</p></div>`;
+  }
+  if (mb.error) {
+    return `<div class="card">${head}<p class="section-note">${esc(__("sd.mb_failed"))}${esc(mb.error)}</p></div>`;
+  }
+  const on = !!mb.enabled;
+  let chip;
+  if (!mb.has_key) chip = `<span class="chip">${esc(mbStatusLabel("unregistered"))}</span>`;
+  else if (!on) chip = `<span class="chip">${esc(__("sd.mb_off"))} · ${esc(mbStatusLabel(mb.status))}</span>`;
+  else if (mb.status === "claimed") chip = `<span class="chip ok">🦞 ${esc(mbStatusLabel(mb.status))}</span>`;
+  else chip = `<span class="chip">⏳ ${esc(mbStatusLabel(mb.status))}</span>`;
+
+  const nameField = mb.has_key ? "" : `
+    <label class="field"><span>${esc(__("sd.mb_name_label"))}</span>
+      <input id="mbName" value="${esc(mb.default_name || "")}" placeholder="${esc(__("sd.mb_name_ph"))}"></label>`;
+  const account = !mb.has_key ? "" : `
+    <p class="section-note">${esc(__("sd.mb_account"))}${esc(__("sd.colon"))}<b>${esc(mb.name)}</b>
+      ${mb.profile_url ? ` · <a href="${esc(mb.profile_url)}" target="_blank" rel="noopener">${esc(__("sd.mb_profile"))}</a>` : ""}
+      · <button type="button" id="mbRefreshBtn" class="button">${esc(__("sd.mb_refresh"))}</button></p>`;
+  const claim = (mb.has_key && mb.status !== "claimed") ? `
+    <div class="mb-claim">
+      <p>${esc(__f("sd.mb_claim_note", { code: mb.verification_code || "—" }))}</p>
+      ${mb.claim_url ? `<a class="button" href="${esc(mb.claim_url)}" target="_blank" rel="noopener">${esc(__("sd.mb_claim_link"))}</a>` : ""}
+    </div>` : "";
+  const actions = (mb.actions || []).length
+    ? `<ul class="mb-actions">${mb.actions.map(mbActionRow).join("")}</ul>`
+    : `<p class="section-note">${esc(__("sd.mb_no_actions"))}</p>`;
+
+  return `<div class="card">${head}
+    <label class="fam-toggle"><input type="checkbox" id="mbToggle"${on ? " checked" : ""}>
+      <span class="section-note">${esc(__("sd.mb_toggle"))}</span> ${chip}</label>
+    ${nameField}${account}${claim}
+    <p class="section-note">${esc(__("sd.mb_actions"))} <span class="tag">${esc(__f("sd.mb_count", { n: mb.action_count || 0 }))}</span></p>
+    ${actions}
+    <small class="muted-line">${esc(__f("sd.mb_log_path", { path: mb.log_path || "" }))}</small>
+  </div>`;
+}
+
+async function toggleMoltbook(enabled) {
+  if (store.creating || store.currentId == null) return;
+  const id = store.currentId;
+  const nameEl = $("#mbName");
+  const body = { agent_id: id, enabled };
+  if (enabled && nameEl && nameEl.value.trim()) body.name = nameEl.value.trim();
+  try {
+    foot(enabled ? __("sd.mb_connecting") : __("sd.mb_disconnecting"));
+    const payload = await api("/api/moltbook/toggle", { method: "POST", body: JSON.stringify(body) });
+    if (store.currentId !== id) return;
+    store.moltbook = payload;
+    renderStep();
+    foot(enabled ? __f("sd.mb_connected", { name: payload.name || "" }) : __("sd.mb_disconnected"), "ok");
+  } catch (err) {
+    foot(__("sd.mb_failed") + err.message, "err");
+    renderStep(); // snap the checkbox back to what the server holds
+  }
+}
+
+async function refreshMoltbook() {
+  if (store.creating || store.currentId == null) return;
+  const id = store.currentId;
+  try {
+    foot(__("sd.mb_refreshing"));
+    const payload = await api("/api/moltbook/refresh", { method: "POST", body: JSON.stringify({ agent_id: id }) });
+    if (store.currentId !== id) return;
+    store.moltbook = payload;
+    renderStep();
+    foot(__f("sd.mb_status_now", { status: mbStatusLabel(payload.status) }), "ok");
+  } catch (err) {
+    foot(__("sd.mb_failed") + err.message, "err");
+  }
+}
+
+function bindMoltbookStep() {
+  const toggle = $("#mbToggle");
+  if (toggle) toggle.addEventListener("change", () => toggleMoltbook(toggle.checked));
+  const refresh = $("#mbRefreshBtn");
+  if (refresh) refresh.addEventListener("click", refreshMoltbook);
+}
+
 function stepReview() {
   const i = store.draft.identity, st = store.draft.state;
   const idRows = [["sd.name", i.name], ["sd.gender", i.gender], ["sd.age", i.age], ["sd.hukou", i.hukou], ["sd.residence", i.residence]]
@@ -1494,6 +1787,7 @@ function stepReview() {
       <div class="card"><h3>${esc(__("sd.state_vars"))}</h3><div class="review-list">${stRows}</div></div>
     </div>
     ${finCard}
+    ${moltbookCard()}
     <div class="card">
       <h3>${esc(__("sd.interview"))}</h3>
       <label class="field"><span>${esc(__("sd.interview_label"))}</span>
@@ -1623,6 +1917,7 @@ function bindStep() {
   bindMemoryStep();
   bindSocialStep();
   bindFinanceStep();
+  bindMoltbookStep();
   const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", runInterview);
   const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", save);
   const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", runSim);
@@ -1818,9 +2113,14 @@ async function runInterview() {
 /* ---------- wire up ---------- */
 function init() {
   document.querySelectorAll(".step").forEach((b) => b.addEventListener("click", () => {
+    if (store.browsing) return; // the steps edit; browsing does not
     store.step = Number(b.dataset.step); renderStep();
   }));
-  $("#agentSelect").addEventListener("change", (e) => selectAgent(e.target.value).catch((err) => foot(err.message, "err")));
+  $("#citySelect").addEventListener("change", (e) => pickCity(e.target.value).catch((err) => foot(err.message, "err")));
+  $("#agentSelect").addEventListener("change", (e) => {
+    const pick = store.browsing ? browseAgent(e.target.value) : selectAgent(e.target.value);
+    pick.catch((err) => foot(err.message, "err"));
+  });
   $("#newAgentBtn").addEventListener("click", startCreate);
   $("#saveBtn").addEventListener("click", save);
   $("#runBtn").addEventListener("click", runSim);
@@ -1831,8 +2131,27 @@ function init() {
     loadAgents().then(() => selectAgent(ev.detail.agent_id)).catch((err) => foot(err.message, "err"));
   });
 
-  loadAgents()
-    .then(() => store.currentId != null ? selectAgent(store.currentId) : renderStep())
+  /* `?city=&agent=` is how the 城市 page hands a resident over. The id alone
+   * would be ambiguous — every city numbers its residents from 1 — so the two
+   * always travel together. */
+  const params = new URLSearchParams(window.location.search);
+  const wantedCity = params.get("city");
+  const wantedAgent = params.get("agent");
+
+  loadCities()
+    .then(() => {
+      if (wantedCity != null && wantedCity !== store.runningCity) {
+        store.cityRef = wantedCity;
+        store.browsing = true;
+        $("#citySelect").value = wantedCity;
+        setEditingChrome(false);
+        return browseCity(wantedCity, wantedAgent);
+      }
+      return loadAgents().then(() => {
+        const start = wantedAgent != null ? Number(wantedAgent) : store.currentId;
+        return start != null ? selectAgent(start) : renderStep();
+      });
+    })
     .catch((err) => foot(__("sd.load_failed") + err.message, "err"));
 }
 

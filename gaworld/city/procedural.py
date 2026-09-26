@@ -179,33 +179,85 @@ def generate_citymap(
         {"name": hub, "category": HUB_CATALOG[hub], "places": _hub_places(hub, rng)} for hub in others
     ]
 
-    lines = ["# City Map", ""]
-
-    river = river_name or f"{name} River"
-    river_path = ["0.05,0.24", "0.18,0.30", "0.38,0.27", "0.56,0.33", "0.78,0.28", "0.95,0.35"]
-    lines.append(f"@river: {river} | path={';'.join(river_path)} | width=0.08")
-
     # Lay hubs on a loose grid; the map builder adds its own organic jitter and
     # fills each hub's block, so a regular spacing here is enough.
     cols = max(3, int(len(hubs) ** 0.5) + 1)
     for index, hub in enumerate(hubs):
-        x = 2.5 + (index % cols) * 3.1
-        y = 3.2 + (index // cols) * 2.6
-        lines.append(
-            f"@node: {hub['name']} | kind=hub | district={hub['name']} "
-            f"| category={hub['category']} | x={x:.1f} | y={y:.1f}"
-        )
+        hub["x"] = 2.5 + (index % cols) * 3.1
+        hub["y"] = 3.2 + (index // cols) * 2.6
 
     ordered = [hub["name"] for hub in hubs]
-    for source, target in zip(ordered, ordered[1:]):
-        lines.append(f"@road: {source} -> {target} | type=arterial")
+    roads = [(source, target, "arterial") for source, target in zip(ordered, ordered[1:])]
     # Close one loop so the arterial network is not a bare chain.
     if len(ordered) >= 4:
-        lines.append(f"@road: {ordered[-1]} -> {ordered[0]} | type=collector")
+        roads.append((ordered[-1], ordered[0], "collector"))
 
+    metro = None
     if layout["metro"] and len(ordered) >= 5:
-        stops = ">".join(ordered[: min(6, len(ordered))])
-        lines.append(f"@metro: M1 | color=#8f5bd8 | stops={stops}")
+        metro = {"name": "M1", "stops": ordered[: min(6, len(ordered))]}
+
+    return render_citymap(
+        name,
+        hubs,
+        river={
+            "name": river_name or f"{name} River",
+            "path": [(0.05, 0.24), (0.18, 0.30), (0.38, 0.27), (0.56, 0.33), (0.78, 0.28), (0.95, 0.35)],
+            "width": 0.08,
+        },
+        roads=roads,
+        metro=metro,
+    )
+
+
+def render_citymap(
+    city_name: str,
+    hubs: list[dict[str, Any]],
+    *,
+    river: dict[str, Any] | None = None,
+    roads: list[tuple[str, str, str]] | None = None,
+    metro: dict[str, Any] | None = None,
+    place_categories: dict[str, str] | None = None,
+) -> str:
+    """Render the ``citymap.md`` directive format from an explicit layout.
+
+    Shared by this module's name-seeded generator and by
+    :mod:`gaworld.city.imagine`, which builds the same ``hubs`` shape from a
+    description instead of from a dice roll — one writer, so a spec an LLM
+    designed and a spec the fallback produced can never drift in format.
+
+    ``hubs`` entries are ``{"name", "category", "x", "y", "places"}``; a place
+    is either a plain name or ``{"building", "floors", "flats"}`` for one with
+    an interior. ``place_categories`` declares what the small places *are*,
+    which matters for any spec whose names are not English: the map layer's
+    :func:`~gaworld.world.city_map.infer_category` keys off English keywords
+    and would otherwise file every 鱼市 and 卫生院 under ``mixed``.
+    """
+    name = str(city_name or "").strip() or "Unnamed City"
+    lines = ["# City Map", ""]
+
+    if river and river.get("path"):
+        path = ";".join(f"{float(x):.2f},{float(y):.2f}" for x, y in river["path"])
+        width = float(river.get("width") or 0.08)
+        lines.append(f"@river: {river.get('name') or f'{name} River'} | path={path} | width={width:g}")
+
+    for hub in hubs:
+        lines.append(
+            f"@node: {hub['name']} | kind=hub | district={hub['name']} "
+            f"| category={hub['category']} | x={float(hub['x']):.1f} | y={float(hub['y']):.1f}"
+        )
+
+    # Places carry a category but deliberately no x/y: the loader lays each
+    # hub's block itself, and pinning them here would flatten that layout.
+    for place_name, category in (place_categories or {}).items():
+        lines.append(f"@node: {place_name} | kind=place | category={category}")
+
+    for source, target, road_type in roads or []:
+        lines.append(f"@road: {source} -> {target} | type={road_type}")
+
+    if metro and metro.get("stops"):
+        stops = ">".join(metro["stops"])
+        color = metro.get("color") or "#8f5bd8"
+        lines.append(f"@metro: {metro.get('name') or 'M1'} | color={color} | stops={stops}")
 
     lines += ["", f"- City: {name}"]
     for hub in hubs:
@@ -247,5 +299,6 @@ __all__ = [
     "SCALE_LAYOUT",
     "districts_from_spec",
     "generate_citymap",
+    "render_citymap",
     "seed_from_name",
 ]

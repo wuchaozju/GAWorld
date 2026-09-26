@@ -25,6 +25,7 @@ from __future__ import annotations
 from typing import Any
 
 from gaworld.world import city_map as _cm
+from gaworld.world.away import is_away_location
 
 # Default thresholds; overridable via CONFIG["local_physical"].
 _DEFAULT_BUSY_RATIO = 0.6
@@ -72,7 +73,8 @@ def update_occupancy_from_agents(city_map: Any, agents: list[dict[str, Any]] | N
         if locations.get("in_transit"):
             continue
         current = locations.get("current") or locations.get("home")
-        if not current:
+        if not current or is_away_location(current):
+            # Out of town: not a node, and not a body in any room here.
             continue
         counts[current] = counts.get(current, 0) + 1
 
@@ -129,7 +131,10 @@ def local_physical_state(
         "anomaly": False,
         "anomaly_kind": "",
     }
-    if not location or in_transit or not city_map:
+    # Out of town, the snapshot would describe the city the agent is not in —
+    # its crowds, its opening hours, its weather. An empty snapshot is the
+    # honest answer; `gaworld.travel` says where the agent actually is.
+    if not location or in_transit or not city_map or is_away_location(location):
         return state
 
     try:
