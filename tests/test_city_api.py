@@ -126,6 +126,58 @@ class CityApiTest(unittest.TestCase):
         # Never leave the config pointing at a directory that no longer exists.
         self.assertNotIn("city", json.loads(self.config_path.read_text(encoding="utf-8")))
 
+    def test_city_map_falls_back_when_real_bundle_is_missing(self):
+        """A real-mode bundle whose map.geojson is missing (e.g. Overpass
+        was down when the city was created) must still return a usable
+        map by reading the procedural spec from the same bundle. The
+        panel should not 404 — that would leave the city broken forever
+        even though the simulation can still run on the procedural map.
+        """
+        manifest = json.loads(self.city.manifest_path.read_text(encoding="utf-8"))
+        manifest["map"] = {
+            "mode": "real",
+            "virtual": "citymap.md",
+            "real": "map.geojson",
+            "origin": {"lat": 30.0, "lng": 120.0,
+                       "lat_per_km": 1 / 111, "lng_per_km": 1 / 96},
+        }
+        self.city.manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+        real_path = self.city.real_map_path
+        if real_path.exists():
+            real_path.unlink()
+
+        payload, status = city_api.handle_get(
+            "/api/city/map", {"city": [self.city.slug]}
+        )
+        self.assertEqual(200, status,
+                         "missing real bundle must not 404")
+        self.assertEqual(payload["meta"]["requested_mode"], "real")
+        self.assertEqual(payload["meta"]["mode"], "virtual",
+                         "must degrade to procedural spec")
+        self.assertTrue(payload["meta"]["fell_back"])
+        self.assertEqual(payload["meta"]["source"], "citymap.md")
+        self.assertTrue(payload["map"]["nodes"],
+                        "degraded payload must still carry nodes")
+
+    def test_city_map_404s_when_neither_real_nor_virtual_exists(self):
+        """If neither file exists, the panel must 404 — there is nothing
+        sensible to render, and silently fabricating a fake map would
+        mask a real bundle-config error.
+        """
+        self.city.real_map_path.unlink(missing_ok=True)
+        self.city.virtual_map_path.unlink(missing_ok=True)
+        manifest = json.loads(self.city.manifest_path.read_text(encoding="utf-8"))
+        manifest["map"] = dict(manifest["map"], mode="real")
+        self.city.manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+        payload, status = city_api.handle_get(
+            "/api/city/map", {"city": [self.city.slug]}
+        )
+        self.assertEqual(404, status)
+
 
 class CityResidentsTest(unittest.TestCase):
     """``/api/city/catalogue``, ``/api/city/agents`` and ``/api/city/agent``.

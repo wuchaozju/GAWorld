@@ -56,6 +56,14 @@ DEFAULT_DEADLINE = 240.0
 #: instead of re-discovering the dead ones on every subsequent query.
 _preferred_mirror: str | None = None
 
+#: Cooldown (seconds) for a mirror that just failed: don't try it again
+#: during this window, even if it would be the first pick. Public mirrors
+#: go down for minutes, not microseconds, so a short skip stops the whole
+#: bundle from wasting 45s × N queries on a mirror that 504'd on query #1.
+#: Reset to a fresh re-attempt after the window elapses.
+MIRROR_COOLDOWN = 60.0
+_mirror_cooldown_until: dict[str, float] = {}
+
 # category → (overpass selectors, kind, per-category cap).
 # Each selector runs for both nodes and ways (way centroids via `out center`).
 CATEGORY_QUERIES: dict[str, tuple[list[str], str, int]] = {
@@ -95,10 +103,21 @@ class OSMError(RuntimeError):
 
 
 def _mirror_order() -> list[str]:
-    """Mirrors to try, known-good one first."""
-    if _preferred_mirror and _preferred_mirror in OVERPASS_URLS:
-        return [_preferred_mirror] + [u for u in OVERPASS_URLS if u != _preferred_mirror]
-    return list(OVERPASS_URLS)
+    """Mirrors to try, known-good one first; skip ones in cooldown.
+
+    Cooldown skips are critical when the public mirrors are blocked
+    upstream: without them the same dead URL would be retried at the top
+    of the list on every subsequent query inside the same bundle.
+    """
+    now = time.monotonic()
+    available = [u for u in OVERPASS_URLS if _mirror_cooldown_until.get(u, 0.0) <= now]
+    # If every mirror is in cooldown, fall back to the full list — better
+    # to retry than to skip and pretend there's no Overpass at all.
+    if not available:
+        available = list(OVERPASS_URLS)
+    if _preferred_mirror and _preferred_mirror in available:
+        return [_preferred_mirror] + [u for u in available if u != _preferred_mirror]
+    return available
 
 
 def _request_once(url: str, data: bytes, timeout: int) -> dict[str, Any]:
@@ -133,42 +152,75 @@ def _request_once(url: str, data: bytes, timeout: int) -> dict[str, Any]:
     return result.get("payload", {})
 
 
+#: How many rounds of mirror-sweeping to do before giving up. Each round
+#: visits the available mirrors once with a slightly longer backoff between
+#: rounds (5s, 10s, 20s). Two extra rounds (3 total) is enough to ride out
+#: transient 504 storms on a single mirror while keeping the total budget
+#: under a minute for the rare all-mirrors-down case.
+_OVERPASS_RETRY_ROUNDS = 3
+#: Backoff (seconds) before each retry round. ``backoff[i]`` is the wait
+#: *before* round ``i+1`` (so ``backoff[0]`` waits before round 1's retry).
+_BACKOFFS = [5.0, 10.0, 20.0]
+
+
 def _default_overpass(query: str, timeout: int = DEFAULT_TIMEOUT) -> dict[str, Any]:
+    """Overpass client with mirror sweep + retry + cooldown.
+
+    Mirrors that fail during this call are recorded in the cooldown map so
+    the next ``fetch_bundle`` category query won't repeat the same dead
+    URL at the top of the list. After the cooldown window (60s) they are
+    retried automatically.
+
+    Retries the full mirror sweep up to ``_OVERPASS_RETRY_ROUNDS`` times
+    with the per-round backoff in ``_BACKOFFS``. The retry only fires
+    when *every* mirror failed; a single successful mirror short-circuits.
+    """
     global _preferred_mirror
 
     data = urllib.parse.urlencode({"data": query}).encode("utf-8")
     last_err: Exception | None = None
-    mirrors = _mirror_order()
-    # A timeout already shrunk to the caller's remaining budget means there is
-    # no time for a second and third mirror; try only the best one.
-    if timeout <= 10:
-        mirrors = mirrors[:1]
-    for index, url in enumerate(mirrors):
-        try:
-            payload = _request_once(url, data, timeout)
-            # A rate-limited/overloaded mirror can return HTTP 200 with an empty
-            # body and a "remark" instead of an error — treat that as retryable.
-            if payload.get("remark") and not payload.get("elements"):
-                raise ValueError(f"overpass remark: {payload['remark'].strip()}")
-            _preferred_mirror = url
-            return payload
-        except (
-            urllib.error.URLError,
-            urllib.error.HTTPError,
-            TimeoutError,
-            OSError,
-            json.JSONDecodeError,
-            ValueError,
-        ) as exc:
-            last_err = exc
-            if url == _preferred_mirror:
-                _preferred_mirror = None  # it stopped working; re-discover
-            _LOG.warning("overpass error via %s: %s", url, exc)
-            # Back off only *between* mirrors, and only briefly: a bundle needs
-            # ~9 queries, so a long sleep here is multiplied nine-fold.
-            if index < len(mirrors) - 1:
-                time.sleep(2)
-    raise OSMError(f"Overpass failed on all {len(mirrors)} mirrors: {last_err}")
+    for round_idx in range(_OVERPASS_RETRY_ROUNDS):
+        mirrors = _mirror_order()
+        # A timeout already shrunk to the caller's remaining budget means there is
+        # no time for a second and third mirror; try only the best one.
+        if timeout <= 10:
+            mirrors = mirrors[:1]
+        for index, url in enumerate(mirrors):
+            try:
+                payload = _request_once(url, data, timeout)
+                # A rate-limited/overloaded mirror can return HTTP 200 with an empty
+                # body and a "remark" instead of an error — treat that as retryable.
+                if payload.get("remark") and not payload.get("elements"):
+                    raise ValueError(f"overpass remark: {payload['remark'].strip()}")
+                _preferred_mirror = url
+                _mirror_cooldown_until.pop(url, None)  # success → forget any prior cooldown
+                return payload
+            except (
+                urllib.error.URLError,
+                urllib.error.HTTPError,
+                TimeoutError,
+                OSError,
+                json.JSONDecodeError,
+                ValueError,
+            ) as exc:
+                last_err = exc
+                if url == _preferred_mirror:
+                    _preferred_mirror = None  # it stopped working; re-discover
+                _mirror_cooldown_until[url] = time.monotonic() + MIRROR_COOLDOWN
+                _LOG.warning("overpass error via %s: %s", url, exc)
+                # Back off only *between* mirrors, and only briefly: a bundle needs
+                # ~9 queries, so a long sleep here is multiplied nine-fold.
+                if index < len(mirrors) - 1:
+                    time.sleep(2)
+        # All mirrors in this round failed — wait before the next round
+        # (skip the wait after the final round, there's nothing left to try).
+        if round_idx < _OVERPASS_RETRY_ROUNDS - 1:
+            _LOG.info(
+                "all mirrors failed in round %d/%d; backing off %ss before retry",
+                round_idx + 1, _OVERPASS_RETRY_ROUNDS, _BACKOFFS[round_idx],
+            )
+            time.sleep(_BACKOFFS[round_idx])
+    raise OSMError(f"Overpass failed on all {len(OVERPASS_URLS)} mirrors after {_OVERPASS_RETRY_ROUNDS} rounds: {last_err}")
 
 
 def _bbox_clause(bbox: tuple[float, float, float, float]) -> str:

@@ -242,6 +242,12 @@ def city_map(ref: str) -> dict[str, Any]:
     Returns whichever map the bundle actually runs on — the real OSM one when
     it has it, the procedural spec otherwise — so the preview never shows a
     different city than the simulation would use.
+
+    The graceful degradation when ``manifest.map.mode == "real"`` but the OSM
+    bundle is missing is handled by :pyattr:`CityBundle.map_mode`, which
+    returns ``"virtual"`` in that case so the simulator and the panel agree
+    on the same file. We surface that distinction in the response so the
+    frontend can show a "real-map unavailable" hint.
     """
     from gaworld.world.city_map import (
         build_visualization_payload,
@@ -250,15 +256,16 @@ def city_map(ref: str) -> dict[str, Any]:
     )
 
     bundle = resolve_city(ref)
-    mode = bundle.map_mode
-    source = bundle.real_map_path if mode == "real" else bundle.virtual_map_path
+    requested_mode = str((bundle.manifest.get("map") or {}).get("mode", "virtual"))
+    effective_mode = bundle.map_mode  # already degrades real→virtual when missing
+    source = bundle.real_map_path if effective_mode == "real" else bundle.virtual_map_path
     if not source.exists():
         raise CityNotFoundError(f"城市「{bundle.display_name}」没有地图文件（{source.name}）")
 
     key = (str(source), source.stat().st_mtime)
     payload = _MAP_CACHE.get(key)
     if payload is None:
-        built = load_real_city_map(str(source)) if mode == "real" else load_city_map(str(source))
+        built = load_real_city_map(str(source)) if effective_mode == "real" else load_city_map(str(source))
         payload = build_visualization_payload(built)
         # The GeoJSON export roughly doubles the response and the canvas
         # renderer does not read it — the panel is a preview, not an export.
@@ -272,7 +279,9 @@ def city_map(ref: str) -> dict[str, Any]:
         "city": bundle.summary(),
         "map": payload,
         "meta": {
-            "mode": mode,
+            "mode": effective_mode,
+            "requested_mode": requested_mode,
+            "fell_back": requested_mode == "real" and effective_mode == "virtual",
             # Both an imagined and a name-seeded city run on a virtual map, but
             # calling a described one "procedurally generated" in the panel
             # misattributes the work the user's description actually did.
@@ -315,8 +324,8 @@ def knowledge(ref: str) -> dict[str, Any]:
 
 
 def rebuild_knowledge(payload: dict[str, Any]) -> dict[str, Any]:
-    from gaworld.city.create import build_knowledge
     from gaworld.city.context import clear_cache
+    from gaworld.city.create import build_knowledge
     from gaworld.city.geocode import Place
 
     bundle = resolve_city(str(payload.get("city") or ""))
