@@ -11,8 +11,6 @@
   var TABS = [
     { id: "dashboard", src: "/dashboard" },
     { id: "simviz", src: "/site/simviz/index.html" },
-    { id: "mapbox", src: "/site/citymap/mapbox.html?city=wuzhen" },
-    { id: "mapcompare", src: "/site/citymap/compare.html" },
     { id: "city", src: "/site/dashboard/city.html" },
     { id: "worlds", src: "/site/dashboard/worlds.html" },
     { id: "analytics", src: "/site/dashboard/analytics.html" },
