@@ -143,10 +143,36 @@
       const canvas = this.canvas;
       const host = document.createElement("div");
       host.className = "cmv-host";
+      // The legacy renderer relied on the caller's #mapCanvas CSS
+      // (width:100%; aspect-ratio:16/10) to size the slot. Carry those
+      // visual properties over to host so the panel still grows to the
+      // same rectangle as before — otherwise the flex parent collapses the
+      // slot to header-only height.
+      const ccs = getComputedStyle(canvas);
+      const propsToCopy = ["display", "width", "height", "aspectRatio", "border",
+                            "borderRadius", "boxSizing"];
+      const baseStyle = propsToCopy
+        .filter((p) => ccs[p] && ccs[p] !== "none" && ccs[p] !== "auto" && ccs[p] !== "")
+        .map((p) => p + ":" + ccs[p])
+        .join(";");
       host.style.cssText = [
-        "position:absolute", "inset:0", "overflow:hidden",
+        baseStyle,
+        "position:relative",        // host itself is a normal block
+        "overflow:hidden",          // clip the absolute Mapbox + overlay
         "background:#0c1118",
-      ].join(";");
+      ].join(";").replace(/^;/, "");
+
+      // Make the immediate parent a positioned, clipped container so any
+      // absolute children of host stay inside its box. Callers frequently
+      // leave the canvas wrapper as position:static — that let the old
+      // absolute host escape its slot and cover the whole page.
+      const parent = canvas.parentNode;
+      if (parent) {
+        const pcs = getComputedStyle(parent);
+        if (pcs.position === "static") parent.style.position = "relative";
+        if (pcs.overflow === "visible") parent.style.overflow = "hidden";
+      }
+
       // Mapbox container
       const mapEl = document.createElement("div");
       mapEl.className = "cmv-map";
@@ -170,23 +196,9 @@
         "border:1px solid rgba(255,255,255,.08)",
       ].join(";");
       host.appendChild(emptyEl);
-      // Insert host where canvas used to be. canvas was absolute-anchored
-      // by its callers; we keep the same footprint by appending at canvas's
-      // position with the same size.
-      const parent = canvas.parentNode;
+      // Insert host where canvas used to be.
       if (parent) {
-        const rect = canvas.getBoundingClientRect();
-        if (rect.width) host.style.width = rect.width + "px";
-        if (rect.height) host.style.height = rect.height + "px";
-        // If canvas had explicit positioning styles, mirror them.
-        const cs = getComputedStyle(canvas);
-        if (cs.position === "absolute" || cs.position === "relative" || cs.position === "fixed") {
-          host.style.position = cs.position;
-        }
         parent.replaceChild(host, canvas);
-        // Preserve legacy `this.canvas` for any external code still poking
-        // at it. Mapbox needs a positioned container, so we point canvas at
-        // the map element.
         this.host = host;
         this.overlay = overlay;
         this.mapEl = mapEl;
