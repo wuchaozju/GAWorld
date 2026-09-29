@@ -289,13 +289,18 @@
     async _initMap() {
       try {
         let map, kind;
+        // No fixed center here: we don't yet know where the trace is from,
+        // and a hardcoded Hangzhou center meant Chicago / London / Wuzhen
+        // traces would all open with the basemap framed on the wrong city.
+        // ``_refreshLayers`` calls ``fitBounds`` once the trace arrives,
+        // so we let the basemap pick its own default until then.
         if (this.token) {
           const mapboxgl = await ensureMapbox();
           mapboxgl.accessToken = this.token;
           const styleUrl = this.theme === "light" ? MAPBOX_LIGHT_STYLE : MAPBOX_DEFAULT_STYLE;
           map = new mapboxgl.Map({
             container: this.mapEl, style: styleUrl,
-            center: [120.1551, 30.2741], zoom: 12.5,
+            center: [0, 20], zoom: 1.6,
             attributionControl: true,
           });
           kind = "mapbox";
@@ -304,7 +309,7 @@
           const styleUrl = this.theme === "light" ? MAPLIBRE_LIGHT_STYLE : MAPLIBRE_DARK_STYLE;
           map = new maplibregl.Map({
             container: this.mapEl, style: styleUrl,
-            center: [120.1551, 30.2741], zoom: 12.5,
+            center: [0, 20], zoom: 1.6,
             attributionControl: true,
           });
           kind = "maplibre";
