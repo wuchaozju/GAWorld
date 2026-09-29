@@ -400,6 +400,8 @@
   "nav.simviz": "仿真回放",
   "nav.studio": "智能体工作台",
   "nav.worlds": "平行世界",
+  "nav.mapbox": "新版地图",
+  "nav.mapcompare": "地图对比",
   "population.checkup": "参数体检",
   "population.checkup_hint": "纯数学检查，不会生成任何人，跟着滑块实时更新。参数互相矛盾时会告诉你该改哪一个。",
   "population.current_batch": "当前这批人",

@@ -400,6 +400,8 @@
   "nav.simviz": "Simulation",
   "nav.studio": "Agent Studio",
   "nav.worlds": "Parallel Worlds",
+  "nav.mapbox": "Mapbox",
+  "nav.mapcompare": "Compare",
   "population.checkup": "Parameter check",
   "population.checkup_hint": "A purely mathematical check — it generates no people and updates live as you move the sliders. When parameters contradict each other it tells you which one to change.",
   "population.current_batch": "Current cohort",
