@@ -1,9 +1,9 @@
 import atexit
 import csv
-import hmac
 import datetime
-import math
+import hmac
 import json
+import math
 import os
 import re
 import subprocess
@@ -12,14 +12,13 @@ import threading
 import time
 import uuid
 from copy import deepcopy
+from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from http.cookies import SimpleCookie
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from gaworld.settings import CONFIG
 from gaworld.apps import analytics, replay_runs
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
@@ -27,6 +26,7 @@ from gaworld.family.lifecycle import family_facts
 from gaworld.integrations.fos_prompt import generate_fos_prompt
 from gaworld.io.avatar import build_agent_avatar_svg
 from gaworld.logging_setup import get_logger
+from gaworld.settings import CONFIG
 
 _LOG = get_logger("gaworld.dashboard")
 
@@ -206,9 +206,9 @@ def _effective_config():
     ``_dashboard_config()`` rather than the loader's relative path, keeping
     the module path constants the single lever over where it reads.
     """
+    from gaworld.city.config import apply_city
     from gaworld.settings.defaults import build_default_config
     from gaworld.settings.overrides import load_env_override, load_environment_config
-    from gaworld.city.config import apply_city
 
     cfg = build_default_config()
     env_override = load_env_override()
@@ -528,8 +528,26 @@ def _sanitize_config_patch(payload):
     if "agent_ids" in payload:
         ids = payload.get("agent_ids")
         if isinstance(ids, str):
-            ids = [part.strip() for part in ids.split(",")]
-        patch["agent_ids"] = [int(item) for item in ids if str(item).strip()]
+            # Accept "12" as "agents 1..12" — a single integer is shorthand
+            # for "first N residents" — and "1,2,3" as a literal list. The
+            # field hint in the UI already promises this; the parser now
+            # actually does it.
+            stripped = ids.strip()
+            if stripped and "," not in stripped and stripped.isdigit():
+                ids = list(range(1, int(stripped) + 1))
+            else:
+                ids = [part.strip() for part in stripped.split(",")]
+        # Drop tokens that aren't integers — a typo in the field shouldn't
+        # 400 the whole config save.
+        patch["agent_ids"] = []
+        for item in ids or []:
+            text = str(item).strip()
+            if not text:
+                continue
+            try:
+                patch["agent_ids"].append(int(text))
+            except (TypeError, ValueError):
+                continue
     if "simulate_realtime" in payload:
         patch["simulate_realtime"] = bool(payload["simulate_realtime"])
     if "time_step_minutes" in payload:
