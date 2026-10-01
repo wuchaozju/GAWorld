@@ -160,6 +160,12 @@
         "position:relative",        // host itself is a normal block
         "overflow:hidden",          // clip the absolute Mapbox + overlay
         "background:#0c1118",
+        // Default to a 16:10 box when the caller didn't pin a height: some
+        // pages (e.g. the city tab) wrap canvas in a `.city-map-wrap` that
+        // relies on the canvas's intrinsic aspect-ratio to size itself;
+        // without this host collapses to zero height. The dashboard tab
+        // already pins aspect-ratio via #mapCanvas so this is additive.
+        "aspect-ratio:16/10",
       ].join(";").replace(/^;/, "");
 
       // Make the immediate parent a positioned, clipped container so any
@@ -403,18 +409,20 @@
         },
       });
       this.layersInstalled = true;
-      // If the trace had a bounds, frame the map on first install.
-      if (!this._framed) {
-        if (nodesArr.length) {
-          let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
-          for (const n of nodesArr) {
-            if (n.lng < minLng) minLng = n.lng; if (n.lat < minLat) minLat = n.lat;
-            if (n.lng > maxLng) maxLng = n.lng; if (n.lat > maxLat) maxLat = n.lat;
-          }
-          this.map.fitBounds([[minLng - 0.01, minLat - 0.01], [maxLng + 0.01, maxLat + 0.01]],
-                             { padding: 50, duration: 0 });
+      // Frame the map on the current trace's bounds every time, not just
+      // on first install: a user switching between cities in the console
+      // city panel expects the basemap to follow. The ``isStyleLoaded``
+      // guard above means we only run this after the basemap is ready,
+      // which is the only timing constraint here. ``duration: 0`` makes
+      // the snap feel instant when the user picks a city.
+      if (nodesArr.length) {
+        let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+        for (const n of nodesArr) {
+          if (n.lng < minLng) minLng = n.lng; if (n.lat < minLat) minLat = n.lat;
+          if (n.lng > maxLng) maxLng = n.lng; if (n.lat > maxLat) maxLat = n.lat;
         }
-        this._framed = true;
+        this.map.fitBounds([[minLng - 0.01, minLat - 0.01], [maxLng + 0.01, maxLat + 0.01]],
+                           { padding: 50, duration: 0 });
       }
       this._drawOverlay();
     }
