@@ -41,7 +41,7 @@ _MAX_ROWS = 20000
 def _records_dir() -> str:
     from gaworld.apps import dashboard_server as ds
 
-    return str(getattr(ds, "RECORDS_DIR", os.path.join("output", "records")))
+    return str(ds._records_dir())
 
 
 def _read_table(name: str) -> list[dict[str, Any]]:

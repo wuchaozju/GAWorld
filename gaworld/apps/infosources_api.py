@@ -88,7 +88,7 @@ def diets_payload(query: dict) -> tuple[dict[str, Any], int]:
 
 def reads_payload(query: dict) -> dict[str, Any]:
     """Recent ``infosources.read`` rows, newest first, filterable by item/source/agent."""
-    path = os.path.join(_ds().RECORDS_DIR, "infosources.read.jsonl")
+    path = os.path.join(_ds()._records_dir(), "infosources.read.jsonl")
     want = {k: _first(query, k) for k in ("url", "source_id", "agent_id")}
     limit = _int(query, "limit", 100)
     rows: list[dict[str, Any]] = []

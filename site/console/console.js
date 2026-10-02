@@ -16,11 +16,13 @@
     { id: "analytics", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },
     { id: "population", src: "/site/dashboard/population.html" },
+    { id: "play", src: "/site/dashboard/play.html" },
     { id: "survey", src: "/site/dashboard/survey.html" },
     { id: "research", src: "/site/dashboard/research.html" },
     { id: "collaboration", src: "/site/dashboard/collaboration.html" },
     { id: "games", src: "/site/dashboard/games.html" },
     { id: "external", src: "/site/dashboard/external.html" },
+    { id: "admin", src: "/site/dashboard/admin.html" },
     { id: "settings", src: "/site/dashboard/settings.html" },
     { id: "docs", src: "/site/dashboard/docs.html" },
   ];
@@ -250,4 +252,152 @@
 
   if (readCollapsed()) document.body.classList.add("nav-collapsed");
   activate(currentTabId());
+
+  // Accounts mode only: who is signed in, and a way out. In single-user mode
+  // /api/auth/me answers {mode: "single"} and the chip stays hidden.
+  fetch("/api/auth/me")
+    .then(function (resp) { return resp.ok ? resp.json() : null; })
+    .then(function (me) {
+      if (!me || me.mode !== "accounts" || !me.user) return;
+      document.getElementById("userName").textContent = me.user.nickname;
+      // The teacher console is for admins; the server checks the role again.
+      var adminTab = document.querySelector('[data-tab="admin"]');
+      if (adminTab) adminTab.hidden = me.user.role !== "admin";
+      document.getElementById("userChip").hidden = false;
+      document.getElementById("logoutBtn").hidden = !me.user.id;  // the token admin has no session
+      document.getElementById("logoutBtn").addEventListener("click", function () {
+        fetch("/api/auth/logout", { method: "POST" }).then(function () { location.href = "/login"; });
+      });
+    })
+    .catch(function () {});
+
+  // Worlds (accounts mode only): which world every panel of this browser is
+  // looking at. The choice is a server-side cookie, so switching reloads the
+  // page and every iframe follows; the server re-checks access each request.
+  var worldState = null;
+
+  function postJson(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    }).then(function (resp) {
+      return resp.json().then(function (data) {
+        if (!resp.ok) throw new Error(data.error || resp.status);
+        return data;
+      });
+    });
+  }
+
+  function worldLabel(w) {
+    return w.mine ? w.name : w.name + " · " + w.owner;
+  }
+
+  function renderWorlds() {
+    if (!worldState) return;
+    var select = document.getElementById("worldSelect");
+    select.innerHTML = "";
+    var shared = document.createElement("option");
+    shared.value = "";
+    shared.textContent = text("world.shared");
+    select.appendChild(shared);
+    worldState.worlds.forEach(function (w) {
+      var option = document.createElement("option");
+      option.value = w.id;
+      option.textContent = worldLabel(w);
+      select.appendChild(option);
+    });
+    var current = worldState.current;
+    select.value = current ? current.id : "";
+    var note = document.getElementById("worldCurrentNote");
+    if (!current) {
+      note.textContent = text(worldState.default_writable ? "world.shared_admin" : "world.shared_note");
+    } else if (current.can_write) {
+      note.textContent = current.name;
+    } else {
+      note.textContent = window.__f ? window.__f("world.readonly", { owner: current.owner }) : current.owner;
+    }
+    document.getElementById("worldOwnerControls").hidden = !(current && current.can_write);
+    if (current) document.getElementById("worldVisibility").value = current.visibility;
+    document.getElementById("worldChip").hidden = false;
+  }
+
+  function loadWorlds() {
+    return fetch("/api/worlds")
+      .then(function (resp) { return resp.ok ? resp.json() : null; })
+      .then(function (data) {
+        if (!data || data.mode !== "accounts") return;
+        worldState = data;
+        renderWorlds();
+      });
+  }
+
+  function loadCities() {
+    return fetch("/api/config")
+      .then(function (resp) { return resp.ok ? resp.json() : { cities: [] }; })
+      .then(function (cfg) {
+        var select = document.getElementById("worldCity");
+        select.innerHTML = "";
+        var base = document.createElement("option");
+        base.value = "";
+        base.textContent = text("world.default_city");
+        select.appendChild(base);
+        (cfg.cities || []).filter(function (c) { return c.population > 0; }).forEach(function (c) {
+          var option = document.createElement("option");
+          option.value = c.slug;
+          option.textContent = c.display_name + " · " + c.population;
+          select.appendChild(option);
+        });
+      });
+  }
+
+  function worldError(err) {
+    document.getElementById("worldError").textContent = err ? String(err.message || err) : "";
+  }
+
+  document.getElementById("worldSelect").addEventListener("change", function (event) {
+    postJson("/api/worlds/select", { id: event.target.value }).then(function () { location.reload(); }, worldError);
+  });
+  document.getElementById("worldManageBtn").addEventListener("click", function () {
+    worldError(null);
+    loadCities();
+    if (worldState && worldState.current && worldState.current.can_write) {
+      fetch("/api/config").then(function (resp) { return resp.json(); }).then(function (cfg) {
+        document.getElementById("worldWait").value = (cfg.multiplayer || {}).wait_for_players_seconds || 0;
+      });
+    }
+    document.getElementById("worldDialog").showModal();
+  });
+  document.getElementById("worldCloseBtn").addEventListener("click", function () {
+    document.getElementById("worldDialog").close();
+  });
+  document.getElementById("worldCreateForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var button = document.getElementById("worldCreateBtn");
+    button.disabled = true;
+    postJson("/api/worlds/create", {
+      name: document.getElementById("worldName").value.trim(),
+      city: document.getElementById("worldCity").value,
+    }).then(function () { location.reload(); }, function (err) {
+      button.disabled = false;
+      worldError(err);
+    });
+  });
+  document.getElementById("worldVisibility").addEventListener("change", function (event) {
+    var current = worldState && worldState.current;
+    if (!current) return;
+    postJson("/api/worlds/" + current.id + "/visibility", { visibility: event.target.value })
+      .then(loadWorlds, worldError);
+  });
+  document.getElementById("worldWait").addEventListener("change", function (event) {
+    postJson("/api/config", { multiplayer: { wait_for_players_seconds: Number(event.target.value) || 0 } })
+      .then(function () { worldError(null); }, worldError);
+  });
+  document.getElementById("worldDeleteBtn").addEventListener("click", function () {
+    var current = worldState && worldState.current;
+    if (!current || !window.confirm(text("world.delete_confirm"))) return;
+    postJson("/api/worlds/" + current.id + "/delete", {}).then(function () { location.reload(); }, worldError);
+  });
+  document.addEventListener("locale-changed", renderWorlds);
+  loadWorlds().catch(function () {});
 })();

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAWorld · 登录</title>
+<!-- Self-contained on purpose: before signing in, /site/auth/ is all a visitor can load. -->
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         font-family: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif; background: #f4f1ea; color: #222; }
+  main { width: min(360px, 92vw); background: #fff; border-radius: 12px; padding: 28px;
+         box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.hint { margin: 0 0 18px; color: #666; font-size: 13px; }
+  label { display: block; font-size: 13px; margin: 12px 0 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 9px 10px; font-size: 15px;
+          border: 1px solid #ccc; border-radius: 8px; }
+  button { width: 100%; margin-top: 18px; padding: 10px; font-size: 15px; border: 0; border-radius: 8px;
+           background: #2f4f7f; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .error { color: #b3261e; font-size: 13px; min-height: 18px; margin-top: 10px; }
+  nav { margin-top: 16px; font-size: 13px; display: flex; justify-content: space-between; }
+  nav a { color: #2f4f7f; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">登录 GAWorld</h1>
+  <p class="hint" id="hint">用昵称和密码登录。</p>
+  <form id="form" autocomplete="on">
+    <div id="code-row" hidden>
+      <label for="code" id="code-label">邀请码</label>
+      <input id="code" name="code" autocomplete="off">
+    </div>
+    <div id="nickname-row">
+      <label for="nickname">昵称</label>
+      <input id="nickname" name="nickname" autocomplete="username" maxlength="32">
+    </div>
+    <label for="password">密码</label>
+    <input id="password" name="password" type="password" minlength="8" autocomplete="current-password">
+    <div id="confirm-row" hidden>
+      <label for="confirm">再输一次密码</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password">
+    </div>
+    <button id="submit" type="submit">登录</button>
+    <div class="error" id="error" role="alert"></div>
+  </form>
+  <nav>
+    <a href="/join" id="to-join">有邀请码？注册</a>
+    <a href="/reset" id="to-reset">有重置码？重设密码</a>
+    <a href="/login" id="to-login" hidden>返回登录</a>
+  </nav>
+</main>
+<script>
+(function () {
+  var MODES = {
+    login: { title: "登录 GAWorld", hint: "用昵称和密码登录。", button: "登录", api: "/api/auth/login" },
+    join: { title: "注册", hint: "用老师发的邀请码注册，密码至少 8 位。", button: "注册并登录", api: "/api/auth/register" },
+    reset: { title: "重设密码", hint: "用老师发的一次性重置码设置新密码。", button: "重设并登录", api: "/api/auth/reset" }
+  };
+  var mode = location.pathname.replace(/\/+$/, "").split("/").pop();
+  if (!MODES[mode]) mode = "login";
+  var params = new URLSearchParams(location.search);
+  var next = params.get("next") || "/console";
+  if (next.charAt(0) !== "/" || next.charAt(1) === "/" || next.charAt(1) === "\\") next = "/console";
+  // The server never sees "#city"; the browser carries it over onto this page.
+  if (location.hash && next.indexOf("#") < 0) next += location.hash;
+  var cfg = MODES[mode];
+  var $ = function (id) { return document.getElementById(id); };
+
+  $("title").textContent = cfg.title;
+  $("hint").textContent = cfg.hint;
+  $("submit").textContent = cfg.button;
+  document.title = "GAWorld · " + cfg.title;
+  var setting = mode !== "login";
+  $("code-row").hidden = !setting;
+  $("confirm-row").hidden = !setting;
+  $("nickname-row").hidden = mode === "reset";
+  $("code-label").textContent = mode === "reset" ? "重置码" : "邀请码";
+  $("code").value = params.get("code") || "";
+  $("password").autocomplete = setting ? "new-password" : "current-password";
+  $("to-join").hidden = mode !== "login";
+  $("to-reset").hidden = mode !== "login";
+  $("to-login").hidden = mode === "login";
+  (setting && !$("code").value ? $("code") : mode === "reset" ? $("password") : $("nickname")).focus();
+
+  $("form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var body = { nickname: $("nickname").value.trim(), password: $("password").value, code: $("code").value.trim() };
+    if (setting && body.password !== $("confirm").value) {
+      $("error").textContent = "两次输入的密码不一致";
+      return;
+    }
+    $("submit").disabled = true;
+    $("error").textContent = "";
+    fetch(cfg.api, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (resp) { return resp.json().then(function (data) { return { ok: resp.ok, data: data }; }); })
+      .then(function (result) {
+        if (result.ok) { location.replace(next); return; }
+        $("error").textContent = result.data.error || "失败，请重试";
+        $("submit").disabled = false;
+      })
+      .catch(function () {
+        $("error").textContent = "网络错误，请重试";
+        $("submit").disabled = false;
+      });
+  });
+})();
+</script>
+</body>
+</html>

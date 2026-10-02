@@ -285,7 +285,7 @@ def traffic_runtime() -> dict[str, Any]:
     file means the layer is off — which is a different statement from "the
     roads were clear" and is reported as such.
     """
-    records_dir = str(getattr(_ds(), "RECORDS_DIR", os.path.join("output", "records")))
+    records_dir = str(_ds()._records_dir())
     path = os.path.join(records_dir, "traffic.tick.jsonl")
     rows: list[dict[str, Any]] = []
     try:

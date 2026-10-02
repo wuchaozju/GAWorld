@@ -135,6 +135,104 @@ body {
   border-color: var(--green);
 }
 
+/* ------------------------------------------------- signed-in user (accounts) */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.user-chip button {
+  background: none;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------ worlds (accounts) */
+.world-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.world-chip select {
+  max-width: 220px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.world-chip button,
+.world-dialog button.open-new {
+  background: none;
+  cursor: pointer;
+}
+
+.world-dialog {
+  width: min(420px, 92vw);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.world-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.world-dialog section,
+.world-dialog form {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.world-dialog label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.world-dialog input,
+.world-dialog select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.world-dialog button[type="submit"],
+.world-dialog button.danger {
+  margin-top: 6px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  background: var(--green-deep);
+}
+
+.world-dialog button.danger {
+  background: #b3261e;
+}
+
+.world-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.world-error {
+  min-height: 18px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #b3261e;
+}
+
 /* --------------------------------------------------------- language switch */
 .lang-switch {
   display: flex;
@@ -345,6 +443,12 @@ html[lang="en"] .sidebar .en {
   height: 100%;
   border: 0;
   background: var(--paper);
+}
+
+/* The teacher console tab is only unhidden for admins; `display: flex` above
+   would otherwise win over the hidden attribute. */
+.tab[hidden] {
+  display: none;
 }
 
 .frames iframe[hidden] {

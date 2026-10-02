@@ -22,6 +22,14 @@
       <strong class="crumb-view" id="crumbView"></strong>
     </div>
     <div class="bar-right">
+      <span class="world-chip" id="worldChip" hidden>
+        <select id="worldSelect" data-i18n-aria="world.label" aria-label="世界"></select>
+        <button type="button" class="open-new" id="worldManageBtn" data-i18n="world.manage">管理世界</button>
+      </span>
+      <span class="user-chip" id="userChip" hidden>
+        <span id="userName"></span>
+        <button type="button" class="open-new" id="logoutBtn" data-i18n="console.logout">退出登录</button>
+      </span>
       <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
       <div class="lang-switch" role="group" data-i18n-aria="lang.switch_label" aria-label="切换语言">
         <button type="button" class="lang-btn" id="lang-zh-btn" lang="zh-CN" aria-pressed="true">中文</button>
@@ -77,6 +85,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18.5 14.5h.01"/></svg>
             <span class="tab-text"><span data-i18n="nav.games">游戏场</span><span class="en">Playground</span></span>
           </button>
+          <button class="tab" role="tab" data-tab="play">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 20a5 5 0 0 1 10 0M11 20a5 5 0 0 1 10 0"/></svg>
+            <span class="tab-text"><span data-i18n="nav.play">多人共玩</span><span class="en">Play Together</span></span>
+          </button>
           <button class="tab" role="tab" data-tab="survey">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/></svg>
             <span class="tab-text"><span data-i18n="nav.survey">群体采访</span><span class="en">Group Interview</span></span>
@@ -101,6 +113,10 @@
 
         <section class="nav-group">
           <h2 class="nav-group-label"><span data-i18n="nav.group_system">系统</span><span class="en">System</span></h2>
+          <button class="tab" role="tab" data-tab="admin" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            <span class="tab-text"><span data-i18n="nav.admin">教师控制台</span><span class="en">Teacher</span></span>
+          </button>
           <button class="tab" role="tab" data-tab="settings">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>
             <span class="tab-text"><span data-i18n="nav.settings">配置</span><span class="en">Settings</span></span>
@@ -122,6 +138,33 @@
     </main>
   </div>
 
+  <dialog class="world-dialog" id="worldDialog">
+    <section id="worldCurrent">
+      <h2 data-i18n="world.current_title">当前世界</h2>
+      <p class="world-note" id="worldCurrentNote"></p>
+      <div id="worldOwnerControls" hidden>
+        <label for="worldVisibility" data-i18n="world.visibility">可见性</label>
+        <select id="worldVisibility">
+          <option value="private" data-i18n="world.vis_private">私有：只有我</option>
+          <option value="class" data-i18n="world.vis_class">班级：大家只读</option>
+          <option value="open" data-i18n="world.vis_open">开放：大家可进入查看</option>
+        </select>
+        <label for="worldWait" data-i18n="world.wait_label">每个 tick 等玩家（秒，0 = 不等）</label>
+        <input id="worldWait" type="number" min="0" max="300" step="5" value="0">
+        <button type="button" class="danger" id="worldDeleteBtn" data-i18n="world.delete">删除这个世界</button>
+      </div>
+    </section>
+    <form id="worldCreateForm">
+      <h2 data-i18n="world.new_title">新建世界</h2>
+      <label for="worldName" data-i18n="world.name">名称</label>
+      <input id="worldName" maxlength="64" required>
+      <label for="worldCity" data-i18n="world.city">城市</label>
+      <select id="worldCity"></select>
+      <button type="submit" id="worldCreateBtn" data-i18n="world.create">创建并进入</button>
+    </form>
+    <p class="world-error" id="worldError" role="alert"></p>
+    <button type="button" class="open-new" id="worldCloseBtn" data-i18n="world.close">关闭</button>
+  </dialog>
   <script src="/site/dashboard/i18n.js"></script>
   <script src="/site/console/console.js"></script>
 </body>

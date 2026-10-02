@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="admin.page_title">GAWorld · 教师控制台</title>
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <style>
+    .admin-grid { display: grid; gap: 16px; }
+    .admin-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+    .admin-row label { display: grid; gap: 4px; font-size: 13px; color: var(--muted, #666); }
+    .admin-row input, .admin-row select, .admin-grid textarea { padding: 7px 8px; border: 1px solid var(--line, #ddd);
+      border-radius: 8px; font: inherit; }
+    .admin-grid textarea { width: 100%; box-sizing: border-box; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+    .admin-table th, .admin-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line, #eee);
+      vertical-align: middle; }
+    .admin-table th { font-weight: 600; color: var(--muted, #666); font-size: 13px; }
+    #aTargets label { display: flex; align-items: center; gap: 6px; color: inherit; font-size: 14px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #bbb; margin-right: 6px; }
+    .dot.on { background: #2f9e5b; }
+    .codes { font-family: ui-monospace, Menlo, monospace; white-space: pre-wrap; background: var(--panel-soft, #f6f6f3);
+      padding: 10px; border-radius: 8px; font-size: 13px; }
+    .admin-note { font-size: 13px; color: var(--muted, #666); margin: 4px 0 0; }
+    .admin-msg { min-height: 18px; font-size: 13px; }
+    .admin-msg.error { color: #b3261e; }
+  </style>
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell admin-grid">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="admin.kicker">GAWorld · Teacher Console</p>
+          <h1 data-i18n="admin.headline">教师控制台</h1>
+          <p class="sub" data-i18n="admin.sub">发邀请码、看名单与用量、管理所有世界、向全班广播事件。</p>
+        </div>
+      </div>
+    </header>
+    <p id="aMsg" class="admin-msg" role="status"></p>
+
+    <section class="panel">
+      <h3 data-i18n="admin.limits">班级上限</h3>
+      <div class="admin-row">
+        <label><span data-i18n="admin.max_runs">全服同时运行的仿真</span><input id="aMaxRuns" type="number" min="1"></label>
+        <label><span data-i18n="admin.max_per_user">每人同时运行</span><input id="aMaxPerUser" type="number" min="1"></label>
+        <label><span data-i18n="admin.quota">每人每日模型调用（0 = 不限）</span><input id="aQuota" type="number" min="0" step="100"></label>
+        <button class="button primary" id="aLimitsSave" type="button" data-i18n="admin.save">保存</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 data-i18n="admin.invites">邀请码</h3>
+      <div class="admin-row">
+        <label><span data-i18n="admin.count">数量</span><input id="aCount" type="number" min="1" max="200" value="30"></label>
+        <label><span data-i18n="admin.label">班级标签</span><input id="aLabel" placeholder="周三班"></label>
+        <label><span data-i18n="admin.expires">有效天数</span><input id="aExpires" type="number" min="1" value="14"></label>
+        <label><span data-i18n="admin.can_city">可以建城</span><input id="aCanCity" type="checkbox"></label>
+        <button class="button primary" id="aInvite" type="button" data-i18n="admin.generate">生成</button>
+      </div>
+      <p class="admin-note" data-i18n="admin.codes_note">邀请码只显示这一次，请立刻复制发给学生；学生打开链接注册并设置密码。</p>
+      <div id="aCodes" class="codes" hidden></div>
+      <table class="admin-table">
+        <thead><tr>
+          <th data-i18n="admin.label">班级标签</th><th data-i18n="admin.status">状态</th>
+          <th data-i18n="admin.expires_at">到期</th><th></th>
+        </tr></thead>
+        <tbody id="aInviteRows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h3 data-i18n="admin.roster">名单</h3>
+      <table class="admin-table">
+        <thead><tr>
+          <th data-i18n="admin.nickname">昵称</th><th data-i18n="admin.label">班级标签</th>
+          <th data-i18n="admin.calls">今日 / 累计调用</th><th data-i18n="admin.can_city">可以建城</th><th></th>
+        </tr></thead>
+        <tbody id="aUsers"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h3 data-i18n="admin.worlds">世界</h3>
+      <table class="admin-table">
+        <thead><tr>
+          <th data-i18n="admin.world">世界</th><th data-i18n="admin.owner">属主</th><th data-i18n="admin.city">城市</th>
+          <th data-i18n="admin.visibility">可见性</th><th data-i18n="admin.run">运行</th>
+          <th data-i18n="admin.calls_today">今日调用</th><th></th>
+        </tr></thead>
+        <tbody id="aWorlds"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h3 data-i18n="admin.broadcast">广播事件</h3>
+      <p class="admin-note" data-i18n="admin.broadcast_note">给所选世界的每一位居民同一个生活事件：运行中的世界下一个 tick 生效，没在运行的世界下次启动时生效。</p>
+      <div id="aTargets" class="admin-row"></div>
+      <div class="admin-row">
+        <label><span data-i18n="admin.title">标题</span><input id="aTitle" maxlength="80" placeholder="台风过境"></label>
+        <label><span data-i18n="admin.severity">强度</span><input id="aSeverity" type="range" min="0" max="1" step="0.1" value="0.6"></label>
+      </div>
+      <textarea id="aDesc" rows="2" data-i18n-placeholder="admin.desc_placeholder" placeholder="全市停课停工一天，地铁停运。"></textarea>
+      <div class="admin-row"><button class="button primary" id="aBroadcast" type="button" data-i18n="admin.send">广播</button></div>
+    </section>
+
+    <section class="panel">
+      <h3 data-i18n="admin.audit">审计</h3>
+      <table class="admin-table">
+        <thead><tr><th data-i18n="admin.when">时间</th><th data-i18n="admin.nickname">昵称</th>
+          <th data-i18n="admin.action">操作</th><th data-i18n="admin.detail">详情</th></tr></thead>
+        <tbody id="aAudit"></tbody>
+      </table>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/admin.js"></script>
+</body>
+</html>

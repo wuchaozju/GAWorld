@@ -1,4 +1,5 @@
 import atexit
+import contextvars
 import csv
 import datetime
 import hmac
@@ -19,7 +20,10 @@ from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from gaworld.apps import analytics, replay_runs
+from gaworld import accounts, worlds
+from gaworld.accounts import context as request_context
+from gaworld.accounts import policy as access_policy
+from gaworld.apps import accounts_api, analytics, replay_runs
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
@@ -85,6 +89,52 @@ TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
 _COLLABORATION_LOCK = threading.Lock()
+
+#: The request's active world (a row from the account database), or None for
+#: the shared default world. Set by ``_guard`` per request; every path helper
+#: below reads it, so the module constants above stay the default world's.
+_WORLD = request_context.WORLD
+#: The signed-in user of the request (None in single-user mode). Queued and
+#: scheduled starts carry it in their copied context, for the per-user limit.
+_USER = request_context.USER
+WORLD_COOKIE = "gaworld_world"
+
+
+def _current_world():
+    return _WORLD.get()
+
+
+def _world_file(*parts):
+    """Absolute path inside the active world's directory."""
+    return os.path.join(REPO_ROOT, worlds.root(_current_world()["id"]), *parts)
+
+
+def _config_path():
+    """Where `POST /api/config` writes: the world's config, else the global file."""
+    world = _current_world()
+    return worlds.config_path(REPO_ROOT, world["id"]) if world else DASHBOARD_CONFIG_PATH
+
+
+def _profile_path():
+    world = _current_world()
+    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[1]) if world else PROFILE_PATH
+
+
+def _state_csv_path():
+    world = _current_world()
+    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[0]) if world else STATE_CSV_PATH
+
+
+def _economy_snapshot_path():
+    return _world_file("economy", "wealth_snapshot.csv") if _current_world() else ECONOMY_SNAPSHOT_PATH
+
+
+def _records_dir():
+    return _world_file("records") if _current_world() else RECORDS_DIR
+
+
+def _run_log_path():
+    return _world_file("run.log") if _current_world() else RUN_LOG_PATH
 
 
 def _deep_update(base, patch):
@@ -212,12 +262,47 @@ def _effective_config():
 
     cfg = build_default_config()
     env_override = load_env_override()
+    world = _current_world()
     _deep_update(cfg, _dashboard_config())
+    if world:
+        _deep_update(cfg, worlds.read_config(REPO_ROOT, world["id"]))
     _deep_update(cfg, env_override)
     _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
     apply_city(cfg, root=REPO_ROOT)
+    if world:
+        # Last but the environment: a world's paths beat the city's run root.
+        _deep_update(cfg, worlds.overrides(world["id"]))
     _deep_update(cfg, env_override)
     return cfg
+
+
+def _city_seed_files(city):
+    """``(slug, state_csv, profiles_md)`` a new world copies its residents from.
+
+    ``city`` empty means the default population under ``data/``.
+    """
+    from gaworld.city.config import apply_city
+    from gaworld.settings.defaults import build_default_config
+
+    cfg = build_default_config()
+    slug = ""
+    if city:
+        from gaworld.city.bundle import CityNotFoundError, resolve_city
+
+        try:
+            bundle = resolve_city(city)
+        except CityNotFoundError as exc:
+            raise ValueError(str(exc)) from exc
+        if bundle.population_count <= 0:
+            raise ValueError(f"城市「{bundle.display_name}」还没有居民，无法建立世界")
+        slug = bundle.slug
+        cfg["city"] = slug
+        apply_city(cfg, root=REPO_ROOT)
+    csv_src = os.path.join(REPO_ROOT, str(cfg.get("csv_path") or ""))
+    md_src = os.path.join(REPO_ROOT, str(cfg.get("md_path") or ""))
+    if not (os.path.isfile(csv_src) and os.path.isfile(md_src)):
+        raise ValueError("找不到这座城市的居民文件")
+    return slug, csv_src, md_src
 
 
 def _repo_path(value):
@@ -457,6 +542,9 @@ def _sim_span(cfg):
 
 def _config_summary():
     cfg = _effective_config()
+    world = _current_world()
+    # The layer the run toolbar edits: the world's own config, or the global file.
+    layer = worlds.read_config(REPO_ROOT, world["id"]) if world else _dashboard_config()
     routing = cfg.get("llm", {}).get("routing", {})
     return {
         "agent_ids": cfg.get("agent_ids", []),
@@ -473,8 +561,9 @@ def _config_summary():
             "routing": routing,
         },
         "visualization": cfg.get("visualization", {}),
-        "dashboard_config": _dashboard_config(),
-        "city": _dashboard_config().get("city", ""),
+        "multiplayer": cfg.get("multiplayer", {}),
+        "dashboard_config": layer,
+        "city": layer.get("city", ""),
         "cities": _city_choices(),
     }
 
@@ -550,6 +639,11 @@ def _sanitize_config_patch(payload):
                 continue
     if "simulate_realtime" in payload:
         patch["simulate_realtime"] = bool(payload["simulate_realtime"])
+    multiplayer = payload.get("multiplayer")
+    if isinstance(multiplayer, dict) and "wait_for_players_seconds" in multiplayer:
+        # Each tick waits up to this long for the people playing residents.
+        seconds = max(0, min(300, int(multiplayer["wait_for_players_seconds"] or 0)))
+        patch["multiplayer"] = {"wait_for_players_seconds": seconds}
     if "time_step_minutes" in payload:
         value = payload["time_step_minutes"]
         patch["time_step_minutes"] = None if value in ("", None, 0, "0") else value
@@ -630,16 +724,35 @@ def _validated_city(value):
 
 
 def _save_config_patch(payload):
-    current = _dashboard_config()
+    world = _current_world()
+    current = worlds.read_config(REPO_ROOT, world["id"]) if world else _dashboard_config()
     patch = _sanitize_config_patch(payload)
+    if world:
+        # A world's residents were copied from its city when it was made;
+        # pointing it at another city would mix two populations.
+        patch.pop("city", None)
     _deep_update(current, patch)
-    _atomic_write_json(DASHBOARD_CONFIG_PATH, current)
+    _atomic_write_json(_config_path(), current)
+    if "multiplayer" in patch:
+        # The multiplayer plugin reads this every tick: hand it to a running
+        # simulator now rather than at its next start.
+        from gaworld.apps import kernel_api
+        from gaworld.kernel import remote
+
+        try:
+            remote.enqueue(
+                kernel_api._queue_path(),
+                "update_config",
+                {"path": "multiplayer.wait_for_players_seconds", "value": patch["multiplayer"]["wait_for_players_seconds"]},
+            )
+        except LookupError:
+            pass  # nothing running; the next run reads the saved config
     return _config_summary()
 
 
 def _profile_sections():
     try:
-        with open(PROFILE_PATH, "r", encoding="utf-8") as f:
+        with open(_profile_path(), "r", encoding="utf-8") as f:
             text = f.read()
     except OSError:
         return "", []
@@ -690,7 +803,7 @@ def _save_agent_profile(agent_id, profile_text):
         raise ValueError(f"Profile {agent_id} not found")
     new_block = str(profile_text).strip() + "\n\n"
     updated = full_text[:target["start"]] + new_block + full_text[target["end"]:]
-    with open(PROFILE_PATH, "w", encoding="utf-8") as f:
+    with open(_profile_path(), "w", encoding="utf-8") as f:
         f.write(updated)
     return _agent_profile(agent_id)
 
@@ -703,9 +816,9 @@ def _save_agent_profile(agent_id, profile_text):
 # ---------------------------------------------------------------------------
 
 def _read_state_rows():
-    if not os.path.exists(STATE_CSV_PATH):
+    if not os.path.exists(_state_csv_path()):
         return [], []
-    with open(STATE_CSV_PATH, "r", encoding="utf-8-sig", newline="") as f:
+    with open(_state_csv_path(), "r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         fieldnames = list(reader.fieldnames or [])
         rows = [dict(row) for row in reader]
@@ -751,13 +864,14 @@ def _agent_state(agent_id):
 
 
 def _atomic_write_state(fieldnames, rows):
-    tmp_path = STATE_CSV_PATH + ".tmp"
+    target = _state_csv_path()
+    tmp_path = target + ".tmp"
     with open(tmp_path, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
             writer.writerow({key: row.get(key, "") for key in fieldnames})
-    os.replace(tmp_path, STATE_CSV_PATH)
+    os.replace(tmp_path, target)
 
 
 def _save_agent_state(agent_id, payload):
@@ -1032,6 +1146,10 @@ def _index_memory_entry(agent_id, text):
     are swallowed: the JSON file is the source of truth and must not be held
     hostage to an embedding backend.
     """
+    if _current_world():
+        # The memory module binds the default world's vector DB at import; a
+        # world's own index is rebuilt from the JSON when its simulator starts.
+        return
     try:
         from gaworld.memory.store import vector_db_add_entry, vector_db_count_entries
 
@@ -1252,10 +1370,10 @@ def _agent_card(identity, capabilities, private_skills, growth, openclaw):
 
 
 def _finance_snapshot(agent_id):
-    if not os.path.exists(ECONOMY_SNAPSHOT_PATH):
+    if not os.path.exists(_economy_snapshot_path()):
         return None
     try:
-        with open(ECONOMY_SNAPSHOT_PATH, "r", encoding="utf-8-sig", newline="") as f:
+        with open(_economy_snapshot_path(), "r", encoding="utf-8-sig", newline="") as f:
             for row in csv.DictReader(f):
                 try:
                     if int(float(row.get("agent_id"))) == int(agent_id):
@@ -1636,7 +1754,7 @@ def _create_agent(payload):
     rows.append({key: new_row.get(key, "") for key in fieldnames})
     _atomic_write_state(fieldnames, rows)
 
-    with open(PROFILE_PATH, "a", encoding="utf-8") as f:
+    with open(_profile_path(), "a", encoding="utf-8") as f:
         f.write(_format_imported_profile_block(agent_id, profile_payload))
 
     return {"id": agent_id, "name": profile_payload["name"], "state": _agent_state(agent_id)}
@@ -1710,7 +1828,7 @@ def _run_log_slice(path, offset=None):
 def _run_log_markdown():
     """Render the complete run log as a Markdown document for download."""
     status = _run_status()
-    path = status["log_path"] or RUN_LOG_PATH
+    path = status["log_path"] or _run_log_path()
     text = ""
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -1820,22 +1938,132 @@ def _save_agent_goals_payload(agent_id, payload):
     return normalized
 
 
+#: Runs of the per-user worlds by world id; the default world keeps RUN_STATE.
+WORLD_RUNS = {}
+#: Starts waiting for a free slot, oldest first. Each entry carries a copy of
+#: the requesting context, so it launches in the world it was asked for.
+RUN_QUEUE = []
+_RUNS_LOCK = threading.RLock()
+_DISPATCHER = {"thread": None}
+DISPATCH_SECONDS = 2.0
+#: Admin-tunable classroom limits (account database `settings`), read on every
+#: check. A daily model-call quota of 0 means unlimited.
+LIMIT_DEFAULTS = {"max_concurrent_runs": 4, "max_runs_per_user": 1, "daily_llm_calls_per_user": 0}
+
+
+def _run_state():
+    world = _current_world()
+    if not world:
+        return RUN_STATE
+    with _RUNS_LOCK:
+        return WORLD_RUNS.setdefault(
+            world["id"],
+            {"process": None, "started_at": None, "log_path": _run_log_path(), "schedule": None},
+        )
+
+
+def _queue_key():
+    world = _current_world()
+    return world["id"] if world else ""
+
+
+def _queue_position():
+    with _RUNS_LOCK:
+        for index, entry in enumerate(RUN_QUEUE):
+            if entry["world_id"] == _queue_key():
+                return index + 1
+    return None
+
+
+def limits(store):
+    return {key: store.get_setting(key, default) for key, default in LIMIT_DEFAULTS.items()}
+
+
+def _limited_user_id():
+    """Whose per-user quota a start counts against; admins have none."""
+    user = _USER.get()
+    if not user or user.get("role") == "admin":
+        return None
+    return user.get("id")
+
+
+def _gate_open(store, user_id):
+    """Room for one more run? Only a deployment with accounts has limits."""
+    if store is None:
+        return True
+    caps = limits(store)
+    with _RUNS_LOCK:
+        running = [
+            state
+            for state in [RUN_STATE, *WORLD_RUNS.values()]
+            if state.get("process") and state["process"].poll() is None
+        ]
+    if len(running) >= caps["max_concurrent_runs"]:
+        return False
+    mine = sum(1 for state in running if user_id is not None and state.get("started_by") == user_id)
+    return user_id is None or mine < caps["max_runs_per_user"]
+
+
+def _ensure_dispatcher():
+    with _RUNS_LOCK:
+        thread = _DISPATCHER["thread"]
+        if thread is not None and thread.is_alive():
+            return
+        thread = threading.Thread(target=_dispatch_queue, name="run-queue", daemon=True)
+        _DISPATCHER["thread"] = thread
+        thread.start()
+
+
+def _dispatch_queue():
+    """Start queued runs, oldest first, whenever the gate lets one through.
+
+    An entry blocked only by its owner's per-user limit does not hold up the
+    entries behind it.
+    """
+    while True:
+        time.sleep(DISPATCH_SECONDS)
+        with _RUNS_LOCK:
+            if not RUN_QUEUE:
+                _DISPATCHER["thread"] = None
+                return
+            store = accounts.enabled_store(REPO_ROOT)
+            for entry in list(RUN_QUEUE):
+                if not _gate_open(store, entry["user_id"]):
+                    continue
+                RUN_QUEUE.remove(entry)
+                entry["context"].run(_launch_queued, entry)
+
+
+def _launch_queued(entry):
+    state = _run_state()
+    try:
+        _launch(state, entry["payload"])
+    except Exception as exc:
+        # Nobody is waiting on this call; park the failure where the panel looks.
+        _LOG.exception("Queued run failed to start: %s", exc)
+        state["start_error"] = str(exc)
+
+
 def _run_status(log_offset=None):
-    proc = RUN_STATE.get("process")
+    state = _run_state()
+    proc = state.get("process")
     running = bool(proc and proc.poll() is None)
     code = None if not proc else proc.poll()
-    log_path = RUN_STATE.get("log_path") or RUN_LOG_PATH
+    log_path = state.get("log_path") or _run_log_path()
     chunk = _run_log_slice(log_path, log_offset)
-    schedule = RUN_STATE.get("schedule") or {}
+    schedule = state.get("schedule") or {}
     return {
         "running": running,
         "returncode": code,
-        "started_at": RUN_STATE.get("started_at"),
-        "log_path": RUN_STATE.get("log_path"),
+        "started_at": state.get("started_at"),
+        "log_path": state.get("log_path"),
         # Only a schedule that still holds a live timer is pending; one whose
         # timer already fired lingers only to carry `schedule_error`.
         "scheduled_at": schedule.get("at") if schedule.get("timer") else None,
         "schedule_error": schedule.get("error"),
+        # With accounts on, a start beyond the run limits waits its turn.
+        "queued": _queue_position(),
+        "start_error": state.get("start_error"),
         # `log_append` tells the client whether to append `log_tail` to what it
         # already shows or replace it. Clients that send no offset always get a
         # replacement, so the field stays backwards compatible.
@@ -1894,17 +2122,59 @@ def _coerce_int_list(values):
 
 
 def _start_simulation(payload):
-    proc = RUN_STATE.get("process")
-    if proc and proc.poll() is None:
-        raise RuntimeError("Simulation is already running")
-    if isinstance(payload.get("config"), dict):
-        _save_config_patch(payload["config"])
-    _check_agent_ids_against_city()
-    os.makedirs(os.path.dirname(RUN_LOG_PATH), exist_ok=True)
-    env = os.environ.copy()
+    state = _run_state()
+    with _RUNS_LOCK:
+        proc = state.get("process")
+        if proc and proc.poll() is None:
+            raise RuntimeError("Simulation is already running")
+        if _queue_position() is not None:
+            raise RuntimeError("Simulation is already queued")
+        if isinstance(payload.get("config"), dict):
+            _save_config_patch(payload["config"])
+        _check_agent_ids_against_city()
+        state["start_error"] = None
+        user_id = _limited_user_id()
+        # First come, first served: a free slot goes to the queue's head.
+        if RUN_QUEUE or not _gate_open(accounts.enabled_store(REPO_ROOT), user_id):
+            RUN_QUEUE.append(
+                {
+                    "world_id": _queue_key(),
+                    "user_id": user_id,
+                    "payload": {"reset": bool(payload.get("reset"))},
+                    "context": contextvars.copy_context(),
+                }
+            )
+            _ensure_dispatcher()
+            return _run_status()
+        _launch(state, payload)
+    return _run_status()
+
+
+def _simulation_env():
+    from gaworld.accounts import usage
+
+    env = usage.child_env(os.environ.copy())
     env["PYTHONUNBUFFERED"] = "1"
+    world = _current_world()
+    if world:
+        from gaworld.settings.overrides import load_env_override
+
+        # The simulator layers these over dashboard_config.json and applies them
+        # again after the city, so the world's config and paths have the last
+        # word -- the same layering _effective_config() shows the panels.
+        patch = worlds.read_config(REPO_ROOT, world["id"])
+        _deep_update(patch, worlds.overrides(world["id"]))
+        _deep_update(patch, load_env_override())
+        env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(patch, ensure_ascii=False)
+    return env
+
+
+def _launch(state, payload):
+    log_path = _run_log_path()
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    env = _simulation_env()
     if payload.get("reset"):
-        with open(RUN_LOG_PATH, "w", encoding="utf-8") as log_file:
+        with open(log_path, "w", encoding="utf-8") as log_file:
             log_file.write(f"[dashboard] reset at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             reset = subprocess.run(
                 [sys.executable, os.path.join(REPO_ROOT, "generative_city_sim.py"), "reset"],
@@ -1917,7 +2187,7 @@ def _start_simulation(payload):
             if reset.returncode != 0:
                 raise RuntimeError("Reset failed; check dashboard run log")
     log_mode = "a" if payload.get("reset") else "w"
-    log_file = open(RUN_LOG_PATH, log_mode, encoding="utf-8")
+    log_file = open(log_path, log_mode, encoding="utf-8")
     log_file.write(f"\n[dashboard] run at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
     log_file.flush()
     proc = subprocess.Popen(
@@ -1928,10 +2198,10 @@ def _start_simulation(payload):
         stderr=subprocess.STDOUT,
         text=True,
     )
-    RUN_STATE["process"] = proc
-    RUN_STATE["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    RUN_STATE["log_path"] = RUN_LOG_PATH
-    return _run_status()
+    state["process"] = proc
+    state["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    state["log_path"] = log_path
+    state["started_by"] = _limited_user_id()
 
 
 def _parse_schedule_time(raw):
@@ -1968,12 +2238,15 @@ def _schedule_simulation(payload):
         "config": payload.get("config"),
     }
     with _SCHEDULE_LOCK:
-        previous = RUN_STATE.get("schedule") or {}
+        state = _run_state()
+        previous = state.get("schedule") or {}
         if previous.get("timer"):
             previous["timer"].cancel()
-        timer = threading.Timer(delay, _fire_scheduled_simulation)
+        # The timer thread starts with an empty context; hand it this request's
+        # world and user so the run starts where it was scheduled.
+        timer = threading.Timer(delay, contextvars.copy_context().run, args=(_fire_scheduled_simulation,))
         timer.daemon = True
-        RUN_STATE["schedule"] = {
+        state["schedule"] = {
             "at": when.strftime("%Y-%m-%d %H:%M:%S"),
             "timer": timer,
             "payload": start_payload,
@@ -1985,16 +2258,17 @@ def _schedule_simulation(payload):
 
 def _cancel_scheduled_simulation():
     with _SCHEDULE_LOCK:
-        schedule = RUN_STATE.get("schedule") or {}
+        state = _run_state()
+        schedule = state.get("schedule") or {}
         if schedule.get("timer"):
             schedule["timer"].cancel()
-        RUN_STATE["schedule"] = None
+        state["schedule"] = None
     return _run_status()
 
 
 def _fire_scheduled_simulation():
     with _SCHEDULE_LOCK:
-        schedule = RUN_STATE.get("schedule")
+        schedule = _run_state().get("schedule")
         if not schedule:
             return
         # Drop the timer first: from here on the schedule is spent, and the
@@ -2008,16 +2282,18 @@ def _fire_scheduled_simulation():
         # /api/run/status can show it instead of raising into the timer thread.
         _LOG.exception("Scheduled run failed to start: %s", exc)
         with _SCHEDULE_LOCK:
-            schedule = RUN_STATE.get("schedule")
+            schedule = _run_state().get("schedule")
             if schedule:
                 schedule["error"] = str(exc)
     else:
         with _SCHEDULE_LOCK:
-            RUN_STATE["schedule"] = None
+            _run_state()["schedule"] = None
 
 
 def _stop_simulation():
-    proc = RUN_STATE.get("process")
+    with _RUNS_LOCK:
+        RUN_QUEUE[:] = [entry for entry in RUN_QUEUE if entry["world_id"] != _queue_key()]
+    proc = _run_state().get("process")
     if proc and proc.poll() is None:
         proc.terminate()
         try:
@@ -2025,6 +2301,24 @@ def _stop_simulation():
         except subprocess.TimeoutExpired:
             proc.kill()
     return _run_status()
+
+
+def _stop_all_simulations():
+    """Server shutdown: no world's simulator outlives the dashboard."""
+    with _RUNS_LOCK:
+        RUN_QUEUE.clear()
+        states = [RUN_STATE, *WORLD_RUNS.values()]
+    for state in states:
+        proc = state.get("process")
+        if proc and proc.poll() is None:
+            proc.terminate()
+    for state in states:
+        proc = state.get("process")
+        if proc and proc.poll() is None:
+            try:
+                proc.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
 
 def _interview_agent(payload):
@@ -2078,7 +2372,23 @@ def _latest_trace_meta():
 def _replay_runs():
     """Every replayable trace on disk: the live run, archives, scenario runs."""
     visualization_dir = _effective_config().get("visualization", {}).get("output_dir", "output/visualization")
-    return replay_runs.list_runs(REPO_ROOT, visualization_dir)
+    runs = replay_runs.list_runs(REPO_ROOT, visualization_dir)
+    store = accounts.enabled_store(REPO_ROOT)
+    if store is None:
+        return runs
+    # The scan finds every world's traces; list only the worlds this user may see.
+    seen = {}
+
+    def visible(run):
+        parts = run["id"].split("/")
+        if parts[:2] != ["output", "worlds"] or len(parts) < 3:
+            return True
+        if parts[2] not in seen:
+            world = store.get_world(parts[2])
+            seen[parts[2]] = bool(world and world_readable(world, _USER.get()))
+        return seen[parts[2]]
+
+    return [run for run in runs if visible(run)]
 
 
 def _current_trace_frame():
@@ -2401,6 +2711,51 @@ def _fos_export(payload: dict) -> dict:
     }
 
 
+#: Page routes rewritten onto a file under /site or /docs in do_GET / do_HEAD.
+STATIC_ROUTES = frozenset(
+    ("/", "", "/console", "/console/", "/dashboard", "/dashboard/", "/board", "/board/", "/todo", "/todo/")
+) | frozenset(access_policy.PUBLIC_PAGES)
+
+DENIALS = {
+    "admin": "没有权限：该操作需要管理员",
+    "city": "没有权限：需要「建立城市」权限",
+    "world": "没有权限：只有世界的创建者能修改它（共享的默认世界只限管理员）",
+}
+
+
+def world_readable(world, user):
+    """Owners and admins see a world; others only once it is shared."""
+    if user is None:
+        return False
+    return user.get("role") == "admin" or world.get("owner_id") == user.get("id") or world.get("visibility") != "private"
+
+
+#: user id -> wall time of their latest request; the teacher console's
+#: "online" dot. In memory only: a restart forgets, which is fine for a dot.
+LAST_SEEN = {}
+
+
+#: Who a request carrying GAWORLD_DASHBOARD_TOKEN is once accounts are on.
+TOKEN_ADMIN = {"id": 0, "nickname": "token-admin", "role": "admin", "can_create_city": True, "label": ""}
+
+#: The only static trees the console loads. Everything else under the repo root
+#: (source, dashboard_config.json, data/, residents' memory under output/) is
+#: read through the API or not at all.
+STATIC_PREFIXES = ("/site/", "/docs/", "/video/public/", "/output/population/")
+
+#: Root-level documents the 文档 panel lists (site/dashboard/docs.js).
+STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md"))
+
+
+def _static_path_allowed(path):
+    if path in STATIC_ROUTES or path in STATIC_FILES or path.startswith(STATIC_PREFIXES):
+        return True
+    # Traces and avatars: the live run, archived runs and every scenario /
+    # parallel world keep them in a `visualization` dir (see replay_runs).
+    parts = [part for part in path.split("/") if part]
+    return len(parts) > 2 and parts[0] == "output" and "visualization" in parts[1:-1]
+
+
 class DashboardHandler(SimpleHTTPRequestHandler):
     server_version = "GAWorldDashboard/0.1"
 
@@ -2418,6 +2773,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     # cannot ride it); scripts send `Authorization: Bearer …`.
 
     AUTH_COOKIE = "gaworld_token"
+    user = None
+    accounts = None
 
     def _deny(self, status, message):
         if self.path.startswith("/api/"):
@@ -2430,22 +2787,86 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(data)
 
+    # Accounts (gaworld/accounts) layer on top: once the account database
+    # exists, a request without the token needs a `gaworld_session` cookie,
+    # and gaworld.accounts.policy decides what that user may call. The token
+    # holder stays an admin, so operator scripts keep working.
+
     def _guard(self, path, query):
-        """Return True when the request was answered here (refused/redirected)."""
-        if not path.startswith("/api/") and any(
-            part.startswith(".") for part in path.split("/") if part
+        """Return True when the request was answered here (refused/redirected).
+
+        Leaves ``self.user`` (None, a user row, or TOKEN_ADMIN) and
+        ``self.accounts`` (the store, or None in single-user mode) behind.
+        """
+        self.user = None
+        self.accounts = None
+        _WORLD.set(None)
+        _USER.set(None)
+        if not path.startswith("/api/") and (
+            any(part.startswith(".") for part in path.split("/") if part) or not _static_path_allowed(path)
         ):
             self._deny(404, "Not found")
             return True
         token = os.environ.get("GAWORLD_DASHBOARD_TOKEN", "").strip()
-        if not token:
+        self.accounts = accounts.enabled_store(REPO_ROOT)
+        if not token and self.accounts is None:
             return False
+        if token:
+            verdict = self._token_ok(path, query, token)
+            if verdict == "answered":
+                return True
+            if verdict == "ok":
+                self.user = TOKEN_ADMIN
+                return self._enter_world(path)
+        if self.accounts is None:
+            self._deny(401, "authentication required: open /?token=<token> or send Authorization: Bearer <token>")
+            return True
+        morsel = SimpleCookie(self.headers.get("Cookie", "")).get(accounts_api.SESSION_COOKIE)
+        self.user = self.accounts.session_user(morsel.value) if morsel is not None else None
+        if self.user is not None:
+            LAST_SEEN[self.user["id"]] = time.time()
+        if self.user is not None and self._enter_world(path):
+            return True
+        level = access_policy.required(self.command, path)
+        if access_policy.allows(self.user, level, _current_world()):
+            return False
+        if self.user is not None:
+            self._deny(403, DENIALS[level])
+        elif path.startswith("/api/"):
+            self._deny(401, "请先登录：/login")
+        else:
+            target = path + (f"?{query}" if query else "")
+            self._redirect("/login?" + urlencode({"next": target}))
+        return True
+
+    def _enter_world(self, path):
+        """Make the cookie's world the request's active world, if this user may
+        see it (else the shared default). Returns True when the request was
+        refused here: a static path into a world the user may not see."""
+        if self.accounts is None:
+            return False
+        _USER.set(self.user)
+        if path.startswith("/output/worlds/"):
+            target = self.accounts.get_world(path.split("/")[3])
+            if target is None or not world_readable(target, self.user):
+                self._deny(404, "Not found")
+                return True
+        morsel = SimpleCookie(self.headers.get("Cookie", "")).get(WORLD_COOKIE)
+        if morsel is not None and worlds.valid_id(morsel.value):
+            world = self.accounts.get_world(morsel.value)
+            if world is not None and world_readable(world, self.user):
+                _WORLD.set(world)
+        return False
+
+    def _token_ok(self, path, query, token):
+        """"ok" when the request carries the operator token, "answered" when a
+        `?token=` login was handled here (redirect or refusal), else "no"."""
         params = parse_qs(query, keep_blank_values=True)
         offered = (params.pop("token", [""]) or [""])[0]
         if offered:
             if not hmac.compare_digest(offered, token):
                 self._deny(401, "invalid token")
-                return True
+                return "answered"
             rest = urlencode(params, doseq=True)
             self.send_response(303)
             self.send_header(
@@ -2455,15 +2876,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.send_header("Location", path + (f"?{rest}" if rest else ""))
             self.send_header("Content-Length", "0")
             self.end_headers()
-            return True
+            return "answered"
         header = self.headers.get("Authorization", "")
         if header.startswith("Bearer ") and hmac.compare_digest(header[7:].strip(), token):
-            return False
+            return "ok"
         morsel = SimpleCookie(self.headers.get("Cookie", "")).get(self.AUTH_COOKIE)
         if morsel is not None and hmac.compare_digest(morsel.value, token):
-            return False
-        self._deny(401, "authentication required: open /?token=<token> or send Authorization: Bearer <token>")
-        return True
+            return "ok"
+        return "no"
 
     def log_message(self, fmt, *args):
         # The login URL carries the token in its query string; keep it out of logs.
@@ -2486,6 +2906,60 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
+
+    def _auth_reply(self, payload, status, set_cookie):
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        if set_cookie:
+            self.send_header("Set-Cookie", set_cookie)
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _quota_refusal(self, path):
+        """Why a member may not start more model work today, or None.
+
+        A soft quota: only requests that start model calls are refused, and
+        work already running finishes.
+        """
+        user = self.user
+        if not access_policy.quota_gated(path) or not user or user.get("role") == "admin":
+            return None
+        quota = self.accounts.get_setting("daily_llm_calls_per_user", 0)
+        if quota <= 0:
+            return None
+        from gaworld.accounts import usage
+
+        if usage.TALLY.today(user.get("id")) < quota:
+            return None
+        return f"今天的大模型调用额度（{quota} 次）已用完；明天再来，或请老师调整额度"
+
+    def _city_write_refusal(self, path, payload):
+        """Why a non-admin may not make this city write, or None.
+
+        Members with `can_create_city` may create cities and edit the ones
+        they created; the creator is recorded in the account database, so a
+        city made before accounts existed belongs to the admins.
+        """
+        store, user = self.accounts, self.user
+        if store is None or user is None or user.get("role") == "admin":
+            return None
+        if path.rstrip("/") == "/api/city/create":
+            return "覆盖已有城市需要管理员" if payload.get("force") else None
+        from gaworld.city.bundle import resolve_city
+
+        refs = [payload.get("city") or ""]
+        if path.rstrip("/") == "/api/city/migrate" and payload.get("from_city"):
+            refs.append(payload["from_city"])
+        for ref in refs:
+            try:
+                slug = resolve_city(str(ref)).slug
+            except Exception:
+                continue  # unknown city: city_api answers 404 with its own message
+            if store.city_owner(slug) != user.get("id"):
+                return "只能修改自己建立的城市"
+        return None
 
     def _download_response(self, data, content_type, filename):
         self.send_response(200)
@@ -2520,6 +2994,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         return {key: values[0] if values else "" for key, values in parsed.items()}
 
     def _handle_api_get(self, path, query):
+        if path == "/api/play":
+            from gaworld.apps import play_api
+
+            body, status = play_api.handle_get(self.user if self.accounts is not None else None, path)
+            return self._json_response(body, status=status)
+        if path == "/api/worlds" or path.startswith("/api/worlds/"):
+            from gaworld.apps import worlds_api
+
+            return self._auth_reply(*worlds_api.handle_get(self.accounts, self.user, path))
+        if path.startswith("/api/auth/"):
+            return self._auth_reply(*accounts_api.handle_get(self.accounts, self.user, path))
         # Kernel surface: generic interventions + the SSE record stream
         # (gaworld/apps/kernel_api.py). The stream holds the connection open,
         # so it writes to the socket itself instead of returning JSON.
@@ -2757,6 +3242,27 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def _handle_api_post(self, path):
         payload = self._read_json_body()
+        store = self.accounts
+        if path.startswith("/api/auth/"):
+            morsel = SimpleCookie(self.headers.get("Cookie", "")).get(accounts_api.SESSION_COOKIE)
+            return self._auth_reply(
+                *accounts_api.handle_post(store, self.user, path, payload, morsel.value if morsel else "")
+            )
+        if store is not None:
+            if path != "/api/play/claim":  # lease renewals every 30 s; play_api audits the first claim
+                store.audit(self.user, "POST", path)
+            refusal = self._quota_refusal(path)
+            if refusal:
+                return self._json_response({"error": refusal}, status=429)
+        if path.startswith("/api/worlds/"):
+            from gaworld.apps import worlds_api
+
+            return self._auth_reply(*worlds_api.handle_post(store, self.user, path, payload))
+        if path.startswith("/api/play/"):
+            from gaworld.apps import play_api
+
+            body, status = play_api.handle_post(self.user if store is not None else None, path, payload, store)
+            return self._json_response(body, status=status)
         if path.startswith("/api/interventions/"):
             from gaworld.apps import kernel_api
 
@@ -2827,7 +3333,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if path.startswith("/api/city"):
             from gaworld.apps import city_api
 
+            refusal = self._city_write_refusal(path, payload)
+            if refusal:
+                return self._json_response({"error": refusal}, status=403)
             body, status = city_api.handle_post(path, payload)
+            if store is not None and status == 200:
+                route = path.rstrip("/")
+                if route == "/api/city/create" and self.user and self.user.get("id"):
+                    store.set_city_owner(body["city"]["slug"], self.user["id"])
+                elif route == "/api/city/delete":
+                    store.forget_city(os.path.basename(str(body.get("removed") or "")))
             return self._json_response(body, status=status)
         if path.startswith("/api/moltbook"):
             from gaworld.apps import moltbook_api
@@ -2968,6 +3483,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.path = "/site/dashboard/index.html"
         elif path in ("/board", "/board/", "/todo", "/todo/"):
             self.path = "/docs/todo_board.html"
+        elif path in access_policy.PUBLIC_PAGES:
+            self.path = "/site/auth/index.html"
         return super().do_GET()
 
     def do_HEAD(self):
@@ -2987,6 +3504,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.path = "/site/dashboard/index.html"
         elif path in ("/board", "/board/", "/todo", "/todo/"):
             self.path = "/docs/todo_board.html"
+        elif path in access_policy.PUBLIC_PAGES:
+            self.path = "/site/auth/index.html"
         return super().do_HEAD()
 
     def do_POST(self):
@@ -3028,7 +3547,7 @@ def run_server(host="127.0.0.1", port=8766):
     except KeyboardInterrupt:
         pass
     finally:
-        _stop_simulation()
+        _stop_all_simulations()
         _reset_collaboration_service_for_tests()
         server.server_close()
 
@@ -3040,4 +3559,10 @@ if __name__ == "__main__":
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
-    run_server(host=args.host, port=args.port)
+    # Under `python -m` this file runs as `__main__`, while the API modules
+    # import `gaworld.apps.dashboard_server` -- a second copy with its own
+    # per-request world, run table and queue. Serve from that canonical copy so
+    # there is exactly one of each.
+    from gaworld.apps import dashboard_server as canonical
+
+    canonical.run_server(host=args.host, port=args.port)

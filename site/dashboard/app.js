@@ -1595,12 +1595,15 @@ function exportRunLog() {
 async function refreshStatus() {
   const offset = state.runLog.offset;
   const status = await api(`/api/run/status${offset == null ? "" : `?log_offset=${offset}`}`);
-  state.running = Boolean(status.running);
+  // A queued start (run limits, accounts mode) locks the controls like a run.
+  state.running = Boolean(status.running || status.queued);
   state.scheduledAt = status.scheduled_at || null;
   syncRunButtons();
   const badge = status.running
     ? __("sim.running")
-    : status.returncode == null ? __("sim.not_run") : __("sim.finished") + " " + status.returncode;
+    : status.queued
+      ? window.__f("sim.queued_badge", { position: status.queued })
+      : status.returncode == null ? __("sim.not_run") : __("sim.finished") + " " + status.returncode;
   // A pending schedule is the most useful thing the badge can say while
   // nothing runs, so it takes over the idle text.
   els.runStatusBadge.textContent = !status.running && state.scheduledAt
@@ -1612,6 +1615,10 @@ async function refreshStatus() {
     message(window.__f("sim.schedule_failed", { error: status.schedule_error }), "error");
   }
   state.scheduleError = status.schedule_error || null;
+  if (status.start_error && status.start_error !== state.startError) {
+    message(window.__f("sim.start_failed", { error: status.start_error }), "error");
+  }
+  state.startError = status.start_error || null;
   applyRunLog(status);
   if (status.running) loadTrace(false).catch(() => {});
 }

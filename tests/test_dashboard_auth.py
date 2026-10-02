@@ -61,6 +61,51 @@ class AuthTest(unittest.TestCase):
                     self.assertNotIn(b"API_KEY", body)
                 self.assertEqual(self._req("HEAD", "/.env")[0].status, 404)
 
+    def test_only_allowlisted_static_paths_are_served(self):
+        # The handler serves the repo root, so without an allowlist the source
+        # tree, dashboard_config.json, data/ and every resident's memory under
+        # output/ are one GET away for anyone holding the shared token.
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("GAWORLD_DASHBOARD_TOKEN", None)
+            for path in (
+                "/dashboard_config.json",
+                "/gaworld/apps/dashboard_server.py",
+                "/data/agents_big5.csv",
+                "/output/memory/agent_1_goals.json",
+                "/output/",
+                "/pyproject.toml",
+                "/video/package.json",
+                "/site/%2e%2e/data/agents_big5.csv",
+            ):
+                self.assertEqual(self._req("GET", path)[0].status, 404, path)
+                self.assertEqual(self._req("HEAD", path)[0].status, 404, path)
+            # "/" is left out: its landing page (site/index.html) is not in the repository.
+            for path in ("/console", "/dashboard", "/board", "/site/console/index.html"):
+                self.assertEqual(self._req("GET", path)[0].status, 200, path)
+
+    def test_static_allowlist_rules(self):
+        allowed = (
+            "/site/dashboard/app.js",
+            "/docs/todo_board.html",
+            "/video/public/gaworld-graphical-abstract.png",
+            "/output/visualization/simulation_trace.json",
+            "/output/visualization/avatars/agent_1.svg",
+            "/output/parallel_worlds/x/worlds/w1/visualization/simulation_trace.json",
+            "/output/population/x_state_init.csv",
+        )
+        refused = (
+            "/output/memory/agent_1.json",
+            "/output/visualization_backup.json",
+            "/output/interviews/s1/answers.json",
+            "/data/cities/wuzhen/agents.csv",
+            "/sitemap/x",
+            "/requirements.txt",
+        )
+        for path in allowed:
+            self.assertTrue(ds._static_path_allowed(path), path)
+        for path in refused:
+            self.assertFalse(ds._static_path_allowed(path), path)
+
     def test_without_token_everything_is_open_as_before(self):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("GAWORLD_DASHBOARD_TOKEN", None)

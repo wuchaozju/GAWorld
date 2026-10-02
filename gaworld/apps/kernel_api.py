@@ -36,7 +36,8 @@ def _ds():
 
 def _queue_path() -> str:
     ds = _ds()
-    return os.path.join(ds.REPO_ROOT, remote.path_for(ds.CONFIG))
+    # The active world's queue; its running simulator drains that file.
+    return os.path.join(ds.REPO_ROOT, remote.path_for(ds._effective_config()))
 
 
 def handle_get(path: str, query: dict) -> tuple[dict[str, Any], int]:
@@ -160,6 +161,6 @@ def serve_stream(handler, query: dict) -> None:
         handler.wfile.flush()
 
     try:
-        stream_records(_ds().RECORDS_DIR, write, tables=_parse_tables(query))
+        stream_records(_ds()._records_dir(), write, tables=_parse_tables(query))
     except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
         pass

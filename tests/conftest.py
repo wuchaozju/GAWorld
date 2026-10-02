@@ -16,3 +16,8 @@ wanting to reproduce a run with the panel's own settings.
 import os
 
 os.environ.setdefault("GAWORLD_IGNORE_LOCAL_CONFIG", "1")
+
+# Same for the account database: once a deployment has run
+# `python -m gaworld.accounts init`, every dashboard test would otherwise be
+# sent to /login. Account tests point this at their own temp file.
+os.environ.setdefault("GAWORLD_ACCOUNTS_DB", os.path.join(os.devnull, "no-accounts.sqlite"))

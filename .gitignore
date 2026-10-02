@@ -153,6 +153,8 @@ celerybeat.pid
 !/site/dashboard/**
 !/site/console/
 !/site/console/**
+!/site/auth/
+!/site/auth/**
 !/site/mobile/
 !/site/mobile/**
 !/site/simviz/

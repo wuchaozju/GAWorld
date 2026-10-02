@@ -400,7 +400,7 @@ class TestPanelReader(unittest.TestCase):
         from gaworld.apps import external_systems_api as api
 
         with unittest.mock.patch.object(api, "_ds") as ds:
-            ds.return_value.RECORDS_DIR = tempfile.mkdtemp()
+            ds.return_value._records_dir.return_value = tempfile.mkdtemp()
             self.assertEqual(api.traffic_runtime()["available"], False)
 
     def test_a_quiet_run_is_reported_as_never_congested(self):
@@ -413,7 +413,7 @@ class TestPanelReader(unittest.TestCase):
             fh.write('{"_day": 1, "_time": "08:30", "edges_congested": 0, '
                      '"edges_loaded": 1, "flow_pcu": 1.0, "congestion_max": 1.0}\n')
         with unittest.mock.patch.object(api, "_ds") as ds:
-            ds.return_value.RECORDS_DIR = tmp
+            ds.return_value._records_dir.return_value = tmp
             ds.return_value.REPO_ROOT = tmp
             report = api.traffic_runtime()
         self.assertTrue(report["available"])

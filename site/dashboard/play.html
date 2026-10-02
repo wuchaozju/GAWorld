@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="play.page_title">GAWorld · 多人共玩</title>
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <style>
+    .play-grid { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.4fr); gap: 16px; }
+    .play-list { max-height: 460px; overflow: auto; display: grid; gap: 6px; margin-top: 8px; }
+    .play-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+                padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 8px; font-size: 14px; }
+    .play-row.taken { opacity: .6; }
+    .play-row.mine { border-color: var(--green, #2f7d55); }
+    .play-row small { color: var(--muted, #777); }
+    .play-form { display: grid; gap: 6px; margin-top: 12px; }
+    .play-form textarea, .play-form input, .play-form select, #pSearch { width: 100%; box-sizing: border-box;
+      padding: 8px; border: 1px solid var(--line, #ddd); border-radius: 8px; font: inherit; }
+    .play-feed { display: grid; gap: 6px; margin-top: 8px; max-height: 320px; overflow: auto; font-size: 14px; }
+    .play-feed p { margin: 0; }
+    .play-feed time { color: var(--muted, #777); margin-right: 6px; font-size: 12px; }
+    @media (max-width: 760px) { .play-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="play.kicker">GAWorld · Play Together</p>
+          <h1 data-i18n="play.headline">多人共玩：认领一位居民，和大家同时生活在这座城市里</h1>
+          <p class="sub" data-i18n="play.sub">
+            在一个开放的世界里认领一位居民，写下他这一步要做什么、对谁说什么——下一个 tick 生效。
+            没人扮演的居民照常由模型驱动；你离开两分钟后，居民自动交还给模型。
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <p id="pStatus" class="disaster-status" role="status"></p>
+
+    <section class="play-grid" id="pBoard" hidden>
+      <section class="panel">
+        <h3 data-i18n="play.residents">居民</h3>
+        <input id="pSearch" type="search" data-i18n-placeholder="play.search" placeholder="按姓名或编号筛选" />
+        <div id="pResidents" class="play-list"></div>
+      </section>
+
+      <section class="panel">
+        <h3 data-i18n="play.mine_title">我扮演的居民</h3>
+        <p id="pMine" class="disaster-status" data-i18n="play.none">还没有认领居民：在左边挑一位。</p>
+        <div id="pControls" hidden>
+          <form class="play-form" id="pActForm">
+            <label for="pAct" data-i18n="play.act_label">这一步做什么</label>
+            <textarea id="pAct" rows="3" maxlength="500" data-i18n-placeholder="play.act_placeholder"
+                      placeholder="例如：去菜市场找李阿姨商量明天的社区会议"></textarea>
+            <button class="button primary" type="submit" data-i18n="play.act_send">送出行动</button>
+          </form>
+          <form class="play-form" id="pSayForm">
+            <label for="pSayTo" data-i18n="play.say_label">对谁说话</label>
+            <select id="pSayTo"></select>
+            <input id="pSay" maxlength="500" data-i18n-placeholder="play.say_placeholder" placeholder="想说的话" />
+            <button class="button" type="submit" data-i18n="play.say_send">说出口</button>
+          </form>
+          <button class="button" type="button" id="pRelease" data-i18n="play.release">交还给模型</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" id="pFeedPanel" hidden>
+      <h3 data-i18n="play.feed">现场</h3>
+      <div id="pFeed" class="play-feed"><p data-i18n="play.feed_empty">还没有动静。</p></div>
+    </section>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/play.js"></script>
+</body>
+</html>
