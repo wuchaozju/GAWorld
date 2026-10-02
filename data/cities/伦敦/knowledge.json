@@ -1,0 +1,102 @@
+{
+  "name": "大倫敦;大伦敦",
+  "summary": "核心高端服务业集聚，外围实体产业支撑的多元化经济格局",
+  "industries": [
+    {
+      "name": "金融业",
+      "weight": 0.35,
+      "trend": "growing",
+      "note": "核心高端产业，集聚效应明显"
+    },
+    {
+      "name": "专业服务业",
+      "weight": 0.15,
+      "trend": "stable",
+      "note": "包括法律、会计、咨询等高端服务业"
+    },
+    {
+      "name": "文化创意产业",
+      "weight": 0.1,
+      "trend": "growing",
+      "note": "依托文化资源发展"
+    },
+    {
+      "name": "科技与数字产业",
+      "weight": 0.1,
+      "trend": "growing",
+      "note": "新兴高端产业方向"
+    },
+    {
+      "name": "旅游业",
+      "weight": 0.08,
+      "trend": "stable",
+      "note": "依托城市资源"
+    },
+    {
+      "name": "实体制造业",
+      "weight": 0.1,
+      "trend": "stable",
+      "note": "主要分布于外围区域"
+    },
+    {
+      "name": "零售与消费业",
+      "weight": 0.07,
+      "trend": "stable",
+      "note": "服务于城市人口与游客"
+    },
+    {
+      "name": "公共服务业",
+      "weight": 0.05,
+      "trend": "stable",
+      "note": "包括教育、医疗等公共领域"
+    }
+  ],
+  "priorities": [
+    "强化金融及专业服务等高端核心产业集聚",
+    "推动外围区域实体产业升级",
+    "发展文化创意与数字科技等新兴高端产业"
+  ],
+  "labor_demand": [
+    "金融与专业服务领域高端人才",
+    "科技与数字产业技术人才",
+    "文化创意产业专业人才",
+    "实体制造业技能型人才"
+  ],
+  "sources": [
+    {
+      "title": "大伦敦 (英格兰下属的一级行政... - 百度百科",
+      "url": "http://www.baidu.com/link?url=qDokAz-B0iprziQ32s8i0A2ZlFp3E74JnN6eOKzX9UtECeFXRExO7ZOUlLXrgG1OL70E_cWMEtsy65GNLdy1WMndbh8FWWvesHesxoLaKXC"
+    },
+    {
+      "title": "英国 经济 及 产业 情况",
+      "url": "http://www.baidu.com/link?url=NFU14n3fjGWQYJqoKoODsnlle3dbccnKJD6P1fWGsUMX6yN6z_f4Ri7Ln0NrPx8HLpsCM6WDCk8de91OFLmLIoIyhlT0o7By49dr7lhowuDv4bI-5R38LYXzQaaMPFFp"
+    },
+    {
+      "title": "伦敦 (英国首都、英国第一大城市) - 百度百科",
+      "url": "http://www.baidu.com/link?url=9o3ZB15urGJZ0350LHUMti2cpgSEDvJC3BdVWjQExcxKPSDiJCQn7Bej546-paH9bhYphIjXsFrCZtCqHJFqevEgcA0WfsE83L7PBhdHa1i"
+    },
+    {
+      "title": "解释城市| 大伦敦 如何形成“核心高端化、外围实体化”的 产业 格局",
+      "url": "http://www.baidu.com/link?url=zT7xK9h5PL7mcE2D269plk7kHYbfG8yAzMBEz5r2bZBHNIrkJjsLCTMIpFoNCZxIr_UyQ8873Fi16pf00t1uHNlPK1J0Bt6NlqKRtDeDTtu"
+    },
+    {
+      "title": "大 （汉语文字）_百度百科",
+      "url": "https://baike.baidu.com/item/大/34128"
+    },
+    {
+      "title": "大 的意思, 大 的解释, 大 的拼音, 大 的部首, 大 的笔顺-汉语国学",
+      "url": "https://www.hanyuguoxue.com/zidian/zi-22823"
+    },
+    {
+      "title": "大字笔画、笔顺、笔划 - 大字怎么写?",
+      "url": "https://www.hanzipi.com/大.html"
+    },
+    {
+      "title": "大 - 維基詞典，自由的多語言詞典",
+      "url": "https://zh.wiktionary.org/zh-hant/大"
+    }
+  ],
+  "source": "web",
+  "built_at": "2026-09-27T16:37:09+00:00",
+  "schema_version": "1.0"
+}

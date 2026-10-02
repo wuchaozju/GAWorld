@@ -3,8 +3,8 @@
   "achieved": {
     "median_age": {
       "target": 36.0,
-      "achieved": 32.5,
-      "delta": -3.5
+      "achieved": 30.0,
+      "delta": -6.0
     },
     "share_under_18": {
       "target": 0.16,
@@ -285,44 +285,50 @@
       {
         "age_from": 15,
         "age_to": 19,
-        "male": 2,
+        "male": 1,
         "female": 1
       },
       {
         "age_from": 20,
         "age_to": 24,
-        "male": 0,
-        "female": 2
+        "male": 2,
+        "female": 3
       },
       {
         "age_from": 25,
         "age_to": 29,
-        "male": 2,
-        "female": 2
+        "male": 3,
+        "female": 1
       },
       {
         "age_from": 30,
         "age_to": 34,
-        "male": 3,
+        "male": 1,
         "female": 2
       },
       {
         "age_from": 35,
         "age_to": 39,
-        "male": 3,
+        "male": 1,
+        "female": 0
+      },
+      {
+        "age_from": 40,
+        "age_to": 44,
+        "male": 2,
         "female": 1
       },
       {
         "age_from": 45,
         "age_to": 49,
-        "male": 1,
-        "female": 2
+        "male": 0,
+        "female": 1
       },
       {
         "age_from": 50,
         "age_to": 54,
-        "male": 1,
-        "female": 0
+        "male": 2,
+        "female": 1
       },
       {
         "age_from": 55,
@@ -337,28 +343,28 @@
         "female": 1
       },
       {
-        "age_from": 70,
-        "age_to": 74,
-        "male": 1,
+        "age_from": 65,
+        "age_to": 69,
+        "male": 0,
         "female": 1
       },
       {
-        "age_from": 75,
-        "age_to": 79,
+        "age_from": 70,
+        "age_to": 74,
         "male": 1,
         "female": 0
       },
       {
-        "age_from": 80,
-        "age_to": 84,
+        "age_from": 85,
+        "age_to": 89,
         "male": 1,
-        "female": 0
+        "female": 2
       },
       {
         "age_from": 90,
         "age_to": 94,
-        "male": 0,
-        "female": 2
+        "male": 1,
+        "female": 0
       }
     ],
     "lorenz": [
@@ -454,30 +460,22 @@
       },
       {
         "size": 2,
-        "count": 4
-      },
-      {
-        "size": 3,
         "count": 3
       },
       {
-        "size": 4,
-        "count": 2
+        "size": 3,
+        "count": 5
       },
       {
         "size": 5,
-        "count": 1
-      },
-      {
-        "size": 6,
-        "count": 1
+        "count": 3
       }
     ],
     "household_types": {
-      "nuclear": 2,
       "multigen": 3,
-      "couple": 3,
+      "nuclear": 3,
       "single_parent": 1,
+      "couple": 2,
       "shared_rental": 2,
       "single": 4
     },
@@ -499,93 +497,93 @@
     "state_distribution": {
       "emotion": {
         "target_mean": 0.58,
-        "mean": 0.608,
-        "sd": 0.103,
-        "p10": 0.4849,
-        "p25": 0.5515,
-        "p50": 0.604,
-        "p75": 0.6504,
-        "p90": 0.7235
+        "mean": 0.5643,
+        "sd": 0.114,
+        "p10": 0.4119,
+        "p25": 0.4837,
+        "p50": 0.5661,
+        "p75": 0.6385,
+        "p90": 0.6938
       },
       "stress": {
         "target_mean": 0.55,
-        "mean": 0.5543,
-        "sd": 0.0882,
-        "p10": 0.4218,
-        "p25": 0.5241,
-        "p50": 0.5666,
-        "p75": 0.6124,
-        "p90": 0.6491
+        "mean": 0.5505,
+        "sd": 0.1119,
+        "p10": 0.4171,
+        "p25": 0.4945,
+        "p50": 0.551,
+        "p75": 0.6284,
+        "p90": 0.6891
       },
       "econ_security": {
         "target_mean": 0.52,
-        "mean": 0.4619,
-        "sd": 0.1192,
-        "p10": 0.3283,
-        "p25": 0.3761,
-        "p50": 0.4483,
-        "p75": 0.5482,
-        "p90": 0.6525
+        "mean": 0.4454,
+        "sd": 0.1497,
+        "p10": 0.2622,
+        "p25": 0.3493,
+        "p50": 0.4157,
+        "p75": 0.5257,
+        "p90": 0.6632
       },
       "city_identity": {
         "target_mean": 0.55,
-        "mean": 0.4761,
-        "sd": 0.1509,
-        "p10": 0.2596,
-        "p25": 0.3627,
-        "p50": 0.4864,
-        "p75": 0.5869,
-        "p90": 0.6583
+        "mean": 0.4745,
+        "sd": 0.1428,
+        "p10": 0.2689,
+        "p25": 0.368,
+        "p50": 0.4844,
+        "p75": 0.5833,
+        "p90": 0.6316
       },
       "policy_sensitivity": {
         "target_mean": 0.5,
-        "mean": 0.4743,
-        "sd": 0.1111,
-        "p10": 0.342,
-        "p25": 0.4194,
-        "p50": 0.4759,
-        "p75": 0.5508,
-        "p90": 0.6092
+        "mean": 0.4559,
+        "sd": 0.1103,
+        "p10": 0.3005,
+        "p25": 0.3981,
+        "p50": 0.4553,
+        "p75": 0.5139,
+        "p90": 0.6021
       },
       "platform_dependence": {
         "target_mean": 0.5,
-        "mean": 0.5019,
-        "sd": 0.1431,
-        "p10": 0.3272,
-        "p25": 0.4059,
-        "p50": 0.5316,
-        "p75": 0.6023,
-        "p90": 0.6808
+        "mean": 0.4938,
+        "sd": 0.1382,
+        "p10": 0.3186,
+        "p25": 0.3906,
+        "p50": 0.4887,
+        "p75": 0.5824,
+        "p90": 0.6596
       },
       "risk_preference": {
         "target_mean": 0.45,
-        "mean": 0.445,
-        "sd": 0.1332,
-        "p10": 0.283,
-        "p25": 0.3442,
-        "p50": 0.4291,
-        "p75": 0.545,
-        "p90": 0.6231
+        "mean": 0.475,
+        "sd": 0.136,
+        "p10": 0.2891,
+        "p25": 0.3915,
+        "p50": 0.4717,
+        "p75": 0.5737,
+        "p90": 0.6487
       },
       "voice_propensity": {
         "target_mean": 0.45,
-        "mean": 0.466,
-        "sd": 0.1062,
-        "p10": 0.3239,
-        "p25": 0.4069,
-        "p50": 0.4632,
-        "p75": 0.5341,
-        "p90": 0.607
+        "mean": 0.4382,
+        "sd": 0.1294,
+        "p10": 0.2932,
+        "p25": 0.3304,
+        "p50": 0.418,
+        "p75": 0.5359,
+        "p90": 0.6317
       },
       "mobility_intent": {
         "target_mean": 0.45,
-        "mean": 0.5325,
-        "sd": 0.1899,
-        "p10": 0.2808,
-        "p25": 0.3694,
-        "p50": 0.5766,
-        "p75": 0.6685,
-        "p90": 0.7524
+        "mean": 0.5048,
+        "sd": 0.1815,
+        "p10": 0.2774,
+        "p25": 0.3636,
+        "p50": 0.5094,
+        "p75": 0.6416,
+        "p90": 0.6956
       }
     }
   },
@@ -593,18 +591,22 @@
     "nodes": 40,
     "edges": 240,
     "mean_degree": 12.0,
-    "max_degree": 17,
+    "max_degree": 18,
     "isolated": 0,
-    "clustering": 0.4269623676976618,
+    "clustering": 0.4006027836542542,
     "random_clustering": 0.3,
-    "mean_path_length": 1.7393162393162394,
+    "mean_path_length": 1.747008547008547,
     "random_path_length": 1.4845142993313865,
-    "small_world_sigma": 1.2147143913915974,
+    "small_world_sigma": 1.134702635361117,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
-        "degree": 5,
-        "count": 2
+        "degree": 3,
+        "count": 1
+      },
+      {
+        "degree": 6,
+        "count": 1
       },
       {
         "degree": 7,
@@ -624,36 +626,40 @@
       },
       {
         "degree": 11,
-        "count": 5
+        "count": 2
       },
       {
         "degree": 12,
-        "count": 4
+        "count": 9
       },
       {
         "degree": 13,
-        "count": 6
+        "count": 4
       },
       {
         "degree": 14,
-        "count": 3
+        "count": 4
       },
       {
         "degree": 15,
-        "count": 2
+        "count": 3
       },
       {
         "degree": 16,
-        "count": 6
+        "count": 2
       },
       {
         "degree": 17,
-        "count": 2
+        "count": 3
+      },
+      {
+        "degree": 18,
+        "count": 1
       }
     ]
   },
   "workplaces": {
-    "count": 5,
+    "count": 4,
     "size_histogram": [
       {
         "size": 2,
@@ -661,10 +667,10 @@
       },
       {
         "size": 3,
-        "count": 2
+        "count": 1
       },
       {
-        "size": 7,
+        "size": 10,
         "count": 1
       }
     ]

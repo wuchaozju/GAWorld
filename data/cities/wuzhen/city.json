@@ -40,7 +40,7 @@
   },
   "environment": "environment.json",
   "population": {
-    "count": 60,
+    "count": 63,
     "state_csv": "agents.csv",
     "profiles_md": "profiles.md"
   },
@@ -99,7 +99,17 @@
       "preset": "cn_county_town",
       "seed": 42,
       "replace": false
+    },
+    {
+      "at": "2026-09-27T16:59:25+00:00",
+      "action": "population.add",
+      "added": 63,
+      "total": 63,
+      "preset": "cn_county_town",
+      "locale": "zh-CN",
+      "seed": 1591030365,
+      "replace": true
     }
   ],
-  "updated_at": "2026-09-15T16:44:40+00:00"
+  "updated_at": "2026-09-27T16:59:25+00:00"
 }

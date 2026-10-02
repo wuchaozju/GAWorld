@@ -91,7 +91,17 @@
       "preset": "custom",
       "seed": 42,
       "replace": false
+    },
+    {
+      "at": "2026-09-27T16:59:25+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_county_town",
+      "locale": "zh-CN",
+      "seed": 915436577,
+      "replace": true
     }
   ],
-  "updated_at": "2026-09-22T01:20:44+00:00"
+  "updated_at": "2026-09-27T16:59:25+00:00"
 }

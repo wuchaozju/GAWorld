@@ -3,8 +3,8 @@
   "achieved": {
     "median_age": {
       "target": 36.0,
-      "achieved": 32.5,
-      "delta": -3.5
+      "achieved": 33.0,
+      "delta": -3.0
     },
     "share_under_18": {
       "target": 0.16,
@@ -279,68 +279,74 @@
       {
         "age_from": 10,
         "age_to": 14,
-        "male": 2,
+        "male": 5,
         "female": 4
       },
       {
         "age_from": 15,
         "age_to": 19,
-        "male": 5,
+        "male": 2,
         "female": 0
       },
       {
         "age_from": 20,
         "age_to": 24,
-        "male": 6,
-        "female": 9
+        "male": 3,
+        "female": 6
       },
       {
         "age_from": 25,
         "age_to": 29,
         "male": 8,
-        "female": 5
+        "female": 7
       },
       {
         "age_from": 30,
         "age_to": 34,
-        "male": 3,
-        "female": 3
+        "male": 6,
+        "female": 4
       },
       {
         "age_from": 35,
         "age_to": 39,
-        "male": 5,
+        "male": 3,
         "female": 4
       },
       {
         "age_from": 40,
         "age_to": 44,
-        "male": 2,
-        "female": 4
+        "male": 3,
+        "female": 2
+      },
+      {
+        "age_from": 45,
+        "age_to": 49,
+        "male": 1,
+        "female": 1
       },
       {
         "age_from": 50,
         "age_to": 54,
         "male": 3,
-        "female": 1
+        "female": 2
       },
       {
         "age_from": 55,
         "age_to": 59,
         "male": 4,
-        "female": 2
+        "female": 4
       },
       {
         "age_from": 60,
         "age_to": 64,
         "male": 4,
-        "female": 6
+        "female": 4
       },
       {
         "age_from": 65,
         "age_to": 69,
         "male": 1,
-        "female": 0
+        "female": 3
       },
       {
         "age_from": 70,
@@ -351,26 +357,26 @@
       {
         "age_from": 75,
         "age_to": 79,
-        "male": 2,
+        "male": 1,
         "female": 0
       },
       {
         "age_from": 80,
         "age_to": 84,
         "male": 2,
-        "female": 1
+        "female": 0
       },
       {
         "age_from": 85,
         "age_to": 89,
-        "male": 0,
-        "female": 2
+        "male": 1,
+        "female": 1
       },
       {
         "age_from": 90,
         "age_to": 94,
         "male": 1,
-        "female": 1
+        "female": 0
       }
     ],
     "lorenz": [
@@ -466,32 +472,28 @@
       },
       {
         "size": 2,
-        "count": 11
+        "count": 10
       },
       {
         "size": 3,
-        "count": 6
-      },
-      {
-        "size": 4,
         "count": 7
       },
       {
-        "size": 5,
-        "count": 2
+        "size": 4,
+        "count": 6
       },
       {
-        "size": 6,
-        "count": 2
+        "size": 5,
+        "count": 5
       }
     ],
     "household_types": {
-      "nuclear": 5,
-      "single_parent": 2,
-      "couple": 9,
       "multigen": 7,
+      "single_parent": 1,
+      "nuclear": 6,
       "shared_rental": 5,
-      "single": 10
+      "single": 10,
+      "couple": 9
     },
     "education": {
       "小学及以下": 14,
@@ -511,93 +513,93 @@
     "state_distribution": {
       "emotion": {
         "target_mean": 0.58,
-        "mean": 0.5965,
-        "sd": 0.1075,
-        "p10": 0.4657,
-        "p25": 0.5289,
-        "p50": 0.5965,
-        "p75": 0.656,
-        "p90": 0.7215
+        "mean": 0.5901,
+        "sd": 0.1228,
+        "p10": 0.4201,
+        "p25": 0.5215,
+        "p50": 0.5975,
+        "p75": 0.6642,
+        "p90": 0.7477
       },
       "stress": {
         "target_mean": 0.55,
-        "mean": 0.5655,
-        "sd": 0.1019,
-        "p10": 0.4212,
-        "p25": 0.5144,
-        "p50": 0.5656,
-        "p75": 0.6291,
-        "p90": 0.691
+        "mean": 0.5839,
+        "sd": 0.1218,
+        "p10": 0.435,
+        "p25": 0.4944,
+        "p50": 0.5736,
+        "p75": 0.6598,
+        "p90": 0.7578
       },
       "econ_security": {
         "target_mean": 0.52,
-        "mean": 0.4685,
-        "sd": 0.1465,
-        "p10": 0.2855,
-        "p25": 0.3672,
-        "p50": 0.4778,
-        "p75": 0.5716,
-        "p90": 0.638
+        "mean": 0.4727,
+        "sd": 0.1513,
+        "p10": 0.3072,
+        "p25": 0.3888,
+        "p50": 0.4529,
+        "p75": 0.578,
+        "p90": 0.6855
       },
       "city_identity": {
         "target_mean": 0.55,
-        "mean": 0.4657,
-        "sd": 0.142,
-        "p10": 0.3067,
-        "p25": 0.3691,
-        "p50": 0.4648,
-        "p75": 0.5618,
-        "p90": 0.6569
+        "mean": 0.5001,
+        "sd": 0.1608,
+        "p10": 0.3087,
+        "p25": 0.3736,
+        "p50": 0.5187,
+        "p75": 0.6199,
+        "p90": 0.7014
       },
       "policy_sensitivity": {
         "target_mean": 0.5,
-        "mean": 0.4666,
-        "sd": 0.1276,
-        "p10": 0.3057,
-        "p25": 0.3788,
-        "p50": 0.4674,
-        "p75": 0.5511,
-        "p90": 0.639
+        "mean": 0.4964,
+        "sd": 0.1185,
+        "p10": 0.3313,
+        "p25": 0.4172,
+        "p50": 0.5003,
+        "p75": 0.5784,
+        "p90": 0.6249
       },
       "platform_dependence": {
         "target_mean": 0.5,
-        "mean": 0.5109,
-        "sd": 0.1511,
-        "p10": 0.2835,
-        "p25": 0.4458,
-        "p50": 0.5159,
-        "p75": 0.6028,
-        "p90": 0.6937
+        "mean": 0.5218,
+        "sd": 0.1567,
+        "p10": 0.332,
+        "p25": 0.4121,
+        "p50": 0.5261,
+        "p75": 0.6122,
+        "p90": 0.7206
       },
       "risk_preference": {
         "target_mean": 0.45,
-        "mean": 0.4483,
-        "sd": 0.1217,
-        "p10": 0.2972,
-        "p25": 0.3533,
-        "p50": 0.4442,
-        "p75": 0.532,
-        "p90": 0.6187
+        "mean": 0.4391,
+        "sd": 0.1578,
+        "p10": 0.2432,
+        "p25": 0.3369,
+        "p50": 0.438,
+        "p75": 0.5406,
+        "p90": 0.6068
       },
       "voice_propensity": {
         "target_mean": 0.45,
-        "mean": 0.4405,
-        "sd": 0.1309,
-        "p10": 0.3099,
-        "p25": 0.3587,
-        "p50": 0.4333,
-        "p75": 0.5291,
-        "p90": 0.615
+        "mean": 0.4316,
+        "sd": 0.1221,
+        "p10": 0.2589,
+        "p25": 0.3553,
+        "p50": 0.4335,
+        "p75": 0.5157,
+        "p90": 0.5822
       },
       "mobility_intent": {
         "target_mean": 0.45,
-        "mean": 0.5178,
-        "sd": 0.1934,
-        "p10": 0.2314,
-        "p25": 0.3671,
-        "p50": 0.5489,
-        "p75": 0.6629,
-        "p90": 0.7529
+        "mean": 0.5085,
+        "sd": 0.1867,
+        "p10": 0.2493,
+        "p25": 0.3675,
+        "p50": 0.5086,
+        "p75": 0.6492,
+        "p90": 0.7489
       }
     }
   },
@@ -605,82 +607,74 @@
     "nodes": 100,
     "edges": 600,
     "mean_degree": 12.0,
-    "max_degree": 21,
+    "max_degree": 20,
     "isolated": 0,
-    "clustering": 0.21254267868354554,
+    "clustering": 0.20970230569224377,
     "random_clustering": 0.12,
     "mean_path_length": 2.138047138047138,
     "random_path_length": 1.8532568160582539,
-    "small_world_sigma": 1.5352645917079706,
+    "small_world_sigma": 1.5147476578488566,
     "largest_component_share": 1.0,
     "degree_histogram": [
-      {
-        "degree": 4,
-        "count": 1
-      },
       {
         "degree": 5,
         "count": 2
       },
       {
         "degree": 6,
-        "count": 4
+        "count": 2
       },
       {
         "degree": 7,
-        "count": 3
+        "count": 2
       },
       {
         "degree": 8,
-        "count": 2
+        "count": 10
       },
       {
         "degree": 9,
-        "count": 11
+        "count": 14
       },
       {
         "degree": 10,
-        "count": 15
+        "count": 6
       },
       {
         "degree": 11,
-        "count": 8
+        "count": 9
       },
       {
         "degree": 12,
-        "count": 11
+        "count": 10
       },
       {
         "degree": 13,
-        "count": 5
+        "count": 12
       },
       {
         "degree": 14,
-        "count": 16
+        "count": 9
       },
       {
         "degree": 15,
-        "count": 7
+        "count": 8
       },
       {
         "degree": 16,
-        "count": 4
+        "count": 8
       },
       {
         "degree": 17,
-        "count": 5
-      },
-      {
-        "degree": 18,
         "count": 3
       },
       {
-        "degree": 19,
-        "count": 2
+        "degree": 18,
+        "count": 1
       },
       {
-        "degree": 21,
-        "count": 1
+        "degree": 20,
+        "count": 4
       }
     ]
   },
@@ -693,22 +687,18 @@
       },
       {
         "size": 2,
-        "count": 8
+        "count": 9
       },
       {
-        "size": 3,
+        "size": 5,
         "count": 1
       },
       {
-        "size": 4,
+        "size": 7,
         "count": 2
       },
       {
         "size": 8,
-        "count": 1
-      },
-      {
-        "size": 10,
         "count": 1
       }
     ]

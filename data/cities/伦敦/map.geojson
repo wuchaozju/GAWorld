@@ -1,0 +1,975 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "大倫敦;大伦敦",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 51.507446,
+   "lng": -0.127765,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.01443272
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.2488001,
+     51.6126689
+    ]
+   },
+   "properties": {
+    "name": "Mill Hill Broadway",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0261521,
+     51.4444696
+    ]
+   },
+   "properties": {
+    "name": "Catford",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.074968,
+     51.5452841
+    ]
+   },
+   "properties": {
+    "name": "Dalston Junction",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0883292,
+     51.4541783
+    ]
+   },
+   "properties": {
+    "name": "North Dulwich",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0237594,
+     51.5815237
+    ]
+   },
+   "properties": {
+    "name": "Walthamstow Queen's Road",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1988601,
+     51.389451
+    ]
+   },
+   "properties": {
+    "name": "St. Helier",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.2396076,
+     51.3948747
+    ]
+   },
+   "properties": {
+    "name": "Motspur Park",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.2055176,
+     51.4033264
+    ]
+   },
+   "properties": {
+    "name": "South Merton",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.2388805,
+     51.5802174
+    ]
+   },
+   "properties": {
+    "name": "Hendon",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1020387,
+     51.378808
+    ]
+   },
+   "properties": {
+    "name": "West Croydon",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1052701,
+     51.5775578
+    ]
+   },
+   "properties": {
+    "name": "Harringay",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1277852,
+     51.4383281
+    ]
+   },
+   "properties": {
+    "name": "Streatham Hill",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1475846,
+     51.47761
+    ]
+   },
+   "properties": {
+    "name": "Battersea Park",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0755835,
+     51.5386574
+    ]
+   },
+   "properties": {
+    "name": "Haggerston",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0519666,
+     51.5008237
+    ]
+   },
+   "properties": {
+    "name": "Rotherhithe",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0478319,
+     51.4934207
+    ]
+   },
+   "properties": {
+    "name": "Surrey Quays",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0560206,
+     51.5044344
+    ]
+   },
+   "properties": {
+    "name": "Wapping",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0896031,
+     51.468043
+    ]
+   },
+   "properties": {
+    "name": "Denmark Hill",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1384355,
+     51.4699602
+    ]
+   },
+   "properties": {
+    "name": "Wandsworth Road",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1323141,
+     51.4654853
+    ]
+   },
+   "properties": {
+    "name": "Clapham High Street",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0996753,
+     51.5227918
+    ]
+   },
+   "properties": {
+    "name": "St Bartholomew's and the Royal London School of Medicine and Dentistry",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0066531,
+     51.4825423
+    ]
+   },
+   "properties": {
+    "name": "University of Greenwich",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0023261,
+     51.4636891
+    ]
+   },
+   "properties": {
+    "name": "St Matthew Academy West Campus",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0025056,
+     51.4645527
+    ]
+   },
+   "properties": {
+    "name": "Christ the King Sixth Form College",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1201696,
+     51.448645
+    ]
+   },
+   "properties": {
+    "name": "Little Gems Nursery",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1335601,
+     51.5314094
+    ]
+   },
+   "properties": {
+    "name": "Children's Centre Services SureStart Euston",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.131964,
+     51.5328177
+    ]
+   },
+   "properties": {
+    "name": "St. Aloysius' School Nursery",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.2416099,
+     51.5333139
+    ]
+   },
+   "properties": {
+    "name": "Tubbs Road Community Project",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1105285,
+     51.5326193
+    ]
+   },
+   "properties": {
+    "name": "White Lion Centre",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.106341,
+     51.5478494
+    ]
+   },
+   "properties": {
+    "name": "Studio La Danza",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1325885,
+     51.516109
+    ]
+   },
+   "properties": {
+    "name": "UK College of English",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1322701,
+     51.5161509
+    ]
+   },
+   "properties": {
+    "name": "Scott's College",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1321165,
+     51.5161309
+    ]
+   },
+   "properties": {
+    "name": "Rose of York Language School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1234335,
+     51.5161885
+    ]
+   },
+   "properties": {
+    "name": "EC",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1523829,
+     51.513363
+    ]
+   },
+   "properties": {
+    "name": "Montessori Center International",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1587266,
+     51.4355644
+    ]
+   },
+   "properties": {
+    "name": "Christian Education Centre",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0989164,
+     51.5007848
+    ]
+   },
+   "properties": {
+    "name": "The British School of Osteopathy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1078595,
+     51.505039
+    ]
+   },
+   "properties": {
+    "name": "EF International Language Center",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.117442,
+     51.5116948
+    ]
+   },
+   "properties": {
+    "name": "The Courtauld Institute of Art",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.107454,
+     51.487351
+    ]
+   },
+   "properties": {
+    "name": "City & Guilds Of London Art School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1764217,
+     51.5529722
+    ]
+   },
+   "properties": {
+    "name": "Devonshire House",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1165517,
+     51.5211293
+    ]
+   },
+   "properties": {
+    "name": "GEO London Centre",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1183042,
+     51.6320636
+    ]
+   },
+   "properties": {
+    "name": "Priory Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1663173,
+     51.4732684
+    ]
+   },
+   "properties": {
+    "name": "Bridge Lane Health Centre",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1070682,
+     51.423089
+    ]
+   },
+   "properties": {
+    "name": "British Home & Hospital for Incurables",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0045395,
+     51.4082042
+    ]
+   },
+   "properties": {
+    "name": "Sloane Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1848418,
+     51.3797984
+    ]
+   },
+   "properties": {
+    "name": "Queen Mary's Childrens' Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1715368,
+     51.4020487
+    ]
+   },
+   "properties": {
+    "name": "Chapel Orchard Day Surgery",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1435858,
+     51.5224709
+    ]
+   },
+   "properties": {
+    "name": "The Portland Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.0925094,
+     51.6249907
+    ]
+   },
+   "properties": {
+    "name": "North London Hospice Winchmore Hill",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1123103,
+     51.3911811
+    ]
+   },
+   "properties": {
+    "name": "Sexual Health Clinic",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1115896,
+     51.3895435
+    ]
+   },
+   "properties": {
+    "name": "Macmillan Cancer Support Centres",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1111571,
+     51.3892531
+    ]
+   },
+   "properties": {
+    "name": "Main Reception",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.108499,
+     51.388644
+    ]
+   },
+   "properties": {
+    "name": "Patient Advice and Liaison Service (PALS)",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1110591,
+     51.3912926
+    ]
+   },
+   "properties": {
+    "name": "Maternity Reception",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1102788,
+     51.3911477
+    ]
+   },
+   "properties": {
+    "name": "Fertility Treatment",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1093613,
+     51.3905149
+    ]
+   },
+   "properties": {
+    "name": "Gynaecology Department",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1110648,
+     51.3909333
+    ]
+   },
+   "properties": {
+    "name": "Women's Health Unit",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.11113,
+     51.3887004
+    ]
+   },
+   "properties": {
+    "name": "Croydon Heart Centre",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1097438,
+     51.3902698
+    ]
+   },
+   "properties": {
+    "name": "Dental Department",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1099614,
+     51.3904846
+    ]
+   },
+   "properties": {
+    "name": "Dermatology Department",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.108209,
+     51.3886983
+    ]
+   },
+   "properties": {
+    "name": "Diabetic Department",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1088304,
+     51.3888297
+    ]
+   },
+   "properties": {
+    "name": "MRI",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.1087926,
+     51.3891088
+    ]
+   },
+   "properties": {
+    "name": "Main X-Ray",
+    "category": "medical",
+    "kind": "place"
+   }
+  }
+ ]
+}

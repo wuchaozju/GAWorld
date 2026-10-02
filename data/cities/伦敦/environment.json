@@ -1,0 +1,34 @@
+{
+  "city": "大倫敦;大伦敦",
+  "climate": "continental",
+  "background": "英国;英國·大倫敦;大伦敦。大城市，大陆性寒冷气候。当地经济与就业结构与其规模相称，居民对物价、就业与公共服务的变化较为敏感；社会秩序稳定。",
+  "environment": {
+    "enabled": true,
+    "event_chance": 0.6,
+    "max_events_per_tick": 2,
+    "natural_events": [
+      "降雪天气，道路积雪",
+      "寒潮来袭，气温骤降",
+      "暴风雪预警，出行受阻",
+      "极端低温，供暖负荷升高",
+      "冰冻天气，路面湿滑"
+    ],
+    "social_events": [
+      "主干道交通拥堵",
+      "地铁运营延误",
+      "城市马拉松导致道路封闭",
+      "大型演出，周边人流密集",
+      "商圈促销活动，客流激增"
+    ]
+  },
+  "external_environment": {
+    "enabled": true,
+    "seed": 3811223296,
+    "max_events_per_tick": 3,
+    "generator": {
+      "mode": "llm",
+      "history_days": 3,
+      "description": "英国;英國的大倫敦;大伦敦，大城市，大陆性寒冷气候，季节性天气变化明显；常住人口约 8,908,083 人；当地经济与就业结构随规模而定，居民对物价、就业与公共服务变化敏感。"
+    }
+  }
+}

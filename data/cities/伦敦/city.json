@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "slug": "伦敦",
+  "name": "大倫敦;大伦敦",
+  "display_name": "大倫敦;大伦敦, 英格兰;英格蘭, 英国;英國",
+  "created_at": "2026-09-27T16:32:19+00:00",
+  "place": {
+    "query": "伦敦",
+    "name": "大倫敦;大伦敦",
+    "display_name": "大倫敦;大伦敦, 英格兰;英格蘭, 英国;英國",
+    "lat": 51.5074456,
+    "lng": -0.1277653,
+    "bbox": [
+      51.377445599999994,
+      -0.2577653,
+      51.6374456,
+      0.002234700000000006
+    ],
+    "kind": "city",
+    "scale": "large",
+    "country": "英国;英國",
+    "country_code": "gb",
+    "population": 8908083,
+    "source": "nominatim",
+    "osm_id": 175342,
+    "osm_type": "relation"
+  },
+  "scale": "large",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 51.507446,
+      "lng": -0.127765,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.01443272
+    },
+    "nodes": 64
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 200,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-09-27T16:32:19+00:00",
+      "action": "map.virtual",
+      "scale": "large",
+      "seed": 3811223296
+    },
+    {
+      "at": "2026-09-27T16:36:50+00:00",
+      "action": "map.real",
+      "nodes": 64,
+      "bbox": [
+        51.377445599999994,
+        -0.2577653,
+        51.6374456,
+        0.002234700000000006
+      ]
+    },
+    {
+      "at": "2026-09-27T16:36:50+00:00",
+      "action": "environment",
+      "climate": "continental"
+    },
+    {
+      "at": "2026-09-27T16:37:09+00:00",
+      "action": "knowledge",
+      "source": "web",
+      "industries": [
+        "金融业",
+        "专业服务业",
+        "文化创意产业"
+      ]
+    },
+    {
+      "at": "2026-09-27T16:37:13+00:00",
+      "action": "locale.research",
+      "code": "en-GB-GLA",
+      "label": "英国大伦敦"
+    },
+    {
+      "at": "2026-09-27T16:37:13+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim",
+      "imagined": false
+    },
+    {
+      "at": "2026-09-27T16:37:13+00:00",
+      "action": "population.add",
+      "added": 200,
+      "total": 200,
+      "preset": "cn_county_town",
+      "locale": "en-GB-GLA",
+      "seed": 42,
+      "replace": false
+    },
+    {
+      "at": "2026-09-27T16:59:26+00:00",
+      "action": "population.add",
+      "added": 200,
+      "total": 200,
+      "preset": "cn_county_town",
+      "locale": "en-GB-GLA",
+      "seed": 521085547,
+      "replace": true
+    }
+  ],
+  "updated_at": "2026-09-27T16:59:26+00:00"
+}

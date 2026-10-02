@@ -754,7 +754,17 @@
       "count": 90,
       "source": "persona",
       "scope": "legco"
+    },
+    {
+      "at": "2026-09-27T16:59:26+00:00",
+      "action": "population.add",
+      "added": 190,
+      "total": 190,
+      "preset": "cn_county_town",
+      "locale": "zh-CN",
+      "seed": 491853518,
+      "replace": true
     }
   ],
-  "updated_at": "2026-09-25T09:36:32+00:00"
+  "updated_at": "2026-09-27T16:59:26+00:00"
 }

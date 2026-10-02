@@ -1,0 +1,201 @@
+﻿id,name,gender,age,hukou,residence,employment,industry,monthly_income,emotion,stress,econ_security,city_identity,policy_sensitivity,platform_dependence,risk_preference,voice_propensity,mobility_intent
+1,Casey McCarthy,女,60,本地,Rotherhithe·联排住宅,not_in_labor_force,none,0,0.35,0.66,0.51,0.52,0.71,0.23,0.35,0.45,0.39
+2,Amina Liu,女,48,本地,Rotherhithe·出租公寓,employed,tech,35422,0.43,0.47,0.48,0.53,0.31,0.30,0.40,0.42,0.47
+3,Toby Martinez,男,88,本地,Haggerston·共管公寓,not_in_labor_force,none,9975,0.56,0.41,0.36,0.32,0.55,0.54,0.41,0.22,0.10
+4,Muhammad Kelly,男,28,外省,Walthamstow Queen's Road·出租公寓,employed,service,6931,0.69,0.72,0.44,0.72,0.63,0.45,0.50,0.44,0.69
+5,Jordan Huang,女,57,本地,Walthamstow Queen's Road·自住公寓,not_in_labor_force,none,0,0.33,0.75,0.45,0.54,0.51,0.40,0.31,0.42,0.37
+6,Jacob Wagner,男,73,本地,Dalston Junction·联排住宅,not_in_labor_force,none,9975,0.41,0.54,0.44,0.50,0.71,0.29,0.20,0.38,0.11
+7,Poppy Davies,女,20,本地,Wapping·自住公寓,employed,education,34766,0.70,0.53,0.72,0.65,0.49,0.64,0.49,0.67,0.42
+8,Willow Zhang,女,15,外省,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.59,0.29,0.41,0.35,0.39,0.63,0.45,0.54,0.57
+9,Casey Schmidt,女,29,外省,Clapham High Street·独栋住宅,not_in_labor_force,none,0,0.58,0.49,0.35,0.25,0.57,0.36,0.40,0.48,0.66
+10,Emma Mensah,女,41,外省,Rotherhithe·改建阁楼公寓,employed,trade,17951,0.60,0.66,0.34,0.34,0.67,0.63,0.51,0.38,0.58
+11,Alexander Fernandez,男,26,外省,Battersea Park·议会公屋,employed,education,8805,0.74,0.51,0.31,0.29,0.60,0.51,0.31,0.58,0.93
+12,Adam Rossi,男,39,省内,Hendon·学生公寓,not_in_labor_force,none,0,0.57,0.47,0.12,0.25,0.53,0.55,0.55,0.55,0.55
+13,Aisha White,女,31,省内,West Croydon·出租公寓,unemployed,none,4275,0.56,0.74,0.10,0.37,0.74,0.34,0.46,0.70,0.70
+14,Ava Esposito,女,10,外省,Wapping·改建阁楼公寓,not_in_labor_force,none,0,0.61,0.74,0.50,0.18,0.57,0.67,0.68,0.21,0.74
+15,Mohammed Rosenberg,男,35,外国,Haggerston·共管公寓,employed,service,15471,0.52,0.61,0.27,0.33,0.43,0.78,0.45,0.33,0.56
+16,Alice Russo,女,27,本地,Battersea Park·议会公屋,employed,tech,18359,0.59,0.48,0.39,0.58,0.77,0.48,0.51,0.53,0.60
+17,Taylor Anderson,女,63,本地,Haggerston·改建阁楼公寓,employed,trade,19175,0.50,0.58,0.25,0.65,0.64,0.67,0.27,0.54,0.23
+18,Alex Jones,男,16,外省,West Croydon·改建阁楼公寓,not_in_labor_force,none,0,0.55,0.65,0.35,0.07,0.42,0.66,0.55,0.22,0.75
+19,Nour Chen,女,55,本地,Wapping·共管公寓,employed,tech,85706,0.72,0.53,0.63,0.54,0.51,0.36,0.30,0.37,0.46
+20,Fatima Uddin,女,24,本地,Denmark Hill·自住公寓,employed,trade,13732,0.51,0.72,0.15,0.45,0.62,0.48,0.58,0.36,0.61
+21,Eva Bianchi,女,91,本地,Denmark Hill·联排住宅,not_in_labor_force,none,9975,0.41,0.44,0.49,0.52,0.43,0.38,0.38,0.37,0.42
+22,Florence Yang,女,27,外省,Clapham High Street·独栋住宅,employed,service,42360,0.40,0.48,0.81,0.33,0.70,0.49,0.64,0.42,0.80
+23,Thomas Yang,男,87,本地,Surrey Quays·共管公寓,not_in_labor_force,none,9975,0.73,0.40,0.41,0.48,0.37,0.31,0.30,0.28,0.21
+24,Morgan Liu,男,56,本地,Wapping·共管公寓,employed,trade,27017,0.57,0.39,0.35,0.70,0.61,0.50,0.50,0.61,0.27
+25,Reese Adeyemi,男,13,外省,Dalston Junction·联排住宅,not_in_labor_force,none,0,0.68,0.60,0.41,0.37,0.61,0.65,0.76,0.47,0.94
+26,Sana Lopez,女,70,本地,Denmark Hill·学生公寓,not_in_labor_force,none,9975,0.38,0.64,0.29,0.63,0.55,0.64,0.51,0.40,0.30
+27,Arthur Murphy,男,51,本地,Rotherhithe·出租公寓,employed,service,15046,0.61,0.42,0.46,0.66,0.41,0.38,0.52,0.54,0.45
+28,Avery Wang,女,6,本地,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.54,0.67,0.45,0.52,0.22,0.67,0.53,0.32,0.69
+29,Jessica Hussain,女,17,外省,Rotherhithe·联排住宅,not_in_labor_force,none,0,0.49,0.72,0.56,0.33,0.26,0.59,0.50,0.25,0.70
+30,Sophie Anderson,女,29,本地,Wapping·联排住宅,employed,service,10160,0.46,0.67,0.35,0.47,0.49,0.69,0.58,0.60,0.40
+31,Ava Müller,女,6,外省,Surrey Quays·出租公寓,not_in_labor_force,none,0,0.68,0.37,0.55,0.50,0.62,0.51,0.43,0.48,0.95
+32,Yusuf Obi,男,68,本地,Wapping·出租公寓,not_in_labor_force,none,9975,0.60,0.69,0.43,0.54,0.42,0.65,0.29,0.35,0.24
+33,Reese Hoffmann,女,57,本地,Wapping·议会公屋,employed,service,31727,0.72,0.26,0.72,0.77,0.30,0.25,0.33,0.16,0.20
+34,Jacob Fischer,男,13,本地,Dalston Junction·联排住宅,not_in_labor_force,none,0,0.55,0.40,0.00,0.60,0.36,0.68,0.73,0.40,0.60
+35,Daisy Sanchez,女,31,外省,West Croydon·出租公寓,employed,service,26066,0.38,0.70,0.42,0.45,0.33,0.39,0.49,0.50,0.64
+36,Riley Zhang,男,8,本地,Denmark Hill·学生公寓,not_in_labor_force,none,0,0.53,0.45,0.57,0.50,0.47,0.56,0.58,0.31,0.63
+37,Riley Romano,男,12,本地,Hendon·议会公屋,not_in_labor_force,none,0,0.55,0.55,0.33,0.62,0.37,0.53,0.75,0.11,0.56
+38,Daisy Rosenberg,女,65,本地,Haggerston·改建阁楼公寓,not_in_labor_force,none,9975,0.76,0.64,0.23,0.74,0.32,0.45,0.22,0.36,0.36
+39,Eleanor Mensah,女,87,外省,Wapping·出租公寓,not_in_labor_force,none,9975,0.57,0.57,0.44,0.40,0.49,0.45,0.33,0.27,0.41
+40,Iqra Wang,女,67,本地,Clapham High Street·改建阁楼公寓,not_in_labor_force,none,9975,0.52,0.78,0.53,0.56,0.33,0.51,0.41,0.44,0.48
+41,Harrison Friedman,男,30,本地,Walthamstow Queen's Road·出租公寓,employed,service,5289,0.43,0.70,0.42,0.45,0.36,0.46,0.81,0.50,0.34
+42,Benjamin MacDonald,男,13,省内,Wapping·议会公屋,not_in_labor_force,none,0,0.43,0.44,0.43,0.28,0.30,0.72,0.57,0.31,0.88
+43,Ali Evans,男,6,本地,Clapham High Street·联排住宅,not_in_labor_force,none,0,0.67,0.41,0.50,0.56,0.63,0.63,0.62,0.39,0.54
+44,Harrison Kelly,男,39,本地,Streatham Hill·学生公寓,not_in_labor_force,none,0,0.41,0.55,0.63,0.60,0.48,0.55,0.35,0.25,0.45
+45,Ava Sanchez,女,47,本地,Catford·议会公屋,employed,service,24690,0.52,0.60,0.63,0.69,0.82,0.24,0.50,0.46,0.38
+46,Ahmed Stewart,男,58,本地,Wandsworth Road·议会公屋,employed,trade,68687,0.48,0.48,0.69,0.54,0.73,0.44,0.35,0.68,0.51
+47,Arthur Begum,男,55,本地,Wandsworth Road·学生公寓,not_in_labor_force,none,0,0.53,0.52,0.34,0.57,0.48,0.44,0.42,0.62,0.42
+48,Rowan Yang,男,62,本地,St. Helier·改建阁楼公寓,employed,service,19994,0.55,0.61,0.39,0.53,0.37,0.59,0.45,0.28,0.53
+49,Grace Becker,女,11,本地,Wapping·合租公寓,not_in_labor_force,none,0,0.61,0.63,0.47,0.53,0.45,0.68,0.71,0.48,0.69
+50,Morgan Obi,男,10,本地,Catford·议会公屋,not_in_labor_force,none,0,0.49,0.62,0.27,0.70,0.42,0.68,0.68,0.26,0.74
+51,Florence Davies,女,39,本地,West Croydon·改建阁楼公寓,employed,tech,32898,0.76,0.56,0.47,0.60,0.15,0.27,0.18,0.41,0.48
+52,Liam Begum,男,49,本地,Catford·议会公屋,not_in_labor_force,none,0,0.44,0.80,0.56,0.56,0.43,0.53,0.58,0.64,0.67
+53,Toby Okonkwo,男,57,本地,Walthamstow Queen's Road·自住公寓,not_in_labor_force,none,0,0.64,0.67,0.24,0.64,0.60,0.54,0.13,0.46,0.57
+54,Taylor Obi,男,39,外省,South Merton·共管公寓,employed,service,34127,0.76,0.41,0.57,0.09,0.67,0.62,0.31,0.49,0.63
+55,Emma Thompson,女,30,本地,West Croydon·出租公寓,employed,service,33505,0.74,0.36,0.29,0.57,0.73,0.69,0.46,0.42,0.42
+56,Lily Wang,女,56,本地,Wandsworth Road·自住公寓,employed,trade,41475,0.60,0.56,0.53,0.47,0.43,0.22,0.25,0.41,0.09
+57,Safia Wright,女,46,本地,Dalston Junction·联排住宅,not_in_labor_force,none,0,0.62,0.48,0.47,0.60,0.59,0.64,0.28,0.49,0.43
+58,Toby Mensah,男,61,外省,Wandsworth Road·议会公屋,employed,service,13276,0.43,0.69,0.21,0.43,0.47,0.36,0.48,0.16,0.40
+59,Archie Khan,男,21,外省,Wapping·出租公寓,employed,finance,79944,0.48,0.48,0.49,0.10,0.56,0.72,0.59,0.60,0.77
+60,Benjamin Miah,男,39,外省,Hendon·出租公寓,employed,finance,96077,0.52,0.57,0.94,0.15,0.67,0.36,0.40,0.69,0.42
+61,Archie Patel,男,64,本地,Walthamstow Queen's Road·学生公寓,not_in_labor_force,none,0,0.59,0.54,0.17,0.50,0.65,0.50,0.11,0.48,0.45
+62,Mason Okonkwo,男,62,本地,Walthamstow Queen's Road·学生公寓,employed,service,43282,0.43,0.40,0.90,0.84,0.43,0.29,0.44,0.31,0.34
+63,Sage Taylor,女,27,本地,South Merton·改建阁楼公寓,employed,trade,21655,0.71,0.56,0.70,0.63,0.60,0.40,0.44,0.41,0.33
+64,Casey Campbell,女,64,本地,Walthamstow Queen's Road·学生公寓,employed,trade,25601,0.54,0.71,0.39,0.45,0.50,0.24,0.53,0.54,0.44
+65,Arthur Boateng,男,26,本地,Battersea Park·议会公屋,employed,trade,7975,0.53,0.53,0.33,0.80,0.43,0.64,0.48,0.27,0.63
+66,Archie Adeyemi,男,25,省内,Wapping·改建阁楼公寓,not_in_labor_force,none,0,0.70,0.48,0.21,0.43,0.76,0.48,0.30,0.50,0.59
+67,Hussein Esposito,男,44,外省,Clapham High Street·改建阁楼公寓,employed,service,14615,0.65,0.61,0.47,0.23,0.60,0.58,0.59,0.35,0.50
+68,Oscar Martinez,男,7,外省,Wapping·出租公寓,not_in_labor_force,none,0,0.55,0.80,0.31,0.46,0.35,0.66,0.77,0.43,0.50
+69,Charlie Levy,男,16,本地,West Croydon·改建阁楼公寓,not_in_labor_force,none,0,0.28,0.66,0.38,0.61,0.45,0.54,0.45,0.63,0.45
+70,Harrison Becker,男,23,外省,Wapping·出租公寓,employed,service,32305,0.68,0.55,0.48,0.75,0.67,0.50,0.54,0.57,0.60
+71,Ava White,女,15,外省,Wandsworth Road·自住公寓,not_in_labor_force,none,0,0.72,0.61,0.63,0.31,0.41,0.41,0.52,0.42,0.73
+72,Ali Garcia,男,77,本地,Clapham High Street·改建阁楼公寓,not_in_labor_force,none,9975,0.64,0.49,0.55,0.61,0.44,0.35,0.39,0.51,0.06
+73,Arthur Islam,男,59,本地,Wandsworth Road·议会公屋,employed,trade,16308,0.54,0.65,0.31,0.54,0.52,0.65,0.35,0.41,0.42
+74,Yusuf Uddin,男,31,本地,Denmark Hill·议会公屋,not_in_labor_force,none,0,0.47,0.56,0.45,0.53,0.58,0.60,0.59,0.70,0.31
+75,Jordan Chen,女,16,外省,Wandsworth Road·出租公寓,not_in_labor_force,none,0,0.38,0.75,0.26,0.23,0.52,0.75,0.58,0.35,0.64
+76,Daniel Walsh,男,28,本地,South Merton·改建阁楼公寓,not_in_labor_force,none,0,0.48,0.56,0.65,0.68,0.54,0.50,0.46,0.50,0.60
+77,Riley Begum,男,26,省内,Surrey Quays·共管公寓,not_in_labor_force,none,0,0.34,0.69,0.41,0.51,0.45,0.67,0.67,0.53,0.63
+78,Ella Islam,女,23,外国,Surrey Quays·共管公寓,employed,service,10750,0.57,0.59,0.65,0.20,0.58,0.75,0.41,0.42,0.58
+79,Mohammed Friedman,男,83,外省,Wandsworth Road·自住公寓,not_in_labor_force,none,9975,0.49,0.56,0.45,0.35,0.23,0.15,0.12,0.50,0.40
+80,Grace Huang,女,51,外省,Mill Hill Broadway·共管公寓,not_in_labor_force,none,0,0.39,0.46,0.38,0.52,0.47,0.35,0.53,0.65,0.66
+81,Sage Smith,男,38,本地,South Merton·议会公屋,employed,trade,23363,0.56,0.58,0.22,0.54,0.30,0.39,0.40,0.44,0.58
+82,Sana Bianchi,女,20,本地,Clapham High Street·自住公寓,not_in_labor_force,none,0,0.67,0.79,0.51,0.62,0.48,0.67,0.43,0.48,0.45
+83,Harper Zhang,女,58,省内,Wandsworth Road·议会公屋,not_in_labor_force,none,0,0.44,0.47,0.49,0.33,0.41,0.66,0.50,0.27,0.38
+84,Jessica Miah,女,61,本地,Walthamstow Queen's Road·合租公寓,employed,service,37509,0.44,0.44,0.56,0.52,0.19,0.51,0.45,0.41,0.44
+85,Olivia Graham,女,33,本地,Haggerston·共管公寓,not_in_labor_force,none,0,0.42,0.81,0.38,0.37,0.49,0.64,0.61,0.54,0.54
+86,Amina MacDonald,女,24,本地,Catford·自住公寓,employed,service,17132,0.52,0.55,0.16,0.35,0.60,0.58,0.45,0.23,0.50
+87,Ibrahim Khan,男,29,外省,Wapping·联排住宅,employed,service,29012,0.63,0.62,0.67,0.44,0.58,0.49,0.65,0.29,0.57
+88,Ibrahim Adeyemi,男,87,本地,Denmark Hill·联排住宅,not_in_labor_force,none,9975,0.49,0.55,0.60,0.45,0.33,0.42,0.32,0.44,0.33
+89,Olivia Russo,女,17,外省,Haggerston·共管公寓,not_in_labor_force,none,0,0.64,0.50,0.60,0.49,0.20,0.45,0.58,0.34,0.58
+90,Liam McCarthy,男,60,本地,Motspur Park·自住公寓,not_in_labor_force,none,0,0.66,0.61,0.55,0.52,0.52,0.22,0.50,0.35,0.32
+91,Lucas Lopez,男,53,本地,St. Helier·独栋住宅,employed,tech,22931,0.32,0.62,0.45,0.53,0.41,0.57,0.52,0.39,0.36
+92,Evie Miah,女,28,本地,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.62,0.60,0.47,0.36,0.82,0.76,0.25,0.52,0.58
+93,Theo Graham,男,59,本地,Wapping·议会公屋,employed,tech,53985,0.48,0.45,0.77,0.57,0.62,0.36,0.36,0.48,0.16
+94,Kai Zhang,男,28,本地,South Merton·改建阁楼公寓,employed,service,26538,0.69,0.47,0.52,0.53,0.53,0.65,0.15,0.48,0.49
+95,Jacob Nguyen,男,24,省内,Haggerston·共管公寓,unemployed,none,4275,0.55,0.62,0.21,0.14,0.65,0.67,0.52,0.65,0.80
+96,Harrison Schmidt,男,32,本地,Battersea Park·联排住宅,not_in_labor_force,none,0,0.67,0.54,0.59,0.80,0.46,0.50,0.35,0.40,0.48
+97,Scarlett Smith,女,27,外省,Hendon·议会公屋,not_in_labor_force,none,0,0.77,0.62,0.44,0.40,0.51,0.25,0.57,0.46,0.66
+98,Florence Murphy,女,62,省内,Walthamstow Queen's Road·学生公寓,employed,service,63414,0.68,0.43,0.73,0.31,0.64,0.37,0.30,0.65,0.44
+99,Charlotte Li,女,7,本地,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.56,0.59,0.29,0.74,0.65,0.57,0.70,0.21,0.61
+100,Lily Rosenberg,女,38,省内,Harringay·出租公寓,employed,trade,141216,0.55,0.55,0.87,0.32,0.64,0.69,0.28,0.46,0.60
+101,Arthur Mensah,男,18,本地,Wapping·独栋住宅,employed,trade,44243,0.60,0.57,0.52,0.81,0.67,0.52,0.49,0.34,0.52
+102,Amina Cohen,女,9,本地,Haggerston·共管公寓,not_in_labor_force,none,0,0.82,0.64,0.49,0.57,0.32,0.42,0.63,0.21,0.51
+103,Harry Stewart,男,31,本地,Wapping·合租公寓,not_in_labor_force,none,0,0.68,0.73,0.32,0.87,0.57,0.43,0.60,0.38,0.52
+104,Hassan Anderson,男,48,本地,North Dulwich·自住公寓,employed,tech,22077,0.77,0.57,0.49,0.57,0.55,0.41,0.55,0.67,0.36
+105,Alexander Fischer,男,10,本地,Wandsworth Road·议会公屋,not_in_labor_force,none,0,0.48,0.63,0.61,0.40,0.28,0.68,0.57,0.35,0.67
+106,Florence Martinez,女,39,外省,Wapping·自住公寓,employed,medical,39013,0.85,0.62,0.63,0.34,0.55,0.46,0.51,0.37,0.48
+107,Yusuf Evans,男,78,本地,Rotherhithe·联排住宅,not_in_labor_force,none,9975,0.63,0.77,0.45,0.59,0.42,0.54,0.39,0.46,0.28
+108,Jordan Walsh,女,35,本地,North Dulwich·联排住宅,employed,education,16721,0.87,0.65,0.20,0.59,0.57,0.72,0.56,0.53,0.75
+109,Taylor Uddin,男,22,外省,Haggerston·共管公寓,employed,trade,14178,0.69,0.59,0.20,0.45,0.47,0.68,0.59,0.52,0.71
+110,Sage Sanchez,男,11,本地,Catford·议会公屋,not_in_labor_force,none,0,0.57,0.50,0.47,0.35,0.50,0.69,0.55,0.31,0.53
+111,Scarlett Becker,女,13,本地,Streatham Hill·学生公寓,not_in_labor_force,none,0,0.42,0.72,0.27,0.48,0.58,0.63,0.61,0.46,0.58
+112,Sana Rodriguez,女,15,外省,Wandsworth Road·改建阁楼公寓,not_in_labor_force,none,0,0.72,0.66,0.32,0.47,0.58,0.54,0.58,0.39,0.68
+113,Charlie Wagner,女,35,外省,Harringay·学生公寓,employed,tech,71868,0.43,0.47,0.82,0.31,0.50,0.41,0.53,0.47,0.70
+114,Willow Yang,女,25,本地,Surrey Quays·共管公寓,employed,finance,59149,0.64,0.42,0.47,0.24,0.59,0.53,0.32,0.51,0.37
+115,Jordan Uddin,男,51,本地,St. Helier·独栋住宅,employed,trade,49808,0.50,0.43,0.66,0.68,0.55,0.59,0.41,0.54,0.67
+116,Henry Hussain,男,45,本地,Wapping·改建阁楼公寓,not_in_labor_force,none,0,0.45,0.70,0.77,0.46,0.55,0.35,0.62,0.51,0.62
+117,Safia Becker,女,54,本地,Motspur Park·合租公寓,not_in_labor_force,none,0,0.55,0.57,0.42,0.63,0.67,0.40,0.57,0.41,0.32
+118,Maryam Bianchi,女,90,外省,Motspur Park·合租公寓,not_in_labor_force,none,9975,0.54,0.56,0.34,0.61,0.49,0.72,0.33,0.41,0.17
+119,Phoebe Anderson,女,52,本地,Motspur Park·合租公寓,not_in_labor_force,none,0,0.66,0.49,0.53,0.40,0.44,0.51,0.57,0.34,0.41
+120,Aneesa Islam,女,32,本地,Dalston Junction·学生公寓,employed,tech,57290,0.65,0.39,0.72,0.50,0.60,0.69,0.53,0.47,0.48
+121,Lucy Hoffmann,女,9,外省,Denmark Hill·自住公寓,not_in_labor_force,none,0,0.61,0.44,0.40,0.41,0.56,0.73,0.48,0.37,0.60
+122,Sana Ali,女,63,本地,Walthamstow Queen's Road·合租公寓,not_in_labor_force,none,0,0.38,0.73,0.69,0.45,0.52,0.33,0.32,0.23,0.17
+123,Eden Rosenberg,男,41,外省,West Croydon·改建阁楼公寓,employed,trade,61180,0.50,0.45,0.72,0.58,0.41,0.51,0.59,0.50,0.44
+124,Muhammad Esposito,男,30,本地,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.65,0.42,0.44,0.59,0.46,0.71,0.05,0.48,0.37
+125,Freya White,女,48,本地,Surrey Quays·出租公寓,not_in_labor_force,none,0,0.55,0.61,0.61,0.48,0.71,0.49,0.49,0.43,0.65
+126,Lucas Müller,男,39,外省,North Dulwich·改建阁楼公寓,employed,medical,52502,0.62,0.43,0.60,0.22,0.66,0.54,0.38,0.50,0.58
+127,Theo Levy,男,18,本地,Wapping·自住公寓,employed,trade,28500,0.52,0.64,0.46,0.48,0.31,0.63,0.59,0.64,0.45
+128,Eva Li,女,85,本地,North Dulwich·合租公寓,not_in_labor_force,none,9975,0.60,0.56,0.48,0.53,0.64,0.35,0.25,0.57,0.47
+129,Finley Begum,男,25,外省,Catford·自住公寓,employed,service,9519,0.45,0.86,0.29,0.27,0.27,0.71,0.69,0.50,0.53
+130,Oliver Mensah,男,45,外省,Rotherhithe·联排住宅,employed,trade,75559,0.51,0.37,0.69,0.36,0.50,0.78,0.59,0.34,0.62
+131,Alex Rodriguez,女,30,本地,Clapham High Street·改建阁楼公寓,employed,trade,24243,0.66,0.55,0.51,0.70,0.61,0.62,0.49,0.56,0.68
+132,Avery Esposito,男,16,外省,Wapping·共管公寓,not_in_labor_force,none,0,0.53,0.62,0.49,0.49,0.34,0.52,0.33,0.23,0.60
+133,Ahmed Friedman,男,34,本地,Battersea Park·联排住宅,employed,tech,31161,0.49,0.79,0.55,0.48,0.66,0.51,0.56,0.54,0.51
+134,Rowan Evans,男,29,本地,Wapping·合租公寓,employed,service,30607,0.63,0.77,0.52,0.56,0.56,0.63,0.49,0.60,0.32
+135,Yasmin MacDonald,女,14,本地,Clapham High Street·独栋住宅,not_in_labor_force,none,0,0.67,0.60,0.59,0.37,0.66,0.49,0.59,0.35,0.73
+136,Maryam Liu,女,8,本地,Mill Hill Broadway·共管公寓,not_in_labor_force,none,0,0.44,0.48,0.36,0.52,0.58,0.54,0.49,0.23,0.36
+137,Sage Mensah,男,68,本地,Wandsworth Road·出租公寓,not_in_labor_force,none,9975,0.64,0.69,0.41,0.71,0.59,0.55,0.55,0.59,0.37
+138,Freya Fischer,女,23,外省,Wapping·自住公寓,employed,tech,29533,0.60,0.51,0.42,0.22,0.35,0.50,0.69,0.67,0.57
+139,Reese Uddin,男,62,本地,St. Helier·改建阁楼公寓,employed,service,27997,0.69,0.66,0.31,0.33,0.40,0.63,0.22,0.37,0.39
+140,Hassan MacDonald,男,58,本地,Wandsworth Road·自住公寓,employed,service,12809,0.59,0.47,0.27,0.35,0.45,0.42,0.54,0.44,0.48
+141,Mohammed Obi,男,79,本地,Haggerston·共管公寓,not_in_labor_force,none,9975,0.37,0.43,0.54,0.58,0.60,0.32,0.32,0.44,0.31
+142,Morgan Byrne,女,87,本地,Denmark Hill·议会公屋,not_in_labor_force,none,9975,0.40,0.45,0.51,0.45,0.30,0.54,0.26,0.48,0.31
+143,Fatima Russo,女,61,本地,Denmark Hill·议会公屋,employed,service,21236,0.56,0.48,0.40,0.67,0.34,0.27,0.26,0.30,0.28
+144,Amelia Eze,女,10,外省,Wandsworth Road·议会公屋,not_in_labor_force,none,0,0.46,0.61,0.43,0.36,0.37,0.80,0.76,0.41,0.82
+145,Florence Thompson,女,37,外省,Streatham Hill·学生公寓,employed,service,12326,0.65,0.51,0.38,0.23,0.54,0.57,0.64,0.46,0.48
+146,Sophie Johnson,女,8,本地,Mill Hill Broadway·共管公寓,not_in_labor_force,none,0,0.56,0.69,0.69,0.61,0.16,0.82,0.70,0.32,0.48
+147,Florence Esposito,女,18,本地,Hendon·自住公寓,employed,service,25143,0.44,0.73,0.39,0.82,0.60,0.60,0.66,0.69,0.38
+148,Oscar Kelly,男,29,省内,Wapping·联排住宅,employed,education,17542,0.59,0.54,0.44,0.35,0.69,0.55,0.39,0.71,0.73
+149,Lily Hoffmann,女,56,本地,Wandsworth Road·学生公寓,not_in_labor_force,none,0,0.54,0.39,0.56,0.46,0.34,0.38,0.47,0.14,0.31
+150,Leo Schmidt,男,50,本地,Surrey Quays·出租公寓,employed,tech,46303,0.44,0.48,0.59,0.75,0.73,0.41,0.44,0.52,0.43
+151,Eden Eze,女,31,本地,Dalston Junction·学生公寓,unemployed,none,4275,0.60,0.94,0.16,0.67,0.64,0.51,0.36,0.71,0.48
+152,Sebastian Martin,男,62,本地,Rotherhithe·联排住宅,not_in_labor_force,none,0,0.70,0.66,0.30,0.59,0.50,0.36,0.43,0.44,0.50
+153,Kai Anderson,男,18,外省,Wapping·独栋住宅,employed,trade,39804,0.49,0.44,0.70,0.40,0.69,0.58,0.62,0.58,0.80
+154,Amina Okonkwo,女,12,外省,Walthamstow Queen's Road·学生公寓,not_in_labor_force,none,0,0.55,0.40,0.59,0.39,0.31,0.46,0.65,0.34,0.65
+155,Kai Nguyen,女,42,外省,Hendon·自住公寓,employed,service,20820,0.68,0.68,0.19,0.33,0.45,0.33,0.48,0.41,0.62
+156,Casey Wagner,女,83,本地,North Dulwich·合租公寓,not_in_labor_force,none,9975,0.35,0.65,0.36,0.35,0.54,0.39,0.47,0.50,0.20
+157,Taylor Taylor,男,42,外省,Denmark Hill·联排住宅,not_in_labor_force,none,0,0.73,0.77,0.53,0.38,0.56,0.44,0.61,0.59,0.61
+158,Charlie Uddin,男,31,外省,Dalston Junction·学生公寓,employed,tech,40624,0.50,0.54,0.53,0.55,0.63,0.43,0.52,0.50,0.45
+159,Taylor Wilson,女,32,外省,West Croydon·改建阁楼公寓,employed,education,51113,0.60,0.45,0.50,0.36,0.55,0.46,0.28,0.50,0.67
+160,Morgan Esposito,女,46,省内,Wandsworth Road·出租公寓,employed,finance,232679,0.64,0.41,0.69,0.14,0.52,0.38,0.35,0.42,0.52
+161,Grace MacDonald,女,43,省内,Motspur Park·独栋住宅,employed,service,18767,0.59,0.58,0.57,0.51,0.53,0.56,0.57,0.49,0.73
+162,Morgan Martin,女,89,本地,Wapping·议会公屋,not_in_labor_force,none,9975,0.54,0.46,0.39,0.76,0.57,0.39,0.67,0.65,0.30
+163,Matilda Garcia,女,51,本地,Denmark Hill·学生公寓,not_in_labor_force,none,0,0.45,0.58,0.49,0.41,0.49,0.34,0.54,0.21,0.34
+164,Ahmed Davies,男,32,本地,Wandsworth Road·改建阁楼公寓,employed,service,11825,0.61,0.63,0.47,0.61,0.47,0.67,0.73,0.29,0.33
+165,Eleanor Rosenberg,女,7,省内,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,0,0.53,0.44,0.30,0.59,0.51,0.58,0.52,0.63,0.80
+166,Isabella Martin,女,58,本地,Motspur Park·自住公寓,employed,service,27503,0.65,0.68,0.48,0.54,0.58,0.55,0.61,0.50,0.31
+167,Liam Rosenberg,男,71,本地,Wandsworth Road·自住公寓,not_in_labor_force,none,9975,0.51,0.44,0.33,0.37,0.46,0.44,0.33,0.51,0.25
+168,Reese Becker,女,44,外省,South Merton·出租公寓,employed,trade,23801,0.68,0.59,0.45,0.23,0.60,0.79,0.26,0.49,0.59
+169,Sana Wright,女,31,外省,Wandsworth Road·改建阁楼公寓,employed,medical,45249,0.64,0.50,0.81,0.61,0.53,0.66,0.55,0.59,0.69
+170,Ali Huang,男,59,本地,Haggerston·学生公寓,employed,service,15891,0.47,0.60,0.15,0.59,0.54,0.50,0.39,0.63,0.52
+171,Ahmed Rosenberg,男,47,本地,Dalston Junction·自住公寓,employed,education,47410,0.74,0.42,0.44,0.57,0.55,0.47,0.50,0.39,0.30
+172,Charlie Kelly,女,44,外省,Battersea Park·自住公寓,employed,service,38249,0.67,0.47,0.44,0.31,0.56,0.60,0.30,0.21,0.56
+173,Ava Uddin,女,44,外省,Dalston Junction·联排住宅,employed,trade,48576,0.52,0.66,0.56,0.52,0.40,0.74,0.48,0.26,0.49
+174,Ali Walker,男,32,本地,Clapham High Street·联排住宅,not_in_labor_force,none,0,0.53,0.78,0.56,0.54,0.54,0.53,0.32,0.30,0.46
+175,Noah Byrne,男,24,外省,Catford·自住公寓,employed,service,22502,0.58,0.60,0.09,0.17,0.70,0.52,0.41,0.58,0.73
+176,Samuel Khan,男,24,本地,Denmark Hill·自住公寓,unemployed,none,4275,0.85,0.83,0.17,0.61,0.55,0.69,0.35,0.54,0.49
+177,Ella McCarthy,女,29,本地,Haggerston·改建阁楼公寓,employed,tech,36792,0.71,0.35,0.59,0.56,0.50,0.40,0.55,0.21,0.39
+178,Charlie Martin,女,31,外省,West Croydon·改建阁楼公寓,not_in_labor_force,none,0,0.42,0.62,0.57,0.28,0.61,0.63,0.69,0.66,0.54
+179,Morgan Wang,女,68,本地,Walthamstow Queen's Road·出租公寓,not_in_labor_force,none,9975,0.47,0.68,0.26,0.66,0.39,0.45,0.52,0.48,0.53
+180,Thomas Rosenberg,男,14,外省,Wandsworth Road·改建阁楼公寓,not_in_labor_force,none,0,0.65,0.37,0.32,0.51,0.43,0.48,0.46,0.32,0.80
+181,Hassan Kelly,男,59,本地,Haggerston·学生公寓,employed,service,65897,0.68,0.39,0.49,0.62,0.54,0.21,0.33,0.69,0.19
+182,Mohammed Davies,男,17,本地,Motspur Park·合租公寓,not_in_labor_force,none,0,0.59,0.52,0.39,0.48,0.59,0.54,0.60,0.47,0.41
+183,Harry Li,男,11,本地,Catford·议会公屋,not_in_labor_force,none,0,0.75,0.48,0.38,0.53,0.47,0.86,0.37,0.17,0.60
+184,Samuel Sanchez,男,13,外省,West Croydon·改建阁楼公寓,not_in_labor_force,none,0,0.60,0.54,0.43,0.38,0.62,0.76,0.68,0.36,0.87
+185,Lucas Rossi,男,12,本地,Wapping·合租公寓,not_in_labor_force,none,0,0.72,0.61,0.24,0.46,0.48,0.48,0.63,0.50,0.60
+186,Ruby Romano,女,63,本地,Clapham High Street·改建阁楼公寓,employed,service,36097,0.43,0.64,0.79,0.57,0.42,0.59,0.17,0.58,0.46
+187,Sage Jones,女,18,本地,Clapham High Street·自住公寓,not_in_labor_force,none,0,0.38,0.53,0.32,0.63,0.57,0.50,0.52,0.36,0.56
+188,Alexander Ali,男,18,本地,Hendon·自住公寓,employed,tech,55575,0.60,0.43,0.76,0.56,0.49,0.64,0.60,0.35,0.54
+189,Zainab Fernandez,女,47,本地,Wandsworth Road·出租公寓,not_in_labor_force,none,0,0.45,0.56,0.33,0.63,0.45,0.46,0.48,0.54,0.32
+190,Toby Chen,男,16,本地,Wapping·共管公寓,not_in_labor_force,none,0,0.60,0.64,0.29,0.56,0.60,0.59,0.55,0.65,0.76
+191,Quinn Goldberg,女,31,本地,Clapham High Street·联排住宅,employed,service,11302,0.66,0.83,0.37,0.49,0.39,0.33,0.51,0.39,0.37
+192,Charlotte Fernandez,女,25,本地,Surrey Quays·共管公寓,employed,trade,20406,0.57,0.71,0.43,0.43,0.58,0.64,0.46,0.47,0.74
+193,Ahmed McCarthy,男,38,外省,Surrey Quays·共管公寓,not_in_labor_force,none,0,0.60,0.72,0.13,0.31,0.21,0.38,0.46,0.65,0.62
+194,Omar Kelly,男,33,本地,Battersea Park·联排住宅,employed,tech,111955,0.41,0.47,0.57,0.60,0.69,0.41,0.45,0.31,0.66
+195,Lucas Boateng,男,53,本地,Denmark Hill·学生公寓,employed,service,30065,0.64,0.52,0.42,0.33,0.51,0.58,0.47,0.78,0.51
+196,Alex Graham,男,16,本地,Wapping·共管公寓,not_in_labor_force,none,0,0.55,0.77,0.52,0.73,0.19,0.57,0.49,0.22,0.36
+197,Sebastian Rodriguez,男,14,外省,Wandsworth Road·改建阁楼公寓,not_in_labor_force,none,0,0.23,0.37,0.56,0.16,0.66,0.47,0.32,0.34,0.81
+198,Taylor Conte,男,16,本地,Hendon·自住公寓,not_in_labor_force,none,0,0.50,0.62,0.36,0.43,0.51,0.62,0.52,0.36,0.41
+199,Mason Klein,男,37,省内,Walthamstow Queen's Road·共管公寓,not_in_labor_force,none,0,0.80,0.70,0.38,0.26,0.47,0.46,0.28,0.13,0.74
+200,Logan Liu,男,23,外省,Wapping·自住公寓,employed,medical,19584,0.66,0.52,0.44,0.52,0.46,0.52,0.38,0.38,0.69

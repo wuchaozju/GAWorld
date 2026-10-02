@@ -1,50 +1,50 @@
 {
-  "size": 20,
+  "size": 63,
   "achieved": {
     "median_age": {
       "target": 36.0,
-      "achieved": 28.0,
-      "delta": -8.0
+      "achieved": 32.0,
+      "delta": -4.0
     },
     "share_under_18": {
       "target": 0.16,
-      "achieved": 0.3,
-      "delta": 0.14
+      "achieved": 0.1587,
+      "delta": -0.0013
     },
     "share_over_65": {
       "target": 0.14,
-      "achieved": 0.3,
-      "delta": 0.16
+      "achieved": 0.127,
+      "delta": -0.013
     },
     "migrant_share": {
       "target": 0.38,
-      "achieved": 0.4,
-      "delta": 0.02
+      "achieved": 0.381,
+      "delta": 0.001
     },
     "employment_rate": {
       "target": 0.68,
-      "achieved": 0.5,
-      "delta": -0.18
+      "achieved": 0.6222,
+      "delta": -0.0578
     },
     "tertiary_rate": {
       "target": 0.35,
-      "achieved": 0.1429,
-      "delta": -0.2071
+      "achieved": 0.2453,
+      "delta": -0.1047
     },
     "income_median": {
       "target": 6500.0,
-      "achieved": 6674.975,
-      "delta": 174.975
+      "achieved": 6503.44,
+      "delta": 3.44
     },
     "income_gini": {
       "target": 0.42,
-      "achieved": 0.3174,
-      "delta": -0.1026
+      "achieved": 0.3925,
+      "delta": -0.0275
     },
     "household_mean_size": {
       "target": 2.6,
-      "achieved": 2.5,
-      "delta": -0.1
+      "achieved": 2.625,
+      "delta": 0.025
     },
     "share_single_person": {
       "target": 0.25,
@@ -53,8 +53,8 @@
     },
     "share_multigen": {
       "target": 0.18,
-      "achieved": 0.0,
-      "delta": -0.18
+      "achieved": 0.1667,
+      "delta": -0.0133
     },
     "share_shared_rental": {
       "target": 0.12,
@@ -70,8 +70,8 @@
   "achieved_industry_mix": {
     "tech": {
       "target": 0.18,
-      "achieved": 0.0,
-      "delta": -0.18
+      "achieved": 0.1429,
+      "delta": -0.0371
     },
     "finance": {
       "target": 0.08,
@@ -90,13 +90,13 @@
     },
     "service": {
       "target": 0.38,
-      "achieved": 1.0,
-      "delta": 0.62
+      "achieved": 0.6429,
+      "delta": 0.2629
     },
     "trade": {
       "target": 0.2,
-      "achieved": 0.0,
-      "delta": -0.2
+      "achieved": 0.2143,
+      "delta": 0.0143
     }
   },
   "fit": {
@@ -273,62 +273,86 @@
       {
         "age_from": 5,
         "age_to": 9,
-        "male": 2,
-        "female": 1
+        "male": 1,
+        "female": 2
       },
       {
         "age_from": 10,
         "age_to": 14,
-        "male": 0,
+        "male": 2,
         "female": 2
       },
       {
         "age_from": 15,
         "age_to": 19,
-        "male": 2,
-        "female": 0
+        "male": 3,
+        "female": 1
       },
       {
         "age_from": 20,
         "age_to": 24,
-        "male": 0,
-        "female": 1
+        "male": 4,
+        "female": 2
       },
       {
         "age_from": 25,
         "age_to": 29,
         "male": 2,
-        "female": 1
+        "female": 4
       },
       {
         "age_from": 30,
         "age_to": 34,
-        "male": 0,
-        "female": 1
+        "male": 5,
+        "female": 6
+      },
+      {
+        "age_from": 35,
+        "age_to": 39,
+        "male": 2,
+        "female": 3
+      },
+      {
+        "age_from": 40,
+        "age_to": 44,
+        "male": 2,
+        "female": 0
       },
       {
         "age_from": 45,
         "age_to": 49,
-        "male": 1,
+        "male": 2,
         "female": 1
       },
       {
-        "age_from": 65,
-        "age_to": 69,
-        "male": 1,
+        "age_from": 50,
+        "age_to": 54,
+        "male": 0,
         "female": 1
+      },
+      {
+        "age_from": 55,
+        "age_to": 59,
+        "male": 4,
+        "female": 2
+      },
+      {
+        "age_from": 60,
+        "age_to": 64,
+        "male": 1,
+        "female": 3
       },
       {
         "age_from": 70,
         "age_to": 74,
-        "male": 1,
-        "female": 0
+        "male": 3,
+        "female": 1
       },
       {
         "age_from": 75,
         "age_to": 79,
-        "male": 1,
-        "female": 0
+        "male": 0,
+        "female": 1
       },
       {
         "age_from": 85,
@@ -339,8 +363,8 @@
       {
         "age_from": 90,
         "age_to": 94,
-        "male": 0,
-        "female": 1
+        "male": 2,
+        "female": 0
       }
     ],
     "lorenz": [
@@ -350,79 +374,79 @@
       },
       {
         "population_share": 0.05,
-        "income_share": 0.0
+        "income_share": 0.0059
       },
       {
         "population_share": 0.1,
-        "income_share": 0.0
+        "income_share": 0.0247
       },
       {
         "population_share": 0.15,
-        "income_share": 0.0904
+        "income_share": 0.0366
       },
       {
         "population_share": 0.2,
-        "income_share": 0.0904
+        "income_share": 0.0646
       },
       {
         "population_share": 0.25,
-        "income_share": 0.0904
+        "income_share": 0.0807
       },
       {
         "population_share": 0.3,
-        "income_share": 0.0904
+        "income_share": 0.0981
       },
       {
         "population_share": 0.35,
-        "income_share": 0.0904
+        "income_share": 0.1372
       },
       {
         "population_share": 0.4,
-        "income_share": 0.2559
+        "income_share": 0.1589
       },
       {
         "population_share": 0.45,
-        "income_share": 0.2559
+        "income_share": 0.2069
       },
       {
         "population_share": 0.5,
-        "income_share": 0.2559
+        "income_share": 0.2334
       },
       {
         "population_share": 0.55,
-        "income_share": 0.2559
+        "income_share": 0.2616
       },
       {
         "population_share": 0.6,
-        "income_share": 0.2559
+        "income_share": 0.324
       },
       {
         "population_share": 0.65,
-        "income_share": 0.5188
+        "income_share": 0.3585
       },
       {
         "population_share": 0.7,
-        "income_share": 0.5188
+        "income_share": 0.4352
       },
       {
         "population_share": 0.75,
-        "income_share": 0.5188
+        "income_share": 0.4781
       },
       {
         "population_share": 0.8,
-        "income_share": 0.5188
+        "income_share": 0.5246
       },
       {
         "population_share": 0.85,
-        "income_share": 0.5188
+        "income_share": 0.6317
       },
       {
         "population_share": 0.9,
-        "income_share": 1.0
+        "income_share": 0.6948
       },
       {
         "population_share": 0.95,
-        "income_share": 1.0
+        "income_share": 0.8557
       },
       {
         "population_share": 1.0,
@@ -432,197 +456,238 @@
     "household_sizes": [
       {
         "size": 1,
-        "count": 2
+        "count": 6
       },
       {
         "size": 2,
-        "count": 2
+        "count": 7
       },
       {
         "size": 3,
-        "count": 2
+        "count": 5
       },
       {
         "size": 4,
         "count": 2
+      },
+      {
+        "size": 5,
+        "count": 4
       }
     ],
     "household_types": {
-      "single_parent": 2,
-      "couple": 1,
-      "nuclear": 2,
-      "shared_rental": 1,
-      "single": 2
+      "single_parent": 1,
+      "nuclear": 4,
+      "multigen": 4,
+      "shared_rental": 3,
+      "single": 6,
+      "couple": 6
     },
     "education": {
-      "小学及以下": 4,
-      "初中": 4,
-      "高中/中专": 10,
-      "大专": 0,
-      "本科": 2,
+      "小学及以下": 9,
+      "初中": 19,
+      "高中/中专": 22,
+      "大专": 4,
+      "本科": 9,
       "硕士及以上": 0
     },
     "age_bands": {
-      "0-17": 6,
-      "18-34": 6,
-      "35-54": 2,
-      "55-64": 0,
-      "65+": 6
+      "0-17": 10,
+      "18-34": 24,
+      "35-54": 11,
+      "55-64": 10,
+      "65+": 8
     },
     "state_distribution": {
       "emotion": {
         "target_mean": 0.58,
-        "mean": 0.6007,
-        "sd": 0.1077,
-        "p10": 0.4849,
-        "p25": 0.553,
-        "p50": 0.5899,
-        "p75": 0.6416,
-        "p90": 0.6692
+        "mean": 0.573,
+        "sd": 0.1216,
+        "p10": 0.404,
+        "p25": 0.4826,
+        "p50": 0.5999,
+        "p75": 0.6626,
+        "p90": 0.7361
       },
       "stress": {
         "target_mean": 0.55,
-        "mean": 0.5393,
-        "sd": 0.1119,
-        "p10": 0.3549,
-        "p25": 0.4889,
-        "p50": 0.5762,
-        "p75": 0.6025,
-        "p90": 0.6494
+        "mean": 0.5744,
+        "sd": 0.1178,
+        "p10": 0.4507,
+        "p25": 0.4943,
+        "p50": 0.5811,
+        "p75": 0.6479,
+        "p90": 0.7317
       },
       "econ_security": {
         "target_mean": 0.52,
-        "mean": 0.4624,
-        "sd": 0.1144,
-        "p10": 0.3182,
-        "p25": 0.3885,
-        "p50": 0.4514,
-        "p75": 0.5184,
-        "p90": 0.6342
+        "mean": 0.4947,
+        "sd": 0.1666,
+        "p10": 0.3002,
+        "p25": 0.3823,
+        "p50": 0.4768,
+        "p75": 0.6019,
+        "p90": 0.7217
       },
       "city_identity": {
         "target_mean": 0.55,
-        "mean": 0.4813,
-        "sd": 0.1287,
-        "p10": 0.3573,
-        "p25": 0.4105,
-        "p50": 0.4892,
-        "p75": 0.5424,
-        "p90": 0.5962
+        "mean": 0.4786,
+        "sd": 0.1568,
+        "p10": 0.2665,
+        "p25": 0.3742,
+        "p50": 0.48,
+        "p75": 0.587,
+        "p90": 0.6501
       },
       "policy_sensitivity": {
         "target_mean": 0.5,
-        "mean": 0.446,
-        "sd": 0.1135,
-        "p10": 0.3403,
-        "p25": 0.3626,
-        "p50": 0.4342,
-        "p75": 0.5358,
-        "p90": 0.6051
+        "mean": 0.4816,
+        "sd": 0.1122,
+        "p10": 0.3137,
+        "p25": 0.4011,
+        "p50": 0.4997,
+        "p75": 0.5613,
+        "p90": 0.6193
       },
       "platform_dependence": {
         "target_mean": 0.5,
-        "mean": 0.4813,
-        "sd": 0.19,
-        "p10": 0.2328,
-        "p25": 0.3802,
-        "p50": 0.4677,
-        "p75": 0.5646,
-        "p90": 0.6895
+        "mean": 0.522,
+        "sd": 0.1466,
+        "p10": 0.3287,
+        "p25": 0.4212,
+        "p50": 0.5382,
+        "p75": 0.6301,
+        "p90": 0.7158
       },
       "risk_preference": {
         "target_mean": 0.45,
-        "mean": 0.4427,
-        "sd": 0.1485,
-        "p10": 0.241,
-        "p25": 0.3383,
-        "p50": 0.4491,
-        "p75": 0.5616,
-        "p90": 0.6255
+        "mean": 0.4687,
+        "sd": 0.1408,
+        "p10": 0.2824,
+        "p25": 0.3871,
+        "p50": 0.4798,
+        "p75": 0.5417,
+        "p90": 0.666
       },
       "voice_propensity": {
         "target_mean": 0.45,
-        "mean": 0.461,
-        "sd": 0.0854,
-        "p10": 0.3755,
-        "p25": 0.4059,
-        "p50": 0.4568,
-        "p75": 0.5082,
-        "p90": 0.5914
+        "mean": 0.4238,
+        "sd": 0.1267,
+        "p10": 0.274,
+        "p25": 0.3133,
+        "p50": 0.4481,
+        "p75": 0.505,
+        "p90": 0.5776
       },
       "mobility_intent": {
         "target_mean": 0.45,
-        "mean": 0.5243,
-        "sd": 0.2136,
-        "p10": 0.2802,
-        "p25": 0.3294,
-        "p50": 0.594,
-        "p75": 0.6608,
-        "p90": 0.7535
+        "mean": 0.5533,
+        "sd": 0.1697,
+        "p10": 0.3519,
+        "p25": 0.4637,
+        "p50": 0.5594,
+        "p75": 0.6611,
+        "p90": 0.7403
       }
     }
   },
   "network": {
-    "nodes": 20,
-    "edges": 120,
+    "nodes": 63,
+    "edges": 378,
     "mean_degree": 12.0,
-    "max_degree": 19,
+    "max_degree": 22,
     "isolated": 0,
-    "clustering": 0.6887354441224411,
-    "random_clustering": 0.6,
-    "mean_path_length": 1.368421052631579,
-    "random_path_length": 1.2055713536802566,
-    "small_world_sigma": 1.0112868405299371,
+    "clustering": 0.29511558109523606,
+    "random_clustering": 0.19047619047619047,
+    "mean_path_length": 1.9274193548387097,
+    "random_path_length": 1.6673200688424266,
+    "small_world_sigma": 1.3402758881728296,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
+        "degree": 5,
+        "count": 4
+      },
+      {
         "degree": 6,
-        "count": 1
+        "count": 3
+      },
+      {
+        "degree": 7,
+        "count": 2
+      },
+      {
+        "degree": 8,
+        "count": 3
       },
       {
         "degree": 9,
-        "count": 4
+        "count": 3
       },
       {
         "degree": 10,
-        "count": 2
+        "count": 6
       },
       {
         "degree": 11,
-        "count": 1
+        "count": 7
       },
       {
         "degree": 12,
-        "count": 4
+        "count": 6
       },
       {
         "degree": 13,
-        "count": 2
+        "count": 7
       },
       {
         "degree": 14,
-        "count": 3
+        "count": 9
       },
       {
         "degree": 15,
         "count": 1
       },
       {
+        "degree": 16,
+        "count": 4
+      },
+      {
         "degree": 17,
-        "count": 1
+        "count": 4
       },
       {
         "degree": 19,
+        "count": 2
+      },
+      {
+        "degree": 20,
+        "count": 1
+      },
+      {
+        "degree": 22,
         "count": 1
       }
     ]
   },
   "workplaces": {
-    "count": 2,
+    "count": 9,
     "size_histogram": [
       {
         "size": 2,
-        "count": 2
+        "count": 4
+      },
+      {
+        "size": 3,
+        "count": 1
+      },
+      {
+        "size": 4,
+        "count": 3
+      },
+      {
+        "size": 5,
+        "count": 1
       }
     ]
   }

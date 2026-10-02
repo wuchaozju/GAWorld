@@ -1,65 +1,65 @@
 {
-  "size": 100,
+  "size": 190,
   "achieved": {
     "median_age": {
-      "target": 34.0,
-      "achieved": 29.5,
-      "delta": -4.5
+      "target": 36.0,
+      "achieved": 33.0,
+      "delta": -3.0
     },
     "share_under_18": {
-      "target": 0.14,
-      "achieved": 0.16,
-      "delta": 0.02
+      "target": 0.16,
+      "achieved": 0.1684,
+      "delta": 0.0084
     },
     "share_over_65": {
-      "target": 0.12,
-      "achieved": 0.13,
-      "delta": 0.01
+      "target": 0.14,
+      "achieved": 0.1368,
+      "delta": -0.0032
     },
     "migrant_share": {
-      "target": 0.55,
-      "achieved": 0.55,
-      "delta": 0.0
+      "target": 0.38,
+      "achieved": 0.3789,
+      "delta": -0.0011
     },
     "employment_rate": {
-      "target": 0.74,
-      "achieved": 0.7042,
-      "delta": -0.0358
+      "target": 0.68,
+      "achieved": 0.6667,
+      "delta": -0.0133
     },
     "tertiary_rate": {
-      "target": 0.52,
-      "achieved": 0.5357,
-      "delta": 0.0157
+      "target": 0.35,
+      "achieved": 0.3418,
+      "delta": -0.0082
     },
     "income_median": {
-      "target": 11000.0,
-      "achieved": 11002.32,
-      "delta": 2.32
+      "target": 6500.0,
+      "achieved": 6500.345,
+      "delta": 0.345
     },
     "income_gini": {
-      "target": 0.46,
-      "achieved": 0.441,
-      "delta": -0.019
+      "target": 0.42,
+      "achieved": 0.4073,
+      "delta": -0.0127
     },
     "household_mean_size": {
-      "target": 2.3,
-      "achieved": 2.3256,
-      "delta": 0.0256
+      "target": 2.6,
+      "achieved": 2.6027,
+      "delta": 0.0027
     },
     "share_single_person": {
-      "target": 0.32,
-      "achieved": 0.3256,
-      "delta": 0.0056
+      "target": 0.25,
+      "achieved": 0.274,
+      "delta": 0.024
     },
     "share_multigen": {
       "target": 0.18,
-      "achieved": 0.186,
-      "delta": 0.006
+      "achieved": 0.1781,
+      "delta": -0.0019
     },
     "share_shared_rental": {
-      "target": 0.22,
-      "achieved": 0.2093,
-      "delta": -0.0107
+      "target": 0.12,
+      "achieved": 0.1233,
+      "delta": 0.0033
     },
     "mean_degree": {
       "target": 12.0,
@@ -69,154 +69,154 @@
   },
   "achieved_industry_mix": {
     "tech": {
-      "target": 0.3,
-      "achieved": 0.32,
-      "delta": 0.02
+      "target": 0.18,
+      "achieved": 0.2273,
+      "delta": 0.0473
     },
     "finance": {
-      "target": 0.14,
-      "achieved": 0.12,
-      "delta": -0.02
+      "target": 0.08,
+      "achieved": 0.0455,
+      "delta": -0.0345
     },
     "medical": {
       "target": 0.07,
-      "achieved": 0.04,
-      "delta": -0.03
+      "achieved": 0.0341,
+      "delta": -0.0359
     },
     "education": {
       "target": 0.09,
-      "achieved": 0.04,
-      "delta": -0.05
+      "achieved": 0.0568,
+      "delta": -0.0332
     },
     "service": {
-      "target": 0.28,
-      "achieved": 0.36,
-      "delta": 0.08
+      "target": 0.38,
+      "achieved": 0.4318,
+      "delta": 0.0518
     },
     "trade": {
-      "target": 0.12,
-      "achieved": 0.12,
-      "delta": 0.0
+      "target": 0.2,
+      "achieved": 0.2045,
+      "delta": 0.0045
     }
   },
   "fit": {
     "ipf": {
       "iterations": 2,
-      "max_marginal_deviation": 0.003567872116869597,
+      "max_marginal_deviation": 0.0006298403284811238,
       "converged": true,
       "tolerance": 0.005,
       "targets": {
         "age": [
-          0.14,
-          0.3824999999999999,
-          0.21860950861030942,
-          0.13889049138969065,
-          0.12
+          0.16000000000000003,
+          0.3291709054782813,
+          0.21658189043437226,
+          0.15424720408734646,
+          0.14000000000000004
         ],
         "sex": [
           0.5098039215686274,
           0.4901960784313726
         ],
         "education": [
-          0.13310400000000003,
-          0.18795200000000004,
-          0.23174400000000003,
-          0.15204800000000004,
-          0.23254400000000003,
-          0.06260800000000002
+          0.16548,
+          0.24003999999999998,
+          0.30047999999999997,
+          0.09995999999999998,
+          0.15287999999999996,
+          0.041159999999999995
         ],
         "employment": [
           [
             0.0,
             0.0,
-            0.13999999999999999
+            0.16
           ],
           [
-            0.28304999999999986,
-            0.019124999999999993,
-            0.08032499999999997
+            0.22383621572523127,
+            0.016458545273914063,
+            0.08887614447913593
           ],
           [
-            0.16177103637162893,
-            0.01093047543051547,
-            0.045907996808164986
+            0.14727568549537312,
+            0.010829094521718612,
+            0.0584771104172805
           ],
           [
-            0.10277896362837105,
-            0.006944524569484531,
-            0.029167003191835027
+            0.10488809877939559,
+            0.007712360204367322,
+            0.04164674510358352
           ],
           [
-            0.014399999999999996,
+            0.016800000000000002,
             0.0,
-            0.10559999999999997
+            0.12320000000000002
           ]
         ],
         "industry": [
-          0.16859999999999994,
-          0.07867999999999999,
-          0.03933999999999999,
-          0.050579999999999986,
-          0.15735999999999997,
-          0.06743999999999997,
-          0.43800000000000017
+          0.08870399999999999,
+          0.039424,
+          0.034496,
+          0.044351999999999996,
+          0.18726399999999999,
+          0.09856,
+          0.5072000000000001
         ]
       },
       "achieved": {
         "age": [
-          0.14000000000000004,
-          0.38229666945709717,
-          0.21864192049871808,
-          0.13898951009205335,
-          0.12007189995213141
+          0.16,
+          0.32887912770832645,
+          0.2166297800548551,
+          0.15438152900221752,
+          0.14010956323460094
         ],
         "sex": [
           0.5098039215686274,
-          0.4901960784313727
+          0.49019607843137253
         ],
         "education": [
-          0.13623761645811747,
-          0.19054999972538877,
-          0.23221259460077034,
-          0.15045435487571884,
-          0.22897612788313043,
-          0.06156930645687417
+          0.16504611797673874,
+          0.24003504031235212,
+          0.3011098403284811,
+          0.1000451959977334,
+          0.1526791325326486,
+          0.041084672852045985
         ],
         "employment": [
           [
             0.0,
             0.0,
-            0.14000000000000004
+            0.15999999999999998
           ],
           [
-            0.28284666945709713,
-            0.019125000000000003,
-            0.080325
+            0.22354443795527643,
+            0.016458545273914063,
+            0.08887614447913593
           ],
           [
-            0.1618034482600376,
-            0.010930475430515476,
-            0.04590799680816499
+            0.147323575115856,
+            0.010829094521718612,
+            0.05847711041728049
           ],
           [
-            0.1028779823307338,
-            0.006944524569484534,
-            0.029167003191835038
+            0.10502242369426669,
+            0.007712360204367323,
+            0.04164674510358352
           ],
           [
-            0.014471899952131393,
+            0.01690956323460093,
             0.0,
-            0.10560000000000001
+            0.12320000000000002
           ]
         ],
         "industry": [
-          0.16860000000000006,
-          0.07868,
-          0.03933999999999999,
-          0.05057999999999997,
-          0.15735999999999997,
-          0.06743999999999997,
-          0.4380000000000001
+          0.088704,
+          0.039423999999999994,
+          0.03449599999999999,
+          0.044352000000000016,
+          0.18726399999999999,
+          0.09855999999999995,
+          0.5072000000000001
         ]
       },
       "labels": {
@@ -256,127 +256,127 @@
       }
     },
     "age_band_shares": {
-      "0-17": 0.14,
-      "18-34": 0.3824999999999999,
-      "35-54": 0.21860950861030942,
-      "55-64": 0.13889049138969065,
-      "65+": 0.12
+      "0-17": 0.16,
+      "18-34": 0.32917090547828126,
+      "35-54": 0.21658189043437223,
+      "55-64": 0.15424720408734643,
+      "65+": 0.14
     },
     "median_age": {
-      "target": 34.0,
-      "achieved": 34.0
+      "target": 36.0,
+      "achieved": 36.000000000000014
     },
-    "lognormal_sigma": 0.819394169028161
+    "lognormal_sigma": 0.7265631682806737
   },
   "charts": {
     "age_pyramid": [
       {
         "age_from": 5,
         "age_to": 9,
-        "male": 3,
-        "female": 4
+        "male": 4,
+        "female": 7
       },
       {
         "age_from": 10,
         "age_to": 14,
-        "male": 2,
-        "female": 4
+        "male": 6,
+        "female": 8
       },
       {
         "age_from": 15,
         "age_to": 19,
-        "male": 5,
-        "female": 1
+        "male": 13,
+        "female": 6
       },
       {
         "age_from": 20,
         "age_to": 24,
-        "male": 6,
-        "female": 11
+        "male": 7,
+        "female": 10
       },
       {
         "age_from": 25,
         "age_to": 29,
-        "male": 10,
-        "female": 4
+        "male": 11,
+        "female": 10
       },
       {
         "age_from": 30,
         "age_to": 34,
-        "male": 3,
-        "female": 3
+        "male": 11,
+        "female": 10
       },
       {
         "age_from": 35,
         "age_to": 39,
-        "male": 6,
-        "female": 3
+        "male": 3,
+        "female": 4
       },
       {
         "age_from": 40,
         "age_to": 44,
-        "male": 3,
-        "female": 3
+        "male": 6,
+        "female": 2
       },
       {
         "age_from": 45,
         "age_to": 49,
-        "male": 0,
-        "female": 1
+        "male": 5,
+        "female": 9
       },
       {
         "age_from": 50,
         "age_to": 54,
-        "male": 4,
-        "female": 3
+        "male": 6,
+        "female": 4
       },
       {
         "age_from": 55,
         "age_to": 59,
-        "male": 1,
-        "female": 1
+        "male": 4,
+        "female": 6
       },
       {
         "age_from": 60,
         "age_to": 64,
-        "male": 3,
-        "female": 3
+        "male": 7,
+        "female": 5
       },
       {
         "age_from": 65,
         "age_to": 69,
         "male": 1,
-        "female": 0
+        "female": 3
       },
       {
         "age_from": 70,
         "age_to": 74,
-        "male": 1,
+        "male": 3,
         "female": 2
       },
       {
         "age_from": 75,
         "age_to": 79,
-        "male": 2,
-        "female": 0
+        "male": 3,
+        "female": 2
       },
       {
         "age_from": 80,
         "age_to": 84,
         "male": 2,
-        "female": 1
+        "female": 2
       },
       {
         "age_from": 85,
         "age_to": 89,
-        "male": 0,
-        "female": 2
+        "male": 2,
+        "female": 1
       },
       {
         "age_from": 90,
         "age_to": 94,
-        "male": 1,
-        "female": 1
+        "male": 2,
+        "female": 3
       }
     ],
     "lorenz": [
@@ -386,79 +386,79 @@
       },
       {
         "population_share": 0.05,
-        "income_share": 0.0051
+        "income_share": 0.0077
       },
       {
         "population_share": 0.1,
-        "income_share": 0.0178
+        "income_share": 0.0225
       },
       {
         "population_share": 0.15,
-        "income_share": 0.0347
+        "income_share": 0.0372
       },
       {
         "population_share": 0.2,
-        "income_share": 0.0481
+        "income_share": 0.0588
       },
       {
         "population_share": 0.25,
-        "income_share": 0.0632
+        "income_share": 0.0786
       },
       {
         "population_share": 0.3,
-        "income_share": 0.0889
+        "income_share": 0.1005
       },
       {
         "population_share": 0.35,
-        "income_share": 0.1186
+        "income_share": 0.131
       },
       {
         "population_share": 0.4,
-        "income_share": 0.1407
+        "income_share": 0.158
       },
       {
         "population_share": 0.45,
-        "income_share": 0.1648
+        "income_share": 0.1952
       },
       {
         "population_share": 0.5,
-        "income_share": 0.2048
+        "income_share": 0.2278
       },
       {
         "population_share": 0.55,
-        "income_share": 0.2501
+        "income_share": 0.2633
       },
       {
         "population_share": 0.6,
-        "income_share": 0.2836
+        "income_share": 0.312
       },
       {
         "population_share": 0.65,
-        "income_share": 0.3201
+        "income_share": 0.3549
       },
       {
         "population_share": 0.7,
-        "income_share": 0.3812
+        "income_share": 0.4142
       },
       {
         "population_share": 0.75,
-        "income_share": 0.4516
+        "income_share": 0.467
       },
       {
         "population_share": 0.8,
-        "income_share": 0.5051
+        "income_share": 0.5257
       },
       {
         "population_share": 0.85,
-        "income_share": 0.5652
+        "income_share": 0.6094
       },
       {
         "population_share": 0.9,
-        "income_share": 0.6729
+        "income_share": 0.6881
       },
       {
         "population_share": 0.95,
-        "income_share": 0.8176
+        "income_share": 0.8112
       },
       {
         "population_share": 1.0,
@@ -468,249 +468,265 @@
     "household_sizes": [
       {
         "size": 1,
-        "count": 14
+        "count": 20
       },
       {
         "size": 2,
-        "count": 12
+        "count": 19
       },
       {
         "size": 3,
-        "count": 11
+        "count": 15
       },
       {
         "size": 4,
-        "count": 3
+        "count": 9
       },
       {
         "size": 5,
-        "count": 1
+        "count": 9
       },
       {
         "size": 6,
-        "count": 2
+        "count": 1
       }
     ],
     "household_types": {
-      "nuclear": 5,
-      "multigen": 8,
+      "nuclear": 12,
+      "couple": 18,
+      "multigen": 13,
+      "single": 20,
       "single_parent": 1,
-      "couple": 6,
-      "shared_rental": 9,
-      "single": 14
+      "shared_rental": 9
     },
     "education": {
-      "小学及以下": 10,
-      "初中": 20,
-      "高中/中专": 25,
+      "小学及以下": 28,
+      "初中": 46,
+      "高中/中专": 62,
       "大专": 16,
-      "本科": 26,
-      "硕士及以上": 3
+      "本科": 32,
+      "硕士及以上": 6
     },
     "age_bands": {
-      "0-17": 16,
-      "18-34": 40,
-      "35-54": 23,
-      "55-64": 8,
-      "65+": 13
+      "0-17": 32,
+      "18-34": 71,
+      "35-54": 39,
+      "55-64": 22,
+      "65+": 26
     },
     "state_distribution": {
       "emotion": {
         "target_mean": 0.58,
-        "mean": 0.5965,
-        "sd": 0.1075,
-        "p10": 0.4657,
-        "p25": 0.5289,
-        "p50": 0.5965,
-        "p75": 0.656,
-        "p90": 0.7215
+        "mean": 0.5696,
+        "sd": 0.1269,
+        "p10": 0.4228,
+        "p25": 0.4756,
+        "p50": 0.5652,
+        "p75": 0.6613,
+        "p90": 0.7523
       },
       "stress": {
         "target_mean": 0.55,
-        "mean": 0.5643,
-        "sd": 0.1024,
-        "p10": 0.4203,
-        "p25": 0.5154,
-        "p50": 0.5611,
-        "p75": 0.622,
-        "p90": 0.6955
+        "mean": 0.5597,
+        "sd": 0.1298,
+        "p10": 0.3891,
+        "p25": 0.4751,
+        "p50": 0.5668,
+        "p75": 0.6395,
+        "p90": 0.7191
       },
       "econ_security": {
         "target_mean": 0.52,
-        "mean": 0.4712,
-        "sd": 0.1548,
-        "p10": 0.2697,
-        "p25": 0.3676,
-        "p50": 0.4761,
-        "p75": 0.5572,
-        "p90": 0.6541
+        "mean": 0.4753,
+        "sd": 0.1646,
+        "p10": 0.2622,
+        "p25": 0.3959,
+        "p50": 0.4694,
+        "p75": 0.5461,
+        "p90": 0.6833
       },
       "city_identity": {
         "target_mean": 0.55,
-        "mean": 0.4351,
-        "sd": 0.1446,
-        "p10": 0.2612,
-        "p25": 0.3378,
-        "p50": 0.4189,
-        "p75": 0.5331,
-        "p90": 0.6406
+        "mean": 0.4821,
+        "sd": 0.1522,
+        "p10": 0.2653,
+        "p25": 0.3804,
+        "p50": 0.4941,
+        "p75": 0.5991,
+        "p90": 0.6707
       },
       "policy_sensitivity": {
         "target_mean": 0.5,
-        "mean": 0.481,
-        "sd": 0.1307,
-        "p10": 0.3053,
-        "p25": 0.3831,
-        "p50": 0.4772,
-        "p75": 0.5711,
-        "p90": 0.647
+        "mean": 0.4838,
+        "sd": 0.1276,
+        "p10": 0.3294,
+        "p25": 0.3992,
+        "p50": 0.4856,
+        "p75": 0.5669,
+        "p90": 0.6613
       },
       "platform_dependence": {
         "target_mean": 0.5,
-        "mean": 0.5184,
-        "sd": 0.1557,
-        "p10": 0.2986,
-        "p25": 0.4363,
-        "p50": 0.5241,
-        "p75": 0.6068,
-        "p90": 0.7026
+        "mean": 0.523,
+        "sd": 0.1391,
+        "p10": 0.3429,
+        "p25": 0.4346,
+        "p50": 0.5319,
+        "p75": 0.6053,
+        "p90": 0.675
       },
       "risk_preference": {
         "target_mean": 0.45,
-        "mean": 0.4546,
-        "sd": 0.1245,
-        "p10": 0.2972,
-        "p25": 0.3595,
-        "p50": 0.4562,
-        "p75": 0.5342,
-        "p90": 0.6274
+        "mean": 0.4534,
+        "sd": 0.1327,
+        "p10": 0.2852,
+        "p25": 0.3514,
+        "p50": 0.4527,
+        "p75": 0.5401,
+        "p90": 0.6315
       },
       "voice_propensity": {
         "target_mean": 0.45,
-        "mean": 0.4578,
-        "sd": 0.1333,
-        "p10": 0.3154,
-        "p25": 0.3751,
-        "p50": 0.4522,
-        "p75": 0.5472,
-        "p90": 0.6235
+        "mean": 0.4441,
+        "sd": 0.1331,
+        "p10": 0.2712,
+        "p25": 0.3623,
+        "p50": 0.4464,
+        "p75": 0.5422,
+        "p90": 0.6183
       },
       "mobility_intent": {
         "target_mean": 0.45,
-        "mean": 0.5527,
-        "sd": 0.1958,
-        "p10": 0.26,
-        "p25": 0.4171,
-        "p50": 0.598,
-        "p75": 0.6895,
-        "p90": 0.8022
+        "mean": 0.5235,
+        "sd": 0.1662,
+        "p10": 0.3044,
+        "p25": 0.398,
+        "p50": 0.5277,
+        "p75": 0.6301,
+        "p90": 0.754
       }
     }
   },
   "network": {
-    "nodes": 100,
-    "edges": 600,
+    "nodes": 190,
+    "edges": 1140,
     "mean_degree": 12.0,
-    "max_degree": 20,
+    "max_degree": 23,
     "isolated": 0,
-    "clustering": 0.2228072729643937,
-    "random_clustering": 0.12,
-    "mean_path_length": 2.171043771043771,
-    "random_path_length": 1.8532568160582539,
-    "small_world_sigma": 1.5849484581099893,
+    "clustering": 0.15023017777973463,
+    "random_clustering": 0.06315789473684211,
+    "mean_path_length": 2.430687830687831,
+    "random_path_length": 2.11155782154156,
+    "small_world_sigma": 2.0663473508167507,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
-        "degree": 5,
-        "count": 2
+        "degree": 4,
+        "count": 1
       },
       {
         "degree": 6,
-        "count": 4
+        "count": 7
       },
       {
         "degree": 7,
-        "count": 4
+        "count": 7
       },
       {
         "degree": 8,
-        "count": 6
+        "count": 17
       },
       {
         "degree": 9,
-        "count": 9
-      },
-      {
-        "degree": 10,
-        "count": 10
-      },
-      {
-        "degree": 11,
         "count": 14
       },
       {
+        "degree": 10,
+        "count": 16
+      },
+      {
+        "degree": 11,
+        "count": 23
+      },
+      {
         "degree": 12,
-        "count": 8
+        "count": 27
       },
       {
         "degree": 13,
-        "count": 10
+        "count": 25
       },
       {
         "degree": 14,
-        "count": 8
+        "count": 16
       },
       {
         "degree": 15,
-        "count": 5
+        "count": 8
       },
       {
         "degree": 16,
-        "count": 10
+        "count": 9
       },
       {
         "degree": 17,
-        "count": 3
+        "count": 6
       },
       {
         "degree": 18,
-        "count": 3
-      },
-      {
-        "degree": 19,
-        "count": 3
+        "count": 8
       },
       {
         "degree": 20,
+        "count": 2
+      },
+      {
+        "degree": 21,
+        "count": 2
+      },
+      {
+        "degree": 22,
+        "count": 1
+      },
+      {
+        "degree": 23,
         "count": 1
       }
     ]
   },
   "workplaces": {
-    "count": 15,
+    "count": 24,
     "size_histogram": [
       {
         "size": 1,
-        "count": 1
+        "count": 2
       },
       {
         "size": 2,
-        "count": 8
+        "count": 13
       },
       {
         "size": 3,
-        "count": 1
+        "count": 2
       },
       {
         "size": 4,
-        "count": 3
+        "count": 2
       },
       {
-        "size": 8,
+        "size": 6,
+        "count": 2
+      },
+      {
+        "size": 7,
         "count": 1
       },
       {
         "size": 10,
+        "count": 1
+      },
+      {
+        "size": 17,
         "count": 1
       }
     ]
