@@ -95,6 +95,16 @@ GAWorld/
     trade / age; no simulation run needed). The model picks the verb (forward, ask around,
     debunk, sit on it), the graph picks the recipients, and the run reports the diffusion tree.
     Implemented in `gaworld/apps/rumor_api.py`
+  - team duel — two teams get the same task and two opposed methods; each member plays to their
+    own persona, the moves become a team plan, and a judge scores both plans blind (relabelled
+    方案一/方案二 in shuffled order) per criterion. The winner is decided by the summed scores,
+    not by the winner the model names. Implemented in `gaworld/apps/duel_api.py`
+  - referendum — a motion with real stakes goes to a private vote, then a public one with the
+    tally, the loudest quotes and an optional campaign line in between; the run reports the swing.
+    `gaworld/apps/referendum_api.py`
+  - read the room — one resident, one dilemma, one guess, one call; "ask again" re-samples the
+    same dilemma to measure whether the persona is stable. `gaworld/apps/guess_api.py`
+  Games that need a background job share `gaworld/apps/game_jobs.py` (one `JobStore` each).
   Games keep their state in memory and never write to a city bundle.
   Docs in `docs/PLAYGROUND_TUTORIAL.md`
 - Build a resident from a real person (真人蒸馏): Agent Studio → **＋ 从真人蒸馏**, backed by
@@ -103,6 +113,21 @@ GAWorld/
   - Portraits land in `output/personas/<slug>/` (`persona.json`, `research.md`, `SKILL.md`)
   - Distilling writes only there; **deploying** is the separate, reviewed step that writes the
     seed CSV and the profile Markdown. Docs in `docs/PERSONA_DISTILL_TUTORIAL.md`
+- Turn a research idea or a paper into a study (研究工作台): `/site/dashboard/research.html`,
+  backed by `/api/research/*`. A paper is read first (`/digest`, editable), then planned against
+  `docs/FEATURES.md` with 2–3 alternative designs (`/analyze`); a chosen design compiles into a
+  pre-registered protocol, runs as parallel worlds per seed, and is scored by code:
+  - Plans land in `output/research/<id>.json`; studies in `output/research/studies/<id>/`
+  - 严肃游戏 tab: a description becomes a turn-based role-play game (`/api/research/games/*`);
+    each role is seated by a resident agent or a human (via a seat link), rounds are simultaneous,
+    a facilitator call resolves each round and a debrief scores every role. Designs and sessions in
+    `output/research/serious_games/`; `gaworld/research/serious_game.py` + `gaworld/apps/serious_game_api.py`
+  - 政策仿真与优化 tab: pick a city, describe a policy (optionally a candidate); a seeded sample of
+    residents reacts to each version in fixed-scale JSON, code aggregates and scores, one model call
+    proposes modifications and a revised policy, which is re-simulated on the same residents — the
+    highest composite score is the recommendation (`/api/research/policy/*`). Runs in
+    `output/research/policy/`; `gaworld/research/policy_sim.py` + `gaworld/apps/policy_sim_api.py`
+  - Docs in `docs/RESEARCH_WORKBENCH_TUTORIAL.md`
 - Generate a new city map (single, in-place):
   - `python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"`
 - Create a whole city from a place name (map + environment + agents, as a reusable bundle):
@@ -139,6 +164,7 @@ There is no build step beyond installing Python dependencies.
 ## Testing Guidelines
 - Tests live under `tests/` and use `pytest` discovery (`test_*.py`).
 - Run locally: `pytest tests` (or `python -m unittest discover -s tests -p 'test_*.py'`).
+- Two suites, designed in `docs/TEST_CASES.md`: `pytest --suite core` (~30 s smoke of the main simulation path, listed in `tests/suites/core.txt`) and `pytest --suite full` (everything). Keep the core suite green before committing; a stale entry in `core.txt` fails the run.
 - New code MUST be covered by tests in the same PR; coverage is reported by `pytest-cov` in CI.
 - Prefer lightweight, reproducible tests: mock LLM calls (`call_llm`) and avoid real network IO.
 

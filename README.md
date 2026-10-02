@@ -147,7 +147,7 @@ code.
 - `gaworld/population/`: parameterised population synthesis — `schema` (knob contract + feasibility precheck), `synth` (IPF + conditional sampling + income rank-transform), `network` (households, workplaces, homophily social graph), `report` (validation gate + review charts), `writer` (state CSV + profile Markdown + manifest)
 - `gaworld/group/`: cohort (group) simulation — `cohort` (partition, centroid **and** dispersion, mean-zero network coupling), `cohort_day` (one LLM call per cohort per day), `materialize` (focal / event / tail / audit selection, audit residual), `driver` (day loop + cost accounting), `metrics` + `validate` (the L1–L4 gate), `plugin` (observational cohort telemetry)
 - `gaworld/city/`: create a whole city from a place name — `geocode` (Nominatim → coordinates, bbox, scale), `osm` (Overpass fetch with mirror pinning and a wall-clock deadline), `procedural` (name-seeded fallback map), `environment` (climate- and scale-derived events + background), `bundle` (on-disk layout, manifest, registry), `agents` (bulk synthesis, single append, migration), `config` (point the simulator at a bundle), `knowledge` (researched industry/labour profile with grounded fallbacks), `news` (local-news cache gated on real time, served on sim time), `context` (the four channels through which city knowledge reaches agents)
-- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities), `interview_api` (Group Interview), `external_systems_api` (External Systems), `arena_api`, `games_api`, `disaster_api` and `rumor_api` (Playground: the arena, persuasion, disaster mode and rumor spread)
+- `gaworld/apps/`: local servers (dashboard, external-environment, distributed-comm) and the delegated panel backends `population_api` (Population Studio), `city_api` (Cities), `interview_api` (Group Interview), `external_systems_api` (External Systems), `arena_api`, `games_api` and one module per bigger game — `disaster_api`, `rumor_api`, `duel_api`, `referendum_api`, `guess_api` (Playground)
 - `gaworld/io/`: HTTP guard with retry/backoff and HTML extraction
 - `gaworld/sim/`: extracted simulator sub-modules — `_utils`, `agents_loader`, `_schedule`, `_location`, `_cognition`, `_rag`, `_diary` (more slices coming as the legacy file shrinks)
 - `simulation_visualizer.py`, `avatar_generator.py`, `generate_agent_rag_seed.py`, `analyze_wellbeing.py`: standalone CLI tools (not imported by the runtime)
@@ -158,7 +158,7 @@ code.
 - `scripts/`: launch and developer utilities
 - `docs/`: tutorials, integration notes, design docs, refactor history (`REFACTOR_PLAN.md`, `REFACTOR_BASELINE.md`, `PROJECT_STRUCTURE.md`)
 - `gaworld/parallel/`: parallel-world experiments — `spec` (world/event validation + per-world isolation overrides), `runner` (forks N worlds through a small pool, tracks progress), `analysis` (per-step divergence, split points, per-agent movers)
-- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + Cities `city.html` + Group Interview `survey.html` + External Systems `external.html` + Parallel Worlds `worlds.html` + Playground `games.html` / Arena `arena.html` / Persuasion `persuade.html` / Disaster Mode `disaster.html` / Rumor Spread `rumor.html`)
+- `site/dashboard/`: local dashboard frontend (console `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + Cities `city.html` + Group Interview `survey.html` + External Systems `external.html` + Parallel Worlds `worlds.html` + Playground `games.html` / Arena `arena.html` / Persuasion `persuade.html` / Disaster Mode `disaster.html` / Rumor Spread `rumor.html` / Two-Team Duel `duel.html` / Referendum `referendum.html` / Read the Room `guess.html` / Team Duel `duel.html`)
 - `site/simviz/`: playback viewer
 - `output/`: generated artifacts
 
@@ -616,7 +616,7 @@ Full walkthrough: [Parallel Worlds Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md)
 
 Every other panel *observes* these residents; this one lets you play against them. Console tab
 (**游戏场 / Playground**) or directly at `http://127.0.0.1:8766/site/dashboard/games.html`.
-Four games live in the hub today:
+Seven games live in the hub today:
 
 **Agent Arena** (`arena.html`): pick a group of residents and a set of tasks (10 built-in ones
 covering math, general knowledge, logic, reading and translation, or let an LLM author a fresh
@@ -661,6 +661,33 @@ Asked neutrally, all seven residents answer "let me check with my friend at the 
 line, the same cast produces both "believed it at 72% and forwarded it" and "ignored it, the group
 chat is full of this stuff".
 
+**Referendum** (`referendum.html`): put a motion **somebody loses by** to up to 14 residents —
+the waste transfer station, the 30% service-charge rise, the old-town driving ban, the school
+catchment, the market redevelopment, or one you write. They take a private position first, then
+vote in public with the tally, the most strident quote or two from each side, and an optional
+**campaign line** of yours in between — all of it assembled from data already in hand, so the
+social pressure costs no extra call.
+
+A ballot is `{for/against/abstain, conviction 0-100, one line}`, so the tally, the margin, the
+swing and the polarisation fall out of the ballots with no judge. Two traps are handled in code:
+"不支持" ("do not support") contains "支持" ("support"), so a plain substring pass would record
+the opposite vote — and a 5-1 result would still look perfectly reasonable; and a ballot that
+fails to parse corrupts the tally, the margin *and* the swing at once, so this game re-asks once
+where the others do not.
+
+The way to play it is to run the same cast twice, once without a campaign line and once with it.
+The gap is what the sentence was worth — and it can be negative: in a live run, "no rise means the
+lift stops for two months, how do the old people get downstairs?" was called moral blackmail by
+two residents outright, and pushed the one undecided voter into the against column. Cost:
+`residents × 2 + 1` calls.
+
+**Read the Room** (`guess.html`): read one resident's file and guess which way they go on a
+dilemma. Dealing is free; the single model call happens when you commit. A few seconds a round —
+the only game here you can play idly. "Ask them again" re-asks the same dilemma up to three times:
+three identical answers mean the file holds, three different ones mean it is too thin. That number
+lands in the scoreboard, and it is exactly the persona-consistency data `benchmark/` wants —
+produced by somebody playing a game.
+
 **Disaster Mode** (`disaster.html`): pick a batch of residents (12 at most), pick a disaster —
 earthquake, epidemic, war, flood, blackout, or one you write yourself — and play it out stage by
 stage. Each resident is asked once per stage and answers in a small JSON object: one action out of
@@ -675,6 +702,29 @@ supplies, 2 fled" — assembled from the previous stage's statistics, with no ex
 Without it every stage is an independent draw and the interesting part of a disaster (people
 copying each other, or pointedly not) never appears. The result is a per-stage action histogram,
 average panic and help rate, a card per resident, and a closing city digest.
+
+**Team Duel** (`duel.html`): split the residents into two teams and hand both the same task —
+retrofitting a lift into an old walk-up, making waste sorting stick, clearing a low-lying district
+before a typhoon, staffing a factory nobody wants to work at — but each team may take only its own,
+*opposed* route: top-down vs bottom-up, penalties vs incentives, forced evacuation vs persuasion.
+Every member plays one move from their own persona (what they have, who they know, where the thing
+touches them), a convener folds the moves into a plan with steps and a stated risk, and from round
+two on each team can see what the other produced.
+
+Three things are worth spelling out. **The method is a hard constraint**: the prompt names the rival
+route and forbids it, because otherwise both teams write the same "coordinate broadly, raise
+awareness" plan and there is nothing left to compare — the same surgery as the rumor game's "most
+people do not verify". **Both teams answer the same snapshot**: the rival plan is frozen at the
+start of each round, or the team that runs second answers a fresh plan while the first only ever saw
+a stale one, and turn order decides the match. **The judge does not know whose plan is whose**: the
+two are relabelled Plan one / Plan two in a shuffled order and scored 0–10 on four criteria (goal,
+feasibility, cost, side effects). **The winner comes from the summed scores**, with the winner the
+model *named* kept beside it — when the two disagree the page flags it, which usually means the
+plans are genuinely close.
+
+So the line-up really matters: the same bottom-up route goes differently for a team of officials
+than for a team with a shopkeeper who knows the street, and a member is free to say the method will
+not work where they stand and score their own confidence low.
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -691,11 +741,21 @@ average panic and help rate, a card per resident, and a closing city digest.
 | GET | `/api/games/rumor/graph?city=&agent_ids=` | derived network preview (**no model call**) |
 | POST | `/api/games/rumor/run` | release a rumor; returns `{job_id}` |
 | GET | `/api/games/rumor/jobs/<id>` | progress, then the diffusion tree and the stats |
+| GET | `/api/games/referendum/catalogue` | the motion bank and the limits |
+| POST | `/api/games/referendum/run` | put a motion to the vote; returns `{job_id}` |
+| GET | `/api/games/referendum/jobs/<id>` | progress, then every private and public ballot |
+| POST | `/api/games/guess/deal` | deal a round (**no model call**) |
+| POST | `/api/games/guess/answer` | commit a guess; returns what they actually chose |
+| POST | `/api/games/guess/again` | re-ask the same dilemma — does the persona hold? |
+| GET | `/api/games/duel/catalogue` | the task bank (each with a pair of opposed methods) and the criteria |
+| POST | `/api/games/duel/run` | start a match; returns `{job_id}` |
+| GET | `/api/games/duel/jobs/<id>` | progress, then both plans, the per-criterion scores and the blind order |
 
 A persuasion game costs `1 + turns + 2` model calls (8 at the default of 5 turns) and the turn
 limit is capped at 20; a disaster run costs `residents × stages + 1`; a rumor run is capped at
-`residents × 2 + 1` regardless of how many rounds it plays. State lives in memory only (50
-persuasion sessions, 20 disaster runs, 20 rumor runs) and is cleared when the dashboard
+`residents × 2 + 1` regardless of how many rounds it plays; a duel costs
+`rounds × (members + 2) + 1` (17 for six residents over two rounds). State lives in memory only (50
+persuasion sessions, 20 disaster runs, 20 rumor runs, 20 duels) and is cleared when the dashboard
 restarts — the playground is a sandbox, and it should not change the people in the city.
 
 Full walkthrough: [Playground Tutorial](./docs/PLAYGROUND_TUTORIAL.md) (in Chinese).
@@ -1216,6 +1276,7 @@ Generated artifacts are written under `output/`, including:
 - [Group Interview — Tutorial](./docs/GROUP_INTERVIEW_TUTORIAL.md) (in Chinese; asking one question set to many respondents across cities — typed questions and their tallies, image/URL material and how it degrades, follow-up rounds, reading the breakdowns, the HTTP surface)
 - [External Systems — Tutorial](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md) (in Chinese; observing and editing the money system, the external environment and outward services, plus runtime intervention)
 - [Parallel Worlds — Tutorial](./docs/PARALLEL_WORLDS_TUTORIAL.md) (in Chinese; multi-branch counterfactuals — designing an experiment, reading the divergence charts, dose-response designs, and why to run a placebo world first)
+- [Research Workbench — Tutorial](./docs/RESEARCH_WORKBENCH_TUTORIAL.md) (in Chinese; upload a paper, review the model's reading, compare alternative study designs, then compile one into a pre-registered protocol that runs as parallel worlds and is scored by code)
 - [Playground — Tutorial](./docs/PLAYGROUND_TUTORIAL.md) (in Chinese; the arena's ranking and retention, how persuasion is judged, how disaster mode is played out, the HTTP API, and how to add a game) · [Agent Arena — Tutorial](./docs/ARENA_TUTORIAL.md) (in Chinese)
 - [Big Five (OCEAN) Personality — Design](./docs/proposals/2026-08-20-big-five-personality.md) (the three independent channels, the effect-size and collinearity merge gates, and the offline trait calibration pass)
 - [Mobile Digital Twin](./docs/TWIN_MOBILE.md) (in Chinese; running the phone client over an HTTPS tunnel, invite-code binding, the mirror / perception / calibration channels, and why the twin server is a separate process from the dashboard)

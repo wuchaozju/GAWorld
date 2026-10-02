@@ -827,6 +827,39 @@ occ=2 vs 4）：workers 被 n=5 截住，而 setup 和逐 tick 的那部分依�
 并行只盖了 digest 和日程生成两个阶段。**100 人下的实际加速比还没测过**，
 16.6 那张时间表在测之前不能按“除以 8”来改。
 
+### 16.8 并行只盖住了一半：基础日程 bootstrap 是另一个串行大坑（2026-09-26）
+
+开 100 人 × 1 天 × workers=8 去量加速比，结果在拿到加速比之前先撞上了另一个东西。
+跑了 20 分钟，`parallel_map` 那行日志**还没出现**，而日志里已经在一个一个地出
+`task=schedule` 和 `task=actions`。
+
+查到 `generative_city_sim.py:3040`：
+
+```python
+for a in agents:
+    ...
+    schedules[agent_id] = generate_schedule(a)      # 1 次 LLM / 人
+    ...
+    base_actions = generate_actions(a, schedules[agent_id])   # 又好几次 / 人
+```
+
+**一个普通 for 循环。形状和日程生成阶段一模一样，但这里没用 `parallel_map`。**
+实测速率：约 **20–30 s / 人**，100 人 ≈ **35–50 分钟**，而且在每次每跑都要付一遍。
+这比 16.6 里担心的 tick 循环更先撞到。
+
+**好消息：它是有缓存的。** `load_agent_schedule` / `load_agent_actions` 读
+`memory_dir/agent_<id>_schedule.json` 与 `agent_<id>_actions.json`，命中就跳过生成。
+
+所以 `run_trackb.sh` 加了一个共享缓存：第一跑热完，后面五跑从
+`output/trackb/_base_cache/` 拷进自己隔离的 memory_dir。**只拷这两类文件**。
+
+这不是偷工减料，反而更干净：基础日程是**处理前**的东西，两臂本来就应该从
+同一份人口出发。而处理真正碰的东西（`env_preferences`、episodes、vector db）
+依然每跑隔离——这正是 §16.4 第 1 条要守的线。
+
+**加速比还没拿到**。等 bootstrap 跑完才能看到 `parallel_map` 那一段的耗时；
+好在 w1 对照跑将命中缓存，直接进日程阶段，那一半便宜得多。
+
 ---
 
 相关:`docs/physical_env_perception_analysis.md`(P0–P4 现状分析)、`benchmark/GAWORLD_BENCH_DESIGN.md`(Track A/B 判据)。

@@ -206,6 +206,16 @@
       tags: ["contributing", "约定", "测试", "commit"],
     },
     {
+      id: "test-cases",
+      path: "/docs/TEST_CASES.md",
+      title: "测试用例设计",
+      en: "Test Cases",
+      group: "开发与扩展",
+      summary: "两套测试：全功能详细测试（逐项功能的步骤、预期与对应 pytest）和约 30 秒的核心测试，以及怎么跑、当前基线和覆盖缺口。",
+      en_summary: "Two suites: a detailed full-feature suite (steps, expected results and the matching pytest for every feature) and a ~30-second core suite, plus how to run them, the current baseline and coverage gaps.",
+      tags: ["test", "pytest", "测试", "用例", "core", "suite"],
+    },
+    {
       id: "changelog",
       path: "/CHANGELOG.md",
       title: "更新日志",

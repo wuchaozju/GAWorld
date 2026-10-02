@@ -162,9 +162,9 @@ GAWorld/
 - `gaworld/population/`：参数化人口合成——`schema`（旋钮契约 + 可行性预检）、`synth`（IPF + 条件采样 + 收入秩变换）、`network`（家庭、工作单位、同质性社交图）、`report`（校验门 + 复核图表）、`writer`（状态 CSV + profile MD + manifest）
 - `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（观测型 cohort 遥测）
 - `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）、`knowledge`（联网搜集的产业与就业画像，带分层兜底）、`news`（按真实时间抓取、按仿真时间投喂的本地新闻）、`context`（城市知识影响居民的四条通道统一出口）
-- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及各面板后端 `population_api`（Population Studio）、`city_api`（城市）、`interview_api`（群体采访）、`external_systems_api`（外部系统观测台）、`arena_api`、`games_api`、`disaster_api` 与 `rumor_api`（游戏场：斗兽场 / 说服游戏 / 灾害模式 / 谣言扩散局）
+- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及各面板后端 `population_api`（Population Studio）、`city_api`（城市）、`interview_api`（群体采访）、`external_systems_api`（外部系统观测台）、`arena_api`、`games_api` 与各游戏模块 `disaster_api` / `rumor_api` / `duel_api` / `referendum_api` / `guess_api`（游戏场）
 - `gaworld/parallel/`：平行世界实验——`spec`（世界/事件校验 + 各世界磁盘隔离的配置覆盖）、`runner`（用小型进程池分叉 N 个世界并跟踪进度）、`analysis`（逐步偏离度、分叉点、逐人影响）
-- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 群体采访 `survey.html` + 外部系统 `external.html` + 平行世界 `worlds.html` + 游戏场 `games.html` / 斗兽场 `arena.html` / 说服游戏 `persuade.html` / 灾害模式 `disaster.html` / 谣言扩散局 `rumor.html`）
+- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 群体采访 `survey.html` + 外部系统 `external.html` + 平行世界 `worlds.html` + 游戏场 `games.html` / 斗兽场 `arena.html` / 说服游戏 `persuade.html` / 灾害模式 `disaster.html` / 谣言扩散局 `rumor.html` / 双队竞赛 `duel.html` / 公投局 `referendum.html` / 猜人局 `guess.html`）
 - `site/simviz/`：轨迹回放页面
 - `output/`：生成结果
 
@@ -590,7 +590,7 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 ### 游戏场
 
 前面的面板都在**观察**这些居民，这个面板让你**下场跟他们玩**。控制台「**游戏场**」页签，或直接打开
-`http://127.0.0.1:8766/site/dashboard/games.html`。大厅里目前四个游戏：
+`http://127.0.0.1:8766/site/dashboard/games.html`。大厅里目前七个游戏：
 
 **斗兽场**（`arena.html`）：勾一组居民、勾一批题（内置 10 道覆盖数学 / 常识 / 逻辑 / 阅读 / 翻译，
 也可以让 LLM 现场出题），跑完按正确率 + 中位耗时排座次；填一个 Top-K 就把其余的人标记为淘汰，
@@ -625,6 +625,30 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 
 ---
 
+**公投局**（`referendum.html`）：把一个**有人吃亏**的议案交给最多 14 个居民——垃圾中转站选址、
+物业费上调、老城区限行、学区划片、菜市场改造，或者自己写。流程是先私下表态、再公开表决：
+中间那一屏带着票数、支持和反对两边最响的原话，以及你写的一句**宣传口径**（可留空），
+这些全部由已经拿到的数据拼出来，不额外花一次调用。
+
+票面是 `{支持/反对/弃权, 坚定度 0-100, 一句话}`，所以票数、差额、位移、极化度直接从票面算出来，
+不需要裁判模型。两个坑代码里堵上了：**「不支持」里含「支持」**（纯子串匹配会记成赞成票，
+5:1 的结果看上去还完全合理），所以否定词先判；**一票读不出来会同时污染票数、差额和位移**，
+所以这个游戏解析失败会重问一次，其它游戏不重问。
+
+玩法是同一批人跑两次，一次不带口径、一次带上，票差就是这句话的分量——注意它可能是负的：
+实跑「物业费上调」时那句「不涨物业费，电梯就得停两个月，老人怎么下楼？」被两个居民
+当场点名「道德绑架」，唯一没拿定主意的人因此倒向反对。成本 `人数 × 2 + 1` 次调用。
+
+---
+
+**猜人局**（`guess.html`）：读一份档案，猜这个人在两难里会怎么选，当场对答案。
+**发牌不花调用**，你点下选项才花掉这一局唯一的一次——几秒钟一把，是游戏场里唯一能随手玩的。
+「🔁 再问他一次」用同一道题复问同一个人（最多三次）：三次一样说明档案扛得住，
+三次不同说明档案太薄。这个数字进记分牌的「档案稳定」一栏，也正好是 `benchmark/` 想要的
+persona 一致性数据——玩的人顺手就把它标出来了。
+
+---
+
 **灾害模式**（`disaster.html`）：勾一批居民（最多 12 人），选一场灾难——地震、疫情、战争、洪水、
 大停电，或者自己写一个——然后分幕推演。每个人每一幕只问一次，要求返回一个小 JSON：
 从**避险逃离 / 囤积物资 / 救助他人 / 求助求援 / 照常生活 / 打探消息**里选一类行动，
@@ -635,6 +659,23 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 直接拼出来的，不额外调用模型。没有它，每一幕都是独立抽样，灾难里最值得看的东西（从众、跟风抢购，
 或者偏偏有人不跟）根本不会出现。跑完给出逐幕的行动分布、平均恐慌与互助率、每个人的卡片，
 最后一次调用写一段城市简报。
+
+---
+
+**双队竞赛**（`duel.html`）：把居民点成两个队，扔同一个任务过去——老楼加装电梯、垃圾分类落地、
+台风前转移群众、小厂招不到人……但两队只能各走一条**相反**的路子：自上而下 vs 自下而上、
+罚与盯 vs 奖与带、强制转移 vs 动员说服。每人按自己的档案出一招（他手上有什么、认识谁、
+这件事碰到他哪里），队长汇总成一份带步骤和风险的方案；从第二轮起看得见对手的方案。
+
+三个地方值得说清楚。**办法是硬约束**：提示词里点名对手那条路并明令禁止，否则两个队会写出
+同一份「多方协同、加强宣传」，比出来毫无意义——跟谣言局里那句「多数人并不谨慎」是同一类手术。
+**两队看的是同一份快照**：对手的方案在每轮开始时截下来，不然先跑的队只看得到旧方案，
+赢的就成了出手顺序。**评审不知道谁是谁**：两份方案被重新贴成「方案一 / 方案二」、顺序每场随机洗，
+四个维度（目标达成 / 可行性 / 代价 / 副作用）各 0–10 分，**赢家由总分决定**，
+模型自己说的赢家只作旁证——两者对不上时页面标红，那通常说明两份方案咬得很紧。
+
+所以队伍配置是真的起作用的：同一个「自下而上」，一队全是干部和一队里有个开小店的老街坊，
+跑出来的方案完全不一样；队员还可以直说「这个办法在我这儿行不通」并给低把握分。
 
 | 方法 | 端点 | 用途 |
 |------|------|------|
@@ -651,10 +692,14 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 | GET | `/api/games/rumor/graph?city=&agent_ids=` | 关系图预览（**不花模型调用**） |
 | POST | `/api/games/rumor/run` | 放出一条传闻，返回 `{job_id}` |
 | GET | `/api/games/rumor/jobs/<id>` | 进度；跑完 `result` 含传播树与统计 |
+| GET | `/api/games/duel/catalogue` | 任务库（每个自带一对相反的办法）与评分维度 |
+| POST | `/api/games/duel/run` | 开一场比赛，返回 `{job_id}` |
+| GET | `/api/games/duel/jobs/<id>` | 进度；跑完 `result` 含两队方案、逐项打分与蒙名顺序 |
 
 说服游戏一局的成本是 `1 + 轮数 + 2` 次模型调用（默认 5 轮 = 8 次），轮数上限锁在 20；
-灾害模式一场是 `人数 × 幕数 + 1` 次；谣言局封顶 `人数 × 2 + 1` 次，与轮数无关。
-对局只存在内存里（说服 50 局 / 灾害 20 场 / 谣言 20 场），重启 dashboard 就清空——它是个沙盒，不该改变城市里的人。
+灾害模式一场是 `人数 × 幕数 + 1` 次；谣言局封顶 `人数 × 2 + 1` 次，与轮数无关；
+双队竞赛一场是 `轮数 ×（人数 + 2）+ 1` 次（6 人比 2 轮 = 17 次）。
+对局只存在内存里（说服 50 局 / 灾害 20 场 / 谣言 20 场 / 竞赛 20 场），重启 dashboard 就清空——它是个沙盒，不该改变城市里的人。
 
 完整教程见 [游戏场教程](./docs/PLAYGROUND_TUTORIAL.md)。
 
@@ -1167,6 +1212,7 @@ LLM 调用之前完成决策。
 - [群体采访 — 教程](./docs/GROUP_INTERVIEW_TUTORIAL.md)（跨城市问一群人：题型与统计、图片/网址材料及其降级、连续追问、分组分布怎么读、HTTP 接口）
 - [外部系统 — 教程](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md)（货币系统、外部环境、对外服务的观察与编辑，以及运行时干预）
 - [平行世界 — 教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)（多分支反事实实验：设计实验、读分叉与偏离图、剂量反应设计，以及为什么要先跑安慰剂世界）
+- [研究工作台 — 教程](./docs/RESEARCH_WORKBENCH_TUTORIAL.md)（上传论文、审阅解读、比较几种实验设计，再编译成预注册协议跑平行世界，由代码判定假设并出报告）
 - [游戏场 — 教程](./docs/PLAYGROUND_TUTORIAL.md)（斗兽场排座次与留存、说服游戏的判定规则与 HTTP 接口、怎么加一个新游戏） · [斗兽场 — 教程](./docs/ARENA_TUTORIAL.md)
 - [大五人格（OCEAN）— 设计](./docs/proposals/2026-08-20-big-five-personality.md)（三条独立通道、效应量与共线性两道合入门、离线特质标定）
 - [手机端数字孪生](./docs/TWIN_MOBILE.md)（通过 HTTPS 隧道让手机连上、邀请码绑定、镜像/感知/标定三条通道，以及为什么孪生服务必须与控制台分进程）

@@ -235,7 +235,9 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   whatever the model actually said). All of them keep their state in memory and
   never write to a city bundle — a game is an evaluation sandbox, not a run — and
   all take their LLM entry points as injectable parameters so the tests are
-  network-free. The arena, disaster mode and the rumor game run a round as a job
+  network-free. Games whose round costs dozens of calls share the job store in
+  `game_jobs.py` — one `JobStore` per game, so one game's jobs endpoint can never answer
+  for another's. The arena, disaster mode and the rumor game run a round as a job
   (contestants × tasks, residents × stages, residents × 2); persuasion answers
   each request inline, because one chat turn is a single round trip. `replay_runs.py` enumerates
   every replayable trace on disk (live, `<visualization>/runs/<run_id>/` archives,
