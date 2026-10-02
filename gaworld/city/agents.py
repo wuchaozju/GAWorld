@@ -26,7 +26,7 @@ from typing import Any
 
 from gaworld.city.bundle import CityBundle
 from gaworld.city.locale import load_locale
-from gaworld.city.procedural import districts_from_spec
+from gaworld.city.procedural import districts_from_spec, seed_from_name
 from gaworld.logging_setup import get_logger
 from gaworld.population.generate import generate_population
 from gaworld.population.schema import CSV_COLUMNS, STATE_VAR_KEYS, normalize_spec
@@ -202,8 +202,15 @@ def add_population(
         # education_work / income, and ``normalize_spec`` deep-merges each of
         # those partial sections onto the preset's own.
         raw.update(locale.suggested_overrides)
-    if seed is not None:
-        raw["seed"] = int(seed)
+    if seed is None:
+        # The spec's own default is a fixed 42, which gave every city the same
+        # residents id for id.  Derive it from the city instead, and from the
+        # existing head count so an appended batch doesn't repeat the last one.
+        existing = (
+            0 if replace or not city.state_csv_path.exists() else _max_id(_read_rows(city.state_csv_path))
+        )
+        seed = seed_from_name(f"{city.slug}#{existing}") % (2**31)
+    raw["seed"] = int(seed)
     if overrides:
         raw.update(overrides)
 

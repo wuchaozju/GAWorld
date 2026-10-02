@@ -116,6 +116,22 @@ class CityAgentsTest(unittest.TestCase):
         self.assertEqual(result["added"], 20)
         self.assertEqual(result["total"], 20)
 
+    def test_unseeded_cities_get_different_residents(self):
+        # Without an explicit seed the spec used to fall back to 42, so every
+        # city got the same names id for id.
+        other = create_city("另一镇", offline=True, scale="small", root=self.root)
+        add_population(self.city, size=20)
+        add_population(other, size=20)
+        names = [r["name"] for r in read_rows(self.city.state_csv_path)]
+        other_names = [r["name"] for r in read_rows(other.state_csv_path)]
+        self.assertNotEqual(names, other_names)
+
+    def test_unseeded_second_batch_does_not_repeat_the_first(self):
+        add_population(self.city, size=20)
+        add_population(self.city, size=20)
+        names = [r["name"] for r in read_rows(self.city.state_csv_path)]
+        self.assertNotEqual(names[:20], names[20:])
+
     def test_residents_live_in_districts_this_city_actually_has(self):
         add_population(self.city, size=30, seed=5)
         districts = set(city_districts(self.city))
