@@ -1,12 +1,32 @@
 # 第 8 章　运行系统：仿真循环、时钟与一致性
 
 > 智能体、环境、网络、LLM 都到位了,接下来要把它们**装进一个时钟里**,让时间真正流动起来。这一章讨论社会仿真的运行系统:时钟与步长、顺序与并行、守恒与审计、状态持久化、可复现性。这部分内容在仿真论文里往往被忽视,但在工程实践里决定了一个仿真能不能"跑得起来"。读完本章,读者应该能理解为什么 GAWorld 有 --sim-days / --fast-forward / --sim-years 等不同模式,以及它们各自适合什么研究问题。
+>
+> **本章补充:理论深度视角**。除了工程实现,本章还讨论:
+> - **离散事件仿真理论** (Discrete Event Simulation, Banks 1998)——事件驱动的时间
+> - **守恒定律的物理学根源**——为什么经济系统需要守恒
+> - **可复现性的科学哲学** (Philosophy of Reproducibility)——为什么可复现是科学底线
+> - **分布式系统理论**——CAP 定理与社会仿真
 
 ---
 
 ## 8.1　时钟与步长:秒、分钟、日、月、年
 
-社会仿真用什么"滴答"?这是看似简单但影响深远的选择。
+### 8.1.1　理论背景:离散事件仿真
+
+社会仿真的时钟不是任意的——它有理论理论支撑:
+
+- **离散事件仿真理论**(Discrete Event Simulation, Banks 1998):时间是离散的"事件",每个事件改变系统状态,然后等待下一个下一个事件
+- **连续系统仿真**(Continuous System Simulation):时间是连续的,用微分方程描述
+- **离散-连续混合**:某些现象是连续的(人口增长),),某些是离散的(决策)
+
+GAWorld 采用"混合时钟":
+
+- 决策是离散的(每个 tick 智能体做一次决定)
+- 物理状态是连续的(疲劳度、健康的变化是连续的)
+- 事件是离散的(政策实施日、灾害发生日)
+
+读者在设计自己的仿真时钟时,要考虑:研究问题是离散还是连续?如果是"事件驱动"的(决策,政策),用离散;如果是"过程驱动"的(物理增长),用连续。
 
 **秒级步长**(second-level):每秒钟刷新一次所有智能体的状态。适合仿真"应急疏散""城市交通"等需要秒级反应的场景。1000 人 × 86400 秒/天 × 30 天 = 26 亿次状态更新,计算量惊人。
 
@@ -694,4 +714,516 @@ def alert_on_anomaly(issue: str):
 - 工程最佳实践:日志规范、配置与代码分离、异常处理、资源清理。
 - 监控与可视化:实时仪表盘、性能监控、异常告警、可视化回放。
 - GAWorld 的运行系统已经实现了大部分生产级特性,读者可以直接使用。
+
+
+---
+
+## 8.15　扩展:仿真校准与验证
+
+### 8.15.1　仿真校准
+
+仿真校准(calibration)是用真实数据调整仿真参数:
+
+```python
+def calibrate_simulation(real_data: pd.DataFrame, sim_data: pd.DataFrame,
+                         parameters: dict) -> dict:
+    """校准仿真参数"""
+    # 简单示例:调整参数直到模拟数据接近真实数据
+    best_params = parameters
+    best_diff = float("inf")
+    for _ in range(100):  # 简单网格搜索
+        candidate = perturb_parameters(parameters)
+        simulated = run_with_params(candidate)
+        diff = calculate_diff(simulated, real_data)
+        if diff < best_diff:
+            best_diff = diff
+            best_params = candidate
+    return best_params
+```
+
+### 8.15.2　校准的指标
+
+校准的常用指标:
+
+- 均方误差(MSE)
+- 平均绝对误差(MAE)
+- 相对误差
+- 相关系数
+
+### 8.15.3　仿真验证
+
+验证(validation)是确认仿真预测的准确性:
+
+```python
+def validate_simulation(sim_predictions: pd.Series,
+                       real_outcomes: pd.Series) -> dict:
+    """验证仿真预测"""
+    return {
+        "mae": np.mean(np.abs(sim_predictions - real_outcomes)),
+        "rmse": np.sqrt(np.mean((sim_predictions - real_outcomes) ** 2)),
+        "correlation": np.corrcoef(sim_predictions, real_outcomes)[0, 1]
+    }
+```
+
+### 8.15.4　校准 vs 验证
+
+- 校准:用一部分数据调整参数
+- 验证:用另一部分数据(测试集)验证
+
+两者一起做才是完整的可信度建设。
+
+---
+
+## 8.16　扩展:大规模仿真的优化
+
+### 8.16.1　并行计算的层次
+
+仿真可以多层次并行:
+
+- **bit 级**:用 numpy 向量化
+- **agent 级**:agent 内并行
+- **时间步级**:不同时间步并行
+- **场景级**:不同世界并行
+
+### 8.16.2　GPU 加速
+
+大规模仿真可以用 GPU:
+
+```python
+import cupy as cp
+
+def gpu_parallel_decisions(agents, situations):
+    """GPU 并行决策"""
+    states_gpu = cp.array([a.state for a in agents])
+    # 在 GPU 上并行计算
+    decisions_gpu = compute_decisions_gpu(states_gpu)
+    return cp.asnumpy(decisions_gpu)
+```
+
+### 8.16.3　内存优化
+
+大规模仿真的内存优化:
+
+- 用 numpy 数组代替 list of dict
+- 用稀疏矩阵存关系网络
+- 定期持久化到磁盘
+- 用共享内存避免数据拷贝
+
+### 8.16.4　网络优化
+
+分布式仿真的网络优化:
+
+- 节点间只传输必要数据
+- 压缩传输(序列化)
+- 异步通信
+- 本地优先
+
+---
+
+## 8.17　本章小结(最终扩展版)
+
+- 仿真校准与验证:用真实数据调整参数,用测试集验证。
+- 大规模仿真的优化:并行计算、GPU 加速、内存优化、网络优化。
+- 这些优化让大规模社会仿真成为可能。
+
+
+---
+
+## 8.18　扩展:仿真生态
+
+### 8.18.1　仿真工具
+
+常用仿真工具:
+
+- **NetLogo**:教学友好
+- **Mesa**:Python 友好
+- **Repast**:工业级
+- **AnyLogic**:商业级
+- **GAWorld**:LLM 驱动
+
+### 8.18.2　仿真平台
+
+常用仿真平台:
+
+- **仿真云**:在线运行
+- **仿真实验室**:批量实验
+- **仿真孪生**:实时同步
+
+### 8.18.3　仿真社区
+
+仿真社区:
+
+- **JASSS**:学术期刊 + 社区
+- **NetLogo 社区**:用户群
+- **GAWorld 社区**:GitHub + Discord
+
+### 8.18.4　仿真标准
+
+仿真标准:
+
+- **ODD 协议**:模型描述
+- **FAIR 原则**:数据管理
+- **PROV 标准**:溯源追踪
+
+---
+
+## 8.19　扩展:仿真教育的未来
+
+### 8.19.1　从课堂到在线
+
+仿真教育的趋势:
+
+- 课堂实验 → 在线实验
+- 教师讲授 → 学生主导
+- 静态文本 → 动态内容
+
+### 8.19.2　从理论到实践
+
+学生更早接触仿真:
+
+- 高中:简单 NetLogo 模型
+- 大学:完整仿真项目
+- 研究生:原创研究
+
+### 8.19.3　跨学科教育
+
+仿真天然跨学科:
+
+- 计算社会科学
+- 数据科学
+- 城市规划
+- 公共政策
+
+### 8.19.4　教育认证
+
+仿真教育的认证:
+
+- Coursera / edX 课程
+- 大学学位
+- 专业认证
+
+---
+
+## 8.20　本章小结(最终扩展版)
+
+- 仿真生态:工具、平台、社区、标准。
+- 仿真教育的未来:从课堂到在线、从理论到实践、跨学科、认证。
+- 仿真作为社会科学的"实验台",将成为 21 世纪研究的基础设施。
+
+
+---
+
+## 8.21　扩展:仿真与开源
+
+### 8.21.1　为什么开源
+
+开源的价值:
+
+- 透明度
+- 可复现性
+- 社区贡献
+- 长期可持续
+
+### 8.21.2　开源许可证
+
+常见开源许可证:
+
+- MIT:宽松
+- Apache 2.0:带专利条款
+- GPL:强 copyleft
+- BSD:类似 MIT
+
+GAWorld 使用 MIT 许可证。
+
+### 8.21.3　开源治理
+
+开源治理原则:
+
+- 透明
+- 公开
+- 包容
+- 中立
+
+### 8.21.4　开源社区
+
+开源社区的健康要素:
+
+- 多元贡献者
+- 活跃讨论
+- 清晰流程
+- 持续维护
+
+---
+
+## 8.22　扩展:仿真的可重复性
+
+### 8.22.1　可重复性的层次
+
+- 同一代码 + 同一数据 → 同一结果(可重跑)
+- 同一方法 + 不同实现 → 类似结果(可复现)
+- 同一方法 + 不同数据 → 一致结论(可重复)
+
+### 8.22.2　可重复性的工程实现
+
+- 锁定依赖版本
+- 锁定 Python 版本
+- 锁定 LLM 模型
+- 锁定随机种子
+
+### 8.22.3　可重复性的文化
+
+推动可重复性需要:
+
+- 期刊要求
+- 评审支持
+- 社区共识
+- 工具支持
+
+---
+
+## 8.23　本章小结(最终扩展版)
+
+- 仿真与开源:价值、许可证、治理、社区。
+- 仿真的可重复性:层次、工程、文化。
+- 这些是社会仿真长期发展的基础设施。
+
+
+---
+
+## 8.24　本章尾声
+
+经过本章,读者应该已经具备:
+
+- 时钟与步长的选择能力
+- 顺序与并行的权衡
+- 同步事件与级联的处理
+- 守恒定律的应用
+- 状态持久化与可复现性
+- 仿真运行的工程细节
+- 性能优化能力
+- 仿真校准与验证
+- 大规模仿真的优化
+- 仿真生态与开源
+
+最后,祝读者仿真运行顺利、性能可控!
+
+
+---
+
+## 8.25　扩展:并行计算与分布式仿真的实战
+
+### 8.25.1　多线程 vs 多进程
+
+社会仿真的并行化有两条路径:
+
+- **多线程**(Multithreading):共享内存,适合 IO 密集
+- **多进程**(Multiprocessing):独立内存,适合 CPU 密集
+
+社会仿真的两个瓶颈:
+
+- **LLM 调用**:IO 密集(网络往返)
+- **智能体循环**:CPU 密集(计算)
+
+LLM 调用应该用多线程,智能体循环应该用多进程。
+
+### 8.25.2　Python 并行化
+
+Python 的并行化工具:
+
+- **ThreadPoolExecutor**:线程池
+- **ProcessPoolExecutor**:进程池
+- **multiprocessing**:进程管理
+- **concurrent.futures**:统一的并行接口
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def parallel_llm_calls(prompts):
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(call_llm, prompts))
+    return results
+```
+
+### 8.25.3　分布式计算
+
+大规模仿真需要分布式:
+
+- **Dask**:Python 分布式计算
+- **Ray**:分布式应用框架
+- **Spark**:大数据处理
+- **Kubernetes**:容器编排
+
+社会仿真使用分布式:
+
+- 多机协作
+- 节点间异步同步
+- 中心化调度 + 分布式执行
+
+### 8.25.4　GPU 加速
+
+某些仿真可以用 GPU:
+
+- 大规模智能体决策(用矩阵运算)
+- 神经网络代理(用 PyTorch)
+- 图形渲染(用 OpenGL)
+
+GAWorld 的 LLM 调用主要在云端,不直接用 GPU。
+
+---
+
+## 8.26　扩展:可重复性的工程实现
+
+### 8.26.1　种子管理
+
+种子的严格管理:
+
+- 默认种子 42
+- 跑前记录种子
+- 多个种子验证稳定性
+- 种子 + 配置一起打包
+
+### 8.26.2　版本管理
+
+依赖版本管理:
+
+- requirements.txt 锁定全部依赖
+- Python 版本锁定(3.11.5)
+- 操作系统记录
+- 库版本精确(pandas==2.1.4)
+
+### 8.26.3　容器化
+
+容器化是最佳可重复性方案:
+
+```dockerfile
+FROM python:3.11.5-slim
+WORKDIR /app
+COPY requirements.lock.txt .
+RUN pip install -r requirements.lock.txt
+COPY . .
+CMD ["python", "main.py"]
+```
+
+Docker 确保环境一致。
+
+### 8.26.4　运行时记录
+
+每次运行的完整记录:
+
+```python
+runtime = {
+    "start_time": datetime.now().isoformat(),
+    "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip(),
+    "python_version": sys.version,
+    "platform": platform.platform(),
+    "dependencies": {pkg: get_version(pkg) for pkg in vim_pkgs}
+}
+```
+
+---
+
+## 8.27　扩展:仿真运行的调试与优化
+
+### 8.27.1　调试工具
+
+调试工具:
+
+- **pdb**:Python 内置调试器
+- **ipdb**:增强版调试器
+- **PyCharm/VS Code**:IDE 调试
+- **cProfile**:性能分析
+
+### 8.27.2　性能瓶颈识别
+
+性能瓶颈识别:
+
+- **CPU 瓶颈**:智能体循环、大矩阵运算
+- **IO 瓶颈**:LLM 调用、文件读写
+- **内存瓶颈**:大规模数据、图像处理
+
+### 8.27.3　优化策略
+
+```python
+# 优化 1:向量化
+def vectorized_update(agents):
+    cash = np.array([a.cash for a in agents])
+    income = np.array([a.income_hourly for a in agents])
+    cash += income * time_delta
+    for i, a in enumerate(agents):
+        a.cash = cash[i]
+
+# 优化 2:缓存
+@lru_cache(maxsize=128)
+def cached_compute(x):
+    return expensive_compute(x)
+
+# 优化 3:批处理
+def batch_llm_calls(prompts):
+    # 多个 prompt 合并为一次调用
+    ...
+```
+
+### 8.27.4　内存优化
+
+内存优化:
+
+- 稀疏矩阵存关系网络
+- 定期持久化到磁盘
+- 用生成器避免一次性加载
+
+---
+
+## 8.28　扩展:仿真运行的工程伦理
+
+### 8.28.1　能源消耗
+
+大规模仿真能耗很大:
+
+- LLM 调用能耗:每次 1-10g CO2
+- 大规模仿真:可能产生数吨 CO2
+
+研究者要考虑环境影响,选择合适的规模。
+
+### 8.28.2　数据安全
+
+数据安全考虑:
+
+- 敏感数据加密
+- 访问控制
+- 删除机制
+- 备份策略
+
+### 8.28.3　责任归属
+
+仿真结果的责任:
+
+- 开发者:模型设计
+- 使用者:结果应用
+- 决策者:基于仿真做决策
+
+责任归属要明确。
+
+---
+
+## 8.29　本章小结(最终扩展版)
+
+经过本章(包括扩展部分),读者应该已经具备:
+
+- 时钟与步长的选择
+- 顺序与并行的权衡
+- 同步事件与级联
+- 守恒定律的应用
+- 状态持久化与可复现性
+- 仿真运行的工程细节
+- 性能优化(向量化、并行、分布式、缓存)
+- 仿真校准与验证
+- 大规模仿真的优化
+- 仿真生态与开源
+- 仿真的可重复性
+- 仿真运行的调试与优化
+- 仿真运行的工程伦理
+
+**核心信息**:运行系统是社会仿真的"操作系统",它决定了仿真能不能跑、跑得快、跑得对。
+
+读者读完后,应该能选择合适的步长、并行策略、可重复性方案,以及在出错时做出补救。
 

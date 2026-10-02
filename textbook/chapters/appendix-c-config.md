@@ -762,3 +762,452 @@ def config_to_html(config: dict) -> str:
 - 配置诊断:不生效、错误、版本不匹配、污染。
 - 配置与可观测性:追踪、差异、告警、可视化。
 
+
+---
+
+## C.16　扩展:配置的高级用法
+
+### C.16.1　动态配置
+
+某些场景需要运行时修改配置:
+
+```python
+def dynamic_config(base_config, runtime_state):
+    """根据运行时状态调整配置"""
+    if runtime_state["agent_count"] > 5000:
+        base_config["performance"]["parallel_workers"] = 32
+    if runtime_state["day"] > 100:
+        base_config["llm"]["temperature"] = 0.0  # 后期更稳定
+    return base_config
+```
+
+### C.16.2　配置模板
+
+不同研究项目可以共用配置模板:
+
+```yaml
+# template_long_run.yaml
+# 长跨度仿真的默认配置
+simulation:
+  default_sim_days: 365
+  fast_forward_threshold_days: 90
+llm:
+  default: gpt-4o-mini
+memory:
+  consolidation_threshold: 30
+economy:
+  conservation_audit: true
+```
+
+### C.16.3　配置的 A/B 测试
+
+不同配置的效果对比:
+
+```python
+def config_ab_test(config_a, config_b, n_runs=5):
+    """配置 A/B 测试"""
+    results_a = [run_with_config(config_a) for _ in range(n_runs)]
+    results_b = [run_with_config(config_b) for _ in range(n_runs)]
+    return {
+        "config_a_mean": np.mean(results_a),
+        "config_b_mean": np.mean(results_b),
+        "diff": abs(np.mean(results_a) - np.mean(results_b))
+    }
+```
+
+---
+
+## C.17　扩展:配置的安全考虑
+
+### C.17.1　API 密钥管理
+
+API 密钥绝不应该硬编码:
+
+```python
+# 错
+api_key = "sk-..."
+
+# 对
+import os
+api_key = os.environ.get("OPENAI_API_KEY")
+```
+
+### C.17.2　密钥加密存储
+
+敏感配置加密存储:
+
+```python
+from cryptography.fernet import Fernet
+
+def encrypt_config(config, key):
+    f = Fernet(key)
+    return f.encrypt(json.dumps(config).encode())
+
+def decrypt_config(encrypted, key):
+    f = Fernet(key)
+    return json.loads(f.decrypt(encrypted).decode())
+```
+
+### C.17.3　访问控制
+
+生产环境需要访问控制:
+
+```python
+def check_access(config, user_role):
+    """检查用户权限"""
+    sensitive_fields = ["llm.api_key", "database.password"]
+    if user_role == "admin":
+        return True
+    return not any(field in config for field in sensitive_fields)
+```
+
+---
+
+## C.18　扩展:配置的国际化
+
+### C.18.1　多语言配置
+
+```yaml
+i18n:
+  default_locale: zh_CN
+  supported_locales: [zh_CN, en_US, ja_JP]
+  translations:
+    zh_CN:
+      city: 城市
+      agent: 智能体
+    en_US:
+      city: city
+      agent: agent
+```
+
+### C.18.2　地区特定参数
+
+不同地区有不同的参数:
+
+```yaml
+regional:
+  zh_CN:
+    default_currency: CNY
+    holiday_calendar: china_2026
+    population_distribution: china_2024
+  en_US:
+    default_currency: USD
+    holiday_calendar: usa_2026
+    population_distribution: usa_2024
+```
+
+---
+
+## C.19　本附录教学注释(最终扩展版)
+
+- 配置高级用法:动态配置、模板、A/B 测试。
+- 安全考虑:API 密钥管理、加密、访问控制。
+- 国际化:多语言、地区特定参数。
+
+
+---
+
+## C.20　扩展:配置管理的实际案例
+
+### C.20.1　案例:限行令实验的配置
+
+```yaml
+# exp_limit_2026_09_26.yaml
+experiment:
+  name: 限行令差异化影响
+  date: 2026-09-26
+  preregistration: prereg_limit_2026_09_26.json
+simulation:
+  default_seed: 42
+  default_sim_days: 180
+  fast_forward_threshold_days: 60
+llm:
+  default: gpt-4o-mini
+  tasks:
+    interview_analysis: gpt-4
+economy:
+  conservation_audit: true
+policy_events:
+  limit_weekday:
+    day: 45
+    parameters:
+      plate_rules: "周一1&6,周二2&7,..."
+social:
+  decay_rate_per_day: 0.01
+  ghost_ratio: 0.15
+memory:
+  consolidation_threshold: 10
+  decay_half_life_days: 7
+output:
+  format: csv
+  compression: gzip
+  backup: data_backoutput
+```
+
+### C.20.2　案例:群体采访的配置
+
+```yaml
+# survey_2026_09_26.yaml
+experiment:
+  name: 拥堵费态度调查
+  date: 2026-09-26
+survey:
+  cities:
+    - shaoxing_keqiao
+    - hangzhou_xihu
+  sample_size: 1000
+  stratification: by_income
+questions:
+  - id: main
+    type: open
+    prompt: "你支持加征拥堵费吗?"
+llm:
+  judge:
+    method: multi_judge_voting
+    n_judges: 3
+    temperature: 0
+output:
+  format: json
+  anonymize: true
+```
+
+### C.20.3　案例:灾害仿真的配置
+
+```yaml
+# disaster_2026_09_26.yaml
+experiment:
+  name: 地震灾害仿真
+  date: 2026-09-26
+disaster:
+  scenario: earthquake
+  magnitude: 6.5
+  epicenter: "柯桥区中心"
+stages:
+  - name: stage_1_impact
+    duration_hours: 1
+  - name: stage_2_24h
+    duration_hours: 24
+  - name: stage_3_48h
+    duration_hours: 24
+  - name: stage_4_72h
+    duration_hours: 24
+agents:
+  per_stage: 12
+  selection: diverse_by_role
+output:
+  format: json
+  summary: true
+```
+
+---
+
+## C.21　本附录教学注释(最终扩展版)
+
+- 三个实际案例配置:限行令、群体采访、灾害仿真。
+- 读者可以直接照搬这些配置,根据需要修改。
+
+
+---
+
+## C.22　附录尾声
+
+本附录覆盖了 GAWorld 的配置文件结构和常用覆盖项。
+
+读者在使用本附录时:
+
+- 修改配置:参考场景化配置模板
+- 调试配置问题:查阅配置诊断
+- 配置管理:参考配置管理实践
+- 安全配置:参考安全考虑
+
+配置文件会随 GAWorld 版本更新。建议读者关注 GAWorld 文档以获取最新配置说明。
+
+---
+
+## C.23　配置变更的可复现性强化
+
+### C.23.1　变更签名
+
+每次配置变更应生成一个稳定的"变更签名"(Change Signature):
+
+```python
+import hashlib
+import json
+
+def config_signature(config: dict) -> str:
+    """生成配置的稳定签名"""
+    # 排除敏感字段
+    safe = {k: v for k, v in config.items() if k not in ("llm.api_key", "secrets")}
+    # 排序后序列化(确保稳定)
+    canonical = json.dumps(safe, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+```
+
+论文里报告这个签名,审稿人可以验证配置是否一致。
+
+### C.23.2　变更对比
+
+```python
+def config_diff(c1: dict, c2: dict) -> dict:
+    """配置差异"""
+    added = c2.keys() - c1.keys()
+    removed = c1.keys() - c2.keys()
+    modified = {
+        k: {"old": c1[k], "new": c2[k]}
+        for k in c1.keys() & c2.keys()
+        if c1[k] != c2[k]
+    }
+    return {"added": added, "removed": removed, "modified": modified}
+```
+
+论文里用 diff 表说明"我们改了哪些配置"。
+
+### C.23.3　变更时间线
+
+```python
+config_history = [
+    {"commit": "abc123", "timestamp": "2026-09-26", "config_sig": "a1b2c3"},
+    {"commit": "def456", "timestamp": "2026-10-01", "config_sig": "d4e5f6"},
+    {"commit": "ghi789", "timestamp": "2026-10-15", "config_sig": "g7h8i9"}
+]
+```
+
+论文附录里给出"配置变更时间线"——读者可以跟踪论文对应的版本。
+
+### C.23.4　变更回放
+
+读论文时,读者可以"回放"配置变更:
+
+```bash
+# 切到指定 commit
+git checkout abc123
+
+# 加载对应配置
+python -c "from gaworld.settings import load_config_at; load_config_at('abc123')"
+
+# 跑同样的仿真
+python generative_city_sim.py run
+```
+
+可复现的极致。
+
+---
+
+## C.24　配置与团队协作
+
+### C.24.1　配置评审
+
+团队做研究,关键配置变更要评审:
+
+- **PR 里包含配置变更** → reviewer 必须评审
+- **关键参数变化**(LLM 模型、种子、衰减率)→ 必须评审
+- **不评审直接合并** → 可能产生不可复现的实验
+
+### C.24.2　配置共享
+
+```bash
+# 共享给合作者
+git add dashboard_config.json
+git commit -m "exp: 限行令实验配置"
+git push
+
+# 合作者拉取
+git pull
+python generative_city_sim.py run  # 配置一致
+```
+
+### C.24.3　配置冲突
+
+多人同时改配置会有冲突:
+
+```bash
+git pull
+# CONFLICT in dashboard_config.json
+# 手动解决冲突
+git add dashboard_config.json
+git commit
+```
+
+### C.24.4　配置 PR 模板
+
+```markdown
+## 配置变更说明
+- 变更字段:simulation.default_seed
+- 变更前:42
+- 变更后:43
+- 变更原因:稳健性检验 +1 种子
+- 预期影响:结果微小差异
+- 是否影响已发表实验:否
+
+## 测试
+- [ ] 跑了仿真,没报错
+- [ ] 跑了对照,结论一致
+- [ ] 论文里如果引用这个实验,需要更新
+```
+
+---
+
+## C.25　配置的极限场景
+
+### C.25.1　百万智能体的配置
+
+```yaml
+simulation:
+  default_sim_days: 30
+  parallel_workers: 64
+  distributed:
+    enabled: true
+    n_nodes: 16
+llm:
+  default: ollama:llama3:8b  # 本地,避免网络瓶颈
+  cache: redis://cache:6379
+performance:
+  memory_limit_gb: 128
+  profile_enabled: true
+```
+
+### C.25.2　跨年度仿真的配置
+
+```yaml
+simulation:
+  default_sim_days: 1825  # 5 年
+  fast_forward_threshold_days: 90
+  time_unit: day
+llm:
+  default: gpt-4o-mini
+memory:
+  consolidation_threshold: 50  # 多日累积
+  decay_half_life_days: 14
+```
+
+### C.25.3　实时数字孪生的配置
+
+```yaml
+simulation:
+  real_time: true
+  data_assimilation: true
+llm:
+  default: gpt-4o-mini
+  cache_ttl_seconds: 60
+monitoring:
+  enabled: true
+  alert_on_anomaly: true
+```
+
+---
+
+## C.26　附录尾声(终版)
+
+本附录不只是"配置文件说明",更是"研究工程纪律"。读者做长期仿真研究时,要:
+
+1. 配置分层(默认/项目/实验)
+2. 配置版本化(全部入 git)
+3. 配置验证(schema 验证)
+4. 配置文档化(每个字段有说明)
+5. 配置变更评审(团队协作)
+6. 配置可复现(变更签名 + 变更时间线)
+7. 配置安全(API key 不入 git)
+8. 配置与代码同生命周期
+
+**研究质量,不仅在论文里,也在工程纪律里**。读者把这些纪律内化为习惯,就是合格的研究者。
+

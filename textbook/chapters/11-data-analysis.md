@@ -1,6 +1,14 @@
 # 第 11 章　数据、指标与分析
 
 > 仿真跑完了,数据在磁盘上。怎么从数据里抽出结论?这一章讨论三件事:**原始日志到指标**(怎么从仿真日志计算指标)、**统计推断**(怎么判断差异是真的还是偶然)、**可视化**(怎么把结果画清楚)。社会仿真数据的分析和实证数据分析既有相通之处(都基于统计推断),也有不同之处(数据是合成的,可能分析所有时间点的所有个体)。读完本章,读者应该能把仿真输出变成符合同行评议标准的图表与统计。
+>
+> **本章补充:理论深度视角**。除了工程实现,本章还讨论:
+> - **探索性数据分析** (Exploratory Data Analysis, Tukey 1977)——Tukey 的经典贡献
+> - **统计推断理论** (Statistical Inference, Neyman-Pearson & Fisher)
+> - **多重比较校正理论** (Multiple Comparisons, Bonferroni 1935)
+> - **效应量的统计学** (Effect Size, Cohen 1988)
+> - **可重复研究的元科学** (Metascience of Reproducibility)
+> - **因果推断的可视化** (Causal Visualization)
 
 ---
 
@@ -747,4 +755,757 @@ def reproducibility_certificate(analysis_dir):
 - 数据分析工具链:Python、R、混合、Notebook。
 - 统计推断的细节:样本量、效应量、多重比较、功效分析。
 - 可重复分析:版本控制、环境管理、依赖锁定、证书。
+
+
+---
+
+## 11.17　扩展:大规模数据的处理
+
+### 11.17.1　大规模数据的挑战
+
+仿真数据可能很大:
+
+- 1000 人 × 365 天 × 每天 100 个指标 = 3650 万数据点
+- 加上事件日志、记忆快照,可达数 GB
+
+### 11.17.2　数据存储策略
+
+```python
+# 用 Parquet 代替 CSV
+df.to_parquet("output/data.parquet", compression="gzip")
+
+# 用 HDF5
+df.to_hdf("output/data.h5", key="data", mode="w")
+```
+
+### 11.17.3　分布式数据处理
+
+```python
+import dask.dataframe as dd
+
+df = dd.read_parquet("output/data.parquet")
+result = df.groupby("agent_id").mean().compute()
+```
+
+### 11.17.4　数据采样
+
+如果数据太大,可以采样分析:
+
+- 随机采样
+- 分层采样
+- 时间窗口采样
+
+---
+
+## 11.18　扩展:可视化的最佳实践
+
+### 11.18.1　可视化的目的
+
+可视化应该服务于:
+
+- 探索性分析(了解数据)
+- 假设检验(展示结果)
+- 论文图表(呈现发现)
+
+### 11.18.2　可视化的原则
+
+- 简洁:一张图一个核心信息
+- 清晰:标题、轴标签、单位完整
+- 诚实:不误导
+- 美观:颜色、字体协调
+
+### 11.18.3　可视化的类型
+
+- **时间序列**:展示趋势
+- **分布图**:展示分布形状
+- **比较图**:展示差异
+- **关系图**:展示相关
+- **网络图**:展示结构
+
+### 11.18.4　可视化工具对比
+
+| 工具 | 优势 | 劣势 |
+|---|---|---|
+| matplotlib | 灵活 | 繁琐 |
+| seaborn | 统计图好 | 不灵活 |
+| plotly | 交互式 | 体积大 |
+| ggplot2 | 优雅 | 学习曲线 |
+| D3.js | 强大 | 学习曲线陡 |
+
+---
+
+## 11.19　本章小结(最终扩展版)
+
+- 大规模数据处理:存储策略、分布式、采样。
+- 可视化的最佳实践:目的、原则、类型、工具。
+- 数据分析和可视化是社会仿真的"呈现层",决定研究的影响。
+
+
+---
+
+## 11.20　扩展:高级统计方法
+
+### 11.20.1　广义线性模型
+
+当因变量不是正态分布时,使用 GLM:
+
+```python
+import statsmodels.api as sm
+
+# 泊松回归(计数数据)
+model = sm.GLM(y, X, family=sm.families.Poisson()).fit()
+
+# 二项回归(0/1 数据)
+model = sm.GLM(y, X, family=sm.families.Binomial()).fit()
+```
+
+### 11.20.2　生存分析
+
+仿真研究可以用生存分析看"持续时间":
+
+- 居民在城市里停留多久
+- 关系持续多久
+- 工作保持多久
+
+```python
+from lifelines import KaplanMeierFitter
+
+kmf = KaplanMeierFitter()
+kmf.fit(durations, event_observed)
+kmf.plot_survival_function()
+```
+
+### 11.20.3　多层模型
+
+仿真数据有嵌套结构:
+
+- agent 嵌套在城市
+- 城市嵌套在区域
+
+需要用多层模型:
+
+```python
+import statsmodels.formula.api as smf
+
+# 随机截距
+model = smf.mixedlm("outcome ~ treatment", data=df, groups=df["city"])
+model.fit()
+```
+
+### 11.20.4　因果推断
+
+社会仿真是因果推断的好场景:
+
+- 倾向得分匹配
+- 工具变量
+- 中介分析
+
+---
+
+## 11.21　扩展:数据分析的工程实践
+
+### 11.21.1　分析工作流
+
+完整的工作流:
+
+1. 数据加载
+2. 数据清洗
+3. 探索性分析
+4. 假设检验
+5. 异质性分析
+6. 稳健性检验
+7. 结果可视化
+8. 报告生成
+
+### 11.21.2　分析脚本模板
+
+```python
+# analysis_template.py
+import pandas as pd
+import numpy as np
+
+def main(input_csv: str, output_dir: str):
+    """分析主函数"""
+    # 1. 加载数据
+    df = pd.read_csv(input_csv)
+    print(f"加载 {len(df)} 行数据")
+    # 2. 清洗
+    df = clean_data(df)
+    # 3. 探索性
+    print(df.describe())
+    # 4. 假设检验
+    test_results = run_tests(df)
+    # 5. 异质性
+    heterogeneity = run_heterogeneity(df)
+    # 6. 稳健性
+    robustness = run_robustness(df)
+    # 7. 可视化
+    plot_results(df, output_dir)
+    # 8. 报告
+    generate_report(test_results, heterogeneity, robustness,
+                   f"{output_dir}/report.md")
+```
+
+### 11.21.3　分析的可复现性
+
+分析脚本入 git,数据入仓,结果入档:
+
+```bash
+git add analysis/
+git commit -m "添加 bootstrap 置信区间分析"
+```
+
+### 11.21.4　分析的文档化
+
+每个分析函数应该有 docstring:
+
+```python
+def run_tests(df: pd.DataFrame) -> dict:
+    """
+    运行假设检验。
+
+    参数:
+        df: 数据
+
+    返回:
+        每条假设的判定结果
+    """
+    pass
+```
+
+---
+
+## 11.22　本章小结(最终扩展版)
+
+- 高级统计方法:GLM、生存分析、多层模型、因果推断。
+- 数据分析的工程实践:工作流、脚本模板、可复现性、文档化。
+- 这些方法和技术支持社会仿真研究的"专业感"。
+
+
+---
+
+## 11.23　扩展:数据分析的常见错误
+
+### 11.23.1　数据预处理错误
+
+- 错误删除异常值(可能是真实信号)
+- 错误填充缺失值(引入偏差)
+- 错误转换变量(扭曲分布)
+
+### 11.23.2　统计推断错误
+
+- p-hacking(尝试多种分析方法直到某个显著)
+- 忽视效应量(只报告显著性)
+- 多重比较不校正
+- 错误指定模型
+
+### 11.23.3　可视化错误
+
+- Y 轴截断(夸大差异)
+- 颜色误导(让差异看起来更大)
+- 缺失不确定性
+- 隐藏数据分布
+
+### 11.23.4　解读错误
+
+- 因果 vs 相关
+- 群体 vs 个体
+- 短期 vs 长期
+- 仿真 vs 真实
+
+---
+
+## 11.24　扩展:数据伦理
+
+### 11.24.1　数据隐私
+
+数据隐私保护:
+
+- 匿名化
+- 差分隐私
+- 联邦学习
+- 数据脱敏
+
+### 11.24.2　数据使用边界
+
+- 用于学术
+- 不用于歧视
+- 不用于操纵
+- 不损害相关方
+
+### 11.24.3　数据共享
+
+- 公开数据
+- 限制访问
+- 申请审核
+- 责任明确
+
+### 11.24.4　数据声明
+
+论文里的数据声明:
+
+- 数据来源
+- 数据许可
+- 使用边界
+- 公开程度
+
+---
+
+## 11.25　本章小结(最终扩展版)
+
+- 数据分析的常见错误:预处理、统计推断、可视化、解读。
+- 数据伦理:隐私、边界、共享、声明。
+- 严谨的数据分析是社会仿真研究的"硬功夫"。
+
+
+---
+
+## 11.26　本章尾声
+
+经过本章,读者应该已经具备:
+
+- 仿真数据分析的核心流程
+- 三层数据(原始日志、状态日志、记忆快照)的使用
+- 指标白话化
+- 偏离度、分叉点、轨迹对齐
+- 四张必画图
+- 异质性分析
+- 稳健性检验
+- 长期趋势检测
+- 大规模数据处理
+- 可视化最佳实践
+- 高级统计方法
+- 数据分析的工程实践
+- 数据伦理
+
+最后,祝读者分析顺利、数据揭示真相!
+
+
+---
+
+## 11.27　扩展:时间序列分析的细节
+
+时间序列是社会仿真数据最核心的形式之一。本节给出详细的方法。
+
+### 11.27.1　时间序列的构成
+
+时间序列可以分解为:
+
+- **趋势**(Trend):长期方向(上升/下降)
+- **季节性**(Seasonality):周期性波动
+- **周期性**(Cyclical):非固定周期波动
+- **噪声**(Noise):随机波动
+
+仿真时间序列需要这四层分析。
+
+### 11.27.2　滑动窗口均值
+
+```python
+def rolling_window(df, metric, window=30):
+    """滑动窗口均值"""
+    return df.groupby("day")[metric].mean().rolling(window).mean()
+```
+
+滑动窗口均值用于看长期趋势。
+
+### 11.27.3　指数平滑
+
+```python
+def exponential_smoothing(series, alpha=0.3):
+    """指数平滑"""
+    result = [series[0]]
+    for n in range(1, len(series)):
+        result.append(alpha * series[n] + (1 - alpha) * result[-1])
+    return result
+```
+
+指数平滑近期数据比远期数据更重要。
+
+### 11.27.4　ARIMA 模型
+
+```python
+from statsmodels.tsa.arima.model import ARIMA
+
+def fit_arima(series, order=(1, 1, 1)):
+    """ARIMA 模型"""
+    model = ARIMA(series, order=order)
+    fitted = model.fit()
+    return fitted
+```
+
+ARIMA 用于预测。
+
+### 11.27.5　变化点检测
+
+```python
+import ruptures as rpt
+
+def detect_change_points(series, n_bkps=3):
+    """变化点检测"""
+    algo = rpt.Pelt(model="rbf").fit(series.values)
+    change_points = algo.predict(pen=10)
+    return change_points
+```
+
+变化点检测用于识别"突变时间"。
+
+### 11.27.6　时间序列的统计检验
+
+时间序列的统计检验:
+
+- **平稳性检验**(ADF 检验):序列是否平稳
+- **白噪声检验**(Ljung-Box):序列是否是白噪声
+- **自相关检验**(Durbin-Watson):序列是否存在自相关
+- **季节性检验**(季节分解):是否存在季节性
+
+### 11.27.7　时间序列的可视化
+
+时间序列的可视化:
+
+- **折线图**:最常用
+- **堆积图**:展示多个时间序列
+- **热力图**:展示时间 × 群组的值
+- **动画**:展示时间动态
+
+---
+
+## 11.28　扩展:多层数据结构的处理
+
+社会仿真数据常常是多层的:
+
+- 个体嵌套在城市
+- 城市嵌套在区域
+- 多个时间点嵌套在个体
+
+多层数据的处理需要:
+
+- **多层模型**(Multilevel model)
+- **固定效应模型**(Fixed Effects model)
+- **随机效应模型**(Random Effects model)
+- **混合模型**(Mixed Model)
+
+```python
+import statsmodels.formula.api as smf
+
+# 多层模型
+model = smf.mixedlm("outcome ~ treatment * income",
+                    data=df,
+                    groups=df["city"])
+result = model.fit()
+```
+
+### 11.28.1　固定效应 vs 随机效应
+
+- **固定效应**:假设群组效应是固定的(每个群组有不同的常数)
+- **随机效应**:假设群组效应是随机的(从某个分布抽取)
+
+社会科学里,随机效应更常见——城市是"从城市总体抽出来的样本"。
+
+### 11.28.2　群组内相关
+
+多层数据的关键问题是"群组内相关"——同一城市的智能体有相似的环境。如果忽略这个相关,标准误会被低估。
+
+处理方法:
+
+- **稳健标准误**(Cluster-robust SE)
+- **多层模型**
+- **GEE(Generalized Estimating Equations)**
+
+### 11.28.3　多层分析的常见错误
+
+- **错误 1**:忽略群组结构,使用 OLS
+- **错误 2**:把群组效应当作固定效应处理(失去推广性)
+- **错误 3**:跨群组比较时不做群组校正
+
+读者做多层数据分析时,要避免这些错误。
+
+---
+
+## 11.29　扩展:贝叶斯分析
+
+贝叶斯分析在社会仿真里越来越重要。
+
+### 11.29.1　贝叶斯基本思路
+
+贝叶斯分析的核心是贝叶斯定理:
+
+$$P(\theta|D) = \frac{P(D|\theta) \times P(\theta)}{P(D)}$$
+
+- $P(\theta)$:先验概率
+- $P(D|\theta)$:似然(给定参数,数据概率)
+- $P(\theta|D)$:后验概率(给定数据,参数概率)
+
+### 11.29.2　贝叶斯分析的优势
+
+- 自然处理不确定性
+- 整合先验知识
+- 自然处理多层数据
+- 自然处理缺失数据
+
+### 11.29.3　PyMC 应用
+
+```python
+import pymc as pm
+
+with pm.Model() as model:
+    # 先验
+    mu = pm.Normal("mu", mu=0, sigma=10)
+    sigma = pm.HalfNormal("sigma", sigma=5)
+
+    # 似然
+    likelihood = pm.Normal("y", mu=mu, sigma=sigma, observed=data)
+
+    # 采样
+    trace = pm.sample(2000)
+```
+
+PyMC 是 Python 的贝叶斯建模库。
+
+### 11.29.4　贝叶斯在社会仿真里的价值
+
+- **参数估计**:用先验 + 数据得到参数分布
+- **预测**:用后验预测分布
+- **模型比较**:用 Bayes Factor
+- **决策**:用后验损失函数
+
+---
+
+## 11.30　扩展:因果推断的具体技术
+
+因果推断是社会仿真数据分析的核心。
+
+### 11.30.1　倾向得分匹配
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import NearestNeighbors
+
+def propensity_score_matching(treatment, covariates, outcome):
+    """倾向得分匹配"""
+    # 估计倾向得分
+    model = LogisticRegression()
+    model.fit(covariates, treatment)
+    propensity = model.predict_proba(covariates)[:, 1]
+
+    # 匹配
+    treated_idx = np.where(treatment)[0]
+    control_idx = np.where(~treatment)[0]
+    matcher = NearestNeighbors(n_neighbors=1)
+    matcher.fit(propensity[control_idx].reshape(-1, 1))
+    distances, indices = matcher.kneighbors(propensity[treated_idx].reshape(-1, 1))
+
+    # 计算效应
+    effect = np.mean(outcome[treated_idx] - outcome[control_idx[indices.flatten()]])
+    return effect
+```
+
+### 11.30.2　双重差分
+
+```python
+def difference_in_differences(y_t0, y_t1, y_c0, y_c1):
+    """双重差分"""
+    diff_t = y_t1 - y_t0
+    diff_c = y_c1 - y_c0
+    return diff_t - diff_c
+```
+
+### 11.30.3　断点回归
+
+```python
+def regression_discontinuity(x, y, cutoff):
+    """断点回归"""
+    below = x < cutoff
+    above = ~below
+    slope_below = np.polyfit(x[below], y[below], 1)
+    slope_above = np.polyfit(x[above], y[above], 1)
+    effect = (np.interp(cutoff, x[above], y[above])
+              - np.interp(cutoff, x[below], y[below]))
+    return effect
+```
+
+### 11.30.4　工具变量
+
+```python
+import statsmodels.api as sm
+
+def instrumental_variable(y, X, Z):
+    """工具变量回归"""
+    # 第一阶段:Z 对 X 的回归
+    first_stage = sm.OLS(X, Z).fit()
+    X_hat = first_stage.predict()
+
+    # 第二阶段:y 对 X_hat 的回归
+    second_stage = sm.OLS(y, X_hat).fit()
+    return second_stage
+```
+
+### 11.30.5　合成控制法
+
+```python
+def synthetic_control(treated_unit, control_units, y_pre):
+    """合成控制法"""
+    # 寻找最匹配的加权组合
+    # 权重最小化 = sum((y_treated - weighted_control)^2)
+    weights = optimize_weights(y_pre[treated_unit], y_pre[control_units])
+    y_synthetic = (y_pre[control_units] * weights).sum(axis=1)
+    return y_synthetic, weights
+```
+
+---
+
+## 11.31　扩展:数据可视化的最佳实践
+
+### 11.31.1　可视化的常见错误
+
+- **错误 1**:3D 图(很难读)
+- **错误 2**:饼图(难以比较大小)
+- **决策 3**:Y 轴不从 0 开始(夸大差异)
+- **错误 4**:颜色冲突(色盲不友好)
+- **错误 5**:缺失误差线
+- **错误 6**:过多的线(无法阅读)
+
+### 11.31.2　可视化的选择
+
+- **分布**:直方图、密度图、箱线图
+- **比较**:柱状图、小提琴图、并排箱线图
+- **趋势**:折线图、堆积图、动画
+- **关系**:散点图、气泡图、配对图
+- **结构**:网络图、热力图、树状图
+
+### 11.31.3　可视化工具
+
+- **Matplotlib**:基础绘图
+- **Seaborn**:统计图
+- **Plotly**:交互式
+- **Bokeh**:Web 友好
+- **D3.js**:JavaScript 强大
+- **ggplot2**:R 优雅
+- **Altair**:声明式 Python 可视化
+
+### 11.31.4　可视化的代码示例
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def plot_comprehensive(df, output="output.png"):
+    """综合可视化"""
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+    # 1. 时间序列
+    df.groupby("day")["car_trips"].mean().plot(ax=axes[0, 0])
+    axes[0, 0].set_title("时间序列")
+
+    # 2. 分布
+    sns.histplot(df["car_trips"], ax=axes[0, 1])
+    axes[0, 1].set_title("分布")
+
+    # 3. 相关
+    sns.scatterplot(data=df, x="car_trips", y="public_transit_users", ax=axes[1, 0])
+    axes[1, 0].set_title("相关")
+
+    # 4. 分组
+    sns.boxplot(data=df, x="income_group", y="car_trips", ax=axes[1, 1])
+    axes[1, 1].set_title("分组")
+
+    plt.tight_layout()
+    plt.savefig(output, dpi=100)
+```
+
+---
+
+## 11.32　扩展:数据伦理与隐私
+
+### 11.32.1　数据隐私的边界
+
+仿真数据虽然是合成的,但仍涉及隐私问题:
+
+- 仿真数据可能包含敏感属性(种族、宗教、性取向)
+- 仿真数据可能被反向工程,推断真实人
+
+### 11.32.2　数据共享的边界
+
+公开仿真数据时:
+
+- 匿名化(去掉真实姓名、地址)
+- 模糊化(年龄分桶)
+- 聚合化(报告汇总,不报告个体)
+- 加密(对敏感字段加密)
+
+### 11.32.3　GDPR 与仿真
+
+GDPR(欧盟通用数据保护条例)对仿真数据有要求:
+
+- 即使是合成数据,也需要"合法依据"
+- "数据保护影响评估"(DPIA) 是必要的
+- "数据最小化"原则适用
+
+### 11.32.4　数据伦理检查清单
+
+数据公开前,做伦理检查:
+
+- [ ] 数据匿名化了吗?
+- [ ] 数据有"使用边界"吗?
+- [ ] 数据公开得到机构批准了吗?
+- [ ] 数据可能用于歧视吗?
+- [ ] 数据可能用于操纵吗?
+
+---
+
+## 11.33　扩展:数据分析的元科学
+
+### 11.33.1　元科学的兴起
+
+元科学(metascience)是"研究科学的研究",包括:
+
+- **可重复性**(Reproducibility):别人能跑出同样结果
+- **预注册**(Pre-registration):跑前固定假设
+- **开放数据**(Open Data):数据公开
+- **开放代码**(Open Code):代码公开
+- **同行评议**(同行评议):让其他研究者审核
+
+### 11.33.2　可重复性危机的应对
+
+社会仿真在元科学层面要做:
+
+- **预注册**:跑前固定假设
+- **完整报告**:报告所有细节
+- **代码公开**:让其他研究者验证
+- **数据公开**:让其他研究者复用
+- **主动复现**:复现其他研究者的结果
+
+### 11.33.3　社会仿真作为元科学工具
+
+社会仿真天然支持元科学:
+
+- 仿真可以"一键复现"(同配置 + 同种子 = 同结果)
+- 仿真可以严格预注册(条件、指标、判定规则)
+- 仿真可以开放数据(合成数据 + 配置)
+- 仿真可以开放代码(GAWorld 是 MIT)
+
+读者做仿真研究时,要充分利用这些元科学优势。
+
+---
+
+## 11.34　本章小结(最终扩展版)
+
+经过本章,读者应该已经具备:
+
+- 仿真数据分析的核心流程
+- 三层数据(原始日志、状态日志、记忆快照)的使用
+- 指标白话化
+- 偏离度、分叉点、轨迹对齐
+- 四张必画图
+- 异质性分析
+- 稳健性检验
+- 长期趋势检测(时间序列、变化点检测、ARIMA)
+- 大规模数据处理
+- 可视化最佳实践
+- 高级统计方法(GLM、生存分析、多层模型、贝叶斯分析)
+- 数据分析的工程实践
+- 数据伦理
+- 因果推断(倾向得分匹配、双重差分、断点回归、工具变量、合成控制)
+- 元科学实践
+
+最后,祝读者分析顺利、数据揭示真相、结论可信!
 

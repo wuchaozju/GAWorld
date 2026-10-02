@@ -485,3 +485,492 @@ Mavis. (2026). Multi-Agent Social Simulation: Principles, Technology, and Cases.
 > D.6 节"推荐学习路径"是给不同阶段的读者准备的。读者可以根据自己的时间精力选择路径。
 >
 > 至此,本书附录四件套(术语、CLI、配置、文献)全部完成。接下来进入"最后阶段:每章补字数"——把全书字数补充到 20 万字目标。
+---
+
+## D.8　扩展:经典论文清单(深度阅读路径)
+
+### 入门级(必读)
+
+1. Schelling (1971). Dynamic Models of Segregation.
+2. Axelrod (1984). *The Evolution of Cooperation*.
+3. Epstein & Axtell (1996). *Growing Artificial Societies*.
+4. Park et al. (2023). Generative Agents.
+5. Lazer et al. (2009). Computational Social Science.
+
+### 方法论
+
+6. Epstein (2006). *Generative Social Science*.
+7. Railsback & Grimm (2019). *Agent-Based and Individual-Based Modeling*.
+8. Grimm et al. (2020). The ODD Protocol.
+9. Klöckner et al. (2023). The ODD Protocol for Social Science.
+10. Wilensky & Rand (2015). *An Introduction to Agent-Based Modeling*.
+
+### LLM 仿真
+
+11. Wei et al. (2022). Chain-of-Thought Prompting.
+12. Zheng et al. (2023). Judging LLM-as-a-Judge.
+13. Bubeck et al. (2023). Sparks of AGI.
+14. Kojima et al. (2022). Large Language Models are Zero-Shot Reasoners.
+
+### 网络科学
+
+15. Watts & Strogatz (1998). Small-World Networks.
+16. Barabási & Albert (1999). Scale-Free Networks.
+17. Christakis & Fowler (2009). *Connected*.
+18. Easley & Kleinberg (2010). *Networks, Crowds, and Markets*.
+19. Granovetter (1973). The Strength of Weak Ties.
+
+### 经济学与社会学
+
+20. Putnam (2000). *Bowling Alone*.
+21. Jacobs (1961). *Death and Life of Great American Cities*.
+22. Schelling (1978). *Micromotives and Macrobehavior*.
+23. Kahneman (2011). *Thinking, Fast and Slow*.
+
+### 灾害研究
+
+24. Quarantelli (1997). Ten Criteria for Disaster Preparedness.
+25. Tierney (2007). Disaster Research at the Crossroads.
+26. Drabek (2010). *The Human Side of Disaster*.
+
+### 大五人格
+
+27. Goldberg (1993). Structure of Phenotypic Personality Traits.
+28. Costa & McCrae (1992). Revised NEO Personality Inventory.
+29. McCrae & Costa (1997). Personality Trait Structure as Universal.
+
+### 实验设计
+
+30. Cohen (1988). *Statistical Power Analysis*.
+31. Shadish, Cook & Campbell (2002). *Experimental and Quasi-Experimental Designs*.
+32. Montgomery (2017). *Design and Analysis of Experiments*.
+33. Pearl (2009). *Causality*.
+
+### 可复现性
+
+34. Nosek et al. (2018). The Preregistration Revolution.
+35. Munafò et al. (2017). Manifesto for Reproducible Science.
+36. Wilkinson et al. (2016). FAIR Principles.
+
+### 中文文献
+
+37. 张江、李晓兵等(2020).《计算社会科学导论》.
+38. 吴晓刚、郝仁佳(2021).《计算社会科学:方法论与实践》.
+39. 段伟文(2021).《人工智能时代的伦理重构》.
+
+---
+
+## D.9　扩展:数据集使用注意事项
+
+### 数据获取
+
+每个数据集都有自己的获取流程:
+
+- **开放数据**:直接下载,如 World Bank、WHO
+- **学术数据**:需要申请,如 CFPS、CGSS
+- **商业数据**:需要购买,如高德、滴滴
+- **隐私数据**:需要特殊处理,如医疗数据
+
+### 数据清洗
+
+原始数据通常需要清洗:
+
+- 缺失值处理(删除、插值、模型)
+- 异常值检测(IQR、Z-score)
+- 数据标准化(归一化、Z-score)
+- 数据合并(多个数据源)
+
+### 数据存储
+
+```bash
+# 推荐的目录结构
+data/
+├── raw/              # 原始数据,只读
+├── processed/        # 处理后数据
+├── interim/          # 中间结果
+├── external/         # 外部数据
+└── README.md         # 数据字典
+```
+
+### 数据共享
+
+公开数据时的注意事项:
+
+- **README**:数据字典、字段说明
+- **LICENSE**:明确数据许可
+- **DOI**:可引用性
+- **更新频率**:数据更新时间
+
+---
+
+## D.10　扩展:工具选择的决策框架
+
+不同工具适合不同场景:
+
+### 仿真平台选择
+
+| 场景 | 工具 | 理由 |
+|---|---|---|
+| 教学 | NetLogo | 简单、入门快 |
+| 学术 | GAWorld | 完整、LLM 驱动 |
+| 工业 | AnyLogic | 商业级、专业支持 |
+| 科研原型 | Mesa | Python、灵活 |
+
+### LLM 选择
+
+| 场景 | 模型 | 理由 |
+|---|---|---|
+| 成本敏感 | gpt-4o-mini | 便宜 |
+| 质量优先 | gpt-4 | 强 |
+| 本地运行 | Ollama + 开源 | 无 API 成本 |
+| 中文场景 | Qwen / DeepSeek | 中文优化 |
+
+### 数据分析
+
+| 场景 | 工具 | 理由 |
+|---|---|---|
+| 探索性 | Jupyter + pandas | 交互式 |
+| 出版 | R + ggplot2 | 优雅 |
+| 大数据 | Spark | 分布式 |
+| 实时 | Kafka + Stream | 流式 |
+
+---
+
+## D.11　扩展:常用 Python 库清单
+
+### 数据科学
+
+- **pandas**:数据加载、清洗、转换
+- **numpy**:数值计算
+- **scipy**:统计、科学计算
+- **statsmodels**:统计模型
+- **scikit-learn**:机器学习
+- **matplotlib**:基础绘图
+- **seaborn**:统计可视化
+- **plotly**:交互式绘图
+- **bokeh**:Web 可视化
+
+### 网络分析
+
+- **networkx**:网络分析
+- **community**:社区检测(Louvain)
+- **python-igraph**:高性能网络分析
+
+### 地理信息
+
+- **geopandas**:地理数据
+- **shapely**:几何操作
+- **pyproj**:投影转换
+- **folium**:地图可视化
+
+### 自然语言处理
+
+- **transformers**:Hugging Face 模型
+- **sentence-transformers**:句子向量
+- **openai**:OpenAI API
+- **anthropic**:Anthropic API
+
+### 仿真相关
+
+- **mesa**:Python ABM 框架
+- **simpy**:离散事件仿真
+- **SALib**:敏感性分析
+
+---
+
+## D.12　扩展:常用数据集清单(中文相关)
+
+### 人口与经济
+
+- **中国统计年鉴**:国家统计局
+- **各省统计年鉴**:各省统计局
+- **城市统计年鉴**:各市统计局
+
+### 社会调查
+
+- **CFPS**(中国家庭追踪调查):北京大学
+- **CGSS**(中国综合社会调查):中国人民大学
+- **CHNS**(中国健康与营养调查):北卡罗来纳大学
+- **CLDS**(中国劳动力动态调查):中山大学
+
+### 行为与社交
+
+- **微博开放平台**:社交媒体
+- **百度迁徙**:人口流动
+- **腾讯位置服务**:位置数据
+- **支付宝消费数据**:消费行为
+
+### 健康与流行病
+
+- **中国卫健委数据**:公共卫生
+- **CDC 公开数据**:疾病控制
+- **国家医保局数据**:医疗保险
+
+### 城市与交通
+
+- **高德地图**:地理数据
+- **百度地图**:地理数据
+- **滴滴开放平台**:出行数据
+- **国家交通部数据**:交通基础设施
+
+---
+
+## D.13　本附录教学注释(扩展版)
+
+- 经典论文清单覆盖了社会仿真研究的必读文献。
+- 数据集使用注意事项:获取、清洗、存储、共享。
+- 工具选择的决策框架:平台、LLM、数据分析。
+- 常用 Python 库清单覆盖了完整的数据科学生态。
+- 中文相关数据集是中文读者的重要资源。
+
+
+---
+
+## D.14　扩展:可复现研究的具体实践
+
+### D.14.1　可复现性的层次
+
+可复现性有多个层次:
+
+- **可重跑**:同样的代码、同样的数据 → 同样的结果
+- **可复现**:同样的方法、不同的实现 → 类似的结果
+- **可重复**:同样的方法、不同的数据 → 一致的结论
+
+### D.14.2　可复现性的工具
+
+- **Jupyter Notebook**:交互式记录
+- **R Markdown**:可重复报告
+- **Quarto**:多语言可重复文档
+- **Snakemake / Nextflow**:工作流
+- **Docker / Singularity**:环境容器化
+
+### D.14.3　可复现性的最佳实践
+
+- **数据公开**:Zenodo、FigShare、OSF
+- **代码开源**:GitHub、GitLab
+- **环境锁定**:requirements.txt、Dockerfile
+- **配置记录**:config.yaml、版本 hash
+
+### D.14.4　可复现性的文化
+
+推动可复现性需要:
+
+- **期刊要求**:投稿时要求公开数据
+- **社区规范**:领域内的"最低标准"
+- **教育普及**:让学生从一开始就知道
+- **奖励机制**:奖励可复现的研究
+
+---
+
+## D.15　扩展:学术写作的模板与示例
+
+### D.15.1　Nature 系列论文模板
+
+```
+Title: [一句话研究问题]
+Abstract: [150-300 字,结构化或非结构化]
+Introduction: [3-5 页]
+Results: [5-10 页,每个图对应一段]
+Discussion: [3-5 页]
+Methods: [3-5 页]
+References: [30-50 篇]
+```
+
+### D.15.2　Science 论文模板
+
+```
+Title (135 字符以内)
+Abstract (125 字以内,不含未发表数据)
+Introduction (4 段)
+Results (3-5 段,每段一个发现)
+Discussion (3-4 段)
+Methods (在线补充材料)
+References (40-60 篇)
+```
+
+### D.15.3　社会学期刊论文模板
+
+```
+Title
+Abstract (150-250 字)
+Introduction
+  - 研究背景
+  - 文献综述
+  - 研究问题
+  - 贡献
+Methods
+  - 数据
+  - 方法
+  - 局限
+Results
+Discussion
+  - 主要发现
+  - 与既有研究对话
+  - 政策含义
+  - 研究局限
+References
+```
+
+### D.15.4　仿真论文的特殊要素
+
+仿真论文需要额外的:
+
+- **预注册声明**
+- **仿真平台说明**
+- **可复现性证书**
+- **使用边界声明**
+- **仿真局限讨论**
+
+---
+
+## D.16　本附录教学注释(最终扩展版)
+
+- 可复现性的具体实践:层次、工具、最佳实践、文化。
+- 学术写作模板:Nature、Science、社会学期刊、仿真论文。
+- 教材配套资源完整,读者可以按模板和工具快速上手。
+
+
+---
+
+## D.17　扩展:中文写作与表达
+
+### D.17.1　中文学术写作的特点
+
+中文学术写作有自己的特点:
+
+- 段落较长,信息密度高
+- 句式较松散
+- 论证较间接
+- 重视"意境"
+
+### D.17.2　中英文转换
+
+中英文转换时需要注意:
+
+- 主动/被动语态
+- 长句拆短
+- 修辞的简化
+- 引用的规范
+
+### D.17.3　避免 AI 痕迹
+
+避免 AI 写作的常见痕迹:
+
+- 否定式排比("不是 X,而是 Y")
+- 三段式法则
+- 套话("在当今时代")
+- 过多的总结句
+
+### D.17.4　保持个人风格
+
+学术写作应保持个人风格:
+
+- 主动语态
+- 具体表达
+- 个人观察
+- 真实反思
+
+---
+
+## D.18　扩展:学术写作的细节
+
+### D.18.1　段落结构
+
+好的段落结构:
+
+- 主题句(第一句)
+- 支撑句(2–5 句)
+- 过渡句(最后一句)
+
+### D.18.2　句子结构
+
+好的句子结构:
+
+- 简洁(< 30 字)
+- 主动语态
+- 具体动词
+- 避免冗余
+
+### D.18.3　词的选择
+
+词的选择原则:
+
+- 具体 > 抽象
+- 主动 > 被动
+- 简单 > 复杂
+- 标准 > 生僻
+
+### D.18.4　引用的艺术
+
+引用的艺术:
+
+- 不堆砌
+- 有对话
+- 有批判
+- 有新意
+
+---
+
+## D.19　本附录教学注释(最终扩展版)
+
+- 中文写作的特点与转换,避免 AI 痕迹。
+- 学术写作的细节:段落、句子、词、引用。
+- 这些写作细节决定了论文的可读性,值得深入学习。
+
+
+---
+
+## D.20　附录尾声
+
+本附录覆盖了开放数据集、工具软件、经典文献。
+
+读者在使用本附录时:
+
+- 做研究时:从开放数据集开始
+- 设计研究时:参考经典论文清单
+- 写作时:参考学术写作模板
+- 学习时:参考推荐学习路径
+
+数据集、工具、文献都会持续更新。建议读者关注:
+- arXiv(最新论文)
+- GitHub Trending(热门项目)
+- JASSS(仿真领域期刊)
+- 各领域顶刊
+
+最后,祝读者学有所成,研有所得!
+
+
+---
+
+## D.21　最后的资源清单
+
+为了让读者方便查阅,这里给出最终的推荐资源清单。
+
+### D.21.1　必读论文(5 篇)
+
+1. Schelling (1971) - 隔离模型
+2. Axelrod (1984) - 合作演化
+3. Epstein & Axtell (1996) - Sugarscape
+4. Park et al. (2023) - Generative Agents
+5. Lazer et al. (2009) - 计算社会科学
+
+### D.21.2　必用工具(5 个)
+
+1. GAWorld
+2. Python (pandas, numpy, matplotlib)
+3. Git
+4. Jupyter Notebook
+5. R / RStudio
+
+### D.21.3　必关注的资源(5 个)
+
+1. JASSS 期刊
+2. arXiv (cs.MA, cs.CY)
+3. Open Science Framework
+4. Wikipedia "Agent-based model"
+5. Complex Systems Society
+
+读完这本教材,您已经掌握了社会仿真的核心知识。
+
+接下来,做您的研究吧!
+

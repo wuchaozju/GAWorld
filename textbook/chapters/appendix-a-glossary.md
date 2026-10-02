@@ -231,3 +231,292 @@
 > 这个术语表不是"权威定义",而是"工作定义"——它反映的是 2026 年社会仿真领域的主流用法,可能随时间变化。读者在自己的研究中,如果某个术语有特定含义,应该在论文里明确说明。
 >
 > A.8 节"GAWorld 特有术语"对应该平台的功能。读者用 GAWorld 时,可以参考这一节核对功能名。
+---
+
+## A.11　扩展:行为与决策的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 决策树 | Decision Tree | 用树状结构表示决策过程 |
+| 强化学习 | Reinforcement Learning | 通过奖励信号学习的算法 |
+| 多臂赌博机 | Multi-Armed Bandit | 探索—利用权衡的经典问题 |
+| 蒙特卡洛 | Monte Carlo | 随机采样统计推断方法 |
+| 马尔可夫链 | Markov Chain | 无记忆随机过程 |
+| 马尔可夫决策过程 | Markov Decision Process | 加决策的马尔可夫过程 |
+| 部分可观测马尔可夫决策过程 | POMDP | 状态部分可观测的决策过程 |
+| Q-Learning | Q-Learning | 强化学习算法之一 |
+| 策略梯度 | Policy Gradient | 强化学习的策略优化方法 |
+| 模仿学习 | Imitation Learning | 从示范中学习行为 |
+| 逆强化学习 | Inverse RL | 从行为反推奖励函数 |
+| 多智能体强化学习 | Multi-Agent RL | 多智能体的强化学习 |
+| 博弈论 | Game Theory | 研究策略互动的数学 |
+| 纳什均衡 | Nash Equilibrium | 没有玩家愿意单方面偏离的状态 |
+| 囚徒困境 | Prisoner's Dilemma | 经典博弈论问题 |
+| 演化博弈论 | Evolutionary Game Theory | 引入演化动力学的博弈论 |
+| 机制设计 | Mechanism Design | 反向的博弈论 |
+| 拍卖理论 | Auction Theory | 资源分配的博弈论 |
+
+---
+
+## A.12　扩展:经济学与社会科学的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 一般均衡 | General Equilibrium | 所有市场同时出清的状态 |
+| 帕累托最优 | Pareto Optimal | 没有帕累托改进的状态 |
+| 比较优势 | Comparative Advantage | 相对成本优势 |
+| 外部性 | Externality | 第三方未补偿的影响 |
+| 公共物品 | Public Good | 非排他性、非竞争性的物品 |
+| 搭便车 | Free Riding | 享受公共物品但不付出 |
+| 信息不对称 | Information Asymmetry | 交易双方信息不对等 |
+| 逆向选择 | Adverse Selection | 信息不对称导致的市场失灵 |
+| 道德风险 | Moral Hazard | 隐藏行为导致的风险 |
+| 委托代理 | Principal-Agent | 委托人与代理人的激励问题 |
+| 集体行动 | Collective Action | 多人合作的经典问题 |
+| 公地悲剧 | Tragedy of the Commons | 共享资源被过度使用 |
+| 社会资本 | Social Capital | 信任、规范、网络 |
+| 弱连接 | Weak Tie | 强度低但数量多的关系 |
+| 结构洞 | Structural Hole | 网络中两个群体之间的连接人 |
+
+---
+
+## A.13　扩展:技术与工程的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 数据库 | Database | 结构化数据存储 |
+| 关系数据库 | Relational Database | 基于关系模型的数据库 |
+| NoSQL | NoSQL | 非关系数据库 |
+| 图数据库 | Graph Database | 基于图结构的数据库 |
+| 缓存 | Cache | 高速数据存储 |
+| 消息队列 | Message Queue | 异步通信机制 |
+| 分布式系统 | Distributed System | 多节点协同系统 |
+| 微服务 | Microservice | 小型独立服务 |
+| 容器化 | Containerization | 应用打包和隔离 |
+| Docker | Docker | 容器化平台 |
+| Kubernetes | Kubernetes | 容器编排平台 |
+| CI/CD | Continuous Integration/Deployment | 持续集成/部署 |
+| 监控 | Monitoring | 系统运行状态观测 |
+| 日志聚合 | Log Aggregation | 多源日志统一管理 |
+| A/B 测试 | A/B Testing | 两个版本对比实验 |
+
+---
+
+## A.14　扩展:研究方法学的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 田野调查 | Field Research | 在自然场景下的研究 |
+| 民族志 | Ethnography | 深入的文化描述 |
+| 案例研究 | Case Study | 单一对象的深入研究 |
+| 比较研究 | Comparative Research | 多对象的对比研究 |
+| 历史分析 | Historical Analysis | 历史数据的分析 |
+| 内容分析 | Content Analysis | 文本/媒体内容分析 |
+| 话语分析 | Discourse Analysis | 话语结构和权力分析 |
+| 扎根理论 | Grounded Theory | 从数据中涌现理论 |
+| 三角化 | Triangulation | 多方法验证 |
+| 同行评议 | Peer Review | 学术共同体评审 |
+| 预注册 | Pre-Registration | 跑前固定假设 |
+| 开放数据 | Open Data | 数据公开 |
+| 开放代码 | Open Source Code | 代码公开 |
+| 复现性 | Reproducibility | 别人能复现你的结果 |
+| 可重复性 | Replicability | 在新数据上重复结果 |
+
+---
+
+## A.15　扩展:领域应用的细分术语
+
+### A.15.1　公共政策
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 政策评估 | Policy Evaluation | 评估政策效果 |
+| 政策仿真 | Policy Simulation | 用仿真预测政策效果 |
+| 政策周期 | Policy Cycle | 议程—制定—执行—评估 |
+| 利益相关者 | Stakeholder | 政策影响的所有方 |
+| 政策网络 | Policy Network | 政策制定的关系网络 |
+| 政策学习 | Policy Learning | 从过去政策中学到的经验 |
+| 多中心治理 | Polycentric Governance | 多层级多主体治理 |
+
+### A.15.2　城市规划
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 城市更新 | Urban Renewal | 老城改造 |
+| 土地利用 | Land Use | 城市功能区划分 |
+| 公共交通导向开发 | TOD | 以公交为中心的开发 |
+| 智慧城市 | Smart City | 用技术提升城市治理 |
+| 数字孪生城市 | Digital Twin City | 城市的数字副本 |
+| 紧凑城市 | Compact City | 高密度、功能混合的城市 |
+| 城市韧性 | Urban Resilience | 城市应对冲击的能力 |
+
+### A.15.3　公共卫生
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 流行病学 | Epidemiology | 疾病分布与决定因素 |
+| 基本传染数 | Basic Reproduction Number | R0,每个感染者传染的人数 |
+| 群体免疫 | Herd Immunity | 群体对传染病的整体抵抗力 |
+| 接触追踪 | Contact Tracing | 追踪感染者接触的人 |
+| 健康不平等 | Health Inequality | 健康状况的人群差异 |
+| 健康的社会决定因素 | Social Determinants of Health | 影响健康的社会因素 |
+
+---
+
+## A.16　扩展:GAWorld 内部模块的术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 智能体循环 | Agent Loop | agent 主循环 |
+| 认知管线 | Cognition Pipeline | agent 的认知处理流程 |
+| 行动选择 | Action Selection | agent 选择行动 |
+| 状态更新 | State Update | agent 状态变化 |
+| 事件触发器 | Event Trigger | 触发事件的机制 |
+| 事件队列 | Event Queue | 待处理事件的队列 |
+| 仿真时钟 | Simulation Clock | 仿真时间推进 |
+| 仿真循环 | Simulation Loop | 仿真的主循环 |
+| 持久化层 | Persistence Layer | 数据存储抽象 |
+| LLM 路由器 | LLM Router | 不同任务路由到不同模型 |
+| 多裁判 | Multi-Judge | 多个 LLM 投票 |
+| Persona 蒸馏 | Persona Distillation | 从真人生成居民 |
+| Agent Studio | Agent Studio | 单智能体可视化构建 |
+| 研究工作台 | Research Workbench | 预注册 + 实验 + 报告 |
+| 平行世界实验台 | Parallel Worlds Dashboard | 平行世界可视化 |
+| 灾害分幕 | Disaster Stage | 灾害过程的阶段 |
+
+---
+
+## A.17　扩展:学术写作的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| IMRaD | IMRaD | Introduction/Methods/Results/Discussion |
+| 摘要 | Abstract | 论文的简短总结 |
+| 引言 | Introduction | 论文的背景与目的 |
+| 方法 | Methods | 论文的研究方法 |
+| 结果 | Results | 论文的发现 |
+| 讨论 | Discussion | 结果的解释与意义 |
+| 结论 | Conclusion | 论文的最终结论 |
+| 局限 | Limitations | 研究的弱点 |
+| 未来工作 | Future Work | 后续研究方向 |
+| 致谢 | Acknowledgments | 感谢贡献者 |
+| 利益冲突 | Conflict of Interest | 作者的利益披露 |
+| 数据可获得性 | Data Availability | 数据公开声明 |
+| 代码可获得性 | Code Availability | 代码公开声明 |
+| 引用 | Citation | 文献引用 |
+| 参考文献 | References | 引用的文献列表 |
+
+---
+
+## A.18　本附录教学注释(扩展版)
+
+- 行为与决策术语覆盖了主要的 AI/RL/博弈论概念。
+- 经济学与社会科学术语是社会仿真研究的核心词汇。
+- 技术与工程术语帮助读者读懂工程实现。
+- 研究方法学术语是论文写作的必备。
+- 领域应用术语:公共政策、城市规划、公共卫生。
+- GAWorld 内部模块术语帮助读者理解平台实现。
+- 学术写作术语是论文结构的标准词汇。
+
+
+---
+
+## A.19　扩展:仿真理论的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 计算社会科学 | Computational Social Science | 用计算方法研究社会科学 |
+| 智能体建模 | Agent-Based Modeling | 用智能体构建模型 |
+| 离散事件仿真 | Discrete Event Simulation | 离散时间点的仿真 |
+| 连续仿真 | Continuous Simulation | 连续时间的仿真 |
+| 蒙特卡洛仿真 | Monte Carlo Simulation | 随机采样仿真 |
+| 系统动力学 | System Dynamics | 反馈循环建模 |
+| 演化仿真 | Evolutionary Simulation | 模拟演化过程 |
+| 涌现 | Emergence | 微观到宏观的自组织 |
+| 共演化 | Co-evolution | 多个系统相互影响 |
+| 自适应 | Adaptation | 系统对环境变化的调整 |
+| 鲁棒性 | Robustness | 系统抗干扰能力 |
+| 韧性 | Resilience | 系统恢复能力 |
+| 相变 | Phase Transition | 系统的突然变化 |
+| 临界点 | Critical Point | 相变发生的临界状态 |
+| 自组织临界 | Self-Organized Criticality | 系统自然演化到临界状态 |
+| 复杂适应系统 | Complex Adaptive System | 由多个相互作用的 agent 组成的系统 |
+| 涌现行为 | Emergent Behavior | 系统涌现的个体行为 |
+| 多智能体系统 | Multi-Agent System | 多个智能体协同的系统 |
+| 集体智能 | Collective Intelligence | 群体涌现的智能 |
+| 群体决策 | Group Decision Making | 群体共同做决策 |
+
+---
+
+## A.20　扩展:统计与方法的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| 假设检验 | Hypothesis Testing | 检验统计假设 |
+| 零假设 | Null Hypothesis | H0:无效应假设 |
+| 备择假设 | Alternative Hypothesis | H1:有效应假设 |
+| 显著性水平 | Significance Level | α,通常 0.05 |
+| p 值 | p-value | 观测到该结果或更极端的概率 |
+| 第一类错误 | Type I Error | 错误拒绝真零假设 |
+| 第二类错误 | Type II Error | 错误接受假零假设 |
+| 功效 | Statistical Power | 1 - β,正确拒绝假零假设的概率 |
+| 效应量 | Effect Size | 衡量效应大小 |
+| Cohen's d | Cohen's d | 标准化的均值差 |
+| eta 平方 | Eta Squared | 方差解释比例 |
+| R 平方 | R-squared | 回归方差解释比例 |
+| 置信区间 | Confidence Interval | 参数估计的区间 |
+| 自助法 | Bootstrap | 重采样统计方法 |
+| 置换检验 | Permutation Test | 重排样本做检验 |
+| 贝叶斯统计 | Bayesian Statistics | 基于先验和似然的统计 |
+| 先验分布 | Prior Distribution | 贝叶斯统计的先验 |
+| 后验分布 | Posterior Distribution | 贝叶斯统计的后验 |
+| 最大似然估计 | Maximum Likelihood Estimation | MLE |
+| 最小二乘 | Ordinary Least Squares | OLS |
+
+---
+
+## A.21　扩展:技术与工具的细分术语
+
+| 中文 | 英文 | 解释 |
+|---|---|---|
+| Git | Git | 分布式版本控制 |
+| GitHub | GitHub | 代码托管平台 |
+| GitLab | GitLab | 自托管代码平台 |
+| Docker | Docker | 容器化平台 |
+| Kubernetes | Kubernetes | 容器编排 |
+| Jenkins | Jenkins | 持续集成工具 |
+| GitHub Actions | GitHub Actions | CI/CD 平台 |
+| pytest | pytest | Python 测试框架 |
+| unittest | unittest | Python 标准测试框架 |
+| tox | tox | Python 测试工具 |
+| Sphinx | Sphinx | Python 文档生成 |
+| MkDocs | MkDocs | Markdown 文档生成 |
+| Read the Docs | Read the Docs | 文档托管平台 |
+| PyPI | PyPI | Python 包索引 |
+| conda | conda | Python 包和环境管理 |
+| pip | pip | Python 包管理 |
+
+---
+
+## A.22　本附录教学注释(最终扩展版)
+
+- 仿真理论的细分术语覆盖了涌现、共演化、相变、复杂适应系统等核心概念。
+- 统计与方法的细分术语是社会仿真研究的方法学基础。
+- 技术与工具的细分术语帮助读者选择合适的工具。
+
+
+---
+
+## A.23　附录尾声
+
+本附录覆盖了社会仿真研究中常用的术语,按主题分类。每个术语给出中文、英文和解释。
+
+读者在使用本附录时:
+
+- 写论文时:选择合适的中英文术语
+- 读论文时:遇到陌生术语查阅
+- 设计研究时:确认术语符合领域共识
+- 教学时:作为术语速查表分发
+
+本附录会随着领域发展更新。建议读者关注 GAWorld 文档以获取最新术语表。
+

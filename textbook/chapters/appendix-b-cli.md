@@ -843,3 +843,253 @@ python generative_city_sim.py parallel-worlds --help
 - 高级配置选项支持特殊场景。
 - 命令行参数详解帮助读者理解每个选项。
 
+
+---
+
+## B.22　扩展:GAWorld 高级功能命令
+
+### B.22.1　Agent Studio 相关命令
+
+```bash
+# 启动 Agent Studio 模式
+python generative_city_sim.py studio --agent-id 31
+
+# 导出单个 agent 的完整档案
+python generative_city_sim.py export-agent --agent-id 31 --output agent_31.json
+
+# 部署新 agent 到当前城市
+python generative_city_sim.py deploy-agent --name "新居民" --age 28 --job "工程师"
+```
+
+### B.22.2　Moltbook 相关命令
+
+```bash
+# 把 agent 接入 Moltbook
+python generative_city_sim.py moltbook register --agent-id 31
+
+# 查看 Moltbook 状态
+python generative_city_sim.py moltbook status --agent-id 31
+
+# 刷新 Moltbook 信息流
+python generative_city_sim.py moltbook refresh --agent-id 31
+```
+
+### B.22.3　Persona Distillation 命令
+
+```bash
+# 从真人姓名蒸馏
+python -m gaworld.persona distill --name "林素"
+
+# 从网址蒸馏
+python -m gaworld.persona distill --url "https://example.com/person"
+
+# 部署蒸馏结果
+python -m gaworld.persona deploy --slug "linsu"
+```
+
+### B.22.4　Real Work 命令
+
+```bash
+# 接入真实工作
+python -m gaworld.real_work connect --agent-id 31 --task-type "data_labeling"
+```
+
+---
+
+## B.23　扩展:分布式 relay 命令
+
+### B.23.1　启动节点
+
+```bash
+# 启动主节点
+python generative_city_sim.py serve-distributed --role master --port 8877
+
+# 启动 worker 节点
+python generative_city_sim.py serve-distributed --role worker \
+  --master-host master.internal --port 8878
+```
+
+### B.23.2　提交分布式任务
+
+```bash
+# 在主节点提交
+python generative_city_sim.py parallel-worlds --spec spec.json \
+  --distributed --workers 10
+```
+
+### B.23.3　监控节点
+
+```bash
+# 查看所有节点状态
+python generative_city_sim.py distributed-status
+
+# 查看任务进度
+python generative_city_sim.py distributed-progress
+```
+
+---
+
+## B.24　扩展:GAWorld 调试技巧
+
+### B.24.1　日志级别
+
+```bash
+# 详细日志
+python generative_city_sim.py run --sim-days 7 --log-level DEBUG
+
+# 安静模式
+python generative_city_sim.py run --sim-days 7 --log-level WARNING
+```
+
+### B.24.2　单步调试
+
+```bash
+# 单 agent 单 tick
+python generative_city_sim.py debug --agent-id 31 --ticks 1
+
+# 单 agent 看 prompt
+python generative_city_sim.py show-prompt --agent-id 31 --situation "..."
+```
+
+### B.24.3　状态快照
+
+```bash
+# 在指定时间点创建快照
+python generative_city_sim.py snapshot --day 30
+
+# 恢复快照
+python generative_city_sim.py restore --snapshot-id snap_xxx
+```
+
+### B.24.4　性能分析
+
+```bash
+# 启用 cProfile
+python generative_city_sim.py run --sim-days 30 --profile
+
+# 查看分析结果
+python -c "
+import pstats
+p = pstats.Stats('output/profile.stats')
+p.sort_stats('cumulative').print_stats(30)
+"
+```
+
+---
+
+## B.25　本附录教学注释(最终扩展版)
+
+- GAWorld 高级功能命令:Studio、Moltbook、Persona、Real Work。
+- 分布式 relay 命令:主节点、worker、提交、监控。
+- 调试技巧:日志级别、单步、快照、性能分析。
+
+
+---
+
+## B.26　扩展:GAWorld 实验运行脚本模板
+
+### B.26.1　完整实验脚本
+
+```bash
+#!/bin/bash
+# 实验运行脚本
+set -e
+
+EXPERIMENT_NAME="my_experiment_$(date +%Y%m%d_%H%M%S)"
+OUTPUT_DIR="output/$EXPERIMENT_NAME"
+
+mkdir -p $OUTPUT_DIR
+
+echo "=== 实验开始: $EXPERIMENT_NAME ==="
+
+# 1. 准备城市
+python -m gaworld.city create "实验城市" --size 1000 --seed 42
+
+# 2. 预实验(短时段)
+python generative_city_sim.py run \
+  --city exp_city \
+  --sim-days 7 \
+  --seed 42 \
+  --output $OUTPUT_DIR/pre_test
+
+# 3. 检查预实验结果
+python scripts/check_run_integrity.py $OUTPUT_DIR/pre_test
+
+# 4. 正式实验
+python generative_city_sim.py parallel-worlds \
+  --spec spec.json \
+  --output $OUTPUT_DIR/main
+
+# 5. 分析结果
+python analysis_script.py $OUTPUT_DIR/main
+
+# 6. 生成报告
+python generate_report.py $OUTPUT_DIR/main > $OUTPUT_DIR/report.md
+
+echo "=== 实验完成 ==="
+echo "结果目录: $OUTPUT_DIR"
+```
+
+### B.26.2　并行实验脚本
+
+```bash
+#!/bin/bash
+# 并行跑多个实验
+NUM_PARALLEL=4
+EXPERIMENTS=("exp_a" "exp_b" "exp_c" "exp_d")
+
+for exp in "${EXPERIMENTS[@]}"; do
+    python generative_city_sim.py run \
+      --sim-days 30 \
+      --seed 42 \
+      --output output/$exp &
+    if [[ $(jobs -r | wc -l) -ge $NUM_PARALLEL ]]; then
+        wait -n
+    fi
+done
+wait
+```
+
+### B.26.3　实验监控脚本
+
+```bash
+#!/bin/bash
+# 实验监控
+while true; do
+    clear
+    echo "=== 实验监控 $(date) ==="
+    for d in output/*/; do
+        if [[ -f "$d/.running" ]]; then
+            echo "$d: 运行中"
+            # 显示进度
+            tail -3 "$d/logs/pipeline.log" 2>/dev/null
+        fi
+    done
+    sleep 30
+done
+```
+
+---
+
+## B.27　本附录教学注释(最终扩展版)
+
+- 完整的实验运行脚本模板:从准备到分析到报告。
+- 并行实验、监控脚本支持大规模研究。
+- 本附录覆盖了 GAWorld 的全部 CLI,读者可以照搬使用。
+
+
+---
+
+## B.28　附录尾声
+
+本附录覆盖了 GAWorld 的全部 CLI 命令,按用途分类。每个命令给出语法、参数、典型用法。
+
+读者在使用本附录时:
+
+- 日常使用:从常用命令开始
+- 调试:查阅调试命令
+- 性能优化:查阅优化命令
+- 高级功能:查阅高级命令
+
+CLI 命令会随 GAWorld 版本更新。建议读者关注 GAWorld GitHub 以获取最新命令。
+
