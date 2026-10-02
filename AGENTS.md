@@ -7,6 +7,8 @@ GAWorld/
 ├── gaworld/                  # 核心包（所有功能的正式实现）
 │   ├── kernel/               # 微内核（clock, bus, registry, controller, recorder, context, interventions）
 │   ├── plugins/              # 内置插件装配点（builtin_plugins()，9 个插件）
+│   ├── accounts/             # 多用户账号（store/policy/CLI：邀请码注册、强制密码、会话、角色、建城权限、审计；库不存在即单人模式）
+│   ├── worlds/               # 每人的世界（output/worlds/<id>/：config.json + 居民副本 + 全部运行产物；路径复用 city.config.RUN_PATHS）
 │   ├── apps/                 # 服务器与可视化（dashboard 后端含 Agent Studio API, visualizer, …）
 │   ├── behavior/             # 动态行为模块（dynamic.py + plugin.py）
 │   ├── cognition/            # 人类真实感模块（realism.py）
@@ -21,6 +23,7 @@ GAWorld/
 │   ├── io/                   # IO 工具（avatar.py, http_guard.py, web_scrape.py）
 │   ├── llm/                  # LLM 提供商（providers.py）
 │   ├── memory/               # 记忆系统（store, experience, consolidation, decay, …）
+│   ├── multiplayer/          # 多人共玩插件（玩家认领居民：player_claim/act/say/release 干预 → 感知 + 动作；可选每 tick 等玩家）
 │   ├── moltbook/             # Moltbook 集成（accounts/client/log + plugin：居民上智能体社交网络发帖，行动逐条记录）
 │   ├── persona/              # 真人蒸馏（research/distill/render/store：姓名或网址 → 居民 + 思维框架）
 │   ├── personality/          # 大五人格 OCEAN 特质（traits/anchors + plugin.py，默认开启）
@@ -61,6 +64,22 @@ GAWorld/
 - Interview an agent:
   - `python generative_city_sim.py interview --agent-id 31 --question "Question"`
   - `python generative_city_sim.py interview --agent-id 31 --questions-file questions.txt`
+- Accounts for a shared deployment (多用户, opt-in): `python -m gaworld.accounts init --admin <昵称>` creates
+  `output/accounts/accounts.sqlite`; from then on the console requires sign-in (`/login`, `/join?code=…`).
+  Invite codes: `python -m gaworld.accounts invite --count 30 --label <班级>`. What members may call is
+  `gaworld/accounts/policy.py`; `GAWORLD_DASHBOARD_TOKEN` stays an admin. Each user works in their own world
+  (`/api/worlds`, the console's world switcher): a copy of a city's residents plus every run output under
+  `output/worlds/<id>/`; the active world is the `gaworld_world` cookie and every path the dashboard resolves goes
+  through it (`_effective_config()`, `_state_csv_path()`, `_records_dir()`, …) — new dashboard code must not read
+  `output/` through a module constant. Run limits live in the account DB. Anything a member creates is stamped
+  with `gaworld.accounts.ownership.stamp()` and filtered with `visible()` / `owned()`; background jobs must start
+  through `ownership.spawn()` so they keep the asking user and world. Model calls are counted per user
+  (`gaworld.accounts.usage`, hooked into `call_llm`) for a soft daily quota. In an `open` world people play
+  residents (`/api/play`, the 多人共玩 tab): a two-minute lease per resident, actions sent through the world's
+  intervention queue to `gaworld/multiplayer/plugin.py`. Admins get a 教师控制台 tab (`site/dashboard/admin.html`):
+  invites, roster and usage, limits, every world (stop, export the play log), and a class-wide life-event
+  broadcast (`POST /api/worlds/broadcast`). Docs in `docs/SERVER_DEPLOYMENT.md`,
+  design in `docs/proposals/2026-10-01-multi-user.md`
 - Interview a crowd (群体采访): the dashboard panel at `/site/dashboard/survey.html`, backed by
   `/api/interview/*`. One round is split into one child process per city:
   - `python -m gaworld.interview --spec round.json --out answers.json`
