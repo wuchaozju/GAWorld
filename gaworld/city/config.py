@@ -61,7 +61,11 @@ def run_overrides(slug: str) -> dict[str, Any]:
     """
     from gaworld.city.bundle import RUNS_DIRNAME
 
-    base = f"{RUNS_DIRNAME}/{slug}"
+    return run_root_overrides(f"{RUNS_DIRNAME}/{slug}")
+
+
+def run_root_overrides(base: str) -> dict[str, Any]:
+    """Config patch moving every path in :data:`RUN_PATHS` under *base*."""
     patch: dict[str, Any] = {}
     for path, leaf in RUN_PATHS.items():
         parts = path.split(".")
@@ -142,4 +146,5 @@ __all__ = [
     "apply_city",
     "city_overrides",
     "run_overrides",
+    "run_root_overrides",
 ]
