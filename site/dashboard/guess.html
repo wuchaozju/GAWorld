@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="guess.page_title">GAWorld · 猜人局</title>
+  <meta name="description" data-i18n-content="guess.meta_description" content="GAWorld 猜人局 — 读一个居民的档案，猜他在两难里会怎么选，然后当场对答案。一局一次模型调用。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="guess.kicker">GAWorld Playground · Read the Room</p>
+          <h1 data-i18n="guess.headline">猜人局：你真的懂这个人吗</h1>
+          <p class="sub" data-i18n="guess.sub">
+            读一份档案，猜他在这道两难里会怎么选，当场对答案。一局一次模型调用，几秒钟一把。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="guess.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="guess-board">
+      <div id="gScore" class="disaster-overall"></div>
+
+      <section class="guess-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 data-i18n="guess.section_board">这一局</h3>
+            <p id="gStatus" class="disaster-status" data-i18n="guess.idle">正在发牌…</p>
+          </div>
+          <div class="guess-controls">
+            <label class="inline-field">
+              <span data-i18n="guess.city_label">城市</span>
+              <select id="gCity"></select>
+            </label>
+            <button id="gDealBtn" class="button" data-i18n="guess.deal">🔀 换一局</button>
+          </div>
+        </header>
+
+        <div class="guess-grid">
+          <article id="gFile" class="guess-file"></article>
+
+          <div class="guess-play">
+            <p id="gDilemma" class="guess-dilemma"></p>
+            <div id="gOptions" class="guess-options"></div>
+            <div id="gReveal" class="guess-reveal" hidden></div>
+            <div id="gAfter" class="guess-after" hidden>
+              <button id="gAgainBtn" class="button" data-i18n="guess.again">🔁 再问他一次</button>
+              <button id="gNextBtn" class="button primary" data-i18n="guess.next">下一局 →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel guess-history">
+        <h4 data-i18n="guess.history">战绩</h4>
+        <ul id="gHistory"></ul>
+        <p class="disaster-hint" data-i18n="guess.stability_hint">
+          「再问他一次」用同一道题再问同一个人：三次答案一样说明这份档案稳，三次都不同说明档案太薄——这是顺带量出来的数据。
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/guess.js"></script>
+</body>
+</html>

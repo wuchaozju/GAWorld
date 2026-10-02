@@ -21,7 +21,13 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
-  const t = (key, fallback) => (typeof __ === "function" ? __(key) : fallback);
+  // Same contract as city-agents.js: an unresolved key means i18n has not
+  // loaded yet (the catalogue fetch can win that race), so fall back to the
+  // inline text rather than rendering "vote.custom_option" at the user.
+  const t = (key, fallback) => {
+    const value = typeof __ === "function" ? __(key) : "";
+    return !value || value === key ? fallback : value;
+  };
 
   const CUSTOM = "__custom__";
   const SIZE = 460;        // SVG viewBox, square
@@ -40,6 +46,12 @@
     jobTimer: null,
     maxAgents: 14,
   };
+
+  const exporter = GAWorldGameExport.attach(() => state.run && {
+    game: "rumor",
+    label: (state.run.rumor || {}).title,
+    markdown: GAWorldGameExport.rumor(state.run),
+  });
 
   async function init() {
     $("#rRunBtn").addEventListener("click", startRun);
@@ -313,6 +325,7 @@
     const run = state.run;
     $("#rIdle").hidden = !!run;
     $("#rResult").hidden = !run;
+    exporter.sync();
     if (!run) return drawGraph();
 
     const r = run.rumor || {};

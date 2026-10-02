@@ -32,6 +32,12 @@
     busy: false,
   };
 
+  const exporter = GAWorldGameExport.attach(() => state.session && {
+    game: "persuade",
+    label: state.session.agent_name,
+    markdown: GAWorldGameExport.persuasion(state.session),
+  });
+
   async function init() {
     $("#pStartBtn").addEventListener("click", startGame);
     $("#pSendBtn").addEventListener("click", sendMessage);
@@ -174,6 +180,7 @@
     const session = state.session;
     $("#pIdle").hidden = !!session;
     $("#pBoard").hidden = !session;
+    exporter.sync();
     if (!session) return;
 
     $("#pQuestionEcho").textContent = session.question;

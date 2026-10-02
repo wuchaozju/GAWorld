@@ -3,7 +3,7 @@
 > 和城里的智能体玩一局。游戏场是入口，具体的游戏各自一页。
 >
 > 大厅：`http://localhost:<port>/site/dashboard/games.html`（控制台侧栏「实验 → 游戏场」）
-> 引擎：`gaworld/apps/games_api.py` + `disaster_api.py` + `rumor_api.py`｜
+> 引擎：`gaworld/apps/games_api.py` + `disaster_api.py` + `rumor_api.py` + `referendum_api.py` + `guess_api.py`｜
 > 前端：`site/dashboard/{games,persuade,disaster,rumor}.{html,js}` + `games.css`｜
 > 测试：`tests/test_{games,disaster,rumor}_api.py`
 
@@ -19,9 +19,14 @@
 - [5. 灾害模式是怎么推的](#5-灾害模式是怎么推的)
 - [6. 谣言扩散局：五分钟跑通](#6-谣言扩散局五分钟跑通)
 - [7. 谣言扩散局是怎么传的](#7-谣言扩散局是怎么传的)
-- [8. 程序化调用：HTTP API](#8-程序化调用http-api)
-- [9. 加一个新游戏](#9-加一个新游戏)
-- [10. 排查清单](#10-排查清单)
+- [8. 双队竞赛：五分钟跑通](#8-双队竞赛五分钟跑通)
+- [9. 双队竞赛是怎么判的](#9-双队竞赛是怎么判的)
+- [10. 公投局：五分钟跑通](#10-公投局五分钟跑通)
+- [11. 公投局是怎么算的](#11-公投局是怎么算的)
+- [12. 猜人局：五分钟跑通](#12-猜人局五分钟跑通)
+- [13. 程序化调用：HTTP API](#13-程序化调用http-api)
+- [14. 加一个新游戏](#14-加一个新游戏)
+- [15. 排查清单](#15-排查清单)
 
 ---
 
@@ -49,10 +54,13 @@
 | 说服游戏 | 问一个居民一个问题，限定轮数内聊天说服他，复问时答案改变即胜 | `persuade.html` | `/api/games/persuasion/*` |
 | 灾害模式 | 一批居民经历同一场灾难，分幕推演，看行动分布、恐慌值与互助率怎么变 | `disaster.html` | `/api/games/disaster/*` |
 | 谣言扩散局 | 一条传闻沿着熟人关系往外走，看传播树、信任度、谁放大了它、谁挡住了它 | `rumor.html` | `/api/games/rumor/*` |
+| 双队竞赛 | 两个队拿同一个任务、各走一条相反的路子，评审蒙着队名逐项打分 | `duel.html` | `/api/games/duel/*` |
+| 公投局 | 一个有利害的议案先私下表态、再公开表决，看民意的位移和改票的人 | `referendum.html` | `/api/games/referendum/*` |
+| 猜人局 | 读一份档案猜他在两难里怎么选，一局一次调用；复问还能量档案稳不稳 | `guess.html` | `/api/games/guess/*` |
 
 斗兽场仍然走它自己的 `/api/arena/*` 命名空间——游戏场只是把它收进了同一个入口，
 接口一个都没动。新游戏统一挂在 `/api/games/<game>/` 下。灾害模式和谣言扩散局体量较大，
-逻辑分别放在 `gaworld/apps/disaster_api.py` 和 `rumor_api.py`，`games_api` 只做一层转发，
+逻辑分别放在 `gaworld/apps/disaster_api.py`、`rumor_api.py` 和 `duel_api.py`，`games_api` 只做一层转发，
 并提供两样公共件：`persona_block()`（档案前言）和 `first_json_object()`（把结构化回复从模型的话里抠出来）。
 
 ---
@@ -217,13 +225,125 @@
 
 ---
 
-## 8. 程序化调用：HTTP API
+## 8. 双队竞赛：五分钟跑通
 
-### 8.1 `GET /api/games/agents?city=<slug>`
+1. 打开大厅，点「双队竞赛」。
+2. 左边选**城市**和**任务**：老楼加装电梯 / 垃圾分类落地 / 台风前转移群众 / 小厂招不到人 /
+   街边小店救客流 / 让孩子放下手机，或者「✍️ 自己出一个」。
+3. 选完任务，**两个队的办法**会自动填好——内置任务自带一对相反的路子（自上而下 vs 自下而上、
+   罚与盯 vs 奖与带、强制转移 vs 动员说服……）。想改就直接改，**改过就按自定义任务跑**。
+4. 设**比几轮**（默认 2，上限 3）。第一轮两队各自闭门做；从第二轮起能看见对手的方案。
+5. **分队**：在居民列表上点「甲」「乙」把人分到两边，再点一次取消；或者点「🎲 随机分队」。
+   一个队最多 5 人，两队合计最多 10 人。左边实时显示这一场要花多少次模型调用。
+6. 点「开始比」。跑完右边给出：比分牌、逐项评分表（甲往左长、乙往右长）、
+   两份方案并排（一句话打法 + 分步骤 + 他们自己说的最大风险），以及每位队员出的那一招和把握。
+
+**一场要几次 LLM 调用**：`轮数 ×（人数 + 2）+ 1`。6 个人比 2 轮 = 17 次。
+
+---
+
+## 9. 双队竞赛是怎么判的
+
+**办法是硬约束，不是风味描述。** 只告诉模型「你们队偏向激励」，两个队会写出同一份
+「多方协同、加强宣传」，比出来毫无意义。所以队员的提示词里**点名了对手那条路并明令禁止**：
+「另一队走的是完全相反的路子（X）。那条路你们不许用，也不用替他们说好话。」
+这和谣言局里「多数人并不谨慎」是同一类手术——都在跟模型讨好人的默认倾向作对。
+
+**两个队看的是同一份快照。** 第二轮起能看见对手的方案，这才叫竞赛；但对手的方案是在
+**这一轮开始时**截下来的。否则先跑甲队、再跑乙队，乙队看到的是甲队刚写完的新方案，
+而甲队只看得到旧的——赢的就成了出手顺序，不是办法本身。
+
+**评审不知道谁是谁。** 两份方案被重新贴成「方案一 / 方案二」，顺序每场随机洗牌，
+于是位置偏好和「自下而上听起来更先进」这类名字偏好都挂不到某一队头上。
+洗出来的顺序写在结果里（`verdict.order`），页面上也会显示，可以自己核。
+
+**评审只打分，加法我们自己做。** 四个维度各 0–10 分：目标达成、可行性、代价、副作用
+（后两项打的是「这份方案好不好」——代价越小、副作用越少分越高），满分 40。
+**赢家由总分决定**，模型自己说的赢家只作为 `judge_said` 留在旁边。两者对不上时页面会标红——
+那通常意味着两份方案确实咬得很紧，而不是需要抹平的瑕疵。
+
+队员那一层也不是走过场：每个人按**自己的档案**出招（他的职业、人脉、这件事碰到他哪里），
+还可以说「我们队这个办法在我这儿行不通」并给低把握分——队长汇总时被要求别把这种地方
+装作能做到。所以同一个办法，一队全是干部和一队全是店主，跑出来的方案不一样。
+
+---
+
+## 10. 公投局：五分钟跑通
+
+1. 打开大厅，点「公投局」。
+2. 左边选**城市**，勾**参与表决的人**（最多 14 人，「🎲 随机 8 人」也行）。
+   人越杂越好——退休的、供着房贷的、做小生意的，对同一个议案的利害完全不同。
+3. 选一个**议案**：垃圾中转站选址 / 物业费上调 / 老城区限行 / 学区划片 / 菜市场改造，
+   或者自己写。**写议案的唯一要领：得有人吃亏。** 没人吃亏的议案 14:0 通过，什么也看不出来。
+4. **宣传口径**可留空。这是你的手牌：正式表决前贴在群里的一句话。
+5. 点「付诸表决」。跑完右边给出：结果横幅（通过 / 否决 + 票数 + 位移）、
+   「私下 → 正式」两条对比条、改票的人和他们的原话、每人的卡片、一段表决简报。
+
+**玩法建议**：同一批人、同一个议案跑两次——一次留空口径，一次带上。
+两次的票差就是这句话的分量。注意它**可能是负的**：我实跑「物业费上调」时写了一句
+「不涨物业费，电梯就得停两个月，老人怎么下楼？」，两个居民直接在投票理由里点名
+「这是道德绑架」，唯一没拿定主意的人因此倒向反对。
+
+**一场要几次 LLM 调用**：`人数 × 2 + 1`（私下一轮 + 正式一轮 + 简报）。
+8 个人 = 17 次。解析失败的票会自动重问一次，那次不计在内。
+
+---
+
+## 11. 公投局是怎么算的
+
+**先私下，再公开。** 只问一次不叫表决，那测的是人设本身。中间隔着一次"看见别人"，
+才分得出「他怎么想」和「他知道自己是少数派之后会怎么投」——后者才是表决真正决定的东西。
+
+**中间那一屏是免费的。** 正式表决的提示词里带着三样东西，全部来自已经拿到的数据，
+不额外调用模型：
+
+* **票数**：「现在大家的意见摆出来了：支持 3 人、反对 4 人、弃权 1 人。」
+* **两边最响的声音**：私下那轮里，支持和反对各挑坚定度最高的两个人，把原话贴出来。
+  按坚定度挑而不是按关系网挑——这是个公开场合，公开场合是嗓门大的人定调子。
+* **你的宣传口径**（如果写了），而且明确写成「有人在群里和电梯口贴出了这样一句话」，
+  不会被当成事实。
+
+**每张票是 `{stance, strength, say}`**，stance 只能是支持 / 反对 / 弃权，
+所以票数、差额、位移、极化度全都从票面直接算出来，不需要裁判模型。
+
+两个容易被忽略的坑，代码里都堵上了：
+
+* **「不支持」里含「支持」。** 纯子串匹配会把它记成赞成票——这是最坏的一种错，
+  因为 5:1 的结果看上去完全合理。所以否定词先判。
+* **一票读不出来 = 统计被污染。** 灾害模式里解析失败只毁一格柱状图，
+  表决里却会同时动票数、差额和位移。所以公投局**解析失败会重问一次**
+  （其它游戏不重问），两次都失败才记成「其他」，且不计入任何一边。
+
+**弃权是立场，不是缺席**：一个明说自己不站队的人，本身就是信息。
+
+---
+
+## 12. 猜人局：五分钟跑通
+
+1. 打开大厅，点「猜人局」。页面直接发牌，**发牌不花模型调用**。
+2. 左边是这个人的**档案**（身份行 + profiles.md 里那段，截断到 700 字），
+   右边是一道两难题和三四个选项。
+3. 读完档案，点你认为他会选的那个。这时才花掉这一局唯一的一次调用。
+4. 揭晓：他选了哪个、为什么，你猜中没有。顶上的记分牌更新命中率、连胜、最佳连胜。
+5. **「🔁 再问他一次」**：用同一道题再问同一个人，最多三次。
+   三次一样说明这份档案扛得住；三次不同说明档案太薄，撑不起这道题——
+   这个数字会进记分牌的「档案稳定」一栏。
+
+实跑两例：一个 70 岁退休居民在「楼上装修」上三次答了 D / B / B（不稳），
+一个上班族在「两份工作」上三次都是 B（稳）。这就是顺带量出来的 persona 一致性数据，
+`benchmark/` 里的评测可以直接拿去用。
+
+**成本**：一局 1 次调用，复问每次再加 1 次。是游戏场里唯一能随手玩两把的。
+
+---
+
+## 13. 程序化调用：HTTP API
+
+### 13.1 `GET /api/games/agents?city=<slug>`
 
 可选对手列表，`city` 留空 = 默认世界。响应 `{"agents": [{id, name, age, gender, job}, ...]}`。
 
-### 8.2 `POST /api/games/persuasion/start`
+### 13.2 `POST /api/games/persuasion/start`
 
 ```bash
 curl -s -X POST http://localhost:<port>/api/games/persuasion/start \
@@ -246,27 +366,27 @@ curl -s -X POST http://localhost:<port>/api/games/persuasion/start \
 
 `max_turns` 会被夹到 `[1, 20]`。问题为空 → `400`。
 
-### 8.3 `POST /api/games/persuasion/say`
+### 13.3 `POST /api/games/persuasion/say`
 
 `{"session_id": "...", "message": "..."}` → 更新后的 session。
 `messages` 里按 `player` / `agent` 交替追加。**用完最后一轮时这一次调用会连带结算**，
 返回的 `status` 直接是 `settled`。会话不存在 → `404`；已结算或空消息 → `400`。
 
-### 8.4 `POST /api/games/persuasion/settle`
+### 13.4 `POST /api/games/persuasion/settle`
 
 `{"session_id": "..."}` → 复问 + 裁判，返回带 `final_answer` / `outcome` / `reason` 的 session。
 `outcome` 是 `success`（说服成功）或 `failed`。重复调用是幂等的，不会再花一次钱。
 
-### 8.5 `GET /api/games/persuasion/sessions[/<id>]`
+### 13.5 `GET /api/games/persuasion/sessions[/<id>]`
 
 列表（进行中的在前）或单局详情。内存存储，最多保留 50 局，超出时先丢已结算的。
 
-### 8.6 `GET /api/games/disaster/catalogue`
+### 13.6 `GET /api/games/disaster/catalogue`
 
 灾难库 + 各种上限：`{"disasters": [{id, name, emoji, summary, stages}], "max_agents": 12,
 "max_stages": 3, "default_stages": 2, "actions": [...]}`。
 
-### 8.7 `POST /api/games/disaster/run`
+### 13.7 `POST /api/games/disaster/run`
 
 ```bash
 curl -s -X POST http://localhost:<port>/api/games/disaster/run \
@@ -283,7 +403,7 @@ curl -s -X POST http://localhost:<port>/api/games/disaster/run \
 
 `stages` 也接受一整段文本（按换行切幕）。没选人 → `400`；灾难 id 不认识 → `400`（在开作业之前就挡掉）。
 
-### 8.8 `GET /api/games/disaster/jobs/<job_id>`
+### 13.8 `GET /api/games/disaster/jobs/<job_id>`
 
 运行中返回 `{status: "running", progress, message}`；跑完 `status: "done"`，`result` 是整场推演：
 
@@ -304,17 +424,17 @@ curl -s -X POST http://localhost:<port>/api/games/disaster/run \
 }
 ```
 
-### 8.9 `GET /api/games/disaster/runs`
+### 13.9 `GET /api/games/disaster/runs`
 
 本次运行期间跑完的场次（最多 20 场，和作业表同一份内存），按时间倒序，
 每条带 `job_id`——回看就是拿它再查一次 `/jobs/<job_id>`。
 
-### 8.10 `GET /api/games/rumor/catalogue`
+### 13.10 `GET /api/games/rumor/catalogue`
 
 传闻库 + 上限：`{"rumors": [{id, title, emoji, text}], "max_agents": 14,
 "max_rounds": 5, "default_rounds": 3, "actions": ["转发", "私下求证", "辟谣", "不管"]}`。
 
-### 8.11 `GET /api/games/rumor/graph?city=<slug>&agent_ids=1,2,3`
+### 13.11 `GET /api/games/rumor/graph?city=<slug>&agent_ids=1,2,3`
 
 **不花模型调用**的关系图预览——前端每次改勾选都调它。
 
@@ -329,7 +449,7 @@ curl -s -X POST http://localhost:<port>/api/games/disaster/run \
 
 `isolated` 是一条关系都没有的人——消息传不到他们那儿。名单里有人不在这座城 → `400`。
 
-### 8.12 `POST /api/games/rumor/run`
+### 13.12 `POST /api/games/rumor/run`
 
 ```bash
 curl -s -X POST http://localhost:<port>/api/games/rumor/run \
@@ -341,7 +461,7 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
 `{"custom": {"title": "菜场要拆", "text": "听说…"}}`；`seeds` 不传 = 自动挑
 （关系最多的一个 + 一个不是他熟人的）。少于两个人 → `400`；传闻 id 不认识 → `400`。
 
-### 8.13 `GET /api/games/rumor/jobs/<job_id>`
+### 13.13 `GET /api/games/rumor/jobs/<job_id>`
 
 跑完 `result` 是整场：
 
@@ -365,20 +485,158 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
 `kind` 是 `rumor`（转发）/ `question`（私下求证）/ `debunk`（辟谣）。
 `firewalls` = 听说了、不信、也没往下传的人。`heard_from` 为 `null` 表示他是自己刷到的（种子）。
 
-### 8.14 `GET /api/games/rumor/runs`
+### 13.14 `GET /api/games/rumor/runs`
 
 本次运行跑完的场次（≤ 20），按时间倒序，带 `job_id` 供回看。
 
+### 13.15 `GET /api/games/duel/catalogue`
+
+内置任务（每个自带一对相反的办法）、四个评分维度、人数与轮数上限、满分。
+
+### 13.16 `POST /api/games/duel/run`
+
+```bash
+curl -s -X POST http://localhost:<port>/api/games/duel/run \
+  -H "Content-Type: application/json" \
+  -d '{"city": "wuzhen", "team_a": [1,2,3], "team_b": [4,5,6],
+       "task_id": "elevator", "rounds": 2}'
+```
+
+自定义任务把 `task_id` 留空，改传 `custom`：
+
+```json
+{"title": "老街停车", "text": "…处境…", "goal": "…怎样算办成…",
+ "method_a": {"title": "划线收费", "text": "…"},
+ "method_b": {"title": "错时共享", "text": "…"}}
+```
+
+两个办法**都要给**，缺一个直接 `400`——只有一条路子不叫竞赛。
+两个队也各要至少一个人，同一个人不能同时出现在两边（`400`，会点名是谁）。
+响应 `{job_id}`。
+
+### 13.17 `GET /api/games/duel/jobs/<job_id>`
+
+作业状态；跑完 `result` 是整场比赛：
+
+```json
+{
+  "run_id": "…", "city": "wuzhen", "rounds": 2,
+  "task": {"id": "elevator", "title": "老楼加装电梯", "method_a": {...}, "method_b": {...}},
+  "teams": [
+    {"key": "A", "name": "甲队", "method": {...},
+     "members": [{"agent_id": 1, "name": "…", "job": "…",
+                  "moves": [{"round": 0, "move": "…", "why": "…", "confidence": 70}]}],
+     "plans": [{"round": 0, "headline": "…", "steps": ["…"], "risk": "…"}]}
+  ],
+  "verdict": {"winner": "B", "scores": {"A": {"effect": 4, …, "total": 16},
+                                        "B": {…, "total": 24}},
+              "reason": "…", "judge_said": "B", "order": ["A", "B"],
+              "criteria": [{"key": "effect", "label": "目标达成"}], "max_score": 40},
+  "stats": {"teams": {"A": {"members": 3, "avg_confidence": 62, "total": 16}},
+            "margin": 8, "judge_disagreed": false}
+}
+```
+
+`order` 是这一场里两份方案送到评审面前的顺序（`["A","B"]` = 甲队的方案当「方案一」）。
+`judge_disagreed` 为真表示模型自己宣布的赢家和它给的分数对不上。
+
+### 13.18 `GET /api/games/duel/runs`
+
+本次运行跑完的场次（≤ 20），按时间倒序，带 `job_id` 供回看。
+
+### 13.19 `GET /api/games/referendum/catalogue`
+
+议案库与上限：`{"motions": [{id, title, emoji, text}], "max_agents": 14,
+"stances": ["支持", "反对", "弃权"]}`。
+
+### 13.20 `POST /api/games/referendum/run`
+
+```bash
+curl -s -X POST http://localhost:<port>/api/games/referendum/run \
+  -H "Content-Type: application/json" \
+  -d '{"city": "wuzhen", "agent_ids": [3, 10, 19, 39], "motion_id": "fee",
+       "campaign": "不涨物业费，电梯就得停两个月"}'
+```
+
+返回 `{"job_id": "referendum-58eb41cb"}`。自定义议案把 `motion_id` 留空，
+改传 `{"custom": {"title": "…", "text": "…"}}`；`campaign` 可留空（= 不做宣传）。
+少于两个人 → `400`；议案 id 不认识 → `400`。
+
+### 13.21 `GET /api/games/referendum/jobs/<job_id>`
+
+跑完 `result`：
+
+```json
+{
+  "run_id": "9f2c81ab", "city": "wuzhen",
+  "motion": {"id": "fee", "title": "物业费上调", "emoji": "💰", "text": "…"},
+  "campaign": "…",
+  "quotes": [{"name": "程子月", "stance": "反对", "say": "…"}],
+  "voters": [{"agent_id": 3, "name": "周嘉平", "job": "…", "residence": "…",
+              "private": {"stance": "弃权", "strength": 40, "say": "…"},
+              "public": {"stance": "反对", "strength": 75, "say": "…"},
+              "flipped": true}],
+  "flips": [{"agent_id": 3, "name": "周嘉平", "from": "弃权", "to": "反对", "say": "…"}],
+  "stats": {"total": 6,
+            "private": {"支持": 0, "反对": 5, "弃权": 1, "其他": 0, "avg_strength": 66, "polarised": 0},
+            "public":  {"支持": 0, "反对": 6, "弃权": 0, "其他": 0, "avg_strength": 77.8, "polarised": 2},
+            "result": "否决", "margin": -6, "swing": 0, "flips": 1},
+  "summary": "…"
+}
+```
+
+`result ∈ {通过, 否决, 平票}`（弃权不计入差额），`swing` 是正式与私下的支持票之差，
+`polarised` 是坚定度 ≥ 80 的人数。
+
+### 13.22 `GET /api/games/referendum/runs`
+
+本次运行跑完的表决（≤ 20），按时间倒序，带 `job_id` 供回看。
+
+### 13.23 `GET /api/games/guess/catalogue`
+
+题库：`{"dilemmas": [{id, title, emoji, text, options: [{key, text}]}], "max_samples": 3}`。
+
+### 13.24 `POST /api/games/guess/deal`
+
+`{"city": "wuzhen"}`（可选 `agent_id` / `dilemma_id`，不给就随机）→ 一局：
+
+```json
+{"id": "guess-1a2b3c4d", "city": "wuzhen",
+ "agent": {"agent_id": 80, "name": "彭然秀", "age": 70, "gender": "女",
+           "job": "退休", "residence": "…", "file": "**性格**：…"},
+ "dilemma": {"id": "noise", "title": "楼上装修", "options": [{"key": "A", "text": "…"}]},
+ "guess": "", "choice": "", "samples": [], "settled": false}
+```
+
+**这一步不花模型调用**，也不会把提示词里的档案原文发给浏览器。
+
+### 13.25 `POST /api/games/guess/answer`
+
+`{"round_id": "...", "guess": "B"}` → 同一份结构，补上 `choice` / `why` /
+`correct` / `samples[0]`。猜的选项不在选项表里 → `400`；同一局猜两次 → `400`。
+
+### 13.26 `POST /api/games/guess/again`
+
+`{"round_id": "..."}` → 用同一道题再问同一个人，追加一条 `samples`。
+最多 `max_samples` 次；没猜过就复问 → `400`。**复问不会改判这一局的胜负。**
+
+### 13.27 `GET /api/games/guess/scoreboard`
+
+`{"played", "correct", "accuracy", "streak", "best_streak", "resampled", "stable", "history"}`。
+`stable / resampled` = 复问过的局里，几局的答案完全一致——这是顺带量出来的 persona 稳定性。
+
 ---
 
-## 9. 加一个新游戏
+## 14. 加一个新游戏
 
 1. **后端**：在 `games_api.handle_get` / `handle_post` 里加一个 `/api/games/<game>/…` 分支。
    照说服游戏的样子：LLM 入口做成可注入的参数（`answer_fn=` / `judge_fn=`），
    这样测试不碰网络；状态放内存，不写城市 bundle。
    逻辑超过百来行就单独开一个模块，分支里只转发——灾害模式就是这么做的
    （`disaster_api.py`，`games_api` 里只有两行 `if path.startswith(...)`）。
-   要跑很多次调用的游戏别做成同步接口，照 `disaster_api` 开个后台作业 + 进度。
+   要跑很多次调用的游戏别做成同步接口，用 `gaworld/apps/game_jobs.py` 的 `JobStore`
+   开个后台作业 + 进度（每个游戏一个 store，别共用——否则 A 游戏的 jobs 接口能查到 B 的作业）。
+   一局只要一两次调用的游戏就别开作业了，照 `guess_api` 直接同步返回。
 2. **前端**：加一个 `site/dashboard/<game>.html` + `.js`，样式复用 `games.css`。
 3. **入口**：在 `games.html` 里加一张 `.game-card`，中英文案写进
    `site/dashboard/locales/{zh-CN,en}.json`。
@@ -388,7 +646,7 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
 
 ---
 
-## 10. 排查清单
+## 15. 排查清单
 
 | 现象 | 原因 | 修法 |
 | --- | --- | --- |
@@ -407,3 +665,12 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
 | 所有人都选「私下求证」 | 传闻对这批人不痛不痒，没人有动机转 | 换一条跟他们利害相关的（钱 / 孩子 / 饭碗），或换一批人 |
 | 有人显示「没听说」 | 他在关系图上是孤立的，或者链条没走到他 | 正常：这正是这个游戏要看的东西；想让他听到就把他设成种子 |
 | 传播树只有一两跳 | 轮数够了，但没人选「转发」 | 正常结果——多数传闻确实传不动；换传闻或换人再看 |
+| 公投 14:0 通过，没有分歧 | 议案没人吃亏 | 改成有人得利、有人掏钱的版本；内置议案都带着代价 |
+| 宣传口径写了，票反而更少 | 口径被居民当成道德绑架了 | 这是真结果，不是 bug；换个说法再跑一次对比 |
+| 票里出现「其他」 | 重问一次之后仍然解析不出来 | 换个更听话的 provider；这票不计入任何一边 |
+| 猜人局档案是空的 | 那个居民在 profiles.md 里没有段落 | 换一个人，或者补档案——没档案的人全靠运气 |
+| 复问三次三个答案 | 档案撑不住这道题 | 正常：这正是复问要量的东西，记在「档案稳定」里 |
+| 双队竞赛两份方案长得一模一样 | 两个队的办法写得太像 | 把两条路子改成真的互斥（堵 vs 疏、花钱 vs 改条件） |
+| 比分咬得很紧还标了「评审说的赢家和分数对不上」 | 正常：两份方案确实接近 | 加一轮再比，或换一支队伍配置看看谁更吃这个办法 |
+| 某个队员说「这个办法在我这儿行不通」 | 也是正常结果——这正是队伍配置起作用的地方 | 想看反转就把他换到另一队去 |
+| 分队时点不动「甲」 | 一个队已经满 5 人 | 先取消一个，或把人放到另一队 |

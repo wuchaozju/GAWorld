@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="vote.page_title">GAWorld · 公投局</title>
+  <meta name="description" data-i18n-content="vote.meta_description" content="GAWorld 公投局 — 一个有利害关系的议案交给一群居民：先私下表态，再看到大家的意见和一句宣传口径后正式表决，看谁改了票。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="vote.kicker">GAWorld Playground · Referendum</p>
+          <h1 data-i18n="vote.headline">公投局：一句话能改几票</h1>
+          <p class="sub" data-i18n="vote.sub">
+            把一个有切身利害的议案交给一群居民：先私下表态，再看到大家的立场和你写的那句宣传口径，然后正式投票。差值就是被说动的人。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="vote.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <aside class="disaster-side panel">
+        <h3 data-i18n="vote.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="vote.city_label">城市</span>
+          <select id="vCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="vote.motion_label">议案</span>
+          <select id="vMotion"></select>
+        </label>
+        <p id="vMotionText" class="disaster-hint"></p>
+
+        <div id="vCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="vote.custom_title_label">议案标题</span>
+            <input id="vCustomTitle" type="text" data-i18n-placeholder="vote.custom_title_placeholder" placeholder="例如：小区改停车场" />
+          </label>
+          <label class="field">
+            <span data-i18n="vote.custom_text_label">议案内容</span>
+            <textarea id="vCustomText" data-i18n-placeholder="vote.custom_text_placeholder" placeholder="写清楚投什么、谁得利、谁吃亏——没人吃亏的议案会 14:0 通过，什么也看不出来。"></textarea>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="vote.campaign_label">宣传口径（可留空）</span>
+          <textarea id="vCampaign" data-i18n-placeholder="vote.campaign_placeholder" placeholder="正式表决前贴在群里和电梯口的一句话。留空＝不做宣传，看原生民意。"></textarea>
+        </label>
+        <p class="disaster-hint" data-i18n="vote.campaign_hint">
+          这是你的手牌：同一批人、同一个议案，跑一次不带口径、再跑一次带上，差值就是这句话的分量。
+        </p>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="vote.agents_title">参与表决的人</span> <b id="vPicked">0</b></h4>
+          <p class="disaster-hint" data-i18n="vote.agents_hint">最多 14 人。人越杂，分歧线越清楚。</p>
+          <div class="disaster-toolbar">
+            <button class="button" id="vPickRandom" data-i18n="vote.pick_random">🎲 随机 8 人</button>
+            <button class="button" id="vPickNone" data-i18n="vote.pick_none">清空</button>
+          </div>
+          <ul id="vAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="vRunBtn" class="button primary" data-i18n="vote.run">付诸表决</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="vote.history">最近几次</h4>
+          <ul id="vHistory"></ul>
+        </section>
+      </aside>
+
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="vTitle" data-i18n="vote.section_board">表决</h3>
+            <p id="vStatus" class="disaster-status" data-i18n="vote.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="vBar" style="width:0%"></span></div>
+            <span id="vPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="vResult" hidden>
+          <div id="vVerdict" class="vote-verdict"></div>
+
+          <section class="vote-shift">
+            <h4 data-i18n="vote.shift">私下表态 → 正式表决</h4>
+            <div id="vBars"></div>
+          </section>
+
+          <section id="vFlipsBox" class="vote-flips" hidden>
+            <h4 data-i18n="vote.flips">改票的人</h4>
+            <ul id="vFlips"></ul>
+          </section>
+
+          <section id="vSummaryBox" class="disaster-summary" hidden>
+            <h4 data-i18n="vote.summary">表决简报</h4>
+            <p id="vSummary"></p>
+          </section>
+
+          <div id="vCards" class="disaster-cards"></div>
+        </div>
+
+        <p id="vIdle" class="disaster-idle" data-i18n="vote.idle_hint">左边选一批人和一个议案，点「付诸表决」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/referendum.js"></script>
+</body>
+</html>

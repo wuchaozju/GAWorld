@@ -19,7 +19,13 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
-  const t = (key, fallback) => (typeof __ === "function" ? __(key) : fallback);
+  // Same contract as city-agents.js: an unresolved key means i18n has not
+  // loaded yet (the catalogue fetch can win that race), so fall back to the
+  // inline text rather than rendering "vote.custom_option" at the user.
+  const t = (key, fallback) => {
+    const value = typeof __ === "function" ? __(key) : "";
+    return !value || value === key ? fallback : value;
+  };
 
   const CUSTOM = "__custom__";
 
@@ -34,6 +40,12 @@
     jobId: null,
     jobTimer: null,
   };
+
+  const exporter = GAWorldGameExport.attach(() => state.run && {
+    game: "disaster",
+    label: (state.run.disaster || {}).name,
+    markdown: GAWorldGameExport.disaster(state.run),
+  });
 
   async function init() {
     $("#dRunBtn").addEventListener("click", startRun);
@@ -230,6 +242,7 @@
     const run = state.run;
     $("#dIdle").hidden = !!run;
     $("#dResult").hidden = !run;
+    exporter.sync();
     if (!run) return;
 
     const d = run.disaster || {};

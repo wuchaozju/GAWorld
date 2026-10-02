@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="duel.page_title">GAWorld · 双队竞赛</title>
+  <meta name="description" data-i18n-content="duel.meta_description" content="GAWorld 双队竞赛 — 同一个任务，两个队用两种不同的办法，看谁办得更好。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark">GA</div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="duel.kicker">GAWorld Playground · Duel</p>
+          <h1 data-i18n="duel.headline">双队竞赛：同一件事，两种办法</h1>
+          <p class="sub" data-i18n="duel.sub">
+            把居民编成两个队，扔同一个任务过去，但两队只能走各自那条路——一队自上而下，一队自下而上。最后由评审蒙着队名逐项打分。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="duel.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: set up one duel -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="duel.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="duel.city_label">城市</span>
+          <select id="dCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="duel.task_label">任务</span>
+          <select id="dTask"></select>
+        </label>
+        <p id="dTaskText" class="disaster-hint"></p>
+
+        <div id="dCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="duel.custom_title_label">任务名</span>
+            <input id="dCustomTitle" type="text" data-i18n-placeholder="duel.custom_title_placeholder" placeholder="例如：老街停车位不够" />
+          </label>
+          <label class="field">
+            <span data-i18n="duel.custom_text_label">要办的事</span>
+            <textarea id="dCustomText" data-i18n-placeholder="duel.custom_text_placeholder" placeholder="把处境写清楚：谁卡在哪、为什么难办。"></textarea>
+          </label>
+          <label class="field">
+            <span data-i18n="duel.custom_goal_label">怎样算办成了</span>
+            <input id="dCustomGoal" type="text" data-i18n-placeholder="duel.custom_goal_placeholder" placeholder="例如：三个月内投诉量降一半" />
+          </label>
+        </div>
+
+        <div class="duel-methods">
+          <label class="field">
+            <span><b class="is-a" data-i18n="duel.team_a">甲队</b> <span data-i18n="duel.method_label">的办法</span></span>
+            <input id="dMethodATitle" type="text" />
+            <textarea id="dMethodAText"></textarea>
+          </label>
+          <label class="field">
+            <span><b class="is-b" data-i18n="duel.team_b">乙队</b> <span data-i18n="duel.method_label">的办法</span></span>
+            <input id="dMethodBTitle" type="text" />
+            <textarea id="dMethodBText"></textarea>
+          </label>
+        </div>
+        <p class="disaster-hint" data-i18n="duel.method_hint">
+          两个办法要真的不同——路子越像，两份方案越像，比出来也没意思。改了内置任务的办法就当自定义任务跑。
+        </p>
+
+        <label class="field">
+          <span data-i18n="duel.rounds_label">比几轮</span>
+          <input id="dRounds" type="number" min="1" max="3" value="2" />
+        </label>
+        <p id="dCost" class="disaster-hint"></p>
+
+        <div class="disaster-block">
+          <h4>
+            <span data-i18n="duel.roster_title">分队</span>
+            <b class="is-a" id="dCountA">0</b> <span class="muted">vs</span> <b class="is-b" id="dCountB">0</b>
+          </h4>
+          <p class="disaster-hint" data-i18n="duel.roster_hint">
+            点「甲」「乙」把人分进两队，再点一次取消。队伍配置很关键：一队全是干部和一队全是店主，同一个办法跑出来的结果不一样。
+          </p>
+          <div class="disaster-toolbar">
+            <button class="button" id="dPickRandom" data-i18n="duel.pick_random">🎲 随机分队</button>
+            <button class="button" id="dPickNone" data-i18n="duel.pick_none">清空</button>
+          </div>
+          <ul id="dAgents" class="disaster-list duel-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="dRunBtn" class="button primary" data-i18n="duel.run">开始比</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="duel.history">最近几场</h4>
+          <ul id="dHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="dTitle" data-i18n="duel.section_board">比赛</h3>
+            <p id="dStatus" class="disaster-status" data-i18n="duel.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="dBar" style="width:0%"></span></div>
+            <span id="dPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="dResult" hidden>
+          <section id="dVerdict" class="duel-verdict"></section>
+          <section id="dSheet" class="duel-sheet"></section>
+          <div id="dBoards" class="duel-boards"></div>
+        </div>
+
+        <p id="dIdle" class="disaster-idle" data-i18n="duel.idle_hint">左边选个任务、把人分成两队，点「开始比」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/duel.js"></script>
+</body>
+</html>

@@ -45,13 +45,13 @@ progress, in-memory state, injectable LLM entry points (``answer_fn=`` /
 from __future__ import annotations
 
 import statistics
-import threading
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from gaworld.apps.game_jobs import JobStore
 from gaworld.apps.games_api import first_json_object
 from gaworld.logging_setup import get_logger
 
@@ -81,9 +81,6 @@ OTHER_ACTION = "其他"
 #: Jobs that group people without making them colleagues. Without this,
 #: "无业，家庭照料为主" (a quarter of a typical bundle) becomes one big office.
 NON_WORK_JOBS: tuple[str, ...] = ("无业，家庭照料为主", "退休", "学生", "")
-
-_MAX_JOBS = 20
-
 
 # ---------------------------------------------------------------------------
 # Rumor bank
@@ -440,99 +437,39 @@ def parse_reaction(raw: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Job plumbing — same shape as arena_api / disaster_api.
+# Jobs — one store per game (see gaworld.apps.game_jobs).
 # ---------------------------------------------------------------------------
 
-_JOBS: dict[str, dict[str, Any]] = {}
-_JOBS_LOCK = threading.Lock()
-
-
-def _new_job(kind: str) -> str:
-    job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
-    with _JOBS_LOCK:
-        _JOBS[job_id] = {
-            "id": job_id,
-            "kind": kind,
-            "status": "running",
-            "progress": 0.0,
-            "message": "启动中…",
-            "started_at": time.time(),
-            "finished_at": None,
-            "result": None,
-            "error": None,
-        }
-        finished = [
-            (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
-        ]
-        while len(_JOBS) > _MAX_JOBS and finished:
-            finished.sort()
-            _, oldest = finished.pop(0)
-            _JOBS.pop(oldest, None)
-    return job_id
-
-
-def _update_job(job_id: str, **fields: Any) -> None:
-    with _JOBS_LOCK:
-        record = _JOBS.get(job_id)
-        if record is not None:
-            record.update(fields)
-
-
-def _run_in_background(job_id: str, work: Callable[..., Any]) -> None:
-    def runner() -> None:
-        try:
-            result = work(lambda p, m: _update_job(job_id, progress=p, message=m))
-            _update_job(job_id, status="done", progress=1.0, finished_at=time.time(), result=result)
-        except Exception as exc:  # pragma: no cover - surfaced via the API
-            _update_job(
-                job_id,
-                status="failed",
-                finished_at=time.time(),
-                error=f"{type(exc).__name__}: {exc}",
-            )
-            _LOG.exception("rumor job %s failed", job_id)
-
-    thread = threading.Thread(target=runner, name=f"rumor-{job_id}", daemon=True)
-    thread.start()
+_JOBS = JobStore("rumor")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
-    with _JOBS_LOCK:
-        record = _JOBS.get(job_id)
-        return dict(record) if record is not None else None
-
-
-def list_runs() -> list[dict[str, Any]]:
-    """Finished runs still in memory, newest first."""
-    with _JOBS_LOCK:
-        records = [dict(r) for r in _JOBS.values()]
-    rows = []
-    for record in records:
-        result = record.get("result") or {}
-        if record["status"] != "done" or not result:
-            continue
-        stats = result.get("stats") or {}
-        rows.append(
-            {
-                "job_id": record["id"],
-                "run_id": result.get("run_id"),
-                "city": result.get("city"),
-                "rumor": (result.get("rumor") or {}).get("title"),
-                "emoji": (result.get("rumor") or {}).get("emoji"),
-                "total": stats.get("total"),
-                "reached": stats.get("reached"),
-                "believers": stats.get("believers"),
-                "created_at": result.get("created_at"),
-            }
-        )
-    rows.sort(key=lambda r: -(r["created_at"] or 0))
-    return rows
+    return _JOBS.status(job_id)
 
 
 def reset_jobs() -> None:
     """Drop every job. Used by tests; production code never calls it."""
-    with _JOBS_LOCK:
-        _JOBS.clear()
+    _JOBS.reset()
+
+
+def list_runs() -> list[dict[str, Any]]:
+    """Finished runs still in memory, newest first."""
+    return [
+        {
+            "job_id": row["job_id"],
+            "run_id": result.get("run_id"),
+            "city": result.get("city"),
+            "rumor": (result.get("rumor") or {}).get("title"),
+            "emoji": (result.get("rumor") or {}).get("emoji"),
+            "total": stats.get("total"),
+            "reached": stats.get("reached"),
+            "believers": stats.get("believers"),
+            "created_at": result.get("created_at"),
+        }
+        for row in _JOBS.results()
+        for result in [row["result"]]
+        for stats in [result.get("stats") or {}]
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -840,9 +777,7 @@ def start_run(payload: dict[str, Any]) -> str:
     # Fail fast on an unknown rumor: better a 400 now than a dead job.
     resolve_rumor(str(payload.get("rumor_id") or ""), custom)
 
-    job_id = _new_job("rumor")
-    _run_in_background(
-        job_id,
+    return _JOBS.run(
         lambda progress: run_rumor(
             city=city,
             agent_ids=agent_ids,
@@ -851,9 +786,8 @@ def start_run(payload: dict[str, Any]) -> str:
             seeds=[int(s) for s in (payload.get("seeds") or [])],
             rounds=int(payload.get("rounds") or DEFAULT_ROUNDS),
             progress=progress,
-        ),
+        )
     )
-    return job_id
 
 
 # ---------------------------------------------------------------------------

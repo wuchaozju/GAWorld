@@ -36,7 +36,17 @@
     jobId: null,
     jobTimer: null,
     leaderboard: [],
+    lastResult: null,
   };
+
+  const exporter = GAWorldGameExport.attach(() => state.leaderboard.length && {
+    game: "arena",
+    label: state.city,
+    markdown: GAWorldGameExport.arena(
+      Object.assign({ city: state.city }, state.lastResult, { leaderboard: state.leaderboard }),
+      { eliminated: Array.from(state.eliminated) }
+    ),
+  });
 
   async function init() {
     bindCityPicker();
@@ -330,6 +340,7 @@
         if (rec.status === "done") {
           clearInterval(state.jobTimer);
           state.jobTimer = null;
+          state.lastResult = rec.result || null;
           state.leaderboard = (rec.result && rec.result.leaderboard) || [];
           renderLeaderboard();
           renderSurvivors();
@@ -363,6 +374,7 @@
 
   // -- leaderboard + retain ---------------------------------------------
   function renderLeaderboard() {
+    exporter.sync();
     const wrap = $("#arenaLeaderboard");
     if (!state.leaderboard.length) {
       wrap.innerHTML = `<div class="arena-leaderboard-empty">${esc(t("arena.no_runs", "尚未运行"))}</div>`;

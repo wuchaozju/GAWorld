@@ -420,3 +420,251 @@
 .disaster-card .belief { font-size: 11px; }
 .disaster-card .belief.is-believer { color: var(--game-danger); }
 .disaster-card .belief.is-doubter { color: var(--game-accent); }
+
+/* ---- 双队竞赛: the disaster frame again; the scoreboard is what's new.
+ * 甲队 reads as the accent green and 乙队 as steel, so a side keeps one
+ * colour across the picker, the scoreboard, the sheet and the two boards. */
+:root {
+  --duel-a: var(--game-accent);
+  --duel-b: var(--steel, #3c5a68);
+  --duel-a-soft: color-mix(in srgb, var(--game-accent) 12%, transparent);
+  --duel-b-soft: color-mix(in srgb, var(--steel, #3c5a68) 12%, transparent);
+}
+b.is-a, .duel-pick.is-a.is-on, .duel-score .side.is-a i { color: var(--duel-a); }
+b.is-b, .duel-pick.is-b.is-on, .duel-score .side.is-b i { color: var(--duel-b); }
+
+.duel-methods { display: grid; gap: 4px; }
+.duel-methods .field input { margin-bottom: 4px; }
+.duel-methods .field textarea { min-height: 62px; }
+
+/* roster rows carry a 甲/乙 pair instead of a checkbox */
+.duel-list li { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 8px; }
+.duel-list li.is-picked { background: var(--game-soft); }
+.duel-list .who { font-size: 13px; }
+.duel-list .meta { color: var(--game-muted); font-size: 11px; }
+.duel-side { display: flex; gap: 4px; flex: none; }
+.duel-pick {
+  border: 1px solid var(--game-divider);
+  background: var(--game-card);
+  color: var(--game-muted);
+  border-radius: var(--radius-sm, 8px);
+  padding: 1px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.duel-pick.is-a.is-on { border-color: var(--duel-a); background: var(--duel-a-soft); }
+.duel-pick.is-b.is-on { border-color: var(--duel-b); background: var(--duel-b-soft); }
+
+/* verdict banner */
+.duel-verdict {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.duel-verdict.is-a { background: var(--duel-a-soft); border-color: var(--duel-a); }
+.duel-verdict.is-b { background: var(--duel-b-soft); border-color: var(--duel-b); }
+.duel-verdict.is-tie { background: var(--game-soft); }
+.duel-verdict h4 { margin: 10px 0 0; font-size: 17px; }
+.duel-verdict p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; }
+.duel-score { display: flex; align-items: flex-end; justify-content: center; gap: 18px; }
+.duel-score .side { display: grid; justify-items: center; }
+.duel-score .side b { font-size: 13px; }
+.duel-score .side .method { color: var(--game-muted); font-size: 11px; }
+.duel-score .side i { font-style: normal; font-size: 30px; font-weight: 700; line-height: 1.1; }
+.duel-score .vs { color: var(--game-muted); font-size: 12px; padding-bottom: 6px; }
+.duel-blind { color: var(--game-muted); font-size: 11px !important; }
+.duel-flag { display: block; color: var(--game-danger); font-weight: 600; margin-top: 2px; }
+
+/* per-criterion tug of war: 甲 grows leftwards, 乙 rightwards */
+.duel-sheet { margin-bottom: 18px; }
+.duel-sheet h4 { margin: 0 0 8px; font-size: 14px; }
+.duel-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 72px 1fr 22px;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.duel-row .label { text-align: center; color: var(--game-muted); }
+.duel-row .n { color: var(--game-muted); text-align: center; }
+.duel-row .track { height: 8px; border-radius: 999px; background: var(--game-soft); overflow: hidden; display: flex; }
+.duel-row .track:first-of-type { justify-content: flex-end; }
+.duel-row .track i { display: block; height: 100%; }
+.duel-row .track i.is-a { background: var(--duel-a); }
+.duel-row .track i.is-b { background: var(--duel-b); }
+
+/* the two plans, side by side */
+.duel-boards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 900px) { .duel-boards { grid-template-columns: 1fr; } }
+.duel-board {
+  border: 1px solid var(--game-divider);
+  border-top-width: 3px;
+  border-radius: var(--radius-sm, 8px);
+  padding: 12px 14px;
+  background: var(--game-card);
+}
+.duel-board.is-a { border-top-color: var(--duel-a); }
+.duel-board.is-b { border-top-color: var(--duel-b); }
+.duel-board-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.duel-board-head h4 { margin: 0; font-size: 15px; }
+.duel-board-head .method { font-size: 12px; color: var(--game-muted); }
+.duel-method-text { margin: 4px 0 8px; font-size: 11px; color: var(--game-muted); line-height: 1.6; }
+.duel-headline { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.6; }
+.duel-steps { margin: 8px 0 0; padding-left: 20px; font-size: 12px; line-height: 1.7; }
+.duel-risk { margin: 8px 0 0; font-size: 12px; color: var(--game-danger); }
+.duel-history-plans { margin-top: 8px; font-size: 12px; color: var(--game-muted); }
+.duel-history-plans summary { cursor: pointer; }
+.duel-history-plans p { margin: 4px 0 0; line-height: 1.6; }
+
+.duel-members { display: grid; gap: 8px; margin-top: 12px; border-top: 1px dashed var(--game-divider); padding-top: 10px; }
+.duel-member header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.duel-member .name { font-size: 12px; font-weight: 600; }
+.duel-member .job { font-size: 11px; color: var(--game-muted); }
+.duel-member .move { margin: 3px 0 0; font-size: 12px; line-height: 1.6; }
+.duel-member .why { margin: 2px 0 0; font-size: 11px; color: var(--game-muted); font-style: italic; }
+.duel-member footer { margin-top: 2px; }
+.duel-member .conf { font-size: 11px; color: var(--game-muted); }
+
+/* ---- 公投局: verdict banner + the one comparison the page exists for ---- */
+.vote-verdict {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--game-divider);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm, 8px);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: var(--game-card);
+}
+.vote-verdict.is-pass { border-left-color: var(--game-accent); background: var(--game-success-soft); }
+.vote-verdict.is-fail { border-left-color: var(--game-danger); background: var(--game-danger-soft); }
+.vote-verdict.is-tie { border-left-color: var(--game-muted); }
+.vote-verdict .headline { font-size: 20px; }
+.vote-verdict .tally { font-size: 13px; }
+.vote-verdict .swing,
+.vote-verdict .campaign { font-size: 12px; color: var(--game-muted); }
+
+.vote-shift { margin-bottom: 16px; }
+.vote-shift h4,
+.vote-flips h4 { margin: 0 0 8px; font-size: 14px; }
+.vote-bar { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+.vote-bar .label { color: var(--game-muted); }
+.vote-bar .track { display: flex; height: 18px; border-radius: 999px; overflow: hidden; background: var(--game-soft); }
+.vote-bar .track i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--game-card);
+  min-width: 18px;
+}
+.vote-bar .track .is-for { background: var(--game-accent); }
+.vote-bar .track .is-against { background: var(--game-danger); }
+.vote-bar .track .is-abstain { background: var(--game-muted); }
+.vote-bar .track .is-other { background: var(--game-divider); color: var(--game-ink); }
+.vote-bar .n { color: var(--game-muted); white-space: nowrap; }
+
+.vote-flips { margin-bottom: 16px; }
+.vote-flips ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vote-flips li {
+  border: 1px dashed var(--game-accent);
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 10px;
+  font-size: 12px;
+  display: grid;
+  gap: 2px;
+}
+.vote-flips .who { font-weight: 600; font-size: 13px; }
+.vote-flips .move { color: var(--game-muted); }
+.vote-flips .why { color: var(--game-ink); }
+
+.disaster-card.is-flipped { border-color: var(--game-accent); border-style: dashed; }
+.disaster-card .tag.is-for { color: var(--game-accent); border-color: var(--game-accent); }
+.disaster-card .tag.is-against { color: var(--game-danger); border-color: var(--game-danger); }
+.disaster-card .tag.is-abstain,
+.disaster-card .tag.is-other { color: var(--game-muted); border-color: var(--game-divider); }
+
+/* ---- 猜人局: one file, one dilemma, four buttons ---- */
+.guess-board { display: grid; gap: 16px; padding: 16px 0 0; }
+.guess-controls { display: flex; align-items: center; gap: 8px; }
+.guess-controls select {
+  padding: 6px 8px;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-card);
+  color: var(--game-ink);
+  font: inherit;
+  max-width: 220px;
+}
+.guess-grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .guess-grid { grid-template-columns: 1fr; } }
+
+.guess-file {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-soft);
+  padding: 12px 14px;
+}
+.guess-file h4 { margin: 0; font-size: 15px; }
+.guess-file .meta { margin: 2px 0 8px; color: var(--game-muted); font-size: 12px; }
+.guess-file .file-body {
+  font-size: 12px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.guess-dilemma { margin: 0 0 12px; font-size: 14px; line-height: 1.7; }
+.guess-options { display: grid; gap: 8px; }
+.guess-option {
+  text-align: left;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-card);
+  color: inherit;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guess-option:hover:not(:disabled) { border-color: var(--game-accent); }
+.guess-option b { color: var(--game-muted); }
+.guess-option .pill {
+  margin-left: auto;
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  border: 1px solid var(--game-divider);
+  color: var(--game-muted);
+  white-space: nowrap;
+}
+.guess-option .pill.is-theirs { border-color: var(--game-accent); color: var(--game-accent); }
+.guess-option.is-yours { border-color: var(--game-muted); }
+.guess-option.is-theirs { border-color: var(--game-accent); background: var(--game-success-soft); }
+.guess-option.is-yours.is-theirs { border-width: 2px; }
+
+.guess-reveal {
+  margin-top: 12px;
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 14px;
+  border: 1px solid var(--game-divider);
+}
+.guess-reveal.is-hit { background: var(--game-success-soft); border-color: var(--game-accent); }
+.guess-reveal.is-miss { background: var(--game-danger-soft); border-color: var(--game-danger); }
+.guess-reveal h4 { margin: 0 0 4px; font-size: 15px; }
+.guess-reveal p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; }
+.guess-reveal .samples { color: var(--game-muted); font-size: 12px; }
+.guess-after { display: flex; gap: 8px; margin-top: 12px; }
+
+.guess-history h4 { margin: 0 0 8px; font-size: 14px; }
+.guess-history ul { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }
+.guess-history li { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
+.guess-history .who { font-weight: 600; }
+.guess-history .meta { color: var(--game-muted); }
