@@ -351,3 +351,103 @@
   font-weight: 500;
 }
 .rw-digest .rw-field textarea { min-height: 64px; }
+
+/* ---- tabs (实施方案 / 严肃游戏) ---- */
+
+.rw-tabs { display: flex; gap: 4px; margin: 0 0 14px; border-bottom: 1px solid var(--line, #e5e7eb); }
+.rw-tab {
+  padding: 8px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.rw-tab:hover { color: var(--ink, #14201b); }
+.rw-tab.is-active { color: var(--green, #13795b); border-bottom-color: var(--green, #13795b); }
+.rw-tab:focus-visible { outline: 2px solid var(--green, #13795b); outline-offset: 2px; }
+.rw-main[hidden] { display: none; }
+
+/* ---- serious game ---- */
+
+.sg-field-num { flex: 0 0 90px; margin-bottom: 0; }
+.sg-private { color: #a16f1c; }
+.sg-setup { margin-top: 18px; padding-top: 4px; border-top: 1px dashed var(--line, #e5e7eb); }
+.sg-seats { display: grid; gap: 8px; margin-bottom: 12px; }
+.sg-seat {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.sg-seat-role { display: grid; gap: 2px; }
+.sg-seat-role .rw-hint { margin: 0; }
+.sg-seat-kind { display: flex; gap: 10px; white-space: nowrap; }
+.sg-seat select,
+.sg-seat input[type=text] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 6px;
+  font: inherit;
+}
+.sg-seat [hidden] { display: none; }
+
+.sg-indicators { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.sg-ind-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted, #6b7280); }
+.sg-ind-head b { color: var(--ink, #14201b); }
+.sg-ind-bar { height: 6px; border-radius: 3px; background: rgba(19, 121, 91, 0.12); overflow: hidden; margin-top: 4px; }
+.sg-ind-bar i { display: block; height: 100%; background: var(--green, #13795b); transition: width .4s ease; }
+
+.sg-seat-table td.sg-mark { width: 24px; text-align: center; color: var(--green, #13795b); font-weight: 700; }
+.rw-badge.sg-human { border-color: #c48a2b; color: #a16f1c; }
+.rw-badge.sg-up { border-color: var(--green, #13795b); color: var(--green, #13795b); }
+.rw-badge.sg-down { border-color: #b3541e; color: #b3541e; }
+.rw-badge.is-live::before { content: "● "; color: var(--green, #13795b); }
+
+.sg-brief,
+.sg-current {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  background: rgba(19, 121, 91, 0.04);
+}
+.sg-brief .rw-dl { margin-top: 6px; }
+.sg-options { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+.sg-round { padding: 10px 0; border-bottom: 1px solid var(--line, #e5e7eb); }
+.sg-round .rw-hint { margin: 2px 0 6px; }
+.sg-narration { margin: 8px 0 4px; font-size: 13px; line-height: 1.65; padding-left: 10px; border-left: 3px solid var(--green, #13795b); }
+.sg-thought { font-size: 12px; color: var(--muted, #6b7280); }
+.sg-debrief { margin-top: 14px; }
+
+/* A player opened a seat link: only their game, nothing else. */
+.sg-player .rw-tabs,
+.sg-player #sgForm,
+.sg-player #rwPaneGame .rw-side { display: none; }
+.sg-player #rwPaneGame { grid-template-columns: minmax(0, 1fr); }
+
+@media (max-width: 760px) {
+  .sg-seat { grid-template-columns: 1fr; }
+}
+#sgGame .rw-table td:first-child { min-width: 6em; }
+
+/* ---- 政策仿真与优化 ---- */
+.ps-field-city { flex: 1 1 220px; }
+.ps-check { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; font-size: 13px; color: var(--ink, #14201b); }
+.ps-check input { margin: 0; }
+.ps-policy-text { white-space: pre-wrap; }
+.ps-best { border-color: var(--green, #13795b); color: #fff; background: var(--green, #13795b); margin-left: 4px; }
+.ps-best-row td { background: rgba(19, 121, 91, 0.06); }
+.ps-score { position: relative; min-width: 90px; height: 20px; border-radius: 4px; background: rgba(19, 121, 91, 0.08); overflow: hidden; }
+.ps-score-bar { position: absolute; inset: 0 auto 0 0; background: rgba(19, 121, 91, 0.35); }
+.ps-score b { position: relative; padding-left: 6px; line-height: 20px; }
+.ps-good { color: var(--green, #13795b); font-weight: 600; }
+.ps-gaps { margin-top: 8px; }

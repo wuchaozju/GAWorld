@@ -26,7 +26,13 @@
       <div class="rw-topmeta" id="rwTopMeta"></div>
     </header>
 
-    <section class="studio-main rw-main">
+    <nav class="rw-tabs" role="tablist" data-i18n-aria="research.tabs_label" aria-label="工作台分区">
+      <button type="button" class="rw-tab is-active" role="tab" id="rwTabPlan" data-tab="plan" aria-selected="true" aria-controls="rwPanePlan" data-i18n="research.tab_plan">实施方案</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabGame" data-tab="game" aria-selected="false" aria-controls="rwPaneGame" data-i18n="research.tab_game">严肃游戏</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabPolicy" data-tab="policy" aria-selected="false" aria-controls="rwPanePolicy" data-i18n="research.tab_policy">政策仿真与优化</button>
+    </nav>
+
+    <section class="studio-main rw-main" id="rwPanePlan" role="tabpanel" aria-labelledby="rwTabPlan">
       <div class="rw-panel">
         <div class="rw-card" id="rwForm">
           <h3 data-i18n="research.material_title">1 · 研究材料</h3>
@@ -89,8 +95,105 @@
         </div>
       </aside>
     </section>
+
+    <section class="studio-main rw-main" id="rwPaneGame" role="tabpanel" aria-labelledby="rwTabGame" hidden>
+      <div class="rw-panel">
+        <div class="rw-card" id="sgForm">
+          <h3 data-i18n="research.sg_form_title">1 · 描述一个严肃游戏</h3>
+          <p class="rw-hint" data-i18n="research.sg_form_hint">写下你想推演的情景：谁在场、各自想要什么、要决定什么。模型会把它设计成一个回合制的角色扮演游戏——每个角色可以由城市里的居民智能体扮演，也可以由真人来玩。</p>
+          <label class="rw-field">
+            <span data-i18n="research.sg_desc_label">游戏描述</span>
+            <textarea id="sgDesc" rows="8" data-i18n-placeholder="research.sg_desc_ph" placeholder="例如：一个老旧小区要不要加装电梯。一楼住户、高层老人、物业、街道干部四方协商，谁出钱、怎么分摊、噪音和采光怎么补偿。玩 4 轮，看大家能不能达成一个方案。"></textarea>
+          </label>
+          <div class="rw-row">
+            <label class="rw-field sg-field-num">
+              <span data-i18n="research.sg_rounds_label">轮数</span>
+              <select id="sgRounds"></select>
+            </label>
+            <label class="rw-field sg-field-num">
+              <span data-i18n="research.sg_roles_label">角色数</span>
+              <select id="sgRoles"></select>
+            </label>
+            <label class="rw-field rw-field-model">
+              <span data-i18n="research.sg_model_label">设计和主持用的模型</span>
+              <select id="sgProvider"></select>
+            </label>
+            <button class="btn" id="sgDesign" data-i18n="research.sg_design">生成游戏</button>
+          </div>
+          <p class="rw-progress" id="sgProgress" aria-live="polite"></p>
+        </div>
+
+        <div class="rw-card" id="sgGame" hidden></div>
+        <div class="rw-card" id="sgSession" hidden></div>
+      </div>
+
+      <aside class="rw-side">
+        <div class="rw-side-card">
+          <h3 data-i18n="research.sg_games">游戏</h3>
+          <div id="sgGames" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.sg_sessions">对局</h3>
+          <div id="sgSessions" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.how_title">它是怎么工作的</h3>
+          <p class="rw-hint" data-i18n="research.sg_how_body">每一轮所有角色同时行动：居民由模型按各自的档案和角色简介来演，真人通过座位链接在自己的浏览器里行动。人齐了，主持人裁定这一轮的结果、调整公共指标；最后一轮结束后按评分维度复盘。对局存放在 output/research/serious_games/，不会写回任何城市。</p>
+        </div>
+      </aside>
+    </section>
+    <section class="studio-main rw-main" id="rwPanePolicy" role="tabpanel" aria-labelledby="rwTabPolicy" hidden>
+      <div class="rw-panel">
+        <div class="rw-card" id="psForm">
+          <h3 data-i18n="research.ps_form_title">1 · 选城市，写政策</h3>
+          <p class="rw-hint" data-i18n="research.ps_form_hint">从城市里抽一批居民，让每个人按自己的档案对政策作出反应（支持度、生活、钱包、会不会照做、担心什么、想怎么改），由代码汇总成指标；模型据此评估效果并给出修改建议，修订版会在同一批居民上再仿真一次，用分数说话。</p>
+          <div class="rw-row">
+            <label class="rw-field ps-field-city">
+              <span data-i18n="research.ps_city_label">城市</span>
+              <select id="psCity"></select>
+            </label>
+            <label class="rw-field sg-field-num">
+              <span data-i18n="research.ps_sample_label">居民样本</span>
+              <select id="psSample"></select>
+            </label>
+          </div>
+          <label class="rw-field">
+            <span data-i18n="research.ps_policy_label">政策描述</span>
+            <textarea id="psPolicy" rows="6" data-i18n-placeholder="research.ps_policy_ph" placeholder="例如：自明年 1 月起，全市生活垃圾按重量计费，每公斤 0.5 元，由物业代收；混投一次罚款 300 元。"></textarea>
+          </label>
+          <label class="rw-field">
+            <span data-i18n="research.ps_candidate_label">候选政策（可选，用来和上面的政策对比）</span>
+            <textarea id="psCandidate" rows="4" data-i18n-placeholder="research.ps_candidate_ph" placeholder="例如：垃圾按户定额收费每月 20 元，分类达标的小区每季度返还一半；不设罚款，改为志愿者桶边督导。"></textarea>
+          </label>
+          <label class="ps-check"><input type="checkbox" id="psVerify" checked /><span data-i18n="research.ps_verify">用推荐的修订版再仿真一次（同一批居民），验证修改是否真的更好</span></label>
+          <div class="rw-row">
+            <label class="rw-field rw-field-model">
+              <span data-i18n="research.ps_model_label">扮演居民和分析用的模型</span>
+              <select id="psProvider"></select>
+            </label>
+            <button class="btn" id="psRun" data-i18n="research.ps_run">开始仿真</button>
+          </div>
+          <p class="rw-progress" id="psProgress" aria-live="polite"></p>
+        </div>
+
+        <div class="rw-card" id="psResult" hidden></div>
+      </div>
+
+      <aside class="rw-side">
+        <div class="rw-side-card">
+          <h3 data-i18n="research.ps_runs">仿真记录</h3>
+          <div id="psRuns" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.how_title">它是怎么工作的</h3>
+          <p class="rw-hint" data-i18n="research.ps_how_body">每个版本对每位居民各一次模型调用，回答是固定格式的 JSON，指标全部由代码计算；综合分 = 支持度 35% + 生活 30% + 钱包 15% + 遵从 20%（各自归一到 0–1）。推荐版本按综合分选出，不由模型决定。记录存放在 output/research/policy/，不会写回任何城市。</p>
+        </div>
+      </aside>
+    </section>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
   <script src="/site/dashboard/research.js"></script>
+  <script src="/site/dashboard/serious-game.js"></script>
+  <script src="/site/dashboard/policy-sim.js"></script>
 </body>
 </html>

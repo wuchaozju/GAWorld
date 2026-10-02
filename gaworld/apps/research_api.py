@@ -769,7 +769,23 @@ def _study_route(path: str) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 
+def _is_game_path(path: str) -> bool:
+    return path == "/api/research/games" or path.startswith("/api/research/games/")
+
+
+def _is_policy_path(path: str) -> bool:
+    return path == "/api/research/policy" or path.startswith("/api/research/policy/")
+
+
 def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
+    if _is_game_path(path):
+        from gaworld.apps import serious_game_api
+
+        return serious_game_api.handle_get(path, query)
+    if _is_policy_path(path):
+        from gaworld.apps import policy_sim_api
+
+        return policy_sim_api.handle_get(path, query)
     try:
         if path == "/api/research/context":
             return context(), 200
@@ -808,6 +824,14 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     payload = payload if isinstance(payload, dict) else {}
+    if _is_game_path(path):
+        from gaworld.apps import serious_game_api
+
+        return serious_game_api.handle_post(path, payload)
+    if _is_policy_path(path):
+        from gaworld.apps import policy_sim_api
+
+        return policy_sim_api.handle_post(path, payload)
     try:
         if path == "/api/research/analyze":
             return start_analysis(payload), 202
