@@ -266,7 +266,7 @@ def _seed_big5(agent_id: int, name: str, values: dict[str, float]) -> bool:
     fieldnames, rows = ds._read_big5_rows()
     if not fieldnames:
         return False
-    row = {key: "" for key in fieldnames}
+    row = dict.fromkeys(fieldnames, "")
     row.update({"id": agent_id, "name": name, "source": "persona_distilled"})
     for dim in ds.BIG5_DIMENSIONS:
         if dim in fieldnames:

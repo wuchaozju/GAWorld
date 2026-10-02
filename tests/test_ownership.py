@@ -3,9 +3,10 @@
 * ``gaworld.accounts.ownership``: stamped on creation, listed / read / deleted
   only by the maker and admins; single-user mode sees everything; background
   jobs keep the asking user.
-* Each store wired to it: interview sessions, research plans, personas (no
-  overwriting someone else's portrait), persuasion, the arena's elimination
-  ledger.
+* Each store wired to it: game jobs, interview sessions, research plans,
+  serious games (a seat link still opens its seat), policy runs, personas
+  (no overwriting someone else's portrait), persuasion, guess, the arena's
+  elimination ledger.
 * ``gaworld.accounts.usage``: one line per model call, tallied per user per
   day; the dashboard refuses new model work once a member's quota is spent.
 """
@@ -19,6 +20,7 @@ import os
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -93,6 +95,25 @@ class StoresTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_game_jobs(self):
+        from gaworld.apps.game_jobs import JobStore
+
+        jobs = JobStore("t")
+        with as_user(A):
+            job_id = jobs.run(lambda progress: {"created_at": 1, "who": USER.get()["id"]})
+        deadline = time.time() + 5
+        while time.time() < deadline:
+            with as_user(A):
+                if (jobs.status(job_id) or {}).get("status") == "done":
+                    break
+            time.sleep(0.02)
+        with as_user(A):
+            self.assertEqual(jobs.status(job_id)["result"]["who"], 2)  # the job thread knew who asked
+            self.assertEqual(len(jobs.results()), 1)
+        with as_user(B):
+            self.assertIsNone(jobs.status(job_id))
+            self.assertEqual(jobs.results(), [])
+
     def test_interview_sessions(self):
         from gaworld.apps import interview_api
         from gaworld.interview import store
@@ -146,6 +167,48 @@ class StoresTest(unittest.TestCase):
                 self.assertFalse(research_api.delete({"plan_id": PLAN})["deleted"])
                 self.assertEqual(research_api.handle_get("/api/research/studies")[0], {"studies": []})
 
+    def test_serious_game_seat_links(self):
+        from gaworld.apps import serious_game_api as api
+        from gaworld.research import serious_game as sg
+
+        session = {
+            "id": "sess1",
+            "owner_id": 2,
+            "status": "acting",
+            "seats": [{"role_id": "r1", "kind": "human", "token": "seat-tok"}],
+        }
+        with (
+            mock.patch.object(sg, "games_root", return_value=self.root),
+            mock.patch.object(api, "_get", return_value=session),
+            mock.patch.object(
+                sg, "seat_by_token", side_effect=lambda s, t: s["seats"][0] if t == "seat-tok" else None
+            ),
+            mock.patch.object(
+                sg, "public_view", side_effect=lambda s, seat_token="", host=False: {"host": host}
+            ),
+            mock.patch.object(api, "_kick"),
+        ):
+            with as_user(B):
+                self.assertEqual(api.handle_get("/api/research/games/sessions/sess1")[1], 404)
+                body, status = api.handle_get("/api/research/games/sessions/sess1", {"seat": ["seat-tok"]})
+                self.assertEqual((status, body), (200, {"host": False}))  # the link opens only that seat
+                self.assertEqual(api.handle_post("/api/research/games/sessions/sess1/delete", {})[1], 404)
+            with as_user(A):
+                self.assertEqual(api.handle_get("/api/research/games/sessions/sess1")[0], {"host": True})
+
+    def test_policy_runs(self):
+        from gaworld.apps import policy_sim_api as api
+        from gaworld.research import policy_sim as ps
+
+        with mock.patch.object(ps, "policy_root", return_value=self.root):
+            ps.save_run({"id": "r1", "owner_id": 2, "created_at": 1})
+            with as_user(B):
+                self.assertEqual(api.handle_get("/api/research/policy")[0]["runs"], [])
+                self.assertEqual(api.handle_get("/api/research/policy/r1")[1], 404)
+                self.assertEqual(api.handle_post("/api/research/policy/r1/delete", {})[1], 404)
+            with as_user(A):
+                self.assertEqual(api.handle_get("/api/research/policy/r1")[1], 200)
+
     def test_personas(self):
         from gaworld.apps import persona_api
 
@@ -159,22 +222,27 @@ class StoresTest(unittest.TestCase):
                 self.assertFalse(persona_api.delete({"slug": "zhang-san"})["deleted"])
             self.assertTrue((self.root / "zhang-san").is_dir())
 
-    def test_persuasion(self):
-        from gaworld.apps import games_api
+    def test_persuasion_and_guess(self):
+        from gaworld.apps import games_api, guess_api
 
         with as_user(A):
             session = games_api.PersuasionSession(
                 id="p1", city="", persona={"agent_id": 5, "name": "甲"}, question="?", max_turns=3
             )
             games_api._store(session)
+            guess_api._store({"id": "g1", "created_at": 1, "guess": "x", "correct": True})
         try:
             with as_user(B):
                 self.assertIsNone(games_api.get_session("p1"))
                 self.assertEqual(games_api.list_sessions(), [])
+                with self.assertRaises(KeyError):
+                    guess_api._require("g1")
             with as_user(A):
                 self.assertEqual(games_api.get_session("p1")["id"], "p1")
+                self.assertEqual(guess_api._require("g1")["id"], "g1")
         finally:
             games_api.reset_sessions()
+            guess_api.reset_rounds()
 
     def test_arena_ledger_is_per_user(self):
         from gaworld.apps import arena_api

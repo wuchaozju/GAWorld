@@ -1,0 +1,98 @@
+# 核心功能测试套件（Suite B）—— `pytest --suite core`
+# 用例编号与 docs/TEST_CASES.md 第三部分一一对应。每行是一个文件 / 类 / 单个测试。
+# 选取原则：覆盖「配置 → LLM → 内核 → 一天仿真 → 产物」主干，全部 mock LLM、无网络、
+# 不起子进程，整套应在 1 分钟内跑完。
+
+# C-01 配置分层与覆盖
+tests/test_gaworld_settings.py
+tests/test_gaworld_config.py
+
+# C-02 LLM 路由、跨 provider 降级、输出修复
+tests/test_gaworld_llm_fallback.py
+tests/test_llm_output_truncation.py::TestTruncation
+tests/test_llm_output_truncation.py::TestRepairIsIdentityOnValidJson
+tests/test_mock_llm_fixture.py
+
+# C-03 微内核六服务（clock / bus / registry / controller / recorder / context）
+tests/test_kernel.py
+
+# C-04 插件装配与第三方插件
+tests/test_extension_hooks_resolve.py
+tests/test_kernel_plugin_e2e.py
+
+# C-05 认知管线与消融
+tests/test_sim_pipeline.py
+tests/test_pipeline_ablation.py
+
+# C-06 Agent 适配与并发执行
+tests/test_gaworld_core_agent.py
+tests/test_gaworld_core_runner.py
+
+# C-07 记忆存储与跨天持久化
+tests/test_memory_store.py
+tests/test_episode_persistence_across_days.py
+
+# C-08 一天端到端仿真
+tests/test_e2e_smoke.py
+
+# C-09 CLI 子命令
+tests/test_cli_run_sim_days.py
+tests/test_cli_commands.py
+
+# C-10 续跑与记忆 schema 闸门
+tests/test_resume_start_day.py
+tests/test_reset_gate_for_memory_model.py
+
+# C-11 经济货币守恒
+tests/test_economy_conservation.py
+
+# C-12 地图、位置与出行
+tests/test_city_map_system.py
+tests/test_location_system.py::TestTravelPlan
+tests/test_location_system.py::TestTransportCost
+tests/test_location_system.py::TestResolveLocation
+
+# C-13 社交网络（schema、衰减、Dunbar）
+tests/test_social_network_schema.py
+tests/test_dunbar_decay.py
+
+# C-14 生命事件调度
+tests/test_life_events.py
+
+# C-15 运行时干预与动作校验门
+tests/test_interventions.py
+tests/test_action_gate.py
+
+# C-16 长时段快进与大跨度（月 / 年）
+tests/test_fast_forward.py
+tests/test_long_horizon.py::TestHorizonPlanning
+tests/test_long_horizon.py::TestPeriodDigest
+
+# C-17 大五人格：缺省中性、可复现
+tests/test_personality_big_five.py::TestNeutralFallback
+tests/test_personality_big_five.py::TestDeterminism
+
+# C-18 运行清单与报告
+tests/test_gaworld_run_manifest.py
+
+# C-19 城市 bundle 与路径隔离
+tests/test_city_bundle.py
+
+# C-20 群体采访核心引擎
+tests/test_interview_group_core.py
+
+# C-21 人口合成：结构正确、可复现
+tests/test_population.py::ReproducibilityTests
+tests/test_population.py::StructuralValidityTests
+
+# C-22 平行世界实验规格
+tests/test_parallel_worlds.py::SpecTests
+
+# C-23 Dashboard 访问控制与 API 契约
+tests/test_dashboard_auth.py
+tests/test_accounts.py
+tests/test_worlds.py
+tests/test_ownership.py
+tests/test_multiplayer.py
+tests/test_teacher_console.py
+tests/test_openapi.py
