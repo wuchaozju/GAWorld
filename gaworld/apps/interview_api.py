@@ -26,6 +26,7 @@ import traceback
 import uuid
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.interview")
@@ -58,6 +59,7 @@ def _new_job(kind: str) -> str:
             "message": "启动中…",
             "started_at": time.time(),
             "finished_at": None,
+            **ownership.stamp(),
             "result": None,
             "error": None,
         }
@@ -100,13 +102,13 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
 
-    threading.Thread(target=runner, name=f"interview-{job_id}", daemon=True).start()
+    ownership.spawn(runner, name=f"interview-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        if not record:
+        if not record or not ownership.visible(record):
             return None
         # Matches population_api: NaN/Infinity would make JSON.parse throw
         # away the whole response rather than just the offending key.
@@ -177,13 +179,19 @@ def roster(query: dict[str, Any] | None = None) -> dict[str, Any]:
 def sessions() -> dict[str, Any]:
     from gaworld.interview import store
 
-    return {"sessions": store.list_sessions()}
+    return {"sessions": ownership.owned(store.list_sessions())}
+
+
+def _session(session_id: str) -> dict[str, Any] | None:
+    """The session, or None when it does not exist or is someone else's."""
+    from gaworld.interview import store
+
+    session = store.load_session(session_id)
+    return session if ownership.visible(session) else None
 
 
 def session_detail(session_id: str) -> dict[str, Any] | None:
-    from gaworld.interview import store
-
-    return store.load_session(session_id)
+    return _session(session_id)
 
 
 def export_markdown(session_id: str) -> dict[str, Any]:
@@ -195,7 +203,7 @@ def export_markdown(session_id: str) -> dict[str, Any]:
     """
     from gaworld.interview import store
 
-    session = store.load_session(session_id)
+    session = _session(session_id)
     if session is None:
         raise ValueError(f"找不到会话 {session_id}")
     markdown = store.load_report(session_id)
@@ -226,12 +234,16 @@ def plan(payload: dict[str, Any]) -> dict[str, Any]:
 
 def start_round(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate, then run one round in the background."""
+    from gaworld.interview import store
     from gaworld.interview.session import plan_round, run_round
 
     payload = payload if isinstance(payload, dict) else {}
     # Validate before returning a job id: a rejected question set should come
     # back as a 400 the user can fix, not as a job that fails a second later
     # in a log they never read.
+    follow_up = str(payload.get("session_id") or "").strip()
+    if follow_up and _session(follow_up) is None:
+        raise ValueError(f"找不到会话 {follow_up}")
     preview = plan_round(payload)
 
     job_id = _new_job("round")
@@ -241,6 +253,9 @@ def start_round(payload: dict[str, Any]) -> dict[str, Any]:
             raise RuntimeError("已有一次群体采访正在进行，请等它结束再开始下一次。")
         try:
             session = run_round(payload, report=lambda fraction, message: report(fraction, message))
+            if not follow_up and ownership.stamp():
+                session.update(ownership.stamp())
+                store.save_session(session)
         finally:
             _RUN_LOCK.release()
         return {
@@ -259,6 +274,8 @@ def delete(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.interview import store
 
     session_id = str((payload or {}).get("session_id") or "").strip()
+    if _session(session_id) is None:
+        return {"deleted": False, "session_id": session_id}
     removed = store.delete_session(session_id)
     return {"deleted": removed, "session_id": session_id}
 

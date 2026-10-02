@@ -34,6 +34,7 @@ import traceback
 import uuid
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.research")
@@ -67,6 +68,7 @@ def _new_job(kind: str) -> str:
             "finished_at": None,
             "result": None,
             "error": None,
+            **ownership.stamp(),
         }
         finished = [
             (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
@@ -107,13 +109,13 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
 
-    threading.Thread(target=runner, name=f"research-{job_id}", daemon=True).start()
+    ownership.spawn(runner, name=f"research-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        if not record:
+        if not record or not ownership.visible(record):
             return None
         return json.loads(json.dumps(record, ensure_ascii=False), parse_constant=lambda _: None)
 
@@ -150,8 +152,9 @@ def context() -> dict[str, Any]:
         "providers": _providers(),
         "catalogue": {"path": workbench.CATALOGUE_PATH, "chars": len(catalogue), "available": bool(catalogue)},
         "limits": {"material_chars": workbench.MAX_MATERIAL_CHARS, "call_budget": DEFAULT_CALL_BUDGET},
-        "plans": workbench.list_plans(),
-        "studies": study_mod.list_studies(),
+        "plans": ownership.owned(workbench.list_plans()),
+        # Only admins start studies, so only they see them.
+        "studies": study_mod.list_studies() if ownership.sees_unowned() else [],
         "measures": len(measures.registry()),
     }
 
@@ -159,13 +162,15 @@ def context() -> dict[str, Any]:
 def plans() -> dict[str, Any]:
     from gaworld.research import workbench
 
-    return {"plans": workbench.list_plans()}
+    return {"plans": ownership.owned(workbench.list_plans())}
 
 
 def plan_detail(plan_id: str) -> dict[str, Any] | None:
+    """The plan, or None when it does not exist or is someone else's."""
     from gaworld.research import workbench
 
-    return workbench.load_plan(plan_id)
+    plan = workbench.load_plan(plan_id)
+    return plan if ownership.visible(plan) else None
 
 
 def export_markdown(plan_id: str) -> dict[str, Any]:
@@ -176,7 +181,7 @@ def export_markdown(plan_id: str) -> dict[str, Any]:
     """
     from gaworld.research import workbench
 
-    plan = workbench.load_plan(plan_id)
+    plan = plan_detail(plan_id)
     if plan is None:
         raise ValueError(f"找不到方案 {plan_id}")
     markdown = str(plan.get("markdown") or "")
@@ -225,7 +230,7 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
 
         plan = workbench.analyze(request, llm_fn=llm_fn, provider=routed)
         report(0.9, "正在保存方案…")
-        workbench.save_plan(plan)
+        workbench.save_plan(plan, ownership.stamp())
         return {"plan_id": plan.id, "title": plan.title, "feasibility": plan.feasibility}
 
     _run_in_background(job_id, work)
@@ -309,6 +314,8 @@ def delete(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.research import workbench
 
     plan_id = str((payload or {}).get("plan_id") or "").strip()
+    if plan_detail(plan_id) is None:
+        return {"deleted": False, "plan_id": plan_id}
     removed = workbench.delete_plan(plan_id)
     return {"deleted": removed, "plan_id": plan_id}
 
@@ -783,9 +790,11 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
                 return {"error": "Unknown plan"}, 404
             return detail, 200
         if path == "/api/research/studies":
-            return studies(), 200
+            return (studies() if ownership.sees_unowned() else {"studies": []}), 200
         if path.startswith("/api/research/studies/"):
             study_id, action = _study_route(path)
+            if not ownership.sees_unowned():
+                raise StudyNotFound(study_id)  # only admins start studies, so only they read them
             if action == "report":
                 return export_study_report(study_id), 200
             if not action:

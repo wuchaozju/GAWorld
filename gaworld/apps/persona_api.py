@@ -28,6 +28,7 @@ import traceback
 import uuid
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.persona")
@@ -58,6 +59,7 @@ def _new_job(kind: str) -> str:
             "progress": 0.0,
             "message": "启动中…",
             "started_at": time.time(),
+            **ownership.stamp(),
             "finished_at": None,
             "result": None,
             "error": None,
@@ -101,13 +103,13 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
 
-    threading.Thread(target=runner, name=f"persona-{job_id}", daemon=True).start()
+    ownership.spawn(runner, name=f"persona-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        if not record:
+        if not record or not ownership.visible(record):
             return None
         # Matches interview_api: NaN/Infinity would make JSON.parse throw away
         # the whole response rather than just the offending key.
@@ -172,8 +174,40 @@ def _distill_now(subject: str, provider: str | None, progress: Any) -> dict[str,
             llm_fn=_llm_fn(provider),
             progress=lambda f, m: progress(0.5 + 0.45 * f, m),
         )
+        # The directory is named after the person, so a second student
+        # distilling the same name would overwrite the first one's portrait.
+        if store_mod.persona_dir(profile.slug).is_dir() and not _mine(profile.slug):
+            raise ValueError(f"已有别人蒸馏的同名画像「{profile.slug}」，换个写法（如加上网址）再试")
         store_mod.save(profile, dossier)
+        _write_owner(profile.slug)
     return {"persona": profile.to_dict(), "slug": profile.slug}
+
+
+#: Who distilled a portrait, kept beside it so persona.json stays the format
+#: the deploy and skill paths already read.
+OWNER_FILE = "owner.json"
+
+
+def _owner(slug: str) -> dict[str, Any]:
+    from gaworld.persona import store as store_mod
+
+    try:
+        payload = json.loads((store_mod.persona_dir(slug) / OWNER_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_owner(slug: str) -> None:
+    from gaworld.persona import store as store_mod
+
+    stamp = ownership.stamp()
+    if stamp:
+        (store_mod.persona_dir(slug) / OWNER_FILE).write_text(json.dumps(stamp, ensure_ascii=False), encoding="utf-8")
+
+
+def _mine(slug: str) -> bool:
+    return ownership.visible(_owner(slug))
 
 
 def start_distill(payload: dict[str, Any]) -> dict[str, Any]:
@@ -194,14 +228,14 @@ def start_distill(payload: dict[str, Any]) -> dict[str, Any]:
 def personas() -> dict[str, Any]:
     from gaworld.persona import store as store_mod
 
-    return {"personas": store_mod.list_personas()}
+    return {"personas": [row for row in store_mod.list_personas() if _mine(row["slug"])]}
 
 
 def detail(slug: str) -> dict[str, Any] | None:
     from gaworld.persona import store as store_mod
 
     profile = store_mod.load(slug)
-    if profile is None:
+    if profile is None or not _mine(slug):
         return None
     from gaworld.persona.render import profile_block, skill_markdown
 
@@ -311,6 +345,8 @@ def delete(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.persona import store as store_mod
 
     slug = str((payload or {}).get("slug") or "").strip()
+    if not _mine(slug):
+        return {"deleted": False, "slug": slug}
     return {"deleted": store_mod.delete(slug), "slug": slug}
 
 

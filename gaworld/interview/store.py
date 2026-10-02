@@ -133,6 +133,7 @@ def list_sessions(limit: int = 50) -> list[dict[str, Any]]:
                 "questions": len(questions),
                 "rounds": max((int(q.get("round") or 1) for q in questions), default=1),
                 "cities": session.get("cities") or [],
+                "owner_id": session.get("owner_id"),
             }
         )
     rows.sort(key=lambda row: row.get("updated_at") or 0, reverse=True)

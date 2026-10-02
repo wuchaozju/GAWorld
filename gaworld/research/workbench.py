@@ -732,11 +732,13 @@ def plan_path(plan_id: str) -> Path:
     return plans_root() / f"{plan_id}.json"
 
 
-def save_plan(plan: ResearchPlan) -> Path:
+def save_plan(plan: ResearchPlan, extra: dict[str, Any] | None = None) -> Path:
+    """Write the plan; *extra* fields (e.g. its owner) are stored alongside."""
     path = plan_path(plan.id)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = plan.to_dict()
     payload["markdown"] = render_markdown(plan)
+    payload.update(extra or {})
     temp = path.with_name(path.name + ".tmp")
     temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     temp.replace(path)
@@ -779,6 +781,7 @@ def list_plans() -> list[dict[str, Any]]:
                 "score": (data.get("feasibility") or {}).get("score"),
                 "steps": len(data.get("steps") or []),
                 "designs": len(data.get("designs") or []) or (1 if data.get("design") else 0),
+                "owner_id": data.get("owner_id"),
             }
         )
     out.sort(key=lambda item: item["created_at"], reverse=True)

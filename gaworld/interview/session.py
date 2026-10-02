@@ -74,6 +74,10 @@ def _child_env(slug: str) -> dict[str, str]:
         existing = {}
     existing["city"] = slug
     env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(existing, ensure_ascii=False)
+    # The child's model calls count against whoever started the interview.
+    from gaworld.accounts import usage
+
+    usage.child_env(env)
     return env
 
 

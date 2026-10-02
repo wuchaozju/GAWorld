@@ -1007,17 +1007,24 @@ def call_llm(
     document has to say so, or the provider truncates it mid-JSON and every
     parser downstream sees malformed input rather than a budget problem.
     """
-    return LLM_ROUTER.call(
-        prompt,
-        task=task,
-        agent_id=agent_id,
-        provider=provider,
-        system=system,
-        temperature=temperature,
-        allow_fallback=allow_fallback,
-        images=images,
-        max_tokens=max_tokens,
-    )
+    try:
+        return LLM_ROUTER.call(
+            prompt,
+            task=task,
+            agent_id=agent_id,
+            provider=provider,
+            system=system,
+            temperature=temperature,
+            allow_fallback=allow_fallback,
+            images=images,
+            max_tokens=max_tokens,
+        )
+    finally:
+        # A shared deployment's per-user quota (gaworld.accounts.usage);
+        # writes nothing when accounts are off.
+        from gaworld.accounts import usage
+
+        usage.record(task)
 
 
 # ---------------------------------------------------------------------

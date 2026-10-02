@@ -46,6 +46,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.games_api")
@@ -309,6 +310,8 @@ class PersuasionSession:
     reason: str = ""
     created_at: float = field(default_factory=time.time)
     finished_at: float | None = None
+    #: Who started it (accounts mode); other players cannot read or continue it.
+    owner_id: int | None = field(default_factory=lambda: ownership.stamp().get("owner_id"))
 
     @property
     def agent_id(self) -> int:
@@ -360,7 +363,7 @@ def _store(session: PersuasionSession) -> None:
 def _require(session_id: str) -> PersuasionSession:
     with _SESSIONS_LOCK:
         session = _SESSIONS.get(str(session_id))
-    if session is None:
+    if session is None or not ownership.visible({"owner_id": session.owner_id}):
         raise KeyError(session_id)
     return session
 
@@ -375,7 +378,7 @@ def get_session(session_id: str) -> dict[str, Any] | None:
 def list_sessions() -> list[dict[str, Any]]:
     """Open games first, newest first inside each group."""
     with _SESSIONS_LOCK:
-        sessions = list(_SESSIONS.values())
+        sessions = [s for s in _SESSIONS.values() if ownership.visible({"owner_id": s.owner_id})]
     sessions.sort(key=lambda s: (s.settled, -s.created_at))
     return [
         {

@@ -38,6 +38,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.city.bundle import resolve_city
 from gaworld.logging_setup import get_logger
 
@@ -65,6 +66,7 @@ def _new_job(kind: str) -> str:
             "finished_at": None,
             "result": None,
             "error": None,
+            **ownership.stamp(),
         }
         finished = [
             (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
@@ -97,14 +99,13 @@ def _run_in_background(job_id: str, work: Callable[..., Any]) -> None:
             )
             _LOG.exception("arena job %s failed", job_id)
 
-    thread = threading.Thread(target=runner, name=f"arena-{job_id}", daemon=True)
-    thread.start()
+    ownership.spawn(runner, name=f"arena-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        return dict(record) if record is not None else None
+        return dict(record) if record is not None and ownership.visible(record) else None
 
 
 # ---------------------------------------------------------------------------
@@ -564,7 +565,7 @@ def run_round(
 # ---------------------------------------------------------------------------
 
 
-#: In-memory store of elimination flags keyed by (city_slug, agent_id).
+#: In-memory store of elimination flags keyed by (ledger key, agent_id).
 #: Persistent storage is intentionally avoided so an arena session never
 #: mutates the long-lived city bundle; the front-end can still show the
 #: survivors/eliminated lists until the next reload.
@@ -572,21 +573,29 @@ _ELIMINATED: dict[tuple[str, int], float] = {}
 _ELIM_LOCK = threading.Lock()
 
 
+def _ledger_key(city_ref: str) -> str:
+    """The city's slug, per user once accounts are on: one student's
+    eliminations must not empty another student's pool."""
+    slug = _city_slug(city_ref)
+    owner = ownership.stamp()
+    return f"{owner['owner_id']}/{slug}" if owner else slug
+
+
 def mark_eliminated(city_ref: str, agent_ids: Iterable[int]) -> list[int]:
-    city_slug = _city_slug(city_ref)
+    key = _ledger_key(city_ref)
     with _ELIM_LOCK:
         for agent_id in agent_ids:
-            _ELIMINATED[(city_slug, int(agent_id))] = time.time()
+            _ELIMINATED[(key, int(agent_id))] = time.time()
     return sorted({int(i) for i in agent_ids})
 
 
 def is_eliminated(city_ref: str, agent_id: int) -> bool:
-    return (_city_slug(city_ref), int(agent_id)) in _ELIMINATED
+    return (_ledger_key(city_ref), int(agent_id)) in _ELIMINATED
 
 
 def eliminated_for(city_ref: str) -> list[int]:
-    slug = _city_slug(city_ref)
-    return sorted(aid for (c, aid) in _ELIMINATED if c == slug)
+    key = _ledger_key(city_ref)
+    return sorted(aid for (c, aid) in _ELIMINATED if c == key)
 
 
 def reset_eliminated(city_ref: str | None = None) -> None:
@@ -600,15 +609,15 @@ def reset_eliminated(city_ref: str | None = None) -> None:
         if city_ref is None:
             _ELIMINATED.clear()
         else:
-            slug = _city_slug(city_ref)
+            ledger = _ledger_key(city_ref)
             for key in list(_ELIMINATED.keys()):
-                if key[0] == slug:
+                if key[0] == ledger:
                     _ELIMINATED.pop(key, None)
 
 
 def survivors_for(city_ref: str, agent_ids: Iterable[int]) -> list[int]:
-    slug = _city_slug(city_ref)
-    return sorted(int(i) for i in agent_ids if (slug, int(i)) not in _ELIMINATED)
+    key = _ledger_key(city_ref)
+    return sorted(int(i) for i in agent_ids if (key, int(i)) not in _ELIMINATED)
 
 
 def _city_slug(city_ref: str) -> str:
