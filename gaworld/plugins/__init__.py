@@ -23,18 +23,19 @@ def builtin_plugins():
     from gaworld.infosources.plugin import InfoSourcesPlugin
     from gaworld.interests_plugin import InterestsPlugin
     from gaworld.moltbook.plugin import MoltbookPlugin
+    from gaworld.multiplayer.plugin import MultiplayerPlugin
     from gaworld.personality.plugin import BigFivePlugin
     from gaworld.policy.plugin import InterventionPlugin
     from gaworld.skills.plugin import SkillsPlugin
     from gaworld.travel.plugin import TravelPlugin
     from gaworld.work.plugin import RealWorkPlugin
+    from gaworld.world.home_plugin import HomeEnvironmentPlugin
     from gaworld.world.plugin import (
-        VehicleOwnershipPlugin,
         LocalPhysicalPlugin,
         SpatialPreferencesPlugin,
         TrafficPlugin,
+        VehicleOwnershipPlugin,
     )
-    from gaworld.world.home_plugin import HomeEnvironmentPlugin
 
     return [
         # First: personality is a read-only prerequisite layer. Seeding it
@@ -71,6 +72,9 @@ def builtin_plugins():
         # snapshot when both fire.
         HomeEnvironmentPlugin(),
         CollaborationPlugin(),
+        # After every other filter of `action.selected`, so a person playing a
+        # resident has the last word on what that resident does.
+        MultiplayerPlugin(),
         # Last: it only observes (post_step buffer, day-end post) and must see
         # the step after every filter above has had its say.
         MoltbookPlugin(),
