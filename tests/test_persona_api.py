@@ -17,12 +17,11 @@ import shutil
 import tempfile
 import unittest
 
-import gaworld.apps.dashboard_server as ds
-from gaworld.apps import persona_api
+from gaworld.apps import persona_api, residents, world_paths
 from gaworld.persona import store as store_mod
 from gaworld.persona.distill import PersonaProfile
 
-REPO_ROOT = ds.REPO_ROOT
+REPO_ROOT = world_paths.REPO_ROOT
 REAL_CSV = os.path.join(REPO_ROOT, "data", "hangzhou_agents_state_init.csv")
 REAL_MD = os.path.join(REPO_ROOT, "data", "hangzhou_profiles_with_names.md")
 REAL_BIG5 = os.path.join(REPO_ROOT, "data", "agents_big5.csv")
@@ -58,19 +57,19 @@ PERSONA = {
 class PersonaApiCase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
-        self._paths = (ds.STATE_CSV_PATH, ds.PROFILE_PATH, ds.BIG5_CSV_PATH)
-        ds.STATE_CSV_PATH = os.path.join(self.tmp, "state.csv")
-        ds.PROFILE_PATH = os.path.join(self.tmp, "profiles.md")
-        ds.BIG5_CSV_PATH = os.path.join(self.tmp, "big5.csv")
-        shutil.copy(REAL_CSV, ds.STATE_CSV_PATH)
-        shutil.copy(REAL_MD, ds.PROFILE_PATH)
-        shutil.copy(REAL_BIG5, ds.BIG5_CSV_PATH)
+        self._paths = (world_paths.STATE_CSV_PATH, world_paths.PROFILE_PATH, world_paths.BIG5_CSV_PATH)
+        world_paths.STATE_CSV_PATH = os.path.join(self.tmp, "state.csv")
+        world_paths.PROFILE_PATH = os.path.join(self.tmp, "profiles.md")
+        world_paths.BIG5_CSV_PATH = os.path.join(self.tmp, "big5.csv")
+        shutil.copy(REAL_CSV, world_paths.STATE_CSV_PATH)
+        shutil.copy(REAL_MD, world_paths.PROFILE_PATH)
+        shutil.copy(REAL_BIG5, world_paths.BIG5_CSV_PATH)
         self._persona_dir = os.environ.get("GAWORLD_PERSONA_DIR")
         os.environ["GAWORLD_PERSONA_DIR"] = os.path.join(self.tmp, "personas")
         store_mod.save(PersonaProfile.from_dict(PERSONA))
 
     def tearDown(self):
-        ds.STATE_CSV_PATH, ds.PROFILE_PATH, ds.BIG5_CSV_PATH = self._paths
+        world_paths.STATE_CSV_PATH, world_paths.PROFILE_PATH, world_paths.BIG5_CSV_PATH = self._paths
         if self._persona_dir is None:
             os.environ.pop("GAWORLD_PERSONA_DIR", None)
         else:
@@ -117,7 +116,7 @@ class TestDeploy(PersonaApiCase):
         self.assertEqual(200, status)
         agent_id = result["agent_id"]
 
-        state = ds._agent_state(agent_id)
+        state = residents.agent_state(agent_id)
         self.assertEqual("李某", state["name"])
         self.assertEqual(47, state["age"])
         self.assertAlmostEqual(0.6, state["state"]["emotion"], places=2)
@@ -125,7 +124,7 @@ class TestDeploy(PersonaApiCase):
 
     def test_deploy_appends_the_framework_to_the_profile(self):
         result, _status = persona_api.handle_post("/api/persona/deploy", {"slug": "li-mou"})
-        text = ds._agent_profile(result["agent_id"])["text"]
+        text = residents.agent_profile(result["agent_id"])["text"]
         self.assertIn("经营一家面料出口公司", text)   # the standard block
         self.assertIn("订单即信号", text)             # the distilled framework
         self.assertIn("如果账期超过90天", text)
@@ -138,16 +137,16 @@ class TestDeploy(PersonaApiCase):
     def test_deploy_seeds_the_big_five_row(self):
         result, _status = persona_api.handle_post("/api/persona/deploy", {"slug": "li-mou"})
         self.assertTrue(result["big5_written"])
-        payload = ds._agent_big5(result["agent_id"])
+        payload = residents.agent_big5(result["agent_id"])
         self.assertAlmostEqual(1.2, payload["values"]["c"], places=2)
         self.assertAlmostEqual(-0.8, payload["values"]["n"], places=2)
 
     def test_deploy_without_a_big_five_file_still_creates_the_resident(self):
-        os.remove(ds.BIG5_CSV_PATH)
+        os.remove(world_paths.BIG5_CSV_PATH)
         result, status = persona_api.handle_post("/api/persona/deploy", {"slug": "li-mou"})
         self.assertEqual(200, status)
         self.assertFalse(result["big5_written"])
-        self.assertIsNotNone(ds._agent_state(result["agent_id"]))
+        self.assertIsNotNone(residents.agent_state(result["agent_id"]))
 
     def test_operator_overrides_win_over_the_distilled_values(self):
         result, _status = persona_api.handle_post(
@@ -155,7 +154,7 @@ class TestDeploy(PersonaApiCase):
             {"slug": "li-mou", "identity": {"name": "李某（化名）", "residence": "杭州"},
              "state": {"stress": 0.1}},
         )
-        state = ds._agent_state(result["agent_id"])
+        state = residents.agent_state(result["agent_id"])
         self.assertEqual("李某（化名）", state["name"])
         self.assertEqual("杭州", state["residence"])
         self.assertAlmostEqual(0.1, state["state"]["stress"], places=2)

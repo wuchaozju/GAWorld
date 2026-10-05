@@ -865,6 +865,7 @@ class LLMRouter:
                     latency_ms=elapsed_ms,
                     ok=True,
                 )
+                GLOBAL_STATS.record_request(ok=True, fell_back=index > 0)
                 log.debug(
                     "llm.call ok id=%s provider=%s fallback_index=%d task=%s agent=%s "
                     "prompt_chars=%d completion_chars=%d latency_ms=%d",
@@ -919,6 +920,7 @@ class LLMRouter:
             task or "",
             agent_id if agent_id is not None else "",
         )
+        GLOBAL_STATS.record_request(ok=False)
         assert last_exc is not None
         raise last_exc
 

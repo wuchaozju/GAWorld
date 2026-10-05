@@ -14,7 +14,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from gaworld.apps import analytics
+from gaworld.apps import analytics, world_paths
 
 ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = ROOT / "site" / "dashboard"
@@ -325,11 +325,11 @@ class AnalyticsRunSelectionTest(unittest.TestCase):
             os.path.join(self.root, "output", "visualization", "runs", "r1", "simulation_trace.json"),
             {"meta": {"finished": True}, "frames": []},
         )
-        self._real_root = ds.REPO_ROOT
-        ds.REPO_ROOT = self.root
+        self._real_root = world_paths.REPO_ROOT
+        world_paths.REPO_ROOT = self.root
 
     def tearDown(self):
-        self.ds.REPO_ROOT = self._real_root
+        world_paths.REPO_ROOT = self._real_root
         self._tmp.cleanup()
 
     def _run(self, kind):

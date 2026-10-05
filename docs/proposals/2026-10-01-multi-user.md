@@ -130,6 +130,8 @@ copy-on-write）+ 全部运行产物。平行世界的 `world_overrides` 没有�
 | 结果 | 位置 | 属主记在 |
 |---|---|---|
 | 灾难 / 谣言 / 公投 / 严肃游戏 / 政策仿真的作业 | 内存 `JobStore` | 作业记录 |
+| 灾难 / 谣言 / 公投的对局存档（2026-10-03） | `output/games/<kind>/` | 存档 JSON 的 `owner_id` / `owner`；没有读取接口，只给 Bench Track B 读 |
+| 谁是真人的房间（2026-10-04） | 内存；揭晓后存档到 `output/games/whois/` | 房间记录（房主）；**座位链接**能让持有者（须是能写 `/api/games/` 的成员）打开并操作那个座位，收轮 / 揭晓只有房主；存档同上，只给 Bench Track D 读 |
 | 采访会话 | `output/interviews/<id>/session.json` | 会话 JSON（续问别人的会话被拒） |
 | 研究方案；研究（study） | `output/research/` | 方案 JSON；研究只有管理员能建，故只给管理员看 |
 | 严肃游戏的设计与对局 | `output/research/serious_games/` | JSON；**席位链接**仍能让持有者打开并操作那个席位 |
@@ -232,7 +234,7 @@ tick 开始时若有在线玩家还没出手，最多等这么久，等待中自
 |---|---|---|
 | P0 安全底座（**已实现**） | 静态文件改为白名单：只放行 `/site/`、`/docs/`、`/video/public/`、`/output/population/`、`/output/**/visualization/**`、文档面板列出的三份根目录文档与页面别名，其余 404（`dashboard_server._static_path_allowed`）。原计划的「`POST /api/config`、`city use` 限 admin」需要身份，移入 P1 | `tests/test_dashboard_auth.py`：源码、`dashboard_config.json`、`/data/...`、`/output/memory/...` 得 404；控制台、回放 trace 仍 200 |
 | P1 账号（**已实现**） | `gaworld/accounts/`（store / policy / CLI）+ `apps/accounts_api.py`（`/api/auth/*`）+ `site/auth/`（`/login` `/join` `/reset`）；控制台右上角显示当前用户与「退出登录」。**P2 之前学生写操作走白名单**（`accounts/policy.py`）：采访、游戏、研究分析、人物蒸馏可用；建城类需 `can_create_city` 且只能改自己建的城、不能 `force` 覆盖；全局配置 / 模型设置 / 启停仿真 / 切换城市 / 编辑居民 / 一切 `delete` 只限 admin；所有 POST 写审计 | `tests/test_accounts.py`（store、policy 表、建城人检查、HTTP 全流程、CLI），已入 core 套件 |
-| P2 世界隔离（**已实现**） | `gaworld/worlds/`（路径、种子复制）+ 账号库 `worlds` / `settings` 表 + `apps/worlds_api.py`（`/api/worlds`：列出 / 新建 / 切换 / 可见性 / 删除 / 运行上限）；`_effective_config` 与路径函数按请求的世界解析；按世界的运行表 + 可配置闸门 + FIFO 队列；控制台顶栏世界切换器与管理对话框；属主在自己的世界里可改配置、启停/定时仿真、编辑居民（档案/状态/目标/记忆/财务/关系）、发干预；大五人格与生命事件仍读全局文件，保持仅管理员 | `tests/test_worlds.py`：路径、策略、配置分层与写入隔离、私有世界对他人不可见（API/静态文件）、闸门 + 排队 + 出队后在正确世界启动、删除、`-m` 入口不分裂状态 |
+| P2 世界隔离（**已实现**） | `gaworld/worlds/`（路径、种子复制）+ 账号库 `worlds` / `settings` 表 + `apps/worlds_api.py`（`/api/worlds`：列出 / 新建 / 切换 / 可见性 / 删除 / 运行上限）；`_effective_config` 与路径函数按请求的世界解析；按世界的运行表 + 可配置闸门 + FIFO 队列；控制台顶栏世界切换器与管理对话框；属主在自己的世界里可改配置、启停/定时仿真、编辑居民（档案/状态/目标/记忆/财务/关系/大五人格——大五人格表随世界复制到 `seed/`）、发干预；生命事件仍读全局文件，保持仅管理员 | `tests/test_worlds.py`：路径、策略、配置分层与写入隔离、私有世界对他人不可见（API/静态文件）、闸门 + 排队 + 出队后在正确世界启动、删除、`-m` 入口不分裂状态 |
 | P3 结果属主与配额（**已实现**） | `accounts/ownership.py`（盖章 / 可见性 / 带上下文的后台线程）接入 4.5 表中全部存储；`accounts/usage.py`（调用日志、按日按人计数、子进程继承）+ `call_llm` 钩子 + 软配额（429）+ `GET /api/auth/usage` | `tests/test_ownership.py`：规则、后台线程继承用户、每个存储的跨用户隔离、席位链接、画像不可覆盖、竞技场分账、用量计数与子进程继承、失败调用也计数、配额只拦模型工作 |
 | P4 开放世界（**已实现**） | `gaworld/multiplayer/`（四个干预 + 感知/动作/等待钩子，内置插件）+ `apps/play_api.py`（`/api/play`：租约认领、行动、说话、在场记录）+ 「多人共玩」页签 + 世界对话框里的等待秒数 | `tests/test_multiplayer.py`：插件规则（意图一次、路上保留、说话一次、租约过期、等待只为未出手的玩家）、HTTP 全流程（私有不可进、一人一位、未运行拒绝、入队内容、在场记录、断线到期），以及**真实主循环**里玩家意图进入感知并成为动作 |
 | P5 教师控制台（**已实现**） | `site/dashboard/admin.html`（仅管理员可见的页签）；补充接口：作废邀请码、名单在线状态、世界的排队与今日调用、代为停止、`POST /api/worlds/broadcast`、`GET /api/worlds/<id>/trail` | `tests/test_teacher_console.py`：作废规则、在线时间、世界列表与停止权限、广播写入各世界（含共享世界）且仅管理员、导出与可见性；浏览器验证全页 |

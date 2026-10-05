@@ -275,6 +275,103 @@ class TestLLMStats(unittest.TestCase):
         self.assertEqual({}, s.snapshot()["by_task"])
 
 
+class TestRunScopedAccounting(unittest.TestCase):
+    """The manifest reports the run's own model calls, judged per request.
+
+    Before this, ``failure_count`` was process-wide: in the test suite every
+    run "inherited" the failures of earlier fallback tests (providers ``a`` /
+    ``b`` / ``r`` showed up in 30-odd manifests under output/), and a failed
+    primary followed by a successful fallback counted as a failure.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def _manifest(self, stats, config=CONFIG):
+        builder = ManifestBuilder(repo_root=".", manifest_dir=self.tmp.name, config=config)
+        builder.bind_llm_stats(stats)
+        return load_manifest(builder.finalise(outcome="ok"))
+
+    def test_calls_before_the_run_are_not_the_runs(self):
+        s = LLMCallStats()
+        for _ in range(8):
+            s.record(task="earlier", provider="a", latency_ms=5, ok=False)
+            s.record_request(ok=False)
+        s.mark_run_start()
+        s.record(task="plan", provider="p1", latency_ms=40, ok=True)
+        s.record_request(ok=True)
+        m = self._manifest(s)
+        self.assertEqual("ok", m["outcome"])
+        self.assertEqual((1, 0, 1, 0), (m["llm"]["call_count"], m["llm"]["failure_count"],
+                                        m["llm"]["requests"], m["llm"]["requests_failed"]))
+        self.assertEqual({"p1"}, set(m["llm"]["by_provider"]))
+        self.assertEqual(9, m["llm"]["process_call_count"])
+
+    def test_a_rescued_request_is_not_a_lost_one(self):
+        s = LLMCallStats()
+        s.record(task="plan", provider="primary", latency_ms=5, ok=False)
+        s.record(task="plan", provider="backup", latency_ms=5, ok=True)
+        s.record_request(ok=True, fell_back=True)
+        m = self._manifest(s)
+        self.assertEqual("ok", m["outcome"])
+        self.assertEqual(1, m["llm"]["failure_count"])          # the attempt
+        self.assertEqual(0, m["llm"]["requests_failed"])        # the answer
+        self.assertTrue(any("fallback provider" in n for n in m["notes"]))
+
+    def test_lost_requests_above_the_threshold_degrade_the_run(self):
+        s = LLMCallStats()
+        for i in range(20):
+            s.record_request(ok=i >= 2)                         # 2/20 = 10% lost
+        m = self._manifest(s)
+        self.assertEqual("degraded", m["outcome"])
+        self.assertTrue(any("2/20" in n for n in m["notes"]))
+        lenient = {**CONFIG, "run_manifest": {"degraded_failure_share": 0.2}}
+        self.assertEqual("ok", self._manifest(s, lenient)["outcome"])
+        self.assertIn("degraded", render_report(self._manifest(s)))
+
+    def test_a_partial_manifest_is_never_judged(self):
+        s = LLMCallStats()
+        s.record_request(ok=False)
+        b = ManifestBuilder(repo_root=".", manifest_dir=self.tmp.name, config=CONFIG)
+        b.bind_llm_stats(s)
+        self.assertEqual("in_progress", b.build(outcome="in_progress")["outcome"])
+
+    def test_seed_source_is_recorded(self):
+        b = ManifestBuilder(repo_root=".", manifest_dir=self.tmp.name, config=CONFIG,
+                            seed_source="auto")
+        self.assertEqual(("auto", 42), (b.build()["run"]["seed_source"], b.build()["run"]["random_seed"]))
+
+    def test_the_router_counts_requests_and_fallbacks(self):
+        from unittest import mock
+
+        from gaworld.llm import providers
+
+        class Stub:
+            def __init__(self, fail):
+                self.fail = fail
+
+            def call(self, prompt):
+                if self.fail:
+                    raise RuntimeError("down")
+                return "fine"
+
+        router = object.__new__(providers.LLMRouter)
+        router.providers = {"x": Stub(True), "y": Stub(False), "z": Stub(True)}
+        router.routing = {"default": "x", "fallback": ["y"]}
+        router.config = {}
+        stats = LLMCallStats()
+        with mock.patch.object(providers, "GLOBAL_STATS", stats):
+            self.assertEqual("fine", router.call("hi"))
+            self.assertEqual("fine", router.call("hi", provider="y"))
+            with self.assertRaises(RuntimeError):
+                router.call("hi", provider="z", allow_fallback=False)
+        snap = stats.snapshot()
+        self.assertEqual((4, 2), (snap["call_count"], snap["failure_count"]))
+        self.assertEqual((3, 1, 1), (snap["requests"], snap["requests_failed"],
+                                     snap["requests_fell_back"]))
+
+
 class TestBuilderNeverCrashes(unittest.TestCase):
     def test_builder_accepts_non_mapping_config(self):
         # start_manifest coerces cfg to a dict; make sure ManifestBuilder

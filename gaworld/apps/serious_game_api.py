@@ -366,7 +366,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return {"error": "Unknown game or session"}, 404
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown serious-game endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -394,7 +394,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": "Unknown game or session"}, 404
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown serious-game endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

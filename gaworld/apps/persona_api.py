@@ -29,6 +29,7 @@ import uuid
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.apps import residents, world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.persona")
@@ -261,24 +262,24 @@ def _seed_big5(agent_id: int, name: str, values: dict[str, float]) -> bool:
     than raising) when the file is absent: the Big Five plugin is optional, and
     a missing personality seed must not cost the operator the whole deployment.
     """
-    from gaworld.apps import dashboard_server as ds
 
-    fieldnames, rows = ds._read_big5_rows()
+    fieldnames, rows = residents.read_big5_rows()
     if not fieldnames:
         return False
     row = dict.fromkeys(fieldnames, "")
     row.update({"id": agent_id, "name": name, "source": "persona_distilled"})
-    for dim in ds.BIG5_DIMENSIONS:
+    for dim in residents.BIG5_DIMENSIONS:
         if dim in fieldnames:
             row[dim] = f"{float(values.get(dim, 0.0)):.4f}"
-    rows = [r for r in rows if ds._row_id(r) != int(agent_id)] + [row]
-    tmp_path = ds.BIG5_CSV_PATH + ".tmp"
+    rows = [r for r in rows if residents.row_id(r) != int(agent_id)] + [row]
+    path = world_paths.big5_csv_path()
+    tmp_path = path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for item in rows:
             writer.writerow({key: item.get(key, "") for key in fieldnames})
-    os.replace(tmp_path, ds.BIG5_CSV_PATH)
+    os.replace(tmp_path, path)
     return True
 
 
@@ -290,7 +291,6 @@ def deploy(payload: dict[str, Any]) -> dict[str, Any]:
     later reader can still see what the sources supported versus what a human
     decided.
     """
-    from gaworld.apps import dashboard_server as ds
     from gaworld.persona import store as store_mod
     from gaworld.persona.distill import clamp_state
     from gaworld.persona.render import agent_payload, insert_block, profile_block
@@ -310,13 +310,13 @@ def deploy(payload: dict[str, Any]) -> dict[str, Any]:
     if (payload or {}).get("state"):
         body["state"] = clamp_state(payload["state"])
 
-    created = ds._create_agent(body)
+    created = residents.create_agent(body)
     agent_id = created["id"]
 
     block = profile_block(profile)
     if block:
-        section = ds._agent_profile(agent_id) or {}
-        ds._save_agent_profile(agent_id, insert_block(section.get("text") or "", block))
+        section = residents.agent_profile(agent_id) or {}
+        residents.save_agent_profile(agent_id, insert_block(section.get("text") or "", block))
 
     big5_written = _seed_big5(agent_id, body["name"], profile.big5)
 
@@ -371,7 +371,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
             return found, 200
     except (FileNotFoundError, ValueError) as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown persona endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -387,7 +387,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return delete(payload), 200
     except (FileNotFoundError, ValueError) as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown persona endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

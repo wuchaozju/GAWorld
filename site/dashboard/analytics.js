@@ -11,7 +11,7 @@
   "use strict";
 
   var PALETTE = [
-    "#0e7a58", "#3c5a68", "#d6a81e", "#c04545", "#7b5ea7",
+    "#0b7a5e", "#3e6474", "#d6a81e", "#c03a45", "#7b5ea7",
     "#17936c", "#b3703a", "#4a7fb5", "#8a9a3f", "#a4478b",
   ];
 
@@ -151,14 +151,14 @@
       var value = lo + ((hi - lo) * i) / 4;
       var gy = y(value).toFixed(1);
       grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy +
-        '" stroke="#e4ece5" stroke-width="1"/>' +
+        '" stroke="var(--line)" stroke-width="1"/>' +
         '<text x="' + (padL - 4) + '" y="' + (Number(gy) + 3).toFixed(1) +
-        '" font-size="8" fill="#8a968f" text-anchor="end">' + esc(compact(value)) + "</text>";
+        '" font-size="8" fill="var(--faint)" text-anchor="end">' + esc(compact(value)) + "</text>";
     }
     // Zero baseline stands out when a series crosses it (deltas, net income).
     if (lo < 0 && hi > 0) {
       grid += '<line x1="' + padL + '" y1="' + y(0).toFixed(1) + '" x2="' + (W - padR) +
-        '" y2="' + y(0).toFixed(1) + '" stroke="#b9c6bc" stroke-width="1" stroke-dasharray="3 3"/>';
+        '" y2="' + y(0).toFixed(1) + '" stroke="var(--line-strong)" stroke-width="1" stroke-dasharray="3 3"/>';
     }
 
     var paths = live.map(function (s, index) {
@@ -180,12 +180,12 @@
         if (idx < 0 || idx >= opts.xLabels.length) return;
         var anchor = position === 0 ? "start" : position === 2 ? "end" : "middle";
         xAxis += '<text x="' + x(idx, opts.xLabels.length).toFixed(1) + '" y="' + (H - 5) +
-          '" font-size="8" fill="#8a968f" text-anchor="' + anchor + '">' +
+          '" font-size="8" fill="var(--faint)" text-anchor="' + anchor + '">' +
           esc(opts.xLabels[idx]) + "</text>";
       });
     } else {
       xAxis = '<text x="' + (W - padR) + '" y="' + (H - 5) +
-        '" font-size="8" fill="#8a968f" text-anchor="end">' +
+        '" font-size="8" fill="var(--faint)" text-anchor="end">' +
         esc(__f("an.axis_steps", { count: maxLen })) + "</text>";
     }
 
@@ -217,20 +217,20 @@
       var width = (Math.abs(value) / span) * plot;
       var bx = value >= 0 ? zero : zero - width;
       var cy = index * rowH + 4;
-      var fill = item.color || (opts.diverging ? (value >= 0 ? "#0e7a58" : "#c04545") : color(index));
+      var fill = item.color || (opts.diverging ? (value >= 0 ? "#0b7a5e" : "#c03a45") : color(index));
       return '<text x="' + (padL - 6) + '" y="' + (cy + 11) +
-        '" font-size="9" fill="#3f4d45" text-anchor="end">' + esc(item.label) + "</text>" +
+        '" font-size="9" fill="var(--ink-soft)" text-anchor="end">' + esc(item.label) + "</text>" +
         '<rect x="' + bx.toFixed(1) + '" y="' + cy + '" width="' + Math.max(width, 1).toFixed(1) +
         '" height="12" rx="2" fill="' + fill + '" opacity="0.85"><title>' +
         esc(item.label + "：" + (item.display || num(value, 3))) + "</title></rect>" +
         '<text x="' + (W - 4) + '" y="' + (cy + 11) +
-        '" font-size="8.5" fill="#66746c" text-anchor="end">' +
+        '" font-size="8.5" fill="var(--muted)" text-anchor="end">' +
         esc(item.display || num(value, 3)) + "</text>";
     }).join("");
 
     var axis = opts.diverging
       ? '<line x1="' + zero.toFixed(1) + '" y1="0" x2="' + zero.toFixed(1) + '" y2="' + H +
-        '" stroke="#c4d1c6" stroke-width="1"/>'
+        '" stroke="var(--line-strong)" stroke-width="1"/>'
       : "";
     return '<svg class="an-chart" viewBox="0 0 ' + W + " " + H + '" role="img">' + axis + rows + "</svg>";
   }
@@ -245,14 +245,14 @@
       var pts = axes.map(function (_, i) {
         return point(i, R * f).map(function (v) { return v.toFixed(1); }).join(",");
       }).join(" ");
-      return '<polygon points="' + pts + '" fill="none" stroke="#d8e3da" stroke-width="1"/>';
+      return '<polygon points="' + pts + '" fill="none" stroke="var(--line)" stroke-width="1"/>';
     }).join("");
 
     var labels = axes.map(function (key, i) {
       var p = point(i, R + 16);
       var anchor = Math.abs(p[0] - cx) < 6 ? "middle" : p[0] > cx ? "start" : "end";
       return '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] + 3).toFixed(1) +
-        '" font-size="8" fill="#66746c" text-anchor="' + anchor + '">' +
+        '" font-size="8" fill="var(--muted)" text-anchor="' + anchor + '">' +
         esc(metricLabel(key)) + "</text>";
     }).join("");
 
@@ -283,12 +283,12 @@
 
     var header = cols.map(function (c, i) {
       return '<text x="' + (padL + i * cellW + cellW / 2) + '" y="' + (padT - 8) +
-        '" font-size="8.5" fill="#66746c" text-anchor="middle">' + esc(c) + "</text>";
+        '" font-size="8.5" fill="var(--muted)" text-anchor="middle">' + esc(c) + "</text>";
     }).join("");
 
     var body = rows.map(function (r, ri) {
       var label = '<text x="' + (padL - 8) + '" y="' + (padT + ri * cellH + cellH / 2 + 3) +
-        '" font-size="9" fill="#3f4d45" text-anchor="end">' + esc(labelFor ? labelFor(r) : r) + "</text>";
+        '" font-size="9" fill="var(--ink-soft)" text-anchor="end">' + esc(labelFor ? labelFor(r) : r) + "</text>";
       var cells = cols.map(function (c, ci) {
         var value = lookup(r, c) || 0;
         var alpha = value <= 0 ? 0.04 : 0.12 + 0.78 * (value / max);
@@ -580,13 +580,13 @@
       var r = isAgent ? 9 : 5;
       return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + r +
         '" fill="' + (isAgent ? agentColor(node.agent_id) : "#c8d6cb") +
-        '" stroke="#ffffff" stroke-width="1.5"><title>' +
+        '" stroke="var(--surface)" stroke-width="1.5"><title>' +
         esc(node.label + (node.role ? " · " + node.role : "")) + "</title></circle>" +
         (isAgent
           ? '<text x="' + p.x.toFixed(1) + '" y="' + (p.y - 13).toFixed(1) +
-            '" font-size="9.5" fill="#243029" text-anchor="middle">' + esc(node.label) + "</text>"
+            '" font-size="9.5" fill="var(--ink)" text-anchor="middle">' + esc(node.label) + "</text>"
           : '<text x="' + p.x.toFixed(1) + '" y="' + (p.y + 13).toFixed(1) +
-            '" font-size="7.5" fill="#7e8b84" text-anchor="middle">' + esc(node.label) + "</text>");
+            '" font-size="7.5" fill="var(--muted)" text-anchor="middle">' + esc(node.label) + "</text>");
     }).join("");
 
     $("anSocialGraph").innerHTML =
@@ -687,9 +687,9 @@
 
     var lanes = types.map(function (type) {
       return '<line x1="' + padL + '" y1="' + laneY[type].toFixed(1) + '" x2="' + (W - padR) +
-        '" y2="' + laneY[type].toFixed(1) + '" stroke="#e8efe9" stroke-width="1"/>' +
+        '" y2="' + laneY[type].toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>' +
         '<text x="' + (padL - 4) + '" y="' + (laneY[type] + 3).toFixed(1) +
-        '" font-size="8" fill="#8a968f" text-anchor="end">' + esc(type) + "</text>";
+        '" font-size="8" fill="var(--faint)" text-anchor="end">' + esc(type) + "</text>";
     }).join("");
 
     var dots = data.timeline.map(function (frame) {
@@ -698,15 +698,15 @@
         if (y == null || frame.day == null) return "";
         return '<circle cx="' + xFor(frame.day).toFixed(1) + '" cy="' + y.toFixed(1) +
           '" r="' + (2.5 + 5 * (event.severity || 0)).toFixed(1) + '" fill="' +
-          (EVENT_COLORS[event.type] || "#66746c") + '" fill-opacity="0.65"><title>' +
+          (EVENT_COLORS[event.type] || "var(--muted)") + '" fill-opacity="0.65"><title>' +
           esc("Day " + frame.day + " · " + event.name + __f("an.severity_paren", { value: num(event.severity, 2) })) +
           "</title></circle>";
       }).join("");
     }).join("");
 
-    var axis = '<text x="' + padL + '" y="' + (H - 6) + '" font-size="8" fill="#8a968f">Day ' + minDay +
+    var axis = '<text x="' + padL + '" y="' + (H - 6) + '" font-size="8" fill="var(--faint)">Day ' + minDay +
       '</text><text x="' + (W - padR) + '" y="' + (H - 6) +
-      '" font-size="8" fill="#8a968f" text-anchor="end">Day ' + maxDay + "</text>";
+      '" font-size="8" fill="var(--faint)" text-anchor="end">Day ' + maxDay + "</text>";
 
     $("anEventTimeline").innerHTML =
       '<svg class="an-chart is-wide" viewBox="0 0 ' + W + " " + H + '" role="img">' +
@@ -715,7 +715,7 @@
         return frame.events.map(function (event) {
           return '<div class="an-event"><span class="an-event-day">Day ' + esc(frame.day) +
             '</span><span class="an-event-dot" style="background:' +
-            (EVENT_COLORS[event.type] || "#66746c") + '"></span><span class="an-event-name">' +
+            (EVENT_COLORS[event.type] || "var(--muted)") + '"></span><span class="an-event-name">' +
             esc(event.name) + '</span><span class="an-event-meta">' + esc(event.scope) +
             esc(__f("an.severity_suffix", { value: num(event.severity, 2) })) + "</span></div>";
         }).join("");
@@ -1034,6 +1034,35 @@
     showRunStatus();
     renderRunNote();
   });
+
+  /* Charts are drawn in fixed viewBox units (320 wide) and stretched to their
+     card, so a 650px card doubled every label and a narrow one shrank it. Once
+     they are in the page, counter-scale the text to a steady ~1.3× its drawn size; strokes keep their
+     pixel width through vector-effect in analytics.css. A chart in a hidden
+     section measures 0 and is refitted when a later render or resize runs. */
+  var TEXT_SCALE = 1.3;
+  function fitCharts() {
+    Array.prototype.forEach.call(document.querySelectorAll("svg.an-chart"), function (svg) {
+      var box = svg.viewBox && svg.viewBox.baseVal;
+      var width = svg.getBoundingClientRect().width;
+      if (!box || !box.width || !width) return;
+      // Both ways: a 240px small multiple shrank 8-unit labels to 6px.
+      var factor = Math.max(0.4, Math.min(1.8, TEXT_SCALE / (width / box.width)));
+      Array.prototype.forEach.call(svg.querySelectorAll("text[font-size]"), function (text) {
+        var base = text.getAttribute("data-fs") || text.getAttribute("font-size");
+        text.setAttribute("data-fs", base);
+        text.setAttribute("font-size", (Number(base) * factor).toFixed(2));
+      });
+    });
+  }
+  var fitQueued = false;
+  function queueFit() {
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(function () { fitQueued = false; fitCharts(); });
+  }
+  new MutationObserver(queueFit).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", queueFit);
 
   bindPickers();
   bindExport();

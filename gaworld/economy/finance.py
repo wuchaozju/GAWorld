@@ -22,7 +22,35 @@ import random
 from collections import defaultdict
 from copy import deepcopy
 
+from gaworld.economy.organization_accounts import (
+    atomic_json,
+)
+from gaworld.economy.organization_accounts import (
+    checkpoint_organization_economy as checkpoint_organization_economy,
+)
+from gaworld.economy.organization_accounts import (
+    get_organization_funding_receipt as get_organization_funding_receipt,
+)
+from gaworld.economy.organization_accounts import (
+    get_organization_receipt as get_organization_receipt,
+)
+from gaworld.economy.organization_accounts import (
+    organization_account_balance as organization_account_balance,
+)
+from gaworld.economy.organization_accounts import (
+    organization_fund as organization_fund,
+)
+from gaworld.economy.organization_accounts import (
+    organization_transfer as organization_transfer,
+)
+from gaworld.economy.organization_accounts import (
+    register_organization_account as register_organization_account,
+)
+from gaworld.economy.organization_accounts import (
+    restore_organization_economy as restore_organization_economy,
+)
 from gaworld.personality.traits import trait_modifier
+from gaworld.world.away import is_away
 
 # ---------------------------------------------------------------------------
 # 0. MODULE RNG
@@ -214,15 +242,32 @@ DEFAULT_ECONOMY_CONFIG = {
             "trade":    1.0,
             "default":  1.0,
         },
+        # Endogenous inflation (docs/proposals/2026-10-03-endogenous-inflation.md).
+        # OFF by default. While off, inflation_rate / cumulative_inflation are
+        # display-only — nothing in the ledger reads them.
+        "inflation": {
+            "enabled": False,
+            "driver": "demand",        # "exogenous" | "phillips" | "demand"
+            "anchor": 0.025,           # pi* (annual)
+            "sensitivity": 0.5,        # kappa
+            "baseline_days": 30,       # days averaged into the demand baseline C0
+            "window_days": 30,         # trailing window for current demand C
+            "natural_unemployment": 0.05,
+            "suppress_phase_expense_mult": True,
+            "wage_indexation": 0.5,    # share of last month's price rise passed to wages
+        },
     },
 
     # --- Shock events ---
     "shocks": {
         "enabled": True,
-        # Per-agent daily probability of each shock type
+        # Layoff and raise chances are per resident per MONTH (drawn daily as
+        # 1-(1-p)^(1/30)); each phase's layoff_risk / raise_chance adds to them.
+        # The medical emergency chance is per resident per DAY.
         "layoff_base_prob": 0.001,
         # When a layoff-type policy/environment event is active today, raise each
-        # agent's layoff probability to at least this (event -> economy bridge).
+        # agent's layoff probability that day to at least this (per day, not
+        # per month: event -> economy bridge).
         "event_layoff_prob": 0.6,
         "raise_base_prob": 0.008,
         "medical_emergency_prob": 0.0005,
@@ -735,8 +780,13 @@ def _init_macro_state(cfg):
     }
 
 
-def _advance_macro_cycle(macro_state, cfg):
-    """Advance macro cycle by one day; possibly transition phase."""
+def _advance_macro_cycle(macro_state, cfg, inflation_override=None):
+    """Advance macro cycle by one day; possibly transition phase.
+
+    ``inflation_override`` is today's rate from an endogenous driver. The
+    phase walk still draws its random multipliers (the RNG stream stays the
+    same), but the rate that accrues into the price level is the driver's.
+    """
     if not macro_state.get("enabled", False):
         return
 
@@ -782,6 +832,8 @@ def _advance_macro_cycle(macro_state, cfg):
             macro_state["industry_conditions"][ind] = _clip(
                 macro_state["industry_conditions"][ind] + shift, 0.5, 1.5)
 
+    if inflation_override is not None:
+        macro_state["inflation_rate"] = inflation_override
     # Daily inflation accumulation
     daily_inflation = macro_state["inflation_rate"] / 365.0
     macro_state["cumulative_inflation"] = macro_state.get("cumulative_inflation", 1.0) * (1.0 + daily_inflation)
@@ -800,14 +852,100 @@ def _macro_income_multiplier(macro_state, industry, cfg):
     return base_mult * industry_cond
 
 
+def _inflation_cfg(cfg):
+    """The endogenous-inflation block, or ``None`` when it is switched off."""
+    block = (cfg.get("macro", {}) or {}).get("inflation", {}) or {}
+    return block if bool(block.get("enabled", False)) else None
+
+
 def _macro_expense_multiplier(macro_state, cfg):
-    """Get expense multiplier from inflation and cycle phase."""
+    """Get expense multiplier from the cycle phase — and, with endogenous
+    inflation on, the price level.
+
+    Until 2026-10-03 the price level (``cumulative_inflation``) was accrued
+    every day and never read here, although the docs said it raised spending.
+    It is applied only when ``macro.inflation.enabled``; budgets are then
+    held at base prices (see the month-end re-plan) and multiplied up here.
+    """
     if not macro_state or not macro_state.get("enabled", False):
         return 1.0
     phase = macro_state.get("phase", "expansion")
     phase_effects = cfg.get("macro", {}).get("phase_effects", {})
     effects = phase_effects.get(phase, {})
-    return _to_float(effects.get("expense_mult", 1.0), 1.0)
+    phase_mult = _to_float(effects.get("expense_mult", 1.0), 1.0)
+    infl = _inflation_cfg(cfg)
+    if infl is None:
+        return phase_mult
+    if bool(infl.get("suppress_phase_expense_mult", True)):
+        # The phase multiplier was a stand-in for "the cycle makes things
+        # dearer" — exactly what the price level now does. Counting both
+        # would double it (same call as the congestion layer's rush-hour mult).
+        phase_mult = 1.0
+    return phase_mult * _to_float(macro_state.get("cumulative_inflation", 1.0), 1.0)
+
+
+def _driver_state(macro_state):
+    return macro_state.setdefault("inflation_driver", {
+        "demand_history": [],
+        "baseline": None,
+        "price_at_settlement": _to_float(macro_state.get("cumulative_inflation", 1.0), 1.0),
+    })
+
+
+def _endogenous_inflation(macro_state, infl):
+    """Today's annual inflation rate from the configured driver, or ``None``
+    for the exogenous driver (the phase random walk keeps the rate)."""
+    driver = str(infl.get("driver", "demand")).lower()
+    anchor = _to_float(infl.get("anchor", 0.025), 0.025)
+    kappa = _to_float(infl.get("sensitivity", 0.5), 0.5)
+    if driver == "phillips":
+        u_star = _to_float(infl.get("natural_unemployment", 0.05), 0.05)
+        u = _to_float(macro_state.get("unemployment_rate", u_star), u_star)
+        return _clip(anchor + kappa * (u_star - u), 0.001, 0.15)
+    if driver != "demand":
+        return None
+    state = _driver_state(macro_state)
+    baseline = state.get("baseline")
+    history = state.get("demand_history") or []
+    window = max(1, int(_to_float(infl.get("window_days", 30), 30)))
+    if not baseline or not history:
+        return _clip(anchor, 0.001, 0.15)  # still in the baseline period
+    current = sum(history[-window:]) / len(history[-window:])
+    return _clip(anchor + kappa * (current / baseline - 1.0), 0.001, 0.15)
+
+
+def _record_real_demand(macro_state, agents, days, infl):
+    """Append today's per-capita *real* consumption (housing and medical
+    emergencies excluded).
+
+    Real, not nominal: nominal spending rises with the price level itself, so
+    a nominal measure would feed inflation back into inflation. A medical
+    emergency's out-of-pocket bill is spending nobody chose: counted as
+    demand, one 21k bill in a 3-resident town pinned inflation at the cap for
+    a month. Routine healthcare spending still counts.
+    """
+    price = max(1e-9, _to_float(macro_state.get("cumulative_inflation", 1.0), 1.0))
+    total, people = 0.0, 0
+    for agent in agents or []:
+        econ = agent.get("economy") if isinstance(agent, dict) else None
+        if not isinstance(econ, dict):
+            continue
+        people += 1
+        by_cat = econ.get("daily_expense_by_category") or {}
+        spent = sum(_to_float(v, 0.0) for k, v in by_cat.items() if k != "housing")
+        total += max(0.0, spent - _to_float(econ.get("_daily_emergency_expense", 0.0), 0.0))
+    if not people:
+        return
+    per_day = total / price / people / max(1, days)
+    state = _driver_state(macro_state)
+    history = state.setdefault("demand_history", [])
+    history.extend([round(per_day, 4)] * max(1, days))
+    baseline_days = max(1, int(_to_float(infl.get("baseline_days", 30), 30)))
+    if state.get("baseline") is None and len(history) >= baseline_days:
+        state["baseline"] = round(sum(history[:baseline_days]) / baseline_days, 4) or None
+    keep = max(baseline_days, int(_to_float(infl.get("window_days", 30), 30)))
+    if len(history) > keep:
+        del history[:-keep]
 
 
 # ---------------------------------------------------------------------------
@@ -844,8 +982,33 @@ def _active_event_layoff(context):
     return False
 
 
+#: Days in a month for the shock hazard (rent and budgets also divide by 30).
+_DAYS_PER_MONTH = 30
+
+
+def _monthly_to_daily(p_month):
+    """Per-day chance whose 30 daily draws add up to ``p_month`` over a month.
+
+    ``1 - (1 - p)^(1/30)`` rather than ``p / 30``: a month of daily draws then
+    has exactly the configured monthly chance (``p / 30`` falls short — a 50%
+    monthly chance would come out as 40%). 0 stays 0 and 1 stays 1.
+    """
+    p = _clip(p_month, 0.0, 1.0)
+    if p >= 1.0:
+        return 1.0
+    return 1.0 - (1.0 - p) ** (1.0 / _DAYS_PER_MONTH)
+
+
 def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, sectors=None):
-    """Check and apply daily economic shocks.
+    """Check and apply one day's economic shocks.
+
+    Layoff and raise probabilities (``shocks.layoff_base_prob`` /
+    ``raise_base_prob`` and each phase's ``layoff_risk`` / ``raise_chance``)
+    are *monthly* chances, turned into a per-day draw here. They used to be
+    drawn as daily chances, which made an expansion give about 12 raises and
+    a default year about 4 layoffs per resident, leaving the median wage at
+    the floor after one year. ``medical_emergency_prob`` and
+    ``event_layoff_prob`` stay per day.
 
     `event_layoff=True` forces an elevated layoff probability because a
     layoff-type event is active today (see _active_event_layoff).
@@ -868,7 +1031,7 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
     # Higher econ_security slightly reduces layoff impact
     state = agent.get("state", {}) if isinstance(agent, dict) else {}
     econ_sec = _to_float(state.get("econ_security", 0.5), 0.5)
-    layoff_prob *= (1.2 - 0.4 * econ_sec)
+    layoff_prob = _monthly_to_daily(layoff_prob * (1.2 - 0.4 * econ_sec))
     # Event-driven layoff: a 裁员/layoff event today floors the probability so
     # affected agents actually take an income hit (not just perception text).
     if event_layoff and not econ.get("_layoff_days_remaining", 0):
@@ -891,6 +1054,9 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
                 _to_float(econ.get("gross_monthly_salary", 0), 0)
                 * (new_hourly / old_hourly), 2)
         econ["_layoff_days_remaining"] = _rng.randint(30, 90)
+        # The wage the spell started from (a second layoff inside the spell
+        # keeps the first one's), so recovery has something to return to.
+        econ.setdefault("_pre_layoff_hourly", round(old_hourly, 2))
         events.append({
             "type": "layoff",
             "income_cut_pct": round(income_cut * 100, 1),
@@ -903,7 +1069,7 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
         raise_prob = _to_float(shocks_cfg.get("raise_base_prob", 0.008), 0.008)
         raise_prob += _to_float(phase_effects.get("raise_chance", 0), 0)
         raise_prob *= (0.7 + 0.6 * _to_float(econ.get("income_skill", 0.5), 0.5))
-        if _rng.random() < raise_prob:
+        if _rng.random() < _monthly_to_daily(raise_prob):
             raise_pct = _rng.uniform(0.05, 0.25)
             econ["base_hourly_income"] = _to_float(econ.get("base_hourly_income", 0), 0) * (1.0 + raise_pct)
             econ["gross_monthly_salary"] = _to_float(econ.get("gross_monthly_salary", 0), 0) * (1.0 + raise_pct)
@@ -927,6 +1093,9 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
         econ["daily_expense"] = _to_float(econ.get("daily_expense", 0), 0) + out_of_pocket
         cats = econ.get("daily_expense_by_category", {})
         cats["healthcare"] = _to_float(cats.get("healthcare", 0), 0) + out_of_pocket
+        # Kept apart so the inflation demand measure can leave it out.
+        econ["_daily_emergency_expense"] = round(
+            _to_float(econ.get("_daily_emergency_expense", 0), 0) + out_of_pocket, 2)
         # Hospital (firms) receives patient out-of-pocket + government reimbursement
         _sector_add(sectors, "firms", out_of_pocket + reimbursed)
         _sector_add(sectors, "government", -reimbursed)
@@ -944,12 +1113,32 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
         if remaining - 1 <= 0:
             # Recover: re-seek employment at slightly lower base
             econ.pop("_layoff_days_remaining", None)
-            events.append({"type": "layoff_recovery"})
+            pre_layoff = _to_float(econ.pop("_pre_layoff_hourly", 0.0), 0.0)
+            recovery = {"type": "layoff_recovery"}
+            events.append(recovery)
             rehire = _rehire_after_unemployment(agent, econ, cfg)
             if rehire:
                 events.append(rehire)
+            elif pre_layoff > 0:
+                recovery["to_hourly"] = _restore_after_layoff(econ, pre_layoff)
 
     return events
+
+
+def _restore_after_layoff(econ, pre_layoff_hourly):
+    """End a random layoff's spell: back to 85–100% of the pre-layoff wage.
+
+    The same scar an unemployment event's re-hire leaves. Before this the cut
+    was permanent: only raises could win it back, and the countdown only
+    gated them. Never lowers the wage (indexation may have lifted it).
+    """
+    old_hourly = _to_float(econ.get("base_hourly_income", 0.0), 0.0)
+    new_hourly = round(max(old_hourly, pre_layoff_hourly * _rng.uniform(0.85, 1.0)), 2)
+    econ["base_hourly_income"] = new_hourly
+    if old_hourly > 0:
+        econ["gross_monthly_salary"] = round(
+            _to_float(econ.get("gross_monthly_salary", 0), 0) * (new_hourly / old_hourly), 2)
+    return new_hourly
 
 
 # ---------------------------------------------------------------------------
@@ -1093,6 +1282,7 @@ def apply_employment_event(agent, event, config=None, day=None):
         new_hourly = max(_to_float(cfg.get("min_hourly_income", 8.0), 8.0),
                          old_hourly * rate)
         econ.pop("_layoff_days_remaining", None)
+        econ.pop("_pre_layoff_hourly", None)
         econ.pop("previous_job", None)
         econ["retired"] = True
         record["replacement_rate"] = round(rate, 3)
@@ -1104,12 +1294,24 @@ def apply_employment_event(agent, event, config=None, day=None):
         econ["previous_job"] = old_job
         record["recovery_days"] = econ["_layoff_days_remaining"]
     else:
-        new_hourly = _draw_hourly_for_job(new_job, econ.get("income_skill", 0.5), cfg)
+        if "new_monthly_salary_cents" in event:
+            salary_cents = event["new_monthly_salary_cents"]
+            from gaworld.economy.organization_accounts import cents
+            salary = cents(salary_cents) / 100
+            hours = max(1.0, _to_float(cfg.get("target_work_hours_per_day", 7), 7))
+            work_days = max(1.0, _to_float(cfg.get("work_days_per_month", 22), 22))
+            new_hourly = salary / (hours * work_days)
+        else:
+            new_hourly = _draw_hourly_for_job(new_job, econ.get("income_skill", 0.5), cfg)
         econ.pop("_layoff_days_remaining", None)
+        econ.pop("_pre_layoff_hourly", None)
         econ.pop("previous_job", None)
 
     record["from_hourly"] = round(old_hourly, 2)
     record["to_hourly"] = _apply_new_job_income(agent, econ, new_hourly, cfg)
+    if "new_monthly_salary_cents" in event and not (unemployed or retired):
+        set_contract_salary(agent, event["new_monthly_salary_cents"], config or {})
+        record["to_hourly"] = econ["base_hourly_income"]
     econ.setdefault("shock_log", []).append(record)
     return record
 
@@ -1438,6 +1640,50 @@ def _record_income(econ, amount, sectors=None):
     _sector_add(sectors, "firms", -value)
 
 
+def set_contract_salary(agent, monthly_salary_cents, config=None):
+    """Set the posted contract exactly, without an additional random wage draw."""
+    from gaworld.economy.organization_accounts import cents
+
+    salary = cents(monthly_salary_cents) / 100
+    econ = agent.get("economy")
+    if not isinstance(econ, dict):
+        raise ValueError("contract salary requires an initialized economy")
+    cfg = _get_cfg({"config": config or {}})
+    hours = max(1.0, _to_float(cfg.get("work_hours_per_day", 8), 8))
+    days = max(1.0, _to_float(cfg.get("work_days_per_month", 22), 22))
+    hourly = salary / (hours * days)
+    _apply_new_job_income(agent, econ, hourly, cfg)
+    econ["gross_monthly_salary"] = salary
+    net, tax, si, breakdown, housing = calc_net_monthly_salary(salary, cfg)
+    econ.update(net_monthly_salary=net, monthly_tax=tax, monthly_si_total=si,
+                monthly_si_breakdown=breakdown, monthly_housing_fund=housing)
+    return salary
+
+
+def _organization_payroll(context, agent, amount, category):
+    if not isinstance(context, dict):
+        return None
+    service = context.get("organization_service")
+    if service is None and context.get("sim") is not None:
+        service = context["sim"].plugin_state("organizations").get("service")
+    if service is None:
+        return None
+    return service.pay_wage(agent, amount, context, category)
+
+
+def _record_wage(agent, amount, context, category="wage"):
+    """Route only labor income; merchant and investment flows keep their sources."""
+    paid = _organization_payroll(context, agent, amount, category)
+    if paid is not None:
+        return paid
+    econ = agent["economy"]
+    value = round(max(0.0, _to_float(amount, 0.0)), 2)
+    sectors = _economy_state(context).get("sectors")
+    _record_income(econ, value, sectors)
+    econ["month_gross_income"] = round(_to_float(econ.get("month_gross_income", 0), 0) + value, 2)
+    return value
+
+
 def _record_expense(econ, category, amount, sectors=None):
     """Consumption expense. With `sectors`, revenue accrues to the firms pool."""
     value = round(max(0.0, _to_float(amount, 0.0)), 2)
@@ -1469,6 +1715,52 @@ def charge_external_expense(agent, category, amount, context=None):
     sectors = _economy_state(context).get("sectors") if isinstance(context, dict) else None
     _record_expense(econ, category, value, sectors)
     return value
+
+
+def credit_paid_leave(agent, context=None, *, day, days_per_year=5):
+    """Pay a working day spent away on leave, up to an annual allowance.
+
+    One day's contractual wage — ``gross_monthly_salary / work_days_per_month``,
+    the usual basis for paying leave — booked like any wage (out of the firms
+    pool, into the monthly tax base). Up to ``days_per_year`` days per
+    simulated year (365 days; 5 is the statutory minimum in
+    《职工带薪年休假条例》); after that the day is unpaid leave. Only employed
+    residents have leave to take. The caller decides it is a working day.
+
+    Returns the record appended to ``shock_log`` (``paid_leave`` or
+    ``unpaid_leave``), or ``None`` when nothing applies.
+    """
+    econ = agent.get("economy") if isinstance(agent, dict) else None
+    if not isinstance(econ, dict) or "daily_expense_by_category" not in econ:
+        return None
+    if _employment_status(agent) != EMPLOYED_STATUS:
+        return None
+    year = (max(1, int(day)) - 1) // 365
+    used = econ.get("_paid_leave")
+    if not isinstance(used, dict) or used.get("year") != year:
+        used = {"year": year, "days": 0}
+    allowance = max(0, int(_to_float(days_per_year, 5)))
+    record = {"day": int(day), "allowance": allowance}
+    if used["days"] >= allowance:
+        record.update(type="unpaid_leave", days_used=used["days"])
+    else:
+        cfg = _get_cfg(context) if isinstance(context, dict) else DEFAULT_ECONOMY_CONFIG
+        work_days = max(1.0, _to_float(cfg.get("work_days_per_month", 22), 22))
+        pay = round(max(0.0, _to_float(econ.get("gross_monthly_salary", 0), 0) / work_days), 2)
+        requested = pay
+        if isinstance(context, dict):
+            pay = _record_wage(agent, pay, {**context, "day": int(day)}, "paid_leave")
+        else:
+            _record_income(econ, pay)
+            econ["month_gross_income"] = round(_to_float(econ.get("month_gross_income", 0), 0) + pay, 2)
+        _sync_balance(econ)
+        used["days"] += 1
+        record.update(type="paid_leave", pay=pay, days_used=used["days"])
+        if pay < requested:
+            record["unpaid"] = round(requested - pay, 2)
+    econ["_paid_leave"] = used
+    econ.setdefault("shock_log", []).append(record)
+    return record
 
 
 def _apply_cash_constraint(econ, expense_map, cfg):
@@ -1781,8 +2073,11 @@ def _save_agent_economy(context, agent, cfg):
     if not isinstance(payload, dict):
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+    if context.get("config", {}).get("organizations", {}).get("enabled", False):
+        atomic_json(path, payload)
+    else:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 def _load_agent_economy(context, agent_id, cfg):
@@ -2118,6 +2413,10 @@ def on_simulation_start(context):
     for agent in context.get("agents", []):
         if not isinstance(agent, dict) or "id" not in agent:
             continue
+        # A child or elder promoted from the household (family.members_as_agents)
+        # has no account: the household keeps paying for them as a dependant.
+        if agent.get("family_dependant"):
+            continue
         _init_agent_economy(agent, cfg, context)
         econ = agent.get("economy", {})
         init_assets = econ.get("initial_assets", {}) if isinstance(econ.get("initial_assets"), dict) else {}
@@ -2181,16 +2480,25 @@ def _period_days(context):
         return 1
 
 
-def _accrue_coarse_income(econ, cfg, days, sectors):
+def _accrue_coarse_income(econ, cfg, days, sectors, *, agent=None, context=None):
     """Credit approximate labour income for a step that ran no ticks.
 
     Mirrors the ``income_target_daily`` formula already used at day end, but
     off the macro-adjusted ``hourly_income`` so recessions and layoffs still
     bite. Paid out of the firms pool via :func:`_pay_agent_income`, so money
     is conserved and the wage lands in the monthly tax base. A no-op when
-    ticks did run (``daily_income`` already non-zero).
+    today's wage/leave is already booked. Organization arrears are income on
+    receipt but do not replace the current day's labour obligation.
     """
-    if _to_float(econ.get("daily_income", 0.0), 0.0) > 0:
+    current_income = _to_float(econ.get("daily_income", 0.0), 0.0)
+    if context is not None and (context.get("config", {}).get("organizations") or {}).get("enabled", False):
+        day = int(context.get("day", 0))
+        if econ.get("_organization_current_wage_day") == day:
+            return 0.0
+        arrears = econ.get("_organization_arrears_income", {})
+        if arrears.get("day") == day:
+            current_income = round(current_income - _to_float(arrears.get("amount", 0), 0), 2)
+    if current_income > 0:
         return 0.0
     hourly = _to_float(econ.get("hourly_income", 0.0), 0.0)
     if hourly <= 0:
@@ -2203,8 +2511,23 @@ def _accrue_coarse_income(econ, cfg, days, sectors):
     amount = round(max(0.0, hourly * hours * (0.90 + 0.35 * drive) * work_days), 2)
     if amount <= 0:
         return 0.0
+    if agent is not None and context is not None:
+        return _record_wage(agent, amount, context, "coarse_wage")
     _pay_agent_income(econ, amount, sectors)
     return amount
+
+
+#: Job-text fallback for corpora without an ``employment`` column. The
+#: 51-resident Hangzhou corpus writes 「学生型智能体，…」 / 「退休状态，…」 into the
+#: job line and nothing else, so an exact match on 待业中 / 已退休 counted its
+#: students and retirees as employed. First match wins (「退休状态，主要承担家庭
+#: 照料…」 is retired, not a homemaker).
+_JOB_TEXT_STATUSES = (
+    (("失业", "待业"), UNEMPLOYED_STATUS),
+    (("退休",), "retired"),
+    (("学生",), "student"),
+    (("家庭照料", "无业"), "not_in_labor_force"),
+)
 
 
 def _employment_status(agent):
@@ -2213,11 +2536,21 @@ def _employment_status(agent):
     if status:
         return status
     job = str((agent or {}).get("job", "") or "").strip()
-    if job == UNEMPLOYED_JOB_TEXT:
-        return UNEMPLOYED_STATUS
-    if job == RETIRED_JOB_TEXT:
-        return "retired"
+    for keywords, value in _JOB_TEXT_STATUSES:
+        if any(keyword in job for keyword in keywords):
+            return value
     return EMPLOYED_STATUS
+
+
+def restore_employment_state(agent):
+    """Restore a saved job/status without generating a second employment shock."""
+    econ = agent.get("economy")
+    job = econ.get("job") if isinstance(econ, dict) else None
+    if not isinstance(job, str) or not job.strip():
+        return False
+    agent["job"] = job
+    agent["employment"] = _employment_status({"job": job})
+    return True
 
 
 def labour_force_snapshot(agents):
@@ -2257,6 +2590,22 @@ def labour_force_snapshot(agents):
 # 16. HOOK: on_day_start
 # ---------------------------------------------------------------------------
 
+def refresh_organization_employment_statistics(context):
+    """Refresh workforce after organization decisions, preserving today's manual override."""
+    if not (context.get("config", {}).get("organizations") or {}).get("enabled", False):
+        return
+    runtime = _economy_state(context)
+    cfg = _get_cfg(context)
+    if not runtime.get("enabled", False) or not cfg.get("macro", {}).get("unemployment_from_agents", True):
+        return
+    snapshot = labour_force_snapshot(context.get("agents", []))
+    macro = runtime.get("macro", {})
+    macro["labour_force"] = snapshot
+    override_today = runtime.get("_organization_unemployment_override_day") == int(context["day"])
+    if snapshot["labour_force"] > 0 and not override_today:
+        macro["unemployment_rate"] = snapshot["unemployment_rate"]
+
+
 def on_day_start(context):
     cfg = _get_cfg(context)
     runtime = _economy_state(context)
@@ -2267,8 +2616,10 @@ def on_day_start(context):
     # drift of a month/year step matches a month/year of daily steps.
     days = _period_days(context)
     macro_state = runtime.get("macro", {})
+    infl = _inflation_cfg(cfg)
+    override = _endogenous_inflation(macro_state, infl) if infl else None
     for _ in range(days):
-        _advance_macro_cycle(macro_state, cfg)
+        _advance_macro_cycle(macro_state, cfg, inflation_override=override)
     # The phase walk still runs (leaving the RNG stream untouched); its
     # unemployment guess is then replaced by what the agents actually are.
     if bool(cfg.get("macro", {}).get("unemployment_from_agents", True)):
@@ -2282,13 +2633,19 @@ def on_day_start(context):
     # Dashboard-queued interventions land *after* the cycle advance, so an
     # operator-set inflation/unemployment figure is the one this day actually
     # uses instead of being immediately multiplied away by the phase drift.
-    _consume_interventions(context, runtime, cfg, _to_float(context.get("day", 0), 0))
+    applied = _consume_interventions(context, runtime, cfg, _to_float(context.get("day", 0), 0))
+    if (context.get("config", {}).get("organizations") or {}).get("enabled", False):
+        runtime["_organization_unemployment_override_day"] = (
+            int(context["day"]) if any("unemployment_rate" in item["applied_macro"] for item in applied) else None
+        )
 
     # Is a layoff-type policy event active today? (event -> economy bridge)
     event_layoff = _active_event_layoff(context)
     sectors = runtime.get("sectors")
 
     for agent in context.get("agents", []):
+        if agent.get("family_dependant"):
+            continue
         econ = agent.get("economy", {})
         if not isinstance(econ, dict):
             continue
@@ -2297,6 +2654,10 @@ def on_day_start(context):
         econ["daily_income"] = 0.0
         econ["daily_expense"] = 0.0
         econ["daily_expense_by_category"] = _empty_daily_categories()
+        econ.pop("_daily_emergency_expense", None)
+        if (context.get("config", {}).get("organizations") or {}).get("enabled", False):
+            econ.pop("_organization_arrears_income", None)
+            econ.pop("_organization_current_wage_day", None)
 
         # Daily income volatility
         base_hour = max(
@@ -2368,10 +2729,17 @@ def on_agent_pre_step(context):
     step = context.get("step", {})
     if not isinstance(agent, dict) or not isinstance(step, dict):
         return
+    if agent.get("family_dependant"):
+        return
     activity = str(step.get("activity", step.get("scheduled_activity", "")))
     if _is_sleep_activity(activity):
         return
     if _is_income_activity(activity, ""):
+        return
+    # Out of town (a trip, or a twin's real position) there is no local job
+    # to go and earn at. Without this a family visit was rewritten to "工作"
+    # on most steps, and every step for a laid-off resident.
+    if is_away(agent):
         return
     if not _should_seek_income(agent, cfg):
         return
@@ -2395,6 +2763,8 @@ def on_agent_post_step(context):
     agent = context.get("agent", {})
     step = context.get("step", {})
     if not isinstance(agent, dict) or not isinstance(step, dict):
+        return
+    if agent.get("family_dependant"):
         return
     econ = agent.get("economy", {})
     if not isinstance(econ, dict):
@@ -2422,10 +2792,7 @@ def on_agent_post_step(context):
             income += _to_float(econ.get("hourly_income", 0.0), 0.0) * 0.5
     if income > 0:
         income = round(income, 2)
-        _record_income(econ, income, sectors)
-        # Track realized gross wages for the monthly tax/SI settlement
-        econ["month_gross_income"] = round(
-            _to_float(econ.get("month_gross_income", 0), 0) + income, 2)
+        income = _record_wage(agent, income, context)
 
     # --- Expenses (cash-constrained) ---
     expense_map = _estimate_behavior_expenses(agent, activity, action, location, hours, cfg, macro_state)
@@ -2482,6 +2849,23 @@ def on_day_end(context):
     agents_list = context.get("agents", [])
     agent_map = {a.get("id"): a for a in agents_list if isinstance(a, dict)}
 
+    # Endogenous inflation: measure today's real demand (before anything else
+    # touches the day's counters), and at month end work out the wage rise.
+    # Fast-forward books no intraday spending, so it is not measured there and
+    # the demand driver holds its last rate.
+    infl = _inflation_cfg(cfg)
+    price_level = _to_float(macro_state.get("cumulative_inflation", 1.0), 1.0)
+    if infl and str(infl.get("driver", "demand")).lower() == "demand" and not coarse:
+        _record_real_demand(macro_state, agents_list, days, infl)
+    wage_raise = 0.0
+    if infl and is_month_end:
+        driver_state = _driver_state(macro_state)
+        previous = _to_float(driver_state.get("price_at_settlement"), price_level) or price_level
+        # Nominal wages are not cut when prices fall.
+        wage_raise = max(0.0, _to_float(infl.get("wage_indexation", 0.5), 0.5)
+                         * (price_level / previous - 1.0))
+        driver_state["price_at_settlement"] = price_level
+
     # Fast-forward runs no intra-day ticks, so `on_agent_post_step` never
     # credited any wages. Book the approximate ones now — before distress
     # detection and friend loans see the balance.
@@ -2489,7 +2873,7 @@ def on_day_end(context):
         for agent in agents_list:
             econ = agent.get("economy") if isinstance(agent, dict) else None
             if isinstance(econ, dict):
-                _accrue_coarse_income(econ, cfg, days, sectors)
+                _accrue_coarse_income(econ, cfg, days, sectors, agent=agent, context=context)
 
     # P3: route today's consumption/rent shares to merchant & landlord agents,
     # then let distressed agents borrow from friends over the social network.
@@ -2497,7 +2881,7 @@ def on_day_end(context):
     _process_friend_loans(agent_map, agents_list, cfg)
 
     for agent in context.get("agents", []):
-        if not isinstance(agent, dict):
+        if not isinstance(agent, dict) or agent.get("family_dependant"):
             continue
         econ = agent.get("economy", {})
         if not isinstance(econ, dict):
@@ -2535,9 +2919,21 @@ def on_day_end(context):
                 _sector_add(sectors, "government", round(withheld - hf_indiv, 2))
                 # Housing fund: individual part (from withholding) + employer
                 # match (paid by firms)
-                accounts["housing_fund"] = round(
-                    _to_float(accounts.get("housing_fund", 0), 0) + hf_indiv + hf_employer, 2)
-                _sector_add(sectors, "firms", -hf_employer)
+                employer_match = _organization_payroll(context, agent, hf_employer, "housing_fund")
+                if employer_match is None:
+                    accounts["housing_fund"] = round(
+                        _to_float(accounts.get("housing_fund", 0), 0) + hf_indiv + hf_employer, 2)
+                    _sector_add(sectors, "firms", -hf_employer)
+                else:
+                    # The transfer already credited the employer's actual
+                    # match; the withheld individual contribution is separate.
+                    accounts["housing_fund"] = round(
+                        _to_float(accounts.get("housing_fund", 0), 0) + hf_indiv, 2)
+
+            # Partial, lagged wage indexation (endogenous inflation only)
+            if wage_raise > 0:
+                for key in ("gross_monthly_salary", "base_hourly_income"):
+                    econ[key] = round(_to_float(econ.get(key, 0), 0) * (1.0 + wage_raise), 2)
 
             # Recalculate planning profile from the contract salary
             gross = _to_float(econ.get("gross_monthly_salary", 0), 0)
@@ -2549,12 +2945,18 @@ def on_day_end(context):
                 econ["monthly_si_breakdown"] = si_bd
                 econ["monthly_housing_fund"] = hf_monthly
 
-                # Recalculate spending profile
-                engel, save_rate = _engel_params(net_sal, cfg)
+                # Recalculate spending profile. With endogenous inflation the
+                # plan is made on *real* income and held at base prices; the
+                # expense multiplier prices it at today's level. So a wage that
+                # lags prices shows up as a smaller real basket, a higher Engel
+                # share and a lower savings rate — and a fully indexed wage
+                # leaves the basket where it was (no wage-price spiral).
+                plan_income = net_sal / max(1e-9, price_level) if infl else net_sal
+                engel, save_rate = _engel_params(plan_income, cfg)
                 econ["engel_coefficient"] = round(engel, 4)
                 econ["savings_rate"] = round(save_rate, 4)
-                econ["monthly_budget"] = _build_monthly_budget(net_sal, engel, save_rate, cfg)
-                econ["monthly_expense_estimate"] = round(net_sal * (1.0 - save_rate), 2)
+                econ["monthly_budget"] = _build_monthly_budget(plan_income, engel, save_rate, cfg)
+                econ["monthly_expense_estimate"] = round(plan_income * (1.0 - save_rate), 2)
 
             # --- Repay friend loans first (interest-free, social obligation) ---
             _repay_friend_loans(agent, econ, agent_map)
@@ -2599,11 +3001,17 @@ def on_day_end(context):
                 bonus_gross = round(gross * bonus_months, 2)
                 # Bonus tax (simplified: taxed as regular income)
                 bonus_net = round(bonus_gross * 0.85, 2)  # approximate after-tax
-                _record_income(econ, bonus_net, sectors)
-                # Firms pay the gross bonus; the tax part goes to government
-                bonus_tax = round(bonus_gross - bonus_net, 2)
-                _sector_add(sectors, "firms", -bonus_tax)
-                _sector_add(sectors, "government", bonus_tax)
+                organization_bonus = _organization_payroll(context, agent, bonus_gross, "year_bonus")
+                if organization_bonus is None:
+                    _record_income(econ, bonus_net, sectors)
+                    # Firms pay the gross bonus; its tax goes to government.
+                    bonus_tax = round(bonus_gross - bonus_net, 2)
+                    _sector_add(sectors, "firms", -bonus_tax)
+                    _sector_add(sectors, "government", bonus_tax)
+                else:
+                    bonus_gross = organization_bonus
+                    bonus_tax = round(bonus_gross * 0.15, 2)
+                    bonus_net = round(bonus_gross - bonus_tax, 2)
                 econ.setdefault("shock_log", []).append({
                     "type": "year_end_bonus",
                     "gross": bonus_gross,
@@ -2664,7 +3072,7 @@ def on_day_end(context):
         system_total = _system_total(agents, sectors)
         initial_total = _to_float(
             runtime.get("initial_system_total", system_total), system_total)
-        runtime.setdefault("audit_rows", []).append({
+        audit_row = {
             "day": day,
             "agents_total": _agents_total(agents),
             "firms": sectors.get("firms", 0.0),
@@ -2672,7 +3080,11 @@ def on_day_end(context):
             "bank": sectors.get("bank", 0.0),
             "system_total": system_total,
             "drift": round(system_total - initial_total, 2),
-        })
+        }
+        if context.get("config", {}).get("organizations", {}).get("enabled", False):
+            audit_row["organizations_total"] = round(sum(
+                value for key, value in sectors.items() if key.startswith("organization:")), 2)
+        runtime.setdefault("audit_rows", []).append(audit_row)
 
 
 # ---------------------------------------------------------------------------
@@ -2731,11 +3143,15 @@ def on_simulation_end(context):
         "income_target_daily", "portfolio_type",
         "investment_return_ytd",
         "initial_labor_savings", "initial_inheritance", "initial_assets_total",
+        # Lets GAWorld-Bench compute wealth_gini over the labour force only.
+        "employment_status",
     ]
     with open(snapshot_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=snap_fields)
         writer.writeheader()
         for agent in context.get("agents", []):
+            if agent.get("family_dependant"):
+                continue
             econ = agent.get("economy", {})
             if not isinstance(econ, dict):
                 continue
@@ -2767,6 +3183,7 @@ def on_simulation_end(context):
                 "initial_labor_savings": round(_to_float(init_assets.get("labor_savings", 0), 0), 2),
                 "initial_inheritance": round(_to_float(init_assets.get("inheritance", 0), 0), 2),
                 "initial_assets_total": round(_to_float(init_assets.get("total", 0), 0), 2),
+                "employment_status": _employment_status(agent),
             }
             writer.writerow(agent_row)
             aid = agent_row["agent_id"]
@@ -2804,6 +3221,8 @@ def on_simulation_end(context):
     if audit_rows:
         audit_fields = ["day", "agents_total", "firms", "government", "bank",
                         "system_total", "drift"]
+        if context.get("config", {}).get("organizations", {}).get("enabled", False):
+            audit_fields.insert(5, "organizations_total")
         audit_path = os.path.join(output_dir, "conservation_audit.csv")
         with open(audit_path, "w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=audit_fields)

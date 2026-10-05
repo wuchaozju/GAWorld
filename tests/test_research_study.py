@@ -330,6 +330,26 @@ def test_supported_when_every_seed_agrees_and_clears_noise():
     assert result["seeds"] == [42, 43]
 
 
+def test_seeds_from_different_code_epochs_are_not_judged_together():
+    """A study paused across a code change: the gap between its seeds is the
+    change, not chance, so agreeing seeds still cannot support a hypothesis."""
+    protocol = make_protocol()
+    runs = runs_for(
+        (42, {**series(0.5, 0.4, 0.51), **series(0.5, 0.53, 0.5, metric="emotion")}),
+        (43, {**series(0.52, 0.41, 0.515), **series(0.5, 0.54, 0.505, metric="emotion")}),
+    )
+    runs[0]["report"]["comparability_epoch"] = 4
+    runs[1]["report"]["comparability_epoch"] = 5
+    result = evaluate(protocol, runs)
+    assert result["comparability"] == {"epochs": {42: 4, 43: 5}, "mixed": True}
+    for item in result["hypotheses"]:
+        assert item["verdict"] == "inconclusive"
+        assert any("可比性版本" in reason for reason in item["reasons"])
+
+    runs[0]["report"]["comparability_epoch"] = 5
+    assert evaluate(protocol, runs)["hypotheses"][0]["verdict"] == "supported"
+
+
 def test_contradicted_when_every_seed_moves_the_other_way():
     protocol = make_protocol()
     protocol.hypotheses = protocol.hypotheses[:1]
@@ -374,6 +394,58 @@ def test_unmeasured_and_quality_issues():
     issues = result["quality"]["issues"]
     assert any(issue["condition"] == "subsidy" and "没有状态数据" in issue["issue"] for issue in issues)
     assert any("没有变化" in issue["issue"] for issue in issues)
+
+
+def _with_paired(runs, by_seed, *, control="baseline"):
+    """Attach per-resident estimates (what ``gaworld.parallel.causal`` writes) to each seed's report."""
+    for run in runs:
+        ate, low, high, q = by_seed[run["seed"]]
+        run["report"]["causal"] = {"baseline_id": control, "estimates": [
+            {"world_id": "subsidy", "metric": "stress", "ate": ate, "ci_low": low, "ci_high": high,
+             "p_value": q, "q_value": q, "n": 30, "verdict": "robust" if q < 0.05 else "null"},
+        ]}
+    return runs
+
+
+def test_paired_tests_back_a_supported_verdict():
+    protocol = make_protocol()
+    protocol.hypotheses = protocol.hypotheses[:1]
+    runs = _with_paired(
+        runs_for((42, series(0.5, 0.4, 0.51)), (43, series(0.52, 0.41, 0.515))),
+        {42: (-0.09, -0.11, -0.07, 0.001), 43: (-0.1, -0.12, -0.08, 0.001)},
+    )
+    item = evaluate(protocol, runs)["hypotheses"][0]
+    assert item["verdict"] == "supported"
+    assert item["effects"][0]["paired"]["ate"] == pytest.approx(-0.09)
+    assert item["seed_ci"][0] < item["mean_effect"] < item["seed_ci"][1]
+    assert any("配对检验都在同一方向显著" in reason for reason in item["reasons"])
+
+
+def test_a_seed_whose_residents_did_not_move_downgrades_the_verdict():
+    """The population mean moved; the paired test in seed 43 says the
+    residents did not, reliably. A pre-registered call cannot stand on that."""
+    protocol = make_protocol()
+    protocol.hypotheses = protocol.hypotheses[:1]
+    runs = _with_paired(
+        runs_for((42, series(0.5, 0.4, 0.51)), (43, series(0.52, 0.41, 0.515))),
+        {42: (-0.09, -0.11, -0.07, 0.001), 43: (-0.02, -0.06, 0.02, 0.3)},
+    )
+    item = evaluate(protocol, runs)["hypotheses"][0]
+    assert item["verdict"] == "inconclusive"
+    assert any("种子 43" in reason and "不显著" in reason for reason in item["reasons"])
+
+
+def test_paired_evidence_against_another_control_is_not_used():
+    protocol = make_protocol()
+    protocol.hypotheses = protocol.hypotheses[:1]
+    runs = _with_paired(
+        runs_for((42, series(0.5, 0.4, 0.51)), (43, series(0.52, 0.41, 0.515))),
+        {42: (0.0, -0.1, 0.1, 0.9), 43: (0.0, -0.1, 0.1, 0.9)},
+        control="placebo",
+    )
+    item = evaluate(protocol, runs)["hypotheses"][0]
+    assert item["effects"][0]["paired"] is None
+    assert item["verdict"] == "supported"
 
 
 def test_mean_aggregation_reads_the_whole_series():
@@ -426,11 +498,12 @@ def test_report_has_every_section_and_marks_ungrounded_claims():
     assert doc.startswith("# 租金补贴的压力效应\n")
     assert "## 预注册" in doc
     assert "| subsidy | 补贴 | 处理 | Day 2 09:00 租金补贴 |" in doc
-    assert "| H1 | 补贴降低压力 | stress | subsidy vs baseline | 下降 | 0.0200 | final |" in doc
+    assert "| H1 | 补贴降低压力 | stress (c) | subsidy vs baseline | 下降 | 0.0200 | final |" in doc
+    assert "### 指标来源" in doc and "| stress | (c) | 事件与政策对它的影响由一次模型调用直接给出" in doc
     assert "编译时丢弃的内容" in doc
     assert "## 执行记录" in doc and "`output/parallel_worlds/x_s42`" in doc
     assert "### H1 · 支持" in doc
-    assert "- **均值效应**: -0.1050 · **噪声底线**: 0.0100" in doc
+    assert "- **均值效应**: -0.1050（c 级：只读方向，大小不作数） · **噪声底线**: 0.0100" in doc
     assert "所有世界都有数据" in doc
     assert "- **H1**: 补贴降低了压力 — 均值效应 -0.1" in doc
     assert "- **H9** （未挂到任何假设，不作数）: 凭空的结论" in doc

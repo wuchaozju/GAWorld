@@ -1165,6 +1165,7 @@ def _run_digest(
     known_tie_keys: set[str] | None = None,
     tie_candidate_keys: set[str] | None = None,
     max_life_moves: int = 2,
+    action_candidates: list[str] | None = None,
 ) -> dict[str, Any] | None:
     """One digest call; ``None`` when the response is unusable."""
     try:
@@ -1184,7 +1185,7 @@ def _run_digest(
             task, agent.get("id"), str(resp or "")[:160],
         )
         return None
-    return _normalize_digest(
+    digest = _normalize_digest(
         parsed,
         max_delta=max_delta,
         brief_max_chars=brief_max_chars,
@@ -1194,6 +1195,23 @@ def _run_digest(
         tie_candidate_keys=tie_candidate_keys,
         max_life_moves=max_life_moves,
     )
+    if action_candidates:
+        action = parsed.get("selected_action")
+        digest["selected_action"] = action if isinstance(action, str) and action in action_candidates else ""
+    return digest
+
+
+def _extension_prompt(prompt: str, sections: list[str] | None, candidates: list[str] | None) -> str:
+    """Append optional plugin facts and an exact, bounded action menu."""
+    if sections:
+        prompt += "\n【补充感知】\n" + "\n".join(str(section) for section in sections if section)
+    if candidates:
+        prompt += (
+            "\n【可执行动作】\n" + json.dumps(candidates, ensure_ascii=False)
+            + '\n如决定执行其中一项，在返回 JSON 增加 "selected_action"，值须与一个候选标识完全一致；'
+            '不执行则填空字符串。brief 中的叙述不代表实际执行。每人每步最多选择一项。'
+        )
+    return prompt
 
 
 def simulate_agent_day(
@@ -1209,6 +1227,8 @@ def simulate_agent_day(
     config: dict | None = None,
     llm_fn: Callable[..., str] | None = None,
     rng: "_random.Random | None" = None,
+    perception_sections: list[str] | None = None,
+    action_candidates: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compress one day for one agent into a normalized digest dict.
 
@@ -1253,6 +1273,7 @@ def simulate_agent_day(
         max_delta=max_delta,
         state_keys="、".join(LONG_RUN_STATE_KEYS),
     )
+    prompt = _extension_prompt(prompt, perception_sections, action_candidates)
     digest = _run_digest(
         agent,
         prompt=prompt,
@@ -1261,6 +1282,7 @@ def simulate_agent_day(
         brief_max_chars=brief_max_chars,
         max_memories=1,
         llm_fn=llm_fn,
+        action_candidates=action_candidates,
     )
     if digest is None:
         return _fallback()
@@ -1282,6 +1304,8 @@ def simulate_agent_period(
     config: dict | None = None,
     llm_fn: Callable[..., str] | None = None,
     rng: "_random.Random | None" = None,
+    perception_sections: list[str] | None = None,
+    action_candidates: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compress a whole month/year for one agent into one digest.
 
@@ -1305,6 +1329,8 @@ def simulate_agent_period(
             config=config,
             llm_fn=llm_fn,
             rng=rng,
+            perception_sections=perception_sections,
+            action_candidates=action_candidates,
         )
 
     cfg = long_run_config(config)
@@ -1380,6 +1406,7 @@ def simulate_agent_period(
         ),
         scale_hint=_SCALE_HINT.get(period.unit, ""),
     )
+    prompt = _extension_prompt(prompt, perception_sections, action_candidates)
     digest = _run_digest(
         agent,
         prompt=prompt,
@@ -1392,6 +1419,7 @@ def simulate_agent_period(
         known_tie_keys=known_tie_keys,
         tie_candidate_keys=tie_candidate_keys,
         max_life_moves=budget["life_moves"],
+        action_candidates=action_candidates,
     )
     if digest is None:
         return _fallback()

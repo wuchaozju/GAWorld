@@ -150,6 +150,7 @@
 | A7-13 | 城市知识库 | 检索 → 画像 → 四条影响通道 | 搜索失败不致命；地图信息太少时拒绝声称有某种经济结构；缓存按真实时间刷新 | `test_city_knowledge.py` | P2 |
 | A7-14 | 城市 API 与跨城只读 | `/api/city/*` | 列出非当前城市的居民；分页报告总数；未知城市返回 404；选择城市会保留配置里的其他键 | `test_city_api.py` | P1 |
 | A7-15 | 离开本市（出差 / 探亲 / 旅行） | 开启 travel | 不在城里的 agent 不占地点、不产生路网负载；回来后恢复真实位置；行程时长随距离增长；被忽视的父母最终会把人拉回去 | `test_travel_away.py` | P1 |
+| A7-16 | 室内房间（同屋才算碰面） | 布局、分户、摆放、偶遇、按房间计容量 | 后端布局、选布局规则与 spatial-tree.js 逐项一致，槽位规则与 indoor-view.js 一致；各布局面积占比和为 1；访客不进员工房间，上班的人退到员工房间，别名与家居插件的房间生效；按 citymap 分户、每户一个家庭、不够加层、后来的家庭不打乱已有分配；关着不放人；床不共用、房间合适就不换、在路上没有房间；同楼不同户、同场所不同房间不算碰面，没有房间时退回按地点；就餐区按面积占比满员后改去别家，另一个活动仍可进，拒绝理由写房间，放行的房间就是落座的房间，路上的人按放行房间计数；轨迹只在当前地点带房间；住宅楼一次显示一户（选中居民的，否则人最多的）；真实主循环每步放人 | `test_rooms.py`、`site/dashboard/indoor-view.test.js` | P1 |
 
 ### 2.8 社交与家庭
 
@@ -226,6 +227,7 @@
 | A13-05 | 验证门 L0–L4 | 配对实验 | Wasserstein、KS、Moran's I 数值正确；传染产生正的社会自相关；参照组可复现 | `test_group_validate.py` | P1 |
 | A13-06 | Population Studio | 预览、生成、导出 | 预览够快，适合按键即时刷新；任务失败会被报告；导出与写盘的产物一致 | `test_dashboard_population.py` | P2 |
 | A13-07 | 批量导入与脱敏 | CSV / JSONL | 姓名换成确定性的化名，盐不同结果不同；联系方式被删掉；中英文列名同义词都能识别 | `test_import_api.py`、`test_enterprise_pack.py` | P1 |
+| A13-08 | 主运行的群体模式 | `simulation_mode: group` + 按天快进 | 未开快进 / 按月步长 / 未知模式在开跑前被拒；普通运行不注册任何处理器；群体只平移非实体化成员、只动快进简报能动的状态变量，快进简报只给实体化的人；审计残差超阈次日该群体审计翻倍（有上限），连续不告警降回，不加倍时抽样逐位不变；居民档案无行业列时按职业推断；真实主循环里简报数 = 实体化人数、每个居民的状态历史长度一致、写出 `group.day` | `test_group_mode.py` | P1 |
 
 ### 2.14 采访、研究与实验
 
@@ -241,6 +243,13 @@
 | A14-08 | AI 社会科学家 | 方案 → 协议 → 运行 → 判定 | 所有种子一致且超过噪声时判「支持」；种子之间不一致时判「不确定」；单种子又没有安慰剂对照时不能判「支持」 | `test_research_study.py` | P1 |
 | A14-09 | 需求估计实验 | 价格网格与答题臂 | 上下文不依赖处理组价格；诱导问题里不含答案；需求曲线能还原生成它的概率 | `test_experiments_demand.py` | P2 |
 | A14-10 | 基准任务 | `/api/bench/*` | 白名单；同一时间只跑一个任务；harness 失败被报告为失败 | `test_bench_api.py` | P2 |
+| A14-11 | AI 社会科学家 · composite | 平行世界 + 跑后问卷 | 有可计分题时协议为 composite，开放题不成为指标；每个世界的采访带着该世界的覆盖与最后状态，被升级的家人不采访；问卷得分按 0–1 进判定，无法计分的不算 0；少数居民大幅变化撑不起「支持」（逐人配对检验降级） | `test_research_composite.py` | P1 |
+| A14-12 | 平行世界 · 参数扫描 | 一个数值配置项 + 几组取值 | 基准保持当前值、每个取值一个世界、剂量 = 取值；不存在 / 非数值 / 实验级的路径、整数参数的小数、超过 8 个世界都报错，等于当前值的取值跳过；补丁在子进程里只改这一片叶子；剂量反应以当前值为起点；面板生成后补丁随运行请求发出 | `test_parallel_sweep.py`、`site/dashboard/worlds.test.js` | P1 |
+| A14-13 | 指标来源分级 | 研究指标、问卷指标、Bench 指标 | 每个指标都有等级与依据，目前全为 (c)；(c) 级假设判定不变但标「只读方向」，旧协议按目录补等级；解读在结论里写了大小的被标出，依据里的种子效应不算；报告有「指标来源」节；Bench scorecard 列出最弱依赖并把恩格尔系数、储蓄率标为回显；Bench 与研究目录的九维状态等级一致 | `test_measure_provenance.py`、`benchmark/test_gaworld_bench.py` | P1 |
+| A14-14 | Rubric-Bench 人类锚点校准 | 抽集 → 两人标注 → judge → 分析 | 按维度分层、约三分之一被改坏且题目里看不出；人人一致且 judge 一致才 `ok`，人人不一致先判 rubric 有歧义，judge 不一致单独失败，未标完或无 judge 为 `incomplete`；没有通过的校准时 Track R gate 到不了 OK，换了 rubric 或 judge 视为未校准；每位标注者只拿到自己的标注；非法分数、未知题目、未知集被拒 | `benchmark/test_rubric_bench.py`、`test_bench_api.py` | P1 |
+| A14-15 | Bench Track B · 对局层 | 谣言 / 公投 / 灾害对局存档 → `--track B` | 三种游戏跑完即落盘（作业完成之前），带 provider 与玩家；未开启存档 / 空结果不写，写失败不影响结果；谣言局被辟谣的相信者留下辟谣前后两次信任度；从众只用不带口径、私下有严格多数的局，两个方向都计；灾害不计解析失败的「其他」；旧谣言存档（无历史）跳过；少于 5 局或样本不够弃权且拉低分数，全弃权为 n/a；混合模型、读不了的文件在报告里标出 | `test_game_archive.py`、`benchmark/test_gaworld_bench.py` | P1 |
+| A14-16 | 经典实验库 | 六个范式 × 居民 × 两个条件 | 每个范式是有人类对照、出处与注意事项的两条件对比；提示词带居民、两个条件只差题面、不提实验；解析器认得常见回答、拒收超出 0–100 的金额与非正估计；网格 = 居民 × 题目 × 条件 × 采样，可续跑、拒绝第二个写入者、后端全挂即中止；判定只看配对方向（复现 / 反向 / 未复现 / 样本不足），采样在人内平均，读不出的计数；混合模型被标出 | `test_classic_experiments.py` | P1 |
+| A14-17 | 谁是真人 + Bench Track D | 建房 → 聊几轮 → 互猜 → 揭晓 → `--track D` | 座位号随机且在人数上限内；居民的提示词不提有人在猜；一轮整轮出现、按座位号排；房主可以不等缺席的真人收轮，但居民没写完不收；揭晓前玩家看不到谁是谁；每张票覆盖除自己外的每个座位且只投一次；揭晓按票计数并存档，房主可以不等没投的人；座位链接只开自己的座位；消息从 JSON 或散文里读出并截断；Track D 以真人互判率为分母、封顶 1，少于 5 局 / 20 票（对居民）/ 10 票（对真人）弃权，混合模型与读不了的存档在报告里标出 | `test_whois_api.py`、`benchmark/test_gaworld_bench.py` | P1 |
 
 ### 2.15 游戏场
 
@@ -256,7 +265,8 @@
 | 编号 | 用例 | 步骤 / 输入 | 预期结果 | 自动化 | 级别 |
 |---|---|---|---|---|---|
 | A16-01 | 访问控制 | 点开头的路径、token | 点文件永远不对外提供；没设 token 时和以前一样全开放；设了 token 后 API、静态文件和 POST 都受保护；浏览器登录设置 strict cookie | `test_dashboard_auth.py` | P0 |
-| A16-02 | OpenAPI 契约 | `/api/openapi.json` | 文档合法；与模块里的一致；文档里的每个路由都已注册 | `test_openapi.py` | P1 |
+| A16-02 | OpenAPI 契约 | `/api/openapi.json` | 文档合法；与模块里的一致；文档里的每个 GET 都已注册、每个 POST 的路径段都在代码里；代码与控制台用到的每个 `/api/` 路由都在文档里；已知路由换了方法返回 405 + `Allow`；未知路由各模块统一 `{"error": "Unknown endpoint"}`；重复启动运行返回 409 | `test_openapi.py` | P1 |
+| A16-09 | Python 客户端 | `gaworld.client` | 按 operationId 调用任意接口；错误按状态码抛对应异常；作业轮询到结束、失败抛 `JobFailed`；事件流按表名产出记录；Bearer token 与账号登录的 cookie 都能用 | `test_client.py` | P1 |
 | A16-03 | Agent Studio | 状态、身份、关系、记忆、财务编辑 | 写入 CSV 并同步画像 Markdown；取值被夹住；保留 BOM；RAG 条目只打一次标签 | `test_dashboard_studio.py` | P1 |
 | A16-04 | agent 列表去重 | `/api/agents` | 每个 id 一条；CSV 与 Markdown 覆盖同一批 id；表头重复时显示出来 | `test_dashboard_agents_unique.py` | P1 |
 | A16-05 | 分析面板 | 各类读取 | 产物损坏时降级为空；归档的运行不借用正在运行的产物；不在列表里的 run id 被拒 | `test_dashboard_analytics.py` | P1 |
@@ -331,7 +341,7 @@
 | C-20 | 群体采访引擎 | 题型校验、答案解析、否定识别、追问连续性、统计 | `test_interview_group_core.py` |
 | C-21 | 人口合成 | 结构合法；同一种子逐字节可复现 | `test_population.py`（两个类） |
 | C-22 | 平行世界规格 | 至少两个世界；事件时间合法；不能改实验控制量；路径隔离 | `test_parallel_worlds.py::SpecTests` |
-| C-23 | Dashboard 安全与契约 | 点文件不对外；token 门控；OpenAPI 与路由一致 | `test_dashboard_auth.py`、`test_openapi.py` |
+| C-23 | Dashboard 安全与契约 | 点文件不对外；token 门控；OpenAPI 与路由双向一致；Python 客户端；分布式世界的节点令牌只到自己的世界 | `test_dashboard_auth.py`、`test_openapi.py`、`test_client.py`、`test_cluster.py` |
 
 **核心套件准入规则**
 

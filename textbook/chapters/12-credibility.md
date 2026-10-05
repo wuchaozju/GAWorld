@@ -260,22 +260,7 @@ LLM 一致性:
 ========================================
 ```
 
-这是 GAWorld 的"自动审稿"功能。读者做研究时,可以参考它的输出格式写论文的"可信度声明"部分。
-
----
-
-## 12.7　本章小结
-
-- 三种效度:构念、内部、外部,优先级是构念 > 内部 > 外部。
-- 可复现性四件套:种子、配置、依赖、运行时,论文必须附完整。
-- 三种关键检验:安慰剂(检验假阳性)、鲁棒性(检验稳定性)、反事实(检验真实性)。
-- benchmark 是仿真和真实数据对齐的关键:基尼系数、限行效应、疫情 R0、网络传播、灾害响应。
-- 同行评议常见质疑四类:简化、数据合成、LLM 不可复现、因果识别,均有标准回应。
-- GAWorld 的"自动可信度评估"给读者提供了一个自查清单。
-
----
-
-## 12.8　思考题
+这是 GAWorld 的"自动审稿"功能。读者做研究时,可以参考它的输出格式写论文的"可信度声明"部分。## 12.8　思考题
 
 1. **评估你自己的研究**:列出三种效度分别打几分(1–5),说明理由。
 2. **设计一个安慰剂检验**:你的研究问题里,什么样的"虚假干预"能当安慰剂?
@@ -292,7 +277,7 @@ LLM 一致性:
 3. Shadish, W. R., Cook, T. D., & Campbell, D. T. (2002). *Experimental and Quasi-Experimental Designs for Generalized Causal Inference*. Houghton Mifflin.
 4. Edmonds, B., & Hales, D. (2010). Replication, Replication and Replication: Some Hard Lessons from Simple Models. In *Simulating Social Complexity*. Springer.
 5. Romm, J. (2001). *The Blind Side of Population Stabilization*. *Science*, 291(5507), 1281. —— 关于简化模型的反思。
-6. Klöckner, A., et al. (2023). The ODD Protocol for Describing Agent-Based Models in Social Science. *JASSS*, 26(2).
+6. Klöckner, A., et al. (2023). The ODD Protocol for Describing 智能体-Based Models in Social Science. *JASSS*, 26(2).
 7. GAWorld 工程文档:`gaworld/benchmark/`、`docs/EXPERIMENTS_REPORT.md`。
 8. Stanford, K., & Toulmin, S. (2006). *The Ambiguity of "Game": Ludwig Wittgenstein's Notion of a Language-Game and Its Use in the Social Sciences*. *Human Affairs*, 16(1). —— 关于模型与现实的哲学讨论。
 
@@ -311,7 +296,7 @@ LLM 一致性:
 > 到本章为止,本书"方法层"全部完成。读者如果做完整的研究项目,应该有了:预注册(第 9 章)+ 实验设计(第 10 章)+ 数据分析(第 11 章)+ 可信度评估(第 12 章)。接下来进入"案例层"——四个 GAWorld 实证案例,把前面学到的方法用到真实问题上。
 ---
 
-## 12.10　扩展:三种效度的深入讨论
+### 12.10 扩展:三种效度的深入讨论
 
 ### 12.10.1　构念效度的详细评估
 
@@ -353,7 +338,7 @@ LLM 一致性:
 
 ---
 
-## 12.11　扩展:可复现性的工程细节
+### 12.11 扩展:可复现性的工程细节
 
 ### 12.11.1　代码可复现性
 
@@ -392,7 +377,7 @@ LLM 一致性:
 
 ---
 
-## 12.12　扩展:benchmark 的工程实现
+### 12.12 扩展:benchmark 的工程实现
 
 ### 12.12.1　benchmark 库的建设
 
@@ -456,7 +441,7 @@ benchmark 也有局限:
 
 ---
 
-## 12.13　扩展:同行评议的应对策略
+### 12.13 扩展:同行评议的应对策略
 
 ### 12.13.1　预审稿
 
@@ -496,7 +481,7 @@ benchmark 也有局限:
 
 ---
 
-## 12.14　扩展:可信度的工程实现
+### 12.14 扩展:可信度的工程实现
 
 ### 12.14.1　自动可信度评估
 
@@ -551,7 +536,7 @@ LLM 一致性: ✓ 92%
 
 ---
 
-## 12.15　扩展:可信度的学术前沿
+### 12.15 扩展:可信度的学术前沿
 
 ### 12.15.1　可复现性危机
 
@@ -604,22 +589,7 @@ AI 系统的"可解释性"是当前研究热点:
 - 同行评议的应对策略:预审稿、回复信、撤稿重投、申诉。
 - 可信度的工程实现:自动评估、证书、改进、展示。
 - 学术前沿:可复现性危机、预注册扩展、可解释 AI、因果推断深化。
-
-
----
-
-## 12.17　扩展:可信度提升的工程实践
-
-### 12.17.1　预注册的强制性
-
-把预注册做成"必须":
-
-```python
-def run_experiment(experiment_spec):
-    """运行实验前强制预注册"""
-    if not experiment_spec.get("preregistration"):
-        raise ValueError("必须先预注册才能运行实验")
-    if experiment_spec["preregistration"]["status"] != "approved":
+s"] != "approved":
         raise ValueError("预注册必须批准后才能运行")
     # ... 跑实验
 ```
@@ -658,7 +628,7 @@ def auto_check_results(results, preregistration):
 
 ---
 
-## 12.18　扩展:可信度建设的长期策略
+### 12.18 扩展:可信度建设的长期策略
 
 ### 12.18.1　建立研究信誉
 
@@ -707,7 +677,7 @@ def auto_check_results(results, preregistration):
 
 ---
 
-## 12.20　扩展:仿真研究的伦理审查
+### 12.20 扩展:仿真研究的伦理审查
 
 ### 12.20.1　为什么需要伦理审查
 
@@ -736,26 +706,7 @@ def auto_check_results(results, preregistration):
 - 默认启用伦理 filter
 - 透明报告 agent 的"价值取向"
 - 允许研究者自定义伦理规则
-- 论文里必须附"使用边界"声明
-
----
-
-## 12.21　扩展:研究社区的角色
-
-### 12.21.1　学术期刊
-
-期刊是可信度建设的关键:
-
-- 严格的同行评议
-- 公开数据和代码的要求
-- 撤稿机制
-- 研究伦理规范
-
-### 12.21.2　学术会议
-
-会议是最新研究的传播:
-
-- 国际会议(ICCSS、JASSS、NetLogo Conference)
+- 论文里必须附"使用边界"声明Conference)
 - 区域会议(各洲的社会仿真会议)
 - 工作坊(LLM + 社会仿真、AI 伦理)
 
@@ -788,7 +739,7 @@ def auto_check_results(results, preregistration):
 
 ---
 
-## 12.23　扩展:跨学科的可信度建设
+### 12.23 扩展:跨学科的可信度建设
 
 ### 12.23.1　社会科学的可信度
 
@@ -825,7 +776,7 @@ def auto_check_results(results, preregistration):
 
 ---
 
-## 12.24　扩展:可信度的可视化
+### 12.24 扩展:可信度的可视化
 
 ### 12.24.1　可信度仪表盘
 
@@ -836,11 +787,7 @@ def credibility_dashboard(assessment: dict) -> str:
     categories = ["可复现性", "构造效度", "内部效度",
                   "外部效度", "LLM一致性", "守恒"]
     scores = [
-        assessment["reproducibility"],
-        assessment["construct"],
-        assessment["internal"],
-        assessment["external"],
-        assessment["llm_consistency"],
+        assessment["re   assessment["llm_consistency"],
         assessment["conservation"]
     ]
     ax.bar(categories, scores, color="steelblue")
@@ -915,7 +862,7 @@ def generate_credibility_report(assessment: dict) -> str:
 
 ---
 
-## 12.26　扩展:研究失败的应对
+### 12.26 扩展:研究失败的应对
 
 ### 12.26.1　研究失败是常态
 
@@ -955,7 +902,7 @@ def generate_credibility_report(assessment: dict) -> str:
 
 ---
 
-## 12.27　扩展:研究者的伦理责任
+### 12.27 扩展:研究者的伦理责任
 
 ### 12.27.1　研究者的责任
 
@@ -1000,32 +947,7 @@ def generate_credibility_report(assessment: dict) -> str:
 - 研究失败的应对:常态、处理、价值、报告。
 - 研究者的伦理责任:总责任、对参与者、对社会、对科学。
 - 可信度建设贯穿研究的全生命周期。
-
-
----
-
-## 12.29　本章尾声
-
-经过本章,读者已经掌握了可信度评估的核心:
-
-- 三种效度的深入评估
-- 可复现性的工程细节
-- Benchmark 库
-- 同行评议的应对
-- 可信度的工程实现
-- 跨学科的可信度建设
-- 可信度的可视化
-- 研究失败的应对
-- 研究者的伦理责任
-
-可信度建设是社会仿真研究的"硬功夫",需要长期积累。
-
-最后,祝读者研究顺利、可信度不断提升!
-
-
----
-
-## 12.30　扩展:可信度的元科学
+12.30　扩展:可信度的元科学
 
 ### 12.30.1　元科学的兴起
 
@@ -1054,24 +976,7 @@ def generate_credibility_report(assessment: dict) -> str:
 - **可重复代码**:代码和数据公开
 - **开放科学**:全过程开放
 
-社会仿真研究者要利用仿真"先天可重复"的优势,推动整个领域的元科学化。
-
----
-
-## 12.31　扩展:可信度评估的具体方法
-
-### 12.31.1　构念效度的具体评估
-
-构念效度评估的具体步骤:
-
-1. **明确构念**:研究者要测的是什么?
-2. **识别代理**:用什么指标测?
-3. **多代理测量**:用多个指标
-4. **探索性分析**:看指标分布是否合理
-5. **质性校验**:人工判断行为是否符合预期
-6. **调整因素**:根据反馈修正指标
-
-### 12.31.2　内部效度的具体评估
+社会仿真研究者要利用仿真"先天可重复"的优势,推动整个领域的元科学化。2　内部效度的具体评估
 
 内部效度评估的具体步骤:
 
@@ -1094,7 +999,7 @@ def generate_credibility_report(assessment: dict) -> str:
 
 ---
 
-## 12.32　扩展:同行评议的应对策略
+### 12.32 扩展:同行评议的应对策略
 
 ### 12.32.1　理解评审的角色
 
@@ -1149,7 +1054,7 @@ def generate_credibility_report(assessment: dict) -> str:
 
 ---
 
-## 12.33　扩展:可信度的具体案例
+### 12.33 扩展:可信度的具体案例
 
 ### 12.33.1　Sugarscape 的可信度建设
 
@@ -1189,7 +1094,7 @@ Axelrod 锦标赛的可信度建设:
 
 ---
 
-## 12.34　扩展:可信度的政策应用
+### 12.34 扩展:可信度的政策应用
 
 ### 12.34.1　可信度评估的政策含义
 
@@ -1219,7 +1124,7 @@ Axelrod 锦标赛的可信度建设:
 
 ---
 
-## 12.35　扩展:可信度与科学哲学
+### 12.35 扩展:可信度与科学哲学
 
 ### 12.35.1　科学实在论 vs 反实在论
 

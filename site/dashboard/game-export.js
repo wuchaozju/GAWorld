@@ -208,7 +208,65 @@
     );
   }
 
-  // -- 公投 -----------------------------------------------------------------
+  // -- 陪审团 ---------------------------------------------------------------
+  function jury(run, now) {
+    const c = run.case || {};
+    const tally = run.tally || {};
+    const stats = run.stats || {};
+    const question = run.question || {};
+    const jurors = run.jurors || [];
+    const verdict = tally.verdict || "无罪";
+    const headline =
+      `陪审团：${c.emoji || ""} ${c.title || ""}`.trim()
+      + ` — 裁决${verdict}（${tally.guilty || 0} 有罪 / ${tally.not_guilty || 0} 无罪）`;
+
+    const ballots = jurors.map((j, i) => [
+      `陪审员 #${i + 1}`,
+      j.name || "",
+      j.verdict || "—",
+      String(j.confidence || 0),
+      one(j.quote || ""),
+      one(j.secondary_value || ""),
+    ]);
+    const rounds = (run.rounds_log || []).map((log) => {
+      const speeches = (log.speeches || []).map((sp) =>
+        `- **${sp.name || ("#" + sp.agent_id)}**：${one(sp.text || "")}`
+      ).join("\n");
+      return `### 第 ${(log.round || 0) + 1} 轮\n\n${speeches}`;
+    }).join("\n\n");
+
+    return doc(
+      headline,
+      [
+        run.city ? `城市：${run.city}` : "",
+        c.defendants ? `被告：${c.defendants}` : "",
+        `第二个问题：${(question.label || "")}`,
+      ],
+      [
+        c.facts ? `## 案情\n\n${quote(c.facts)}` : "",
+        [
+          `## 裁决：${verdict}`,
+          `${tally.guilty || 0} 票有罪、${tally.not_guilty || 0} 票无罪`,
+          `意见分歧度：${stats.spread || 0} / 100`,
+          `中位信心：${stats.median_confidence || 0} / 100`,
+          (tally.supporting || []).length
+            ? `\n**${verdict}方：**\n` + (tally.supporting || []).map((s) => `- ${s.name || ""}：${one(s.quote || "")}`).join("\n")
+            : "",
+          (tally.dissenting || []).length
+            ? `\n**反对方：**\n` + (tally.dissenting || []).map((s) => `- ${s.name || ""}：${one(s.quote || "")}`).join("\n")
+            : "",
+        ].filter(Boolean).join("\n\n"),
+        `## 投票明细\n\n` + table(
+          ["席位", "姓名", "投票", "信心", "理由", question.text ? "量刑题回答" : ""],
+          ballots,
+        ),
+        rounds,
+      ],
+      now
+    );
+  }
+
+// -- 公投 -----------------------------------------------------------------
   function referendum(run, now) {
     const motion = run.motion || {};
     const stats = run.stats || {};
@@ -322,6 +380,94 @@
     );
   }
 
+  // -- 小说局 -------------------------------------------------------------
+  function novel(run, now) {
+    const cast = (run.cast || []).map((c) => `${c.name}（${c.role || "—"}）`).join("、");
+    const stats = run.stats || {};
+    const totalWords = stats.total_words || run.chapters.reduce((s, c) => s + (c.word_count || 0), 0);
+    const targetWords = run.target_words || stats.target_words || 0;
+    const chapters = (run.chapters || []).map((c) => {
+      const head = `## 第${c.chapter}章　${one(c.title)}\n\n`;
+      const meta = c.summary ? `> ${one(c.summary)}\n\n` : "";
+      return head + meta + (c.text || "");
+    });
+    const toc = (run.chapters || []).map((c) => `- 第${c.chapter}章　${one(c.title)}（${c.word_count || 0}字）`).join("\n");
+
+    const meta = [
+      run.city ? `城市：${run.city}` : "",
+      `风格：${(run.style && run.style.title) || "—"} · 视角：${(run.style && run.style.point_of_view) || "—"}`,
+      `角色：${cast || "—"}`,
+      targetWords ? `目标：${targetWords}字 · 实写：${totalWords}字` : "",
+    ].filter(Boolean);
+
+    return doc(
+      run.title || "未命名小说",
+      meta,
+      [
+        run.premise ? `## 核心情境\n\n${one(run.premise)}` : "",
+        run.back_cover ? `## 封面简介\n\n${run.back_cover}` : "",
+        chapters.length ? `## 目录\n\n${toc}\n\n---\n\n` + chapters.join("\n\n") : "",
+      ].filter(Boolean),
+      now
+    );
+  }
+
+  // -- 新闻评论 -------------------------------------------------------------
+  function commentary(run, now) {
+    const news = run.news || {};
+    const related = run.related || [];
+    const stats = run.stats || {};
+    const counts = stats.stance_counts || {};
+    const breakdown = ["支持", "反对", "中立", "质疑", "其他"]
+      .filter((s) => counts[s])
+      .map((s) => `${s} ×${counts[s]}`)
+      .join("、") || "—";
+
+    const rows = (run.nodes || [])
+      .slice()
+      .sort((a, b) => (b.strength || 0) - (a.strength || 0))
+      .map((n) => [who(n.agent_id, n.name), n.job || "—", n.stance || "其他", n.strength || 0, n.comment || "(没说话)"]);
+
+    const strongest = stats.strongest
+      ? `${stats.strongest.name}（${stats.strongest.stance} · 强度 ${stats.strongest.strength}）`
+      : "—";
+
+    const meta = [
+      run.city ? `城市：${run.city}` : "",
+      `来源：${news.source === "url" ? (news.url || "网址") : "粘贴文本"}`,
+      related.length ? `相关阅读：${related.length} 条` : "",
+      `${stats.total || 0} 人 · ${stats.spoke || 0} 出声`,
+      `平均强度 ${stats.avg_strength || 0}`,
+    ];
+
+    const relatedSection = related.length
+      ? "## 相关阅读（仅作背景）\n\n" + related.map((r) => {
+          const head = `《${one(r.title) || "(无题)"}》`;
+          const src = r.source === "url" ? `[链接](${r.url})` : "粘贴文本";
+          const err = r.fetch_error ? ` ⚠ ${one(r.fetch_error)}` : "";
+          return `- ${head} · ${src}${err}`;
+        }).join("\n")
+      : "";
+
+    const sections = [
+      news.title ? `## 新闻\n\n**${one(news.title)}**` : "",
+      news.body ? quote(news.body) : "",
+      news.fetch_error ? `> ⚠ ${one(news.fetch_error)}` : "",
+      relatedSection,
+      run.summary ? `## 总览\n\n${one(run.summary)}` : "",
+      "## 立场分布\n\n" + breakdown,
+      `**最坚定：** ${strongest}`,
+      rows.length ? "## 每个人的评论\n\n" + table(["居民", "职业", "立场", "强度", "评论"], rows) : "",
+    ];
+
+    return doc(
+      `新闻评论：${one(news.title) || "(无题)"}`.trim(),
+      meta.filter(Boolean),
+      sections,
+      now
+    );
+  }
+
   // -- 浏览器胶水 -----------------------------------------------------------
   function download(filename, markdown) {
     const blob = new Blob(["﻿" + markdown], { type: "text/markdown;charset=utf-8" });
@@ -358,5 +504,5 @@
     return { sync };
   }
 
-  return { arena, attach, disaster, duel, fileName, guess, persuasion, referendum, rumor };
+  return { arena, attach, commentary, disaster, duel, fileName, guess, jury, novel, persuasion, referendum, rumor };
 }));

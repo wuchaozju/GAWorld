@@ -38,6 +38,7 @@ from .environment import environment_settings
 from .family import family_settings
 from .integrations import integration_settings
 from .llm import llm_settings
+from .organizations import organizations_settings
 from .personality import personality_settings
 from .runtime import simulation_settings
 
@@ -115,6 +116,14 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
         "规则；要动正在跑的那一轮，去「外部系统 → 货币系统」排干预。",
     ),
     (
+        "organizations",
+        "organizations",
+        organizations_settings,
+        "持久组织",
+        "默认关闭。启用后，社区执行资助分配，企业发布有限岗位并由自身账户发工资。"
+        "组织身份、规则、成员、预算和历史随世界保存；需同时启用经济，仅支持单机逐 tick 与按日快进。",
+    ),
+    (
         "family",
         "family",
         family_settings,
@@ -160,6 +169,7 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
 
 #: ``section id -> (title, help)``.
 SECTION_EN: dict[str, tuple[str, str]] = {
+    "organizations": ("Persistent organizations", "Finite community aid and company hiring with durable identities, rules, budgets and history. Requires economy; supports single-machine ticks and daily fast-forward."),
     "simulation": (
         "Simulation run",
         "The skeleton of one run: how many days, which residents, how time advances, "
@@ -281,6 +291,17 @@ LABELS_EN: dict[str, str] = {
     "unit": "Step unit",
     "period_brief_max_chars": "Period briefing char cap",
     "hook_chunk_days": "Day-hook catch-up block (days)",
+    "simulation_mode": "Simulation mode",
+    "group": "Cohort tier",
+    "cohort_axes": "Cohort axes",
+    "min_cohort_size": "Smallest cohort",
+    "materialization_budget": "Individuals per day",
+    "audit_fraction": "Audit sample share",
+    "focal_ids": "Focal residents",
+    "residual_alarm": "Audit residual alarm",
+    "audit_boost_factor": "Audit boost factor",
+    "audit_boost_max": "Audit boost cap",
+    "audit_cooldown_days": "Audit cool-down (days)",
     "action_space": "Action space generation",
     "activities_per_call": "Activities asked per call",
     "personality": "Big Five",
@@ -395,6 +416,7 @@ LABELS_EN: dict[str, str] = {
     "run_manifest": "Run manifest",
     "html_report": "HTML report",
     "partial_write": "Partial manifest at start",
+    "degraded_failure_share": "Lost-request share for 'degraded'",
     "day_routine_workers": "Schedule generation workers",
     "external_rag": "External information injection",
     "bootstrap": "Cold-start injection",
@@ -428,6 +450,11 @@ LABELS_EN: dict[str, str] = {
     "traffic.beta": "BPR beta",
     "traffic.decay": "Congestion carry-over",
     "agents_represent": "Travellers per resident",
+    "local_physical.capacity": "Venue capacity",
+    "local_physical.capacity.categories": "Capped categories",
+    "local_physical.capacity.agents_represent": "People per resident (blank = traffic's)",
+    "local_physical.capacity.redirect_top_k": "Alternatives tried before refusing",
+    "local_physical.rooms": "Rooms",
     "max_congestion": "Congestion ceiling",
     "mode_pcu": "Car-equivalents per mode",
     "road_capacity": "Capacity by road class",
@@ -572,6 +599,8 @@ LABELS_EN: dict[str, str] = {
     "max_away_share": "Max share away",
     "fare_per_km": "Fare per km",
     "daily_surcharge": "Daily cost away",
+    "paid_leave_days_per_year": "Paid leave days a year",
+    "compress_away_days": "Compress days away",
     "obligation_threshold": "Obligation threshold",
     "daily_prob_over_threshold": "Daily chance once due",
     "min_cash_months": "Cash floor (months)",
@@ -668,6 +697,15 @@ LABELS_EN: dict[str, str] = {
     "min_spend_factor": "Minimum spend factor",
     "macro": "Macro cycle",
     "initial_inflation_rate": "Initial inflation rate",
+    "economy.macro.inflation": "Endogenous inflation",
+    "economy.macro.inflation.driver": "Driver",
+    "economy.macro.inflation.anchor": "Inflation anchor (annual)",
+    "economy.macro.inflation.sensitivity": "Gap sensitivity",
+    "economy.macro.inflation.baseline_days": "Demand baseline days",
+    "economy.macro.inflation.window_days": "Demand window days",
+    "economy.macro.inflation.natural_unemployment": "Natural unemployment (phillips)",
+    "economy.macro.inflation.suppress_phase_expense_mult": "Suppress the phase expense multiplier",
+    "economy.macro.inflation.wage_indexation": "Wage indexation share",
     "initial_unemployment_rate": "Initial unemployment rate",
     "unemployment_from_agents": "Count unemployment from the residents",
     "cycle_phase_duration_days": "Phase duration range (days)",
@@ -806,6 +844,10 @@ LABELS_EN: dict[str, str] = {
     "daily_probability": "Daily event chance per household",
     "contagion_enabled": "Enable in-household mood contagion",
     "remote_contagion_weight": "Remote-family contagion strength",
+    "family.members_as_agents": "Family members as residents",
+    "min_child_age": "Youngest child promoted",
+    "min_elder_age": "Youngest elder promoted",
+    "max_new_agents": "Most new residents",
 }
 
 #: ``MANUAL_HELP`` twin, key for key. Anything absent falls back to the
@@ -885,6 +927,48 @@ MANUAL_HELP_EN: dict[str, str] = {
         "interest decay, household costs) are caught up. Capped at 30 so one block spans at "
         "most one month-end settlement — otherwise a year-long run would deduct a single "
         "day's rent."
+    ),
+    "simulation_mode": (
+        "individual: every resident runs the full pipeline. group: cohorts move most of the "
+        "town at one call per cohort per day and a few residents run individually — "
+        "500 people cost about as much as 60. Needs day-step fast-forward. Not for "
+        "network-diffusion questions: a cohort moves its members together."
+    ),
+    "group": (
+        "The cohort tier. In group mode it carries the population; in an individual run, "
+        "`enabled` only records cohort statistics each day."
+    ),
+    "group.enabled": (
+        "Individual runs only: record each day how the population clusters and drifts, "
+        "changing nothing. Group mode does not need it."
+    ),
+    "group.cohort_axes": (
+        "What residents are grouped by. Empty = age band × industry × hukou. Finer cohorts "
+        "cost more calls and describe their members better."
+    ),
+    "group.min_cohort_size": "Cells smaller than this are merged into the nearest cohort.",
+    "group.materialization_budget": (
+        "How many residents run the ordinary fast-forward brief each day: focal residents and "
+        "the audit sample first, then those their cohort describes worst. This, not the "
+        "cohort count, is what the run costs."
+    ),
+    "group.audit_fraction": (
+        "Share of the town sampled each day to check the cohorts: they run individually and "
+        "their own change is compared with what their cohort predicted. Without it a group run "
+        "reports no error at all."
+    ),
+    "group.focal_ids": "Residents who always run individually — the people a study follows.",
+    "group.max_state_delta": "How far one cohort may move its members in a day.",
+    "group.residual_alarm": (
+        "Audit residual (summed over the state variables) above which a cohort counts as "
+        "mis-describing its members."
+    ),
+    "group.audit_boost_factor": (
+        "After an alarm, that cohort's audit sample is multiplied by this for the next day."
+    ),
+    "group.audit_boost_max": "Ceiling on that multiplier.",
+    "group.audit_cooldown_days": (
+        "Days under the alarm before a raised audit steps back down."
     ),
     "calendar": (
         "The simulation calendar: which day it starts, what weekday that is, and which days "
@@ -1099,6 +1183,11 @@ MANUAL_HELP_EN: dict[str, str] = {
         "Snapshot a partial manifest at run start. Costs nothing on success; on a crash it "
         "leaves a breadcrumb showing what the run was about to do."
     ),
+    "run_manifest.degraded_failure_share": (
+        "A finished run is marked 'degraded' instead of 'ok' when more than this share of "
+        "its model requests failed on every provider, fallbacks included — those decisions "
+        "fell back to heuristic defaults."
+    ),
     "llm": (
         "Multi-backend model configuration: `providers` lists what is available, `routing` "
         "decides which task goes where."
@@ -1177,6 +1266,34 @@ MANUAL_HELP_EN: dict[str, str] = {
         "loop already works this out and then throws it away; this keeps it. Off by default "
         "\u2014 it is one row per tick and nothing but the Track B redistribution analysis "
         "reads it."
+    ),
+    "local_physical.capacity": (
+        "A full venue turns people away. A trip to a shop or leisure place whose crowd would "
+        "exceed its capacity goes to the nearest place of the same kind that is open and has "
+        "room, or is refused and the resident stays put. Off by default: it changes who is "
+        "where, so runs before and after are not comparable."
+    ),
+    "local_physical.capacity.categories": (
+        "Which kinds of place can be full. Homes, work, school, hospitals and stations are "
+        "never capped: being turned away from those is not something this models."
+    ),
+    "local_physical.capacity.agents_represent": (
+        "How many real people one resident stands for when counting a crowd. Blank uses the "
+        "road-congestion value. A modelling knob: at 1 a 600-person venue never fills in a "
+        "500-resident town, so any finding about refusals must hold across several values."
+    ),
+    "local_physical.capacity.redirect_top_k": (
+        "How many nearby places of the same kind to try before refusing. 0 refuses at once."
+    ),
+    "local_physical.rooms": (
+        "Residents stand in rooms. Every household gets its own flat in its building (the "
+        "citymap's Floor/Flat lines, with floors added when there are more households than "
+        "flats); each step puts the resident in the room that fits what they are doing (bed "
+        "for sleeping, kitchen for cooking, seating for eating out). Chance encounters then "
+        "need the same room, not just the same place, so neighbours at home no longer run "
+        "into each other; with venue capacity on, it is counted per room (a room holds the "
+        "venue's capacity times its share of the floor plan). Off by default: it changes who "
+        "meets whom, so runs before and after are not comparable."
     ),
     "home": (
         "Designs each agent's home (rooms, furniture, ambiance) and feeds an at-home "
@@ -1381,6 +1498,18 @@ MANUAL_HELP_EN: dict[str, str] = {
         "Daily lodging and eating-out cost while away, settled through the economy's "
         "conserved spending channel."
     ),
+    "travel.paid_leave_days_per_year": (
+        "Working days a family visit or holiday may take as paid annual leave per "
+        "simulated year; each pays one day's salary (gross monthly / working days a "
+        "month). Later ones are unpaid. 5 is the statutory minimum for 1–10 years of "
+        "service. Business trips are work, and weekends are not leave."
+    ),
+    "travel.compress_away_days": (
+        "A day out of town skips the daily routine and the per-step perceive / plan / "
+        "act / reflect calls; one day digest (one model call) writes a memory and a "
+        "bounded state change instead. The ledger, the timeline and the end-of-day "
+        "summary carry on as usual."
+    ),
     "travel.fare_per_km": (
         "One-way fare per kilometre (rail or air). A modelling guess: it decides whether "
         "a trip is expensive, and supports no conclusion of its own."
@@ -1488,9 +1617,39 @@ MANUAL_HELP_EN: dict[str, str] = {
         "The macro cycle: expansion → peak → contraction → trough. Raise and layoff chances "
         "differ by phase."
     ),
+    "economy.macro.phase_effects": (
+        "What each phase does to residents. layoff_risk and raise_chance are chances per "
+        "resident per month, added to shocks.layoff_base_prob / raise_base_prob: 0.025 means "
+        "a whole year in that phase sees about a quarter of residents laid off once."
+    ),
     "economy.macro.initial_inflation_rate": (
-        "The annual inflation rate. Note it acts only on the spending side — wages do not "
-        "follow, so over a long run residents can afford steadily less."
+        "Starting annual inflation rate. On its own this number is display-only: nothing in "
+        "the ledger reads it or the price index. Switch on macro.inflation for prices to reach "
+        "spending."
+    ),
+    "economy.macro.inflation": (
+        "Prices that actually reach the ledger. Spending (and rent) is multiplied by the price "
+        "index, and the inflation rate is driven by the residents: by real consumption against "
+        "its first-month baseline (demand), by the counted unemployment (phillips), or left to "
+        "the cycle's random walk (exogenous). Off by default; runs before and after are not "
+        "comparable."
+    ),
+    "economy.macro.inflation.driver": (
+        "demand: more real spending than at the start pushes inflation up, less pulls it down. "
+        "phillips: unemployment above its natural rate pulls inflation down. exogenous: the old "
+        "random walk, now priced in."
+    ),
+    "economy.macro.inflation.sensitivity": (
+        "How strongly the gap moves inflation: 0.5 means spending 10% above baseline adds 5 "
+        "points to the anchor. A guessed knob — read results across several values."
+    ),
+    "economy.macro.inflation.wage_indexation": (
+        "Share of last month's price rise added to wages at the month-end settlement. 0: wages "
+        "never follow and residents can afford less and less; 1: prices barely matter."
+    ),
+    "economy.macro.inflation.suppress_phase_expense_mult": (
+        "Set the cycle phase's own expense multiplier to 1 while the price index is on, so the "
+        "cycle does not make things dearer twice."
     ),
     "economy.macro.unemployment_from_agents": (
         "Work the unemployment figure out by counting who actually holds a job, "
@@ -1504,8 +1663,9 @@ MANUAL_HELP_EN: dict[str, str] = {
         "drives layoffs is each phase's layoff_risk."
     ),
     "economy.shocks": (
-        "Individual-level accidents: layoffs, raises, medical emergencies. The probabilities "
-        "are per resident per period."
+        "Individual-level accidents: layoffs, raises, medical emergencies. Layoff and raise "
+        "chances (here and each phase's layoff_risk / raise_chance) are per resident per "
+        "month; the medical emergency chance is per resident per day."
     ),
     "economy.routing": (
         "Where a resident's spending goes: the merchant's labour share into the firms pool, "
@@ -1762,6 +1922,25 @@ MANUAL_HELP_EN: dict[str, str] = {
         "The chance of one household event per household per day (a child's fever, a row, a "
         "family meal). The event lands on everyone in the household at once."
     ),
+    "family.members_as_agents": (
+        "Turn co-resident school-age children and co-resident elders into residents in their "
+        "own right, once, before day 1: their own schedule, perception, memory and place on "
+        "the map, living at the household's home (a child's daytime place is the nearest "
+        "school). They stay dependants in the ledger — no account; the household keeps paying "
+        "for them — and never travel on their own. Off by default: every promoted member costs "
+        "as much model time as any other resident."
+    ),
+    "family.members_as_agents.min_elder_age": (
+        "Co-resident parents younger than this are often still working; they would need a job "
+        "and an income of their own, so they stay off-screen."
+    ),
+    "family.members_as_agents.min_child_age": (
+        "Co-resident children from this age up to 17 become residents (school age). Younger "
+        "children stay off-screen."
+    ),
+    "family.members_as_agents.max_new_agents": (
+        "The most such residents one run may add — a hard ceiling on the cost."
+    ),
     "family.events.contagion_weight": (
         "How strongly co-resident family influence each other's mood and stress. It moves "
         "people toward each other rather than adding or subtracting out of nowhere: a "
@@ -1921,6 +2100,19 @@ MANUAL_HELP: dict[str, str] = {
     "long_run.randomness": "快进期间的随机程度：越高，突发事件越频繁、状态波动越大。0 = 完全确定，同种子必然复现。粗粒度下突发事件的期望个数按步长天数放大。",
     "long_run.brief_max_chars": "每条日简报的字数上限，超了会被截断。",
     "long_run.period_brief_max_chars": "月度简报的字数上限；年度简报按 1.5 倍算。",
+    "simulation_mode": "individual：每位居民走完整管线。group：大多数人由所属群体推进（每个群体每天一次调用），少数人单独跑——500 人的花费约等于 60 人。必须按天快进。不能用来研究网络扩散：一个群体里的人一起动。",
+    "group": "群体层。群体模式下由它推进人口；普通运行里打开 enabled 只每天记录群体统计。",
+    "group.enabled": "只对普通运行有用：每天记录人口怎么分群、怎么漂移，不改变任何人。群体模式不需要它。",
+    "group.cohort_axes": "按什么分群。留空 = 年龄段 × 行业 × 户籍。分得越细调用越多、越能代表群里的人。",
+    "group.min_cohort_size": "人数少于这个的格子并入最近的群体。",
+    "group.materialization_budget": "每天有多少人单独跑普通的快进简报：先焦点居民和审计样本，剩下的给群体最描述不了的人。运行花多少主要看它，不看群体数。",
+    "group.audit_fraction": "每天抽多少比例的人核对群体：他们单独跑，再拿自己的变化和群体的预测比。没有它，群体运行就报不出任何误差。",
+    "group.focal_ids": "始终单独跑的居民——研究要跟踪的人。",
+    "group.max_state_delta": "一个群体一天最多把成员推多远。",
+    "group.residual_alarm": "审计残差（各状态变量之和）超过它，就算这个群体没描述好它的成员。",
+    "group.audit_boost_factor": "告警后，这个群体第二天的审计样本乘以这个倍数。",
+    "group.audit_boost_max": "这个倍数的上限。",
+    "group.audit_cooldown_days": "连续多少天不告警，加大的审计才降回去。",
     "long_run.hook_chunk_days": "粗粒度下，日边界钩子（经济结算、兴趣衰减、家庭开销）每多少天补跑一次。上限 30，保证一个区块最多跨一次月结算——否则跑一年只会扣一天房租。",
     "calendar": "仿真日历：从哪天开始、开局是周几、哪几天算周末。周末会改变日程模板和外出概率。",
     "calendar.start_date": "开局日期。填 today 表示用今天的真实日期。",
@@ -1991,6 +2183,10 @@ MANUAL_HELP: dict[str, str] = {
     "run_manifest.partial_write": (
         "开跑时先写一份 partial 清单：正常结束不需要，异常崩溃时能留下线索。"
     ),
+    "run_manifest.degraded_failure_share": (
+        "模型请求在所有备用后端上都失败的比例超过它，跑完的运行就记为 degraded 而不是 ok"
+        "——那些决策退回了规则默认值，这次运行已经不是配置描述的那次运行。"
+    ),
     # ---- 语言模型 ----
     "llm": "多后端模型配置：providers 是可用后端清单，routing 决定哪个任务派给谁。",
     "llm.providers": (
@@ -2008,6 +2204,15 @@ MANUAL_HELP: dict[str, str] = {
     # ---- 环境 ----
     "local_physical": "居民对当前所在地点的感知：挤不挤、开没开门。关掉后人对周围环境一无所知。",
     "local_physical.record_occupancy": "把每一步每个地点的人数写进 output/records。感知循环本来就算了这个数，算完就扔，这里只是把它留下来。默认关——每步一行，而且目前只有 Track B 的重分布分析会读它。",
+    "local_physical.capacity": "场所满了就进不去：去商店或休闲场所时，如果人数会超过容量，就改去最近的、同类、开着门且有空位的地方；都满就去不成，原地不动，下一步的感知里会知道为什么。默认关——它改变每个时刻谁在哪，开启前后的 run 不可比。",
+    "local_physical.capacity.categories": "哪些类别的地方会满。住宅、单位、学校、医院、车站永远不限：被它们拒之门外不是这里要模拟的事。",
+    "local_physical.capacity.agents_represent": "数人头时一个居民代表多少真人。留空沿用道路拥堵的设定。这是建模旋钮：取 1 时，500 人的小镇永远挤不满一个 600 人容量的地方，所以关于「被拒多少」的结论要在几个取值下都成立。",
+    "local_physical.capacity.redirect_top_k": "被拒之前先试附近几个同类场所。0 = 满了直接拒绝。",
+    "local_physical.rooms": "居民待在房间里：每个家庭在自己那栋楼里分到一户（用城市地图里的 Floor/Flat，户数不够就往上加层）；每一步按正在做的事把人放进合适的房间（睡觉在卧室、做饭在厨房、在外吃饭在座位区）。偶遇要同一个房间才算，所以同楼的邻居在家里不再「碰面」；场所容量也开着时按房间算（房间容量 = 场所容量 × 面积占比）。默认关——它改变谁会碰到谁，开启前后的 run 不可比。",
+    "home": "给每个居民设计一个家（房间、家具、氛围），居民真的在家时，把一句在家情况（所在房间 + 光线、声音、温度、整洁度）写进感知。默认按程序生成、可复现：同一个种子跑两次，家一模一样；`llm_enrich` 可以再润色家具名和整体氛围。",
+    "home.llm_enrich": "每个居民调一次大模型，润色家具名并写一句氛围描述。默认关——程序生成的结果已经够用，润色只改文字，不影响在家观察。",
+    "home.inject_into_perception": "是否把在家的房间与氛围那一句写进居民的感知上下文。关掉后照样记录，只是不进提示词。",
+    "home.record_observations": "每一步往 `output/home/agent_<id>.jsonl` 追加一行观察。感知循环本来就算了这份快照，这里把它留下来供后续分析（在家面板读的就是这个文件）。",
     "economy.use_profile_income": "按居民简历上写的收入给他发工资，而不是照职业名再算一个。关掉的话，账本和这个人的自我描述是两回事——实测 326 人相关系数只有 0.31，账本中位数比简历高 39%，人口本来的贫富差距也被抹平了。简历上没写收入的人，两种设置下都回落到按职业估算。",
     "economy.profile_income_jitter": "工资可以在简历那个数上下浮动多少，免得整座城的收入都是整数。设 0 就严格照简历发。",
     "location_assignment": "居民最后住在哪、在哪上班。\u300cnearest\u300d是原来的做法：同一类职业都被派去最近的那栋楼，结果整座镇挤在少数几个地址里，大部分路上一个人都没有。\u300cgravity\u300d改成在附近的候选里挑，容量大的、离得近的更容易被选中。改这个会改变谁住哪、谁在哪上班，所以之前的运行结果不能直接拿来比。",
@@ -2060,6 +2265,8 @@ MANUAL_HELP: dict[str, str] = {
     "travel": "居民会离开本市几天：出差、去外省探亲、旅行，然后回来。在外期间他不占本市任何地点、不与本市任何人照面、也不上本市的路。默认关闭——它改变每天城里还剩多少人，开启前后的 run 不可比。",
     "travel.max_away_share": "同一天最多允许多少比例的居民在外。没有这个上限，三个触发叠加会把城市掏空。",
     "travel.daily_surcharge": "在外每天的住宿与外食开销，走经济系统的守恒支出通道结算。",
+    "travel.paid_leave_days_per_year": "探亲或旅行每个仿真年可以按带薪年假请的工作日数，每天发一天的工资（税前月薪 ÷ 每月工作日）；超出的按无薪假。5 是工龄 1–10 年的法定最低档。出差算工作，周末不算假。",
+    "travel.compress_away_days": "在外的日子不再生成当天日程、不再逐步调用感知 / 计划 / 行动 / 反思；改为每天一次日摘要（一次模型调用），写一条记忆和有上限的状态变化。账本、时间线和日终总结照常。",
     "travel.fare_per_km": "每公里票价（高铁／飞机），单程。这是建模猜测值，只决定一趟出行贵不贵，不支撑任何结论。",
     "travel.business.base_daily_prob": "工作日出差的基础概率，再按职业调制——销售、外贸、咨询远高于平均。",
     "travel.family.obligation_threshold": "关系责任感涨到多少就该回去看看。对疏于联系的家人，这个量本来每天都在涨却无处可去，探亲是它唯一的出口。",
@@ -2095,10 +2302,16 @@ MANUAL_HELP: dict[str, str] = {
     "economy.investment": "投资收益模型：各类资产的均值/波动，以及保守/稳健/激进三种组合画像。",
     "economy.credit": "信贷：能借多少（按月收入的倍数）、年利率多少。利率越高，欠债的人越难翻身。",
     "economy.macro": "宏观周期：扩张 → 顶峰 → 收缩 → 谷底循环。不同阶段的涨薪和裁员概率不一样。",
-    "economy.macro.initial_inflation_rate": "年通胀率。注意它只作用在支出侧——工资不跟涨，所以长期跑下来居民会越来越买不起东西。",
+    "economy.macro.phase_effects": "每个阶段对居民的影响。layoff_risk 和 raise_chance 是每人每月的概率，叠加在 shocks 的裁员 / 涨薪底噪上：0.025 意味着一整年都在这个阶段的话，约四分之一的人会被裁一次。",
+    "economy.macro.initial_inflation_rate": "初始年通胀率。单靠它只是一个显示用的数字：账本里没有任何东西读它或物价指数。要让物价真的进账本，打开 macro.inflation。",
+    "economy.macro.inflation": "让物价真的进账本：支出（含房租）乘以物价指数，通胀率由居民决定——按实际消费相对开头一个月的偏离（demand）、按统计出的失业率（phillips），或沿用周期随机游走（exogenous）。默认关；开启前后的 run 不可比。",
+    "economy.macro.inflation.driver": "demand：实际消费比开头多，通胀就往上走，少就往下走。phillips：失业率高于自然失业率时通胀往下走。exogenous：原来的随机游走，只是现在真的计入价格。",
+    "economy.macro.inflation.sensitivity": "缺口对通胀的拉动强度：0.5 表示消费比基线高 10%，通胀在锚点上加 5 个百分点。这是猜的旋钮，结论要在几个取值下都成立。",
+    "economy.macro.inflation.wage_indexation": "月结时把上个月物价涨幅的多大比例加到工资上。0：工资从不跟涨，居民越来越买不起；1：物价几乎不起作用。",
+    "economy.macro.inflation.suppress_phase_expense_mult": "物价指数开着时，把周期相位自带的支出倍数按 1 计，免得「周期让东西变贵」算两遍。",
     "economy.macro.unemployment_from_agents": "失业率按「到底有多少人真的有工作」统计出来，而不是让它自己随机漂。关掉的话，会出现全城人人有工作、面板上却写着 5.2% 失业的情况。仿真里没有任何东西读这个数，所以它只决定你看到的数字是不是真的。退休和在读学生不计入。",
     "economy.macro.initial_unemployment_rate": "一个景气指标，本身不会让谁丢工作；真正决定裁员的是各阶段的 layoff_risk。",
-    "economy.shocks": "个体层面的意外：裁员、涨薪、医疗急症。概率是每人每期的。",
+    "economy.shocks": "个体层面的意外：裁员、涨薪、医疗急症。裁员和涨薪的概率（这里的和各阶段的 layoff_risk / raise_chance）是每人每月的；医疗急症的概率是每人每天的。",
     "economy.routing": "居民花出去的钱流向谁：商户的劳动分成进企业池，房租进房东，其余按规则分配。",
     "economy.friend_loans": "熟人之间借钱的规则：最多欠几个月、出借方要留多少缓冲、有多大意愿借。",
     "economy.sectors": "企业池 / 政府池 / 银行池的初始余额。这三个池子加上所有居民账户构成系统总货币，正常情况下总量守恒。",
@@ -2148,6 +2361,10 @@ MANUAL_HELP: dict[str, str] = {
     "personality.sampling.rescale": "抽完之后把人群拉回均值 0、标准差 1。五十来个人的样本，均值本身就有约 0.14 个标准差的抖动，不拉回来整座城可能系统性偏内向或偏焦虑，而这会被误读成一个发现。",
     "family.finance.elder_support_monthly": "给不同住的老人每月寄多少赡养费。父母年龄到了下面那个阈值才开始算。",
     "family.events.daily_probability": "每户每天发生一件家庭事件的概率（孩子发烧、夫妻吵架、家庭聚餐……）。事件会同时落到全家人身上。",
+    "family.members_as_agents": "开局前把同住的学龄子女和同住长辈变成真正的居民：有自己的日程、感知、记忆和地图上的位置，住在这户的家里（孩子白天去最近的学校）。账本上他们仍是被抚养人——没有账户，费用照旧由这户承担——也不会独自出行。默认关闭：每多一个这样的居民，模型开销就和普通居民一样多一份。",
+    "family.members_as_agents.min_elder_age": "比这个年龄小的同住父母往往还在工作，需要自己的工作和收入，所以仍留在场外。",
+    "family.members_as_agents.min_child_age": "从这个年龄到 17 岁的同住子女成为居民（学龄）。更小的孩子仍在场外。",
+    "family.members_as_agents.max_new_agents": "一次运行最多新增多少位这样的居民——开销的硬上限。",
     "family.events.contagion_weight": "同住家人之间情绪和压力的互相影响强度。它是「向对方靠拢」而不是凭空加减：全家都平静时不会产生任何漂移。调到 0 就关掉传染。",
     "family.cohabitation": "未婚但住在一起的那部分人。他们拿到的是「伴侣」而不是「配偶」，也不会有共同子女。",
     "family.cohabitation.share": "这个年龄区间内的未婚居民里，有多少和伴侣同居。",
@@ -2204,6 +2421,11 @@ LABELS: dict[str, str] = {
     "long_run": "长时段快进", "brief_llm": "简报用 LLM", "max_state_delta": "单步状态变化上限",
     "brief_max_chars": "日简报字数上限", "unit": "步长单位",
     "period_brief_max_chars": "阶段简报字数上限", "hook_chunk_days": "日钩子补跑区块(天)",
+    "simulation_mode": "仿真模式", "group": "群体层", "cohort_axes": "分群维度",
+    "min_cohort_size": "最小群体人数", "materialization_budget": "每天单独跑的人数",
+    "audit_fraction": "审计抽样比例", "focal_ids": "焦点居民", "residual_alarm": "审计残差告警线",
+    "audit_boost_factor": "告警后审计倍数", "audit_boost_max": "审计倍数上限",
+    "audit_cooldown_days": "审计回落天数",
     "action_space": "动作空间生成", "activities_per_call": "每次调用问几个活动",
     # 大五人格
     "personality": "大五人格", "channels": "生效通道", "rules": "规则通道", "prompt": "提示词通道",
@@ -2254,6 +2476,7 @@ LABELS: dict[str, str] = {
     "max_override_bonus": "覆盖加成上限",
     "concurrency": "并行度", "day_routine_workers": "日程生成并发数",
     "run_manifest": "运行清单", "html_report": "HTML 报告", "partial_write": "开跑时写 partial",
+    "degraded_failure_share": "判为降级的失败请求占比",
     "external_rag": "外部信息注入", "bootstrap": "冷启动注入", "use_seed_script": "使用种子脚本",
     "only_when_empty": "仅在为空时", "profile_items": "画像条数", "web_items": "网络条数",
     "use_web_search": "使用联网搜索", "prefer_cached_news": "优先用缓存新闻",
@@ -2262,6 +2485,12 @@ LABELS: dict[str, str] = {
     # 环境 / 感知
     "local_physical": "本地环境感知", "crowd_busy_ratio": "拥挤阈值", "crowd_packed_ratio": "爆满阈值",
     "record_occupancy": "记录每个人在哪",
+    "local_physical.capacity": "场所容量", "local_physical.capacity.categories": "会满的场所类别",
+    "local_physical.capacity.agents_represent": "一个居民代表多少人（留空=沿用拥堵设定）",
+    "local_physical.capacity.redirect_top_k": "被拒前尝试的同类场所数",
+    "local_physical.rooms": "房间（同屋才算碰面）",
+    "home": "居民的家与在家感知", "home.llm_enrich": "用大模型润色住宅",
+    "home.record_observations": "逐步记录在家观察", "home.inject_into_perception": "把在家情况写进感知",
     "use_profile_income": "按简历上的收入发薪", "profile_income_jitter": "收入抖动幅度",
     "location_assignment": "住处与工作地分配", "location_assignment.mode": "分配方式",
     "workplace_candidates": "工作地候选数(0=不限)", "home_candidates": "住处候选数(0=不限)",
@@ -2335,7 +2564,8 @@ LABELS: dict[str, str] = {
     "dynamic_behavior": "动态行为",
     # 离城出行
     "travel": "离开本市", "max_away_share": "在外人数上限", "fare_per_km": "每公里票价",
-    "daily_surcharge": "在外日均开销",
+    "daily_surcharge": "在外日均开销", "paid_leave_days_per_year": "每年带薪年假天数",
+    "compress_away_days": "压缩在外的日子",
     "travel.business": "出差", "travel.leisure": "旅行",
     "obligation_threshold": "责任感阈值", "daily_prob_over_threshold": "越线后每日概率",
     "min_cash_months": "现金下限（月）", "base_daily_prob": "基础日概率",
@@ -2382,6 +2612,12 @@ LABELS: dict[str, str] = {
     "credit": "信贷", "credit_limit_months": "授信月数", "annual_interest_rate": "年利率",
     "hardship_liquidity_months": "困难期流动性月数", "min_spend_factor": "最低消费系数",
     "macro": "宏观周期", "initial_inflation_rate": "初始通胀率",
+    "economy.macro.inflation": "内生通胀", "economy.macro.inflation.driver": "驱动方式",
+    "economy.macro.inflation.anchor": "通胀锚点（年化）", "economy.macro.inflation.sensitivity": "缺口敏感度",
+    "economy.macro.inflation.baseline_days": "需求基线天数", "economy.macro.inflation.window_days": "需求滑动窗口天数",
+    "economy.macro.inflation.natural_unemployment": "自然失业率（phillips）",
+    "economy.macro.inflation.suppress_phase_expense_mult": "压掉周期支出倍数",
+    "economy.macro.inflation.wage_indexation": "工资跟涨比例",
     "initial_unemployment_rate": "初始失业率", "unemployment_from_agents": "失业率按居民实际统计", "cycle_phase_duration_days": "阶段时长区间（天）",
     "phases": "阶段顺序", "phase_effects": "各阶段效应", "income_mult": "收入乘数",
     "expense_mult": "支出乘数", "layoff_risk": "裁员概率", "raise_chance": "涨薪概率",
@@ -2453,6 +2689,8 @@ LABELS: dict[str, str] = {
     "spouse_bailout_enabled": "伴侣补现金缺口", "dual_income_security_bonus": "双职工安全感加成",
     "sole_earner_stress": "独自养家压力",
     "family.events": "家庭事件", "daily_probability": "每户每日事件概率",
+    "family.members_as_agents": "家人成为居民", "min_child_age": "最小升级子女年龄",
+    "min_elder_age": "最小升级长辈年龄", "max_new_agents": "新居民上限",
     "contagion_enabled": "启用户内情绪传染", "contagion_weight": "同住传染强度",
     "remote_contagion_weight": "异地家人传染强度",
 }

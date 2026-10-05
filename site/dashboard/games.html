@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title data-i18n="games.page_title">GAWorld · 游戏场</title>
@@ -8,12 +9,14 @@
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
   <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body class="studio-body">
   <main class="studio-shell games-shell">
     <header class="studio-top">
       <div class="brand">
-        <div class="brand-mark">GA</div>
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
         <div class="brand-copy">
           <p class="kicker" data-i18n="games.kicker">GAWorld Playground</p>
           <h1 data-i18n="games.headline">游戏场：和城里的智能体玩一局</h1>
@@ -89,6 +92,51 @@
           读一份档案，猜他在两难里会怎么选，当场对答案。一局一次模型调用、几秒钟一把，是这里唯一能随手玩的游戏；「再问他一次」顺带量出这份档案稳不稳。
         </p>
         <span class="game-meta" data-i18n="games.guess_meta">一局 1 次调用 · 1 名居民 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/novel.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">📖</span>
+        <h3 data-i18n="games.novel_title">小说局</h3>
+        <p class="game-tagline" data-i18n="games.novel_tagline">
+          挑几个居民当主角，写一段故事大纲，设定目标字数——模型会按他们的档案（职业、年龄、口吻、价值观）写一本他们做主角的小说。不是贴名字，是让他们活过来。
+        </p>
+        <span class="game-meta" data-i18n="games.novel_meta">1 本 · 2–6 人主角团 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/jury.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">⚖️</span>
+        <h3 data-i18n="games.jury_title">陪审团</h3>
+        <p class="game-tagline" data-i18n="games.jury_tagline">
+          你写一个案件（内置的或自己编的），挑 3–5 名居民当陪审员。他们讨论三轮，再匿名投票表决有罪 / 无罪，再对一个量刑问题表态。分歧度比结论更显告诉你这群人在这座城里能不能把事情说清。
+        </p>
+        <span class="game-meta" data-i18n="games.jury_meta">1 庭 · 3–5 名陪审员 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/commentary.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">📰</span>
+        <h3 data-i18n="games.commentary_title">新闻评论</h3>
+        <p class="game-tagline" data-i18n="games.commentary_tagline">
+          给一条新闻（贴一段文字或一个网址），挑几个居民。每人用自己的口吻写一条短评，挑一个立场（支持 / 反对 / 中立 / 质疑），再给个强度。结尾一段总览告诉你这群人对这件事的整体反应。
+        </p>
+        <span class="game-meta" data-i18n="games.commentary_meta">1 场 · 最多 12 人 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/roommate.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🛋️</span>
+        <h3 data-i18n="games.roommate_title">同居模式</h3>
+        <p class="game-tagline" data-i18n="games.roommate_tagline">
+          挑 2–6 位居民，给他们一间公寓，按下播放。看他们在客厅里寒暄、在厨房里搭伙做饭、在阳台上发呆——对话和内心独白从他们头顶冒出来，旁边的仪表盘告诉你谁今天心情好、谁和谁更亲了。
+        </p>
+        <span class="game-meta" data-i18n="games.roommate_meta">长会话 · 2–6 人同居 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/whois.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🕵️</span>
+        <h3 data-i18n="games.whois_title">谁是真人</h3>
+        <p class="game-tagline" data-i18n="games.whois_tagline">
+          几位居民和几个真人坐进同一个匿名群聊，每人只显示编号。同时发言聊几轮，然后每个真人给其他号打勾：真人还是居民？揭晓之后，看居民骗过了几个人。
+        </p>
+        <span class="game-meta" data-i18n="games.whois_meta">1 局 · 3–8 个座位 · 需要 LLM · 多人</span>
       </a>
     </section>
 

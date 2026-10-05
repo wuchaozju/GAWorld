@@ -22,24 +22,16 @@
 .set-search input {
   flex: 1 1 auto; min-width: 0; padding: 8px 11px;
   border: 1px solid var(--line, #dde6de); border-radius: 8px;
-  background: #fff; color: var(--ink, #17251f); font-size: 13px;
+  background: var(--card); color: var(--ink, #17251f); font-size: 13px;
 }
 .set-search input:focus { outline: none; border-color: var(--green, #0e7a58); }
 .set-filter { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted, #66746c); }
 .set-filter input { accent-color: var(--green, #0e7a58); }
 
-/* studio.css 把 .step 当 flex item 用，却没让容器变成 flex 容器；和 external.css
-   一样按页面作用域修，不动全局，免得影响同样用这套 markup 的 population 页。 */
-#setTabs {
-  display: flex; gap: 6px; flex-wrap: wrap;
-  margin-top: 12px; padding: 8px;
-  border: 1px solid var(--line, #dde6de); background: var(--card, #fff);
-  border-radius: 10px; box-shadow: var(--shadow-sm); overflow-x: auto;
-}
 #setTabs .step { gap: 4px; white-space: nowrap; }
 .set-tabcount {
   font-style: normal; font-size: 10.5px; font-weight: 700;
-  background: var(--green, #0e7a58); color: #fff;
+  background: var(--green, #0e7a58); color: var(--on-accent);
   border-radius: 999px; padding: 1px 6px; margin-left: 2px;
 }
 
@@ -60,10 +52,10 @@
 .set-hint { color: var(--muted, #66746c); font-size: 13px; margin: 8px 0; }
 .set-section-help {
   margin: 0 0 14px; padding: 10px 12px; font-size: 12.5px; line-height: 1.7;
-  color: var(--muted, #66746c); background: #f4f8f5;
+  color: var(--muted, #66746c); background: var(--sunken);
   border: 1px solid var(--line, #dde6de); border-radius: 9px;
 }
-.set-warn { color: #c04545; font-weight: 700; }
+.set-warn { color: var(--red); font-weight: 700; }
 
 /* ---- 分组 ---- */
 
@@ -92,7 +84,7 @@
 
 .set-section-title {
   margin: 0 0 2px;
-  font-family: Georgia, "Noto Serif SC", serif;
+  font-family: var(--font-sans);
   font-size: 18px;
   color: var(--ink, #17251f);
 }
@@ -108,7 +100,7 @@
   display: block; margin: 0 0 8px; padding: 7px 9px;
   border: 1px solid transparent; border-radius: 8px;
 }
-.set-field:hover { background: #f7faf8; }
+.set-field:hover { background: var(--sunken); }
 .set-field.is-inline { display: flex; align-items: center; gap: 8px; }
 /* 勾选框必须逃过下面那条 `width: 100%`，否则它会撑满整行、把标签挤出面板。 */
 .set-field.is-inline input[type="checkbox"] {
@@ -117,7 +109,7 @@
 }
 .set-field.is-inline .set-label { flex: 1 1 auto; min-width: 0; }
 .set-field.is-dirty { border-color: var(--green, #0e7a58); background: rgba(19, 121, 91, 0.06); }
-.set-field.is-bad { border-color: #c04545; background: rgba(192, 69, 69, 0.06); }
+.set-field.is-bad { border-color: var(--red); background: rgba(192, 69, 69, 0.06); }
 .set-field.is-shadowed .set-path { color: #b06a1f; }
 
 .set-label {
@@ -126,30 +118,30 @@
 }
 .set-path {
   font-size: 11px; font-weight: 500; color: var(--muted, #66746c);
-  background: #f0f4f1; border-radius: 5px; padding: 1px 6px;
+  background: var(--sunken); border-radius: 5px; padding: 1px 6px;
 }
 .set-field > input:not([type="checkbox"]),
 .set-field > textarea {
   width: 100%; margin-top: 5px; padding: 7px 10px;
   border: 1px solid var(--line, #dde6de); border-radius: 7px;
-  background: #fff; color: var(--ink, #17251f); font-size: 13px;
+  background: var(--card); color: var(--ink, #17251f); font-size: 13px;
 }
-.set-field > textarea { min-height: 62px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.set-field > textarea { min-height: 62px; font-family: var(--font-mono); font-size: 12px; }
 .set-field > input:focus,
 .set-field > textarea:focus { outline: none; border-color: var(--green, #0e7a58); }
 .set-field > input:disabled,
-.set-field > textarea:disabled { background: #f2f4f3; color: var(--muted, #66746c); cursor: not-allowed; }
+.set-field > textarea:disabled { background: var(--sunken); color: var(--muted, #66746c); cursor: not-allowed; }
 
 .set-badge {
   font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 1px 7px;
   border: 1px solid transparent;
 }
-.set-badge.is-dashboard { background: rgba(19, 121, 91, 0.12); color: #0e7a58; border-color: rgba(19, 121, 91, 0.3); }
+.set-badge.is-dashboard { background: rgba(19, 121, 91, 0.12); color: var(--green); border-color: rgba(19, 121, 91, 0.3); }
 .set-badge.is-env { background: rgba(60, 90, 104, 0.12); color: #3c5a68; border-color: rgba(60, 90, 104, 0.3); }
 .set-badge.is-env_file { background: rgba(176, 106, 31, 0.14); color: #a4600f; border-color: rgba(176, 106, 31, 0.32); }
 
 .set-revert {
-  border: 1px solid var(--line, #dde6de); background: #fff; color: var(--muted, #66746c);
+  border: 1px solid var(--line, #dde6de); background: var(--card); color: var(--muted, #66746c);
   border-radius: 6px; width: 20px; height: 20px; line-height: 1;
   cursor: pointer; font-size: 12px; padding: 0;
 }
@@ -159,7 +151,7 @@
 
 .llm-card {
   margin: 0 0 14px; padding: 12px 14px;
-  border: 1px solid var(--line, #dde6de); border-radius: 10px; background: #fbfdfb;
+  border: 1px solid var(--line, #dde6de); border-radius: 10px; background: var(--card);
 }
 .llm-card > h3 {
   display: flex; align-items: center; gap: 6px;
@@ -169,27 +161,27 @@
 .llm-pick select {
   width: 100%; margin-top: 5px; padding: 8px 10px;
   border: 1px solid var(--line, #dde6de); border-radius: 7px;
-  background: #fff; color: var(--ink, #17251f); font-size: 14px; font-weight: 600;
+  background: var(--card); color: var(--ink, #17251f); font-size: 14px; font-weight: 600;
 }
 .set-field > select {
   width: 100%; margin-top: 5px; padding: 7px 10px;
   border: 1px solid var(--line, #dde6de); border-radius: 7px;
-  background: #fff; color: var(--ink, #17251f); font-size: 13px;
+  background: var(--card); color: var(--ink, #17251f); font-size: 13px;
 }
 .set-field > select:focus, .llm-pick select:focus { outline: none; border-color: var(--green, #0e7a58); }
-.set-field > select:disabled { background: #f2f4f3; color: var(--muted, #66746c); cursor: not-allowed; }
+.set-field > select:disabled { background: var(--sunken); color: var(--muted, #66746c); cursor: not-allowed; }
 .llm-pick .set-hint { margin: 8px 0 0; }
 
 .llm-row {
   padding: 9px 10px; border: 1px solid var(--line, #dde6de);
-  border-radius: 8px; background: #fff; margin-bottom: 8px;
+  border-radius: 8px; background: var(--card); margin-bottom: 8px;
 }
 .llm-row.is-default { border-color: rgba(19, 121, 91, 0.45); }
 .llm-row-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 13px; }
 .llm-row-head b { color: var(--ink, #17251f); }
 .llm-row-meta {
   margin-top: 3px; font-size: 11.5px; color: var(--muted, #66746c);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all;
+  font-family: var(--font-mono); word-break: break-all;
 }
 .llm-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .llm-row-actions .button { padding: 4px 10px; font-size: 12px; }
@@ -200,7 +192,7 @@
 .llm-slot { flex: 1 1 200px; min-width: 0; }
 .llm-result { font-size: 11.5px; line-height: 1.6; word-break: break-word; }
 .llm-result.is-ok { color: var(--green, #0e7a58); }
-.llm-result.is-bad { color: #c04545; }
+.llm-result.is-bad { color: var(--red); }
 .llm-result.is-busy { color: var(--muted, #66746c); }
 
 .llm-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
@@ -212,7 +204,7 @@
 .llm-field input, .llm-field select {
   width: 100%; padding: 7px 10px; font-size: 13px;
   border: 1px solid var(--line, #dde6de); border-radius: 7px;
-  background: #fff; color: var(--ink, #17251f);
+  background: var(--card); color: var(--ink, #17251f);
 }
 .llm-field input:focus, .llm-field select:focus { outline: none; border-color: var(--green, #0e7a58); }
 .llm-form-actions {
@@ -238,13 +230,13 @@
   margin: 0 0 10px; font-size: 13px; color: var(--ink, #17251f);
 }
 .set-count {
-  font-size: 11px; font-weight: 700; background: var(--green, #0e7a58); color: #fff;
+  font-size: 11px; font-weight: 700; background: var(--green, #0e7a58); color: var(--on-accent);
   border-radius: 999px; padding: 1px 7px;
 }
 .set-pending { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
 .set-pending li {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px;
-  align-items: center; padding: 6px 8px; border-radius: 7px; background: #f4f8f5;
+  align-items: center; padding: 6px 8px; border-radius: 7px; background: var(--sunken);
   font-size: 12px;
 }
 .set-pending li.is-bad { background: rgba(192, 69, 69, 0.08); }
@@ -255,7 +247,7 @@
   border: none; background: transparent; color: var(--muted, #66746c);
   cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px;
 }
-.set-undo:hover { color: #c04545; }
+.set-undo:hover { color: var(--red); }
 .set-stat { margin: 0 0 10px; font-size: 12.5px; color: var(--muted, #66746c); }
 .set-stat b { color: var(--ink, #17251f); font-variant-numeric: tabular-nums; }
 .set-wide { width: 100%; margin-bottom: 8px; }
@@ -272,11 +264,11 @@
   display: grid; grid-template-columns: minmax(150px, auto) 16px 64px minmax(0, 1fr);
   gap: 4px 10px; align-items: center; padding: 7px 9px; border-radius: 8px;
 }
-.set-env-row:hover { background: #f7faf8; }
+.set-env-row:hover { background: var(--sunken); }
 .set-env-name { font-size: 12px; color: var(--ink, #17251f); word-break: break-all; }
 .set-env-state { font-size: 11.5px; color: #b06a1f; font-weight: 700; }
 .set-env-row.is-set .set-env-state { color: var(--green, #0e7a58); }
-.set-env-value { font-size: 12px; color: var(--muted, #66746c); font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.set-env-value { font-size: 12px; color: var(--muted, #66746c); font-family: var(--font-mono); word-break: break-all; }
 .set-env-help { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted, #66746c); line-height: 1.6; }
 
 /* ---- 配置文件原文 ---- */
@@ -292,7 +284,7 @@
 .set-status { font-size: 12.5px; color: var(--muted, #66746c); flex: 1 1 260px; }
 .set-status.is-ok { color: var(--green, #0e7a58); }
 .set-status.is-warn { color: #b06a1f; }
-.set-status.is-bad { color: #c04545; }
+.set-status.is-bad { color: var(--red); }
 .set-actions { display: flex; gap: 8px; }
 
 /* help.js 把自己的 <style> 插在 <head> 末尾，同权重下它会赢；这里靠 body 前缀

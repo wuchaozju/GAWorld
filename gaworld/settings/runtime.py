@@ -64,6 +64,40 @@ def simulation_settings() -> dict[str, Any]:
             # settlement boundary.
             "hook_chunk_days": 30,
         },
+        # Who is simulated how. "individual" (default): every resident runs
+        # the full pipeline. "group": cohorts carry most of the population at
+        # one model call per cohort per day, and a materialised few (focal,
+        # tail, audit sample) run the ordinary fast-forward brief. Group mode
+        # needs day-step fast-forward (long_run.enabled, unit "day") and is not
+        # for network-diffusion questions. See gaworld/group/plugin.py.
+        "simulation_mode": "individual",
+        # The cohort tier. ``enabled`` alone, in an individual run, only
+        # records cohort statistics each day and changes nothing.
+        "group": {
+            "enabled": False,
+            # Partition axes; empty = age band x industry x hukou.
+            "cohort_axes": [],
+            # Smaller cells are merged into their nearest cohort.
+            "min_cohort_size": 4,
+            # Residents run at individual fidelity per day (focal and the audit
+            # sample come first, the rest goes to the cohort's tail).
+            "materialization_budget": 20,
+            # Share of the population held out each day to measure how far the
+            # cohorts' predictions are from what individuals actually did.
+            "audit_fraction": 0.03,
+            # Residents always run individually.
+            "focal_ids": [],
+            # Clamp on one cohort's daily state change.
+            "max_state_delta": 0.12,
+            # Audit residual (L1 over the state variables) that counts as an alarm.
+            "residual_alarm": 0.08,
+            # An alarm multiplies that cohort's audit share by this for the next
+            # day, up to audit_boost_max; it steps back down after
+            # audit_cooldown_days days under the alarm.
+            "audit_boost_factor": 2,
+            "audit_boost_max": 8,
+            "audit_cooldown_days": 3,
+        },
         # Calendar settings for weekday/weekend simulation.
         "calendar": {
             "start_date": "today",
@@ -364,5 +398,9 @@ def simulation_settings() -> dict[str, Any]:
             # Snapshot a partial manifest at run start so a crashed run
             # still leaves a breadcrumb.
             "partial_write": True,
+            # A finished run is reported as "degraded" instead of "ok" when
+            # more than this share of its model requests were lost after
+            # every fallback (those decisions used heuristic defaults).
+            "degraded_failure_share": 0.05,
         },
     }

@@ -38,6 +38,7 @@ from unittest import mock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import residents
 from gaworld.events import candidates as candidate_events
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -60,9 +61,9 @@ def _locale(name):
 
 def _first_agent_id():
     """An id that exists in the seed CSV, so the test does not hardcode one."""
-    rows = ds._read_state_rows()[1]
+    rows = residents.read_state_rows()[1]
     for row in rows:
-        agent_id = ds._row_id(row)
+        agent_id = residents.row_id(row)
         if agent_id is not None:
             return agent_id
     raise unittest.SkipTest("no agents in the seed CSV")

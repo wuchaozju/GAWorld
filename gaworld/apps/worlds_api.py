@@ -20,6 +20,7 @@ from typing import Any
 
 from gaworld import worlds
 from gaworld.accounts import AccountError, AccountStore
+from gaworld.apps import runs, world_paths
 
 Result = tuple[dict[str, Any], int, str | None]
 
@@ -50,10 +51,9 @@ def _inside(world: dict[str, Any] | None) -> Iterator[None]:
 def _public(
     world: dict[str, Any], user: dict[str, Any], calls_today: dict[Any, int] | None = None
 ) -> dict[str, Any]:
-    ds = _ds()
-    state = ds.WORLD_RUNS.get(world["id"]) or {}
+    state = runs.WORLD_RUNS.get(world["id"]) or {}
     proc = state.get("process")
-    queued = next((i + 1 for i, entry in enumerate(ds.RUN_QUEUE) if entry["world_id"] == world["id"]), None)
+    queued = next((i + 1 for i, entry in enumerate(runs.RUN_QUEUE) if entry["world_id"] == world["id"]), None)
     return {
         "id": world["id"],
         "name": world["name"],
@@ -86,7 +86,7 @@ def handle_get(store: AccountStore | None, user: dict[str, Any] | None, path: st
     if path == "/api/worlds/settings":
         if user.get("role") != "admin":
             return {"error": "没有权限：该操作需要管理员"}, 403, None
-        return {"limits": ds.limits(store)}, 200, None
+        return {"limits": runs.limits(store)}, 200, None
     parts = path.split("/")  # ["", "api", "worlds", "<id>", "trail"]
     if len(parts) == 5 and parts[4] == "trail":
         world = store.get_world(parts[3])
@@ -94,11 +94,11 @@ def handle_get(store: AccountStore | None, user: dict[str, Any] | None, path: st
             return {"error": f"没有编号为 {parts[3]} 的世界"}, 404, None
         return trail(world), 200, None
     if path != "/api/worlds":
-        return {"error": f"unknown endpoint: {path}"}, 404, None
+        return {"error": "Unknown endpoint"}, 404, None
     from gaworld.accounts import usage
 
     calls = usage.TALLY.snapshot()["worlds_today"] if user.get("role") == "admin" else {}
-    current = ds._current_world()
+    current = world_paths.current_world()
     visible = [w for w in store.list_worlds() if ds.world_readable(w, user)]
     return (
         {
@@ -129,7 +129,7 @@ def _trail_line(table: str, row: dict[str, Any]) -> str:
 def trail(world: dict[str, Any]) -> dict[str, Any]:
     """Everything people did in a world, as a Markdown document to download."""
     with _inside(world):
-        records = _ds()._records_dir()
+        records = world_paths.records_dir()
     lines = [
         f"# {world['name']} · 多人共玩记录",
         "",
@@ -172,15 +172,15 @@ def _post(store: AccountStore, user: dict[str, Any], path: str, payload: dict[st
     if path == "/api/worlds/settings":
         if user.get("role") != "admin":
             raise PermissionError("该操作需要管理员")
-        for key in ds.LIMIT_DEFAULTS:
+        for key in runs.LIMIT_DEFAULTS:
             if key in payload:
                 value = int(payload[key])
                 floor = 0 if key == "daily_llm_calls_per_user" else 1  # 0 = no quota
                 if value < floor:
                     raise ValueError(f"{key} 至少为 {floor}")
                 store.set_setting(key, value)
-        store.audit(user, "limits", str(ds.limits(store)))
-        return {"limits": ds.limits(store)}, 200, None
+        store.audit(user, "limits", str(runs.limits(store)))
+        return {"limits": runs.limits(store)}, 200, None
     if path == "/api/worlds/broadcast":
         if user.get("role") != "admin":
             raise PermissionError("该操作需要管理员")
@@ -189,9 +189,12 @@ def _post(store: AccountStore, user: dict[str, Any], path: str, payload: dict[st
         if not user.get("id"):
             raise PermissionError("该操作需要以账号登录")
         city, csv_src, md_src = ds._city_seed_files(str(payload.get("city") or "").strip())
+        agent_files = ds._city_agent_files(city)
         world = store.create_world(user["id"], str(payload.get("name") or ""), city)
         try:
-            worlds.create_tree(ds.REPO_ROOT, world["id"], city=city, csv_src=csv_src, md_src=md_src)
+            worlds.create_tree(
+                world_paths.REPO_ROOT, world["id"], city=city, csv_src=csv_src, md_src=md_src, agent_files=agent_files
+            )
         except OSError:
             store.delete_world(world["id"])
             raise
@@ -206,7 +209,7 @@ def _post(store: AccountStore, user: dict[str, Any], path: str, payload: dict[st
         return {"ok": True, "id": world_id}, 200, world_cookie(world_id)
     parts = path.split("/")  # ["", "api", "worlds", "<id>", "<action>"]
     if len(parts) != 5:
-        return {"error": f"unknown endpoint: {path}"}, 404, None
+        return {"error": "Unknown endpoint"}, 404, None
     world = _owned(store, user, parts[3])
     if parts[4] == "visibility":
         changed = store.set_world_visibility(world["id"], str(payload.get("visibility") or ""))
@@ -214,23 +217,23 @@ def _post(store: AccountStore, user: dict[str, Any], path: str, payload: dict[st
         return {"world": _public(changed, user)}, 200, None
     if parts[4] == "stop":
         with _inside(world):
-            ds._stop_simulation()
+            runs.stop_simulation()
         store.audit(user, "world_stop", world["id"])
         return {"world": _public(world, user)}, 200, None
     if parts[4] == "delete":
-        state = ds.WORLD_RUNS.get(world["id"]) or {}
+        state = runs.WORLD_RUNS.get(world["id"]) or {}
         proc = state.get("process")
-        queued = any(entry["world_id"] == world["id"] for entry in ds.RUN_QUEUE)
+        queued = any(entry["world_id"] == world["id"] for entry in runs.RUN_QUEUE)
         if (proc and proc.poll() is None) or queued:
             raise ValueError("先停止这个世界的仿真再删除")
         store.delete_world(world["id"])
-        worlds.remove_tree(ds.REPO_ROOT, world["id"])
-        ds.WORLD_RUNS.pop(world["id"], None)
+        worlds.remove_tree(world_paths.REPO_ROOT, world["id"])
+        runs.WORLD_RUNS.pop(world["id"], None)
         store.audit(user, "world_delete", world["id"])
-        current = ds._current_world()
+        current = world_paths.current_world()
         cookie = world_cookie("") if current and current["id"] == world["id"] else None
         return {"ok": True}, 200, cookie
-    return {"error": f"unknown endpoint: {path}"}, 404, None
+    return {"error": "Unknown endpoint"}, 404, None
 
 
 def broadcast(store: AccountStore, user: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -242,7 +245,6 @@ def broadcast(store: AccountStore, user: dict[str, Any], payload: dict[str, Any]
     """
     from gaworld.events.life import add_life_event
 
-    ds = _ds()
     title = str(payload.get("title") or "").strip()
     if not title:
         raise ValueError("事件标题不能为空")
@@ -261,14 +263,14 @@ def broadcast(store: AccountStore, user: dict[str, Any], payload: dict[str, Any]
             results.append({"id": world_id, "ok": False, "error": "没有这个世界"})
             continue
         with _inside(world):
-            cfg = ds._effective_config()
+            cfg = world_paths.effective_config()
             # Absolute, so the dashboard writes the very file the simulator
             # (cwd = repo root) reads, wherever the dashboard was started.
             life = dict(cfg.get("life_events") or {})
-            life["event_dir"] = os.path.join(ds.REPO_ROOT, str(life.get("event_dir") or "output/life_events"))
+            life["event_dir"] = os.path.join(world_paths.REPO_ROOT, str(life.get("event_dir") or "output/life_events"))
             cfg["life_events"] = life
             add_life_event(event, cfg)
-            running = bool(ds._run_status().get("running"))
+            running = bool(runs.run_status().get("running"))
         results.append(
             {"id": world_id, "name": world["name"] if world else "", "ok": True, "running": running}
         )

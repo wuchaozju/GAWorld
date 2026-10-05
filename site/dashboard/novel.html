@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="novel.page_title">GAWorld · 小说局</title>
+  <meta name="description" data-i18n-content="novel.meta_description" content="GAWorld 小说局 — 选几个居民当主角,给一段大纲和字数,让模型写一本他们做主角的小说,人物的口吻和决定都按档案来。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="novel.kicker">GAWorld Playground · Novel</p>
+          <h1 data-i18n="novel.headline">小说局:让城里人当主角</h1>
+          <p class="sub" data-i18n="novel.sub">
+            挑几个居民当主角,写一段故事大纲,定一个目标字数。模型会按他们档案里的职业、年龄、口吻写一本他们做主角的小说——不是把名字贴上去,而是让他们活过来。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="novel.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: setup -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="novel.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="novel.city_label">城市</span>
+          <select id="nCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="novel.style_label">写作风格</span>
+          <select id="nStyle"></select>
+        </label>
+        <p id="nStyleText" class="disaster-hint"></p>
+
+        <div id="nCustomStyleBlock" hidden>
+          <label class="field">
+            <span data-i18n="novel.custom_style_label">自定义风格</span>
+            <textarea id="nCustomStyleText" data-i18n-placeholder="novel.custom_style_placeholder" placeholder="例如:轻巧、节奏快、对话多于描写,人物说话短而有力。"></textarea>
+          </label>
+          <label class="field">
+            <span data-i18n="novel.custom_style_pov">视角</span>
+            <select id="nCustomStylePov">
+              <option value="第三人称">第三人称</option>
+              <option value="第一人称轮换">第一人称轮换</option>
+              <option value="全知视角">全知视角</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="novel.target_words_label">目标字数</span>
+          <input id="nTargetWords" type="number" min="1000" max="80000" step="500" value="10000" />
+        </label>
+        <p class="disaster-hint" data-i18n="novel.target_words_hint">
+          中文字符。模型会按字数分章,实际字数通常在 ±10% 以内。8 章 ≈ 8000–12000 字。
+        </p>
+
+        <label class="field">
+          <span data-i18n="novel.title_label">书名(可选)</span>
+          <input id="nTitleHint" type="text" data-i18n-placeholder="novel.title_placeholder" placeholder="留空则模型从情境里取" />
+        </label>
+
+        <label class="field">
+          <span data-i18n="novel.outline_label">故事大纲</span>
+          <textarea id="nOutline" data-i18n-placeholder="novel.outline_placeholder" placeholder="一两段话讲清核心情境、关键转折、想要的结尾氛围。可以留空让模型自由发挥。"></textarea>
+        </label>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="novel.agents_title">主角团</span> <b id="nPicked">0</b><span class="muted" data-i18n="novel.agents_count_suffix">/6</span></h4>
+          <p class="disaster-hint" data-i18n="novel.agents_hint">
+            至少 2 人,最多 6 人。每个人的职业、年龄、口吻都会进到正文里——选人不同,写出来的小说就不一样。
+          </p>
+          <div class="disaster-toolbar">
+            <button class="button" id="nPickNone" data-i18n="novel.pick_none">清空</button>
+          </div>
+          <ul id="nAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="nRunBtn" class="button primary" data-i18n="novel.run">开始写</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="novel.history">最近几本</h4>
+          <ul id="nHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: progress + reader -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="nTitle" data-i18n="novel.section_board">小说</h3>
+            <p id="nStatus" class="disaster-status" data-i18n="novel.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="nBar" style="width:0%"></span></div>
+            <span id="nPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="nResult" hidden>
+          <section class="novel-cover">
+            <h2 id="nBookTitle"></h2>
+            <p id="nPremise" class="novel-premise"></p>
+            <p id="nBackCover" class="novel-back-cover"></p>
+            <div id="nCast" class="novel-cast"></div>
+            <div class="novel-stats" id="nStats"></div>
+          </section>
+
+          <nav class="novel-tabs" role="tablist">
+            <button id="nTabReader" class="novel-tab is-active" role="tab" aria-selected="true" data-i18n="novel.tab_reader">📖 正文</button>
+            <button id="nTabViz" class="novel-tab" role="tab" aria-selected="false" data-i18n="novel.tab_viz">📊 故事线</button>
+          </nav>
+
+          <section id="nReaderPane" class="novel-pane">
+            <section class="novel-toc">
+              <h4 data-i18n="novel.toc">目录</h4>
+              <ol id="nToc"></ol>
+            </section>
+
+            <section class="novel-reader">
+              <div id="nChapters"></div>
+            </section>
+          </section>
+
+          <section id="nVizPane" class="novel-pane" hidden>
+            <section class="novel-viz-panel">
+              <h4 data-i18n="novel.viz_flow_title">章节流向</h4>
+              <p class="muted" data-i18n="novel.viz_flow_hint">按顺序连接所有章节,节点宽度=字数,颜色=出场角色数。点击跳到对应章节。</p>
+              <div id="nFlowChart" class="novel-flow"></div>
+            </section>
+
+            <section class="novel-viz-panel">
+              <h4 data-i18n="novel.viz_arc_title">角色弧线</h4>
+              <p class="muted" data-i18n="novel.viz_arc_hint">横轴=章节,纵轴=每个角色在该章的"出场强度"(0–100,基于章节正文中提及该角色的段落占比)。</p>
+              <div id="nArcChart" class="novel-arc"></div>
+              <ul id="nArcLegend" class="novel-arc-legend"></ul>
+            </section>
+
+            <section class="novel-viz-panel">
+              <h4 data-i18n="novel.viz_net_title">同框关系</h4>
+              <p class="muted" data-i18n="novel.viz_net_hint">两个角色同章出现的次数决定连线的粗细——一眼读出"谁跟谁最常一起出场"。</p>
+              <div id="nNetChart" class="novel-net"></div>
+            </section>
+          </section>
+        </div>
+
+        <p id="nIdle" class="disaster-idle" data-i18n="novel.idle_hint">
+          左边选几个居民当主角,填一段故事大纲,设个目标字数,点「开始写」。
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/novel.js"></script>
+</body>
+</html>

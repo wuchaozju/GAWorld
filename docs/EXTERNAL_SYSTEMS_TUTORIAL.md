@@ -107,7 +107,7 @@ python generative_city_sim.py run --sim-days 5
 | 周期阶段 | 扩张 / 顶峰 / 收缩 / 谷底，四阶段轮转 | — |
 | 通胀率（年化） | `macro.inflation_rate`，被钳在 0.1%–15% | — |
 | 失业率 | `macro.unemployment_rate`，被钳在 2%–20%。**注意它是一个被更新的数字，不会真的让谁失业**——随机裁员概率来自 `phase_effects.layoff_risk`；要指名道姓地让某人失业或换工作，走人生事件的「失业」/「换工作」模板（会改写 `agent["job"]` 本身，见 [FEATURES](FEATURES.md)） | — |
-| 累计物价指数 | 从 1.0 起按日通胀累乘，只作用在支出侧 | 长模拟里它会持续侵蚀实际收入 |
+| 累计物价指数 | 从 1.0 起按日通胀累乘。**默认只是显示用**：账本里没有任何东西读它（2026-10-03 之前的文档说它作用在支出侧，那不是代码的行为）。打开 `economy.macro.inflation` 后支出和房租才乘以它，通胀率也改由居民决定 | 开启后，工资跟涨比例 < 1 时它会持续侵蚀实际收入 |
 | 系统总货币 | agent 全部账户 + 三个部门池 | — |
 | 守恒漂移 | 每日 `system_total − initial_system_total` 的最大绝对值 | **非 0 就是 bug**，不是设定 |
 | 基尼系数 | 按流动资产（活期+储蓄+投资）算 | 少于 2 人或总额为 0 时显示 `—` |
@@ -256,7 +256,10 @@ _advance_macro_cycle(...)      # 先按周期规则漂移
 _consume_interventions(...)    # 再把你设的值盖上去
 ```
 
-这样你设的通胀率就是**那天真正被使用的值**，不会刚写进去就被周期漂移乘掉。
+这样你设的值不会刚写进去就被周期漂移乘掉，面板上显示的就是它。但要知道两点：当天的物价累积已经在
+周期推进里做完了，所以你设的通胀率**从次日起**才参与累积；而且只有打开 `economy.macro.inflation`
+时物价才进账本——默认它只是一个数字。内生驱动（demand / phillips）下，次日的通胀率由居民重新算出，
+会覆盖你设的值；要直接改物价，改 `cumulative_inflation`。
 
 ### 5.3 守恒怎么保持诚实
 
@@ -414,7 +417,7 @@ curl -s -X POST $BASE/api/external-systems/interventions/cancel \
 | `economy.tax.monthly_exemption` / `.brackets` | 起征点 / 税率表 |
 | `economy.social_insurance.*_rate` | 五险一金个人缴费率 |
 | `economy.macro.initial_inflation_rate` / `.initial_unemployment_rate` | 宏观初值 |
-| `economy.macro.phase_effects.<阶段>.layoff_risk` | 各阶段裁员概率（真正让人失业的是这个） |
+| `economy.macro.phase_effects.<阶段>.layoff_risk` | 各阶段每人每月的裁员概率（真正让人失业的是这个） |
 | `economy.sectors.initial_*_balance` | 三个部门池的初始余额 |
 | `economy.credit.credit_limit_months` / `.annual_interest_rate` | 授信额度 / 年息 |
 | `economy.routing.merchant_labor_share` | 消费经企业池转付给服务业 agent 的比例 |

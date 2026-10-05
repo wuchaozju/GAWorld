@@ -28,9 +28,9 @@ import unittest
 from datetime import date
 
 import gaworld.sim._fastforward as ff
+from gaworld.apps import world_paths
 from gaworld.economy import finance as eco
 from tests.fixtures.mock_llm import install
-
 
 # ---------------------------------------------------------------------------
 # Horizon planning
@@ -293,7 +293,7 @@ class TestDashboardSpanField(unittest.TestCase):
 
         from gaworld.apps import dashboard_server as ds
 
-        with patch.object(ds, "_effective_config", lambda: self._cfg("month", 30)):
+        with patch.object(world_paths, "effective_config", lambda: self._cfg("month", 30)):
             patched = ds._sanitize_config_patch(
                 {"sim_span": {"unit": "month", "count": 3}}
             )
@@ -319,7 +319,7 @@ class TestDashboardSpanField(unittest.TestCase):
 
         from gaworld.apps import dashboard_server as ds
 
-        with patch.object(ds, "_effective_config", lambda: self._cfg("year", 30)):
+        with patch.object(world_paths, "effective_config", lambda: self._cfg("year", 30)):
             patched = ds._sanitize_config_patch(
                 {"sim_days": 2, "sim_span": {"unit": "year", "count": 1}}
             )

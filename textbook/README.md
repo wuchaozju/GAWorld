@@ -2,13 +2,26 @@
 
 **副标题**　一本写给社会科学本科生与研究生的混合教材（思想 + 技术 + 经典案例 + GAWorld 现代范式代表）
 
-**作者**　Mavis（cw 项目团队）　|　**字数**　约 22 万字　|　**交付形式**　Markdown 源文件（可由 Pandoc 转为 PDF/HTML/EPUB）
+**作者**　Mavis（cw 项目团队）　|　**字数**　约 35 万中文字符 / 22 章正文 + 4 附录　|　**交付形式**　Markdown/PDF/EPUB（`textbook-complete.zip`）
 
 ---
 
 ## 全书结构
 
-全书共 **7 编 22 章 + 4 附录**。每章 8 000–14 000 字，平均约 10 000 字，22 章正文合计约 **22 万字**。
+全书共 **7 编 22 章 + 4 附录**。每章 8 000–18 000 中文字，22 章正文合计约 **35 万中文字符**(以中英文字符计;含 markdown 标记/代码块/标点的原始字节约 54 万)。
+
+| 编 | 主题 | 章数 | 字数(中文字符) | 定位 |
+|---|---|---|---|---|
+| **第一编　原理** | 社会科学为什么要做仿真 | 3 | ~3.4 万 | 思想层 |
+| **第二编　技术** | 智能体、环境、网络与 LLM | 5 | ~7.5 万 | 技术层 |
+| **第三编　方法** | 仿真作为研究方法的全流程 | 4 | ~6.0 万 | 方法层 |
+| **第四编　案例** | 经典 + GAWorld 现代 LLM 范式 | 4 | ~6.0 万 | 案例层(GAWorld 代表) |
+| **第五编　写作** | 论文、复现与同行评议 | 1 | ~1.3 万 | 产出层 |
+| **第六编　前沿** | 局限、争议与未来方向 | 1 | ~1.1 万 | 反思层 |
+| **第七编　深入** | 哲学、多平台、网络科学、跨学科 | 4 | ~4.6 万 | 深度层 |
+| **附录** | 术语 / CLI / 配置 / 资源清单 | 4 | ~4.6 万 | 工具 |
+
+> 章节均已逐章加深:补"理论深度 + 方法论清单 + 批判视角",而非简单 bullet 注水。
 
 | 编 | 主题 | 章数 | 字数 | 定位 |
 |---|---|---|---|---|
@@ -261,3 +274,56 @@ chapters/
 - **哲学深度足够**，认识论、方法论、因果归责都有深入讨论。
 - **跨学科应用广泛**，从人类学到经济学到组织行为学都有应用。
 - **理论与技术均衡**，既讲清原理，也给出可运行代码。
+
+---
+
+## 教材使用指南
+
+### 三种阅读路线
+
+**路线 A:本科生通识路线(2 周)**
+
+1. 第 1–3 章:理解"社会仿真是什么、为什么"
+2. 第 13 章:跟着案例跑一遍 GAWorld
+3. 第 19、18 章:了解哲学反思和局限
+
+**路线 B:研究生研究路线(3 周)**
+
+1. 全编通读,重点在第 3、19、22 章(思想)
+2. 第 6、11、12 章(方法)
+3. 第四编 4 个案例任选一个完整跑通
+
+**路线 C:工程师开发路线(2 周)**
+
+1. 第 4–8 章(技术)和第 20 章(多平台对比)
+2. 第 21 章(网络)
+3. 第四编 + 第 17 章(可复现)
+
+### 配 GAWorld 安装
+
+```bash
+git clone https://github.com/MiniMax/GAWorld.git
+cd GAWorld
+pip install -r requirements.txt
+python -m gaworld.city "hometown" --scale 100  # 创建城市
+python generative_city_sim.py run             # 跑仿真
+```
+
+### 三种交付格式的适用场景
+
+| 格式 | 大小 | 适用场景 |
+|---|---|---|
+| `textbook-complete.pdf`(1.9 MB) | 579 页 A4 印刷版 | 打印、图书馆归档、桌面阅读 |
+| `textbook-complete.epub`(508 KB) | 电子书 | 手机/Kindle/Apple Books/微信读书 |
+| `textbook-complete.md`(859 KB) | 单一 Markdown | GitHub 托管、二次编辑 |
+| `textbook-complete.zip`(2.7 MB) | 上面 3 件套 + MANIFEST | 一键分发 |
+
+### 二次编辑提示
+
+- 章节源文件:`chapters/*.md`
+- 单章字数区间:8K–18K 中文字
+- **一键构建(MD + PDF + EPUB + ZIP)**: `bash scripts/build.sh`
+- **重新构建(单本 markdown)**:`python3 scripts/merge_textbook.py`
+- **重新构建(PDF)**:`pandoc textbook-complete.md -o textbook-complete.pdf --pdf-engine=xelatex --toc -V mainfont=STSong -V monofont=Menlo -V documentclass=book -V papersize=a4`
+- **重新构建(EPUB)**:`pandoc textbook-complete.md -o textbook-complete.epub --toc --metadata title="多智能体社会仿真:原理、技术与案例" --metadata author="Mavis (cw 项目团队)" --metadata lang="zh-CN"`
+- **加入新章节**:在 `chapters/` 里加 `23-xxx.md`,然后跑 build.sh,脚本会按文件名前缀自动排序

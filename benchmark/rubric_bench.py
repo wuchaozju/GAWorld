@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from rubric import calibration as calib  # noqa: E402
 from rubric import loader, runner, synth  # noqa: E402
 from rubric.aggregate import render_markdown  # noqa: E402
 
@@ -48,7 +49,8 @@ def main(argv=None) -> int:
     p.add_argument("--ablate", default="",
                    help="消融算子，逗号分隔（N1..N8）或 all")
     p.add_argument("--dim", default="", help="只跑某个维度（R1/R2/R3/R4）")
-    p.add_argument("--results-dir", default=str(RESULTS_DIR))
+    p.add_argument("--results-dir", default=None,
+                   help="默认 results/；--synthetic 时默认 results/synthetic/（不覆盖真实 scorecard）")
     args = p.parse_args(argv)
 
     if args.synthetic:
@@ -75,18 +77,28 @@ def main(argv=None) -> int:
     else:
         ablations = [s.strip().upper() for s in args.ablate.split(",") if s.strip()]
 
+    def calibration(rubric):
+        # The newest human calibration for this rubric (P4); without one, or
+        # with a failed or stale one, the gate stays UNVERIFIED.
+        found = None if args.synthetic else calib.latest_analysis(calib.CALIBRATION_DIR, rubric["rubric_hash"])
+        return calib.scorecard_block(found, rubric["rubric_hash"], providers if not args.synthetic else None)
+
     scorecard = runner.run(
         data, providers=providers, sample_seed=args.sample_seed,
         min_days=args.min_days, samples_per_judge=args.samples_per_judge,
-        ablations=ablations, judge_call=judge_call)
+        ablations=ablations, judge_call=judge_call, calibration=calibration)
     scorecard["mode"] = "synthetic" if args.synthetic else "real"
+    if args.synthetic:
+        # Synthetic data + stub judges exercise the pipeline, not the simulator.
+        scorecard["gate"] = {"state": "FIXTURE",
+                             "reason": "合成数据 + stub judge，只验证评测代码路径，不是仿真结果"}
 
     if args.dim:
         keep = args.dim.strip().upper()
         scorecard["dimensions"] = {k: v for k, v in scorecard["dimensions"].items() if k == keep}
         scorecard["items"] = {k: v for k, v in scorecard["items"].items() if v["dim"] == keep}
 
-    out_dir = Path(args.results_dir)
+    out_dir = Path(args.results_dir or (RESULTS_DIR / "synthetic" if args.synthetic else RESULTS_DIR))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "rubric_scorecard.json").write_text(
         json.dumps(scorecard, ensure_ascii=False, indent=2), encoding="utf-8")

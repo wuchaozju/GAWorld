@@ -51,6 +51,9 @@ MAX_CHILDREN = 3
 #: An elder becomes plausibly at risk from here; below it bereavement of a
 #: co-resident parent is not something a year should invent.
 BEREAVEMENT_MIN_ELDER_AGE = 65
+#: Share of divorces after which the children keep living with this resident.
+#: Same figure ``assign`` uses for residents sampled as already divorced.
+CUSTODY_KEEP_SHARE = 0.55
 
 
 def _members(record: dict[str, Any]) -> list[dict[str, Any]]:
@@ -175,6 +178,11 @@ def bereavable_member(record: dict[str, Any]) -> dict[str, Any] | None:
     candidates = []
     for member in _members(record):
         if not member.get("coresident"):
+            continue
+        # An in-sim resident is a person the simulation is running, not a
+        # line in this record: flagging them deceased here would leave them
+        # walking around the city.
+        if member.get("kind") == "agent":
             continue
         role = str(member.get("role", ""))
         try:
@@ -309,11 +317,93 @@ def bereave(
     }
 
 
+def partner_of(record: dict[str, Any]) -> dict[str, Any] | None:
+    """The co-resident spouse or partner, if any."""
+    for member in _members(record):
+        if member.get("coresident") and str(member.get("role", "")) in PARTNER_ROLES:
+            return member
+    return None
+
+
+def can_divorce(agent: dict[str, Any], record: dict[str, Any]) -> bool:
+    partner = partner_of(record)
+    return partner is not None and str(partner.get("role")) == "spouse"
+
+
+def can_separate(agent: dict[str, Any], record: dict[str, Any]) -> bool:
+    partner = partner_of(record)
+    return partner is not None and str(partner.get("role")) == "partner"
+
+
+def split(
+    record: dict[str, Any],
+    agent: dict[str, Any],
+    *,
+    day: int = 0,
+    rng: random.Random | None = None,
+    keeps_children: bool | None = None,
+) -> dict[str, Any] | None:
+    """End the co-resident partnership in *this* record.
+
+    The partner becomes an ``ex`` who no longer lives here. A marriage ends
+    in ``divorced``; a cohabitation goes back to ``never``. Off-screen
+    children stay with this resident with probability
+    :data:`CUSTODY_KEEP_SHARE` unless ``keeps_children`` decides it; children
+    who are in-sim residents always stay (they live here, and the off-screen
+    side has nowhere to take them). An in-sim couple calls this once per
+    side and moves one of them out (:func:`vacate`).
+    """
+    partner = partner_of(record)
+    if partner is None:
+        return None
+    _rng = rng or random
+    married = str(partner.get("role")) == "spouse"
+    partner["role"] = "ex"
+    partner["coresident"] = False
+    partner["note"] = "离异" if married else "已分手"
+    partner["separated_day"] = int(day)
+    record["marital_status"] = "divorced" if married else "never"
+    record["bond"] = ""
+    if keeps_children is None:
+        keeps_children = _rng.random() < CUSTODY_KEEP_SHARE
+    left = []
+    if not keeps_children:
+        for member in _members(record):
+            if (
+                str(member.get("role", "")) == "child"
+                and member.get("coresident")
+                and member.get("kind") != "agent"
+            ):
+                member["coresident"] = False
+                member["note"] = "随另一方生活"
+                left.append(member)
+    return {
+        "type": "divorce" if married else "separation",
+        "member": partner,
+        "children_left": left,
+        "household_type": refresh_household_type(record),
+    }
+
+
+def vacate(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """The holder of this record moved out: nobody here lives with them now."""
+    left = []
+    for member in _members(record):
+        if member.get("coresident"):
+            member["coresident"] = False
+            member["note"] = "仍住在原来的家"
+            left.append(member)
+    refresh_household_type(record)
+    return left
+
+
 #: Template key -> (eligibility predicate, transition).
 TRANSITIONS = {
     "marriage": (can_marry, marry),
     "childbirth": (can_bear_child, bear_child),
     "bereavement": (can_be_bereaved, bereave),
+    "divorce": (can_divorce, split),
+    "separation": (can_separate, split),
 }
 
 
@@ -329,8 +419,10 @@ def apply_transition(
     entry = TRANSITIONS.get(str(key))
     if entry is None:
         return None
-    _eligible, transition = entry
+    eligible, transition = entry
     try:
+        if not eligible(agent, record):
+            return None
         return transition(record, agent, day=day, rng=rng)
     except Exception as exc:  # noqa: BLE001 - a bad record must not kill the run
         _LOG.warning("family transition %s failed for %s: %s", key, agent.get("id"), exc)
@@ -345,9 +437,14 @@ __all__ = [
     "bereave",
     "can_be_bereaved",
     "can_bear_child",
+    "can_divorce",
     "can_marry",
+    "can_separate",
     "derive_household_type",
     "family_facts",
     "marry",
+    "partner_of",
     "refresh_household_type",
+    "split",
+    "vacate",
 ]

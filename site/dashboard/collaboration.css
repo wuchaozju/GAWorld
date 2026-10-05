@@ -232,7 +232,7 @@ select,
   border: 1px solid var(--line);
   border-radius: 0;
   color: var(--ink);
-  background: #fffef8;
+  background: var(--surface);
 }
 
 textarea {
@@ -265,7 +265,7 @@ select,
   border: 1px solid var(--line);
   color: var(--ink);
   text-align: left;
-  background: #f7f7ee;
+  background: var(--surface);
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
@@ -275,7 +275,7 @@ select,
 }
 
 .member-card.is-selected {
-  color: #f8fbf7;
+  color: var(--on-accent);
   border-color: var(--green);
   background: var(--green);
 }
@@ -349,7 +349,7 @@ select,
   margin-top: 18px;
   padding: 13px 15px;
   border: 0;
-  color: #f9fbf6;
+  color: var(--on-accent);
   background: var(--green-deep);
 }
 
@@ -400,7 +400,7 @@ select,
   border: 1px solid var(--line);
   color: var(--ink);
   text-align: left;
-  background: #f8f8ef;
+  background: var(--surface);
 }
 
 .session-entry.is-active {
@@ -509,7 +509,7 @@ select,
   gap: 4px 10px;
   padding: 12px;
   border: 1px solid var(--line);
-  background: #f6f7ef;
+  background: var(--surface);
 }
 
 .active-member strong {
@@ -558,7 +558,7 @@ select,
   align-items: center;
   padding: 13px 14px;
   border: 1px solid var(--line);
-  background: #f8f8f0;
+  background: var(--surface);
   counter-increment: task-step;
 }
 
@@ -727,7 +727,7 @@ select,
   align-items: center;
   padding: 11px;
   border: 1px solid var(--line);
-  background: #f6f7ef;
+  background: var(--surface);
 }
 
 .artifact-item::before {

@@ -399,8 +399,7 @@ class TestPanelReader(unittest.TestCase):
     def test_absent_file_reads_as_off_not_as_clear_roads(self):
         from gaworld.apps import external_systems_api as api
 
-        with unittest.mock.patch.object(api, "_ds") as ds:
-            ds.return_value._records_dir.return_value = tempfile.mkdtemp()
+        with unittest.mock.patch.object(api.world_paths, "records_dir", return_value=tempfile.mkdtemp()):
             self.assertEqual(api.traffic_runtime()["available"], False)
 
     def test_a_quiet_run_is_reported_as_never_congested(self):
@@ -412,9 +411,10 @@ class TestPanelReader(unittest.TestCase):
                      '"edges_loaded": 2, "flow_pcu": 3.0, "congestion_max": 1.0}\n')
             fh.write('{"_day": 1, "_time": "08:30", "edges_congested": 0, '
                      '"edges_loaded": 1, "flow_pcu": 1.0, "congestion_max": 1.0}\n')
-        with unittest.mock.patch.object(api, "_ds") as ds:
-            ds.return_value._records_dir.return_value = tmp
-            ds.return_value.REPO_ROOT = tmp
+        with (
+            unittest.mock.patch.object(api.world_paths, "records_dir", return_value=tmp),
+            unittest.mock.patch.object(api.world_paths, "REPO_ROOT", tmp),
+        ):
             report = api.traffic_runtime()
         self.assertTrue(report["available"])
         self.assertFalse(report["ever_congested"])

@@ -25,6 +25,7 @@ import sys
 import tempfile
 import unittest
 
+from gaworld.apps import world_paths
 from tests.fixtures.mock_llm import install
 
 
@@ -128,8 +129,15 @@ class TestFamilyEndToEnd(unittest.TestCase):
         for name, value in pinned.items():
             setattr(sim, name, value)
 
+    @staticmethod
+    def _records_dir():
+        # Where this run's Recorder writes: a selected city moves it under its run root.
+        from gaworld.settings import CONFIG
+
+        return (CONFIG.get("records") or {}).get("output_dir", "output/records")
+
     def _read_records(self, table):
-        path = os.path.join("output", "records", f"{table}.jsonl")
+        path = os.path.join(self._records_dir(), f"{table}.jsonl")
         if not os.path.exists(path):
             return []
         with open(path, encoding="utf-8") as fh:
@@ -175,16 +183,15 @@ class TestFamilyEndToEnd(unittest.TestCase):
         checked against each other — unit tests on either side alone would
         both stay green while the panel showed nothing."""
         import generative_city_sim as sim
-        from gaworld.apps import dashboard_server as ds
         from gaworld.apps import family_api
 
         self._patch_module_constants(sim)
         with install():
             sim.run_simulation()
 
-        original = ds.RECORDS_DIR
-        self.addCleanup(lambda: setattr(ds, "RECORDS_DIR", original))
-        ds.RECORDS_DIR = os.path.join(os.getcwd(), "output", "records")
+        original = world_paths.RECORDS_DIR
+        self.addCleanup(lambda: setattr(world_paths, "RECORDS_DIR", original))
+        world_paths.RECORDS_DIR = os.path.join(os.getcwd(), self._records_dir())
 
         payload, status = family_api.handle_get("/api/family/overview", {})
         self.assertEqual(status, 200)

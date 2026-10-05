@@ -28,6 +28,7 @@ from http.server import ThreadingHTTPServer
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import runs
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DASHBOARD = os.path.join(REPO_ROOT, "site", "dashboard")
@@ -49,14 +50,14 @@ class RunLogSliceTest(unittest.TestCase):
             handle.write(data)
 
     def test_missing_log_is_empty_not_an_error(self):
-        chunk = ds._run_log_slice(os.path.join(self.tmp.name, "nope.log"))
+        chunk = runs.run_log_slice(os.path.join(self.tmp.name, "nope.log"))
         self.assertEqual("", chunk["text"])
         self.assertEqual(0, chunk["size"])
         self.assertFalse(chunk["append"])
 
     def test_first_read_returns_the_whole_log(self):
         self._write("day 1\nday 2\n".encode("utf-8"))
-        chunk = ds._run_log_slice(self.path)
+        chunk = runs.run_log_slice(self.path)
         self.assertEqual("day 1\nday 2\n", chunk["text"])
         self.assertFalse(chunk["append"])
         self.assertEqual(0, chunk["skipped"])
@@ -64,17 +65,17 @@ class RunLogSliceTest(unittest.TestCase):
 
     def test_later_reads_only_carry_what_was_appended(self):
         self._write("day 1\n".encode("utf-8"))
-        first = ds._run_log_slice(self.path)
+        first = runs.run_log_slice(self.path)
         self._write("day 2\n".encode("utf-8"), mode="ab")
-        second = ds._run_log_slice(self.path, first["offset"])
+        second = runs.run_log_slice(self.path, first["offset"])
         self.assertTrue(second["append"])
         self.assertEqual("day 2\n", second["text"])
         self.assertEqual(first["text"] + second["text"], "day 1\nday 2\n")
 
     def test_an_idle_log_appends_nothing(self):
         self._write("day 1\n".encode("utf-8"))
-        offset = ds._run_log_slice(self.path)["offset"]
-        chunk = ds._run_log_slice(self.path, offset)
+        offset = runs.run_log_slice(self.path)["offset"]
+        chunk = runs.run_log_slice(self.path, offset)
         self.assertTrue(chunk["append"])
         self.assertEqual("", chunk["text"])
         self.assertEqual(offset, chunk["offset"])
@@ -83,36 +84,36 @@ class RunLogSliceTest(unittest.TestCase):
         # `skipped` drives a "the head was omitted" notice in the panel, so an
         # append must not report the client's own offset as omitted bytes.
         self._write("day 1\n".encode("utf-8"))
-        offset = ds._run_log_slice(self.path)["offset"]
+        offset = runs.run_log_slice(self.path)["offset"]
         self._write("day 2\n".encode("utf-8"), mode="ab")
-        self.assertEqual(0, ds._run_log_slice(self.path, offset)["skipped"])
+        self.assertEqual(0, runs.run_log_slice(self.path, offset)["skipped"])
 
     def test_a_restarted_run_forces_a_full_reload(self):
         self._write("a long first run\n".encode("utf-8"))
-        stale = ds._run_log_slice(self.path)["offset"]
+        stale = runs.run_log_slice(self.path)["offset"]
         self._write("new run\n".encode("utf-8"))  # truncates, as /api/run/start does
-        chunk = ds._run_log_slice(self.path, stale)
+        chunk = runs.run_log_slice(self.path, stale)
         self.assertFalse(chunk["append"], "a stale offset must not append onto a rotated log")
         self.assertEqual("new run\n", chunk["text"])
 
     def test_a_half_written_character_waits_for_its_remaining_bytes(self):
         # The simulator writes while we read, so a poll can land mid-character.
         self._write("你好".encode("utf-8")[:-1])
-        first = ds._run_log_slice(self.path)
+        first = runs.run_log_slice(self.path)
         self.assertEqual("你", first["text"], "an incomplete character is held back, not mangled")
         self.assertEqual(3, first["offset"])
         self._write("你好".encode("utf-8")[-1:], mode="ab")
-        second = ds._run_log_slice(self.path, first["offset"])
+        second = runs.run_log_slice(self.path, first["offset"])
         self.assertEqual("好", second["text"])
 
     def test_an_oversized_log_drops_whole_characters_from_the_front(self):
         self._write("城市仿真日志".encode("utf-8"))
-        original = ds.RUN_LOG_VIEW_MAX_BYTES
-        ds.RUN_LOG_VIEW_MAX_BYTES = 10  # cuts inside a 3-byte character
+        original = runs.RUN_LOG_VIEW_MAX_BYTES
+        runs.RUN_LOG_VIEW_MAX_BYTES = 10  # cuts inside a 3-byte character
         try:
-            chunk = ds._run_log_slice(self.path)
+            chunk = runs.run_log_slice(self.path)
         finally:
-            ds.RUN_LOG_VIEW_MAX_BYTES = original
+            runs.RUN_LOG_VIEW_MAX_BYTES = original
         self.assertNotIn("�", chunk["text"], "a truncated head must not leave a broken char")
         self.assertTrue(chunk["text"].endswith("日志"))
         self.assertGreater(chunk["skipped"], 0, "the client is told bytes were skipped")
@@ -125,22 +126,22 @@ class RunLogStatusPayloadTest(unittest.TestCase):
         self.path = os.path.join(self.tmp.name, "run.log")
         with open(self.path, "w", encoding="utf-8") as handle:
             handle.write("booting\n")
-        original = ds.RUN_STATE.get("log_path")
-        ds.RUN_STATE["log_path"] = self.path
-        self.addCleanup(lambda: ds.RUN_STATE.__setitem__("log_path", original))
+        original = runs.RUN_STATE.get("log_path")
+        runs.RUN_STATE["log_path"] = self.path
+        self.addCleanup(lambda: runs.RUN_STATE.__setitem__("log_path", original))
 
     def test_status_reports_the_offset_and_size_the_client_needs(self):
-        status = ds._run_status()
+        status = runs.run_status()
         self.assertEqual("booting\n", status["log_tail"])
         self.assertFalse(status["log_append"])
         self.assertEqual(len("booting\n"), status["log_size"])
         self.assertEqual(status["log_size"], status["log_offset"])
 
     def test_status_with_an_offset_is_an_append(self):
-        offset = ds._run_status()["log_offset"]
+        offset = runs.run_status()["log_offset"]
         with open(self.path, "a", encoding="utf-8") as handle:
             handle.write("day 1 done\n")
-        status = ds._run_status(offset)
+        status = runs.run_status(offset)
         self.assertTrue(status["log_append"])
         self.assertEqual("day 1 done\n", status["log_tail"])
 
@@ -150,9 +151,9 @@ class RunLogMarkdownTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = os.path.join(self.tmp.name, "run.log")
-        original = ds.RUN_STATE.get("log_path")
-        ds.RUN_STATE["log_path"] = self.path
-        self.addCleanup(lambda: ds.RUN_STATE.__setitem__("log_path", original))
+        original = runs.RUN_STATE.get("log_path")
+        runs.RUN_STATE["log_path"] = self.path
+        self.addCleanup(lambda: runs.RUN_STATE.__setitem__("log_path", original))
 
     def _write(self, text):
         with open(self.path, "w", encoding="utf-8") as handle:
@@ -187,9 +188,9 @@ class RunLogEndpointTest(unittest.TestCase):
         self.path = os.path.join(self.tmp.name, "run.log")
         with open(self.path, "w", encoding="utf-8") as handle:
             handle.write("第 1 天开始\n")
-        original = ds.RUN_STATE.get("log_path")
-        ds.RUN_STATE["log_path"] = self.path
-        self.addCleanup(lambda: ds.RUN_STATE.__setitem__("log_path", original))
+        original = runs.RUN_STATE.get("log_path")
+        runs.RUN_STATE["log_path"] = self.path
+        self.addCleanup(lambda: runs.RUN_STATE.__setitem__("log_path", original))
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), ds.DashboardHandler)
         self.port = self.server.server_address[1]
         threading.Thread(target=self.server.serve_forever, daemon=True).start()

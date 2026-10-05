@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title data-i18n="research.page_title">GAWorld · 研究工作台</title>
@@ -8,12 +9,15 @@
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
   <link rel="stylesheet" href="/site/dashboard/research.css" />
+  <link rel="stylesheet" href="/site/dashboard/worlds.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body class="studio-body">
   <main class="studio-shell">
     <header class="studio-top">
       <div class="brand">
-        <div class="brand-mark">GA</div>
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
         <div class="brand-copy">
           <p class="kicker" data-i18n="research.kicker">GAWorld 研究工作台</p>
           <h1 data-i18n="research.headline">把研究想法变成可执行的仿真方案</h1>
@@ -30,6 +34,7 @@
       <button type="button" class="rw-tab is-active" role="tab" id="rwTabPlan" data-tab="plan" aria-selected="true" aria-controls="rwPanePlan" data-i18n="research.tab_plan">实施方案</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabGame" data-tab="game" aria-selected="false" aria-controls="rwPaneGame" data-i18n="research.tab_game">严肃游戏</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabPolicy" data-tab="policy" aria-selected="false" aria-controls="rwPanePolicy" data-i18n="research.tab_policy">政策仿真与优化</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabWorlds" data-tab="worlds" aria-selected="false" aria-controls="rwPaneWorlds" data-i18n="research.tab_worlds">平行世界 · 反事实推断</button>
     </nav>
 
     <section class="studio-main rw-main" id="rwPanePlan" role="tabpanel" aria-labelledby="rwTabPlan">
@@ -190,10 +195,165 @@
         </div>
       </aside>
     </section>
+    <!-- 平行世界 · 反事实推断. Driven by worlds.js against /api/parallel-worlds/*. -->
+    <section class="pw-pane" id="rwPaneWorlds" role="tabpanel" aria-labelledby="rwTabWorlds" hidden>
+      <div class="pw-intro">
+        <div>
+          <h2 data-i18n="worlds.headline">同一批人，换一件事，看历史怎么分叉</h2>
+          <p class="rw-hint" data-i18n="worlds.sub">
+            所有世界共用同一批居民、同一个随机种子、同一个模型 ——
+            唯一的区别是发生了什么。剩下的差异就是这件事造成的。
+          </p>
+        </div>
+        <div class="pw-topmeta" id="pwTopMeta"></div>
+      </div>
+
+      <section class="pw-main">
+        <!-- ============ 左：世界设计 ============ -->
+        <aside class="pw-design" id="pwDesign">
+          <div class="pw-card">
+            <h2><span data-i18n="worlds.setup">实验设置</span><span class="help-tip" data-i18n-help="worlds.setup_hint" data-help="这些设置对所有平行世界都一样：同样的居民、同样的天数、同样的随机种子。保持一致才能把终局差异归因到事件本身。"></span></h2>
+            <div class="pw-fields" id="pwShared"></div>
+          </div>
+
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.list_title">平行世界</span><span class="help-tip" data-i18n-help="worlds.list_hint" data-help="每个世界是一次完整仿真，拥有独立的记忆、日志与状态目录。给某个世界加事件，它就会走出不同的历史；不加事件的世界就是基准。"></span></h2>
+              <button class="button small" id="pwAddWorld" type="button" data-i18n="worlds.add">+ 新世界</button>
+            </div>
+            <p class="pw-hint" id="pwPresetHint" data-i18n="worlds.preset_hint">从模板开始：</p>
+            <div class="pw-presets" id="pwPresets"></div>
+            <details class="pw-sweep-box">
+              <summary><span data-i18n="worlds.sweep_title">参数扫描：一个参数、几组取值</span><span class="help-tip" data-i18n-help="worlds.sweep_hint" data-help="选一个数值配置项，给几组取值，每个取值生成一个世界（剂量 = 取值），基准世界保持当前值；跑完在「剂量反应」里看每个指标随参数怎么变。基准世界里的事件会复制到每个世界。生成后会替换下面的世界列表。"></span></summary>
+              <div class="pw-fields pw-sweep" id="pwSweep"></div>
+            </details>
+            <div class="pw-worlds" id="pwWorldList"></div>
+          </div>
+        </aside>
+
+        <!-- ============ 右：观测与推断 ============ -->
+        <section class="pw-observe">
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.branch">分叉图</span><span class="help-tip" data-i18n-help="worlds.branch_hint" data-help="横轴是仿真天数。所有世界从同一条主干出发，在各自的第一个事件处分叉；分叉后的粗细代表它离基准世界有多远。"></span></h2>
+              <div class="pw-legend" id="pwLegend"></div>
+            </div>
+            <div class="pw-svgwrap" id="pwBranch"></div>
+          </div>
+
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.trajectory">走向对比</span><span class="help-tip" data-i18n-help="worlds.trajectory_hint" data-help="每条线是一个世界该指标的人群均值随时间的变化。虚线标记事件发生的位置。"></span></h2>
+              <div class="pw-chart-tools">
+                <select id="pwMetricSelect" data-i18n-aria="worlds.metric_label" aria-label="指标"></select>
+                <label class="pw-check"><input type="checkbox" id="pwRelative" /> <span data-i18n="worlds.relative">只看与基准的差</span></label>
+              </div>
+            </div>
+            <div class="pw-svgwrap" id="pwTrajectory"></div>
+            <div class="pw-readout" id="pwReadout" data-i18n="worlds.readout">把鼠标移到图上查看某一步的数值。</div>
+          </div>
+
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.divergence">偏离基准的距离</span><span class="help-tip" data-i18n-help="worlds.divergence_hint" data-help="每一步，该世界所有指标与基准世界同一步的平均绝对差。它第一次稳定越过阈值的那一步，就是两段历史真正分开的时刻。"></span></h2>
+            </div>
+            <div class="pw-svgwrap" id="pwDivergence"></div>
+          </div>
+
+          <div class="pw-card pw-causal">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.causal">反事实推断</span><span class="help-tip" data-i18n-help="worlds.causal_hint" data-help="每位居民在每个世界里都有一段历史，所以个体效应就是同一个人在处理世界与对照世界之间的差（事件之后的窗口均值）。平均效应 ATE 附按居民重抽样的 95% 区间、符号翻转随机化检验的 p 值，以及跨所有检验的 BH-FDR 校正 q 值；事件前的差距用来检查主干是否一致，DiD 扣除了它。"></span></h2>
+              <div class="pw-chart-tools">
+                <label class="pw-inline"><span data-i18n="worlds.compare_label">对照世界</span><select id="pwCompare"></select></label>
+                <select id="pwCausalWorld" data-i18n-aria="worlds.world_label" aria-label="世界"></select>
+              </div>
+            </div>
+            <div id="pwVerdicts"></div>
+            <div class="pw-svgwrap" id="pwForest"></div>
+            <div class="pw-table" id="pwEstimates"></div>
+          </div>
+
+          <div class="pw-card" id="pwInterpretCard">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.interpret">模型解读</span><span class="help-tip" data-i18n-help="worlds.interpret_hint" data-help="把上面的估计表、起效顺序、跨种子重复和剂量反应交给一个模型，请它像社会科学家一样写出解读、局限和下一步实验。它只能引用表里的数字：每条发现都要指向表中的一个「世界 × 指标」，并附上那一行的判定；指不到任何一行的发现标为不作数。结果按对照世界缓存在实验目录里。"></span></h2>
+              <div class="pw-chart-tools">
+                <select id="pwInterpretProvider" data-i18n-aria="worlds.interpret_model" aria-label="解读用的模型"></select>
+                <button class="button small" id="pwInterpretRun" type="button" data-i18n="worlds.interpret_run">解读这些数字</button>
+              </div>
+            </div>
+            <div id="pwInterpret"></div>
+          </div>
+
+          <div class="pw-grid2">
+            <div class="pw-card">
+              <div class="pw-card-head">
+                <h2><span data-i18n="worlds.dynamics">机制线索：谁先动</span><span class="help-tip" data-i18n-help="worlds.dynamics_hint" data-help="按起效时刻排序：效应第一次稳定越过阈值（有安慰剂时用它校准）的那一步。先动的指标往往是因果链的上游，但顺序只是线索，不是证明。"></span></h2>
+                <span class="pw-subtle" id="pwDynamicsWorld"></span>
+              </div>
+              <div class="pw-table" id="pwDynamics"></div>
+            </div>
+            <div class="pw-card">
+              <div class="pw-card-head">
+                <h2><span data-i18n="worlds.hte">异质性：效应落在谁身上</span><span class="help-tip" data-i18n-help="worlds.hte_hint" data-help="按居民属性（性别、年龄段、户籍……，来自当前城市的种子表）和事件前水平分组，分别估计条件平均效应；p 值来自打乱分组标签的置换检验，回答「这个属性到底有没有关系」。"></span></h2>
+                <div class="pw-chart-tools">
+                  <span class="pw-subtle" id="pwHteWorld"></span>
+                  <select id="pwHteMetric" data-i18n-aria="worlds.metric_label" aria-label="指标"></select>
+                </div>
+              </div>
+              <div class="pw-table" id="pwHte"></div>
+            </div>
+          </div>
+
+          <div class="pw-card">
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.replication">跨种子重复</span><span class="help-tip" data-i18n-help="worlds.replication_hint" data-help="同一个设计换几个随机种子各跑一遍。每个种子是整个仿真的一次抽样，所以合并时以种子为单位：均值、t 区间、方向一致的种子数。研究工作台按种子跑出的研究也会在这里合并。"></span></h2>
+              <span class="pw-subtle" id="pwReplicationSeeds"></span>
+            </div>
+            <div class="pw-table" id="pwReplication"></div>
+          </div>
+
+          <div class="pw-card" id="pwDoseCard" hidden>
+            <div class="pw-card-head">
+              <h2><span data-i18n="worlds.dose">剂量反应</span><span class="help-tip" data-i18n-help="worlds.dose_hint" data-help="给处理世界填上剂量（如 1 = 轻度、2 = 重度），对照世界记为 0。每个指标拟合效应对剂量的直线：斜率、R²，以及效应是否随剂量单调变化。"></span></h2>
+            </div>
+            <div class="pw-table" id="pwDose"></div>
+          </div>
+
+          <div class="pw-grid2">
+            <div class="pw-card">
+              <div class="pw-card-head">
+                <h2><span data-i18n="worlds.deltas">终局差异</span><span class="help-tip" data-i18n-help="worlds.deltas_hint" data-help="每个世界相对基准世界的终值与均值差，按绝对差排序。"></span></h2>
+              </div>
+              <div class="pw-table" id="pwDeltas"></div>
+            </div>
+            <div class="pw-card">
+              <div class="pw-card-head">
+                <h2><span data-i18n="worlds.movers">谁被改变了</span><span class="help-tip" data-i18n-help="worlds.movers_hint" data-help="同一个居民在两个世界里的终局差距。人群均值会把个体差异抹平，这张表把它们找回来。"></span></h2>
+                <select id="pwMoverWorld" data-i18n-aria="worlds.world_label" aria-label="世界"></select>
+              </div>
+              <div class="pw-table" id="pwMovers"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <footer class="pw-foot">
+        <div class="pw-runstate" id="pwRunState" data-i18n="worlds.not_running">未运行</div>
+        <div class="pw-progress" id="pwProgress"></div>
+        <div class="pw-actions">
+          <select id="pwHistory" data-i18n-aria="worlds.history_label" aria-label="历史实验"></select>
+          <button class="button subtle" id="pwRefresh" type="button" data-i18n="worlds.refresh">刷新</button>
+          <button class="button danger" id="pwStop" type="button" data-i18n="worlds.stop" hidden>停止</button>
+          <button class="button primary" id="pwRun" type="button" data-i18n="worlds.run">运行平行世界</button>
+        </div>
+      </footer>
+    </section>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/research.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
+  <script src="/site/dashboard/worlds.js"></script>
 </body>
 </html>

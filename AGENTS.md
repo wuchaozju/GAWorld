@@ -13,7 +13,8 @@ GAWorld/
 │   ├── behavior/             # 动态行为模块（dynamic.py + plugin.py）
 │   ├── cognition/            # 人类真实感模块（realism.py）
 │   ├── core/                 # Agent 基础与并发执行（agent.py, runner.py）
-│   ├── distributed/          # 分布式通信（comm.py）
+│   ├── distributed/          # 分布式通信（comm.py：中继客户端）
+│   ├── cluster/              # 分布式世界（nodes/hub/bundle/node/plugin：一个世界的居民分到多台机器，枢纽 = dashboard）
 │   ├── economy/              # 经济模块（finance.py + plugin.py）
 │   ├── env/                  # 环境系统（system.py）
 │   ├── events/               # 生命事件（life.py + plugin.py）
@@ -36,6 +37,7 @@ GAWorld/
 │   ├── work/                 # 工作模块（router, queue, market, adapters + plugin.py）
 │   ├── world/                # 城市地图（city_map.py + plugin.py：物理感知/空间偏好/道路拥堵；away.py 定义「异地」）
 │   ├── hooks.py              # 旧版生命周期钩子（HookBus，兼容层；新代码用 kernel/bus.py）
+│   ├── client.py             # Dashboard HTTP API 的 Python 客户端（按 OpenAPI operationId 调用任意接口）
 │   ├── interests.py          # 兴趣与成长档案（+ interests_plugin.py）
 │   └── logging_setup.py      # 日志配置
 ├── generative_city_sim.py    # CLI 入口（run / reset / interview）——仅管线骨架，子系统逻辑在插件里
@@ -70,8 +72,11 @@ GAWorld/
   `gaworld/accounts/policy.py`; `GAWORLD_DASHBOARD_TOKEN` stays an admin. Each user works in their own world
   (`/api/worlds`, the console's world switcher): a copy of a city's residents plus every run output under
   `output/worlds/<id>/`; the active world is the `gaworld_world` cookie and every path the dashboard resolves goes
-  through it (`_effective_config()`, `_state_csv_path()`, `_records_dir()`, …) — new dashboard code must not read
-  `output/` through a module constant. Run limits live in the account DB. Anything a member creates is stamped
+  through it (`gaworld/apps/world_paths.py`: `effective_config()`, `state_csv_path()`, `records_dir()`, …) — new
+  dashboard code must not read `output/` through a module constant. Runs, their queue and limits live in
+  `gaworld/apps/runs.py`; a delegate API module is one line in `gaworld/apps/routes.py`, not a handler branch, and every new route
+  gets an entry in `gaworld/apps/openapi.py` (`tests/test_openapi.py` fails on an undocumented route; the
+  document also drives the 405 answers and `gaworld.client.call()`). Run limits live in the account DB. Anything a member creates is stamped
   with `gaworld.accounts.ownership.stamp()` and filtered with `visible()` / `owned()`; background jobs must start
   through `ownership.spawn()` so they keep the asking user and world. Model calls are counted per user
   (`gaworld.accounts.usage`, hooked into `call_llm`) for a soft daily quota. In an `open` world people play
@@ -80,6 +85,12 @@ GAWorld/
   invites, roster and usage, limits, every world (stop, export the play log), and a class-wide life-event
   broadcast (`POST /api/worlds/broadcast`). Docs in `docs/SERVER_DEPLOYMENT.md`,
   design in `docs/proposals/2026-10-01-multi-user.md`
+- Distributed world (分布式世界): a world's owner assigns residents to nodes in 管理世界 → 分布式节点; another
+  machine runs its share with `python -m gaworld.cluster join <hub> --token <world>.<node>.<secret>`. The dashboard
+  is the hub (`/api/cluster/*`: node tokens, the world's relay, a per-node intervention outbox, tick sync, record
+  upload); `play_api` routes a player's action to the machine running the resident. Code in `gaworld/cluster/` +
+  `gaworld/apps/cluster_api.py`; phones join through `/play/<world_id>`. Design in
+  `docs/proposals/2026-10-02-distributed-worlds.md`
 - Interview a crowd (群体采访): the dashboard panel at `/site/dashboard/survey.html`, backed by
   `/api/interview/*`. One round is split into one child process per city:
   - `python -m gaworld.interview --spec round.json --out answers.json`
@@ -127,6 +138,15 @@ GAWorld/
     proposes modifications and a revised policy, which is re-simulated on the same residents — the
     highest composite score is the recommendation (`/api/research/policy/*`). Runs in
     `output/research/policy/`; `gaworld/research/policy_sim.py` + `gaworld/apps/policy_sim_api.py`
+  - 平行世界 · 反事实推断 tab (`research.html?tab=worlds`; the old `worlds.html` / `/console#worlds`
+    redirect here): design 2–8 worlds by hand, run them (optionally under several `seeds`, one grouped
+    experiment per seed), and read counterfactual estimates — paired per-resident ATE with bootstrap CI,
+    sign-flip p, BH q, pre-event balance / DiD, placebo noise floor, onset order, heterogeneity, dose–response,
+    replication across seeds, plus an optional one-call model reading (`POST /api/parallel-worlds/interpret`,
+    `gaworld/parallel/interpret.py`: every finding is tied back to an estimates row and its verdict, cached per
+    comparison world). Backed by `/api/parallel-worlds/*`; estimators in `gaworld/parallel/causal.py`
+    (deterministic, no model calls); frontend `site/dashboard/worlds.js`. A study's verdicts also gate on
+    each seed's paired test (`gaworld/research/evaluate.py`). Docs in `docs/PARALLEL_WORLDS_TUTORIAL.md` §13
   - Docs in `docs/RESEARCH_WORKBENCH_TUTORIAL.md`
 - Generate a new city map (single, in-place):
   - `python scripts/generate_citymap.py --description "a small city with about 1000 residents, in east china"`
@@ -167,6 +187,7 @@ There is no build step beyond installing Python dependencies.
 - Two suites, designed in `docs/TEST_CASES.md`: `pytest --suite core` (~30 s smoke of the main simulation path, listed in `tests/suites/core.txt`) and `pytest --suite full` (everything). Keep the core suite green before committing; a stale entry in `core.txt` fails the run.
 - New code MUST be covered by tests in the same PR; coverage is reported by `pytest-cov` in CI.
 - Prefer lightweight, reproducible tests: mock LLM calls (`call_llm`) and avoid real network IO.
+- If a change alters what a run with **default** config produces so that earlier runs are no longer comparable, append an `Epoch` to `gaworld/core/comparability.py` (never renumber old ones). Runs, compare-event dirs and parallel-worlds experiments are stamped with it, and replicate pooling, study verdicts and the bench gate refuse to combine across epochs. Opt-in switches that default off don't need one.
 
 ## Commit & Pull Request Guidelines
 - Existing history uses short, lowercase summary messages (e.g., `updated`, `sync`, `requirement`). Keep commits concise and imperative.

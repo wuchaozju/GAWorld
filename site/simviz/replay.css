@@ -28,6 +28,7 @@ input {
 
 .page {
   min-height: 100vh;
+  height: 100dvh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
@@ -45,6 +46,10 @@ input {
 .topbar {
   justify-content: space-between;
 }
+.topbar > div:first-child,
+.topbar .scene-modes { flex-shrink: 0; }
+.topbar .scene-modes { flex-wrap: nowrap; }
+.run-picker { flex: 1 1 320px; min-width: 0; }
 
 .eyebrow {
   margin: 0 0 2px;
@@ -59,6 +64,7 @@ h1 {
   margin: 0;
   font-size: 24px;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .run-picker,
@@ -90,13 +96,43 @@ button:hover {
 }
 
 #runSelect {
-  min-width: min(520px, 56vw);
+  min-width: 0;
+  width: 100%;
 }
 
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+/* Floor plan of the building in focus, next to the map. */
+.indoor-shell {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  border-left: 0;
+  background: var(--surface);
+}
+
+@media (max-width: 1280px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .indoor-shell {
+    grid-column: 1;
+    grid-row: 1;
+    border-left: 0;
+    border-top: 0;
+  }
+
+  .inspector {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 .map-shell {
@@ -179,8 +215,18 @@ canvas {
 
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: 56vh minmax(260px, 1fr);
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .map-shell { flex: 0 0 56vh; }
+
+  .indoor-shell,
+  .inspector {
+    grid-column: auto;
+    grid-row: auto;
+    flex-shrink: 0;
   }
 
   .inspector {

@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GAWorld Console</title>
   <meta name="description" data-i18n-content="console.shell_description" content="GAWorld 一体化控制台：控制台 · 仿真回放 · 智能体工作台" />
   <link rel="stylesheet" href="/site/console/console.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body>
   <header class="console-bar">
@@ -13,7 +16,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
     <a class="brand" href="/" data-i18n-title="console.home_title" title="返回首页">
-      <span class="brand-mark">GA</span>
+      <span class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></span>
       <span class="brand-name">GAWorld Console</span>
     </a>
     <div class="crumb" id="crumb" aria-live="polite">
@@ -53,6 +56,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2a5 5 0 0 1 6 4.8"/></svg>
             <span class="tab-text"><span data-i18n="nav.population">人口与群体</span><span class="en">Population</span></span>
           </button>
+          <button class="tab" role="tab" data-tab="organizations">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V7l9-4 9 4v14M8 21v-7h8v7M7 9h2m6 0h2"/></svg>
+            <span class="tab-text"><span data-i18n="nav.organizations">组织</span><span class="en">Organizations</span></span>
+          </button>
           <button class="tab" role="tab" data-tab="studio">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             <span class="tab-text"><span data-i18n="nav.studio">智能体工作台</span><span class="en">Agent Studio</span></span>
@@ -73,10 +80,6 @@
 
         <section class="nav-group">
           <h2 class="nav-group-label"><span data-i18n="nav.group_experiment">实验</span><span class="en">Experiment</span></h2>
-          <button class="tab" role="tab" data-tab="worlds">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.2v9.6M18 10.2c0 4.4-12 2.6-12 6.6"/></svg>
-            <span class="tab-text"><span data-i18n="nav.worlds">平行世界</span><span class="en">Parallel Worlds</span></span>
-          </button>
           <button class="tab" role="tab" data-tab="collaboration">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg>
             <span class="tab-text"><span data-i18n="nav.collaboration">合作任务</span><span class="en">Cooperation</span></span>
@@ -151,6 +154,26 @@
         </select>
         <label for="worldWait" data-i18n="world.wait_label">每个 tick 等玩家（秒，0 = 不等）</label>
         <input id="worldWait" type="number" min="0" max="300" step="5" value="0">
+        <div class="world-cluster">
+          <h3 data-i18n="world.share_title">手机 / 其他设备进入</h3>
+          <p class="world-note" data-i18n="world.share_note">把这个链接（或它的二维码）发给大家：登录后直接进入这个世界的「多人共玩」。世界要设为「开放」别人才能进。</p>
+          <input id="worldShareLink" readonly>
+          <h3 data-i18n="world.nodes_title">分布式节点</h3>
+          <p class="world-note" data-i18n="world.nodes_note">把一部分居民交给别的电脑运行（用那台电脑自己的模型密钥）。分配在下次运行时生效；没分出去的居民留在本服务器。</p>
+          <label for="worldSyncTimeout" data-i18n="world.sync_label">每个 tick 最多等慢节点（秒，0 = 不等）</label>
+          <input id="worldSyncTimeout" type="number" min="0" max="600" step="10" value="60">
+          <p class="world-note" id="worldHubLine"></p>
+          <ul class="world-nodes" id="worldNodes"></ul>
+          <label for="worldNodeName" data-i18n="world.node_name">节点名称</label>
+          <input id="worldNodeName" maxlength="64" data-i18n-placeholder="world.node_name_ph" placeholder="例如：302 机房 7 号机">
+          <label for="worldNodeAgents" data-i18n="world.node_agents">它负责的居民编号</label>
+          <input id="worldNodeAgents" data-i18n-placeholder="world.node_agents_ph" placeholder="例如：11-20, 25">
+          <button type="button" class="secondary" id="worldNodeAdd" data-i18n="world.node_add">添加节点</button>
+          <div id="worldNodeCommand" hidden>
+            <p class="world-note" data-i18n="world.node_command">在那台电脑的 GAWorld 目录里运行（令牌只显示这一次）：</p>
+            <pre id="worldNodeCommandText"></pre>
+          </div>
+        </div>
         <button type="button" class="danger" id="worldDeleteBtn" data-i18n="world.delete">删除这个世界</button>
       </div>
     </section>

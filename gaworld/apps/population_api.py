@@ -7,9 +7,9 @@ of forwarding; everything else lives here.
 
 Two design points worth stating, because both were mistakes waiting to happen:
 
-**Path constants are read from ``dashboard_server`` at call time**, not
+**Path constants are read from ``world_paths`` at call time**, not
 imported at module load. The existing dashboard tests work by monkeypatching
-``ds.STATE_CSV_PATH`` onto a temp directory, and a ``from … import
+``world_paths.STATE_CSV_PATH`` onto a temp directory, and a ``from … import
 STATE_CSV_PATH`` here would capture the real path before the patch lands and
 quietly write into the user's ``data/`` during a test run.
 
@@ -30,6 +30,8 @@ import uuid
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
+from gaworld.accounts import ownership
+from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.population")
@@ -102,7 +104,7 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
 
-    threading.Thread(target=runner, name=f"job-{job_id}", daemon=True).start()
+    ownership.spawn(runner, name=f"job-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
@@ -133,7 +135,7 @@ def population_schema() -> dict[str, Any]:
     """The panel's parameter contract, generated from the dataclasses.
 
     Served rather than duplicated in JavaScript. The nine state variables are
-    currently declared twice already (``dashboard_server.STATE_VAR_KEYS`` and
+    currently declared twice already (``residents.STATE_VAR_KEYS`` and
     ``site/dashboard/studio.js``), and those two have to be kept in sync by
     hand; this endpoint exists so the population knobs never join them.
     """
@@ -398,10 +400,9 @@ def _output_dir(payload: dict[str, Any]) -> str:
     """
     import os
 
-    from gaworld.apps import dashboard_server as ds
 
     raw = str(payload.get("out_dir") or "output/population").strip()
-    root = os.path.realpath(ds.REPO_ROOT)
+    root = os.path.realpath(world_paths.REPO_ROOT)
     target = os.path.realpath(os.path.join(root, raw))
     if not (target == root or target.startswith(root + os.sep)):
         raise ValueError("out_dir 必须位于仓库目录内")
@@ -424,9 +425,8 @@ def _describe_written(written: dict[str, Any]) -> list[dict[str, Any]]:
     """
     import os
 
-    from gaworld.apps import dashboard_server as ds
 
-    root = os.path.realpath(ds.REPO_ROOT)
+    root = os.path.realpath(world_paths.REPO_ROOT)
     labels = {
         "state_csv": ("状态表 State CSV", "每人一行：id、姓名、年龄、户籍、住处 + 九个状态变量"),
         "profiles_md": ("人物志 Profiles", "每人一段自然语言画像，仿真器读它来了解这个人"),
@@ -770,7 +770,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     if path == "/api/population/last":
         agents = _LAST_POPULATION.get("agents") or []
         return {"count": len(agents), "job_id": _LAST_POPULATION.get("job_id")}, 200
-    return {"error": "Unknown population endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -787,7 +787,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return start_validation_job(payload), 202
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown population endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

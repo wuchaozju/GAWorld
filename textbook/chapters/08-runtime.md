@@ -88,12 +88,16 @@ python generative_city_sim.py run --sim-days 180
 **GAWorld 的策略:小规模顺序,大规模分组并行**。100 人以下用顺序;100–1000 人分成 10 组并行;1000 人以上用更复杂的分布式。
 
 ```
+```text
 ┌──────────────────────────────────────┐
+```
 │  100 人:顺序                       │
 │  100~1000 人:10 组并行              │
 │  1000 人以上:100 组并行             │
 │  10000 人以上:分布式节点(多机)    │
+```text
 └──────────────────────────────────────┘
+```
 ```
 
 代码示例:一个简单的并行仿真。
@@ -451,22 +455,7 @@ for entry in agents[0].history[::24]:  # 每天看一条
 
 跑这段代码,你会看到一个简单的"事件 + agent 反应"的循环。第 5 天 9:00 的裁员事件会触发 agent_0 的 cash 减少和 stress 上升,后续的日常循环会持续影响它的状态。
 
-> **教学讨论**:这段代码的事件是"被动"的——它由外部代码添加。更高级的设计是"事件触发器",由 agent 的状态或环境的变化自动产生事件。例如:"如果某 agent 的 cash < 0,触发破产事件"。这会让级联效应真正"涌现"出来。
-
----
-
-## 8.7　本章小结
-
-- 时钟与步长分五档(秒/分钟/小时/日/月/年),选择标准是"和研究问题最小时间单位一致"。
-- 顺序 vs 并行的权衡:顺序保证一致性、并行提高速度。GAWorld 用分批时间步平衡。
-- 同步事件和级联效应是社会仿真最有用的涌现形式,需要严格的事件同步机制。
-- 守恒定律是仿真可信度的底线,经济系统的货币必须守恒。
-- 状态持久化分三层(状态快照、事件日志、记忆快照),可复现性需要种子+配置+依赖三件套。
-- 一个 200 行的最小事件循环能在 1 秒内跑一周仿真,是仿真世界的"操作系统"。
-
----
-
-## 8.8　思考题
+> **教学讨论**:这段代码的事件是"被动"的——它由外部代码添加。更高级的设计是"事件触发器",由 agent 的状态或环境的变化自动产生事件。例如:"如果某 agent 的 cash < 0,触发破产事件"。这会让级联效应真正"涌现"出来。## 8.8　思考题
 
 1. **为限行令案例选择仿真步长**:限行令实施 6 个月,1000 人。你用什么步长?为什么?
 2. **设计一个守恒审计方案**:仿真里有 1000 人、企业、政府、银行四个部门。怎么审计"货币守恒"?代码或伪代码。
@@ -478,13 +467,13 @@ for entry in agents[0].history[::24]:  # 每天看一条
 ## 8.9　延伸阅读
 
 1. Zeigler, B. P., Praehofer, H., & Kim, T. G. (2000). *Theory of Modeling and Simulation: Integrating Discrete Event and Continuous Complex Dynamic Systems*. Academic Press. —— 仿真理论的经典教材。
-2. Railsback, S. F., & Grimm, V. (2019). *Agent-Based and Individual-Based Modeling: A Practical Introduction*. Princeton University Press. —— ABM 实践指南,讨论时钟、并行、可复现等具体问题。
-3. Macal, C. M., & North, M. J. (2010). Tutorial on Agent-Based Modelling and Simulation. *Journal of Simulation*, 4(3), 151–162.
+2. Railsback, S. F., & Grimm, V. (2019). *智能体-Based and Individual-Based Modeling: A Practical Introduction*. Princeton University Press. —— ABM 实践指南,讨论时钟、并行、可复现等具体问题。
+3. Macal, C. M., & North, M. J. (2010). Tutorial on 智能体-Based Modelling and Simulation. *Journal of Simulation*, 4(3), 151–162.
 4. Grimm, V., et al. (2010). The ODD Protocol: A Review and First Update. *Ecological Modelling*, 221(23), 2760–2768. —— ODD 协议(Overview, Design concepts, Details),是描述 ABM 的标准格式。
 5. Edmonds, B., & Hales, D. (2010). Replication, Replication and Replication: Some Hard Lessons from Simple Models. In *Simulating Social Complexity*. —— 可复现性的陷阱。
 6. GAWorld 工程文档:`gaworld/sim/pipeline.py`、`gaworld/economy/finance.py`。
 7. North, M. J., et al. (2013). Complex Adaptive Systems Modeling with Repast Simphony and Repast for High Performance Computing. —— Repast HPC 框架的教程。
-8. Klöckner, A., et al. (2023). The ODD Protocol for Describing Agent-Based Models in Social Science. *JASSS*, 26(2). —— ODD 协议的更新版。
+8. Klöckner, A., et al. (2023). The ODD Protocol for Describing 智能体-Based Models in Social Science. *JASSS*, 26(2). —— ODD 协议的更新版。
 
 ---
 
@@ -499,7 +488,7 @@ for entry in agents[0].history[::24]:  # 每天看一条
 > 至此,本书的"技术层"全部完成。接下来进入"方法层"——从研究问题到可信度评估,这是社会仿真作为研究方法的全流程。第 9 章开始讨论"如何把研究问题变成可证伪的仿真假设"。
 ---
 
-## 8.10　扩展:仿真性能优化
+### 8.10 扩展:仿真性能优化
 
 仿真运行可能很慢。本节讨论性能优化策略。
 
@@ -548,7 +537,7 @@ LLM 调用的缓存能减少 30–50% 的调用:
 
 ---
 
-## 8.11　扩展:分布式与并行计算的深度讨论
+### 8.11 扩展:分布式与并行计算的深度讨论
 
 ### 8.11.1　一致性模型
 
@@ -589,7 +578,7 @@ LLM 调用的缓存能减少 30–50% 的调用:
 
 ---
 
-## 8.12　扩展:仿真运行的工程最佳实践
+### 8.12 扩展:仿真运行的工程最佳实践
 
 ### 8.12.1　日志规范
 
@@ -654,7 +643,7 @@ except MemoryError:
 
 ---
 
-## 8.13　扩展:仿真监控与可视化
+### 8.13 扩展:仿真监控与可视化
 
 仿真运行时需要实时监控。
 
@@ -715,21 +704,6 @@ def alert_on_anomaly(issue: str):
 - 监控与可视化:实时仪表盘、性能监控、异常告警、可视化回放。
 - GAWorld 的运行系统已经实现了大部分生产级特性,读者可以直接使用。
 
-
----
-
-## 8.15　扩展:仿真校准与验证
-
-### 8.15.1　仿真校准
-
-仿真校准(calibration)是用真实数据调整仿真参数:
-
-```python
-def calibrate_simulation(real_data: pd.DataFrame, sim_data: pd.DataFrame,
-                         parameters: dict) -> dict:
-    """校准仿真参数"""
-    # 简单示例:调整参数直到模拟数据接近真实数据
-    best_params = parameters
     best_diff = float("inf")
     for _ in range(100):  # 简单网格搜索
         candidate = perturb_parameters(parameters)
@@ -774,7 +748,7 @@ def validate_simulation(sim_predictions: pd.Series,
 
 ---
 
-## 8.16　扩展:大规模仿真的优化
+### 8.16 扩展:大规模仿真的优化
 
 ### 8.16.1　并行计算的层次
 
@@ -829,7 +803,7 @@ def gpu_parallel_decisions(agents, situations):
 
 ---
 
-## 8.18　扩展:仿真生态
+### 8.18 扩展:仿真生态
 
 ### 8.18.1　仿真工具
 
@@ -863,27 +837,7 @@ def gpu_parallel_decisions(agents, situations):
 
 - **ODD 协议**:模型描述
 - **FAIR 原则**:数据管理
-- **PROV 标准**:溯源追踪
-
----
-
-## 8.19　扩展:仿真教育的未来
-
-### 8.19.1　从课堂到在线
-
-仿真教育的趋势:
-
-- 课堂实验 → 在线实验
-- 教师讲授 → 学生主导
-- 静态文本 → 动态内容
-
-### 8.19.2　从理论到实践
-
-学生更早接触仿真:
-
-- 高中:简单 NetLogo 模型
-- 大学:完整仿真项目
-- 研究生:原创研究
+- **PROV 标准**:溯源追踪原创研究
 
 ### 8.19.3　跨学科教育
 
@@ -913,7 +867,7 @@ def gpu_parallel_decisions(agents, situations):
 
 ---
 
-## 8.21　扩展:仿真与开源
+### 8.21 扩展:仿真与开源
 
 ### 8.21.1　为什么开源
 
@@ -955,7 +909,7 @@ GAWorld 使用 MIT 许可证。
 
 ---
 
-## 8.22　扩展:仿真的可重复性
+### 8.22 扩展:仿真的可重复性
 
 ### 8.22.1　可重复性的层次
 
@@ -977,29 +931,7 @@ GAWorld 使用 MIT 许可证。
 - 期刊要求
 - 评审支持
 - 社区共识
-- 工具支持
-
----
-
-## 8.23　本章小结(最终扩展版)
-
-- 仿真与开源:价值、许可证、治理、社区。
-- 仿真的可重复性:层次、工程、文化。
-- 这些是社会仿真长期发展的基础设施。
-
-
----
-
-## 8.24　本章尾声
-
-经过本章,读者应该已经具备:
-
-- 时钟与步长的选择能力
-- 顺序与并行的权衡
-- 同步事件与级联的处理
-- 守恒定律的应用
-- 状态持久化与可复现性
-- 仿真运行的工程细节
+- 工具支持行的工程细节
 - 性能优化能力
 - 仿真校准与验证
 - 大规模仿真的优化
@@ -1010,7 +942,7 @@ GAWorld 使用 MIT 许可证。
 
 ---
 
-## 8.25　扩展:并行计算与分布式仿真的实战
+### 8.25 扩展:并行计算与分布式仿真的实战
 
 ### 8.25.1　多线程 vs 多进程
 
@@ -1048,14 +980,7 @@ def parallel_llm_calls(prompts):
 
 大规模仿真需要分布式:
 
-- **Dask**:Python 分布式计算
-- **Ray**:分布式应用框架
-- **Spark**:大数据处理
-- **Kubernetes**:容器编排
-
-社会仿真使用分布式:
-
-- 多机协作
+- **D- 多机协作
 - 节点间异步同步
 - 中心化调度 + 分布式执行
 
@@ -1071,7 +996,7 @@ GAWorld 的 LLM 调用主要在云端,不直接用 GPU。
 
 ---
 
-## 8.26　扩展:可重复性的工程实现
+### 8.26 扩展:可重复性的工程实现
 
 ### 8.26.1　种子管理
 
@@ -1122,7 +1047,7 @@ runtime = {
 
 ---
 
-## 8.27　扩展:仿真运行的调试与优化
+### 8.27 扩展:仿真运行的调试与优化
 
 ### 8.27.1　调试工具
 
@@ -1173,7 +1098,7 @@ def batch_llm_calls(prompts):
 
 ---
 
-## 8.28　扩展:仿真运行的工程伦理
+### 8.28 扩展:仿真运行的工程伦理
 
 ### 8.28.1　能源消耗
 

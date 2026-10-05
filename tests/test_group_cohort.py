@@ -554,6 +554,8 @@ class DriverTests(unittest.TestCase):
 
 
 class PluginTests(unittest.TestCase):
+    """Telemetry mode. Handlers take the real EventBus context dict."""
+
     def _ctx(self, agents, config):
         recorded = []
 
@@ -587,22 +589,20 @@ class PluginTests(unittest.TestCase):
         ctx, recorded = self._ctx(_agents(60, seed=5), {})
         plugin = GroupPlugin()
         plugin.setup(ctx)
-        for handler in ctx.bus.handlers["on_simulation_start"]:
-            handler(ctx=ctx)
-        for handler in ctx.bus.handlers["on_day_end"]:
-            handler(ctx=ctx)
+        self.assertEqual({}, ctx.bus.handlers)
         self.assertEqual([], recorded)
 
     def test_enabled_records_partition_and_daily_stats(self):
         from gaworld.group.plugin import GroupPlugin
 
-        ctx, recorded = self._ctx(_agents(60, seed=5), {"group": {"enabled": True}})
+        agents = _agents(60, seed=5)
+        ctx, recorded = self._ctx(agents, {"group": {"enabled": True}})
         plugin = GroupPlugin()
         plugin.setup(ctx)
         for handler in ctx.bus.handlers["on_simulation_start"]:
-            handler(ctx=ctx)
+            handler({"agents": agents})
         for handler in ctx.bus.handlers["on_day_end"]:
-            handler(ctx=ctx)
+            handler({"agents": agents})
         kinds = [kind for kind, _ in recorded]
         self.assertIn("group.partition", kinds)
         self.assertIn("group.cohort_stats", kinds)
@@ -616,9 +616,9 @@ class PluginTests(unittest.TestCase):
         plugin = GroupPlugin()
         plugin.setup(ctx)
         for handler in ctx.bus.handlers["on_simulation_start"]:
-            handler(ctx=ctx)
+            handler({"agents": agents})
         for handler in ctx.bus.handlers["on_day_end"]:
-            handler(ctx=ctx)
+            handler({"agents": agents})
         self.assertEqual(before, [dict(a["state"]) for a in agents])
 
 

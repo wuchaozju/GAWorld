@@ -76,8 +76,9 @@ ok(allIn, "every object's building-space rect is within the interior");
 console.log("\n[tree] park / outdoor + aliases + fallback");
 const park = buildBuildingTree({ id: "P", label: "Riverside Park", category: "leisure" });
 ok(park.outdoor === true, "park name → outdoor blueprint");
-ok(blueprintFor({ category: "industry" }) === BLUEPRINTS.commerce, "industry aliases commerce");
-ok(blueprintFor({ category: "weird-unknown" }) === BLUEPRINTS.residential, "unknown category falls back to residential");
+ok(blueprintFor({ category: "industry" }) === BLUEPRINTS.industry, "industry uses a workshop and warehouse");
+ok(blueprintFor({ category: "transit" }) === BLUEPRINTS.transit, "transit uses a waiting hall and ticket office");
+ok(blueprintFor({ category: "weird-unknown" }) === BLUEPRINTS.mixed, "unknown category falls back to a common hall");
 
 console.log(`\n${failures ? "FAIL" : "PASS"} — ${failures} failure(s)\n`);
 process.exit(failures ? 1 : 0);

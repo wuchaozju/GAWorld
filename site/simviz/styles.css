@@ -121,6 +121,7 @@ h2 { font-size: 22px; }
   border-radius: 22px; overflow: hidden; background: #c1b08e; border: 1px solid rgba(24, 38, 42, 0.08); position: relative;
   aspect-ratio: 10 / 7;
 }
+.map-wrap.is-indoor { min-height: 360px; touch-action: none; }
 #mapCanvasWrap canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 #mapCanvas {
   display: block; width: 100%; height: auto; aspect-ratio: 10 / 7; image-rendering: pixelated; image-rendering: crisp-edges; background: #bda476;
@@ -247,4 +248,5 @@ h2 { font-size: 22px; }
   h1 { max-width: none; font-size: 34px; }
   .summary-grid { grid-template-columns: 1fr; }
   .timeline-meta { flex-direction: column; }
+  .map-wrap.is-indoor { aspect-ratio: auto; height: 360px; min-width: 0; }
 }

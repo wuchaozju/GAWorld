@@ -14,6 +14,7 @@ this section rather than without its results.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -27,6 +28,7 @@ _LANGUAGE_LABELS = {"zh-CN": "简体中文", "en": "English"}
 _PROMPT = """你是 GAWorld 平台的研究解读助手。下面是一项已经跑完、并且已经由代码判定过的仿真研究。你的任务只是解释这些数字，不是重新判定：
 - 每条 finding 必须挂在一个假设 id 上，只能引用表里出现的数字；
 - 判定为 inconclusive / unmeasured 的假设，不要写成有效应；
+- 「指标等级」为 (c) 的假设，claim 里只说方向（上升 / 下降），不写、不比较、不换算效应大小——这类指标由我们自定的参数与模型判断驱动，大小没有现实含义；evidence 可以列各种子效应，作为方向一致的依据；
 - 数据质量问题必须体现在 limitations 里；
 - next_studies 给 2–3 个能在 GAWorld 平行世界里继续做的研究（剂量反应、机制探查、稳健性），每个说明相对本研究改什么。
 
@@ -60,11 +62,15 @@ def build_interpret_prompt(protocol: Protocol, evaluation: dict[str, Any]) -> st
         + ("；".join(f"Day {e['day']} {e['name']}" for e in cond.get("events") or []) or "无")
         for cond in protocol.conditions
     )
-    rows = ["| id | 假设 | 指标 | 对比 | 预测方向 | 各种子效应 | 均值 | 噪声底线 | verdict | 原因 |", "|---|---|---|---|---|---|---|---|---|---|"]
+    rows = [
+        "| id | 假设 | 指标 | 指标等级 | 对比 | 预测方向 | 各种子效应 | 均值 | 噪声底线 | verdict | 原因 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
     for item in evaluation.get("hypotheses") or []:
         effects = ", ".join(f"s{row['seed']}: {_fmt(row.get('effect'))}" for row in item.get("effects") or [])
         rows.append(
             f"| {item['id']} | {item.get('statement', '')} | {item.get('measure_label', item['measure'])} "
+            f"| ({item.get('measure_grade') or '?'}) "
             f"| {item['treatment']} vs {item['control']} | {item['direction']} | {effects} "
             f"| {_fmt(item.get('mean_effect'))} | {_fmt(item.get('noise')) if item.get('noise') is not None else '—'} "
             f"| {item['verdict']} | {'；'.join(item.get('reasons') or [])} |"
@@ -89,12 +95,19 @@ def _text(value: Any, limit: int) -> str:
     return str(value).strip()[:limit]
 
 
+#: A number a finding could be quoting as a size: a decimal, or a percentage.
+_MAGNITUDE_RE = re.compile(r"\d*\.\d+|\d+(?:\.\d+)?\s*[%％]|百分点")
+
+
 def check_claims(interpretation: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:
     """Mark every finding with whether it hangs on a real hypothesis.
 
     Nothing is deleted: an ungrounded finding still shows in the report,
     flagged, because a reader who sees what the model wanted to claim and
-    that it could not back it learns more than one who sees a gap.
+    that it could not back it learns more than one who sees a gap. The same
+    goes for a claim that states a size on a direction-only measure: it is
+    kept, and marked ``cites_size``. Only the claim is checked — the
+    evidence is where per-seed effects belong, as the grounds for a direction.
     """
     known = {item["id"]: item for item in evaluation.get("hypotheses") or []}
     for finding in interpretation.get("findings") or []:
@@ -102,6 +115,8 @@ def check_claims(interpretation: dict[str, Any], evaluation: dict[str, Any]) -> 
         finding["hypothesis"] = hid
         finding["grounded"] = hid in known
         finding["verdict"] = known[hid]["verdict"] if hid in known else ""
+        direction = bool(known[hid].get("direction_only")) if hid in known else False
+        finding["cites_size"] = direction and bool(_MAGNITUDE_RE.search(str(finding.get("claim") or "")))
     return interpretation
 
 

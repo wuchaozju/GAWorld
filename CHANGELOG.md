@@ -4,6 +4,302 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-10-05 — 室内房间：空间树进入仿真
+
+### Added
+
+- **后端空间树** `gaworld/world/spatial_tree.py` — 像素小镇的 18 种布局（房间 + 家具 + 槽位）、选布局的规则（`layoutFor`）与存储 / 索引接口搬到后端；活动 → 槽位用室内视图的同一条规则。测试用 node 逐项比对 JS 文件，前后端不会走样。
+- **`local_physical.rooms`**（默认关）— 打开后：住宅 / 公寓里每个家庭分到自己的一户（citymap 的 Floor/Flat，户数不够往上加层）；每一步按正在做的事把人放进合适的房间（访客不进厨房、库房等员工房间，在家时与家居插件说的房间一致）；**偶遇要同一户、同一房间**，同楼邻居在家不再「碰面」；场所容量也开着时**按房间算**（房间容量 = 场所容量 × 面积占比），拒绝理由写出哪个房间满了。
+- 轨迹每步带 `room: {node, unit, arena, object}`；室内渲染器（像素小镇、控制台、回放共用）按它摆人，住宅楼一次显示一户。
+- 新钩子 `agent.moved`（移动阶段之后，插件文档已登记）；主循环多 2 行。
+- 设计说明 `docs/proposals/2026-10-04-indoor-rooms.md`；测试 `tests/test_rooms.py`（29 项，含一次真实主循环运行）与 `indoor-view.test.js` 一项。
+
+### Notes
+
+- 默认关，默认运行不变，不需要新的可比性版本；开了会改变谁碰见谁（开容量时还有谁进得去），前后 run 不可比。
+- 按面积分容量是约定（(c) 级）：开了房间，同一场所对单一活动的有效容量变小。
+- 居民不会被告知自己在场所的哪个房间；房间只决定碰见谁和容量。
+
+## [Unreleased] — 2026-10-04 — 谁是真人 + GAWorld-Bench Track D（人类判别）
+
+### Added
+
+- **「谁是真人」**（游戏场，`gaworld/apps/whois_api.py`，页面 `site/dashboard/whois.html`）— 1–5 个真人和 1–5 位居民匿名进同一个群聊（座位只显示「N号」、顺序打乱），按话题聊 2–5 轮，每个真人再给每个别人投「真人 / 居民」。房主建房后把座位链接发给朋友（每个链接一个座位，持链接即可发言和投票，互相看不到身份）；居民每轮各写一条，提示词只要求像在群里随口说话，不提有人在猜。揭晓后看每个座位被判成真人的票数和谁猜得最准；整局存到 `output/games/whois/`。开销 = 居民数 × 轮数次调用。
+- **GAWorld-Bench Track D v0.1.8：人类判别** — `--track D` 读上面的存档：`score_D = min(1, 居民被判为真人的比例 / 真人被判为真人的比例)`，以真人互判的通过率为分母；另报判断正确率与按票算的 Wilson 区间。少于 5 局、对居民少于 20 票或对真人少于 10 票时弃权（`n/a`），弃权时报告写明还差多少。`POST /api/bench/run` 的 `track` 接受 `"D"`。
+- 测试 `tests/test_whois_api.py`（11 项）、`benchmark/test_gaworld_bench.py::TestTrackDWhois`（6 项）。
+
+### Notes
+
+- 还没有和真人、真模型玩过；Track D 在攒够对局前一直是 `n/a`。
+- 结论只在这个群聊格式里成立：消息短、口语，居民不知道有人在猜，评委就是同局玩家；设计里的四个 LLM 评审维度（连贯性、人设贴合、记忆可溯源、跨天矛盾率）仍未实现。
+- 房间只在内存里，服务重启就没了；揭晓前的房间不存档。
+
+## [Unreleased] — 2026-10-04 — 主运行里的群体模式 + 影子审计自适应
+
+### Added
+
+- **`simulation_mode: "group"`**（默认 `individual`）— 在**按天快进**的主运行里开群体模式：每天每个群体一次调用，平移它的非实体化成员；实体化的少数人（焦点、审计样本、群体最描述不了的尾部）跑普通快进简报；日终他们的结果并回群体统计。产物与普通运行相同——每个居民的状态历史、运行清单——外加 `group.partition` / `group.day` / `group.summary` 记录，控制台每天一行小结。控制台、平行世界、研究工作台不用改就能读。配置在 `group.*`（每天单独跑的人数、审计比例、焦点居民、告警线、审计倍数），配置面板有中英文说明。
+- **影子审计自适应**（设计文档 Phase 5）— 审计样本自己的变化减去群体的预测就是该群体当天的残差；超过 `group.residual_alarm` 时第二天该群体审计样本 ×2（上限 ×8），连续 3 天不告警降回一档，每次调整都写进记录。因为个体层就是真实的快进简报，这是对群体近似误差的**在线**度量；验证门是对着合成的参照过程过的，给不了这个。
+- 新过滤钩子 `fast_forward.digest_agents`（插件文档已登记）；主循环快进分支多 10 行：不出简报的居民只记状态历史，记忆生命周期只给出简报的人。
+- 测试 `tests/test_group_mode.py`（11 项，含一次真实主循环的群体运行）；`tests/test_group_cohort.py` 的遥测测试改用真实的钩子调用约定。
+
+### Fixed
+
+- `GroupPlugin` 的遥测处理器按 `handler(ctx=...)` 写，与真实 EventBus 的 `fn(ctx_dict)` 不符；它从没注册进 `builtin_plugins()`，所以 `group.enabled` 一直不生效。现在已注册并改成真实约定。
+
+### Notes
+
+- 只支持按天快进（开跑前检查）；逐 tick 模式没法只让一部分人走完整管线。
+- **不能用于网络扩散类问题**：群体里的人一起动，不看社交图（验证门 L2 不通过的原因）；能修它的网络耦合项需要人口合成器的社交图，主运行里没接。
+- 群体只动快进简报能动的 7 个状态变量，两层才比得上；独立驱动器 `python -m gaworld.group` 和验证门不变。
+- 默认 `individual`，默认运行不变，不需要新的可比性版本。
+
+## [Unreleased] — 2026-10-03 — 经典实验库：居民当被试
+
+### Added
+
+- **经典实验库**（`gaworld/experiments/classics/`，`python -m gaworld.experiments.classics list｜run｜analyze`）— 六个教科书范式交给城里的居民来答：框架效应（Tversky & Kahneman 1981）、锚定效应（三题，Jacowitz & Kahneman 1995）、独裁者 vs 最后通牒提议方（Forsythe 等 1994）、最后通牒回应方（给 20 元 vs 50 元）、信任博弈（同小区居民 vs 外地人）、一次性公共品博弈（回报率 0.75 vs 0.3）。题面本地化，提示词不提实验，居民档案在两个条件下一字不差。
+- **按人配对** — 每个居民答每个条件，各自一次无状态调用；效应 = 各人「处理 − 对照」的平均，区间与 p 值用平行世界配对门槛同一套 bootstrap 与符号翻转检验。判定只看方向：复现 / 反向 / 未复现 / 样本不足（少于 10 人）。人类结果并排对照、不进判定；按月收入与年龄中位数的分组是探索性的。锚定另报每题的锚定指数。
+- 运行习惯同需求估计实验：原始回答落盘（改解析器只需重新分析）、按键续跑、拒绝第二个写入者、前 20 次全失败即中止；记录路由到的 provider，混合模型时报告标出。默认 40 位居民、六个范式共 640 次调用，`--dry-run` 先报数。
+- 文档 `docs/CLASSIC_EXPERIMENTS.md`；测试 `tests/test_classic_experiments.py`（18 项）。
+
+### Notes
+
+- 还没有用真模型跑过：640 次调用的预算没动。
+- 这些回答是 (c) 级：说的是扮演居民的模型怎么答。六个都是最有名的实验，复现首先说明模型知道人类会怎么答，每个范式的注意事项写在报告里。
+
+## [Unreleased] — 2026-10-03 — GAWorld-Bench Track B：对局存档与对局层规律
+
+### Added
+
+- **对局存档**（`gaworld/apps/game_archive.py`）— 谣言扩散局、公投局、灾害模式每跑完一局，存一份到 `output/games/<kind>/<时间>-<job_id>.json`：整场结果、这局调用路由到的 provider、多人模式下谁玩的。`JobStore(..., archive=True)` 在作业标为完成之前写；写失败只记日志，不影响玩家拿到结果。界面上的「最近对局」不变，仍只看内存。
+- **谣言局的信任度历史** — 每个居民多了 `beliefs`（每次开口后的信任度）。只有「信了、又被当面辟谣」的人有两项，就是持续影响效应要的辟谣前 / 辟谣后。玩法与开销不变。
+- **Track B 对局层**（`benchmark/gaworld_bench.py --track B [--games-dir]`，`--all` 与默认运行也包含）— 合并同类对局检三条事先定好的规律：公投从众（不带宣传口径、私下有严格多数的局，朝多数的改票显著多于背离的，单侧二项 p<0.05）、灾害中极度恐慌少见而互助常见（恐慌 = 5 占比 ≤ 0.2 且互助 ≥ 0.5）、辟谣后相信度下降但不归零（单侧符号检验 p<0.05 且残留 ≥ 辟谣前的 25%）。每条少于 5 局可用对局或样本不够就弃权，弃权照样拉低分数（`score_B = 复现条数 / 3`）；全弃权时 Track B 为 n/a，报告逐条写缺什么、怎么补。`--synthetic` 带一套对局夹具。
+- 每条规律都标 (c) 级、参照文献和**提示词线索**（例如公投的正式表决提示词点了名「看到多数人怎么想之后改主意不丢人」）；对局混了多个模型时 scorecard 与报告标出来。`POST /api/bench/run` 多了 `games_dir`，`track` 可取 `B`。
+- 测试：`tests/test_game_archive.py`（6 项：完成前落盘、未开启 / 空结果不写、写失败不影响结果、记录玩家、三种游戏开启存档、辟谣前后两次信任度）；`benchmark/test_gaworld_bench.py` 加 `TestTrackBGames`（10 项）。
+
+### Notes
+
+- 原定的「谣言扩散呈 S 形」没有采用：一局最多 14 人、5 轮，一次转发最多传给 4 个还没听说的人，累计到达曲线的形状主要是这几个数的算术。换成了读模型真正作答那一轮的持续影响效应。
+- 这三条是对局层规律——居民对一段提示词的一步回应，不是 agent→环境→agent 回路的涌现（那一类是单独的 `trackb_spatial.py`）。设计文档 Track B 原表的四条仿真层规律仍未实现。
+- 目前没有存档的对局，所以真实 scorecard 上 Track B 是 n/a；每种游戏各玩 5 局以上（公投不填口径）才开始出结论。
+
+## [Unreleased] — 2026-10-03 — Rubric-Bench P4：人类锚点校准
+
+### Added
+
+- **校准集**（`benchmark/rubric/calibration.py`、`benchmark/rubric_calibrate.py`）— 从一次运行按 R1–R4 分层抽 30 题（维度轮转、维度内按 item 轮转；没有数据的维度注明而不硬凑）。约三分之一用该 item 自己的破坏算子改坏，盲标：既让样本铺满 0–2 档，也顺带检验破坏算子。规则项也进集，与人的一致性单独报告。题目（`set.json`）与答案键（`key.json`：哪些被改坏、规则打几分）分开存。
+- **标注页** `/site/dashboard/rubric-calibration.html` — 一题一屏：要看什么 → 记录 → 备注 → 0 / 1 / 2（或「记录里没有能判断的信息」），点分即存并跳到下一道没标的；每位标注者只看得到自己的标注，标完全部才能看结果；可在页上从当前世界的运行新建校准集。
+- **分析** — 人-人序数 Krippendorff α（≥ 0.7）；每位标注者与 judge 的 Spearman ρ、QWK（平均 ≥ 0.6）；人眼里真实与被破坏样本的均分差；逐 item 分歧与人机差，生成重写队列。结论 `ok` / `fail` / `incomplete`，写 `analysis.json` / `analysis.md`。
+- **judge 打分** — `rubric_calibrate.py --judge` 让 judge 集成对完全相同的样本与程序事实打分；也可走 `POST /api/bench/run`（`kind: "calibration"`）。
+- **接进 Track R gate** — `rubric_bench.py` 自动读当前 rubric 最新的校准分析：没有、没过、基于旧版 rubric、或 judge 与校准时不同，trust gate 都到不了 OK（UNVERIFIED，写明原因）；scorecard 多一行「人类锚点校准」。此前 gate 在做过消融、judge 间 α 达标后可以到 OK，与设计文档「P4 之前一律 UNVERIFIED」不符。
+- 接口 `GET /api/bench/calibration[/<id>]`、`POST /api/bench/calibration/build｜<id>/label｜<id>/analyze`（OpenAPI 已登记）。
+- 测试：`benchmark/test_rubric_bench.py` 加 9 项（分层与盲标、通过 / 人人不一致 / judge 不一致 / 未完成四种结论、gate、标注存取与校验、秩相关）；`tests/test_bench_api.py` 加 2 项接口测试。
+
+### Notes
+
+- 没有提交任何标注，也没有建真实校准集：这一步要两个人各花约一小时。当前 `output/` 已能抽满 30 题、覆盖四个维度（R3 只有不依赖社交图的条目）。
+- 标注页不在控制台导航里，直接打开地址；在多用户模式下写接口按现有策略需要管理员权限。
+
+## [Unreleased] — 2026-10-03 — 指标来源分级：(c) 级指标只读方向
+
+### Added
+
+- **研究指标带来源等级**（`gaworld/research/measures.py`）— 每个可测量指标多了 `grade`（它依赖的机制里最弱的一级，分级沿用 `benchmark/MECHANISM_PROVENANCE.md`）和 `basis`（由什么驱动）。问卷指标同样带上（模型扮演居民的自述）。编译提示词的指标表多一列「等级」，并要求 (c) 级指标的假设写成方向性论断；协议记录每个指标的等级与依据。
+- **判定不变，读法变**：(c) 级指标的假设在依据里多一行「指标来源 (c) 级：只读方向，效应大小不作数」，结果带 `measure_grade` / `measure_basis` / `direction_only`。旧协议没有记录等级时按今天的目录补，未知等级按 (c) 读。
+- **解读检查**：解读提示词要求 (c) 级指标的结论只说方向；`check_claims` 把在结论里写了具体大小（小数、百分比、百分点）的发现标成 `cites_size`，报告与面板显示「对只读方向的指标写了效应大小，大小不作数」。各种子效应仍可放在依据里。
+- **报告与面板**：预注册里多一节「指标来源」（等级、由什么驱动、等级的含义）；假设表的指标后标 `(c)`，均值效应旁写「只读方向，大小不作数」；面板上鼠标移到等级上显示依据。
+- **Bench（机制来源表规矩 3）**：`gaworld_bench.py` 的 `METRIC_PROVENANCE` / `STATE_PROVENANCE` 给每个 Track A 锚点和 Track C 指标附上最弱依赖；scorecard 多一节「指标来源」，报告逐项写出来源。分数与通过线不变。
+- `tests/test_measure_provenance.py`（12 项）；`benchmark/test_gaworld_bench.py` 加 4 项，其中一项锁住 Bench 与研究目录对九维状态的等级一致。
+
+### Fixed
+
+- `stance_score` 的指标说明写成了 0–1，实际是 −1–1（正面关键词减负面关键词）。
+
+### Notes
+
+- **核对出的两件事**：(1) 九维状态对事件和政策的反应，主通道是一次模型调用给出的增量（`infer_event_effect`），所以研究闭环里「事件让某状态上升」的结论、Bench Track C 的已知符号检验，检的都是模型对这件事的判断能否穿过状态动态，不是对现实因果的独立检验；(2) Bench Track A 的 `engel_coefficient`、`savings_rate` 是按收入查恩格尔曲线得到的预算参数，不是从实际消费算的——这两项拟合量的是那张表本身，scorecard 现在标为「回显」。改成从实际分类消费计算没有做。
+- `MECHANISM_PROVENANCE.md` 新增「居民状态与消费预算」与「指标的最弱依赖」两节，规矩 3 由代码执行，并加规矩 4（新指标须给等级与依据）。
+- 不改仿真、不改判定与评分，不加可比性版本。
+
+## [Unreleased] — 2026-10-03 — 平行世界：参数扫描
+
+### Added
+
+- **参数扫描**（`gaworld/parallel/sweep.py`，新模块）— 选一个数值配置项和几组取值，展开成一次普通的平行世界实验：基准世界不带补丁、保持当前值（剂量 = 当前值），每个取值一个处理世界（补丁只改这一片叶子，剂量 = 取值），可选一个基准的原样副本作安慰剂。跑完直接由现成的剂量反应读出每个指标的斜率、R² 与是否单调。基准世界的事件复制到每个世界（在某个冲击下扫参数）。
+- **检查**：路径不存在 / 不是数值 / 是实验级设置（种子、天数、居民、目录）直接报错，并指出断在哪一级；整数参数只收整数；等于当前值或重复的取值跳过并说明；至少两个不同取值；连同基准与安慰剂不超过 8 个世界。
+- **面板**：「平行世界」卡片里的「参数扫描」——参数框带全部数值配置项及当前值的下拉建议，生成的世界替换当前列表、检查后照常运行；世界卡片显示自己的配置补丁，补丁随运行请求发出（此前面板上的世界只能带事件）。
+- **接口与命令行**：`POST /api/parallel-worlds/sweep`（只展开不运行），`overview` 多了 `tunables`；`python generative_city_sim.py parallel-worlds --sweep 路径=取值1,取值2,… [--placebo]`，`--spec` 变为可选（同时给时提供共享设置和基准世界的事件）。执行计划与命令行回显里写出每个世界改了哪个配置项，而不是「配置改动 1 项」。
+- `tests/test_parallel_sweep.py`（19 项，含子进程里确认补丁只改这一片叶子、剂量反应以当前值为起点、命令行从 spec 基准世界取事件）；`site/dashboard/worlds.test.js` 加 8 项面板检查。
+
+### Notes
+
+- 不改默认仿真，不加可比性版本。一次只扫一个参数；多参数网格、取值范围检查、把扫描接进研究协议都没有做。
+- 用桩模型实跑过一次：`layoff_base_prob = 1.0` 的世界当天出现裁员，基准和 0.5 的世界没有，报告里出了剂量反应。
+
+## [Unreleased] — 2026-10-03 — AI 社会科学家阶段二：先跑世界，再采访居民
+
+### Added
+
+- **composite 研究**（`gaworld/research/survey.py`，新模块）— 方案要测态度（信任、满意度、支持与否）时，协议编译出跑后问卷：`scale`（有序单选，默认五级同意度）、`boolean`、`open`，最多 8 题。每道 scale / boolean 题成为 0–1 指标 `survey.Q<n>`（量表按选项位置归一，是非题为答「是」的比例），和状态指标一起进可测量目录，假设可以引用；引用开放题的假设在编译时丢弃。
+- **每个世界用自己的记忆采访**（`research/backends.default_survey_runner`）— 每个种子跑完全部世界后，逐世界起一个 `python -m gaworld.interview` 子进程，带上该世界运行时的 config 覆盖（记忆目录、向量库、目标都解析到这个世界），居民状态取该世界最后一步（`interview/local.py` 新增 `final_state_csv` / `read_final_states`）。产物写在世界目录的 `survey_spec.json`、`survey_answers.json`、`survey.json`。被升级成居民的家人不采访（没有档案）。
+- **判定**：问卷得分并入每个种子的结果表，噪声底线与方向规则不变；居民配对关对问卷指标也生效——同一批居民跨世界逐人配对（bootstrap 区间、符号翻转 p、种子内 BH），不要求对照是基准世界（`evaluate.survey_paired`）。答不上的回答不算 0；某题超过 20% 无法计分、某世界采访失败都列为数据质量问题。
+- **跑前检查**：composite 至少要一道可计分题；调用量预算加上 `居民 × 题数 × 世界 × 种子`。
+- 报告与面板：预注册里列出问卷题目与题型，结果里多一张「问卷作答」表。
+- `tests/test_research_composite.py`（14 项，含配对检验降级；一项 slow 用例起真实的采访子进程和桩模型，确认每个世界的居民按该世界的最后状态作答）。
+
+### Notes
+
+- 不改默认仿真，不加可比性版本。旧的 parallel_worlds 研究照常编译、运行、判定。
+- 仍未做：不跑世界的独立问卷、开放题编码计分、经济与网络指标进目录。设计见 `docs/proposals/2026-09-19-ai-social-scientist.md` §2.6，用法见 `docs/RESEARCH_WORKBENCH_TUTORIAL.md` §4.5。
+
+## [Unreleased] — 2026-10-03 — 家庭：户结构的变化真正生效、离婚，以及让家人成为居民
+
+### Fixed
+
+- **结婚 / 添丁 / 亲人离世从来没有改变过户结构。** 家庭插件调用转移时传了 `rng=self._rng`，而它从未赋值；每次都在事件总线里抛错、被吞掉。快进模式里模型选的这些人生大事、面板注入的同类事件，户记录一个都没变——此前的测试只直接调了纯函数。现在每次事件用（种子, 居民, 天, 事件）播种，且先查资格。
+- **仿真内夫妻只改一方**：添丁、亲人离世现在同步到同住的每位仿真内家人（配偶记为子女、被升级的孩子记为兄弟姐妹、长辈记为孙辈），新成员写进关系。
+- **丧亲可能把仿真内的配偶标成去世**：现在只在场外的人里选。
+
+### Added
+
+- **离婚与分手改变户结构**（`lifecycle.split` / `vacate`）— 配偶变为不同住的前任，关系降到前任强度。场外配偶离开，孩子按 55% 留下；仿真内夫妻由播种的硬币决定谁搬到最近的另一个住宅节点，孩子和同住长辈留在原来的家，户一分为二（家庭财务不再互相补贴）。
+- **`family.members_as_agents`（默认关）：家人成为居民** — 开局前把同住的 6–17 岁子女和 60 岁以上同住长辈追加为居民（`agents.built` 优先级 20，主循环随后照常初始化他们），id 从 1,000,000 起稳定编号，住在这户的家里、孩子白天去最近的学校。账本上仍是被抚养人：不建账户、不找收入，这户照旧付他们的开销；不独自出行；没有家务责任文本。家庭简介按他们的视角写（父亲 / 母亲 / 兄弟姐妹 / 祖辈；儿子 / 儿媳 / 孙辈）。新模块 `gaworld/family/promote.py`。
+- `tests/test_family_dynamics.py`（13 项，含一次真实主循环：被指定的 9 岁孩子作为居民走完一天，有自己的感知 / 计划 / 反思调用）。
+
+### Notes
+
+- 默认运行不触发这些转移（家庭日常事件是 `family_*` 另一套，快进模式默认关），家人成为居民默认关，所以不加可比性版本。**开过快进模式或注入过结婚 / 添丁 / 亲人离世事件的旧 run 与之后不可比**——旧代码里这些事件对户结构没有效果。
+- `docs/FAMILY_DESIGN.md` §9 原来写「户结构在一次 run 内是静态的」「子女和长辈始终是 ghost」，已改为如实描述。设计见 `docs/proposals/2026-10-03-family-dynamics.md`。
+- 仍未做：运行中途升级 / 降级、被升级的孩子收到家庭日常事件、仿真内两位居民之间结婚。
+
+## [Unreleased] — 2026-10-03 — 离城：带薪年假、在外一天一次调用；周末判断修正（可比性版本 9）
+
+### Fixed
+
+- **离城和家庭插件的周末判断一直是错的。** 两处都从 `gaworld.sim._schedule` 导入一个那里没有的 `_resolve_day_context`，又读了三个不存在的配置键，于是永远退回「第 1 天是周一」；主循环却按 `calendar` 配置（默认 `start_date: today`）。周六开跑时，一周里有 4 天两边说法相反：旅行在工作日出发、出差在周末出发，家庭责任提示（默认开）在错的日子说「周末」。新增 `gaworld/sim/_utils.py:calendar_from_config`，两个插件在 setup 时按主循环同样的规则解析一次。
+- **经济模块会在外地把人改去上班。** 「找收入」不看人在哪：探亲途中 200 步里 125 步被改成工作，被裁的居民 200 步全改——离城提案里「探亲 / 旅行期间无工作收入」并不成立。现在人在外地（仿真出行或孪生的真实位置）时不再触发。
+
+### Added
+
+- **带薪年假** — 探亲 / 旅行占用的工作日，在职居民按一天的合同工资（`gross_monthly_salary ÷ work_days_per_month`）领取，走工资通道（企业池付、计入税基）；每个仿真年 `travel.paid_leave_days_per_year` 天（默认 5，《职工带薪年休假条例》工龄 1–10 年的档位），之后记无薪假。周末不算、出差是工作。经济侧公开入口 `credit_paid_leave`。
+- **在外的日子压成一次摘要**（`travel.compress_away_days`，设置默认开；离城功能本身默认关）— 不生成当天日程（新内核扩展点 `day.routine.skip`）、跳过逐步的感知 / 打断 / 计划 / 调整 / 选动作 / 反思（`StagePipeline` 支持按步的 `step["_skip_stages"]`），日初调一次快进日摘要，写一条记忆、状态变化按快进日上限截断。移动、状态更新、记忆与状态史、步记录照常。
+- **本市的天气和街面事件到不了外地** — 新扩展点 `env.events.reach`（filter）逐居民决定本 tick 哪些城市事件到得了他（感知、事件影响推断、`external_env` 记忆、好奇心检索共用），默认全部。离城插件对有行程的居民去掉 `natural` / `social` 两类，经济 / 政治 / 技术照旧，`policy_events` 不受影响。此前人在北京，杭州的暴雨照样逐条推断一遍对他的影响（每条一次模型调用）。
+- 真实主循环（模拟 LLM，2 人 2 天）：在外者 21 次调用，在城者 112 次；逐步认知调用为 0，环境事件影响推断 3 次对 23 次。三个扩展点写进了 `docs/PLUGIN_AUTHORING.md`。
+- `tests/test_travel_leave_and_compression.py`（15 项，含一次真实主循环数调用、并确认在外者没收到本市天气）。
+
+### Notes
+
+- 周末修正改变家庭插件（默认开）的感知 → **可比性版本 9**。其余只影响默认关的离城功能，开关在运行清单的配置快照里。设计见 `docs/proposals/2026-10-03-travel-leave-and-cost.md`；原离城提案 §2.4、§2.5、§七、§八.1 已标注。
+- 仍未改：在外期间精力 / 饥饿等需求随反思阶段一起停更；零工也拿年假；不压缩时在外者的感知里仍有本市环境概况文字。
+
+## [Unreleased] — 2026-10-03 — 随机裁员会恢复（可比性版本 8）；大病不再算作通胀需求
+
+### Fixed
+
+- **随机裁员砍掉的 50–85% 收入是永久的。** 30–90 天的倒计时结束后只有「失业」人生事件会复职；随机裁员什么都不发生，倒计时唯一的作用是期间不能涨薪——两份 README 却写着「恢复期 30–90 天」。现在裁员时记下这一段开始前的时薪（期间再被裁仍记第一次的），倒计时结束回到它的 85–100%（与事件复职同样的「疤」），税前月薪同比例调整，`layoff_recovery` 事件带 `to_hourly`；不会往下调；期间换工作或退休则忘掉旧时薪；失业事件照旧按原岗位复职。2000 人默认配置一年：年末工资 p10 0.51 → 1.00 倍，一直谷底时 0.23 → 0.87。README 改成如实描述。
+- **需求驱动的通胀把大病自付费算成需求。** 急症自付额另记一份当天的 `_daily_emergency_expense`，计算需求时减掉，日常医疗消费照算。3 人一年的测试里顶到 15% 上限的天数 30 → 0。
+
+### Added
+
+- `tests/test_layoff_recovery.py`（6 项：回到 85–100% 且月薪同步；期间二次裁员仍回到第一次前的工资；不往下调；换工作 / 退休忘掉旧时薪；失业事件仍走复职；默认一年 p10 > 0.8）；`test_endogenous_inflation.py` 加一项（大病不算需求）。
+
+### Notes
+
+- 第一项改变所有默认 run → **可比性版本 8**；第二项只影响默认关的内生通胀，不加版本。设计见 `docs/proposals/2026-10-03-layoff-recovery.md`。
+- 仍未改：随机裁员不改写职业文本，也不进居民统计的失业率（只有失业事件会）。
+
+## [Unreleased] — 2026-10-03 — 加薪和裁员的概率按月算（可比性版本 7）
+
+### Fixed
+
+- **加薪 / 裁员概率是按月写的数，却按天在抽。** 扩张期每天 3.8% 加薪（每次 +5–25%）、谷底每天 2.6% 裁员（每次砍掉 50–85%，随机裁员不恢复）。2000 人按默认周期跑一年：每人加薪 6.7 次、被裁 4.0 次，**中位居民的工资落到最低时薪**（p10 / 中位 / p90 = 0.10 / 0.10 / 0.54 倍）；一直扩张则 p90 翻到 8.8 倍。现在 `shocks.layoff_base_prob`、`raise_base_prob` 和各阶段的 `layoff_risk`、`raise_chance` 都是**每人每月**的概率，仍每天抽一次，日概率取 1 − (1 − p)^(1/30)，一个月合起来恰好是 p。配置值不变。同样的测法：加薪 0.32 次 / 年、被裁 0.11 次 / 年，工资倍数 0.51 / 1.00 / 1.19。打开需求驱动的通胀时，3 人一年顶在 15% 上限的天数从 234 降到 30。
+- 不变、仍按天：`medical_emergency_prob`（按天 ≈ 每年 17% 的人碰上一次大病，按月读则只有 0.6%）、`event_layoff_prob`（本来就是裁员事件当天的概率下限）。
+- 配置说明（中英，含新增的 `economy.macro.phase_effects`）、面板「外部系统」里四个参数的帮助、settings 注释、外部系统教程、两份 README 写明按月 / 按天。
+
+### Added
+
+- **`tests/test_monthly_shock_probabilities.py`**（7 项）：30 次日抽签合成月概率；月概率 0.5 → 一个月内约一半人涨薪；一直扩张一年 0.3–0.65 次加薪（旧 11.8）；一直谷底一年 0.2–0.45 次裁员（旧 9.6）；默认周期一年后中位工资在 0.9–1.2 倍（旧 0.10）；事件裁员下限仍按天。前四项在旧语义下都失败。
+
+### Notes
+
+- **改变所有默认 run → 可比性版本 7**（`gaworld/core/comparability.py`）。版本 ≤ 6 的 run 在收入、财富、恩格尔系数、储蓄率以及受收入影响的情绪 / 压力上与之后不可比。设计见 `docs/proposals/2026-10-03-monthly-shock-probabilities.md`。
+- 当时记下的两个遗留（随机裁员永久降薪、大病算作通胀需求）已在上一条修掉；`shocks.bonus_month_prob` 没有任何代码读取，仍未动。
+
+## [Unreleased] — 2026-10-03 — 通胀由居民决定（以及：原来的通胀什么都不影响）
+
+### Fixed
+
+- **通胀率和物价指数对账本毫无作用，文档却说会侵蚀实际收入。** `macro.cumulative_inflation` 每天累乘，但支出只乘周期相位的 `expense_mult`，从不读物价指数；面板上把通胀设成 15%，账本一分钱不变。配置说明（中英）、外部系统教程、TUTORIAL.v2、两份 README 已改成如实描述；面板干预的时序说明也改正了（设的通胀率从次日起才参与累积）。
+
+### Added
+
+- **`economy.macro.inflation`（默认关）** — 打开后支出和房租乘以物价指数；通胀率由驱动规则决定：`demand`（默认）π = π\* + κ·(C/C₀ − 1)，C 是人均**实际**消费（名义 ÷ 物价，不含房租）的 30 天均值、C₀ 是开头 30 天的基线；`phillips` 按居民统计的失业率；`exogenous` 沿用周期随机游走。开启时周期相位的支出倍数按 1 计（避免算两遍）。月结时工资按上月物价涨幅的 `wage_indexation`（默认 0.5）跟涨，预算、恩格尔系数、储蓄率按**实际**收入重做——跟涨不足表现为实际篮子变小，完全跟涨则不变，不会形成工资—物价螺旋。快进模式量不到当日消费，需求驱动保持上一次的通胀率。
+- **`tests/test_endogenous_inflation.py`**（10 项）：关闭时物价仍不进账本；物价真的计入支出并替代周期倍数；需求按实际值计（同样的名义支出、物价翻倍 → 记一半）；基线期内通胀等于锚点；收入整体升 50% 的世界通胀高于对照、降 40% 的低于对照；200 天守恒；工资跟涨 0.5 / 0；按实际收入重做预算。
+
+### Notes
+
+- **上游发现（已在可比性版本 7 改为按月，见上一条）：加薪和裁员的概率是按天抽的，数值像是按月写的。** 扩张期每天约 3.8% 加薪（每次 +5–25%），折合每月约 +17%；收缩期每天约 1.6% 裁员。一年下来工资会翻几倍或落到最低工资（3 人测试 ×7.5 / 1408 元）。开启需求驱动的通胀时，这些工资涨落会原样变成通胀，几个月内就碰到 15% 的上限。是否把它们改成月概率需要决定——改了会改变所有默认 run，要新增可比性版本。已记入机制来源表。
+- 默认关，不新增可比性版本。
+
+## [Unreleased] — 2026-10-03 — 场所容量：满了就进不去
+
+### Added
+
+- **`local_physical.capacity`（默认关）** — 节点一直有 `capacity`、主循环一直在数谁在哪，但人数只进了感知（「比较拥挤」），任何人数都能走进任何地方。现在去 commerce / leisure 场所时，若人数（一个居民按 `agents_represent` 个真人计，留空沿用 `traffic.agents_represent`）会超过容量：先改去最近的、同类、营业且有空位的场所（`redirect_top_k`，默认 4，记 `venue.redirect`），都满则拒绝——留在原地，下一步感知里出现「【X】已经满了」，记 `action.denied`。住宅、单位、学校、医院、车站、mixed 永不受限。设计见 `docs/proposals/2026-10-03-venue-capacity.md`。
+- **扎堆到达也卡得住** — 计数含本 tick 已放行的人（以及在路上前往该处的人），否则 12:00 同时到达的一群人会全部进去。代价是结果依赖处理顺序，所以开启时居民的处理顺序每 tick 按种子洗牌：谁抢到最后一个位置是可复现的公平抽签，而不是编号靠前者的特权（测试里固定顺序下前 5 人 60/60 次进去、后 5 人 0 次，洗牌后人人有份）。
+- **`tick.agent_order`（新的内核扩展点）** — 主循环在 tick 内遍历居民前过一次这个 filter，默认原样返回；关闭时与之前逐位一致。写进了 `docs/PLUGIN_AUTHORING.md` 的事件表。
+- **`gaworld/world/venue_capacity.py`** + `VenueCapacityPlugin`；`tests/test_venue_capacity.py`（13 项，含一次真实主循环：全城都满时两个居民一步都没离开家，每次拒绝都带容量原因）。
+
+### Notes
+
+- 参数全是 (c) 类：类别默认容量（commerce 600、leisure 700，hub ×1.5）不是数据，`agents_represent` 是建模旋钮。取 1 时 500 人的小镇永远挤不满一个地方。已登记进 `benchmark/MECHANISM_PROVENANCE.md`。
+- 默认关，所以不新增可比性版本（开关状态在运行清单的配置快照里）。
+
+## [Unreleased] — 2026-10-03 — 让分数和运行记录说真话：Bench 来源戳、诚实的运行清单、可比性版本
+
+### Fixed
+
+- **Bench 门面分数其实是合成夹具。** `benchmark/results/scorecard.json`（2026-09-25）显示 trust gate OK、Track C 4/4、composite 0.9361，四个 delta（+0.08 / −0.12 / +0.09 / +0.06）与 `make_synthetic()` 完全一致。`--synthetic` 现在一律给 **`FIXTURE`** 门槛、写到 `benchmark/results/synthetic/`，永远不覆盖门面 scorecard，也不进 dashboard 的报告列表；scorecard 带 `provenance`（`source: real|synthetic`、输入路径、git commit 与是否 dirty）和 `trust_reasons`。`rubric_bench.py --synthetic` 同样处理。
+- **运行清单把别人的失败记在自己头上。** `LLMCallStats` 是进程级计数，测试套件里每次 `run_simulation` 都把前面回退测试的失败（provider `a` / `b` / `r`）记成自己的；`output/run_manifests/` 的 80 份里 75 份是测试写进去的。现在清单的 `llm` 块只算本次运行（`mark_run_start` 之后），进程总数另记 `process_call_count`；`tests/conftest.py` 把清单重定向到临时目录（同 `output/records` 的做法）。
+- **备用后端救回来的请求被当成失败。** 统计改为两层：attempt（每个后端一次）和 request（每次 `LLMRouter.call` 一次：答上了没有、是不是备用后端答的）。
+- **未设随机种子的运行无法复现。** 未设 `random_seed` 时从系统熵取一个、写进 `CONFIG`（经济 / 出行 / 内核的子 RNG 都从它派生）并记进清单（`run.seed_source = "auto"`）。随机程度与以前完全相同，只是现在知道是哪个种子。
+- **Track A 的 `wealth_gini` 把学生、家庭照料者、退休者算了进去。** 他们拿的是 (c) 类占位收入带（8–22 元/时，学生「复习」也算上班），会把基尼往平等方向拉。现在只在劳动力人口（employed + unemployed）上算，scorecard 写明计算范围；`wealth_snapshot.csv` 新增 `employment_status` 列，没有这一列的旧输出退回全体并注明。economy 本身未改。
+- **选了城市之后，dashboard 读的还是默认世界的数据。** 选城市会把所有运行路径移到 `output/cities/<slug>/`，仿真也写在那里；但 `world_paths.economy_snapshot_path()`（Agent Studio 的财务卡）和 `records_dir()`（家庭卡片、实时事件流 SSE）仍读固定的 `output/economy` / `output/records`——显示的是上一个世界（或测试套件）的数字。现在按当前配置的运行根目录读；新增 `world_paths.run_root()`。
+- **Bench 默认评测的不是当前运行。** `gaworld_bench.py` 不给 `--output-dir` 时读 `output/`，选了城市后那里是过期数据；现在默认读模拟器配置的 `run_output_dir`（选了城市即 `output/cities/<slug>/`）。从 dashboard 发起时按请求所在的世界 / 城市传 `--output-dir`（子进程看不到请求属于哪个世界）。
+- **测试把数据写进了真实的 `output/` 和 `dashboard_config.json`。** 两个跑真实主循环的测试（`test_cluster`、`test_multiplayer` 的 FullSimTest）改为在临时目录里跑（`tests/fixtures/scratch_cwd.py`，同 `test_e2e_smoke` 的做法），`output/economy` / `memory` / `diaries` / `state` 等不再被写；大五人格与好奇心两个单测也不再落盘；`tests/conftest.py` 把 `world_paths.DASHBOARD_CONFIG_PATH` 指向每个测试自己的空文件——此前 `effective_config()` 会读到开发者在面板里选的城市，没打补丁的设置测试还会写真文件。
+- **没有 `employment` 列的语料把学生和退休者算成就业。** `_employment_status` 的职业文本兜底原先只认「待业中」「已退休」两个精确值，杭州 51 人语料里的「学生型智能体，…」「退休状态，…」都被算成 employed；现在按关键词识别（失业/待业 → unemployed，退休 → retired，学生 → student，家庭照料/无业 → not_in_labor_force）。只影响失业率读数，不影响行为。
+
+### Added
+
+- **`run_manifest` 的 `degraded` 结局** — 跑完但超过 `run_manifest.degraded_failure_share`（默认 5%）的模型请求在所有备用后端上都失败时，记 `degraded` 而不是 `ok`，原因写进 `notes`；备用后端答了多少请求也写进去。HTML 报告用橙色徽章。
+- **`gaworld/core/comparability.py`：可比性版本（epoch）** — 货币改造、人格语料重写、收入以 profile 为锚、出行方式阶梯，每次都只在文档里写一句「旧 run 不可比」。现在把它们记成一张只追加的版本表（当前版本 5），并盖在每份运行清单、每个 compare-event 目录的 `run_meta.json`、每个平行世界实验的 `experiment.json` / `report.json` 上。合并结果的三个地方拒绝跨版本：平行世界按种子合并时跳过其他版本的种子（面板注明跳过了哪些）；研究闭环在种子来自不同版本时不判 supported / contradicted；Bench Track C 的对照不是当前版本时 gate 最多 `UNVERIFIED`。何时加版本写进了 `AGENTS.md`。
+- **新测试** — `tests/test_comparability.py`、`tests/test_run_seed.py`、`tests/test_world_paths_run_root.py`（及 `tests/fixtures/scratch_cwd.py`）；`test_gaworld_run_manifest.py`、`test_bench_api.py`、`test_parallel_causal.py`、`test_research_study.py`、`test_unemployment_readout.py`、`test_economy_module.py`、`benchmark/test_gaworld_bench.py` 补充用例。
+
+### Notes
+
+- 旧的 `benchmark/results/scorecard.json` 已用真实输出重跑替换（见下一条）。
+- **`output/` 里已有的测试残留没有清掉**（如 `output/economy/wealth_snapshot.csv` 的 agent 4、5）：今后不会再写入，但旧文件要手动删。全量跑完测试后仓库 `output/` 里只剩三处：`logs/run.log`（应用日志）、`logs/agent_1.log`（经济单测的 agent 日志）、`life_events/events.lock`（空锁文件）。
+
+## [Unreleased] — 2026-10-03 — Dashboard API：完整 OpenAPI、统一约定、Python 客户端
+
+### Added
+
+- **`/api/openapi.json` 覆盖全部路由** — 从 18 个扩到约 280 个操作（账号、世界、分布式节点、多人共玩、居民、运行、分析、城市、人口、导入、采访、研究、严肃游戏、政策仿真、蒸馏、平行世界、游戏场、斗兽场……）。每个操作自动带 `operationId`（`<method>_<路径段>`）、路径参数、`x-gaworld-access`（开启账号后需要的级别，取自 `accounts/policy.py`）与 `x-gaworld-quota`；后台作业统一用 `Job` / `JobStarted` 两个 schema。
+- **`gaworld/client.py`（Python 客户端）** — 只用标准库：Bearer token 或账号登录（cookie 自动保存）、切换当前世界、`call(operationId, …)` 调任意接口、`run_job()` 开作业并轮询到结束、`intervene()` / `wait_intervention()`、`events()` 跟随 SSE 事件流；错误按状态码抛 `AuthError` / `NotFoundError` / `ConflictError` / `QuotaError`。
+- **新测试** — `tests/test_client.py`（进核心套件）；`tests/test_openapi.py` 改为双向校验：服务端代码与控制台脚本里出现的每个 `/api/…` 路由都必须在文档里。
+
+### Changed
+
+- **405 Method Not Allowed** — 文档里有、但不支持这个方法的路由（如 `GET /api/run/start`）返回 405 + `Allow` 头，不再是 404 `Unknown endpoint`。
+- **未知路由的回答统一为 `{"error": "Unknown endpoint"}`** — 原先各模块各说各的（`Unknown population endpoint`、`unknown city endpoint: …`、`not found`），旧的漂移测试因此看不见这些模块。
+- **开后台作业一律 202** — 七个游戏的 `…/run` 和 `POST /api/parallel-worlds/start` 原先返回 200，与其余模块的 202 不一致（前端只看 `res.ok`，不受影响）。
+
+### Fixed
+
+- **已有仿真在运行时 `POST /api/run/start` 返回 500。** 现在是 409（`runs.RunConflict`，仍是 `RuntimeError` 的子类）。
+- **API 参考文档**：`POST /api/interview` 的字段是 `questions`（不是 `question`）；`/api/agents/{id}/relationships|finance` 没有 GET；`/api/run/start` 的 body 是 `{config, reset}` 而不是 CLI 参数；补上头像、自传、trace 数据、户型、小说/陪审团/新闻评论、严肃游戏、政策仿真、账号/世界/分布式/多人共玩等漏掉的路由；去掉失效的行号引用。
+
 ## [Unreleased] — 2026-09-26 — 游戏场：公投局 + 猜人局
 
 ### Added

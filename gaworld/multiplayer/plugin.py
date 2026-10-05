@@ -12,7 +12,10 @@ simulator's side:
   next. It is shown inside that step's perception -- so planning and moving
   follow it like any other intention -- and becomes the step's action.
 - ``player_say(agent_id, target_id, text)``: heard by the target at its next
-  perception (and remembered by the speaker the same way).
+  perception (and remembered by the speaker the same way). In a distributed
+  world the target may live on another machine: then this simulator only has
+  the speaker, takes the target's name from ``target_name``, and the hub sends
+  the target's machine ``player_hear(agent_id, speaker_id, speaker_name, text)``.
 
 A resident nobody plays is an ordinary model-driven resident: a player being
 offline never stops the world. ``multiplayer.wait_for_players_seconds``
@@ -63,6 +66,7 @@ class MultiplayerPlugin(Plugin):
         controller.register_intervention("player_release", self.release)
         controller.register_intervention("player_act", self.act)
         controller.register_intervention("player_say", self.say)
+        controller.register_intervention("player_hear", self.hear)
         ctx.bus.on("perception.sections", self.sections)
         ctx.bus.on("action.selected", self.override_action)
         ctx.bus.on("on_agent_post_step", self.consume)
@@ -111,17 +115,28 @@ class MultiplayerPlugin(Plugin):
         )
         return {"agent_id": aid, "queued_for": "next step"}
 
-    def say(self, ctx: Any, agent_id: Any = None, target_id: Any = None, text: str = "") -> dict[str, Any]:
+    def say(
+        self, ctx: Any, agent_id: Any = None, target_id: Any = None, text: str = "", target_name: str = ""
+    ) -> dict[str, Any]:
         speaker = _agent(ctx, agent_id)
-        target = _agent(ctx, target_id)
-        sid, tid = int(speaker["id"]), int(target["id"])
+        sid = int(speaker["id"])
+        try:
+            target: dict[str, Any] | None = _agent(ctx, target_id)
+        except ValueError:
+            # A resident on another machine of a distributed world.
+            if not target_name:
+                raise
+            target = None
+        tid = int(target["id"]) if target else int(target_id)
         claim = self._live_claim(ctx, sid)
         if claim is None:
             raise ValueError(f"agent {sid} is not being played")
         line = _clip(text)
         heard = self._state(ctx)["heard"]
-        speaker_name, target_name = speaker.get("name", f"#{sid}"), target.get("name", f"#{tid}")
-        heard.setdefault(tid, []).append(f"{speaker_name}对你说：「{line}」")
+        speaker_name = speaker.get("name", f"#{sid}")
+        target_name = target.get("name", f"#{tid}") if target else str(target_name)
+        if target:
+            heard.setdefault(tid, []).append(f"{speaker_name}对你说：「{line}」")
         heard.setdefault(sid, []).append(f"你对{target_name}说了：「{line}」")
         ctx.recorder.record(
             "multiplayer.say",
@@ -135,6 +150,19 @@ class MultiplayerPlugin(Plugin):
             },
         )
         return {"agent_id": sid, "target_id": tid}
+
+    def hear(
+        self, ctx: Any, agent_id: Any = None, speaker_id: Any = None, speaker_name: str = "", text: str = ""
+    ) -> dict[str, Any]:
+        """What a played resident on another machine said to one of ours.
+
+        The speaker's machine has already recorded the line; this only puts it
+        in the listener's next perception.
+        """
+        aid = int(_agent(ctx, agent_id)["id"])
+        name = str(speaker_name or f"#{speaker_id}")
+        self._state(ctx)["heard"].setdefault(aid, []).append(f"{name}对你说：「{_clip(text)}」")
+        return {"agent_id": aid}
 
     # -- hooks ------------------------------------------------------------
 

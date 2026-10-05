@@ -12,6 +12,7 @@ from urllib.request import Request, urlopen
 import pytest
 
 import gaworld.apps.dashboard_server as ds
+from gaworld.apps import residents, world_paths
 from gaworld.collaboration.service import CollaborationService
 
 
@@ -201,10 +202,10 @@ def reset_collaboration_service():
 @pytest.fixture
 def api_server(monkeypatch, tmp_path):
     fake = FakeCollaborationService()
-    monkeypatch.setattr(ds, "REPO_ROOT", str(tmp_path))
+    monkeypatch.setattr(world_paths, "REPO_ROOT", str(tmp_path))
     monkeypatch.setattr(
-        ds,
-        "_effective_config",
+        world_paths,
+        "effective_config",
         lambda: {
             "collaboration": {
                 "sessions_dir": "runtime/sessions",
@@ -351,10 +352,10 @@ def test_default_artifact_base_url_is_published_inside_repo(
     monkeypatch,
     tmp_path,
 ):
-    monkeypatch.setattr(ds, "REPO_ROOT", str(tmp_path))
+    monkeypatch.setattr(world_paths, "REPO_ROOT", str(tmp_path))
     monkeypatch.setattr(
-        ds,
-        "_effective_config",
+        world_paths,
+        "effective_config",
         lambda: {"collaboration": {}},
     )
 
@@ -388,10 +389,10 @@ def test_artifact_base_url_omitted_for_outside_or_traversal(
 ):
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
-    monkeypatch.setattr(ds, "REPO_ROOT", str(repo_root))
+    monkeypatch.setattr(world_paths, "REPO_ROOT", str(repo_root))
     monkeypatch.setattr(
-        ds,
-        "_effective_config",
+        world_paths,
+        "effective_config",
         lambda: {
             "collaboration": {
                 "sessions_dir": sessions_dir,
@@ -744,7 +745,7 @@ def test_lazy_service_is_thread_safe_and_reset_stops_it(monkeypatch, tmp_path):
             (agent_id, episode, cfg)
         ),
     )
-    monkeypatch.setattr(ds, "REPO_ROOT", str(tmp_path))
+    monkeypatch.setattr(world_paths, "REPO_ROOT", str(tmp_path))
     config = {
         "collaboration": {
             "sessions_dir": "var/collaboration",
@@ -752,10 +753,10 @@ def test_lazy_service_is_thread_safe_and_reset_stops_it(monkeypatch, tmp_path):
         },
         "memory_dir": "var/memory",
     }
-    monkeypatch.setattr(ds, "_effective_config", lambda: config)
+    monkeypatch.setattr(world_paths, "effective_config", lambda: config)
     monkeypatch.setattr(
-        ds,
-        "_agent_detail",
+        residents,
+        "agent_detail",
         lambda agent_id: {"identity": {"id": agent_id}},
     )
     barrier = threading.Barrier(8)

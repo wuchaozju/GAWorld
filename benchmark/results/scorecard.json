@@ -1,104 +1,72 @@
 {
-  "generated": "2026-09-25T09:28:06",
-  "trust_gate": "OK",
+  "generated": "2026-10-02T23:17:57",
+  "trust_gate": "UNVERIFIED",
+  "trust_reasons": [
+    "确定性未测（未提供 --det-a/--det-b）"
+  ],
+  "provenance": {
+    "source": "real",
+    "inputs": {
+      "output_dir": "output/cities/伦敦",
+      "comparisons_root": "output/comparisons"
+    },
+    "git": {
+      "commit": "6c5740bfd4dab442dd1cd2f72ec3ee705ab378aa",
+      "dirty": true
+    },
+    "argv": [
+      "--all",
+      "--output-dir",
+      "../output/cities/伦敦"
+    ]
+  },
   "fast": false,
-  "composite_hint": 0.9361,
-  "headline_track": "A",
+  "composite_hint": 0.0,
+  "headline_track": null,
   "tracks": {
     "A": {
       "track": "A",
       "status": "ok",
-      "score": 0.8721,
-      "pass": true,
+      "score": 0.0,
+      "pass": false,
       "metrics": {
         "engel_coefficient": {
-          "sim": 0.29,
+          "sim": 0.48,
           "anchor": 0.288,
-          "rel_err": 0.0069,
+          "rel_err": 0.6667,
           "scope": "national_urban",
           "source": "国家统计局2024公报 (城镇28.8%)",
-          "score": 0.9537
+          "score": 0.0
         },
         "savings_rate": {
-          "sim": 0.328,
+          "sim": 0.05,
           "anchor": 0.35,
-          "rel_err": 0.0629,
+          "rel_err": 0.8571,
           "scope": "national_urban",
           "source": "2024 口径敏感, 区间30-43%",
-          "score": 0.7905
+          "score": 0.0
+        },
+        "wealth_gini": {
+          "sim": 0.0,
+          "anchor": 0.7,
+          "rel_err": 1.0,
+          "scope": "national_urban",
+          "source": "CHFS/瑞信财富报告: 中国家庭财富Gini≈0.6-0.75",
+          "population": "all (1; 旧输出无 employment_status 列，口径偏宽)",
+          "score": 0.0
         }
       },
-      "n_samples": 5,
-      "sim_scope": "district"
+      "n_samples": 1,
+      "sim_scope": "district",
+      "conservation": {
+        "max_abs_drift": 0.0,
+        "pass": true
+      }
     },
     "C": {
       "track": "C",
-      "status": "ok",
-      "sign": {
-        "score": 1.0,
-        "n_eval": 4,
-        "n_correct": 4,
-        "effect_col": "delta_final",
-        "tests": [
-          {
-            "name": "traffic_restriction",
-            "metric": "mobility_intent",
-            "sign": 1,
-            "why": "限行→出行摩擦上升→流动意愿上升",
-            "delta": 0.08,
-            "delta_final": 0.08,
-            "delta_mean": 0.08,
-            "correct": true
-          },
-          {
-            "name": "layoff_shock",
-            "metric": "econ_security",
-            "sign": -1,
-            "why": "裁员→收入骤降→经济安全感下降",
-            "delta": -0.12,
-            "delta_final": -0.12,
-            "delta_mean": -0.12,
-            "correct": true
-          },
-          {
-            "name": "layoff_shock",
-            "metric": "stress",
-            "sign": 1,
-            "why": "裁员→压力上升",
-            "delta": 0.09,
-            "delta_final": 0.09,
-            "delta_mean": 0.09,
-            "correct": true
-          },
-          {
-            "name": "tax_cut",
-            "metric": "econ_security",
-            "sign": 1,
-            "why": "减税→可支配收入上升→经济安全感上升",
-            "delta": 0.06,
-            "delta_final": 0.06,
-            "delta_mean": 0.06,
-            "correct": true
-          }
-        ]
-      },
-      "placebo": {
-        "score": 1.0,
-        "eps": 0.05,
-        "n_metrics": 4,
-        "max_abs_delta": 0.011
-      },
-      "determinism": {
-        "score": 1.0,
-        "n_points": 4,
-        "status": "ok"
-      },
-      "fast": false,
-      "coverage": 1.0,
-      "score": 1.0,
-      "score_uncovered": 1.0,
-      "pass": true,
-      "det_status": "ok"
+      "status": "n/a",
+      "note": "在 /sessions/rcw-01gukbq7cvhcww27sc6bsfhy/mnt/GAWorld/output/comparisons 未找到可匹配的 comparison 运行; 用 --run 实跑或先生成 compare-event 结果"
     },
     "B": {
       "status": "n/a",

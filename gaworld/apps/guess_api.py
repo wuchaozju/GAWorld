@@ -436,7 +436,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("guess GET %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown guess endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -460,7 +460,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("guess POST %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown guess endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

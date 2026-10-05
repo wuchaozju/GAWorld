@@ -12,18 +12,30 @@ or via the ``gaworld.plugins`` entry-point group instead.
 from __future__ import annotations
 
 
+def validate_runtime_config(config):
+    """Run built-in preflight checks outside warning-only plugin setup."""
+    from gaworld.group.plugin import validate_config as validate_group_config
+    from gaworld.organizations.validation import validate_config
+
+    validate_config(config)
+    validate_group_config(config)
+
+
 def builtin_plugins():
     """Instantiate the built-in plugins (K3 migration adds one per stage)."""
     from gaworld.behavior.plugin import DynamicBehaviorPlugin
+    from gaworld.cluster.plugin import ClusterSyncPlugin
     from gaworld.collaboration.plugin import CollaborationPlugin
     from gaworld.economy.plugin import EconomyPlugin
     from gaworld.events.plugin import LifeEventsPlugin
     from gaworld.family.plugin import FamilyPlugin
     from gaworld.goals_plugin import GoalsPlugin
+    from gaworld.group.plugin import GroupPlugin
     from gaworld.infosources.plugin import InfoSourcesPlugin
     from gaworld.interests_plugin import InterestsPlugin
     from gaworld.moltbook.plugin import MoltbookPlugin
     from gaworld.multiplayer.plugin import MultiplayerPlugin
+    from gaworld.organizations.plugin import OrganizationsPlugin
     from gaworld.personality.plugin import BigFivePlugin
     from gaworld.policy.plugin import InterventionPlugin
     from gaworld.skills.plugin import SkillsPlugin
@@ -32,9 +44,11 @@ def builtin_plugins():
     from gaworld.world.home_plugin import HomeEnvironmentPlugin
     from gaworld.world.plugin import (
         LocalPhysicalPlugin,
+        RoomsPlugin,
         SpatialPreferencesPlugin,
         TrafficPlugin,
         VehicleOwnershipPlugin,
+        VenueCapacityPlugin,
     )
 
     return [
@@ -64,6 +78,13 @@ def builtin_plugins():
         # Traffic rides the same tick refresh as LocalPhysical and must commit
         # the previous tick's flows before any agent plans a trip this tick.
         TrafficPlugin(),
+        # After LocalPhysical (same tick refresh); its move validator registers
+        # at priority -10 so it runs after location_exists / venue_open.
+        VenueCapacityPlugin(),
+        # Inert unless `local_physical.rooms.enabled`: seats each resident in a
+        # room after the move stage (the venue-capacity validator above may
+        # already have picked the room for a trip).
+        RoomsPlugin(),
         RealWorkPlugin(),
         DynamicBehaviorPlugin(),
         SpatialPreferencesPlugin(),
@@ -75,7 +96,15 @@ def builtin_plugins():
         # After every other filter of `action.selected`, so a person playing a
         # resident has the last word on what that resident does.
         MultiplayerPlugin(),
+        # A distributed world's tick sync: after the wait for players, so a
+        # tick first waits for the people, then for the other machines.
+        ClusterSyncPlugin(),
         # Last: it only observes (post_step buffer, day-end post) and must see
         # the step after every filter above has had its say.
         MoltbookPlugin(),
+        # Inert unless `simulation_mode: "group"` (or `group.enabled` telemetry).
+        # Its day-end handler carries its own priority, so position here only
+        # orders its day-start cohort shift after the others' day start.
+        GroupPlugin(),
+        OrganizationsPlugin(),
     ]

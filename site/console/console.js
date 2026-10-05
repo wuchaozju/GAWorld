@@ -12,9 +12,9 @@
     { id: "dashboard", src: "/dashboard" },
     { id: "simviz", src: "/site/simviz/index.html" },
     { id: "city", src: "/site/dashboard/city.html" },
-    { id: "worlds", src: "/site/dashboard/worlds.html" },
     { id: "analytics", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },
+    { id: "organizations", src: "/site/dashboard/organizations.html" },
     { id: "population", src: "/site/dashboard/population.html" },
     { id: "play", src: "/site/dashboard/play.html" },
     { id: "survey", src: "/site/dashboard/survey.html" },
@@ -26,6 +26,12 @@
     { id: "settings", src: "/site/dashboard/settings.html" },
     { id: "docs", src: "/site/dashboard/docs.html" },
   ];
+
+  // Views that moved inside another page: the old hash still opens them.
+  // Parallel Worlds is now the 平行世界 tab of the research workbench.
+  var ALIASES = {
+    worlds: { id: "research", src: "/site/dashboard/research.html?tab=worlds" },
+  };
 
   var COLLAPSE_KEY = "gaworld-nav-collapsed";
 
@@ -179,6 +185,15 @@
 
   function currentTabId() {
     var id = (location.hash || "").replace(/^#/, "");
+    var alias = ALIASES[id];
+    if (alias) {
+      // Point the target view at the right sub-tab before it activates: a
+      // fresh frame loads the aliased src, an open one is navigated to it.
+      if (frames[alias.id]) frames[alias.id].src = alias.src;
+      else ensureFrame({ id: alias.id, src: alias.src });
+      history.replaceState(null, "", "#" + alias.id);
+      return alias.id;
+    }
     return tabById(id) ? id : TABS[0].id;
   }
 
@@ -358,6 +373,59 @@
   document.getElementById("worldSelect").addEventListener("change", function (event) {
     postJson("/api/worlds/select", { id: event.target.value }).then(function () { location.reload(); }, worldError);
   });
+  // Distributed nodes (gaworld.cluster): other machines that run part of this
+  // world's residents. The status refreshes while the dialog is open.
+  var clusterTimer = null;
+
+  function fmt(key, params) {
+    return window.__f ? window.__f(key, params) : text(key);
+  }
+
+  function nodeLine(node) {
+    var li = document.createElement("li");
+    li.className = node.online ? "online" : "";
+    var info = document.createElement("div");
+    var title = document.createElement("strong");
+    title.textContent = node.name;
+    info.appendChild(title);
+    var detail = document.createElement("small");
+    var parts = [fmt("world.node_residents", { ids: node.agent_ids.join(", ") })];
+    parts.push(node.online ? text("world.node_state_" + node.state) : text("world.node_offline"));
+    if (node.sim_time) parts.push(fmt("world.node_at", { day: node.sim_day, time: node.sim_time }));
+    if (node.error) parts.push(node.error);
+    detail.textContent = parts.join(" · ");
+    info.appendChild(detail);
+    li.appendChild(info);
+    var remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = text("world.node_remove");
+    remove.addEventListener("click", function () {
+      if (!window.confirm(fmt("world.node_remove_confirm", { name: node.name }))) return;
+      postJson("/api/cluster/nodes/" + node.id + "/delete", {}).then(loadCluster, worldError);
+    });
+    li.appendChild(remove);
+    return li;
+  }
+
+  function loadCluster() {
+    var current = worldState && worldState.current;
+    if (!current || !current.can_write) return Promise.resolve();
+    document.getElementById("worldShareLink").value = location.origin + "/play/" + current.id;
+    return fetch("/api/cluster")
+      .then(function (resp) { return resp.ok ? resp.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var timeout = document.getElementById("worldSyncTimeout");
+        if (document.activeElement !== timeout) timeout.value = data.sync_timeout_seconds;
+        document.getElementById("worldHubLine").textContent = data.nodes.length
+          ? fmt("world.hub_line", { ids: data.hub.agent_ids.join(", ") || "—" })
+          : "";
+        var list = document.getElementById("worldNodes");
+        list.innerHTML = "";
+        data.nodes.forEach(function (node) { list.appendChild(nodeLine(node)); });
+      });
+  }
+
   document.getElementById("worldManageBtn").addEventListener("click", function () {
     worldError(null);
     loadCities();
@@ -365,11 +433,46 @@
       fetch("/api/config").then(function (resp) { return resp.json(); }).then(function (cfg) {
         document.getElementById("worldWait").value = (cfg.multiplayer || {}).wait_for_players_seconds || 0;
       });
+      document.getElementById("worldNodeCommand").hidden = true;
+      loadCluster();
+      clearInterval(clusterTimer);
+      clusterTimer = setInterval(loadCluster, 5000);
     }
     document.getElementById("worldDialog").showModal();
   });
+  document.getElementById("worldDialog").addEventListener("close", function () {
+    clearInterval(clusterTimer);
+    clusterTimer = null;
+  });
   document.getElementById("worldCloseBtn").addEventListener("click", function () {
     document.getElementById("worldDialog").close();
+  });
+  document.getElementById("worldShareLink").addEventListener("focus", function (event) {
+    event.target.select();
+  });
+  document.getElementById("worldSyncTimeout").addEventListener("change", function (event) {
+    postJson("/api/config", { cluster: { sync_timeout_seconds: Number(event.target.value) || 0 } })
+      .then(function () { worldError(null); }, worldError);
+  });
+  document.getElementById("worldNodeAdd").addEventListener("click", function () {
+    var button = document.getElementById("worldNodeAdd");
+    button.disabled = true;
+    postJson("/api/cluster/nodes", {
+      name: document.getElementById("worldNodeName").value.trim(),
+      agent_ids: document.getElementById("worldNodeAgents").value,
+    }).then(function (data) {
+      button.disabled = false;
+      worldError(null);
+      document.getElementById("worldNodeName").value = "";
+      document.getElementById("worldNodeAgents").value = "";
+      document.getElementById("worldNodeCommandText").textContent =
+        "python -m gaworld.cluster join " + location.origin + " --token " + data.token;
+      document.getElementById("worldNodeCommand").hidden = false;
+      return loadCluster();
+    }, function (err) {
+      button.disabled = false;
+      worldError(err);
+    });
   });
   document.getElementById("worldCreateForm").addEventListener("submit", function (event) {
     event.preventDefault();

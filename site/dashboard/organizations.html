@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld · 组织</title>
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/organizations.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell org-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker">GAWorld · Organizations</p>
+          <h1>组织：共同生活，共同承担</h1>
+          <p class="sub">为社区分配有限资源，为企业登记岗位与工资。身份、规则、账目和历史随本世界保存。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="button" id="orgDownload" type="button" disabled>下载完成日指标 JSON</button>
+        <button class="button" id="orgRefresh" type="button">刷新记录</button>
+      </div>
+    </header>
+
+    <p id="orgStatus" class="org-status" role="status" aria-live="polite">正在读取当前世界的组织……</p>
+    <div class="org-board">
+      <aside class="org-sidebar">
+        <section class="panel">
+          <div class="org-section-head"><h2>本世界的组织</h2><span id="orgCount" class="org-counter">—</span></div>
+          <div id="orgList" class="org-list"></div>
+        </section>
+        <section class="panel org-create">
+          <h2>创建组织</h2>
+          <p class="org-note">先登记制度与资金来源。创建命令将在日边界执行，初始资金只发放一次。</p>
+          <form id="orgCreateForm">
+            <fieldset id="orgCreateFields">
+              <label class="field"><span>组织模板</span><select name="kind" id="orgKind"><option value="community">社区资源分配组织</option><option value="company">企业</option></select></label>
+              <label class="field"><span>稳定组织 ID</span><input name="organization_id" required placeholder="例如：mutual-aid" pattern="[A-Za-z0-9_-]+" maxlength="80" /></label>
+              <label class="field"><span>名称</span><input name="name" required maxlength="120" placeholder="例如：河畔互助会" /></label>
+              <label class="field"><span>目标</span><textarea name="goal" rows="2" placeholder="这个组织共同承担什么？"></textarea></label>
+              <div class="org-form-row">
+                <label class="field"><span>负责人居民 ID</span><input name="leader_id" type="number" min="1" step="1" required /></label>
+                <label class="field"><span>初始资金（元）</span><input name="initial_balance" type="text" inputmode="decimal" value="0" required /></label>
+              </div>
+              <label class="field"><span>成员居民 ID（逗号分隔）</span><input name="member_ids" placeholder="例如：2, 3, 4" /></label>
+              <label class="field"><span>拨款来源</span><select name="funding_source" id="orgFunding"><option value="government">政府部门池</option><option value="firms">企业部门池</option></select></label>
+              <label class="field"><span>决策规则</span><select name="rule" id="orgCreateRule"></select></label>
+              <label class="field" id="orgCapField"><span>单人资助上限（元）</span><input name="cap" type="text" inputmode="decimal" value="100" /></label>
+              <div class="org-form-row">
+                <label class="field"><span>决策间隔（天）</span><input name="decision_interval" type="number" min="1" step="1" value="1" /></label>
+                <label class="field"><span>组织随机种子</span><input name="seed" type="number" step="1" value="42" /></label>
+              </div>
+              <button class="button primary" type="submit">排队创建组织</button>
+            </fieldset>
+          </form>
+        </section>
+      </aside>
+
+      <div class="org-main">
+        <section class="panel org-detail-panel">
+          <div id="orgDetail"><div class="org-empty">选择一个组织，查看账户、成员与实际执行记录。</div></div>
+        </section>
+        <section class="panel" id="orgOperations" hidden>
+          <div class="org-section-head"><h2>提交管理命令</h2><span class="org-boundary">下一日边界生效</span></div>
+          <form id="orgCommandForm">
+            <fieldset id="orgCommandFields">
+              <label class="field"><span>操作</span><select name="type" id="orgCommandType"></select></label>
+              <div id="orgCommandInputs" class="org-command-inputs"></div>
+              <button class="button primary" type="submit">提交并排队</button>
+            </fieldset>
+          </form>
+          <p class="org-note">居民编号只在当前世界有效。负责人离开前须先交接；关闭组织会保留账目与已有义务。</p>
+        </section>
+        <section class="panel">
+          <div class="org-section-head"><h2>命令队列</h2><span class="org-boundary">排队 ≠ 已执行</span></div>
+          <p class="org-note">未启用组织或未运行时，命令等待下一次启用组织的运行。已应用与拒绝结果均保留。</p>
+          <div id="orgCommands" class="org-command-list"></div>
+        </section>
+        <section class="panel" id="orgHistoryPanel" hidden>
+          <div class="org-section-head"><h2>决策与交易历史</h2><span class="org-boundary">实际持久记录</span></div>
+          <div id="orgHistory" class="org-history"></div>
+        </section>
+      </div>
+    </div>
+    <footer class="studio-foot">
+      <span>运行范围：单机逐 tick、按日快进；月 / 年快进与分布式世界暂不支持。</span>
+      <a href="/docs/ORGANIZATIONS_TUTORIAL.md" target="_blank" rel="noopener">组织使用教程 ↗</a>
+    </footer>
+  </main>
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/organizations.js"></script>
+</body>
+</html>

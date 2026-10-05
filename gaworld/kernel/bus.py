@@ -34,7 +34,7 @@ class EventBus:
         cfg = config or {}
         self.strict = bool(cfg.get("strict", False))
         # event -> list of (priority, seq, fn); sorted lazily at dispatch.
-        self._handlers: dict[str, list[tuple[int, int, Callable]]] = defaultdict(list)
+        self._handlers: dict[str, list[tuple[int, int, Callable, bool]]] = defaultdict(list)
         self._seq = 0
         # Merged into every dispatch context (e.g. {"sim": SimContext}).
         self.base_context: dict[str, Any] = {}
@@ -52,18 +52,24 @@ class EventBus:
 
     # -- registration ----------------------------------------------------
 
-    def on(self, event: str, fn: Callable, *, priority: int = 0) -> None:
+    def on(self, event: str, fn: Callable, *, priority: int = 0, critical: bool = False) -> None:
+        """Register an observer, or a critical state-changing participant.
+
+        Critical handlers propagate their original errors immediately. This
+        is for participants whose failure makes continued execution invalid;
+        ordinary third-party observers retain the warning-only boundary.
+        """
         if not callable(fn):
             return
         self._seq += 1
-        self._handlers[str(event)].append((int(priority), self._seq, fn))
+        self._handlers[str(event)].append((int(priority), self._seq, fn, bool(critical)))
 
     # HookBus-compatible alias.
     register = on
 
-    def _ordered(self, event: str) -> list[Callable]:
+    def _ordered(self, event: str) -> list[tuple[Callable, bool]]:
         entries = self._handlers.get(str(event), [])
-        return [fn for _, _, fn in sorted(entries, key=lambda e: (-e[0], e[1]))]
+        return [(fn, critical) for _, _, fn, critical in sorted(entries, key=lambda e: (-e[0], e[1]))]
 
     def _handle_error(self, event: str, fn: Callable, exc: Exception, errors: list[str]) -> None:
         _LOG.warning(
@@ -85,10 +91,12 @@ class EventBus:
         """Observe semantics: notify handlers, ignore return values."""
         ctx = {**self.base_context, **context}
         errors: list[str] = []
-        for fn in self._ordered(event):
+        for fn, critical in self._ordered(event):
             try:
                 fn(ctx)
             except Exception as exc:  # noqa: BLE001 — extension trust boundary
+                if critical:
+                    raise
                 self._handle_error(event, fn, exc, errors)
         self._finish(event, errors)
         return errors
@@ -98,10 +106,12 @@ class EventBus:
         ctx = {**self.base_context, **context}
         errors: list[str] = []
         merged: list[Any] = []
-        for fn in self._ordered(event):
+        for fn, critical in self._ordered(event):
             try:
                 out = fn(ctx)
             except Exception as exc:  # noqa: BLE001 — extension trust boundary
+                if critical:
+                    raise
                 self._handle_error(event, fn, exc, errors)
                 continue
             if out is None:
@@ -121,10 +131,12 @@ class EventBus:
         """
         ctx = {**self.base_context, **context}
         errors: list[str] = []
-        for fn in self._ordered(event):
+        for fn, critical in self._ordered(event):
             try:
                 out = fn(value, ctx)
             except Exception as exc:  # noqa: BLE001 — extension trust boundary
+                if critical:
+                    raise
                 self._handle_error(event, fn, exc, errors)
                 continue
             if out is not None:

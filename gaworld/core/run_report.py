@@ -64,6 +64,7 @@ def _badge(outcome: str) -> str:
     palette = {
         "ok": ("#0d6b3f", "#e8f5ee"),
         "failed": ("#b32424", "#fce8e8"),
+        "degraded": ("#9a4a00", "#fdebd8"),
         "in_progress": ("#8a5a0b", "#fff5e0"),
     }
     fg, bg = palette.get(outcome, ("#333", "#eee"))
@@ -168,10 +169,18 @@ def _llm_section(manifest: Mapping[str, Any]) -> str:
 
     call_count = _e(llm.get("call_count", 0))
     failure_count = _e(llm.get("failure_count", 0))
+    requests_line = ""
+    if "requests" in llm:
+        requests_line = (
+            f"<p>Requests: <strong>{_e(llm.get('requests', 0))}</strong>"
+            f" · lost after all fallbacks: <strong>{_e(llm.get('requests_failed', 0))}</strong>"
+            f" · answered by a fallback provider: <strong>{_e(llm.get('requests_fell_back', 0))}</strong></p>"
+        )
     return f"""
 <section>
   <h2>LLM</h2>
-  <p>Total calls: <strong>{call_count}</strong> · failures: <strong>{failure_count}</strong></p>
+  <p>Total calls (attempts, incl. retries on a fallback): <strong>{call_count}</strong> · failures: <strong>{failure_count}</strong></p>
+  {requests_line}
   {_rows('task', by_task)}
   {_rows('provider', by_provider)}
 </section>

@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from gaworld import worlds
 from gaworld.accounts import AccountStore, policy
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import residents, runs, world_paths
 
 PASSWORD = "correct horse"
 CSV = "id,name,emotion\n1,甲,0.5\n2,乙,0.4\n"
@@ -68,12 +69,113 @@ class PolicyTest(unittest.TestCase):
             "/api/interventions/set_agent_state",
         ):
             self.assertEqual(policy.required("POST", path), "world", path)
-        self.assertEqual(policy.required("POST", "/api/agents/3/big5"), "admin")
+        self.assertEqual(policy.required("POST", "/api/agents/3/big5"), "world")
         self.assertTrue(policy.allows(self.OWNER, "world", world))
         self.assertFalse(policy.allows(self.OTHER, "world", world))
         self.assertFalse(policy.allows(self.OWNER, "world", None))  # the shared default world
         self.assertEqual(policy.required("POST", "/api/worlds/w0123abcd/delete"), "member")
         self.assertEqual(policy.required("POST", "/api/worlds/settings"), "admin")
+
+    def test_members_may_tune_parameters_but_not_repoint_a_running_world(self):
+        refuse = policy.config_update_refusal
+        self.assertIsNone(refuse("economy.credit.annual_interest_rate", 0.15))
+        self.assertIsNone(refuse("multiplayer.wait_for_players_seconds", 30))
+        self.assertIsNone(refuse("cluster.sync_timeout_seconds", 5))
+        self.assertIsNone(refuse("economy.tax.brackets", [[3000, 0.03, 0]]))
+        for path, value in (
+            ("llm.providers.minimax.base_url", "https://example.com"),  # the model endpoint
+            ("real_work.external_hooks.webhook_url", "https://example.com"),
+            ("memory_dir", "/tmp"),
+            ("economy.output_dir", "/tmp"),  # a path inside an allowed section
+            ("life_events.events_file", "x.json"),
+            ("cluster.hub_url", "http://example.com"),
+            ("economy.credit", {"annual_interest_rate": 1.0}),  # a whole section at once
+        ):
+            self.assertIsNotNone(refuse(path, value), path)
+
+
+class BackgroundThreadTest(unittest.TestCase):
+    def test_api_jobs_start_through_ownership_spawn(self):
+        """A bare thread starts with an empty context: its job forgets the
+        asking user's world (and its model calls go uncounted)."""
+        apps = os.path.join(os.path.dirname(__file__), "..", "gaworld", "apps")
+        # The run dispatcher runs each queued entry in the entry's own copied context.
+        allowed = {"runs.py": 1}
+        for name in sorted(os.listdir(apps)):
+            if name.endswith(".py"):
+                count = _read(os.path.join(apps, name)).count("threading.Thread(")
+                self.assertLessEqual(count, allowed.get(name, 0), f"{name}: use ownership.spawn()")
+
+
+class ForeignSimulatorTest(unittest.TestCase):
+    """A simulator this dashboard did not start — left by a crashed dashboard,
+    or run from the command line — still owns its world's files."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        config = os.path.join(self.tmp.name, "dashboard_config.json")
+        with open(config, "w", encoding="utf-8") as f:
+            f.write("{}")
+        for patch in (
+            mock.patch.object(world_paths, "REPO_ROOT", self.tmp.name),
+            mock.patch.object(world_paths, "DASHBOARD_CONFIG_PATH", config),
+            mock.patch.object(runs, "RUN_STATE", {"process": None, "log_path": os.path.join(self.tmp.name, "run.log")}),
+            mock.patch.object(runs, "RUN_QUEUE", []),
+            mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": os.path.join(self.tmp.name, "none.sqlite")}),
+        ):
+            patch.start()
+            self.addCleanup(patch.stop)
+        os.environ.pop("GAWORLD_CONFIG_OVERRIDES", None)
+
+    def _publish(self, pid):
+        from gaworld.apps import kernel_api
+
+        path = kernel_api._queue_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"active": True, "pid": pid, "registered": [], "pending": [], "applied": []}, f)
+
+    def test_a_foreign_simulator_blocks_a_second_start_and_can_be_stopped(self):
+        import subprocess
+
+        sim = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", "generative_city_sim.py"])
+        self.addCleanup(lambda: sim.poll() is None and sim.kill())
+        self._publish(sim.pid)
+        self.assertEqual(runs.run_status()["foreign_pid"], sim.pid)
+        with self.assertRaises(RuntimeError) as caught:
+            runs.start_simulation({})
+        self.assertIn(str(sim.pid), str(caught.exception))
+        runs.stop_simulation()
+        self.assertIsNotNone(sim.wait(timeout=10))
+
+    def test_a_reused_pid_is_not_mistaken_for_a_simulator(self):
+        self._publish(os.getpid())  # alive, but this is pytest
+        self.assertIsNone(runs.run_status()["foreign_pid"])
+
+
+class RouteTableTest(unittest.TestCase):
+    def test_every_route_reaches_a_handler(self):
+        import importlib
+
+        from gaworld.apps import routes
+
+        for table, handler in ((routes.GET_ROUTES, "handle_get"), (routes.POST_ROUTES, "handle_post")):
+            for route in table:
+                module = importlib.import_module(f"gaworld.apps.{route.module}")
+                self.assertTrue(callable(getattr(module, handler, None)), f"{route.module}.{handler}")
+
+    def test_first_match_wins_as_in_the_old_chain(self):
+        from gaworld.apps import routes
+
+        self.assertEqual(routes.find(routes.GET_ROUTES, "/api/interventions").module, "kernel_api")
+        self.assertIsNone(routes.find(routes.POST_ROUTES, "/api/interventions"))
+        # The single-agent interview endpoint is the handler's, not interview_api's.
+        self.assertIsNone(routes.find(routes.POST_ROUTES, "/api/interview"))
+        self.assertEqual(routes.find(routes.POST_ROUTES, "/api/interview/run").module, "interview_api")
+        # City writes carry an ownership check in the handler.
+        self.assertIsNone(routes.find(routes.POST_ROUTES, "/api/city/create"))
+        self.assertEqual(routes.find(routes.GET_ROUTES, "/api/city/agents").module, "city_api")
 
 
 class FakeProc:
@@ -122,13 +224,13 @@ class WorldsHttpTest(unittest.TestCase):
         FakeProc.started = []
         self.patches = [
             mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": db}),
-            mock.patch.object(ds, "REPO_ROOT", root),
-            mock.patch.object(ds, "DASHBOARD_CONFIG_PATH", self.global_config),
+            mock.patch.object(world_paths, "REPO_ROOT", root),
+            mock.patch.object(world_paths, "DASHBOARD_CONFIG_PATH", self.global_config),
             mock.patch.object(ds, "_city_seed_files", return_value=("", self.csv, self.md)),
             mock.patch.object(ds.subprocess, "Popen", FakeProc),
-            mock.patch.object(ds, "DISPATCH_SECONDS", 0.05),
-            mock.patch.object(ds, "WORLD_RUNS", {}),
-            mock.patch.object(ds, "RUN_QUEUE", []),
+            mock.patch.object(runs, "DISPATCH_SECONDS", 0.05),
+            mock.patch.object(runs, "WORLD_RUNS", {}),
+            mock.patch.object(runs, "RUN_QUEUE", []),
         ]
         for patch in self.patches:
             patch.start()
@@ -197,6 +299,16 @@ class WorldsHttpTest(unittest.TestCase):
             f.write("{}")
         trace = f"/output/worlds/{world_id}/visualization/simulation_trace.json"
         self.assertEqual(self._req("GET", trace, cookies=[li])[0].status, 404)
+        # Empty path segments collapse when the file is served, so they must not
+        # slip past the world check either.
+        for variant in (
+            f"/output//worlds/{world_id}/visualization/simulation_trace.json",
+            f"//output/worlds/{world_id}/visualization/simulation_trace.json",
+            f"/output/%2Fworlds/{world_id}/visualization/simulation_trace.json",
+            f"/output/worlds//{world_id}/visualization/simulation_trace.json",
+        ):
+            self.assertEqual(self._req("GET", variant, cookies=[li])[0].status, 404, variant)
+            self.assertEqual(self._req("HEAD", variant, cookies=[li])[0].status, 404, variant)
         self.assertEqual(
             self._req("POST", f"/api/worlds/{world_id}/visibility", {"visibility": "class"}, [li])[0].status,
             404,
@@ -213,15 +325,127 @@ class WorldsHttpTest(unittest.TestCase):
         world = self.store.create_world(1, "w")
         token = ds._WORLD.set(world)
         try:
-            cfg = ds._effective_config()
+            cfg = world_paths.effective_config()
             self.assertEqual(cfg["memory_dir"], f"output/worlds/{world['id']}/memory")
             self.assertEqual(
-                ds._state_csv_path(), os.path.join(self.tmp.name, worlds.seed_paths(world["id"])[0])
+                world_paths.state_csv_path(), os.path.join(self.tmp.name, worlds.seed_paths(world["id"])[0])
             )
-            self.assertTrue(ds._records_dir().endswith(f"output/worlds/{world['id']}/records"))
+            self.assertTrue(world_paths.records_dir().endswith(f"output/worlds/{world['id']}/records"))
         finally:
             ds._WORLD.reset(token)
-        self.assertEqual(ds._state_csv_path(), ds.STATE_CSV_PATH)
+        self.assertEqual(world_paths.state_csv_path(), world_paths.STATE_CSV_PATH)
+
+    def test_a_world_keeps_its_own_agent_keyed_inputs(self):
+        data = os.path.join(self.tmp.name, "data")
+        os.makedirs(data)
+        big5 = "id,name,o,c,e,a,n,source,unstated,redundant\n1,甲,0.1,0.2,0.3,0.4,0.5,calibrated,,\n"
+        for name, text in (
+            ("agents_big5.csv", big5),
+            ("family_overrides.json", '{"1": {"marital_status": "married"}}'),
+            ("moltbook_accounts.json", '{"agents": {"1": {"api_key": "secret"}}}'),
+        ):
+            with open(os.path.join(data, name), "w", encoding="utf-8") as f:
+                f.write(text)
+        wang = self._login("小王")
+        world_id, in_world = self._new_world(wang, "小王的世界")
+        seed = os.path.join(self.tmp.name, "output", "worlds", world_id, "seed")
+        # The residents' personalities and family pins come along; live
+        # credentials of real Moltbook accounts do not.
+        self.assertEqual(_read(os.path.join(seed, "agents_big5.csv")), big5)
+        self.assertTrue(os.path.exists(os.path.join(seed, "family_overrides.json")))
+        self.assertFalse(os.path.exists(os.path.join(seed, "moltbook_accounts.json")))
+
+        world = self.store.get_world(world_id)
+        token = ds._WORLD.set(world)
+        try:
+            cfg = world_paths.effective_config()
+            seed_rel = f"output/worlds/{world_id}/seed"
+            self.assertEqual(cfg["personality"]["profile_path"], f"{seed_rel}/agents_big5.csv")
+            self.assertEqual(cfg["family"]["overrides_path"], f"{seed_rel}/family_overrides.json")
+            self.assertEqual(cfg["moltbook"]["accounts_path"], f"{seed_rel}/moltbook_accounts.json")
+            # Editing a personality in the world edits the world's copy only.
+            with mock.patch.object(world_paths, "BIG5_CSV_PATH", os.path.join(data, "agents_big5.csv")):
+                residents.save_agent_big5(1, {"values": {"o": 1.25}})
+        finally:
+            ds._WORLD.reset(token)
+        self.assertIn("1.25", _read(os.path.join(seed, "agents_big5.csv")))
+        self.assertEqual(_read(os.path.join(data, "agents_big5.csv")), big5)
+
+        # Its owner edits a personality over HTTP; the shared default world stays admin-only.
+        url = "/api/agents/1/big5"
+        resp, body = self._req("POST", url, {"values": {"c": -0.75}}, [wang, in_world])
+        self.assertEqual(resp.status, 200, body)
+        self.assertIn("-0.75", _read(os.path.join(seed, "agents_big5.csv")))
+        with mock.patch.object(world_paths, "BIG5_CSV_PATH", os.path.join(data, "agents_big5.csv")):
+            self.assertEqual(self._req("POST", url, {"values": {"c": 1.0}}, [wang])[0].status, 403)
+        self.assertEqual(_read(os.path.join(data, "agents_big5.csv")), big5)
+
+    def test_update_config_over_http_is_limited_for_members(self):
+        wang = self._login("小王")
+        _world_id, in_world = self._new_world(wang, "小王的世界")
+        url = "/api/interventions/update_config"
+        resp, body = self._req("POST", url, {"path": "llm.routing.default", "value": "x"}, [wang, in_world])
+        self.assertEqual(resp.status, 403, body)
+        # A parameter passes the policy; with nothing running it then cannot be queued.
+        resp, _ = self._req("POST", url, {"path": "economy.credit.apr", "value": 0.1}, [wang, in_world])
+        self.assertEqual(resp.status, 409)
+
+    def test_a_reset_does_not_hold_up_other_worlds(self):
+        a = self.store.create_world(2, "a")
+        b = self.store.create_world(3, "b")
+        entered, release = threading.Event(), threading.Event()
+
+        def slow_reset(*args, **kwargs):
+            entered.set()
+            release.wait(10)
+            return mock.Mock(returncode=0)
+
+        errors = []
+
+        def start_a():
+            ds._WORLD.set(a)
+            try:
+                runs.start_simulation({"reset": True})
+            except Exception as exc:
+                errors.append(exc)
+
+        def poll_b():
+            ds._WORLD.set(b)
+            runs.run_status()
+            answered.set()
+
+        answered = threading.Event()
+        with mock.patch.object(ds.subprocess, "run", slow_reset):
+            starter = threading.Thread(target=start_a)
+            starter.start()
+            self.assertTrue(entered.wait(5))
+            # Another world's status poll answers while the reset runs…
+            threading.Thread(target=poll_b, daemon=True).start()
+            self.assertTrue(answered.wait(2), "status poll blocked behind another world's reset")
+            # …and the resetting world cannot be started a second time meanwhile.
+            token = ds._WORLD.set(a)
+            try:
+                with self.assertRaises(RuntimeError):
+                    runs.start_simulation({})
+            finally:
+                ds._WORLD.reset(token)
+            release.set()
+            starter.join(5)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(FakeProc.started), 1)
+
+    def test_agent_log_tail_comes_from_the_active_world(self):
+        world = self.store.create_world(1, "w")
+        for base, text in (("output/logs", "默认世界的日志"), (f"output/worlds/{world['id']}/logs", "本世界的日志")):
+            os.makedirs(os.path.join(self.tmp.name, base), exist_ok=True)
+            with open(os.path.join(self.tmp.name, base, "agent_1.log"), "w", encoding="utf-8") as f:
+                f.write(text)
+        token = ds._WORLD.set(world)
+        try:
+            self.assertEqual(residents.memory_payload(1)["log_tail"], "本世界的日志")
+        finally:
+            ds._WORLD.reset(token)
+        self.assertEqual(residents.memory_payload(1)["log_tail"], "默认世界的日志")
 
     def _status(self, cookies):
         return self._req("GET", "/api/run/status", cookies=cookies)[1]

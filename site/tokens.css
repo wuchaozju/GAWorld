@@ -1,27 +1,93 @@
+/* GAWorld design tokens — shared by the console shell and every dashboard page.
+ * The terminal variant re-declares each of these in terminal/terminal-override.css;
+ * a token added here must be added there too or it leaks the light value. */
+@import url("/site/brand.css");
+
 :root {
-  --ink: #202a31;
-  --muted: #637078;
-  --paper: #f5f7f8;
-  --paper-deep: #edf1f3;
-  --card: #ffffff;
-  --panel: #ffffff;
-  --surface: #ffffff;
-  --sunken: #edf1f3;
-  --line: #dce3e7;
-  --green: #0e7a58;
-  --green-deep: #07543e;
-  --green-soft: #e7f3ed;
-  --green-pale: #f0f8f3;
-  --steel: #456777;
-  --steel-deep: #294551;
-  --steel-pale: #eaf0f5;
-  --red: #b93843;
-  --amber: #94620c;
-  --accent: #0e7a58;
-  --chip-bg: #edf1f3;
-  --radius: 8px;
-  --radius-sm: 6px;
-  --shadow-sm: 0 2px 8px rgba(32, 42, 49, 0.05);
-  --shadow: 0 4px 16px rgba(32, 42, 49, 0.07);
-  --shadow-lg: 0 10px 30px rgba(32, 42, 49, 0.10);
+  /* neutrals */
+  --ink: #242820;
+  --ink-soft: #41473a;
+  --muted: #686c5f;
+  --faint: #7c8072;
+  --paper: #f4f0e7;
+  --paper-deep: #e8e3d7;
+  --card: #fffdf7;
+  --panel: #fffdf7;
+  --surface: #fffdf7;
+  --sunken: #eeeadf;
+  --line: #d7d4c8;
+  --line-strong: #b6baaa;
+
+  /* brand / accent */
+  --green: #b9431d;
+  --green-deep: #923315;
+  --green-soft: #f7e1d4;
+  --green-pale: #faf0e7;
+  --accent: #b9431d;
+  --on-accent: #ffffff;
+  --steel: #536b4f;
+  --steel-deep: #354a33;
+  --steel-pale: #e8eddd;
+
+  /* status */
+  --red: #c03a45;
+  --red-soft: #fbecee;
+  --amber: #9a6208;
+  --amber-soft: #fbf3e2;
+  --chip-bg: #eae7dd;
+
+  /* type */
+  --font-sans: "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC",
+    "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: Georgia, "Noto Serif SC", "Songti SC", serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fs-xxl: 30px;
+
+  /* shape & depth */
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-lg: 5px;
+  --shadow-sm: 0 1px 0 rgba(36, 40, 32, 0.04);
+  --shadow: 0 2px 8px rgba(36, 40, 32, 0.04);
+  --shadow-lg: 0 10px 30px rgba(36, 40, 32, 0.12);
+  --ring: 0 0 0 3px rgba(185, 67, 29, 0.22);
+}
+
+:root[data-theme="dark"] {
+  --ink: #eeeedf;
+  --ink-soft: #d1d6c3;
+  --muted: #b0b7a2;
+  --faint: #939d87;
+  --paper: #1c211b;
+  --paper-deep: #141a13;
+  --card: #252c23;
+  --panel: #252c23;
+  --surface: #252c23;
+  --sunken: #30382c;
+  --line: #424b3c;
+  --line-strong: #69775c;
+  --green: #e9a075;
+  --green-deep: #f5b18a;
+  --green-soft: #493728;
+  --green-pale: #302b22;
+  --accent: #e9a075;
+  --on-accent: #242820;
+  --steel: #bed39d;
+  --steel-deep: #d5e5bd;
+  --steel-pale: #303c29;
+  --red: #f2908d;
+  --red-soft: #492b2a;
+  --amber: #e6c47f;
+  --amber-soft: #403825;
+  --chip-bg: #333b2e;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: 0 10px 30px #0005;
+  --ring: 0 0 0 3px #e9a07540;
 }

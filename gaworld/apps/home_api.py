@@ -17,11 +17,11 @@ at home). This module only *reads*; the plugin owns the writes.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
 
+from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.apps.home_api")
@@ -33,19 +33,14 @@ OBSERVATION_TAIL = 200
 
 
 def _output_root() -> Path:
-    """Resolve ``output/home`` next to the repo root.
+    """``<run root>/home``: where the home plugin of the active run writes.
 
-    Mirrors how ``dashboard_server.py`` resolves ``REPO_ROOT``: the config
-    doesn't pin this directory, so the plugin's writer and this reader both
-    default to ``<repo>/output/home``."""
-    # ``dashboard_server`` puts REPO_ROOT three levels above its own file;
-    # we are called from there, so use the same anchor.
-    here = Path(__file__).resolve()
-    for ancestor in here.parents:
-        if (ancestor / "dashboard_config.json").exists() or (ancestor / "gaworld").is_dir():
-            return ancestor / "output" / "home"
-    # Fallback: best-effort relative path.
-    return Path(os.getcwd()) / "output" / "home"
+    The plugin writes under ``output_root`` (``output`` by default, the world's
+    or city's run root otherwise), so read the same key the dashboard's active
+    world resolves, anchored at the dashboard's ``REPO_ROOT``."""
+
+    root = str(world_paths.effective_config().get("output_root") or "output")
+    return Path(world_paths.REPO_ROOT) / root / "home"
 
 
 def _safe_read_json(path: Path) -> dict[str, Any] | None:
@@ -116,7 +111,7 @@ def handle_get(path: str, query: dict[str, list[str]] | None = None) -> tuple[An
         except ValueError:
             return {"error": "agent_id must be an integer"}, 400
         return _home_for(agent_id, query or {})
-    return {"error": "not found"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def _list_homes() -> dict[str, Any]:

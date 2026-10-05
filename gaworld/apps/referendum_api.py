@@ -314,7 +314,8 @@ def _result_line(counts: dict[str, Any]) -> str:
 # Jobs — one store per game (see gaworld.apps.game_jobs).
 # ---------------------------------------------------------------------------
 
-_JOBS = JobStore("referendum")
+#: Archived: GAWorld-Bench Track B pools finished games (gaworld.apps.game_archive).
+_JOBS = JobStore("referendum", archive=True)
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
@@ -581,20 +582,20 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("referendum GET %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown referendum endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     payload = payload if isinstance(payload, dict) else {}
     try:
         if path == "/api/games/referendum/run":
-            return {"job_id": start_run(payload)}, 200
+            return {"job_id": start_run(payload)}, 202
     except ValueError as exc:
         return {"error": str(exc)}, 400
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("referendum POST %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown referendum endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

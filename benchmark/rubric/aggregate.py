@@ -101,8 +101,14 @@ def discrimination(mean_real: float | None, mean_ablated: float | None) -> float
 
 def build_scorecard(rubric: dict, item_results: dict[str, list[dict]],
                     coverage: dict, *, discrimination_by_item: dict | None = None,
-                    reliability: dict | None = None, manifest: dict | None = None) -> dict:
-    """item_results: item_id -> list of per-unit result dicts."""
+                    reliability: dict | None = None, manifest: dict | None = None,
+                    calibration: dict | None = None) -> dict:
+    """item_results: item_id -> list of per-unit result dicts.
+
+    ``calibration`` is ``calibration.scorecard_block(...)``; leaving it out
+    means no human calibration, and the gate cannot reach OK (design §8:
+    every Track R score before P4 is UNVERIFIED).
+    """
     gates = rubric.get("gates", {})
     d_min = gates.get("discrimination_min", 0.15)
     abstain_max = gates.get("abstain_max", 0.30)
@@ -172,7 +178,8 @@ def build_scorecard(rubric: dict, item_results: dict[str, list[dict]],
         "coverage": coverage,
         "reliability": reliability or {},
         "manifest": manifest or {},
-        "gate": _trust_gate(dims, reliability or {}, gates),
+        "calibration": calibration or {"status": "missing", "reason": "未做人类锚点校准（P4）"},
+        "gate": _trust_gate(dims, reliability or {}, gates, calibration),
     }
 
 
@@ -182,8 +189,13 @@ def _dim_coverage(items: list[dict], coverage: dict) -> float:
     return round(min(vals), 3) if vals else 0.0
 
 
-def _trust_gate(dims: dict, reliability: dict, gates: dict) -> dict:
-    """Three-state gate, matching GAWorld-Bench's convention."""
+def _trust_gate(dims: dict, reliability: dict, gates: dict, calibration: dict | None = None) -> dict:
+    """Three-state gate, matching GAWorld-Bench's convention.
+
+    Human calibration is a precondition of OK, never a cause of
+    UNTRUSTWORTHY: a missing or failed calibration means the scores have not
+    been shown to mean what people mean, not that they are wrong.
+    """
     if not any(d.get("status") == "ok" for d in dims.values()):
         state, reason = "UNVERIFIED", "没有任何维度达到可评状态（数据不足或全部弃权）"
     elif any(d.get("status") == "unverified" for d in dims.values()):
@@ -193,6 +205,10 @@ def _trust_gate(dims: dict, reliability: dict, gates: dict) -> dict:
     alpha = reliability.get("krippendorff_alpha")
     if alpha is not None and alpha < gates.get("human_alpha_min", 0.6):
         state, reason = "UNVERIFIED", f"judge 间一致性 alpha={alpha:.2f} 低于门槛"
+    calibration = calibration or {"status": "missing", "reason": "未做人类锚点校准（P4）"}
+    if calibration.get("status") != "ok":
+        reason = "；".join(part for part in (reason, calibration.get("reason")) if part)
+        state = "UNVERIFIED"
     if reliability.get("any_dimension_untrustworthy"):
         state, reason = "UNTRUSTWORTHY", "存在判别力不足的维度，分数无意义"
     return {"state": state, "reason": reason}
@@ -213,6 +229,13 @@ def render_markdown(scorecard: dict) -> str:
                 if manifest.get("missing_capabilities") else "｜数据能力齐全"),
              f"- Trust gate：**{scorecard['gate']['state']}**"
              + (f"（{scorecard['gate']['reason']}）" if scorecard['gate']['reason'] else "")]
+    calibration = scorecard.get("calibration") or {}
+    if calibration.get("set_id"):
+        judge = calibration.get("judge") or {}
+        lines.append(f"- 人类锚点校准：`{calibration['set_id']}` · {calibration.get('status')} · "
+                     f"人-人 α {calibration.get('human_alpha')} · 人-judge ρ {judge.get('spearman')} / QWK {judge.get('qwk')}")
+    else:
+        lines.append(f"- 人类锚点校准：{calibration.get('status', 'missing')}")
     if manifest.get("run_mode") == "fast_forward":
         lines += ["", "> ⚡ **快进运行**。日内 tick 循环被绕过，因此没有 episodes，"
                        "日记来自确定性模板。R1/R3/R4 与 R2.2/R2.4 会因缺少数据能力而弃权——"

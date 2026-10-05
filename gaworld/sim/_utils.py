@@ -252,6 +252,26 @@ def _parse_sim_start_date(value: Any) -> date:
     return date.today()
 
 
+def calendar_from_config(config: Any) -> dict[str, Any]:
+    """The run's calendar, as keyword arguments for :func:`_resolve_day_context`.
+
+    Reads ``config["calendar"]`` exactly as the main loop does (start date,
+    start weekday, weekend days). Plugins resolve it once, at setup, so that
+    ``start_date: "today"`` names one day for the whole run. A config with no
+    ``calendar`` block at all (bare unit-test configs) falls back to a Monday
+    start with no date.
+    """
+    cal = config.get("calendar") if isinstance(config, dict) else None
+    if not isinstance(cal, dict):
+        return {"start_weekday_idx": 0, "weekend_indexes": {5, 6}, "start_date": None}
+    idx = _weekday_to_index(cal.get("start_weekday", "monday"))
+    return {
+        "start_weekday_idx": 0 if idx is None else idx,
+        "weekend_indexes": _build_weekend_indexes(cal.get("weekend_days", ["saturday", "sunday"])),
+        "start_date": _parse_sim_start_date(cal.get("start_date", "today")),
+    }
+
+
 def _resolve_day_context(
     day_number: Any,
     start_weekday_idx: int = 0,
@@ -361,5 +381,6 @@ __all__ = [
     "_stable_json_marker",
     "_time_str_to_minutes",
     "_weekday_to_index",
+    "calendar_from_config",
     "snap_schedule_to_grid",
 ]

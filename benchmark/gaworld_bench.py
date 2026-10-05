@@ -13,13 +13,27 @@ Implemented in v0.1:
     per-track diagnosis and data-driven improvement suggestions.
   - --synthetic mode: fabricates structurally-correct fixtures so the whole
     pipeline runs without an LLM / simulation (used for verification + trial).
+    Its scorecard carries trust gate FIXTURE and is written under
+    results/synthetic/, never over the headline results/scorecard.json.
 
-Track B / D / E are stubbed (return n/a) and left for v0.2+.
+Implemented in v0.1.7:
+  - Track B, games level: three stylized facts over archived playground games
+    (referendum conformity, disaster panic rare / help common, rumor continued
+    influence). Abstains below five usable games per fact.
+
+Implemented in v0.1.8:
+  - Track D, human judges: from archived 谁是真人 rooms, how often people
+    take residents for people against how often they recognise each other.
+    The design's four LLM-judge dimensions remain unimplemented.
+
+Track E is stubbed (returns n/a) and left for later versions.
 
 Usage (run from the repo-root benchmark/ folder):
     python gaworld_bench.py --synthetic
     python gaworld_bench.py --all                      # default: score real output/
     python gaworld_bench.py --track A --output-dir ../output
+    python gaworld_bench.py --track B [--games-dir ../output/games]
+    python gaworld_bench.py --track D [--games-dir ../output/games]   # reads <games-dir>/whois
     # Track C, live (runs compare-event; needs an LLM provider):
     python gaworld_bench.py --track C --run --days 3 --seed 42 [--llm-provider minimax]
     # Track C, from already-produced comparison dirs:
@@ -68,6 +82,44 @@ ANCHORS = {
                           "source": "杭州市交通运输局2024"},
     "wealth_gini":       {"value": 0.70, "tol": 0.30, "scope": "national_urban",
                           "source": "CHFS/瑞信财富报告: 中国家庭财富Gini≈0.6-0.75"},
+}
+
+#: wealth_gini is computed over these employment statuses only (see Track A).
+LABOUR_FORCE = frozenset({"employed", "unemployed"})
+
+# ── Provenance of every scored number (MECHANISM_PROVENANCE.md, rule 3) ──────
+# The weakest grade among the mechanisms behind a metric, what that mechanism
+# is, and — for the two Track A columns that are a lookup of a configured table
+# rather than an outcome — that the fit measures the table, not the model.
+# Scores are unchanged; this is what a reader needs before citing one.
+METRIC_PROVENANCE = {
+    "engel_coefficient": {
+        "grade": "c", "weakest": "spending.engel_curve 按月净收入分五档查表（系数未注明出处）",
+        "echo": "快照里的值就是按收入查 engel_curve 得到的预算参数，不是从实际分类消费算出来的——拟合量的是这张表",
+    },
+    "savings_rate": {
+        "grade": "c", "weakest": "spending.engel_curve 按月净收入分五档查表（系数未注明出处）",
+        "echo": "快照里的值就是按收入查 engel_curve 得到的计划储蓄率，不是从实际收支算出来的——拟合量的是这张表",
+    },
+    "wealth_gini": {
+        "grade": "c", "weakest": "开局存款 = 月净收入 × U(1, 6) 个月（initial_savings_months_*，定的）；收入锚点本身是 (a)",
+    },
+    "commute_minutes": {
+        "grade": "c", "weakest": "distance_decay、agents_represent（按目标标定的旋钮）",
+    },
+    "transit_share": {
+        "grade": "c", "weakest": "agents_represent、PCU 折算（定的）",
+    },
+}
+
+#: Every Track C sign test reads a core state metric, and every core state
+#: answers an event through one model call proposing its delta
+#: (``infer_event_effect``) before hand-set dynamics carry it. Kept in step
+#: with ``gaworld/research/measures.py`` by a test.
+STATE_PROVENANCE = {
+    "grade": "c",
+    "weakest": "事件对九维状态的影响由一次模型调用直接给出（infer_event_effect），再经手写均值回归（update_state）——"
+               "已知符号检验检的是模型对这件事的判断能否穿过状态动态传到指标上，不是对现实因果的独立检验",
 }
 
 #: Scope of the population actually being simulated. Anchors outside it are
@@ -162,8 +214,18 @@ def track_a_macro_fit(output_dir: Path) -> dict:
                 metrics[key] = statistics.fmean(vals)
         # Distribution-level: wealth Gini over net worth
         # (balance + housing fund − debt); debt column absent in old runs.
+        # Only over the labour force: students, homemakers and retirees get a
+        # (c)-class placeholder income band (8–22 元/h, MECHANISM_PROVENANCE),
+        # not a modelled one, and it would pull the Gini toward equality.
+        # Outputs written before the employment_status column fall back to
+        # everyone, and say so.
+        has_status = any("employment_status" in r for r in rows)
+        gini_rows = [r for r in rows if r.get("employment_status") in LABOUR_FORCE] \
+            if has_status else rows
+        gini_population = (f"labour_force ({len(gini_rows)}/{len(rows)})" if has_status
+                           else f"all ({len(rows)}; 旧输出无 employment_status 列，口径偏宽)")
         net_worth = []
-        for r in rows:
+        for r in gini_rows:
             try:
                 nw = (float(r.get("balance") or 0)
                       + float(r.get("housing_fund") or 0)
@@ -185,12 +247,16 @@ def track_a_macro_fit(output_dir: Path) -> dict:
 
     scored = {}
     context = {}
+    populations = {"wealth_gini": gini_population} if "wealth_gini" in metrics else {}
     for key, sim in metrics.items():
         a = ANCHORS[key]
         rel_err = abs(sim - a["value"]) / a["value"]
         row = {"sim": round(sim, 4), "anchor": a["value"],
                "rel_err": round(rel_err, 4), "scope": a.get("scope", "unknown"),
                "source": a["source"]}
+        if key in populations:
+            row["population"] = populations[key]
+        row.update(METRIC_PROVENANCE.get(key, {}))
         if a.get("scope") in SCORED_SCOPES:
             row["score"] = round(clamp01(1 - rel_err / a["tol"]), 4)
             scored[key] = row
@@ -271,6 +337,37 @@ def _metrics_path(src: Path) -> Path:
     return src / "comparison_metrics.csv" if src.is_dir() else src
 
 
+def _load_current_epoch() -> int | None:
+    """The simulator's current comparability epoch, read by file path so the
+    harness stays importable without the simulator's dependencies."""
+    import importlib.util
+    path = PROJECT_ROOT / "gaworld" / "core" / "comparability.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_gaworld_comparability", path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module  # dataclasses resolve annotations through it
+        spec.loader.exec_module(module)
+        return int(module.CURRENT_EPOCH)
+    except (OSError, ImportError, AttributeError, ValueError, TypeError):
+        return None
+
+
+CURRENT_EPOCH = _load_current_epoch()
+
+
+def _dir_epoch(comparison_dir: Path | None) -> int | None:
+    """The code epoch a compare-event dir was produced by (its run_meta.json);
+    None for dirs written before epochs were stamped."""
+    if not comparison_dir:
+        return None
+    d = comparison_dir if comparison_dir.is_dir() else comparison_dir.parent
+    try:
+        value = json.loads((d / "run_meta.json").read_text(encoding="utf-8")).get("comparability_epoch")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+    return value if isinstance(value, int) else None
+
+
 def _dir_is_fast(comparison_dir: Path | None) -> bool:
     """True if a comparison dir was produced with --fast (from its run_meta.json)."""
     if not comparison_dir:
@@ -303,6 +400,7 @@ def track_c_causal(sign_sources: dict[str, Path], placebo_dir: Path | None,
         delta = eff["effect"] if eff else None
         ok = delta is not None and (delta * t["sign"] > 0)
         sign_results.append({**{k: t[k] for k in ("name", "metric", "sign", "why")},
+                             "grade": STATE_PROVENANCE["grade"],
                              "delta": delta,
                              "delta_final": eff["delta_final"] if eff else None,
                              "delta_mean": eff["delta_mean"] if eff else None,
@@ -312,6 +410,7 @@ def track_c_causal(sign_sources: dict[str, Path], placebo_dir: Path | None,
     sign_score = (n_ok / n_eval) if n_eval else 0.0
     out["sign"] = {"score": round(sign_score, 4), "n_eval": n_eval, "n_correct": n_ok,
                    "effect_col": EFFECT_COL, "tests": sign_results}
+    out["provenance"] = dict(STATE_PROVENANCE)
 
     # C2 placebo + C3 determinism (shared with the multi-seed scorer)
     placebo_score, out["placebo"] = _placebo_block(placebo_dir)
@@ -320,6 +419,10 @@ def track_c_causal(sign_sources: dict[str, Path], placebo_dir: Path | None,
         out["incomplete"] = [p.name for p in incomplete]
     # low-fidelity flag: any scored comparison dir produced with --fast
     out["fast"] = any(_dir_is_fast(d) for d in list(sign_sources.values()) + [placebo_dir])
+    # which code produced each comparison (gaworld/core/comparability.py)
+    out["epochs"] = {name: _dir_epoch(src) for name, src in sign_sources.items() if src}
+    if placebo_dir:
+        out["epochs"]["placebo"] = _dir_epoch(placebo_dir)
 
     coverage = n_eval / len(SIGN_TESTS)
     out["coverage"] = round(coverage, 4)
@@ -499,6 +602,7 @@ def track_c_multiseed(samples_by_test: dict[tuple[str, str], list[float]],
             n_sig += 1
             n_correct += int(correct)
         tests.append({**{k: t[k] for k in ("name", "metric", "sign", "why")},
+                      "grade": STATE_PROVENANCE["grade"],
                       "mean": None if m is None else round(m, 4),
                       "ci95": None if hw is None else round(hw, 4),
                       "n": n, "significant": sig, "correct": correct})
@@ -506,6 +610,7 @@ def track_c_multiseed(samples_by_test: dict[tuple[str, str], list[float]],
     out["sign"] = {"score": round(sign_score, 4), "n_eval": n_sig, "n_correct": n_correct,
                    "n_significant": n_sig, "n_data": n_data, "effect_col": EFFECT_COL,
                    "tests": tests}
+    out["provenance"] = dict(STATE_PROVENANCE)
 
     placebo_score, out["placebo"] = _placebo_block(placebo_dir)
     det_score, out["determinism"] = _determinism_block(det_a, det_b)
@@ -607,8 +712,332 @@ def orchestrate_track_c_multiseed(seeds: list[int], days: int, provider: str | N
     return track_c_multiseed(samples, None, det_a, det_b, None, fast=fast)
 
 
+# ── Track B: stylized facts from archived playground games ───────────────────
+#
+# The rumor, referendum and disaster games archive every finished game to
+# output/games/<kind>/*.json (gaworld/apps/game_archive.py). Each fact pools
+# every eligible game of its kind. Too little data abstains
+# (``reproduced: None``) instead of failing; an abstention still costs the
+# score, the way coverage does in Track C.
+#
+# Level — read before citing any of this. A resident here answers one prompt
+# after seeing the room's tally (referendum), the neighbours' actions
+# (disaster) or a correction (rumor): a one-step agent → crowd → agent loop,
+# not the agent → environment → agent loop trackb_spatial.py measures, and
+# every prompt carries a cue, written next to its fact. All three are grade
+# (c) (MECHANISM_PROVENANCE.md): they say what a persona prompt answers,
+# never how large a real effect is. The disaster thresholds turn "rare" and
+# "common" into numbers; the claim is the qualitative one.
+#
+# Why no rumor S-curve: a game has at most 14 residents, 5 rounds and a
+# forward reaches at most 4 new people, so the cumulative-reach curve's shape
+# is mostly that arithmetic. Its continued-influence check reads a turn the
+# model actually answers.
+GAMES_DIR = PROJECT_ROOT / "output" / "games"
+GAME_KINDS = ("referendum", "disaster", "rumor")
+#: Fewer eligible games than this and a fact abstains.
+MIN_GAMES = 5
+B_ALPHA = 0.05            # one-sided
+PANIC_EXTREME_MAX = 0.2   # share of panic == 5
+HELP_RATE_MIN = 0.5
+CIE_RESIDUAL_MIN = 0.25   # mean belief after correction ≥ this × before
+B_PASS = 0.5              # design §2: score_B ≥ 0.5
+#: An off-vocabulary or unreadable disaster reply — not counted.
+DISASTER_OTHER = "其他"
+
+B_FACTS = [
+    {"id": "referendum_conformity", "kind": "referendum", "name": "公开表决向多数靠拢（从众）",
+     "criterion": "不带宣传口径、私下有严格多数的对局里，朝多数改的票显著多于背离多数的（单侧二项检验 p<0.05）",
+     "min_units": 8, "unit": "张定向改票",
+     "reference": "Asch 1956; Deutsch & Gerard 1955",
+     "cue": "正式表决的提示词写着「看到多数人怎么想之后改主意不丢人」，也写着「不要为了合群而改」——两个方向都提了，但从众被点了名",
+     "advice": "不填宣传口径"},
+    {"id": "disaster_panic_rare", "kind": "disaster", "name": "灾害中极度恐慌少见、互助常见",
+     "criterion": f"极度恐慌（panic=5）占比 ≤ {PANIC_EXTREME_MAX} 且顾得上帮别人的占比 ≥ {HELP_RATE_MIN}"
+                  "（阈值是事先定的约定，把「少见/常见」落成数，不是文献给的数字）",
+     "min_units": 20, "unit": "条反应",
+     "reference": "Quarantelli 2001; Drury, Cocking & Reicher 2009",
+     "cue": "恐慌是 1–5 的自评，不是行为；「是否顾得上帮别人」是必答项，「救助他人」是六个选项之一",
+     "advice": ""},
+    {"id": "rumor_continued_influence", "kind": "rumor", "name": "辟谣后相信度下降但不归零（持续影响效应）",
+     "criterion": f"被辟谣的相信者里，相信度下降的显著多于上升的（单侧符号检验 p<0.05），"
+                  f"且辟谣后平均相信度 ≥ 辟谣前的 {CIE_RESIDUAL_MIN:.0%}",
+     "min_units": 8, "unit": "个被辟谣的相信者",
+     "reference": "Lewandowsky et al. 2012; Walter & Tukachinsky 2020",
+     "cue": "辟谣那一轮的提示词会告诉居民他先前信了多少——残留可能是对这个数字的锚定，不一定是持续影响",
+     "advice": "让辟谣发生：得有人选「辟谣」，被辟谣的人当时还相信"},
+]
+
+
+def load_games(games_dir: Path) -> tuple[dict[str, list[dict]], int]:
+    """Archived games by kind, and how many files could not be read."""
+    games: dict[str, list[dict]] = {}
+    unreadable = 0
+    for kind in GAME_KINDS:
+        for path in sorted((games_dir / kind).glob("*.json")):
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                unreadable += 1
+                continue
+            if isinstance(record, dict) and isinstance(record.get("result"), dict):
+                games.setdefault(kind, []).append(record)
+            else:
+                unreadable += 1
+    return games, unreadable
+
+
+def binom_upper_p(k: int, n: int) -> float:
+    """One-sided P(X ≥ k) for X ~ Binomial(n, 1/2)."""
+    return sum(math.comb(n, i) for i in range(k, n + 1)) / 2 ** n
+
+
+def _fact_conformity(games: list[dict]) -> tuple[int, int, dict, bool]:
+    """Private ballot → public ballot, on the axis minority −1 / 弃权 0 / majority +1."""
+    toward = away = eligible = 0
+    for record in games:
+        run = record["result"]
+        if str(run.get("campaign") or "").strip():
+            continue  # a slogan is persuasion, not the room
+        voters = run.get("voters") or []
+        private = [(v.get("private") or {}).get("stance") for v in voters]
+        yes, no = private.count("支持"), private.count("反对")
+        if yes == no:
+            continue  # no majority to conform to
+        major, minor = ("支持", "反对") if yes > no else ("反对", "支持")
+        axis = {major: 1, "弃权": 0, minor: -1}
+        eligible += 1
+        for voter in voters:
+            before = axis.get((voter.get("private") or {}).get("stance"))
+            after = axis.get((voter.get("public") or {}).get("stance"))
+            if before is None or after is None or before == after:
+                continue
+            if after > before:
+                toward += 1
+            else:
+                away += 1
+    n = toward + away
+    p = binom_upper_p(toward, n) if n else None
+    values = {"toward": toward, "away": away, "p": None if p is None else float(f"{p:.3g}")}
+    return eligible, n, values, p is not None and p < B_ALPHA
+
+
+def _fact_panic(games: list[dict]) -> tuple[int, int, dict, bool]:
+    n = extreme = helped = eligible = 0
+    for record in games:
+        reactions = [r for agent in record["result"].get("agents") or []
+                     for r in agent.get("reactions") or [] if r.get("action") != DISASTER_OTHER]
+        if not reactions:
+            continue
+        eligible += 1
+        n += len(reactions)
+        extreme += sum(1 for r in reactions if r.get("panic") == 5)
+        helped += sum(1 for r in reactions if r.get("help"))
+    share = extreme / n if n else None
+    rate = helped / n if n else None
+    values = {"extreme_share": None if share is None else round(share, 4),
+              "help_rate": None if rate is None else round(rate, 4)}
+    return eligible, n, values, bool(n) and share <= PANIC_EXTREME_MAX and rate >= HELP_RATE_MIN
+
+
+def _fact_continued_influence(games: list[dict]) -> tuple[int, int, dict, bool]:
+    """Belief before and after the one correction a believer can receive.
+
+    A rumor node speaks a second time only when it believed the rumor and
+    was then told it is false, so two entries in ``beliefs`` are exactly a
+    corrected believer. Games archived before ``beliefs`` existed are skipped.
+    """
+    pairs: list[tuple[int, int]] = []
+    eligible = 0
+    for record in games:
+        nodes = record["result"].get("nodes") or []
+        if not any("beliefs" in node for node in nodes):
+            continue
+        eligible += 1
+        pairs += [(int(b[0]), int(b[1])) for node in nodes
+                  for b in [node.get("beliefs") or []] if len(b) >= 2]
+    down = sum(1 for before, after in pairs if after < before)
+    up = sum(1 for before, after in pairs if after > before)
+    p = binom_upper_p(down, down + up) if down + up else None
+    pre = statistics.fmean(b for b, _ in pairs) if pairs else None
+    post = statistics.fmean(a for _, a in pairs) if pairs else None
+    residual = post / pre if pre else None
+    values = {"down": down, "up": up, "p": None if p is None else float(f"{p:.3g}"),
+              "before": None if pre is None else round(pre, 1),
+              "after": None if post is None else round(post, 1),
+              "residual": None if residual is None else round(residual, 4)}
+    ok = p is not None and p < B_ALPHA and residual is not None and residual >= CIE_RESIDUAL_MIN
+    return eligible, len(pairs), values, ok
+
+
+_FACT_FNS = {
+    "referendum_conformity": _fact_conformity,
+    "disaster_panic_rare": _fact_panic,
+    "rumor_continued_influence": _fact_continued_influence,
+}
+
+
+def track_b_games(games_dir: Path) -> dict:
+    """Track B (games level): the pre-registered facts over every archived game."""
+    games, unreadable = load_games(games_dir)
+    facts = []
+    for spec in B_FACTS:
+        eligible, units, values, ok = _FACT_FNS[spec["id"]](games.get(spec["kind"], []))
+        if eligible < MIN_GAMES:
+            reproduced, abstain = None, f"可用对局 {eligible}/{MIN_GAMES}"
+        elif units < spec["min_units"]:
+            reproduced, abstain = None, f"样本 {units}/{spec['min_units']} {spec['unit']}"
+        else:
+            reproduced, abstain = bool(ok), ""
+        facts.append({**spec, "grade": "c", "games": eligible, "units": units,
+                      "values": values, "reproduced": reproduced, "abstain": abstain})
+    providers: dict[str, int] = {}
+    for record in (r for kind in GAME_KINDS for r in games.get(kind, [])):
+        name = record.get("provider") or "未记录"
+        providers[name] = providers.get(name, 0) + 1
+    assessed = [f for f in facts if f["reproduced"] is not None]
+    out = {"track": "B", "level": "games", "games_dir": _repo_relative(games_dir),
+           "games": {kind: len(games.get(kind, [])) for kind in GAME_KINDS},
+           "unreadable": unreadable, "providers": providers, "facts": facts,
+           "n_assessed": len(assessed),
+           "n_reproduced": sum(1 for f in assessed if f["reproduced"])}
+    if not assessed:
+        return {**out, "status": "n/a",
+                "note": f"对局不足（每条需 ≥{MIN_GAMES} 局可用对局，见报告）"}
+    score = out["n_reproduced"] / len(B_FACTS)  # abstentions count against it
+    return {**out, "status": "ok", "score": round(score, 4), "pass": score >= B_PASS,
+            "coverage": round(len(assessed) / len(B_FACTS), 4)}
+
+
+# ── Track D: can people tell residents from people? ──────────────────────────
+#
+# The 谁是真人 game (gaworld/apps/whois_api.py) seats residents and people in
+# one anonymous group chat; after it, every person marks each other number
+# human or resident. Revealed rooms are archived to output/games/whois/*.json.
+# This is the one Track D signal that is not a model judging a model: the
+# judges are people. Of the design's four Track D dimensions (an LLM-judge
+# scorecard) none is implemented yet; this is a fifth, human-judged one.
+#
+#   score_D = min(1, P(resident judged human) / P(person judged human))
+#
+# 1.0 = people mistake residents for people as often as they recognise each
+# other. Pass at 0.7 (design §2). Read with the cues: residents are asked for
+# short spoken messages and are not told about the guessing; judges are
+# fellow players; one judge casts several ballots, so the intervals below
+# (Wilson, per ballot) are optimistic.
+D_MIN_ROOMS = 5
+D_MIN_RESIDENT_JUDGMENTS = 20
+D_MIN_HUMAN_JUDGMENTS = 10
+D_PASS = 0.7
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
+    """Wilson score interval for k successes in n trials."""
+    if n <= 0:
+        return None
+    p = k / n
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4)
+
+
+def track_d_whois(games_dir: Path) -> dict:
+    """Track D (human judges): residents' pass rate against people's own."""
+    rooms, unreadable = [], 0
+    for path in sorted((games_dir / "whois").glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            unreadable += 1
+            continue
+        res = ((record.get("result") or {}).get("results") if isinstance(record, dict) else None)
+        if isinstance(res, dict):
+            rooms.append(record)
+        else:
+            unreadable += 1
+    sums = {"resident_judged_human": 0, "resident_judgments": 0, "human_judged_human": 0, "human_judgments": 0}
+    correct = total = 0
+    providers: dict[str, int] = {}
+    for record in rooms:
+        res = record["result"]["results"]
+        for key in sums:
+            sums[key] += int(res.get(key) or 0)
+        for judge in res.get("judges") or []:
+            correct += int(judge.get("correct") or 0)
+            total += int(judge.get("total") or 0)
+        name = record.get("provider") or "未记录"
+        providers[name] = providers.get(name, 0) + 1
+    rn, hn = sums["resident_judgments"], sums["human_judgments"]
+    out = {
+        "track": "D", "level": "human_judges", "games_dir": _repo_relative(games_dir),
+        "rooms": len(rooms), "unreadable": unreadable, "providers": providers, **sums,
+        "resident_pass_rate": round(sums["resident_judged_human"] / rn, 4) if rn else None,
+        "resident_ci": wilson(sums["resident_judged_human"], rn),
+        "human_rate": round(sums["human_judged_human"] / hn, 4) if hn else None,
+        "human_ci": wilson(sums["human_judged_human"], hn),
+        "accuracy": round(correct / total, 4) if total else None,
+        "dimensions": "人类判别（设计里的四个 LLM 评审维度未实现）",
+    }
+    short = []
+    if len(rooms) < D_MIN_ROOMS:
+        short.append(f"对局 {len(rooms)}/{D_MIN_ROOMS}")
+    if rn < D_MIN_RESIDENT_JUDGMENTS:
+        short.append(f"对居民的判断 {rn}/{D_MIN_RESIDENT_JUDGMENTS}")
+    if hn < D_MIN_HUMAN_JUDGMENTS:
+        short.append(f"对真人的判断 {hn}/{D_MIN_HUMAN_JUDGMENTS}")
+    if short or not out["human_rate"]:
+        return {**out, "status": "n/a", "abstain": "；".join(short) or "真人从没被判成真人，没有对照",
+                "note": "「谁是真人」对局不足（见报告）"}
+    score = min(1.0, out["resident_pass_rate"] / out["human_rate"])
+    return {**out, "status": "ok", "score": round(score, 4), "pass": score >= D_PASS}
+
+
 # ── Scorecard ────────────────────────────────────────────────────────────────
-def build_scorecard(tracks: dict) -> dict:
+#: Where a fixture scorecard goes. Kept apart from the headline card so that a
+#: pipeline check can never be read as a simulation result (it once was: the
+#: 2026-09-25 headline "OK / 0.9361" was the --synthetic fixture).
+SYNTHETIC_DIR = RESULTS_DIR / "synthetic"
+
+
+def _git_info() -> dict:
+    """{commit, dirty} of the repo the scored outputs came from (best effort)."""
+    def run(*args):
+        try:
+            # --no-optional-locks: a read must never leave .git/index.lock
+            # behind (it did, from a sandbox that cannot unlink).
+            p = subprocess.run(["git", "--no-optional-locks", *args], cwd=str(PROJECT_ROOT),
+                               capture_output=True, text=True, timeout=5, check=False)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return p.stdout.strip() if p.returncode == 0 else None
+    commit = run("rev-parse", "HEAD")
+    if not commit:
+        return {}
+    return {"commit": commit, "dirty": bool(run("status", "--porcelain"))}
+
+
+def _repo_relative(value):
+    """Paths inside the repo are recorded relative to it, so a card reads the
+    same on the machine that wrote it and the one that opens it."""
+    if not isinstance(value, Path):
+        return value
+    try:
+        return str(value.resolve().relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(value)
+
+
+def build_provenance(*, synthetic: bool, inputs: dict) -> dict:
+    """Where the scored numbers came from. ``source`` decides the trust gate."""
+    return {
+        "source": "synthetic" if synthetic else "real",
+        "inputs": {k: _repo_relative(v) for k, v in inputs.items() if v is not None},
+        "git": _git_info(),
+        "argv": sys.argv[1:],
+    }
+
+
+def build_scorecard(tracks: dict, provenance: dict | None = None) -> dict:
     implemented = {k: v for k, v in tracks.items()
                    if isinstance(v, dict) and v.get("status") == "ok"}
     composite = (statistics.fmean([v["score"] for v in implemented.values()])
@@ -617,12 +1046,32 @@ def build_scorecard(tracks: dict) -> dict:
     # never-tested determinism is UNVERIFIED, not a free OK.
     det_status = tracks.get("C", {}).get("det_status")  # ok / fail / unassessed / None
     trust = {"fail": "UNTRUSTWORTHY", "ok": "OK"}.get(det_status, "UNVERIFIED")
+    reasons = {"fail": ["确定性失败：同种子两次运行结果不一致"],
+               "ok": []}.get(det_status, ["确定性未测（未提供 --det-a/--det-b）"])
+    # Comparisons produced by older code measure that code, not this one; a
+    # card mixing them describes no single version of the model.
+    epochs = tracks.get("C", {}).get("epochs") or {}
+    stale = sorted(name for name, epoch in epochs.items() if epoch != CURRENT_EPOCH)
+    if stale:
+        reasons.append(f"{len(stale)}/{len(epochs)} 个对照不是当前代码版本（版本 {CURRENT_EPOCH}）产生的："
+                       + "、".join(f"{n}={epochs[n] if epochs[n] is not None else '未标'}" for n in stale)
+                       + " → 用 --run 重跑")
+        if trust == "OK":
+            trust = "UNVERIFIED"
+    provenance = provenance or {"source": "unspecified"}
+    if provenance.get("source") == "synthetic":
+        # Fixtures exercise the scoring code, not the simulator. Their numbers
+        # are chosen to pass, so no gate value may suggest they are evidence.
+        trust = "FIXTURE"
+        reasons = ["合成夹具：只验证评测代码路径"]
     passed = [k for k, v in implemented.items() if v.get("pass")]
     headline = (min(passed, key=lambda k: implemented[k]["score"])
                 if passed else None)
     return {
         "generated": datetime.now().isoformat(timespec="seconds"),
         "trust_gate": trust,
+        "trust_reasons": reasons,
+        "provenance": provenance,
         "fast": bool(tracks.get("C", {}).get("fast", False)),  # low-fidelity (--fast) run?
         "composite_hint": round(composite, 4) if composite is not None else None,
         "headline_track": headline,
@@ -631,17 +1080,31 @@ def build_scorecard(tracks: dict) -> dict:
     }
 
 
+def _pct(value) -> str:
+    return "—" if value is None else f"{value:.0%}"
+
+
 def render_scorecard_md(sc: dict) -> str:
     L = ["# GAWorld-Bench Scorecard", "",
          f"- generated: {sc['generated']}",
-         f"- **trust gate: {sc['trust_gate']}**",
+         f"- **trust gate: {sc['trust_gate']}**"
+         + (f"（{'；'.join(sc['trust_reasons'])}）" if sc.get("trust_reasons") else ""),
          f"- composite hint: {sc['composite_hint']}  _(trend only, 弱证据)_",
          f"- headline (weakest passing track): {sc['headline_track']}"]
+    prov = sc.get("provenance") or {}
+    git = prov.get("git") or {}
+    L.append(f"- 数据来源: `{prov.get('source', 'unspecified')}`"
+             + (f" · git `{git['commit'][:8]}`{'（有未提交改动）' if git.get('dirty') else ''}"
+                if git.get("commit") else ""))
+    if sc["trust_gate"] == "FIXTURE":
+        L.insert(2, "> ⚠️ **合成夹具（--synthetic）**：数字是为让每条检查都通过而预设的，"
+                    "只证明评测代码能跑通，**不是 GAWorld 仿真结果**，不得引用。")
+        L.insert(3, "")
     if sc.get("fast"):
         L.append("- ⚡ **低保真运行（--fast）**：确定性认知 + 跳过每日总结/日记 + 3 agent；"
                  "结论仅供快速定向，勿当全保真结果。")
     L += ["", "| Track | 命题 | score | pass |", "|---|---|---|---|"]
-    names = {"A": "宏观经验拟合", "B": "Stylized-facts", "C": "因果反事实 ⭐",
+    names = {"A": "宏观经验拟合", "B": "Stylized-facts（对局层）", "C": "因果反事实 ⭐",
              "D": "可信度一致性", "E": "可复现/成本"}
     for k in ("A", "B", "C", "D", "E"):
         t = sc["tracks"].get(k, {})
@@ -668,17 +1131,51 @@ def render_scorecard_md(sc: dict) -> str:
         L += ["", head + f" · 安慰剂 {'未评估' if plc is None else plc} · 确定性 {det_status}"]
         if c.get("incomplete"):
             L.append(f"- ⚠️ 运行未完成（缺 comparison_metrics.csv）: {', '.join(c['incomplete'])}")
+    b = sc["tracks"].get("B", {})
+    if b.get("facts"):
+        rest = len(b["facts"]) - b["n_assessed"]
+        L.append(f"- Track B[对局层]: 复现 {b['n_reproduced']}/{b['n_assessed']} 条可评"
+                 + (f"（另 {rest} 条弃权）" if rest else "") + " · 对局 "
+                 + " / ".join(f"{k} {n}" for k, n in b["games"].items())
+                 + (f" · ⚠️ 混合 {len(b['providers'])} 个模型" if len(b.get("providers") or {}) > 1 else ""))
+    d = sc["tracks"].get("D", {})
+    if d.get("level") == "human_judges":
+        L.append(f"- Track D[人类判别]: 居民被判为真人 {_pct(d.get('resident_pass_rate'))}"
+                 f"（{d.get('resident_judgments', 0)} 次判断）· 真人被判为真人 {_pct(d.get('human_rate'))}"
+                 f"（{d.get('human_judgments', 0)} 次）· 对局 {d.get('rooms', 0)}"
+                 + (f" · ⚠️ 混合 {len(d['providers'])} 个模型" if len(d.get("providers") or {}) > 1 else ""))
+    # MECHANISM_PROVENANCE rule 3: every cited metric with its weakest dependency.
+    sourced = []
+    a = sc["tracks"].get("A", {})
+    if a.get("status") == "ok":
+        for key, m in sorted((a.get("metrics") or {}).items()):
+            if m.get("grade"):
+                sourced.append(f"- `{key}` ({m['grade']})：{m.get('weakest', '')}"
+                               + (f" ⚠️ **回显**：{m['echo']}" if m.get("echo") else ""))
+    if c.get("status") == "ok" and c.get("provenance"):
+        sourced.append(f"- Track C 各项（{'、'.join(sorted({t['metric'] for t in c.get('sign', {}).get('tests', [])}))}）"
+                       f" ({c['provenance']['grade']})：{c['provenance']['weakest']}")
+    if b.get("status") == "ok":
+        sourced.append("- Track B 各条 (c)：模型扮演居民对一段提示词的一步回应，提示词里各有线索（见报告）；"
+                       "不是 agent→环境→agent 回路的涌现")
+    if sourced:
+        L += ["", "**指标来源**（最弱一级依赖，定义见 MECHANISM_PROVENANCE.md；(c) 不得单独立论）", *sourced]
     return "\n".join(L) + "\n"
 
 
+def _results_dir_for(sc: dict) -> Path:
+    return SYNTHETIC_DIR if sc.get("trust_gate") == "FIXTURE" else RESULTS_DIR
+
+
 def save_scorecard(sc: dict) -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    (RESULTS_DIR / "scorecard.json").write_text(
+    out = _results_dir_for(sc)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "scorecard.json").write_text(
         json.dumps(sc, indent=2, ensure_ascii=False), encoding="utf-8")
-    (RESULTS_DIR / "scorecard.md").write_text(
+    (out / "scorecard.md").write_text(
         render_scorecard_md(sc), encoding="utf-8")
-    print(f"[bench] wrote {RESULTS_DIR/'scorecard.json'}")
-    print(f"[bench] wrote {RESULTS_DIR/'scorecard.md'}")
+    print(f"[bench] wrote {out/'scorecard.json'}")
+    print(f"[bench] wrote {out/'scorecard.md'}")
 
 
 # ── Report + data-driven improvement suggestions ─────────────────────────────
@@ -701,7 +1198,10 @@ def _report_track_a(t: dict) -> tuple[list[str], list[str]]:
     for key, m in sorted(metrics.items(), key=lambda kv: kv[1]["score"]):
         mark = "✓" if m["score"] >= 0.8 else "✗"
         lines.append(f"- `{key}`: sim {m['sim']} vs 锚点 {m['anchor']} "
-                     f"(误差 {m['rel_err'] * 100:.1f}%) {mark}  _{m['source']}_")
+                     f"(误差 {m['rel_err'] * 100:.1f}%) {mark}  _{m['source']}_"
+                     + (f"（计算范围：{m['population']}）" if m.get("population") else "")
+                     + (f" · 来源 ({m['grade']})" if m.get("grade") else "")
+                     + (" · ⚠️ 回显" if m.get("echo") else ""))
         if worst is None or m["score"] < worst[1]["score"]:
             worst = (key, m)
     if worst and worst[1]["score"] < 0.8:
@@ -711,7 +1211,12 @@ def _report_track_a(t: dict) -> tuple[list[str], list[str]]:
         recs.append(f"主要拖累项 `{k}`（误差 {m['rel_err'] * 100:.1f}%）：{tip}，再校准锚点/容差。")
     if n is not None and n < 10:
         recs.append(f"样本仅 {n} 个，统计不稳；增大 agent 数或延长仿真天数后再评估宏观拟合。")
-    recs.append("提醒：Track A 属弱证据（验证的是写进模型的参数），强证据看 Track C。")
+    echoes = sorted(k for k, m in metrics.items() if m.get("echo"))
+    if echoes:
+        recs.append(f"{'、'.join(f'`{k}`' for k in echoes)} 是输入回显：快照里记的是按收入查 engel_curve 的预算参数。"
+                    "改从实际分类消费（食品支出 / 总消费、1 − 支出 / 收入）计算之前，这几项拟合得再好也不是模型证据。")
+    recs.append("提醒：Track A 属弱证据（验证的是写进模型的参数）。Track C 的指标同为 (c) 级——"
+                "事件影响由模型判断给出，见「指标来源」。")
     return lines, recs
 
 
@@ -725,6 +1230,7 @@ def _report_track_c_multiseed(t: dict) -> tuple[list[str], list[str]]:
         return lines, recs
     lines.append(f"符号 {sign.get('n_correct')}/{sign.get('n_significant')} 显著且正确"
                  f"（显著覆盖 {t.get('significance_coverage')}，数据覆盖 {t.get('coverage')}，95%CI）。")
+    lines += _provenance_lines(t)
     ns = []
     for r in sign.get("tests", []):
         if r["n"] == 0:
@@ -750,6 +1256,11 @@ def _report_track_c_multiseed(t: dict) -> tuple[list[str], list[str]]:
     return lines, recs
 
 
+def _provenance_lines(t: dict) -> list[str]:
+    prov = t.get("provenance") or {}
+    return [f"指标来源 ({prov['grade']})：{prov['weakest']}。"] if prov.get("grade") else []
+
+
 def _track_c_common_recs(t: dict, recs: list[str]) -> None:
     if t.get("incomplete"):
         recs.append(f"补跑未完成的对照（{', '.join(t['incomplete'])}）。")
@@ -772,6 +1283,7 @@ def _report_track_c(t: dict) -> tuple[list[str], list[str]]:
     sign = t.get("sign", {})
     lines.append(f"符号 {sign.get('n_correct')}/{sign.get('n_eval')} 正确"
                  f"（覆盖 {t.get('coverage')}，按 `{sign.get('effect_col')}` 事件后效应）。")
+    lines += _provenance_lines(t)
     failed = []
     for r in sign.get("tests", []):
         if r["delta"] is None:
@@ -810,6 +1322,80 @@ def _report_track_c(t: dict) -> tuple[list[str], list[str]]:
     return lines, recs
 
 
+def _fact_detail(f: dict) -> str:
+    v = f.get("values") or {}
+    if f["id"] == "referendum_conformity":
+        return f"朝多数 {v.get('toward')} / 背离 {v.get('away')}" + ("" if v.get("p") is None else f"，p={v['p']:.3g}")
+    if f["id"] == "disaster_panic_rare":
+        if v.get("extreme_share") is None:
+            return "无反应"
+        return f"极度恐慌 {v['extreme_share']:.0%}，互助 {v['help_rate']:.0%}（{f['units']} 条反应）"
+    if v.get("before") is None:
+        return "无被辟谣的相信者"
+    return (f"{f['units']} 人：下降 {v.get('down')} / 上升 {v.get('up')}"
+            + ("" if v.get("p") is None else f"，p={v['p']:.3g}")
+            + f"；平均相信 {v['before']}% → {v['after']}%（残留 {v['residual']:.0%}）")
+
+
+def _report_track_b(t: dict) -> tuple[list[str], list[str]]:
+    lines, recs = [], []
+    lines.append("对局：" + " / ".join(f"{k} {n}" for k, n in t["games"].items())
+                 + f"（`{t['games_dir']}`）"
+                 + (f"；{t['unreadable']} 个文件读不了" if t.get("unreadable") else ""))
+    lines.append("层级：居民看到众人的表态 / 邻居的行动 / 一次辟谣后，对一段提示词的一步回应——"
+                 "不是 agent→环境→agent 回路的涌现（那一类见 `trackb_spatial.py`）。各条都是 (c) 级，只读定性结论。")
+    providers = t.get("providers") or {}
+    if len(providers) > 1:
+        lines.append("⚠️ 混合了 " + "、".join(f"{k} {n} 局" for k, n in providers.items())
+                     + "：合并检验把不同模型当成一个总体。")
+        recs.append("对局来自多个模型：按模型分开存档目录（`--games-dir`）各评一次，再比较。")
+    for f in t["facts"]:
+        mark = {True: "✓ 复现", False: "✗ 未复现", None: "○ 弃权"}[f["reproduced"]]
+        why = f"（{f['abstain']}）" if f["abstain"] else f"：{_fact_detail(f)}"
+        lines.append(f"- `{f['id']}` {f['name']} — {mark}{why}")
+        lines.append(f"  - 判据：{f['criterion']}。参照：{f['reference']}")
+        lines.append(f"  - 提示词线索：{f['cue']}")
+        if f["reproduced"] is None:
+            extra = f"，{f['advice']}" if f.get("advice") else ""
+            recs.append(f"`{f['id']}` 弃权（{f['abstain']}）→ 在游乐场多玩几局 {f['kind']}{extra}。")
+        elif not f["reproduced"]:
+            recs.append(f"`{f['id']}` 未复现（{_fact_detail(f)}）→ 先看上面的提示词线索是否在起作用；"
+                        "不要为了凑出规律去改提示词。")
+    return lines, recs
+
+
+def _report_track_d(t: dict) -> tuple[list[str], list[str]]:
+    lines, recs = [], []
+    lines.append(f"「谁是真人」对局 {t['rooms']} 局（`{t['games_dir']}/whois`）"
+                 + (f"；{t['unreadable']} 个文件读不了" if t.get("unreadable") else ""))
+
+    def ci(pair):
+        return "" if not pair else f"，95% 区间 {pair[0]:.0%}–{pair[1]:.0%}"
+
+    lines.append(f"- 居民被判为真人：{t['resident_judged_human']}/{t['resident_judgments']}"
+                 f"（{_pct(t.get('resident_pass_rate'))}{ci(t.get('resident_ci'))}）")
+    lines.append(f"- 真人被判为真人：{t['human_judged_human']}/{t['human_judgments']}"
+                 f"（{_pct(t.get('human_rate'))}{ci(t.get('human_ci'))}）")
+    if t.get("accuracy") is not None:
+        lines.append(f"- 判断准确率 {_pct(t['accuracy'])}（50% 上下就是分不出来）")
+    if t.get("status") == "ok":
+        lines.append(f"- score_D = min(1, 居民 ÷ 真人) = {t['score']}（≥ {D_PASS} 算通过）")
+    else:
+        lines.append(f"- 弃权：{t.get('abstain')}")
+        recs.append(f"「谁是真人」样本不足（{t.get('abstain')}）→ 在游戏场多开几局，每局至少两个真人座位"
+                    "（只有一个真人时没人判断真人，没有对照）。")
+    lines.append("- 线索：居民被要求短句、口语，且不知道有人在猜；评委是同桌玩家；一位评委投多张票，区间偏乐观。"
+                 "设计里 Track D 的四个 LLM 评审维度未实现，这是另加的人类判别维度。")
+    providers = t.get("providers") or {}
+    if len(providers) > 1:
+        lines.append("⚠️ 混合了 " + "、".join(f"{k} {n} 局" for k, n in providers.items()) + "。")
+        recs.append("对局来自多个模型：按模型分开存档目录各评一次。")
+    if t.get("status") == "ok" and not t.get("pass"):
+        recs.append("居民比真人更容易被认出来 → 先读几局的对话找出破绽（太长、太完整、没有自己的生活细节），"
+                    "再决定改人设还是改提示词；改提示词换来的分数要另起一批对局评。")
+    return lines, recs
+
+
 def generate_report(sc: dict) -> str:
     tr = sc["tracks"]
     overview = "\n".join(render_scorecard_md(sc).splitlines()[1:])  # reuse table, drop H1
@@ -817,25 +1403,35 @@ def generate_report(sc: dict) -> str:
          "## 结果概览", overview, "",
          "## 分项诊断与建议", ""]
     next_steps: list[str] = []
-    if sc["trust_gate"] != "OK":
-        next_steps.append("【信任门槛】确定性失败 → 先修随机源，结果暂不可信。")
+    gate_step = {
+        "FIXTURE": "【信任门槛】这是合成夹具，只验证评测代码路径 → 要评测模型请去掉 --synthetic 重跑。",
+        "UNTRUSTWORTHY": "【信任门槛】确定性失败 → 先修随机源，结果暂不可信。",
+        "UNVERIFIED": "【信任门槛】" + "；".join(sc.get("trust_reasons") or ["未验证"]) + " → 补齐之前结论只算未验证。",
+    }.get(sc["trust_gate"])
+    if gate_step:
+        next_steps.append(gate_step)
 
-    names = {"A": "宏观经验拟合", "C": "因果反事实 ⭐"}
-    builders = {"A": _report_track_a, "C": _report_track_c}
-    for k in ("C", "A"):  # core track first
+    names = {"A": "宏观经验拟合", "B": "Stylized-facts（对局层）", "C": "因果反事实 ⭐", "D": "可信度（人类判别）"}
+    builders = {"A": _report_track_a, "B": _report_track_b, "C": _report_track_c, "D": _report_track_d}
+    for k in ("C", "B", "D", "A"):  # core track first
         t = tr.get(k, {})
-        if t.get("status") != "ok":
+        # B and D report their abstentions too
+        if t.get("status") != "ok" and not t.get("facts") and t.get("level") != "human_judges":
             continue
-        verdict = "PASS" if t.get("pass") else "FAIL"
+        if t.get("status") == "ok":
+            verdict = f"{t.get('score')} {'PASS' if t.get('pass') else 'FAIL'}"
+        else:
+            verdict = "未评估"
         diag, recs = builders[k](t)
-        L += [f"### Track {k} — {names[k]} — {t.get('score')} {verdict}", *diag, ""]
+        L += [f"### Track {k} — {names[k]} — {verdict}", *diag, ""]
         if recs:
             L += ["建议：", *[f"{i}. {r}" for i, r in enumerate(recs, 1)], ""]
         next_steps += [f"【Track {k}】{r}" for r in recs]
 
-    na = [k for k in ("B", "D", "E") if tr.get(k, {}).get("status") != "ok"]
+    na = [k for k in ("B", "D", "E") if tr.get(k, {}).get("status") != "ok"
+          and not tr.get(k, {}).get("facts") and tr.get(k, {}).get("level") != "human_judges"]
     if na:
-        L += [f"### 未实现：Track {', '.join(na)}",
+        L += [f"### 未评估：Track {', '.join(na)}",
               "这些有效性维度尚未评估，当前结论存在盲区（见设计文档路线图 §7）。", ""]
 
     L += ["## 下一步（按优先级）", ""]
@@ -844,14 +1440,15 @@ def generate_report(sc: dict) -> str:
 
 
 def save_report(sc: dict) -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = _results_dir_for(sc)
+    out.mkdir(parents=True, exist_ok=True)
     md = generate_report(sc)
-    (RESULTS_DIR / "report.md").write_text(md, encoding="utf-8")
-    archive = RESULTS_DIR / "reports"
+    (out / "report.md").write_text(md, encoding="utf-8")
+    archive = out / "reports"
     archive.mkdir(exist_ok=True)
     ts = sc["generated"].replace(":", "").replace("-", "")
     (archive / f"report_{ts}.md").write_text(md, encoding="utf-8")
-    print(f"[bench] wrote {RESULTS_DIR/'report.md'} (+ archive copy)")
+    print(f"[bench] wrote {out/'report.md'} (+ archive copy)")
 
 
 # ── Synthetic fixtures (verification / no-LLM trial) ─────────────────────────
@@ -888,10 +1485,47 @@ def make_synthetic(root: Path) -> dict:
         with open(st / fn, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f); w.writerow(["agent_id", "step", "metric", "value"])
             w.writerows(rows)
-    return {"output_dir": root / "output",
+    games = make_synthetic_games(root / "output" / "games")
+    return {"output_dir": root / "output", "games_dir": games,
             "sign_sources": {k: comps / k for k in fixtures},
             "placebo_dir": placebo, "det_a": st / "baseline_run_a.csv",
             "det_b": st / "baseline_run_b.csv"}
+
+
+def make_synthetic_games(games_dir: Path) -> Path:
+    """Five archived games per kind, shaped like the real archive, chosen to
+    reproduce all three Track B facts and pass Track D."""
+    def vote(stance):
+        return {"stance": stance, "strength": 60, "say": ""}
+
+    def game(kind, i, result):
+        folder = games_dir / kind
+        folder.mkdir(parents=True, exist_ok=True)
+        record = {"kind": kind, "job_id": f"{kind}-{i:08x}", "provider": "synthetic", "result": result}
+        (folder / f"20261003-00000{i}-{kind}.json").write_text(
+            json.dumps(record, ensure_ascii=False), encoding="utf-8")
+
+    private = ["支持", "支持", "支持", "反对", "反对", "弃权"]
+    public = ["支持", "支持", "支持", "支持", "反对", "支持"]  # two moves toward the majority
+    for i in range(MIN_GAMES):
+        game("referendum", i, {"campaign": "", "voters": [
+            {"agent_id": n, "private": vote(a), "public": vote(b)}
+            for n, (a, b) in enumerate(zip(private, public, strict=True), 1)]})
+        game("disaster", i, {"agents": [
+            {"agent_id": 1, "reactions": [{"action": "打探消息", "panic": 3, "help": True},
+                                          {"action": "救助他人", "panic": 2, "help": True}]},
+            {"agent_id": 2, "reactions": [{"action": "囤积物资", "panic": 4, "help": False},
+                                          {"action": "照常生活", "panic": 3, "help": True}]}]})
+        game("rumor", i, {"nodes": [
+            {"agent_id": 1, "beliefs": [80, 40]},
+            {"agent_id": 2, "beliefs": [90, 30]},
+            {"agent_id": 3, "beliefs": [20]}]})
+        # Two people, three residents; each person marks the other four.
+        game("whois", i, {"results": {
+            "resident_judged_human": 5, "resident_judgments": 6,
+            "human_judged_human": 2, "human_judgments": 2,
+            "judges": [{"alias": "1号", "correct": 3, "total": 4}, {"alias": "4号", "correct": 2, "total": 4}]}})
+    return games_dir
 
 
 def make_synthetic_multiseed() -> dict[tuple[str, str], list[float]]:
@@ -918,13 +1552,30 @@ def _write_metrics(path: Path, deltas: list[tuple[str, float]]) -> None:
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
+def _default_output_dir() -> Path:
+    """The run root a fresh simulator process would write to: ``output/``, or
+    ``output/cities/<slug>/`` once a city is selected. Plain ``output/`` is
+    stale after a city switch (and is where the test suite used to write)."""
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    try:
+        from gaworld.settings import CONFIG
+        root = CONFIG.get("run_output_dir") or "output"
+    except Exception as exc:  # fall back rather than refuse to score
+        print(f"[bench] WARN: could not read the simulator config ({exc}); scoring output/")
+        root = "output"
+    return PROJECT_ROOT / root
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="GAWorld-Bench harness (v0.1)")
-    p.add_argument("--track", choices=["A", "C"], help="run a single track")
+    p.add_argument("--track", choices=["A", "B", "C", "D"], help="run a single track")
     p.add_argument("--all", action="store_true", help="run all implemented tracks")
     p.add_argument("--synthetic", action="store_true",
                    help="fabricate fixtures and run without LLM/sim")
     p.add_argument("--output-dir", type=Path, help="sim output dir (Track A)")
+    p.add_argument("--games-dir", type=Path,
+                   help="Track B: archived playground games (default: output/games)")
     p.add_argument("--comparisons-root", type=Path, help="Track C: read existing comparisons dir")
     p.add_argument("--placebo-dir", type=Path, help="Track C: placebo comparison dir")
     p.add_argument("--det-a", type=Path, help="Track C: baseline state file A")
@@ -946,20 +1597,28 @@ def main() -> int:
     if args.synthetic:
         fx = make_synthetic(Path(tempfile.mkdtemp(prefix="gaworld_bench_")))
         args.output_dir = args.output_dir or fx["output_dir"]
+        args.games_dir = args.games_dir or fx["games_dir"]
         syn_sign_sources = fx["sign_sources"]
         args.placebo_dir = args.placebo_dir or fx["placebo_dir"]
         args.det_a = args.det_a or fx["det_a"]
         args.det_b = args.det_b or fx["det_b"]
 
     run_a = args.all or args.track == "A"
+    run_b = args.all or args.track == "B"
     run_c = args.all or args.track == "C"
-    if not (run_a or run_c):
-        run_a = run_c = True  # default: everything implemented
+    run_d = args.all or args.track == "D"
+    if not (run_a or run_b or run_c or run_d):
+        run_a = run_b = run_c = run_d = True  # default: everything implemented
 
     tracks: dict = {}
     if run_a:
-        out_dir = args.output_dir or (PROJECT_ROOT / "output")  # sensible default
+        out_dir = args.output_dir or _default_output_dir()
         tracks["A"] = track_a_macro_fit(out_dir)
+    games_dir = args.games_dir or GAMES_DIR
+    if run_b:
+        tracks["B"] = track_b_games(games_dir)
+    if run_d:
+        tracks["D"] = track_d_whois(games_dir)
     if run_c:
         if seeds is not None:  # A2 multi-seed significance mode
             if args.synthetic:
@@ -989,11 +1648,19 @@ def main() -> int:
             else:
                 tracks["C"] = track_c_causal(ss, placebo, args.det_a, args.det_b,
                                              incomplete=incomplete)
-    tracks.setdefault("B", {"status": "n/a", "note": "未实现 (v0.3)"})
-    tracks.setdefault("D", {"status": "n/a", "note": "未实现 (v0.4)"})
+    tracks.setdefault("B", {"status": "n/a", "note": "未运行（--track B）"})
+    tracks.setdefault("D", {"status": "n/a", "note": "未运行（--track D）"})
     tracks.setdefault("E", {"status": "n/a", "note": "确定性见 Track C; 成本未实现 (v0.2)"})
 
-    sc = build_scorecard(tracks)
+    provenance = build_provenance(synthetic=args.synthetic, inputs={
+        "output_dir": out_dir if run_a else None,
+        "games_dir": games_dir if (run_b or run_d) else None,
+        "comparisons_root": (args.comparisons_root or COMPARISONS_OUT)
+        if run_c and not (args.synthetic or args.run or args.resume) else None,
+        "placebo_dir": args.placebo_dir, "det_a": args.det_a, "det_b": args.det_b,
+        "live_run": bool(args.run or args.resume) or None,
+    })
+    sc = build_scorecard(tracks, provenance)
     save_scorecard(sc)
     save_report(sc)  # every run emits a report with improvement suggestions
     print("\n" + render_scorecard_md(sc))

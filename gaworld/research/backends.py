@@ -15,21 +15,33 @@ reason ``workbench.analyze`` takes ``llm_fn``.
 
 from __future__ import annotations
 
+import csv
 import json
 import os
+import subprocess
+import sys
 import threading
 import time
 from collections.abc import Callable
 from typing import Any
 
+from gaworld.logging_setup import get_logger
 from gaworld.parallel import runner as prunner
 from gaworld.parallel.spec import ExperimentSpec, normalize_experiment
+from gaworld.research import survey as survey_mod
 from gaworld.research.protocol import Protocol
+
+_LOG = get_logger("gaworld.research.backends")
 
 #: ``(progress 0..1, message)``
 ReportFn = Callable[[float, str], None]
 #: ``(spec, seed, report) -> {"root", "id", "status", "world_status", "report"}``
 SeedRunner = Callable[[ExperimentSpec, int, ReportFn], dict[str, Any]]
+#: ``(protocol, seed run, report) -> {world_id: {"scores": {measure: {...}}, ...}}``
+SurveyRunner = Callable[[Protocol, dict[str, Any], ReportFn], dict[str, Any]]
+
+#: Of each seed's slice of the progress bar, how much the survey takes.
+_SURVEY_SHARE = 0.2
 
 
 def experiment_payload(protocol: Protocol, seed: int, *, name: str = "") -> dict[str, Any]:
@@ -51,6 +63,7 @@ def experiment_payload(protocol: Protocol, seed: int, *, name: str = "") -> dict
                 "events": [dict(event) for event in cond.get("events") or []],
                 "config": dict(cond.get("config") or {}),
                 "note": cond.get("role", ""),
+                "role": cond.get("role", ""),
             }
             for cond in protocol.conditions
         ],
@@ -67,6 +80,7 @@ def run_protocol(
     protocol: Protocol,
     *,
     run_seed: SeedRunner,
+    run_survey: SurveyRunner | None = None,
     report: ReportFn | None = None,
     stop: threading.Event | None = None,
     pause: threading.Event | None = None,
@@ -85,13 +99,23 @@ def run_protocol(
     seeds = protocol.seeds or [42]
     runs: list[dict[str, Any]] = []
     share = 1.0 / len(seeds)
+    surveyed = protocol.kind == "composite" and run_survey is not None
+    sim_share = share * (1.0 - _SURVEY_SHARE) if surveyed else share
     for index, seed in enumerate(seeds):
         _wait_while_paused(pause, stop, report, index * share)
         if stop is not None and stop.is_set():
             break
         spec = experiment_spec(protocol, seed, name=name)
-        result = run_seed(spec, seed, _seed_reporter(report, seed, index * share, share))
-        runs.append({"seed": seed, **(result or {})})
+        result = run_seed(spec, seed, _seed_reporter(report, seed, index * share, sim_share))
+        run = {"seed": seed, **(result or {})}
+        if surveyed and not (stop is not None and stop.is_set()):
+            sub = _seed_reporter(report, seed, index * share + sim_share, share - sim_share)
+            try:
+                run["survey"] = run_survey(protocol, run, sub)
+            except Exception as exc:  # one seed's survey failing is a quality issue, not a crash
+                _LOG.warning("survey for seed %s failed: %s", seed, exc)
+                run["survey"] = {"error": str(exc)}
+        runs.append(run)
     return runs
 
 
@@ -159,6 +183,7 @@ def default_seed_runner(
             repo_root,
             base_config=base_config,
             experiment_id=f"{experiment_prefix}_s{seed}",
+            group=experiment_prefix,
         )
         runner = prunner.ExperimentRunner(manifest, repo_root, max_parallel=spec.max_parallel)
         active["runner"] = runner
@@ -181,10 +206,98 @@ def default_seed_runner(
     return run
 
 
+def _respondent_ids(repo_root: str, world: dict[str, Any], spec_ids: list[int]) -> list[int]:
+    """Who lived in this world: the sample if fixed, else whoever its state
+    history recorded. Household members promoted to residents
+    (``family.members_as_agents``) have no profile to interview from yet and
+    are left out."""
+    from gaworld.family.promote import PROMOTED_ID_BASE
+
+    if spec_ids:
+        return [aid for aid in spec_ids if aid < PROMOTED_ID_BASE]
+    path = os.path.join(repo_root, world.get("state_csv") or "")
+    ids: list[int] = []
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                try:
+                    aid = int(row.get("agent_id") or row.get("id") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if 0 < aid < PROMOTED_ID_BASE and aid not in ids:
+                    ids.append(aid)
+    except OSError:
+        return []
+    return ids
+
+
+def default_survey_runner(*, repo_root: str, provider: str = "", timeout: float = 3600.0) -> SurveyRunner:
+    """Interview every world's residents with that world's memories.
+
+    One ``python -m gaworld.interview`` child per world, with the world's own
+    config overrides — the same isolation the world ran under, so the memory
+    store, the vector DB and the goals all resolve to that world's files —
+    and the world's end-of-run state as the residents' state. Transcripts and
+    scores are written to ``<world>/survey.json``.
+    """
+
+    def run(protocol: Protocol, seed_run: dict[str, Any], report: ReportFn) -> dict[str, Any]:
+        manifest = prunner.load_manifest(repo_root, seed_run.get("root") or "") or {}
+        worlds = manifest.get("worlds") or {}
+        spec_ids = [int(a) for a in (manifest.get("spec") or {}).get("agent_ids") or []]
+        survey = protocol.survey or {}
+        out: dict[str, Any] = {}
+        conditions = [cond for cond in protocol.conditions if cond["id"] in worlds]
+        for index, cond in enumerate(conditions):
+            world = worlds[cond["id"]]
+            report(index / max(1, len(conditions)), f"采访世界 {cond['label']} 的居民…")
+            ids = _respondent_ids(repo_root, world, spec_ids)
+            if not ids:
+                out[cond["id"]] = {"error": "这个世界没有可采访的居民（没有状态数据）"}
+                continue
+            world_dir = os.path.join(repo_root, world["dir"])
+            spec_path = os.path.join(world_dir, "survey_spec.json")
+            out_path = os.path.join(world_dir, "survey_answers.json")
+            payload = {
+                "title": f"{protocol.title} · {cond['label']}",
+                "context": survey.get("context", ""),
+                "provider": provider,
+                "questions": survey_mod.interview_questions(survey),
+                "respondents": [{"kind": "agent", "ref": str(aid), "label": f"#{aid}"} for aid in ids],
+                "final_state_csv": os.path.join(world_dir, "state", "agent_state_history.csv"),
+            }
+            with open(spec_path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False)
+            env = os.environ.copy()
+            env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(world.get("overrides") or {}, ensure_ascii=False)
+            env["PYTHONUNBUFFERED"] = "1"
+            proc = subprocess.run(
+                [sys.executable, "-m", "gaworld.interview", "--spec", spec_path, "--out", out_path],
+                cwd=repo_root, env=env, capture_output=True, text=True, timeout=timeout,
+            )
+            if proc.returncode != 0 or not os.path.exists(out_path):
+                tail = (proc.stderr or proc.stdout or "")[-600:]
+                out[cond["id"]] = {"error": f"采访进程失败（退出码 {proc.returncode}）：{tail}"}
+                continue
+            with open(out_path, encoding="utf-8") as handle:
+                transcripts = (json.load(handle) or {}).get("transcripts") or []
+            scores = survey_mod.score(survey, transcripts)
+            record = {"scores": scores, "respondents": len(ids), "transcripts": os.path.relpath(out_path, repo_root)}
+            with open(os.path.join(world_dir, "survey.json"), "w", encoding="utf-8") as handle:
+                json.dump({**record, "transcripts": transcripts}, handle, ensure_ascii=False)
+            out[cond["id"]] = record
+        report(1.0, "采访完成")
+        return out
+
+    return run
+
+
 __all__ = [
     "ReportFn",
     "SeedRunner",
+    "SurveyRunner",
     "default_seed_runner",
+    "default_survey_runner",
     "experiment_payload",
     "experiment_spec",
     "load_report",

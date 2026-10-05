@@ -101,3 +101,23 @@ class TestMacroReadsTheTown(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestJobTextFallback(unittest.TestCase):
+    """The Hangzhou corpus has no employment column; its job line says it."""
+
+    def test_corpus_job_lines_are_classified(self):
+        cases = {
+            "学生型智能体，学业与科研压力周期性波动。": "student",
+            "退休状态，主要承担家庭照料与社区互助。": "retired",
+            "无业，家庭照料为主": "not_in_labor_force",
+            finance.UNEMPLOYED_JOB_TEXT: finance.UNEMPLOYED_STATUS,
+            finance.RETIRED_JOB_TEXT: "retired",
+            "互联网企业初级算法工程师，工作日通常上午9:30到公司": finance.EMPLOYED_STATUS,
+        }
+        for job, expected in cases.items():
+            with self.subTest(job=job):
+                self.assertEqual(finance._employment_status(_agent(job=job)), expected)
+
+    def test_an_explicit_employment_field_still_wins(self):
+        self.assertEqual(finance._employment_status(_agent("employed", job="学生")), "employed")

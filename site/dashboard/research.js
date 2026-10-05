@@ -508,6 +508,14 @@
     }[role] || role || "";
   }
 
+  function surveyKindLabel(kind) {
+    return {
+      scale: t("survey_scale", "量表"),
+      boolean: t("survey_boolean", "是/否"),
+      open: t("survey_open", "开放题（不计分）"),
+    }[kind] || kind || "";
+  }
+
   function directionLabel(direction) {
     return {
       increase: t("direction_increase", "上升"),
@@ -787,13 +795,38 @@
         return "<tr><td class=\"rw-feature\">" + esc(cond.id) + "</td><td>" + esc(cond.label) + "</td><td>" + esc(roleLabel(cond.role)) + "</td><td>" + esc(events) + "</td></tr>";
       }).join("") + "</tbody></table>";
 
+    /* A measure's provenance grade: the weakest grade among the mechanisms
+       behind it (gaworld/research/measures.py). Hover shows what drives it. */
+    var grades = {};
+    (protocol.measures || []).forEach(function (m) { if (m && m.id) grades[m.id] = m; });
+    function gradeChip(measure, grade, basis) {
+      var info = grades[measure] || {};
+      grade = grade || info.grade;
+      if (!grade) return "";
+      return " <span class=\"rw-grade\" title=\"" + esc(basis || info.basis || "") + "\">(" + esc(grade) + ")</span>";
+    }
+
     html += "<h4>" + esc(t("hypotheses", "假设")) + "</h4>" +
       "<table class=\"rw-table\"><thead><tr><th>id</th><th>" + esc(t("hypotheses", "假设")) + "</th><th>" + esc(t("measure", "指标")) + "</th><th>" +
       esc(t("contrast", "对比")) + "</th><th>" + esc(t("direction", "预测方向")) + "</th><th>" + esc(t("min_effect", "最小效应")) + "</th></tr></thead><tbody>" +
       (protocol.hypotheses || []).map(function (h) {
-        return "<tr><td class=\"rw-feature\">" + esc(h.id) + "</td><td>" + esc(h.statement) + "</td><td><code>" + esc(h.measure) + "</code></td><td>" +
+        return "<tr><td class=\"rw-feature\">" + esc(h.id) + "</td><td>" + esc(h.statement) + "</td><td><code>" + esc(h.measure) + "</code>" + gradeChip(h.measure) + "</td><td>" +
           esc(h.treatment + " vs " + h.control) + "</td><td>" + esc(directionLabel(h.direction)) + "</td><td class=\"rw-num\">" + esc(num(h.min_effect, false)) + " · " + esc(h.aggregation) + "</td></tr>";
       }).join("") + "</tbody></table>";
+    if (Object.keys(grades).some(function (id) { return grades[id].grade === "c"; })) {
+      html += "<p class=\"rw-hint\">" + esc(t("grade_c_hint", "(c) 级指标由我们自定的参数与模型判断驱动：结论只读方向，效应大小不作数。把鼠标移到等级上看它由什么驱动。")) + "</p>";
+    }
+    var survey = protocol.survey || {};
+    if ((survey.questions || []).length) {
+      html += "<h4>" + esc(t("survey", "问卷（跑完后在每个世界里采访居民）")) + "</h4>" +
+        (survey.context ? "<p class=\"rw-rationale\">" + esc(survey.context) + "</p>" : "") +
+        "<table class=\"rw-table\"><thead><tr><th>id</th><th>" + esc(t("survey_kind", "题型")) + "</th><th>" +
+        esc(t("survey_question", "问题")) + "</th></tr></thead><tbody>" +
+        survey.questions.map(function (q) {
+          var options = (q.options || []).length ? "<div class=\"rw-reasons\">" + esc(q.options.join(" / ")) + "</div>" : "";
+          return "<tr><td class=\"rw-feature\">" + esc(q.id) + "</td><td>" + esc(surveyKindLabel(q.kind)) + "</td><td>" + esc(q.text) + options + "</td></tr>";
+        }).join("") + "</tbody></table>";
+    }
     if ((protocol.dropped || []).length) {
       html += section(t("dropped", "编译时丢弃"), protocol.dropped.map(function (item) {
         return "<div class=\"rw-gap rw-gap-warn\">" + esc((item.what || "") + " · " + (item.where || "") + "：" + (item.reason || "")) + "</div>";
@@ -817,9 +850,19 @@
       body += "<table class=\"rw-table\"><thead><tr><th>id</th><th>" + esc(t("verdict", "判定")) + "</th><th>" + esc(t("measure", "指标")) + "</th><th>" +
         esc(t("per_seed", "各种子效应")) + "</th><th>" + esc(t("mean_effect", "均值效应")) + "</th><th>" + esc(t("noise", "噪声底线")) + "</th></tr></thead><tbody>" +
         evaluation.hypotheses.map(function (h) {
-          var per = (h.effects || []).map(function (row) { return "s" + row.seed + " " + num(row.effect, true); }).join("，");
+          var per = (h.effects || []).map(function (row) {
+            var paired = row.paired
+              ? "（" + t("paired_short", "配对") + " " + num(row.paired.ate, true) + " [" + num(row.paired.ci_low, true) + ", " +
+                num(row.paired.ci_high, true) + "]）"
+              : "";
+            return "s" + row.seed + " " + num(row.effect, true) + paired;
+          }).join("，");
+          var sizeNote = h.direction_only
+            ? "<div class=\"rw-reasons\">" + esc(t("direction_only", "只读方向，大小不作数")) + "</div>"
+            : "";
           return "<tr><td class=\"rw-feature\">" + esc(h.id) + "</td><td>" + verdictBadge(h.verdict) + "</td><td>" + esc(h.measure_label || h.measure) +
-            "</td><td class=\"rw-num\">" + esc(per) + "</td><td class=\"rw-num\">" + esc(num(h.mean_effect, true)) + "</td><td class=\"rw-num\">" + esc(num(h.noise, false)) + "</td></tr>" +
+            gradeChip(h.measure, h.measure_grade, h.measure_basis) +
+            "</td><td class=\"rw-num\">" + esc(per) + "</td><td class=\"rw-num\">" + esc(num(h.mean_effect, true)) + sizeNote + "</td><td class=\"rw-num\">" + esc(num(h.noise, false)) + "</td></tr>" +
             "<tr><td></td><td colspan=\"5\"><div class=\"rw-reasons\">" + esc((h.statement ? h.statement + " — " : "") + (h.reasons || []).join("；")) + "</div></td></tr>";
         }).join("") + "</tbody></table>";
       var quality = evaluation.quality || {};
@@ -842,6 +885,7 @@
         if ((interp.findings || []).length) {
           ibody += "<ul class=\"rw-list\">" + interp.findings.map(function (f) {
             return "<li><b>" + esc(f.hypothesis || "?") + "</b>" + (f.grounded ? "" : " <span class=\"rw-warn\">" + esc("（" + t("ungrounded", "未挂到任何假设，不作数") + "）") + "</span>") +
+              (f.cites_size ? " <span class=\"rw-warn\">" + esc("（" + t("cites_size", "对只读方向的指标写了效应大小，大小不作数") + "）") + "</span>" : "") +
               " " + esc(f.claim) + (f.evidence ? " <span class=\"rw-reasons\">" + esc(f.evidence) + "</span>" : "") + "</li>";
           }).join("") + "</ul>";
         }

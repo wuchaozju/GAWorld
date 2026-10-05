@@ -34,6 +34,7 @@ class TestResetCommand(unittest.TestCase):
                 memory_dir=os.path.join(tmp, "memory"),
                 log_dir=os.path.join(tmp, "logs"),
                 vector_db_path=vector_db,
+                records={"output_dir": os.path.join(tmp, "records")},
             )
             with (
                 patch.object(sim, "CONFIG", config),
@@ -47,6 +48,9 @@ class TestResetCommand(unittest.TestCase):
             self.assertIn(config["log_dir"], cleared)
             self.assertIn(sim.STATE_OUTPUT_DIR, cleared)
             self.assertIn(sim.ENV_OUTPUT_DIR, cleared)
+            # The Recorder appends and stamps rows with the day only; a run after
+            # a reset restarts at Day 1, so stale rows would be indistinguishable.
+            self.assertIn(config["records"]["output_dir"], cleared)
             self.assertFalse(os.path.exists(vector_db))
 
             state = save_state.call_args.args[0]

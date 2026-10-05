@@ -50,7 +50,12 @@ PROFESSION_TOPICS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
         ("财经", "经济", "投资"),
     ),
     (("律师", "法务", "法律", "法官", "检察", "仲裁"), ("法律", "政策", "社会")),
-    (("公务员", "政府", "街道", "社区", "事业单位", "政务", "机关"), ("政策", "社会", "本地")),
+    # Community *work*, not anything with 社区 in it: 社区医生 / 社区卫生服务中心
+    # belong to the medical row and must not inherit mainstream news as their trade.
+    (
+        ("公务员", "政府", "街道", "社区工作", "社区干部", "社区服务", "居委", "网格员", "事业单位", "政务", "机关"),
+        ("政策", "社会", "本地"),
+    ),
     (
         (
             "设计", "编辑", "记者", "作家", "艺术", "摄影", "文化", "出版", "广告",
@@ -172,7 +177,7 @@ def score_source(
     topics = set(source.topics)
     reasons: list[str] = []
     score = 0.15  # baseline reach: anyone might stumble on anything
-    job_hits = sorted(topics & set(job_topics))
+    job_hits = [t for t in dict.fromkeys(source.topics) if t in set(job_topics)]  # the source's own order
     if job_hits:
         score += 1.0 * len(job_hits)
         reasons.append("职业:" + "/".join(job_hits))

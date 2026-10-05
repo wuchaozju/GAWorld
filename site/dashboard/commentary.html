@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="commentary.page_title">GAWorld · 新闻评论</title>
+  <meta name="description" data-i18n-content="commentary.meta_description" content="GAWorld 新闻评论 — 贴一条新闻或给一个网址，挑几个居民，让他们各自写下评论和立场。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="commentary.kicker">GAWorld Playground · News Commentary</p>
+          <h1 data-i18n="commentary.headline">新闻评论：让居民自己说</h1>
+          <p class="sub" data-i18n="commentary.sub">
+            给一条新闻（贴一段文字或一个网址），挑几个居民，每人会用他自己的口吻写一句评论，挑一个立场，再给个强度。一次调用 + 一个总览，不传不扩散，每个人都是独立看完新闻之后开口的。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="commentary.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: set up one run -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="commentary.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="commentary.city_label">城市</span>
+          <select id="cCity"></select>
+        </label>
+
+        <div class="disaster-block">
+          <h4 data-i18n="commentary.news_title">新闻</h4>
+          <p class="disaster-hint" data-i18n="commentary.news_hint">
+            第一条是「主新闻」，所有人针对它表态。下方可加最多 5 条「相关新闻」，它们只作为背景出现在 prompt 里，不会单独产生评论卡。
+          </p>
+
+          <div id="newsTitle">
+            <!-- 第一个新闻块：主新闻 -->
+            <div class="news-block is-main" data-news-index="0">
+              <header class="news-block-head">
+                <span class="news-block-tag" data-i18n="commentary.news_main">主新闻</span>
+                <div class="news-mode-toggle">
+                  <button class="button is-on" type="button" data-mode="paste" data-i18n="commentary.mode_paste">📝 贴文本</button>
+                  <button class="button" type="button" data-mode="url" data-i18n="commentary.mode_url">🔗 给网址</button>
+                </div>
+              </header>
+
+              <label class="field paste-title-block">
+                <span data-i18n="commentary.paste_title_label">新闻标题（可选）</span>
+                <input type="text" data-role="paste_title" data-i18n-placeholder="commentary.paste_title_placeholder" placeholder="例如：地铁涨价方案公示" />
+              </label>
+              <label class="field paste-body-block">
+                <span data-i18n="commentary.paste_body_label">新闻正文</span>
+                <textarea data-role="paste_body" data-i18n-placeholder="commentary.paste_body_placeholder" placeholder="把新闻正文贴进来…"></textarea>
+              </label>
+
+              <label class="field url-block" hidden>
+                <span data-i18n="commentary.url_label">新闻网址</span>
+                <input type="url" data-role="url" data-i18n-placeholder="commentary.url_placeholder" placeholder="https://…" />
+              </label>
+            </div>
+
+            <!-- 相关新闻容器（动态增删） -->
+            <div id="relatedList"></div>
+
+            <div class="news-actions">
+              <button class="button" id="cAddRelated" type="button" data-i18n="commentary.add_related">➕ 加一条相关新闻</button>
+              <span id="cRelatedCount" class="disaster-hint"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="commentary.agents_title">参演居民</span> <b id="cPicked">0</b></h4>
+          <p class="disaster-hint" data-i18n="commentary.agents_hint">最多 12 人。每个人的职业和立场都会影响他的反应——杂一点更能看到分化。</p>
+          <div class="disaster-toolbar">
+            <button class="button" id="cPickRandom" data-i18n="commentary.pick_random">🎲 随机 6 人</button>
+            <button class="button" id="cPickNone" data-i18n="commentary.pick_none">清空</button>
+          </div>
+          <ul id="cAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="cRunBtn" class="button primary" data-i18n="commentary.run">让他们说</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="commentary.history">最近评论</h4>
+          <ul id="cHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="cTitle" data-i18n="commentary.section_board">评论</h3>
+            <p id="cStatus" class="disaster-status" data-i18n="commentary.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="cBar" style="width:0%"></span></div>
+            <span id="cPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="cResult" hidden>
+          <section id="cNewsBox" class="disaster-summary" hidden>
+            <h4 data-i18n="commentary.news_box_title">新闻原文</h4>
+            <p id="cNewsTitle" class="disaster-hint"></p>
+            <p id="cNewsBody"></p>
+            <p id="cNewsMeta" class="disaster-hint"></p>
+          </section>
+
+          <section id="cRelatedBox" class="commentary-related" hidden>
+            <h4 data-i18n="commentary.related_box_title">相关阅读</h4>
+            <ul id="cRelatedList" class="commentary-related-list"></ul>
+          </section>
+
+          <section id="cSummaryBox" class="disaster-summary" hidden>
+            <h4 data-i18n="commentary.summary">总览</h4>
+            <p id="cSummary"></p>
+          </section>
+
+          <div id="cOverall" class="disaster-overall"></div>
+          <div id="cStanceBars" class="disaster-bars"></div>
+          <div id="cCards" class="disaster-cards"></div>
+        </div>
+
+        <p id="cIdle" class="disaster-idle" data-i18n="commentary.idle_hint">左边贴一段新闻，挑几个居民，点「让他们说」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/commentary.js"></script>
+</body>
+</html>

@@ -33,7 +33,9 @@ CLI/backward-compat entrypoints until their callers have been migrated.
 - Built-in plugins (one per subsystem): `gaworld/policy/plugin.py`
   (intervention), `gaworld/skills/plugin.py`, `gaworld/interests_plugin.py`,
   `gaworld/events/plugin.py` (life events), `gaworld/economy/plugin.py`,
-  `gaworld/world/plugin.py` (local physical + spatial preferences),
+  `gaworld/world/plugin.py` (local physical + spatial preferences, venue
+  capacity, and rooms over the indoor tree in `gaworld/world/spatial_tree.py`,
+  whose layouts a test keeps equal to the pixel-town renderer's),
   `gaworld/work/plugin.py` (real work), `gaworld/behavior/plugin.py`
   (dynamic behavior), `gaworld/moltbook/plugin.py` (moltbook: a connected
   resident's day becomes a post on the agent social network; every call is
@@ -70,6 +72,7 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `agent["ext"]["infosources"]` and the feed through `feed.runtime()`, so the
   simulator's call sites are unchanged. CLI: `python -m gaworld.infosources`.
   Design: `docs/proposals/2026-09-19-agent-information-sources.md`.
+- `gaworld/client.py`: standard-library Python client for the dashboard API — token or account sign-in, world switching, typed errors, job polling, the record stream, and `call(operationId)` for any route listed in `/api/openapi.json`.
 - `gaworld/interests.py`: per-agent interest and skill-growth profile derivation, persistence, matching, progress updates, day-end forgetting decay, and interest-set evolution (retirement + social contagion).
 - `gaworld/work/`: real-work task routing, queueing, adapters, and market data.
 - `gaworld/family/`: households as a first-class entity. `schema.py` owns the
@@ -135,9 +138,14 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   construction. `cohort.py` (partition; cohorts carry mean **and** dispersion;
   `NetworkCoupling` adds a within-cohort mean-zero graph term), `cohort_day.py`
   (one LLM call per cohort per day), `materialize.py` (focal / event / tail /
-  audit selection and the audit residual), `driver.py` (day loop + measured cost
+  audit selection, the audit residual, and `adapt_audit_boost` — more audit for a
+  cohort whose residual crossed the alarm), `driver.py` (day loop + measured cost
   accounting), `metrics.py` + `validate.py` (the L1–L4 validation gate),
-  `plugin.py` (`GroupPlugin`, observational cohort telemetry).
+  `plugin.py` (`GroupPlugin`: group mode inside a normal day-step fast-forward
+  run when `simulation_mode` is `"group"` — cohorts move most residents at day
+  start, the `fast_forward.digest_agents` filter narrows the brief to the
+  materialised few, the day end folds them back and runs the shadow audit — or,
+  with `group.enabled` in an individual run, cohort telemetry only).
   CLIs: `python -m gaworld.group`, `python -m gaworld.group.validate`.
   Design + measured results: [`GROUP_AGENT_DESIGN.md`](GROUP_AGENT_DESIGN.md).
 - `gaworld/interview/`: the group interview — one question set asked of many
@@ -159,6 +167,15 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   would mean mutating global config under a thread pool. CLI (one city's share):
   `python -m gaworld.interview`.
   See [`GROUP_INTERVIEW_TUTORIAL.md`](GROUP_INTERVIEW_TUTORIAL.md).
+- `gaworld/experiments/`: one-shot prompt experiments with residents as subjects
+  (`subjects.py` loads them from the same state CSV and profiles the simulator
+  runs on) — the demand-estimation study (`python -m gaworld.experiments`, see
+  [`DEMAND_EXPERIMENT.md`](DEMAND_EXPERIMENT.md)) and, in `classics/`, the
+  classic-paradigm library: six two-condition contrasts answered by every
+  resident in both conditions, scored on the paired direction
+  (`python -m gaworld.experiments.classics`, see
+  [`CLASSIC_EXPERIMENTS.md`](CLASSIC_EXPERIMENTS.md)). Results go to
+  `output/experiments/[classics/]<name>/`.
 - `gaworld/parallel/`: parallel-world (multi-branch counterfactual) experiments —
   a *fork* of the existing run, not a change to it, so single runs are
   unaffected by construction. `spec.py` validates an experiment (2–8 worlds,
@@ -168,10 +185,14 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   world's `run.log`, and persists the manifest and report; `analysis.py`
   reconstructs per-step trajectories, measures each world's distance from the
   baseline at every step (with a "crosses and stays" split-point rule) and the
-  same distance per agent at the end. CLI: `python generative_city_sim.py
+  same distance per agent at the end; `causal.py` turns the same residents'
+  paired histories into counterfactual estimates (ATE with bootstrap CI,
+  sign-flip p, BH q, balance/DiD, placebo noise floor, onset order,
+  heterogeneity, dose–response, seed replication). CLI: `python generative_city_sim.py
   parallel-worlds --spec worlds.json`. Panel backend:
   `gaworld/apps/parallel_worlds_api.py`, which also adapts legacy
-  `output/comparisons/` trees into the same view.
+  `output/comparisons/` trees into the same view and pools seed replicates;
+  the panel is the research workbench's 平行世界 tab (`site/dashboard/worlds.js`).
   See [`PARALLEL_WORLDS_TUTORIAL.md`](PARALLEL_WORLDS_TUTORIAL.md).
 - `gaworld/skills/`: per-agent Skill subsystem — global library at `data/skills/`, private skills under `output/memory/agent_<id>_skills/`, and experience-to-skill consolidation. See [`SKILL_SYSTEM.md`](SKILL_SYSTEM.md).
 - `gaworld/world/local_physical.py`: per-node occupancy / opening-hours snapshots and crowd-surge anomaly detection injected into perception. See [`physical_env_perception_changelog.md`](physical_env_perception_changelog.md).
@@ -208,10 +229,16 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   assignment, because those answer different questions ("what is this run
   living in?" vs "what will next run look like if I save this?").
   `population_api.py` is the Population Studio backend — a *delegate* module, so
-  `dashboard_server.py` only gains a prefix-forwarding branch for
-  `/api/population/*` rather than another subsystem's routes. It reads path
-  constants from `dashboard_server` at call time, because the dashboard tests
-  monkeypatch those constants onto a temp directory. `city_api.py` is the Cities
+  it is one line in `routes.py` (the prefix → module table the dashboard
+  handler consults) rather than another subsystem's routes. It reads path
+  constants from `world_paths` at call time, because the dashboard tests
+  monkeypatch those constants onto a temp directory. `world_paths.py` resolves
+  every dashboard path for the request's active world, `runs.py` owns the run
+  table, queue, limits and launch, `residents.py` is the Agent Studio backend
+  (profile, state, relationships, memory, finance, Big Five, the detail card,
+  creating a resident). Patch these modules in tests; the old
+  `ds._effective_config` / `ds.RUN_QUEUE` / `ds._agent_detail` … names raise an
+  AttributeError naming the new home. `city_api.py` is the Cities
   backend — create / populate / select a city, plus the **read-only cross-city
   resident reads** (`/api/city/catalogue`, `/api/city/agents`,
   `/api/city/agent`) that let the panel and Agent Studio browse a city the
@@ -237,7 +264,13 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   all take their LLM entry points as injectable parameters so the tests are
   network-free. Games whose round costs dozens of calls share the job store in
   `game_jobs.py` — one `JobStore` per game, so one game's jobs endpoint can never answer
-  for another's. The arena, disaster mode and the rumor game run a round as a job
+  for another's; the rumor, referendum and disaster stores also archive each finished
+  game through `game_archive.py` to `output/games/<kind>/`, which GAWorld-Bench Track B
+  pools. `whois_api.py` ("who is the real person") is the one game where several
+  people play the same room: the host opens it, hands out seat links (the token in
+  the link is the seat — the pattern serious games use), residents write in the
+  background each round, and the revealed room is archived to `output/games/whois/`
+  for Track D. The arena, disaster mode and the rumor game run a round as a job
   (contestants × tasks, residents × stages, residents × 2); persuasion answers
   each request inline, because one chat turn is a single round trip. `replay_runs.py` enumerates
   every replayable trace on disk (live, `<visualization>/runs/<run_id>/` archives,
@@ -290,6 +323,9 @@ New code that needs config assembly should prefer `gaworld.settings`.
     destination, distance, mode, fare, home node, dates). The only
     externally visible quantity this subsystem produces — without it "who is
     out of town today" is a number nothing can see.
+  - `output/games/<rumor|referendum|disaster>/*.json`: one file per finished playground
+    game of those three kinds (result, routed provider, player on a shared server) —
+    the sample GAWorld-Bench Track B (`benchmark/gaworld_bench.py --track B`) reads.
   - `output/economy/interventions.json`: the External Systems panel's queue of
     macro/sector changes. Consumed by `gaworld/economy/finance.py` at each
     simulated day boundary — the one channel available for mid-run monetary

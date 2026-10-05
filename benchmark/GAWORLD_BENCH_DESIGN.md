@@ -68,6 +68,10 @@ Park et al. 生成式智能体的 believability 评估、计算社会科学的 s
 
 > ⚠️ **弱证据警告**：恩格尔曲线、税率、消费弹性是模型的**输入参数**。
 > A 通过只说明实现无 bug，不证明模型有解释力。强证据看 B / C。
+>
+> **2026-10-03 核对**：比上面说的还直接——快照里的 `engel_coefficient`、`savings_rate` 就是按收入查恩格尔曲线得到的预算参数，不是从实际消费算的，
+> 所以这两项拟合量的是那张表本身（「回显」）。Track C 的三个指标同为 (c) 级：事件对状态的影响由一次模型调用给出。
+> scorecard 与报告现在给每个指标附上最弱依赖与回显标记（`METRIC_PROVENANCE` / `STATE_PROVENANCE`，见 `MECHANISM_PROVENANCE.md`「指标的最弱依赖」）；分数不变。
 
 ### Track B — Stylized-facts 复现（机制有效性）
 
@@ -82,7 +86,37 @@ Park et al. 生成式智能体的 believability 评估、计算社会科学的 s
 
 **评分**：`score_B = 复现的 fact 数 / 总 fact 数`（在各自容差内）。
 **Pass 门槛**：`score_B ≥ 0.5`。
-**状态**：harness 中预留接口，v0.1 未实现（依赖更长仿真与更大 N，见 §6）。
+**状态**：上表这四条仍未实现（依赖更长仿真与更大 N，见 §6）；经环境中介的候选（学到的回避让人流再分布）
+是单独的 `trackb_spatial.py`，不进这张 scorecard。v0.1.7 先落地的是下面的**对局层**。
+
+#### Track B v0.1.7：对局层 stylized facts（2026-10-03）
+
+谣言扩散局、公投局、灾害模式每跑完一局就存一份到 `output/games/<kind>/`（`gaworld/apps/game_archive.py`），
+`--track B` 把同类对局合起来检三条**事先定好**的规律：
+
+| 规律 | 用哪些对局 | 判据 | 最少样本 | 参照 |
+|---|---|---|---|---|
+| 公开表决向多数靠拢（从众） | 不带宣传口径、私下有严格多数（支持 ≠ 反对）的公投局 | 按「少数 −1 / 弃权 0 / 多数 +1」看私下→公开的改票，朝多数的显著多于背离的（单侧二项 p<0.05） | 8 张定向改票 | Asch 1956；Deutsch & Gerard 1955 |
+| 灾害中极度恐慌少见、互助常见 | 全部灾害局；解析不出的「其他」不计 | 恐慌 = 5 的占比 ≤ 0.2 **且** 顾得上帮别人的占比 ≥ 0.5 | 20 条反应 | Quarantelli 2001；Drury, Cocking & Reicher 2009 |
+| 辟谣后相信度下降但不归零（持续影响效应） | 带 `beliefs` 历史的谣言局（此前存的旧局跳过） | 被辟谣的相信者里下降的显著多于上升的（单侧符号检验 p<0.05）**且** 辟谣后平均相信度 ≥ 辟谣前的 25% | 8 个被辟谣的相信者 | Lewandowsky et al. 2012；Walter & Tukachinsky 2020 |
+
+- **少于 5 局可用对局或样本不够 → 弃权**（`reproduced: null`），不算失败；但弃权照样拉低分数：
+  `score_B = 复现条数 / 3`，与 Track C 的覆盖度折扣同理。三条全弃权时 Track B 为 `n/a`。
+- **层级——引用前必读。** 居民在这里只是看到众人的表态 / 邻居上一幕的行动 / 一次辟谣后，对一段提示词作一次回应：
+  一步的 agent→人群→agent，不是 agent→环境→agent 回路的涌现。三条都是 **(c) 级**（`MECHANISM_PROVENANCE.md`）：
+  说的是「扮演居民的模型会怎么答」，不是现实效应有多大。灾害一条的两个阈值是把「少见 / 常见」落成数的约定，
+  读的是这个定性说法，不对恐慌率本身作结论。
+- **每条都带提示词线索**（报告里逐条列出）：公投的正式表决提示词写着「看到多数人怎么想之后改主意不丢人」（也写着「不要为了合群而改」）；
+  灾害的恐慌是 1–5 自评、「是否顾得上帮别人」是必答项；辟谣那一轮的提示词告诉居民他先前信了多少——残留可能是锚定。
+  未复现时报告建议先看线索，**不要为了凑出规律去改提示词**。
+- **不同模型的对局会被合起来检**：存档记了 provider，混了不止一个时 scorecard 和报告会标出来，建议用 `--games-dir` 分开评。
+- **为什么没有谣言 S 曲线**：一局最多 14 人、5 轮，一次转发最多传给 4 个还没听说的人——累计到达曲线的形状主要是这几个数的算术，
+  不是模型的行为。持续影响效应读的是模型真正作答的那一轮。
+
+```bash
+python benchmark/gaworld_bench.py --track B                       # 读 output/games/
+python benchmark/gaworld_bench.py --track B --games-dir <目录>    # 只评某一批（比如某个模型的）
+```
 
 ### Track C — 因果 / 反事实有效性 ⭐ 核心
 
@@ -117,6 +151,8 @@ Park et al. 生成式智能体的 believability 评估、计算社会科学的 s
 其中 `coverage = n_eval / 已配置项数`（A3 覆盖度折扣，防止只跑 1 项却看似满分）。
 **Pass 门槛**：`sign_score ≥ 0.75` **且** `placebo_score ≥ 0.8` **且** `coverage ≥ 0.75`。
 **Gate**（A4，三态）：`det=fail → UNTRUSTWORTHY`；`det=unassessed → UNVERIFIED`（不再白送 OK）；`det=ok → OK`。
+另外两条（v0.1.6）：任一对照的 `run_meta.json` 记载的可比性版本 ≠ 当前代码版本（或未标版本）→ 最多 `UNVERIFIED`；
+`--synthetic` → 一律 `FIXTURE`。原因写在 scorecard 的 `trust_reasons`。
 **A5**：匹配到关键词但缺 `comparison_metrics.csv` 的运行标记为"未完成"并在报告提示重跑。
 
 ### Track D — 可信度与人设一致性
@@ -133,7 +169,36 @@ Park et al. 生成式智能体的 believability 评估、计算社会科学的 s
 | 跨天矛盾率 | 多天回答的逻辑冲突计数 | 1 − 矛盾率 |
 
 **评分**：四维归一化均值。**Pass**：`score_D ≥ 0.7`。
-**状态**：v0.1 未实现（需 LLM-judge，留接口）。
+**状态**：上表四个 LLM-judge 维度仍未实现（留接口）。v0.1.8 先落地的是下面的**人类判别**——外部证据，不靠另一个模型打分。
+
+#### Track D v0.1.8：人类判别（2026-10-04）
+
+游戏场的「谁是真人」（`gaworld/apps/whois_api.py`，教程见 `docs/PLAYGROUND_TUTORIAL.md` §12.9）：
+几个真人和几位居民匿名进同一个群聊（座位只显示「N号」，顺序打乱），聊几轮，每个真人再给每个别人投「真人 / 居民」。
+房主揭晓后整局存到 `output/games/whois/`，`--track D` 把所有局合起来：
+
+```
+P(居民被判为真人) = 居民收到的「真人」票 / 居民收到的全部票
+P(真人被判为真人) = 真人收到的「真人」票 / 真人收到的全部票（不含投给自己）
+score_D = min(1, P(居民被判为真人) / P(真人被判为真人))
+```
+
+- **以真人自己的通过率为分母**：真人彼此也会互相怀疑，居民做到「和真人一样像真人」就是满分，不要求 100% 被判为真人。
+  `score_D ≥ 0.7` 记通过（与上表同一门槛）。另报判断正确率（所有票里判对的占比）。
+- **样本不够就弃权**（`n/a`，不算失败）：少于 5 局、对居民的判断少于 20 票、或对真人的判断少于 10 票时不出分；
+  真人一局至少要 2 个才有「真人互判」的对照，只有 1 个真人的局只贡献对居民的票。真人从没被判成真人时也弃权（没有分母）。
+- **区间是按票算的 Wilson 95%**：同一个人投的票、同一个居民收的票并不独立，区间偏窄，只作量级参考。
+- **层级与线索——引用前必读。** 说的是「在这个群聊格式里，扮演居民的模型说话像不像同桌的真人」，不是图灵测试的一般结论：
+  - 消息短（每条最多 200 字），居民的提示词要求「口语，一两句，不超过 60 字，别用书面语、别分点、别总结」——格式本身压低了区分度；
+  - 居民不知道有人在猜（提示词里不提），真人知道；
+  - 评委就是同局玩家，不是独立评审；同一批朋友反复玩会学到套路。
+  - 存档记了 provider，混了不止一个模型时 scorecard 和报告会标出来，建议用 `--games-dir` 分开评。
+- 这一维进 scorecard，但**不替代**上表的四个维度：它看的是「像不像人」，不看人设贴合与记忆可溯源。
+
+```bash
+python benchmark/gaworld_bench.py --track D                       # 读 output/games/whois/
+python benchmark/gaworld_bench.py --track D --games-dir <目录>    # 只评某一批
+```
 
 ### Track E — 可复现性与成本（地基门槛）
 
@@ -153,7 +218,7 @@ Park et al. 生成式智能体的 believability 评估、计算社会科学的 s
 ```
 GAWorld-Bench Scorecard
   Track A  宏观经验拟合      0.xx   [PASS/FAIL]
-  Track B  Stylized-facts    n/a    (未实现)
+  Track B  Stylized-facts    0.xx   [PASS/FAIL]   (对局层；对局不足时 n/a)
   Track C  因果反事实         0.xx   [PASS/FAIL]   ⭐
   Track D  可信度一致性       n/a    (未实现)
   Track E  可复现/成本        gate   [OK/UNVERIFIED/UNTRUSTWORTHY]
@@ -167,6 +232,10 @@ GAWorld-Bench Scorecard
 - 可选 `composite = mean(已实现 track 的 score)`，仅用于追踪趋势，并始终附"弱证据"注记。
 - **Trust gate（三态）**：确定性 `fail` → `UNTRUSTWORTHY`；从未测试 → `UNVERIFIED`（不白送 OK）；
   `ok` → `OK`。门槛失败时上层分数仅供参考。
+- **第四态 `FIXTURE`**：`--synthetic` 的数字是为让每条检查都通过而预设的，只证明评测代码能跑通。
+  它写到 `results/synthetic/`，**永远不覆盖** `results/scorecard.json`。2026-09-25 的门面分数
+  「OK / 0.9361 / 4/4」就是夹具（四个 delta 与 `make_synthetic()` 完全一致），这一态就是为它加的。
+- scorecard 带 `provenance`（`source: real|synthetic`、输入路径、git commit 与是否有未提交改动）。
 - **Headline = 最弱的已通过 track**（木桶原理）：报告短板而非平均。
 
 ---
@@ -176,9 +245,9 @@ GAWorld-Bench Scorecard
 | Track | 复用的现有资产 | 缺口 |
 |-------|---------------|------|
 | A | `exp_abm_validation.py`、`ExperimentRunner.load_economy_data` | 锚点是占位值；提取器 schema 不匹配（见下） |
-| B | `exp_emotion_contagion`、`exp_network_evolution`、`exp_misinfo_spread` | 缺统一的 stylized-fact 判据与聚合 |
+| B | `exp_emotion_contagion`、`exp_network_evolution`、`exp_misinfo_spread`；游戏场对局存档（v0.1.7 已接） | 仿真层的四条仍缺统一判据与聚合 |
 | C | `compare-event` CLI、`comparison_metrics.csv` | **缺安慰剂测试、确定性测试、符号判据** |
-| D | `interview` CLI、`exp_memory_consistency` | 缺 LLM-judge 评分卡 |
+| D | `interview` CLI、`exp_memory_consistency`；游戏场「谁是真人」存档（v0.1.8 已接人类判别） | 缺 LLM-judge 评分卡 |
 | E | `run.log`、`random_seed` 配置 | 缺成本/失败率解析与跨 seed 跑批 |
 
 **实现期发现的两个 schema 不一致（建议单独修）**：
@@ -275,6 +344,9 @@ python gaworld_bench.py --all --run --days 3 --seed 42
 - **v0.1.3（已落地）**：`--continue` 断点续跑——多 seed 实跑每完成一个 (干预,seed) 单元就存 checkpoint（`benchmark/results/checkpoint_multiseed.json`）；中途失败（API 用量等）保存进度并提示，配额恢复后续跑跳过已完成单元。
 - **v0.1.4（已落地）**：`--fast` 快速档——透传给 `compare-event`，启用项目内置 `fos_fast_mode`（确定性认知 + 跳过每日总结/日记）并缩减到 3 agent，大幅减少 LLM 调用；为本地小模型跑更长 horizon 换速度、降保真度。
 - **v0.1.5（已落地）**：`--fast` 自动标注——`compare-event` 在每个对照目录写 `run_meta.json`（含 `fast` 标记）；harness 读取后，scorecard/report 顶部显示"⚡ 低保真运行（--fast）"横幅，避免把快速档结果误当全保真结论。
+- **v0.1.6（已落地，2026-10-03）**：scorecard 带 `provenance` 与 `trust_reasons`；`--synthetic` → `FIXTURE` 且写到 `results/synthetic/`；Track C 读各对照 `run_meta.json` 的 `comparability_epoch`，旧版本/未标版本的对照让 gate 最多 `UNVERIFIED`（见 `gaworld/core/comparability.py`）；Track A 的 `wealth_gini` 只在劳动力人口上计算（见 `MECHANISM_PROVENANCE.md`）；不给 `--output-dir` 时默认读模拟器配置的 `run_output_dir`（选了城市即 `output/cities/<slug>/`），不再是固定的 `output/`。
+- **v0.1.7（已落地，2026-10-03）**：Track B 对局层——谣言 / 公投 / 灾害三种游戏的对局存档到 `output/games/`，`--track B`（`--games-dir`）检从众、恐慌少见互助常见、持续影响效应三条，少于 5 局弃权；各条 (c) 级并附提示词线索，混合模型时标出。
+- **v0.1.8（已落地，2026-10-04）**：Track D 人类判别——游戏场新增「谁是真人」群聊，揭晓后存档到 `output/games/whois/`；`--track D` 以真人互判的通过率为分母给居民打分，少于 5 局 / 20 票（对居民）/ 10 票（对真人）弃权；四个 LLM-judge 维度仍未实现。
 - **v0.2**：Track E 成本/失败率解析、CV。
 - **v0.3**：Track B stylized-facts 判据（接 emotion_contagion / network_evolution）。
 - **v0.4**：Track D LLM-judge 评分卡（接 interview / memory_consistency）。

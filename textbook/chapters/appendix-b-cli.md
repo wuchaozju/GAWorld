@@ -461,6 +461,7 @@ export GAWORLD_DATA_DIR="/path/to/data"
 
 ```
 GAWorld/
+```text
 ├── config.py                # 主配置
 ├── data/                    # 数据资产
 │   ├── cities/             # 城市包
@@ -475,6 +476,7 @@ GAWorld/
 ├── examples/                # 案例脚本
 ├── scripts/                 # 辅助脚本
 └── tests/                   # 测试
+```
 ```
 
 ---
@@ -848,7 +850,7 @@ python generative_city_sim.py parallel-worlds --help
 
 ## B.22　扩展:GAWorld 高级功能命令
 
-### B.22.1　Agent Studio 相关命令
+### B.22.1　智能体 Studio 相关命令
 
 ```bash
 # 启动 Agent Studio 模式

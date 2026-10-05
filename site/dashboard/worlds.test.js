@@ -25,6 +25,10 @@ var OVERVIEW = {
   defaults: { sim_days: 3, agent_ids: [1, 2], seed: 42, max_parallel: 2, llm_provider: "minimax" },
   providers: ["minimax", "ollama_local"],
   agents: [{ id: 1, name: "徐桂兰", configured: true }, { id: 2, name: "李伟", configured: true }],
+  tunables: [
+    { path: "economy.shocks.layoff_base_prob", value: 0.02, label: "裁员基础概率" },
+    { path: "traffic.agents_represent", value: 25, label: "每人代表车辆数" },
+  ],
   presets: [{
     id: "layoff",
     name: "裁员冲击",
@@ -111,6 +115,71 @@ var REPORT = {
       top_delta: 0.19, deltas: { stress: 0.19 } }],
   },
   summary: ["基准世界：基准世界", "轻度限行：第 2 步开始分叉，终局距离基准 0.0500"],
+  causal: {
+    baseline_id: "base",
+    alpha: 0.05,
+    method: { bootstrap: 2000, permutations: 5000 },
+    placebo_ids: [],
+    noise: {},
+    warnings: [],
+    summary: { robust: 1, null: 1 },
+    estimates: [
+      { world_id: "harsh", metric: "stress", label: "压力", n: 2, event_step: 2, ate: 0.19, ci_low: 0.15,
+        ci_high: 0.22, p_value: 0.0002, q_value: 0.0004, d_z: 3.1, ate_final: 0.19, relative: 0.42,
+        pre_gap: 0.0, did: 0.19, balanced: true, noise: null, role: "treatment", verdict: "robust" },
+      { world_id: "mild", metric: "emotion", label: "情绪", n: 2, event_step: 2, ate: -0.01, ci_low: -0.04,
+        ci_high: 0.02, p_value: 0.5, q_value: 0.5, d_z: null, ate_final: -0.02, relative: null,
+        pre_gap: null, did: null, balanced: null, noise: null, role: "", verdict: "null" },
+    ],
+    dynamics: {
+      harsh: { order: ["stress"], metrics: {
+        stress: { onset_step: 2, peak_step: 3, peak: 0.2, final: 0.19, persistence: 0.95, half_life: null },
+        emotion: { onset_step: null, peak_step: 1, peak: -0.01, final: 0, persistence: 0, half_life: 1 },
+      } },
+    },
+    effect_curves: {
+      harsh: { stress: { mean: [0, 0, 0.18, 0.2, 0.19, 0.19], lo: [0, 0, 0.15, 0.17, null, 0.16],
+                         hi: [0, 0, 0.21, 0.23, null, 0.22] } },
+    },
+    dose_response: [
+      { metric: "stress", label: "压力", slope: 0.09, intercept: 0, r2: 0.98, monotonic: true,
+        points: [{ world_id: "base", dose: 0, ate: 0 }, { world_id: "mild", dose: 1, ate: 0.08 },
+                 { world_id: "harsh", dose: 2, ate: 0.19 }] },
+    ],
+  },
+  replication: {
+    group: "g", seeds: [42, 43, 44],
+    summary: { replicated: 1 },
+    rows: [{ world_id: "harsh", metric: "stress", label: "压力", seeds: 3, mean: 0.18, sd: 0.01,
+             ci_low: 0.155, ci_high: 0.205, agree: 3, verdict: "replicated",
+             per_seed: [{ seed: 42, ate: 0.19 }, { seed: 43, ate: 0.17 }, { seed: 44, ate: 0.18 }] }],
+    excluded: [{ seed: 45, root: "output/parallel_worlds/g_s45", comparability_epoch: 4 }],
+  },
+};
+
+var INTERPRETATION = { interpretation: {
+  summary: "重度管制显著推高了压力。", baseline_id: "base", provider: "minimax", created_at: "2026-10-03 01:00:00",
+  findings: [
+    { world: "harsh", metric: "stress", metric_label: "压力", claim: "压力上升", evidence: "ATE +0.19",
+      grounded: true, verdict: "robust" },
+    { world: "mild", metric: "emotion", metric_label: "情绪", claim: "情绪下降", evidence: "",
+      grounded: true, verdict: "null" },
+    { world: "nope", metric: "emotion", claim: "凭空", evidence: "", grounded: false, verdict: "" },
+  ],
+  limitations: ["没有安慰剂世界"],
+  next_experiments: [{ title: "加安慰剂", rationale: "量噪声", design: "加一个市政通告世界" }],
+} };
+
+var HTE = {
+  metric: "stress", label: "压力", n: 2, ate: 0.19, world_id: "harsh", baseline_id: "base", event_step: 2,
+  attributes: [
+    { id: "gender", p_value: 0.01, spread: 0.1, groups: [
+      { group: "女", n: 1, cate: 0.24, ci_low: 0.24, ci_high: 0.24 },
+      { group: "男", n: 1, cate: 0.14, ci_low: 0.14, ci_high: 0.14 } ] },
+    { id: "initial", p_value: 0.4, spread: null, groups: [
+      { group: "low", n: 1, cate: 0.2, ci_low: 0.2, ci_high: 0.2 },
+      { group: "high", n: 1, cate: 0.18, ci_low: 0.18, ci_high: 0.18 } ] },
+  ],
 };
 
 /* ------------------------------------------------------------------ stubs */
@@ -175,7 +244,9 @@ global.__f = function (key, params) {
 var requested = [];
 global.fetch = function (url) {
   requested.push(String(url));
-  var body = String(url).indexOf("/experiment") >= 0 ? REPORT : OVERVIEW;
+  var body = String(url).indexOf("/interpretation") >= 0 ? INTERPRETATION
+    : String(url).indexOf("/heterogeneity") >= 0 ? HTE
+    : String(url).indexOf("/experiment") >= 0 ? REPORT : OVERVIEW;
   return Promise.resolve({
     ok: true,
     status: 200,
@@ -183,7 +254,22 @@ global.fetch = function (url) {
   });
 };
 
-require(path.join(HERE, "worlds.js"));
+/* What POST /api/parallel-worlds/sweep returns (gaworld/parallel/sweep.py). */
+var SWEEP = {
+  path: "economy.shocks.layoff_base_prob", label: "裁员基础概率", current: 0.02, values: [0.04, 0.08],
+  baseline_id: "baseline",
+  dropped: [{ value: "0.02", reason: "与当前值相同，就是基准世界" }],
+  worlds: [
+    { id: "baseline", label: "基准：裁员基础概率 = 0.02", role: "baseline", dose: 0.02, config: {}, events: [] },
+    { id: "v1", label: "裁员基础概率 = 0.04", role: "treatment", dose: 0.04,
+      config: { economy: { shocks: { layoff_base_prob: 0.04 } } }, events: [] },
+    { id: "v2", label: "裁员基础概率 = 0.08", role: "treatment", dose: 0.08,
+      config: { economy: { shocks: { layoff_base_prob: 0.08 } } }, events: [] },
+    { id: "placebo", label: "安慰剂：裁员基础概率 = 0.02", role: "placebo", dose: 0.02, config: {}, events: [] },
+  ],
+};
+
+var panel = require(path.join(HERE, "worlds.js"));
 
 /* ----------------------------------------------------------------- checks */
 
@@ -200,7 +286,23 @@ setTimeout(function () {
   var history = els.pwHistory.innerHTML;
   var meta = els.pwTopMeta.innerHTML;
   var metrics = els.pwMetricSelect.innerHTML;
-  var all = [branch, trajectory, divergence, deltas, movers, legend, meta].join("");
+  var verdicts = els.pwVerdicts.innerHTML;
+  var forest = els.pwForest.innerHTML;
+  var estimates = els.pwEstimates.innerHTML;
+  var dynamics = els.pwDynamics.innerHTML;
+  var hte = els.pwHte.innerHTML;
+  var replication = els.pwReplication.innerHTML;
+  var dose = els.pwDose.innerHTML;
+  var compare = els.pwCompare.innerHTML;
+  var interpretation = els.pwInterpret.innerHTML;
+  var all = [branch, trajectory, divergence, deltas, movers, legend, meta, verdicts, forest, estimates,
+    dynamics, hte, replication, dose, compare, interpretation].join("");
+
+  var sweepForm = els.pwSweep.innerHTML;
+  panel.applySweep(SWEEP);
+  var swept = els.pwWorldList.innerHTML;
+  var sweepMsg = els.pwSweep.innerHTML;
+  var payload = panel.specPayload();
 
   var checks = [
     // --- design column: the thing the user actually edits ---
@@ -250,11 +352,55 @@ setTimeout(function () {
     ["history lists past experiments and flags the empty ones",
       history.indexOf("旧实验") >= 0 && history.indexOf("无数据") >= 0],
 
+    // --- counterfactual inference ---
+    ["a world can be given a role and a dose",
+      worlds.indexOf('data-field="role"') >= 0 && worlds.indexOf('data-field="dose"') >= 0],
+    ["seed replicates are part of the shared setup", shared.indexOf('data-spec="replicates"') >= 0],
+    ["the comparison world can be switched", (compare.match(/<option/g) || []).length === 3 &&
+      compare.indexOf('value="base" selected') >= 0],
+    ["verdict counts are summarized", verdicts.indexOf("稳健") >= 0 && verdicts.indexOf("无效应") >= 0],
+    ["a missing placebo is called out", verdicts.indexOf("安慰剂") >= 0],
+    ["forest plot draws one interval per estimate", (forest.match(/<circle/g) || []).length === 2],
+    ["estimates table shows CI, p and q",
+      estimates.indexOf("[+0.150, +0.220]") >= 0 && estimates.indexOf("&lt;0.001") >= 0],
+    ["dynamics order the metrics by onset", dynamics.indexOf("压力") >= 0 && dynamics.indexOf("未起效") >= 0],
+    ["heterogeneity is fetched and drawn by attribute",
+      requested.join(" ").indexOf("/heterogeneity") >= 0 && hte.indexOf("性别") >= 0 &&
+      hte.indexOf("低于中位") >= 0],
+    ["replication pools the seeds", replication.indexOf("跨种子复现") >= 0 && replication.indexOf("3/3") >= 0],
+    ["a seed from another code epoch is named, not silently dropped",
+      replication.indexOf("种子 45") >= 0 && replication.indexOf("代码版本") >= 0],
+    ["dose-response renders its slope", dose.indexOf("+0.0900") >= 0],
+
+    ["the cached interpretation is loaded and drawn",
+      requested.join(" ").indexOf("/interpretation") >= 0 && interpretation.indexOf("显著推高了压力") >= 0],
+    ["each finding carries its row's verdict", interpretation.indexOf("稳健") >= 0],
+    ["a finding on a non-robust row is cautioned", interpretation.indexOf("没有被判为「稳健」") >= 0],
+    ["a finding that points at no row does not count", interpretation.indexOf("不作数") >= 0],
+    ["limitations and next experiments are listed",
+      interpretation.indexOf("没有安慰剂世界") >= 0 && interpretation.indexOf("加安慰剂") >= 0],
+    ["the interpretation can be re-run", els.pwInterpretRun.textContent === "重新解读"],
+
     // --- safety / correctness ---
     ["labels are escaped everywhere they are drawn", all.indexOf("<script>alert") < 0],
     ["the escaped label still reads correctly", all.indexOf("重度管制") >= 0],
     ["nothing leaks undefined or NaN",
       all.indexOf("undefined") < 0 && all.indexOf("NaN") < 0],
+
+    // --- parameter sweep ---
+    ["the sweep form offers the numeric settings",
+      sweepForm.indexOf('data-sweep="path"') >= 0 && sweepForm.indexOf("traffic.agents_represent") >= 0],
+    ["a sweep fills the form with one world per value",
+      (swept.match(/class="pw-world[ "]/g) || []).length === 4],
+    ["a swept world shows its config patch", swept.indexOf("economy.shocks.layoff_base_prob = 0.04") >= 0],
+    ["the config patch and the dose reach the run payload",
+      payload.worlds[1].config.economy.shocks.layoff_base_prob === 0.04 && payload.worlds[1].dose === 0.04],
+    ["the sweep baseline keeps the current value as its dose",
+      payload.worlds[0].role === "baseline" && payload.worlds[0].dose === 0.02 &&
+      JSON.stringify(payload.worlds[0].config) === "{}"],
+    ["the placebo copy is marked as a placebo", payload.worlds[3].role === "placebo"],
+    ["a skipped value is reported", sweepMsg.indexOf("跳过 0.02") >= 0],
+    ["the experiment is named after the setting", payload.name.indexOf("裁员基础概率") >= 0],
 
     // --- i18n ---
     ["every locale key the panel asks for exists",

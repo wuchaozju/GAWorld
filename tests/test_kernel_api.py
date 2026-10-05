@@ -31,9 +31,8 @@ from http.server import ThreadingHTTPServer
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
-from gaworld.apps import kernel_api
-from gaworld.kernel import build_kernel
-from gaworld.kernel import remote
+from gaworld.apps import kernel_api, world_paths
+from gaworld.kernel import build_kernel, remote
 
 
 def _kernel(tmp):
@@ -117,10 +116,10 @@ class QueueTest(unittest.TestCase):
 class HttpTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self._saved = (ds.REPO_ROOT, ds.RECORDS_DIR, kernel_api.POLL_SECONDS)
-        ds.REPO_ROOT = self.tmp.name
-        ds.RECORDS_DIR = os.path.join(self.tmp.name, "records")
-        os.makedirs(ds.RECORDS_DIR)
+        self._saved = (world_paths.REPO_ROOT, world_paths.RECORDS_DIR, kernel_api.POLL_SECONDS)
+        world_paths.REPO_ROOT = self.tmp.name
+        world_paths.RECORDS_DIR = os.path.join(self.tmp.name, "records")
+        os.makedirs(world_paths.RECORDS_DIR)
         kernel_api.POLL_SECONDS = 0.05
         self.ctx = _kernel(self.tmp.name)
         self.qpath = os.path.join(self.tmp.name, remote.DEFAULT_PATH)
@@ -132,7 +131,7 @@ class HttpTest(unittest.TestCase):
         self.server.shutdown()
         self.server.server_close()
         self.ctx.recorder.close()
-        ds.REPO_ROOT, ds.RECORDS_DIR, kernel_api.POLL_SECONDS = self._saved
+        world_paths.REPO_ROOT, world_paths.RECORDS_DIR, kernel_api.POLL_SECONDS = self._saved
         self.tmp.cleanup()
 
     def _call(self, method, path, body=None):
@@ -165,7 +164,7 @@ class HttpTest(unittest.TestCase):
         self.assertEqual(self._call("GET", "/api/interventions/zzz")[0], 404)
 
     def test_stream_pushes_only_new_complete_rows_of_selected_tables(self):
-        with open(os.path.join(ds.RECORDS_DIR, "traffic.tick.jsonl"), "w") as f:
+        with open(os.path.join(world_paths.RECORDS_DIR, "traffic.tick.jsonl"), "w") as f:
             f.write(json.dumps({"old": True}) + "\n")
         port = self.server.server_address[1]
         sock = socket.create_connection(("127.0.0.1", port), timeout=5)
@@ -175,9 +174,9 @@ class HttpTest(unittest.TestCase):
         while b": connected" not in buf:
             buf += reader.readline()
         self.assertIn(b"text/event-stream", buf)
-        with open(os.path.join(ds.RECORDS_DIR, "family.agent.jsonl"), "w") as f:
+        with open(os.path.join(world_paths.RECORDS_DIR, "family.agent.jsonl"), "w") as f:
             f.write(json.dumps({"skip": True}) + "\n")
-        with open(os.path.join(ds.RECORDS_DIR, "traffic.tick.jsonl"), "a") as f:
+        with open(os.path.join(world_paths.RECORDS_DIR, "traffic.tick.jsonl"), "a") as f:
             f.write(json.dumps({"n": 1}) + "\n" + '{"torn": ')
             f.flush()
         frame = []

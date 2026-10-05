@@ -341,9 +341,73 @@
 }
 .disaster-card .detail { margin: 6px 0 0; font-size: 12px; line-height: 1.6; }
 .disaster-card .say { margin: 6px 0 0; font-size: 12px; color: var(--game-muted); font-style: italic; }
+.disaster-card .meta-line { margin: 4px 0 0; color: var(--game-muted); font-size: 11px; }
 .disaster-card footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
 .disaster-card .panic { color: var(--game-danger); font-size: 11px; letter-spacing: 1px; }
 .disaster-card .help { font-size: 11px; color: var(--game-muted); }
+.disaster-card .help.is-error { color: var(--game-danger); }
+
+/* 新闻评论 stance 标签颜色 — 与游戏通用的 for / against / abstain 一致，
+   额外加 pro / skeptic 两种以覆盖 4 种立场。 */
+.disaster-card .tag.is-pro { color: var(--game-accent); border-color: var(--game-accent); }
+.disaster-card .tag.is-against { color: var(--game-danger); border-color: var(--game-danger); }
+.disaster-card .tag.is-neutral,
+.disaster-card .tag.is-skeptic { color: var(--game-muted); border-color: var(--game-divider); }
+.disaster-card .tag.is-other { color: var(--game-muted); border-color: var(--game-divider); }
+
+/* 多新闻：主新闻块 + 相关新闻块的视觉分组 */
+.news-block {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius, 10px);
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: var(--game-card, #fff);
+}
+.news-block.is-main { border-color: var(--game-accent); border-left-width: 3px; }
+.news-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.news-block-tag {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--game-accent);
+  font-weight: 600;
+}
+.news-mode-toggle { display: flex; gap: 4px; }
+.news-mode-toggle .button.is-on { border-color: var(--game-accent); color: var(--game-accent); }
+.news-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* 结果区：相关阅读小条 */
+.commentary-related {
+  border: 1px dashed var(--game-divider);
+  border-radius: var(--radius, 10px);
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+.commentary-related h4 { margin: 0 0 4px; font-size: 14px; }
+.commentary-related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.commentary-related-list li {
+  font-size: 12px;
+  color: var(--game-muted);
+  line-height: 1.5;
+}
+.commentary-related-list .related-title { color: var(--game-ink); font-weight: 600; }
 
 .disaster-idle { color: var(--game-muted); font-size: 13px; padding: 24px 0; text-align: center; }
 
@@ -668,3 +732,444 @@ b.is-b, .duel-pick.is-b.is-on, .duel-score .side.is-b i { color: var(--duel-b); 
 .guess-history li { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
 .guess-history .who { font-weight: 600; }
 .guess-history .meta { color: var(--game-muted); }
+
+/* ---- 小说局 (Novel Writer): same frame as the other two-column pages,
+ * book cover + cast + TOC + flowing chapter reader on the right. ---- */
+.novel-cover {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius, 14px);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  background: var(--game-soft);
+}
+.novel-cover h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  letter-spacing: .02em;
+}
+.novel-premise {
+  margin: 4px 0 8px;
+  color: var(--game-muted);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.novel-back-cover {
+  margin: 8px 0 12px;
+  font-size: 14px;
+  line-height: 1.75;
+}
+.novel-cast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.novel-cast-tag {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-card);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.novel-cast-tag b { font-weight: 600; }
+.novel-cast-tag i { color: var(--game-muted); font-style: normal; font-size: 11px; }
+.novel-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--game-divider);
+  color: var(--game-muted);
+  font-size: 12px;
+}
+.novel-stats span b { color: var(--game-ink); }
+
+.novel-toc {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius, 14px);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: var(--game-card);
+}
+.novel-toc h4 { margin: 0 0 8px; font-size: 14px; }
+.novel-toc ol {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.novel-toc a {
+  color: var(--game-ink);
+  text-decoration: none;
+}
+.novel-toc a:hover { color: var(--game-accent); text-decoration: underline; }
+.novel-toc .muted { color: var(--game-muted); margin-left: 6px; font-size: 12px; }
+
+.novel-reader {
+  display: grid;
+  gap: 18px;
+}
+.novel-chapter {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius, 14px);
+  padding: 18px 22px;
+  background: var(--game-card);
+}
+.novel-chapter h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.novel-chapter-meta {
+  margin: 0 0 12px;
+  color: var(--game-muted);
+  font-size: 12px;
+}
+.novel-chapter-body {
+  font-size: 15px;
+  line-height: 1.85;
+  letter-spacing: .01em;
+}
+
+/* ---- 陪审团 (Jury): same two-column frame as persuasion, transcript on the right ---- */
+.jury-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px 0 0;
+}
+@media (max-width: 980px) {
+  .jury-grid { grid-template-columns: 1fr; }
+}
+.jury-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.jury-side .field { display: block; margin-bottom: 12px; }
+.jury-side .field > span { display: block; font-size: 13px; margin-bottom: 4px; }
+.jury-side select,
+.jury-side input:not([type="checkbox"]),
+.jury-side textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-card);
+  color: var(--game-ink);
+  font: inherit;
+}
+.jury-side textarea { min-height: 84px; resize: vertical; }
+.jury-hint {
+  color: var(--game-muted);
+  font-size: 12px;
+  margin: 4px 0 12px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.jury-block { margin-top: 6px; }
+.jury-block h4 { margin: 0 0 4px; font-size: 14px; }
+.jury-toolbar { display: flex; gap: 6px; margin: 6px 0 8px; }
+.jury-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+}
+.jury-list li { border-bottom: 1px solid var(--game-divider); }
+.jury-list li:last-child { border-bottom: 0; }
+.jury-list label { display: flex; align-items: baseline; gap: 6px; padding: 6px 8px; cursor: pointer; }
+.jury-list input[type="checkbox"] { flex: none; margin: 0; }
+.jury-list .who { font-size: 13px; }
+.jury-list .meta { color: var(--game-muted); font-size: 11px; }
+.jury-list li.is-picked { background: var(--game-soft); }
+.jury-empty { color: var(--game-muted); font-size: 12px; padding: 8px; }
+.jury-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.jury-history { margin-top: 18px; border-top: 1px solid var(--game-divider); padding-top: 14px; }
+.jury-history h4 { margin: 0 0 8px; font-size: 14px; }
+.jury-history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.jury-history li button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--game-card);
+  color: inherit;
+  cursor: pointer;
+}
+.jury-history li button:hover { border-color: var(--game-accent); }
+.jury-history .who { font-weight: 600; font-size: 13px; }
+.jury-history .meta { display: block; color: var(--game-muted); font-size: 11px; margin-top: 2px; }
+
+.jury-main-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid var(--game-divider);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.jury-main-head h3 { margin: 0; }
+.jury-status { margin: 4px 0 0; color: var(--game-muted); font-size: 13px; }
+.jury-status.is-error { color: var(--game-danger); }
+.jury-progress { display: flex; align-items: center; gap: 8px; min-width: 160px; }
+.jury-progress .bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--game-soft);
+  overflow: hidden;
+}
+.jury-progress .bar span { display: block; height: 100%; background: var(--game-accent); transition: width .2s ease; }
+
+.jury-verdict {
+  border-left: 3px solid var(--game-accent);
+  background: var(--game-success-soft);
+  border-radius: var(--radius-sm, 8px);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.jury-verdict.is-guilty {
+  border-color: var(--game-danger);
+  background: var(--game-danger-soft);
+}
+.jury-verdict .jury-tally {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 14px;
+}
+.jury-verdict .jury-tally .side { display: flex; align-items: baseline; gap: 6px; }
+.jury-verdict .jury-tally .side b { font-size: 14px; }
+.jury-verdict .jury-tally .side i {
+  font-style: normal;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--game-divider);
+  background: var(--game-card);
+}
+.jury-verdict .jury-tally .vs { color: var(--game-muted); font-size: 12px; }
+.jury-verdict h4 { margin: 8px 0 0; font-size: 18px; }
+.jury-verdict p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; }
+
+.jury-stats { margin-bottom: 18px; }
+.jury-stats-head { margin-bottom: 10px; }
+.jury-stats-head h4 { margin: 0 0 4px; font-size: 14px; }
+.jury-stats-head p { margin: 0 0 6px; font-size: 12px; }
+.jury-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.jury-metric {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 12px;
+  background: var(--game-card);
+}
+.jury-metric .label { display: block; font-size: 11px; color: var(--game-muted); margin-bottom: 2px; }
+.jury-metric b { font-size: 16px; }
+
+.jury-rounds { display: grid; gap: 14px; margin-bottom: 18px; }
+.jury-round { border: 1px solid var(--game-divider); border-radius: var(--radius-sm, 10px); background: var(--game-card); }
+.jury-round header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--game-divider);
+  font-size: 13px;
+}
+.jury-round-body {
+  padding: 8px 12px;
+  display: grid;
+  gap: 8px;
+}
+.jury-speech {
+  background: var(--game-soft);
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 12px;
+}
+.jury-speech .who { font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px; }
+.jury-speech p { margin: 0; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+
+.jury-ballots h4 { margin: 0 0 4px; font-size: 14px; }
+.jury-ballots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.jury-ballot {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 12px;
+  background: var(--game-card);
+}
+.jury-ballot header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.jury-ballot .ballot-id { font-size: 11px; color: var(--game-muted); }
+.jury-ballot .ballot-vote {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--game-divider);
+}
+.jury-ballot.is-not .ballot-vote { color: var(--game-accent); border-color: var(--game-accent); }
+.jury-ballot.is-guilty .ballot-vote { color: var(--game-danger); border-color: var(--game-danger); }
+.jury-ballot .ballot-meta { margin: 0; font-size: 12px; color: var(--game-muted); }
+.jury-ballot .ballot-meter {
+  margin: 6px 0 4px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--game-soft);
+  overflow: hidden;
+}
+.jury-ballot .ballot-meter i { display: block; height: 100%; background: var(--game-accent); transition: width .2s ease; }
+.jury-ballot .ballot-meter.rep-sure i { background: #c8a042; }
+.jury-ballot .ballot-meter.rep-weak i { background: var(--game-muted); }
+.jury-ballot .ballot-confidence { margin: 0 0 6px; font-size: 11px; color: var(--game-muted); }
+.jury-ballot blockquote {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--game-ink);
+  border-left: 2px solid var(--game-divider);
+  padding: 2px 8px;
+}
+.jury-ballot .ballot-secondary {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--game-muted);
+}
+
+.jury-tally-rows {
+  border-top: 1px dashed var(--game-divider);
+  padding-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.jury-row .label { font-size: 13px; font-weight: 600; }
+.jury-row ul {
+  margin: 4px 0 0;
+  padding: 0 0 0 16px;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.jury-idle { color: var(--game-muted); font-size: 13px; padding: 24px 0; text-align: center; }
+
+/* ---- 小说局: tabs + 故事线可视化 ---- */
+.novel-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--game-divider);
+  margin: 6px 0 14px;
+}
+.novel-tab {
+  font: inherit;
+  border: 1px solid var(--game-divider);
+  border-bottom: none;
+  border-radius: var(--radius-sm, 8px) var(--radius-sm, 8px) 0 0;
+  background: var(--game-card);
+  color: var(--game-muted);
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.novel-tab.is-active {
+  background: var(--game-soft);
+  color: var(--game-ink);
+  border-color: var(--game-accent);
+  border-bottom-color: var(--game-soft);
+}
+.novel-tab:hover:not(.is-active) { color: var(--game-ink); }
+
+.novel-pane { display: block; }
+.novel-viz-panel {
+  border: 1px solid var(--game-divider);
+  border-radius: var(--radius, 14px);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--game-card);
+}
+.novel-viz-panel h4 { margin: 0 0 4px; font-size: 15px; }
+.novel-viz-panel .muted { display: block; margin: 0 0 10px; font-size: 12px; line-height: 1.6; }
+
+/* flow */
+.novel-flow { overflow-x: auto; padding: 4px 0 8px; }
+.novel-flow-svg { display: block; min-width: 100%; }
+.novel-flow-label { font-size: 11px; fill: var(--game-muted); }
+.novel-flow-title { font-size: 13px; fill: var(--game-ink); font-weight: 600; }
+.novel-flow-meta { font-size: 10px; fill: var(--game-muted); }
+.novel-flow-node:hover rect { stroke: var(--game-accent); stroke-width: 2; }
+.novel-flow-node a { cursor: pointer; }
+
+/* arc */
+.novel-arc { width: 100%; overflow-x: auto; }
+.novel-arc-svg { display: block; width: 100%; min-width: 360px; max-width: 100%; }
+.novel-arc-tick { font-size: 10px; fill: var(--game-muted); }
+.novel-arc-legend {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: 12px;
+}
+.novel-arc-legend li { display: inline-flex; align-items: baseline; gap: 4px; }
+.novel-arc-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: 2px;
+  vertical-align: -1px;
+}
+.novel-arc-legend b { font-weight: 600; }
+
+/* net */
+.novel-net { display: flex; justify-content: center; }
+.novel-net-svg { display: block; max-width: 360px; width: 100%; }
+.novel-net-label { font-size: 11px; fill: var(--game-ink); font-weight: 600; }
+.novel-net-note { font-size: 11px; margin: 6px 0 0; }
+
+/* ---- 谁是真人 (Who's Human) ---- */
+.disaster-grid.is-single { grid-template-columns: 1fr; }
+.whois-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.whois-links ul, .whois-ballot ul, .whois-reveal { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.whois-links li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.whois-link { flex: 1 1 260px; font-size: 12px; padding: 4px 6px; border: 1px solid var(--game-divider); border-radius: var(--radius-sm, 8px); }
+.whois-flag { color: var(--game-muted); font-size: 12px; }
+.whois-chat { display: grid; gap: 12px; margin-bottom: 12px; }
+.whois-round { border-top: 1px solid var(--game-divider); padding-top: 8px; display: grid; gap: 6px; }
+.whois-round-head { margin: 0; color: var(--game-muted); font-size: 12px; }
+.whois-msg { display: flex; gap: 8px; align-items: baseline; }
+.whois-msg.is-me .whois-text { background: var(--game-soft); }
+.whois-alias { flex: none; font-weight: 600; font-size: 13px; min-width: 3em; }
+.whois-text { padding: 6px 10px; border-radius: var(--radius-sm, 8px); border: 1px solid var(--game-divider); font-size: 14px; }
+.whois-compose, .whois-ballot { display: grid; gap: 8px; margin-bottom: 12px; }
+.whois-compose textarea, .whois-ballot textarea { min-height: 64px; resize: vertical; }
+.whois-ballot li { display: flex; gap: 14px; align-items: center; font-size: 14px; }
+.whois-ballot label { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-weight: 400; }
+.whois-ballot input[type="radio"] { margin: 0; }
+.whois-compose .button, .whois-ballot .button { justify-self: start; }
+.whois-reveal li { padding: 8px 10px; border-radius: var(--radius-sm, 8px); border: 1px solid var(--game-divider); font-size: 14px; }
+.whois-reveal li.is-human { background: var(--game-success-soft); }
+.whois-reveal li .muted { float: right; font-size: 12px; }
+.whois-mine { font-weight: 600; }

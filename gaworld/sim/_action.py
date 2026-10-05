@@ -27,7 +27,7 @@ from __future__ import annotations
 import json
 import re
 import random
-from typing import Any
+from typing import Any, Callable
 
 from gaworld.cognition.realism import build_context_key
 from gaworld.interests import match_growth_items
@@ -495,6 +495,7 @@ def choose_action(
     recall_context: dict[str, Any] | None = None,
     decision_refs: dict[str, Any] | None = None,
     return_debug: bool = False,
+    candidate_provider: Callable[[dict[str, Any], str], list[str]] | None = None,
 ):
     if is_sleep_activity(activity):
         result = "睡觉"
@@ -506,6 +507,11 @@ def choose_action(
             }
         return result
     options = action_space.get(activity, [])
+    if candidate_provider is not None:
+        contributions = candidate_provider(agent, activity) or []
+        if contributions:
+            options = list(options)
+            options.extend(option for option in contributions if isinstance(option, str) and option not in options)
 
     if not options:
         result = fallback_action(activity)

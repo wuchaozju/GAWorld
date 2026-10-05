@@ -15,6 +15,21 @@ folds in at end-of-run. It is intentionally minimal:
 * thread-safe (the same lock protects every field),
 * resettable so long-running processes can bracket sub-runs.
 
+Two levels are counted, because they answer different questions:
+
+* **attempts** (``record``) — one per provider tried. A request that fails
+  on the primary and succeeds on the fallback is one failed attempt and one
+  successful one, so the attempt failure rate overstates how many answers
+  were lost.
+* **requests** (``record_request``) — one per ``LLMRouter.call``: did the
+  caller get an answer at all, and did it come from a fallback model?
+  ``requests_failed`` is what a run manifest judges a run by.
+
+``snapshot()["run"]`` is everything since :meth:`mark_run_start`. The
+process-wide totals include whatever the process did before the run (a
+dashboard warm-up, or — in the test suite — every earlier test), so a run
+manifest must not report them as the run's own.
+
 The global instance :data:`GLOBAL_STATS` is what the router uses; tests
 that want isolation should instantiate their own :class:`LLMCallStats`.
 """
@@ -50,10 +65,14 @@ class LLMCallStats:
         self._total_latency_ms = 0
         self._by_task: dict[str, _Bucket] = {}
         self._by_provider: dict[str, _Bucket] = {}
+        self._requests = 0
+        self._requests_failed = 0
+        self._requests_fell_back = 0
         # Task boundary — set when the enclosing run/experiment starts,
         # so the manifest can distinguish a run's calls from any that
         # occurred before it (rare, but possible with dashboard).
         self._started_at_call: int = 0
+        self._run_base: dict[str, Any] = self._counters()
 
     # ------------------------------------------------------------------
     # Recording
@@ -81,6 +100,17 @@ class LLMCallStats:
                 self._bucket(self._by_provider, provider or "").failures += 1
             self._bucket(self._by_provider, provider or "").total_latency_ms += max(0, int(latency_ms))
 
+    def record_request(self, *, ok: bool, fell_back: bool = False) -> None:
+        """One routed request finished: answered (``ok``) or lost after every
+        provider in the chain failed. ``fell_back`` = answered by a provider
+        other than the primary."""
+        with self._lock:
+            self._requests += 1
+            if not ok:
+                self._requests_failed += 1
+            elif fell_back:
+                self._requests_fell_back += 1
+
     @staticmethod
     def _bucket(store: dict[str, _Bucket], key: str) -> _Bucket:
         if key not in store:
@@ -91,10 +121,44 @@ class LLMCallStats:
     # Snapshot
     # ------------------------------------------------------------------
 
+    def _counters(self) -> dict[str, Any]:
+        return {
+            "call_count": self._call_count,
+            "failure_count": self._failure_count,
+            "total_latency_ms": self._total_latency_ms,
+            "requests": self._requests,
+            "requests_failed": self._requests_failed,
+            "requests_fell_back": self._requests_fell_back,
+            "by_task": {k: v.to_dict() for k, v in self._by_task.items()},
+            "by_provider": {k: v.to_dict() for k, v in self._by_provider.items()},
+        }
+
+    @staticmethod
+    def _since(now: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
+        out = {k: now[k] - base.get(k, 0) for k in now if not isinstance(now[k], dict)}
+        for group in ("by_task", "by_provider"):
+            then = base.get(group, {})
+            diff = {}
+            for key, bucket in now[group].items():
+                prev = then.get(key, {})
+                delta = {f: bucket[f] - prev.get(f, 0) for f in bucket}
+                if delta["calls"]:
+                    diff[key] = delta
+            out[group] = diff
+        out["avg_latency_ms"] = (
+            int(out["total_latency_ms"] / out["call_count"]) if out["call_count"] else 0
+        )
+        return out
+
     def snapshot(self) -> dict[str, Any]:
-        """Return a JSON-safe view of the current counters."""
+        """Return a JSON-safe view of the current counters.
+
+        Top-level numbers are process-wide; ``run`` holds the same numbers
+        counted from :meth:`mark_run_start` on.
+        """
         with self._lock:
             calls_in_run = self._call_count - self._started_at_call
+            now = self._counters()
             return {
                 "call_count": self._call_count,
                 "calls_in_run": max(0, calls_in_run),
@@ -103,8 +167,12 @@ class LLMCallStats:
                 "avg_latency_ms": int(
                     self._total_latency_ms / self._call_count
                 ) if self._call_count else 0,
-                "by_task": {k: v.to_dict() for k, v in self._by_task.items()},
-                "by_provider": {k: v.to_dict() for k, v in self._by_provider.items()},
+                "by_task": now["by_task"],
+                "by_provider": now["by_provider"],
+                "requests": self._requests,
+                "requests_failed": self._requests_failed,
+                "requests_fell_back": self._requests_fell_back,
+                "run": self._since(now, self._run_base),
             }
 
     def mark_run_start(self) -> None:
@@ -115,6 +183,7 @@ class LLMCallStats:
         """
         with self._lock:
             self._started_at_call = self._call_count
+            self._run_base = self._counters()
 
     def reset(self) -> None:
         with self._lock:
@@ -123,7 +192,11 @@ class LLMCallStats:
             self._total_latency_ms = 0
             self._by_task.clear()
             self._by_provider.clear()
+            self._requests = 0
+            self._requests_failed = 0
+            self._requests_fell_back = 0
             self._started_at_call = 0
+            self._run_base = self._counters()
 
 
 # Process-wide instance the router uses. Tests should build their own.

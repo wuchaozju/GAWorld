@@ -4,14 +4,14 @@ GAWorld 对外暴露三种 API 表面，覆盖从单条 CLI 命令到多服务 H
 
 | 表面 | 适用场景 | 入口 |
 | --- | --- | --- |
-| **HTTP** | Dashboard / 前端 / 第三方系统接入、机器对机器集成 | `dashboard_server.py`、`twin_server.py`、`distributed_comm_server.py`、`external_environment_server.py` |
+| **HTTP** | Dashboard / 前端 / 第三方系统接入、机器对机器集成 | `dashboard_server.py`、`twin_server.py`、`distributed_comm_server.py`、`external_environment_server.py`；Python 客户端 `gaworld.client`（见 3.4） |
 | **CLI** | 本地仿真运行、单次任务、批量实验、子进程流水线 | `python generative_city_sim.py <cmd>`、`python -m gaworld.<sub>` |
 | **Python** | 把仿真内核或子系统嵌入自己的脚本 / Notebook | `import gaworld`、`from gaworld.<sub> import …` |
 
 > 约定
 > - 所有 HTTP 服务的请求/响应均为 UTF‑8 JSON；`POST` body 也用 JSON。
-> - 通用错误：`{"error": "..."}`，HTTP 400/403/404/500。
-> - Dashboard（端口 8766）会从请求头读取 token，但不强制；其余独立服务鉴权策略见各自章节。
+> - 通用错误：`{"error": "..."}`；Dashboard 各状态码的含义见 1.1.0。
+> - Dashboard（端口 8766）只在设置了 `GAWORLD_DASHBOARD_TOKEN` 或开启账号后才要求鉴权（见第 4 节）；其余独立服务鉴权策略见各自章节。
 > - 默认数据/产物目录：`data/`（输入）、`output/`（仿真产物）。
 
 ---
@@ -31,58 +31,89 @@ python dashboard_server.py
 ```
 
 `http://127.0.0.1:8766/` 是项目首页：`/console`、`/dashboard`、`/board`、`/m` 等入口聚合在控制台。
-所有 `/api/*` 路径由 `gaworld/apps/dashboard_server.py:2398`（GET）与 `gaworld/apps/dashboard_server.py:2578`（POST）分发到 `gaworld/apps/<module>_api.py` 的 `handle_get/handle_post`。
+所有 `/api/*` 路径由 `DashboardHandler._handle_api_get` / `_handle_api_post`（`gaworld/apps/dashboard_server.py`）分发：按整段前缀交给 `gaworld/apps/<module>_api.py` 的 `handle_get/handle_post`（前缀表在 `gaworld/apps/routes.py`），其余在 handler 里直接处理。
 
-> **机器可读描述**：`GET /api/openapi.json`（OpenAPI 3.1，源在 `gaworld/apps/openapi.py`）。目前覆盖对外的编程接口——干预、事件流、信息源、评测、经济；控制台各面板自用的路由仍以本文档为准。`tests/test_openapi.py` 会校验文档合法，并逐条请求确认每个列出的路由都真实存在。可直接导入 Swagger UI / Postman，或用 `openapi-generator` 生成客户端。
+#### 1.1.0 接口约定与机器可读描述
+
+**`GET /api/openapi.json`**（OpenAPI 3.1，源在 `gaworld/apps/openapi.py`）描述 Dashboard 的**全部** `/api/*` 路由（约 280 个操作），控制台各面板自用的也在内；本文档下面的表是导读，字段以它为准。可直接导入 Swagger UI / Postman，或用 `openapi-generator` 生成客户端。每个操作自动带有：
+
+- `operationId`：`<method>_<路径段>`，参数段取参数名，`-`/`.` 换成 `_`。例：`GET /api/agents/{agent_id}/state` → `get_agents_agent_id_state`，`POST /api/games/rumor/run` → `post_games_rumor_run`。`gaworld.client` 按它调用任意接口（3.4）。
+- `x-gaworld-access`：开启账号后需要的级别（`public` / `member` / `city` / `world` / `admin`，取自 `gaworld/accounts/policy.py`）；`x-gaworld-quota: true` 标出会花模型调用、成员当日额度用完后被拒的请求。
+- 分布式世界节点用的 `/api/cluster/node*`、`/api/cluster/relay/*` 标 `security: node`（节点令牌）。
+
+`tests/test_openapi.py` 双向校验它不与代码脱节：文档合法；文档里的每个 GET 都逐条请求、确认已注册，每个 POST 的路径段都在代码里；反过来，服务端代码和控制台脚本里出现的每个 `/api/…` 路由都必须在文档里——**新加路由时同时在 `openapi.py` 里加一条**，否则测试失败。
+
+**状态码**（错误体一律 `{"error": "..."}`）：
+
+| 状态 | 含义 |
+| --- | --- |
+| 200 | 成功 |
+| 202 | 已排队 / 已开作业：后台作业返回 `{"job_id": …}`（干预返回请求记录） |
+| 400 | 参数不对（缺字段、类型错、JSON 体不是对象） |
+| 401 / 403 | 未登录或令牌不对 / 已登录但无权限 |
+| 404 | 找不到对象（居民、作业、会话…）；路由不存在时统一为 `{"error": "Unknown endpoint"}` |
+| 405 | 路由存在但不支持这个方法；响应头 `Allow` 与体里的 `allowed` 列出可用方法（依据 OpenAPI 文档判断） |
+| 409 | 状态冲突：已有仿真在运行或排队、没有运行中的仿真可干预、已有平行世界实验/研究在跑、居民已被别人认领 |
+| 413 | 请求体过大（分布式节点上传） |
+| 429 | 成员当日模型调用额度已用完 |
+| 500 / 502 | 服务端异常（traceback 打到服务端日志）/ 上游模型调用失败 |
+
+**后台作业**：耗时的请求（游戏场各局、群体采访、研究分析、真人蒸馏、人口合成、批量导入、斗兽场、严肃游戏设计、政策仿真）立刻返回 `202` + `{"job_id"}`，再轮询同一前缀下的 `…/jobs/{job_id}`（`POST /api/games/rumor/run` → `GET /api/games/rumor/jobs/{job_id}`），直到 `status` 不再是 `running`：`done` 时读 `result`，`failed` / `error` 时读 `error`。例外：评测 `POST /api/bench/run` 返回的作业 id 在 `id` 字段；研究 `POST /api/research/studies/{id}/run` 的作业在 `/api/research/jobs/{job_id}`；平行世界用 `GET /api/parallel-worlds/job?id=`。
+
+**当前世界**：开启账号后，每个请求读写的都是 cookie `gaworld_world` 指定的世界（`POST /api/worlds/select` 切换），见 1.1.7。
 
 #### 1.1.1 顶层路由
+
+居民相关的读写在 `gaworld/apps/residents.py`，其余在 `dashboard_server.py` 本身。
 
 | Method | 路径 | 用途 | Handler / 参考 |
 | --- | --- | --- | --- |
 | GET | `/api/config` | 当前生效的仿真配置摘要（合并 `config.py` + `dashboard_config.json` + 环境覆盖） | `dashboard_server._config_summary` |
-| POST | `/api/config` | 部分覆盖配置并写回 `dashboard_config.json` | `dashboard_server._save_config_patch` |
-| GET | `/api/agents` | 全部 agent 摘要列表（id、姓名、年龄、性别、状态概览） | `dashboard_server._agents_summary` |
-| POST | `/api/agents` | 创建一个新 agent（body：profile 字段） | `dashboard_server._create_agent` |
-| GET | `/api/agents/{id}/profile` | 单个 agent 的 profile markdown + 解析后的结构化字段 | `dashboard_server._agent_profile` |
-| POST | `/api/agents/{id}/profile` | `body.text` 写入 profile | `dashboard_server._save_agent_profile` |
-| GET | `/api/agents/{id}/state` | 九维状态（情绪/能量/社交/金钱等） | `dashboard_server._agent_state` |
-| POST | `/api/agents/{id}/state` | 改写/补充九维状态 | `dashboard_server._save_agent_state` |
-| GET | `/api/agents/{id}/big5` | Big Five 性格（O/C/E/A/N） | `dashboard_server._agent_big5` |
-| POST | `/api/agents/{id}/big5` | 写入 Big Five，body 必含 5 个 0–1 浮点数 | `dashboard_server._save_agent_big5` |
-| GET | `/api/agents/{id}/detail` | 完整合成快照（profile + state + big5 + 关系 + 财务等） | `dashboard_server._agent_detail` |
-| GET | `/api/agents/{id}/memory` | 记忆列表 + 摘要 + 标签分布 | `dashboard_server._memory_payload` |
-| POST | `/api/agents/{id}/memory` | 追加一条记忆（来自人工或外部系统） | `dashboard_server._append_agent_memory` |
-| GET | `/api/agents/{id}/goals` | 当前目标树 | `dashboard_server._agent_goals_payload` |
-| POST | `/api/agents/{id}/goals` | 改写目标树 | `dashboard_server._save_agent_goals_payload` |
-| GET | `/api/agents/{id}/relationships` | （GET 走外部子模块；见 1.1.4） | `interview_api` 之外 |
-| POST | `/api/agents/{id}/relationships` | 写入社会关系 | `dashboard_server._save_agent_relationships` |
-| GET | `/api/agents/{id}/finance` | （GET 走外部子模块） | — |
-| POST | `/api/agents/{id}/finance` | 写入经济账本 | `dashboard_server._save_agent_finance` |
-| GET | `/api/skills` | 技能库（名称 + 触发词 + 版本） | `dashboard_server._skills_library` |
-| GET | `/api/agents/{id}/profile\|state\|big5\|detail\|memory\|goals` 的 404 | `{"error": "Agent not found"}` 或 `Profile not found` | — |
-| GET | `/api/run/status?log_offset=N` | 仿真运行状态（启动/停止/进度/最近日志偏移量） | `dashboard_server._run_status` |
-| GET | `/api/run/log/export` | 把最近运行日志导出成 Markdown 文件下载 | `dashboard_server._run_log_markdown` |
+| POST | `/api/config` | 部分覆盖配置并写回当前世界的 `dashboard_config.json` | `dashboard_server._save_config_patch` |
+| GET | `/api/agents` | 全部 agent 摘要列表（id、姓名、年龄、性别、状态概览） | `residents.agents_summary` |
+| POST | `/api/agents` | 创建一个新 agent（body：`name, gender, age, hukou, residence, job, personality, daily_life, values, education_income, social_network, state`） | `residents.create_agent` |
+| GET | `/api/agents/{id}/avatar` | 生成的头像（`image/svg+xml`） | `build_agent_avatar_svg` |
+| GET | `/api/agents/{id}/profile` | 单个 agent 的 profile markdown + 解析后的结构化字段 | `residents.agent_profile` |
+| POST | `/api/agents/{id}/profile` | `body.text` 写入 profile | `residents.save_agent_profile` |
+| GET | `/api/agents/{id}/state` | 九维状态（情绪/能量/社交/金钱等） | `residents.agent_state` |
+| POST | `/api/agents/{id}/state` | 改写/补充九维状态：`{state, age?}` | `residents.save_agent_state` |
+| GET | `/api/agents/{id}/big5` | Big Five 性格（O/C/E/A/N） | `residents.agent_big5` |
+| POST | `/api/agents/{id}/big5` | `{values: {openness…neuroticism}}`，每项 0–1；非法 → 400 | `residents.save_agent_big5` |
+| GET | `/api/agents/{id}/detail` | 完整合成快照（profile + state + big5 + 关系 + 财务等） | `residents.agent_detail` |
+| GET | `/api/agents/{id}/autobiography` | 由记忆写成的自传（一次模型调用；失败 502） | `autobiography_api.handle_get` |
+| GET | `/api/agents/{id}/memory` | 记忆列表 + 摘要 + 标签分布 | `residents.memory_payload` |
+| POST | `/api/agents/{id}/memory` | 追加一条记忆 `{text, kind?}` | `residents.append_agent_memory` |
+| GET | `/api/agents/{id}/goals` | 当前目标树 | `residents.agent_goals_payload` |
+| POST | `/api/agents/{id}/goals` | 改写目标树；非法 → 400 | `residents.save_agent_goals_payload` |
+| POST | `/api/agents/{id}/relationships` | 写入社会关系 `{relations, removed?}`（只有 POST；读取走 `/detail`） | `residents.save_agent_relationships` |
+| POST | `/api/agents/{id}/finance` | 写入经济账户 `{accounts}`（只有 POST；读取走 `/detail`） | `residents.save_agent_finance` |
+| GET | `/api/skills` | 技能库（名称 + 触发词 + 版本） | `residents.skills_library` |
+| GET | `/api/agents/{id}/…` 的 404 | `{"error": "Agent not found"}` 或 `Profile not found` | — |
+| GET | `/api/run/status?log_offset=N` | 仿真运行状态（启动/停止/进度/排队位置/最近日志偏移量） | `runs.run_status` |
+| GET | `/api/run/log/export` | 把运行日志导出成 Markdown 文件下载 | `dashboard_server._run_log_markdown` |
 | GET | `/api/trace/meta` | 最近一次 trace 的元信息（输出目录、agent 数） | `dashboard_server._latest_trace_meta` |
-| GET | `/api/replay/runs` | 全部历史 run 目录，可用于 `/api/analytics/?run=<id>` | `dashboard_server._replay_runs` |
+| GET | `/api/trace/data` | 最近一次 trace 的帧数据 | `dashboard_server._trace_payload` |
+| GET | `/api/replay/runs` | 全部历史 run 目录，可用于 `/api/analytics/{section}?run=<id>` | `dashboard_server._replay_runs` |
 | GET | `/api/life-events` | 整城生命事件列表 | `dashboard_server._life_events_payload` |
-| POST | `/api/life-events` | `body` 注入一个新生命事件 | `dashboard_server._add_life_event` |
+| POST | `/api/life-events` | 注入一个生命事件：`{title, description, severity, agent_id \| agent_ids, schedule_mode, day?, time?, state_effects?, impact_tags?}`，或只给 `{candidate_key, agent_id}` 由候选目录补全 | `dashboard_server._add_life_event` |
 | GET | `/api/life-events/candidates?agent_id=&limit=` | 给定 agent 的候选事件（用于"今晚让 ta 遇到什么"面板） | `dashboard_server._life_event_candidates_payload` |
 | GET | `/api/todos` | 整个 todo 看板 | `dashboard_server._todo_board_payload` |
 | POST | `/api/todos` | `body.items` 整体替换 todo 列表 | `dashboard_server._save_todo_board` |
 | POST | `/api/todos/create` | 新建一条 todo | `dashboard_server._create_todo_item` |
-| POST | `/api/todos/update` | 改 todo（完成、编辑、移动列） | `dashboard_server._update_todo_item` |
+| POST | `/api/todos/update` | 改 todo（完成、编辑、移动列），`body.id` 必填 | `dashboard_server._update_todo_item` |
 | POST | `/api/todos/clear` | 清空 todo 板 | `dashboard_server._save_todo_board([])` |
-| POST | `/api/todos/create-form` | 表单版新建 todo（`application/x-www-form-urlencoded`），完成后 302 → `/board` | `dashboard_server._create_todo_item` |
+| POST | `/api/todos/create-form` | 表单版新建 todo（`application/x-www-form-urlencoded`），完成后 303 → `/board` | `dashboard_server._create_todo_item` |
+| POST | `/api/interview` | 单 agent 采访（子进程跑 `generative_city_sim.py interview`）：`{agent_id, questions: str \| [str], context?, timeout?=300}` | `dashboard_server._interview_agent` |
 | POST | `/api/fos-export` | 读取仿真产物并用 LLM 生成一份 FOS（Frame‑of‑Science）提示词；body `output_dir?`、`hint?`、`english?` | `dashboard_server._fos_export` |
-| POST | `/api/relationships/friends` | 给一组 agent 建立双向好友关系（多智能体互动前置步骤） | `dashboard_server._get_collaboration_service().make_friends` |
+| POST | `/api/relationships/friends` | 给一组 agent 建立双向好友关系（多智能体互动前置步骤）：`{agent_ids}` | `CollaborationService.make_friends` |
 
 #### 1.1.2 仿真运行控制
 
 | Method | 路径 | 用途 |
 | --- | --- | --- |
-| POST | `/api/run/start` | 启动一次仿真运行，body 可含 `--sim-days / --seed / --time-unit / --fast-forward` 等同 `run` CLI 的选项；后台线程执行 |
-| POST | `/api/run/stop` | 发送停止信号给后台仿真线程 |
-| POST | `/api/run/schedule` | 把下一次仿真安排为定时任务，body `{cron, days, ...}` |
+| POST | `/api/run/start` | 在当前世界启动（或在名额满时排队）一次仿真子进程：`{config?, reset?}`——`config` 是配置补丁（`sim_span`、`time_step_minutes`、`agent_ids`…），先写入再启动；`reset` 先清空产物。已有运行或排队 → **409** |
+| POST | `/api/run/stop` | 停止当前世界的仿真 |
+| POST | `/api/run/schedule` | 定时启动：`{at, config?, reset?}`，`at` 为 ISO 时间或 `HH:MM` |
 | POST | `/api/run/schedule/cancel` | 取消已安排的定时仿真 |
 
 #### 1.1.3 Analytics 仪表盘
@@ -99,7 +130,7 @@ python dashboard_server.py
 | GET | `/api/analytics/behavior` | 行为习惯热力图（早/午/下午/晚/夜 × 活动） |
 | GET | `/api/analytics/events` | 事件时间轴 |
 
-参考：`gaworld/apps/dashboard_server.py:2298 _analytics_payload`。
+未知 section → 404 `Unknown analytics section`；`run` 不在列表里 → 404 `Unknown run`。参考：`dashboard_server._analytics_payload`。
 
 #### 1.1.4 子模块路由（按 namespace 拆分）
 
@@ -110,20 +141,21 @@ python dashboard_server.py
 | `population` | `gaworld/apps/population_api.py` | `GET /api/population/schema`、`GET /api/population/jobs/{id}`、`GET /api/population/export`、`GET /api/population/last`；`POST /api/population/preview`、`POST /api/population/generate`、`POST /api/population/group-run`、`POST /api/population/validate` | [CITY_TUTORIAL](CITY_TUTORIAL.md) |
 | `import` | `gaworld/apps/import_api.py` | `GET /api/import/schema`、`GET /api/import/jobs/{id}`；`POST /api/import/preview`、`POST /api/import/run` | [BULK_IMPORT_TUTORIAL](BULK_IMPORT_TUTORIAL.md) |
 | `arena` | `gaworld/apps/arena_api.py` | `GET /api/arena/tasks`、`/api/arena/agents`、`/api/arena/jobs/{id}`；`POST /api/arena/generate`、`/api/arena/run`、`/api/arena/retain`、`/api/arena/refill`、`/api/arena/state` | [ARENA_TUTORIAL](ARENA_TUTORIAL.md) |
-| `games/` | `gaworld/apps/games_api.py` | 游戏场。`GET /api/games/agents?city=`、`/api/games/persuasion/sessions[/{id}]`；`POST /api/games/persuasion/start`（body `{city, agent_id, question, max_turns}` → 完整 session，含 `initial_answer`）、`/api/games/persuasion/say`（`{session_id, message}`，用完最后一轮时连带结算）、`/api/games/persuasion/settle`（`{session_id}` → 复问 + 裁判，`outcome ∈ {success, failed}`）。会话只在内存里（≤ 50 局）。**灾害模式**转发给 `gaworld/apps/disaster_api.py`：`GET /api/games/disaster/catalogue\|/api/games/disaster/runs\|/api/games/disaster/jobs/{id}`；`POST /api/games/disaster/run`（body `{city, agent_ids, disaster_id|custom, stages}` → `{job_id}`，作业跑完 `result` 是整场推演：逐人 `reactions` + 逐幕 `stats` + `summary`）。**谣言扩散局**转发给 `gaworld/apps/rumor_api.py`：`GET /api/games/rumor/catalogue\|/api/games/rumor/graph?city=&agent_ids=1,2,3`（关系图预览，**不花模型调用**）`\|/api/games/rumor/runs\|/api/games/rumor/jobs/{id}`；`POST /api/games/rumor/run`（body `{city, agent_ids, rumor_id|custom, seeds, rounds}` → `{job_id}`，作业跑完 `result` 含 `nodes` / `edges` / `transmissions`（传播树）/ 逐轮 `rounds` / `stats`（含 `superspreader`、`firewalls`）/ `summary`）。关系图按档案推导（同小区 / 同姓 / 同行 / 同学 / 同龄），每人限 6 条边。**双队竞赛**转发给 `gaworld/apps/duel_api.py`：`GET /api/games/duel/catalogue`（内置任务，每个自带一对相反的办法）`\|/api/games/duel/runs\|/api/games/duel/jobs/{id}`；`POST /api/games/duel/run`（body `{city, team_a, team_b, task_id|custom, rounds}` → `{job_id}`，作业跑完 `result` 含逐队 `members[].moves` / 逐轮 `plans` / `verdict`（四维打分、`order` 蒙名顺序、`judge_said`）/ `stats`）。评审拿到的是「方案一 / 方案二」且顺序随机，赢家由**总分**决定而不是模型说了算；自定义任务必须给两个办法，同一个人不能在两队。**公投局**转发给 `referendum_api.py`：`GET /api/games/referendum/catalogue\|/runs\|/jobs/{id}`；`POST /api/games/referendum/run`（body `{city, agent_ids, motion_id|custom, campaign}` → `{job_id}`，先私下表态再公开表决，`result` 含逐人 `private`/`public`、`flips`、`stats.swing`）。**猜人局**转发给 `guess_api.py`：`GET /api/games/guess/catalogue\|/scoreboard\|/rounds/{id}`；`POST /api/games/guess/deal`（发牌，**不花调用**）、`/answer`（`{round_id, guess}` → 对错）、`/again`（复问同一人同一题，量档案稳定性）。后台作业用 `gaworld/apps/game_jobs.py` 的 `JobStore`，每个游戏一个。斗兽场仍在 `arena` 命名空间 | [PLAYGROUND_TUTORIAL](PLAYGROUND_TUTORIAL.md) |
-| `family` | `gaworld/apps/family_api.py` | `GET /api/family/overview\|/api/family/preview?agent_id=\|/api/family/agent?agent_id=`；`POST /api/family/override` | [FAMILY_DESIGN](FAMILY_DESIGN.md) |
+| `games/` | `gaworld/apps/games_api.py` | 游戏场。`GET /api/games/agents?city=`、`/api/games/persuasion/sessions[/{id}]`；`POST /api/games/persuasion/start`（body `{city, agent_id, question, max_turns}` → 完整 session，含 `initial_answer`）、`/api/games/persuasion/say`（`{session_id, message}`，用完最后一轮时连带结算）、`/api/games/persuasion/settle`（`{session_id}` → 复问 + 裁判，`outcome ∈ {success, failed}`）。会话只在内存里（≤ 50 局）。**谁是真人**转发给 `whois_api.py`：`GET /api/games/whois/catalogue`（话题与人数上限）`\|/rooms`（自己的房间）`\|/rooms/{id}?seat=`（不带 `seat` 是房主视图，含座位链接与谁还没发 / 没投；带 `seat` 只看得到座位号、聊天记录和自己的状态，揭晓前没有身份）；`POST /api/games/whois/rooms`（`{city, agent_ids?, agents, humans, rounds, topic_id\|custom}`，建房即开第一轮，不阻塞，居民在后台写）、`/rooms/{id}/say`（`{seat, text}`）、`/rooms/{id}/vote`（`{seat, verdicts: {座位号: "human"\|"resident"}, reason?}`，要覆盖除自己外的每个座位）、`/rooms/{id}/next`（房主：不等缺席的人收这一轮）、`/rooms/{id}/reveal`（房主：不等没投的人揭晓）。房间只在内存里，揭晓时存档到 `output/games/whois/` 供 Bench Track D。**灾害模式**转发给 `gaworld/apps/disaster_api.py`：`GET /api/games/disaster/catalogue\|/api/games/disaster/runs\|/api/games/disaster/jobs/{id}`；`POST /api/games/disaster/run`（body `{city, agent_ids, disaster_id|custom, stages}` → `{job_id}`，作业跑完 `result` 是整场推演：逐人 `reactions` + 逐幕 `stats` + `summary`）。**谣言扩散局**转发给 `gaworld/apps/rumor_api.py`：`GET /api/games/rumor/catalogue\|/api/games/rumor/graph?city=&agent_ids=1,2,3`（关系图预览，**不花模型调用**）`\|/api/games/rumor/runs\|/api/games/rumor/jobs/{id}`；`POST /api/games/rumor/run`（body `{city, agent_ids, rumor_id|custom, seeds, rounds}` → `{job_id}`，作业跑完 `result` 含 `nodes` / `edges` / `transmissions`（传播树）/ 逐轮 `rounds` / `stats`（含 `superspreader`、`firewalls`）/ `summary`）。关系图按档案推导（同小区 / 同姓 / 同行 / 同学 / 同龄），每人限 6 条边。**双队竞赛**转发给 `gaworld/apps/duel_api.py`：`GET /api/games/duel/catalogue`（内置任务，每个自带一对相反的办法）`\|/api/games/duel/runs\|/api/games/duel/jobs/{id}`；`POST /api/games/duel/run`（body `{city, team_a, team_b, task_id|custom, rounds}` → `{job_id}`，作业跑完 `result` 含逐队 `members[].moves` / 逐轮 `plans` / `verdict`（四维打分、`order` 蒙名顺序、`judge_said`）/ `stats`）。评审拿到的是「方案一 / 方案二」且顺序随机，赢家由**总分**决定而不是模型说了算；自定义任务必须给两个办法，同一个人不能在两队。**公投局**转发给 `referendum_api.py`：`GET /api/games/referendum/catalogue\|/runs\|/jobs/{id}`；`POST /api/games/referendum/run`（body `{city, agent_ids, motion_id|custom, campaign}` → `{job_id}`，先私下表态再公开表决，`result` 含逐人 `private`/`public`、`flips`、`stats.swing`）。**猜人局**转发给 `guess_api.py`：`GET /api/games/guess/catalogue\|/scoreboard\|/rounds/{id}`；`POST /api/games/guess/deal`（发牌，**不花调用**）、`/answer`（`{round_id, guess}` → 对错）、`/again`（复问同一人同一题，量档案稳定性）。**小说局** `novel_api.py`：`GET /api/games/novel/catalogue\|/agents?city=\|/runs\|/jobs/{id}`；`POST /api/games/novel/run`（`{city, agent_ids, style_id\|style_custom, target_words, chunks_per_chapter, outline?, title_hint?}`）。**陪审团** `jury_api.py`：`GET /api/games/jury/catalogue\|/runs\|/jobs/{id}`；`POST /api/games/jury/run`（`{city, agent_ids, case_id\|custom, rounds, question_key?}`）。**新闻评论** `commentary_api.py`：`GET /api/games/commentary/catalogue\|/runs\|/jobs/{id}`；`POST /api/games/commentary/run`（`{city, agent_ids, url\|title+body}`）。所有 `…/run` 都返回 **202** + `{job_id}`。后台作业用 `gaworld/apps/game_jobs.py` 的 `JobStore`，每个游戏一个。斗兽场仍在 `arena` 命名空间 | [PLAYGROUND_TUTORIAL](PLAYGROUND_TUTORIAL.md) |
+| `family` | `gaworld/apps/family_api.py` | `GET /api/family/overview`（`/api/family` 同）`\|/api/family/preview?agent_id=`（`GET /api/family/override` 同）`\|/api/family/agent?agent_id=`；`POST /api/family/override`（`{agent_id, override\|clear}`） | [FAMILY_DESIGN](FAMILY_DESIGN.md) |
 | `interview/`（带尾斜杠，避开单 agent 旧接口） | `gaworld/apps/interview_api.py` | `GET /api/interview/roster\|/api/interview/sessions\|/api/interview/jobs/{id}\|/api/interview/sessions/{id}[/export]`；`POST /api/interview/plan`、`/api/interview/run`、`/api/interview/delete` | [GROUP_INTERVIEW_TUTORIAL](GROUP_INTERVIEW_TUTORIAL.md) |
-| `research/` | `gaworld/apps/research_api.py` | `GET /api/research/context\|/api/research/plans\|/api/research/jobs/{id}\|/api/research/plans/{id}[/export]\|/api/research/studies[/{id}]`；`POST /api/research/digest`、`/api/research/analyze`、`/api/research/extract`、`/api/research/delete`、`/api/research/studies`（可带 `design_index` 选实验设计）、`/api/research/studies/{id}`（动作：update / approve / run / pause / resume / stop / reset / delete） | [EXPERIMENTS_REPORT](EXPERIMENTS_REPORT.md) |
+| `research/` | `gaworld/apps/research_api.py` | `GET /api/research/context\|/api/research/plans\|/api/research/jobs/{id}\|/api/research/plans/{id}[/export]\|/api/research/studies[/{id}]`；`POST /api/research/digest`、`/api/research/analyze`、`/api/research/extract`、`/api/research/delete`、`/api/research/studies`（可带 `design_index` 选实验设计）、`/api/research/studies/{id}`（动作：update / approve / run / pause / resume / stop / reset / delete；另一项研究在跑 → 409）。**严肃游戏** `serious_game_api.py`：`GET /api/research/games\|/games/{game_id}\|/games/jobs/{id}\|/games/sessions/{id}[/export]?seat=`；`POST /api/research/games/design`（202）、`/games/sessions`、`/games/sessions/{id}/act\|resolve\|delete`、`/games/{game_id}/update\|delete`。**政策仿真** `policy_sim_api.py`：`GET /api/research/policy\|/policy/{run_id}[/export]\|/policy/jobs/{id}`；`POST /api/research/policy/run`（202，`{policy, candidate?, city, sample_size, seed, verify, provider}`）、`/policy/{run_id}/delete` | [EXPERIMENTS_REPORT](EXPERIMENTS_REPORT.md) |
 | `persona/` | `gaworld/apps/persona_api.py` | `GET /api/persona/list\|/api/persona/jobs/{id}\|/api/persona/detail/{slug}`；`POST /api/persona/distill`、`/api/persona/deploy`、`/api/persona/install-skill`、`/api/persona/delete` | [PERSONA_DISTILL_TUTORIAL](PERSONA_DISTILL_TUTORIAL.md) |
 | `external-systems` | `gaworld/apps/external_systems_api.py` | `GET /api/external-systems/overview\|/api/external-systems/health\|/api/external-systems/interventions`；`POST /api/external-systems/config`、`/api/external-systems/interventions`、`/api/external-systems/interventions/cancel` | [EXTERNAL_SYSTEMS_TUTORIAL](EXTERNAL_SYSTEMS_TUTORIAL.md) |
-| `parallel-worlds` | `gaworld/apps/parallel_worlds_api.py` | `GET /api/parallel-worlds/overview\|/api/parallel-worlds/experiments\|/api/parallel-worlds/experiment?={id}\|/api/parallel-worlds/job?id={id}`；`POST /api/parallel-worlds/preview`、`/api/parallel-worlds/start`、`/api/parallel-worlds/stop` | [PARALLEL_WORLDS_TUTORIAL](PARALLEL_WORLDS_TUTORIAL.md) |
+| `parallel-worlds` | `gaworld/apps/parallel_worlds_api.py` | `GET /api/parallel-worlds/overview\|/api/parallel-worlds/experiments\|/api/parallel-worlds/experiment?root={root}[&baseline={world}]\|/api/parallel-worlds/heterogeneity?root=&world=&metric=[&baseline=]\|/api/parallel-worlds/interpretation?root=[&baseline=]\|/api/parallel-worlds/job?id={id}`；`POST /api/parallel-worlds/preview`、`/api/parallel-worlds/sweep`（把一个数值参数的几组取值展开成世界，不运行）、`/api/parallel-worlds/start`（可带 `seeds: [..]` 重复多个种子）、`/api/parallel-worlds/stop`、`/api/parallel-worlds/interpret` | [PARALLEL_WORLDS_TUTORIAL](PARALLEL_WORLDS_TUTORIAL.md) |
 | `settings` | `gaworld/apps/settings_api.py` | `GET /api/settings/overview`；`POST /api/settings/save`、`/api/settings/reset`、`/api/settings/reset-all`、`/api/settings/llm/provider`、`/api/settings/llm/test` | — |
 | `city` | `gaworld/apps/city_api.py` | `GET /api/city/overview\|/api/city/detail?city=\|/api/city/catalogue\|/api/city/agents?city=&q=&limit=&offset=\|/api/city/agent?city=&id=\|/api/city/map?city=\|/api/city/knowledge?city=\|/api/city/news?city=`；`POST /api/city/create`、`/api/city/population`、`/api/city/agent`、`/api/city/migrate`、`/api/city/knowledge`、`/api/city/news`、`/api/city/select`、`/api/city/delete` | [CITY_TUTORIAL](CITY_TUTORIAL.md) |
 | `infosources/`（只读） | `gaworld/apps/infosources_api.py` | `GET /api/infosources/sources`（注册表 + 各源缓存条数、上次抓取时间）、`/api/infosources/feed?source_id=&limit=`（缓存中的条目）、`/api/infosources/diets[?agent_id=]`（每位居民读哪些源、权重与理由）、`/api/infosources/reads?url=&source_id=&agent_id=&limit=`（`infosources.read` 记录，最新在前）。写入走干预：`POST /api/interventions/inject_info_item` | — |
-| `bench/` | `gaworld/apps/bench_api.py` | `POST /api/bench/run`（body `kind: "bench"\|"rubric"` + 白名单选项，对应 `benchmark/gaworld_bench.py` / `rubric_bench.py` 的 CLI 参数：bench 支持 `track, all, synthetic, output_dir, comparisons_root, run, days, seed, seeds, resume, fast, llm_provider`；rubric 支持 `output_dir, synthetic, synthetic_mode, judges, samples_per_judge, min_days, ablate, dim`；路径必须在仓库内）→ `202` + job；同一时间只跑一个（结果文件共用），否则 `409`。`GET /api/bench/jobs[/{id}]`（状态、命令、日志尾部、**该次运行的 scorecard 快照**）、`/api/bench/scorecard`（两套最新 scorecard）、`/api/bench/reports[/{name}]`（历史报告 Markdown） | [GAWORLD_BENCH_DESIGN](../benchmark/GAWORLD_BENCH_DESIGN.md) |
+| `bench/` | `gaworld/apps/bench_api.py` | `POST /api/bench/run`（body `kind: "bench"\|"rubric"` + 白名单选项，对应 `benchmark/gaworld_bench.py` / `rubric_bench.py` 的 CLI 参数：bench 支持 `track`（`A｜B｜C｜D`）`, all, synthetic, output_dir, games_dir, comparisons_root, run, days, seed, seeds, resume, fast, llm_provider`；rubric 支持 `output_dir, synthetic, synthetic_mode, judges, samples_per_judge, min_days, ablate, dim`；路径必须在仓库内）→ `202` + job；同一时间只跑一个（结果文件共用），否则 `409`。`GET /api/bench/jobs[/{id}]`（状态、命令、日志尾部、**该次运行的 scorecard 快照**）、`/api/bench/scorecard`（两套最新 scorecard）、`/api/bench/reports[/{name}]`（历史报告 Markdown）。Track R 人类锚点校准：`GET /api/bench/calibration`（校准集列表、各人标注数、结论）、`GET /api/bench/calibration/{set_id}?annotator=`（题目，只附该标注者自己的标注；不含哪些题被改坏）、`POST /api/bench/calibration/build`（`output_dir?, n?, seed?`，默认取当前世界的运行目录）、`POST …/{set_id}/label`（`annotator, task_id, score: 0｜1｜2｜null, note?`）、`POST …/{set_id}/analyze`；judge 打分走 `POST /api/bench/run`（`kind: "calibration", judge: true, set, judges`，会调模型） | [GAWORLD_BENCH_DESIGN](../benchmark/GAWORLD_BENCH_DESIGN.md) |
 | `economy/`（只读） | `gaworld/apps/economy_api.py` | `GET /api/economy/overview`（宏观状态、部门资金池、货币守恒审计、财富分布、城市日账——与 External Systems 面板同一份数据）、`/api/economy/loans`（居民间借贷图：`borrower → lender, amount`，银行负债榜，以及借贷双方账目是否对得上：`consistent` / `mismatches`）、`/api/economy/ledger?agent_id=&limit=`（单个居民的逐期账本 + 当前欠/借出）。经济干预仍走 `POST /api/external-systems/interventions`（按天排期） | — |
-| `moltbook` | `gaworld/apps/moltbook_api.py` | `GET /api/moltbook/agent?id=`；`POST /api/moltbook/toggle`、`/api/moltbook/refresh` | — |
-| 单 agent 旧接口 | `dashboard_server.py:2682` | `POST /api/interview`（body `{agent_id, question[, context]}`） | [TUTORIAL](TUTORIAL.md) |
+| `moltbook` | `gaworld/apps/moltbook_api.py` | `GET /api/moltbook/agent?id=`；`POST /api/moltbook/toggle`（`{agent_id, enabled, name?}`）、`/api/moltbook/refresh`（`{agent_id}`） | — |
+| `home` | `gaworld/apps/home_api.py` | `GET /api/home`（有户型设计的居民）、`/api/home/{agent_id}?tail=`（户型 + 最近的在家观察；还没设计 → 404） | — |
+| 单 agent 旧接口 | `dashboard_server._interview_agent` | `POST /api/interview`（body `{agent_id, questions, context?, timeout?}`，见 1.1.1） | [TUTORIAL](TUTORIAL.md) |
 
 #### 1.1.5 协作（discussion / cooperation）
 
@@ -171,9 +203,23 @@ curl -N 'localhost:8766/api/events/stream?tables=controller.intervention,traffic
 
 注意：
 - 生效时机是**下一个 tick**，不是请求返回时；`update_config` 对启动时已快照配置的子系统要到下次运行才生效（同 dashboard 配置覆盖）。
+- 开启账号后，成员经此接口发的 `update_config` 只能改仿真参数（`gaworld/accounts/policy.py` 的 `CONFIG_PARAM_SECTIONS`），且不能改路径、地址、凭据类的键或整段替换，否则 403；管理员与单人模式不受限。进程内 `controller.intervene` 不受此限制。
 - 新一次运行启动时会丢弃上一次遗留的 pending 请求；仿真进程已退出（含崩溃）即视为未运行。
 - 平行世界各用自己的队列（`<world_dir>/kernel/interventions.json`），此接口只作用于主运行。
 - 事件流只包含写进 Recorder 的表。常用表：`agent.step`（每个 agent 每个 tick 一行：`agent_id, name, scheduled_activity, activity, action, location, target_location, changed, change_reason`；感知/计划/反思等长文本仍只在 trace 里）、`controller.intervention` / `controller.intervention_failed`、`infosources.injected` / `infosources.read`（`agent_id, name, source_id, title, url, thought`）、`traffic.tick`、`travel.*`、`family.*`。快进（月/年粒度）模式不经过逐 tick 管线，不产生 `agent.step`。
+
+#### 1.1.7 账号、世界、分布式与多人共玩
+
+这些路由要用请求里的用户、账号库或 cookie，所以由 `dashboard_server` 直接分发（不在 `routes.py` 的前缀表里）。没有账号库时 `/api/auth/me`、`/api/worlds` 返回 `{"mode": "single"}`，其余返回 404 `账号功能未开启`。
+
+| 模块 | 路径 | 说明 |
+| --- | --- | --- |
+| `accounts_api.py` | `GET /api/auth/me`；`POST /api/auth/login`（`{nickname, password}`）、`/register`（`{code, nickname, password}`）、`/reset`（`{code, password}`）、`/logout`、`/password`（`{old, new}`） | 登录/注册/重置会设置 `gaworld_session` cookie（HttpOnly、SameSite=Strict）；登录失败 401 |
+| `accounts_api.py`（管理员） | `GET /api/auth/users\|/invites\|/audit\|/usage`；`POST /api/auth/invites`（`{count, label, expires_days, can_create_city}`）、`/api/auth/invites/{id}/revoke`、`/api/auth/users/{id}/reset`、`/api/auth/users/{id}/city`（`{allow}`） | 教师控制台用 |
+| `worlds_api.py` | `GET /api/worlds`、`/api/worlds/{id}/trail`、`/api/worlds/settings`（管理员）；`POST /api/worlds/create`（`{name, city}`）、`/select`（`{id}`，`""` 为共享默认世界）、`/{id}/visibility`（`private\|class\|open`）、`/{id}/stop`、`/{id}/delete`、`/settings`（运行名额、每日额度）、`/broadcast`（`{title, description, severity, world_ids}`，管理员） | `create` / `select` 设置 `gaworld_world` cookie；之后所有请求作用于该世界 |
+| `cluster_api.py`（世界主人） | `GET /api/cluster`；`POST /api/cluster/nodes`（`{name, agent_ids}` → 一次性返回节点令牌）、`/api/cluster/nodes/{id}/agents`、`/api/cluster/nodes/{id}/delete` | 下次运行生效 |
+| `cluster_api.py`（节点，`Authorization: Bearer <world>.<node>.<secret>`） | `GET /api/cluster/node\|/node/bundle\|/node/interventions\|/relay/directory`；`POST /api/cluster/node/heartbeat\|/node/records\|/node/sync\|/relay/register\|/relay/message/send\|/relay/message/poll` | `python -m gaworld.cluster join` 使用；节点令牌只到自己的世界 |
+| `play_api.py` | `GET /api/play`；`POST /api/play/claim`（`{agent_id}`，两分钟租约，每 30 s 续）、`/release`、`/act`（`{text}`）、`/say`（`{target_id, text}`） | 别人正在玩该居民 → 409 |
 
 ### 1.2 Twin 服务（默认 8767）— 移动端"智能体数字孪生"
 
@@ -257,7 +303,7 @@ python -m gaworld.apps.external_environment_server
 
 ### 2.1 顶层命令：`python generative_city_sim.py <cmd>`
 
-参考：`generative_city_sim.py:5670` `_build_arg_parser`。
+参考：`generative_city_sim.py` 的 `_build_arg_parser`。
 
 | Command | 主要参数 | 作用 |
 | --- | --- | --- |
@@ -268,7 +314,7 @@ python -m gaworld.apps.external_environment_server
 | `rag-add` | `--agent-id`、`--text`、`--timestamp?`、`--source?` | 注入一条 RAG 外部信息到指定 agent |
 | `rag-import` | `--agent-id`、`--file`、`--format?`、`--source?` | 从文件/目录批量注入 RAG |
 | `compare-event` | `--event-name`、`--event-description`、`--event-day`、`--event-time?`、`--sim-days?`、`--seed?`、其它 | "有/无事件"两路对比，产出对比报告 |
-| `parallel-worlds` | `--spec worlds.json`、`--sim-days`、`--seed`、其它 | 平行世界实验；详见 [PARALLEL_WORLDS_TUTORIAL](PARALLEL_WORLDS_TUTORIAL.md) |
+| `parallel-worlds` | `--spec worlds.json` 或 `--sweep 路径=取值1,取值2,…`（参数扫描，可加 `--placebo`）、`--sim-days`、`--seed`、其它 | 平行世界实验；详见 [PARALLEL_WORLDS_TUTORIAL](PARALLEL_WORLDS_TUTORIAL.md) |
 | `serve-viz` | `--host`、`--port` | 跑一个静态站 + `GET /api/replay/runs`，用于回放可视化页 |
 | `dashboard` | `--host`、`--port` | 启动 Dashboard 服务（见 1.1） |
 | `serve-distributed` | `--host`、`--port`、`--state-path`、`--max-messages` | 启动 Agent Relay（见 1.3） |
@@ -390,6 +436,43 @@ run_server(host="0.0.0.0", port=8767, backend=build_backend())
 
 > 提示：脚本/Notebook 嵌入时建议先 `from gaworld.env_loader import load_env_file; load_env_file(".env")`，以确保 `MINIMAX_API_KEY` 等凭据被读到（`gaworld/__init__.py` 在包被 `import` 时会自动执行）。
 
+### 3.4 HTTP 客户端（`gaworld.client`）
+
+只用标准库，连一个正在运行的 Dashboard。命名方法覆盖常用流程；其余接口用 `call(operationId, …)`——操作表在第一次调用时从 `/api/openapi.json` 读取，所以服务端新增的路由不用改客户端。
+
+```python
+from gaworld.client import GAWorldClient, ConflictError, JobFailed
+
+gw = GAWorldClient("http://127.0.0.1:8766")      # token 默认取 $GAWORLD_DASHBOARD_TOKEN，以 Bearer 发送
+gw.login("老师", "…")                              # 开启账号时：保存 session cookie
+gw.use_world("")                                   # 切换当前世界（"" 为共享默认世界）
+
+gw.start_run(config={"sim_span": {"unit": "day", "count": 3}})     # 已有运行 → ConflictError（409）
+req = gw.intervene("set_agent_state", agent_id=3, key="stress", value=0.9)
+gw.wait_intervention(req["id"])                    # 等仿真在下一个 tick 应用
+
+result = gw.run_job("/api/games/rumor/run",        # 开作业 → 轮询 …/jobs/{id} → 返回 result
+                    {"city": "wuzhen", "agent_ids": [1, 2, 3], "rumor_id": "water"})
+
+gw.call("get_city_agents", city="wuzhen", limit=20)          # 路径参数按名字填，其余进查询串
+gw.call("post_agents_agent_id_memory", {"text": "搬了新家"}, agent_id=3)
+
+for table, row in gw.events(["agent.step"]):       # 跟随 /api/events/stream
+    print(table, row["name"], row["activity"])
+```
+
+| 方法 | 作用 |
+| --- | --- |
+| `call(operation_id, body=None, **params)` / `operations()` | 按 `operationId` 调用任意接口 / 列出全部操作 |
+| `get(path, **query)` / `post(path, body)` / `request(method, path, body, params)` | 原始请求；JSON 解码后返回，非 JSON（头像、zip、Markdown 下载）返回 `bytes` |
+| `login` / `logout` / `me` / `worlds` / `use_world` | 账号与当前世界 |
+| `agents` / `agent(id)` / `run_status` / `start_run` / `stop_run` | 居民与运行 |
+| `interventions` / `intervene(name, **kwargs)` / `wait_intervention(id)` | 通用干预（1.1.6） |
+| `run_job(path, body, poll=None)` / `wait_job(poll_path)` | 后台作业；失败抛 `JobFailed`，超时抛 `TimeoutError` |
+| `events(tables=None)` | 事件流，产出 `(表名, 行)` |
+
+错误按状态码抛异常：`AuthError`（401/403）、`NotFoundError`（404）、`ConflictError`（409）、`QuotaError`（429），其余为基类 `APIError`；都带 `status`、`message`（服务端的 `error`）与 `body`。
+
 ---
 
 ## 4. 鉴权 / 错误约定 / 调试
@@ -398,7 +481,8 @@ run_server(host="0.0.0.0", port=8767, backend=build_backend())
 - **Twin (8767)**：必须 HTTPS；客户端用 `Authorization: Bearer <token>` 访问 `/api/twin/*`。
 - **Agent Relay (8877)**：`agent_type=native` 直通；`agent_type=openclaw` 必须 `POST /auth/token` 录入 token 后，注册/发消息都校验。
 - **External Environment**：内部子网使用即可。
-- 错误格式统一：`{"error": "message"}`，HTTP 4xx 表示参数/资源错，5xx 表示后端异常（Dashboard 会把 traceback 打到服务端日志）。
+- 开启账号（`python -m gaworld.accounts init`）后，Dashboard 还接受 `gaworld_session` cookie（`POST /api/auth/login` 设置）；每个操作需要的级别见 OpenAPI 里的 `x-gaworld-access`，令牌持有者始终是管理员。
+- 错误格式统一：`{"error": "message"}`；Dashboard 各状态码（含 405 / 409 / 429）的含义见 1.1.0。5xx 表示后端异常（Dashboard 会把 traceback 打到服务端日志）。
 - 调试端点：
   - `GET /api/replay/runs` 列出全部历史 run，配合 `/api/analytics/{section}?run=<id>` 复盘。
   - `GET /api/run/status?log_offset=N` 轮询运行进度；`log_offset` 用来增量取日志。

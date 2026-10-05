@@ -28,6 +28,7 @@ import json
 import os
 from typing import Any
 
+from gaworld.apps import residents, world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.family")
@@ -39,9 +40,8 @@ _MAX_ROWS = 20000
 
 
 def _records_dir() -> str:
-    from gaworld.apps import dashboard_server as ds
 
-    return str(ds._records_dir())
+    return str(world_paths.records_dir())
 
 
 def _read_table(name: str) -> list[dict[str, Any]]:
@@ -127,6 +127,22 @@ def overview() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _config() -> dict[str, Any]:
+    """The active world's config, with the override file anchored at the repo.
+
+    The pins are keyed by agent id, so each population keeps its own file (a
+    world under ``seed/``, a city in its bundle); the global ``CONFIG`` would
+    point every world at the default population's.
+    """
+
+    cfg = world_paths.effective_config()
+    family = dict(cfg.get("family") or {})
+    path = str(family.get("overrides_path") or os.path.join("data", "family_overrides.json"))
+    family["overrides_path"] = path if os.path.isabs(path) else os.path.join(world_paths.REPO_ROOT, path)
+    cfg["family"] = family
+    return cfg
+
+
 def _roster() -> list[dict[str, Any]]:
     """Minimal agent dicts for a preview assignment, read from the state CSV.
 
@@ -135,12 +151,11 @@ def _roster() -> list[dict[str, Any]]:
     the preview cheap and keeps this module out of the simulator's import
     graph.
     """
-    from gaworld.apps import dashboard_server as ds
 
-    rows = ds._read_state_rows()[1]
+    rows = residents.read_state_rows()[1]
     roster: list[dict[str, Any]] = []
     for row in rows:
-        agent_id = ds._row_id(row)
+        agent_id = residents.row_id(row)
         if agent_id is None:
             continue
         try:
@@ -167,11 +182,11 @@ def preview(agent_id: int | None = None) -> dict[str, Any]:
     from gaworld.family.duties import daily_duties
     from gaworld.family.narrative import family_brief
     from gaworld.family.overrides import cross_check, load_overrides
-    from gaworld.settings import CONFIG
 
+    config = _config()
     roster = _roster()
-    overrides = load_overrides(CONFIG)
-    assignment = assign_households(roster, CONFIG, overrides)
+    overrides = load_overrides(config)
+    assignment = assign_households(roster, config, overrides)
     by_name = {int(a["id"]): a for a in roster}
 
     rows = []
@@ -204,8 +219,8 @@ def preview(agent_id: int | None = None) -> dict[str, Any]:
         if selected:
             record = assignment.by_agent[int(agent_id)]
             payload["duties"] = {
-                "weekday": daily_duties(record, day=2, is_weekend=False, config=CONFIG),
-                "weekend": daily_duties(record, day=6, is_weekend=True, config=CONFIG),
+                "weekday": daily_duties(record, day=2, is_weekend=False, config=config),
+                "weekend": daily_duties(record, day=6, is_weekend=True, config=config),
             }
         # Candidate partners: everyone else in the roster. The editor shows
         # them all rather than pre-filtering by age gap — an operator pinning
@@ -232,8 +247,8 @@ def save_override(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
         normalize_override,
         save_overrides,
     )
-    from gaworld.settings import CONFIG
 
+    config = _config()
     if not isinstance(payload, dict):
         return {"error": "请求体必须是一个对象"}, 400
     try:
@@ -241,7 +256,7 @@ def save_override(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     except (TypeError, ValueError):
         return {"error": "缺少 agent_id"}, 400
 
-    overrides = load_overrides(CONFIG)
+    overrides = load_overrides(config)
     if payload.get("clear"):
         overrides.pop(agent_id, None)
     else:
@@ -258,7 +273,7 @@ def save_override(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
             overrides.pop(agent_id, None)
 
     try:
-        path = save_overrides(overrides, CONFIG)
+        path = save_overrides(overrides, config)
     except OSError as exc:
         return {"error": f"写入覆盖文件失败：{exc}"}, 500
     _LOG.info("family override saved for agent %s -> %s", agent_id, path)
@@ -272,7 +287,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     """Route ``/api/family/*`` POSTs. Returns ``(payload, status)``."""
     if path in ("/api/family/override", "/api/family/override/"):
         return save_override(payload)
-    return {"error": f"unknown family endpoint: {path}"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -302,4 +317,4 @@ def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
             if int(row.get("agent_id", -1)) == agent_id:
                 return row, 200
         return {"error": f"no family record for agent {agent_id}"}, 404
-    return {"error": f"unknown family endpoint: {path}"}, 404
+    return {"error": "Unknown endpoint"}, 404

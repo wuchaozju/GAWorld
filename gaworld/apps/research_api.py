@@ -35,6 +35,7 @@ import uuid
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.research")
@@ -355,9 +356,8 @@ _OVERRIDE_KEYS = ("seeds", "sim_days", "fast", "agent_ids", "max_parallel", "sim
 
 def _repo_root() -> str:
     try:
-        from gaworld.apps import dashboard_server as ds
 
-        return str(ds.REPO_ROOT)
+        return str(world_paths.REPO_ROOT)
     except Exception:  # outside the dashboard the package root is the repo
         from gaworld.research import workbench
 
@@ -369,9 +369,8 @@ def _base_config() -> dict[str, Any]:
     hand-built parallel worlds experiment. Late-bound for the same reason
     ``parallel_worlds_api`` is: tests move the repo root."""
     try:
-        from gaworld.apps import dashboard_server as ds
 
-        config = ds._effective_config()
+        config = world_paths.effective_config()
         return config if isinstance(config, dict) else {}
     except Exception:
         _LOG.warning("could not read the effective config; worlds run on defaults", exc_info=True)
@@ -404,6 +403,15 @@ def _seed_runner(study: Any) -> Any:
         experiment_prefix=prefix,
         active=_ACTIVE_STUDY,
     )
+
+
+def _survey_runner(study: Any) -> Any:
+    """The real post-run survey (composite studies). Module-level so tests
+    can swap in a fake. Residents answer on the model they ran on."""
+    from gaworld.research import backends
+
+    provider = str((study.protocol or {}).get("sim_provider") or "")
+    return backends.default_survey_runner(repo_root=_repo_root(), provider=provider)
 
 
 def _is_live(study_id: str) -> bool:
@@ -626,6 +634,7 @@ def _run_study(study_id: str, report: Any) -> dict[str, Any]:
         runs = backends.run_protocol(
             protocol,
             run_seed=_seed_runner(study),
+            run_survey=_survey_runner(study) if protocol.kind == "composite" else None,
             report=lambda p, m: report(p * 0.85, m),
             stop=stop,
             pause=pause,
@@ -819,7 +828,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return {"error": "Unknown study"}, 404
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown research endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -869,7 +878,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": str(exc)}, 409
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown research endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

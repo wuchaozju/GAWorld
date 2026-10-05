@@ -1,0 +1,16 @@
+- main [ref=e2]:
+  - heading "登录 GAWorld" [level=1] [ref=e3]
+  - paragraph [ref=e4]: 用昵称和密码登录。
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: 昵称
+      - textbox "昵称" [active] [ref=e8]
+    - generic [ref=e9]: 密码
+    - textbox "密码" [ref=e10]
+    - button "登录" [ref=e11] [cursor=pointer]
+    - alert [ref=e12]
+  - navigation [ref=e13]:
+    - link "有邀请码？注册" [ref=e14] [cursor=pointer]:
+      - /url: /join
+    - link "有重置码？重设密码" [ref=e15] [cursor=pointer]:
+      - /url: /reset

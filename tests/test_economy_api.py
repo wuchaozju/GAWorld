@@ -20,6 +20,7 @@ from http.server import ThreadingHTTPServer
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import world_paths
 from gaworld.economy import finance
 
 
@@ -35,8 +36,8 @@ def _agent(aid, name, checking, savings, distress=False, neighbors=()):
 class EconomyApiTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self._saved = ds.REPO_ROOT
-        ds.REPO_ROOT = self.tmp.name
+        self._saved = world_paths.REPO_ROOT
+        world_paths.REPO_ROOT = self.tmp.name
         self.agents_dir = os.path.join(self.tmp.name, "output", "economy", "agents")
         os.makedirs(self.agents_dir)
         borrower = _agent(1, "小王", 100.0, 0.0, distress=True, neighbors=(2,))
@@ -58,7 +59,7 @@ class EconomyApiTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
-        ds.REPO_ROOT = self._saved
+        world_paths.REPO_ROOT = self._saved
         self.tmp.cleanup()
 
     def _get(self, path):

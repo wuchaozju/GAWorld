@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="calib.page_title">GAWorld · Track R 人类锚点校准</title>
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/rubric-calibration.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="calib.kicker">GAWorld-Rubric-Bench · Track R · P4</p>
+          <h1 data-i18n="calib.headline">人类锚点校准：judge 读 rubric 的方式和人一样吗</h1>
+          <p class="sub" data-i18n="calib.sub">两个人各自按同一条评分标准给同一批样本打 0 / 1 / 2，互相不看。算出人与人的一致性（α ≥ 0.7 才说明 rubric 写清楚了），再和 judge 的分数比（ρ 与 QWK ≥ 0.6 才说明 judge 读得和人一样）。通过之前，Track R 的分数一律标 UNVERIFIED。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/" target="_top" data-i18n="calib.back">← 返回控制台</a>
+      </div>
+    </header>
+
+    <section class="calib-grid">
+      <aside class="calib-side panel">
+        <label class="field">
+          <span data-i18n="calib.set_label">校准集</span>
+          <select id="cSet"></select>
+        </label>
+        <p id="cSetInfo" class="calib-hint"></p>
+
+        <label class="field">
+          <span data-i18n="calib.annotator_label">你的名字（每位标注者用固定的名字）</span>
+          <input id="cAnnotator" type="text" data-i18n-placeholder="calib.annotator_placeholder" placeholder="例如：标注者甲" />
+        </label>
+
+        <div class="calib-progress">
+          <div class="bar"><span id="cBar" style="width:0%"></span></div>
+          <span id="cProgress" class="muted">0 / 0</span>
+        </div>
+        <div id="cJump" class="calib-jump"></div>
+
+        <div class="button-row">
+          <button id="cAnalyze" class="button" type="button" data-i18n="calib.analyze">看校准结果</button>
+          <button id="cBuild" class="button small" type="button" data-i18n="calib.build">新建校准集</button>
+        </div>
+        <p class="calib-hint" data-i18n="calib.analyze_hint">标完全部任务之前看不到结果，免得受影响。judge 打分用命令行：python rubric_calibrate.py --judge --set &lt;id&gt; --judges a,b,c（会调模型）。</p>
+        <p id="cError" class="calib-error" hidden></p>
+      </aside>
+
+      <section class="calib-main panel">
+        <div id="cEmpty" class="calib-empty" data-i18n="calib.empty">选一个校准集、填上名字，开始标注。还没有校准集就点「新建校准集」——它从当前世界最近一次运行里抽样。</div>
+
+        <article id="cTask" hidden>
+          <header class="calib-task-head">
+            <h3 id="cTaskTitle"></h3>
+            <div class="button-row">
+              <button id="cPrev" class="button small" type="button" data-i18n="calib.prev">← 上一题</button>
+              <button id="cNext" class="button small" type="button" data-i18n="calib.next">下一题 →</button>
+              <button id="cNextOpen" class="button small" type="button" data-i18n="calib.next_open">下一道没标的</button>
+            </div>
+          </header>
+
+          <!-- Read top to bottom: what to look for, the record, then the score. -->
+          <p class="calib-prop" id="cProp"></p>
+          <p class="calib-failure" id="cFailure"></p>
+
+          <details id="cFactsBox" class="calib-facts" hidden>
+            <summary data-i18n="calib.facts">程序核算出的客观事实（judge 也看得到）</summary>
+            <pre id="cFacts"></pre>
+          </details>
+
+          <h4 data-i18n="calib.sample">待评记录</h4>
+          <pre id="cSample" class="calib-sample"></pre>
+
+          <!-- The note goes with the score click, so it sits above the buttons. -->
+          <section class="calib-rubric">
+            <label class="field">
+              <span data-i18n="calib.note_label">备注（可选：为什么这样打）</span>
+              <textarea id="cNote" rows="2"></textarea>
+            </label>
+            <div class="calib-scores" id="cScores"></div>
+            <button id="cAbstain" class="button small" type="button" data-i18n="calib.abstain">记录里没有能判断的信息</button>
+          </section>
+        </article>
+
+        <article id="cResult" hidden></article>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/rubric-calibration.js"></script>
+</body>
+</html>

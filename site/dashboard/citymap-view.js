@@ -92,6 +92,11 @@
       return [p.x, p.y];
     } catch (e) { return null; }
   }
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
   function getNodeByName(nodesByName, name) {
     if (!name) return null;
     return nodesByName.get(String(name)) || nodesByName.get(String(name).trim()) || null;
@@ -114,6 +119,7 @@
       this.getSelectedAgentHome = opts.getSelectedAgentHome || (() => null);
       this.emptyText = opts.emptyText || (() => t("map.waiting_data"));
       this.trailFrames = opts.trailFrames || 96;
+      this.showThoughts = opts.showThoughts !== false;
       this.token = this._resolveToken();
       this.theme = "dark";
       this.engine = null;
@@ -577,7 +583,46 @@
           padding:2px 7px;border-radius:5px;white-space:nowrap;max-width:160px;overflow:hidden;
           text-overflow:ellipsis;">${name}</div>`);
       }
+      if (this.showThoughts) html.push(...this._thoughtBubbles(agents, selectedId));
       this.overlay.innerHTML = html.join("");
+    }
+    // Speech bubbles with each resident's main thought, above the avatar.
+    // The selected resident goes first; a bubble that would overlap one
+    // already placed is dropped, so a crowded node shows one, not a pile.
+    _thoughtBubbles(agents, selectedId) {
+      const thoughtOf = global.AgentThought && global.AgentThought.thoughtOf;
+      if (!thoughtOf) return [];
+      const ordered = agents.slice().sort((a, b) =>
+        (Number(b.agent_id) === selectedId) - (Number(a.agent_id) === selectedId));
+      const placed = [];
+      const out = [];
+      for (const a of ordered) {
+        const isSelected = Number(a.agent_id) === selectedId;
+        const text = thoughtOf(a, isSelected ? 80 : 40);
+        if (!text) continue;
+        const p = this._agentLngLat(a);
+        const pt = p && projectToScreen(this.map, p[0], p[1]);
+        if (!pt) continue;
+        const r = isSelected ? 22 : 16;
+        const w = Math.min(isSelected ? 260 : 200, Array.from(text).length * 12 + 20);
+        const h = w >= (isSelected ? 260 : 200) ? 46 : 28;
+        const box = { x: pt[0] - w / 2, y: pt[1] - r - 12 - h, w, h };
+        if (placed.some((b) => box.x < b.x + b.w && b.x < box.x + box.w && box.y < b.y + b.h && b.y < box.y + box.h)) {
+          continue;
+        }
+        placed.push(box);
+        out.push(`<div class="cmv-thought" title="${escapeHtml(a.plan || text)}" style="position:absolute;
+          left:${box.x}px;top:${box.y}px;width:${w}px;box-sizing:border-box;
+          background:#fffef9;color:#17211d;border:1px solid rgba(23,33,29,.18);border-radius:10px;
+          padding:5px 9px;font:500 12px/1.4 -apple-system,PingFang SC,sans-serif;
+          box-shadow:0 3px 10px rgba(0,0,0,.25);${isSelected ? "z-index:2;" : "opacity:.93;"}
+          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+          💭 ${escapeHtml(text)}</div>
+          <div style="position:absolute;left:${pt[0] - 6}px;top:${box.y + h - 1}px;width:0;height:0;
+          border:6px solid transparent;border-top-color:#fffef9;border-bottom:0;
+          filter:drop-shadow(0 1px 0 rgba(23,33,29,.18));"></div>`);
+      }
+      return out;
     }
     _agentLngLat(agent) {
       // Try to find a node by resolved/target name; if both exist and

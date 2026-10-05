@@ -3,7 +3,7 @@
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(60, 90, 104, 0.055) 1px, transparent 1px) 0 0 / 24px 24px,
-    #ffffff;
+    var(--surface);
 }
 
 .collaboration-panel [hidden] {
@@ -35,7 +35,7 @@
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #f4f7f5;
+  background: var(--surface);
   color: var(--steel);
   font-size: 11px;
   font-weight: 900;
@@ -70,7 +70,7 @@
 .collaboration-status.is-paused,
 .collaboration-status.is-interrupted {
   border-color: rgba(214, 168, 30, 0.3);
-  background: #fff8dc;
+  background: var(--amber-soft);
   color: #705710;
 }
 
@@ -82,7 +82,7 @@
 .collaboration-status.is-failed,
 .collaboration-status.is-cancelled {
   border-color: rgba(192, 69, 69, 0.25);
-  background: #fff0ef;
+  background: var(--red-soft);
   color: #8b3030;
 }
 
@@ -142,7 +142,7 @@
   padding: 0 10px 0 6px;
   border: 1px solid #cfdad2;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--card);
   color: var(--ink);
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(20, 32, 27, 0.04);
@@ -160,7 +160,7 @@
 .collaboration-member-chip.is-selected {
   border-color: var(--green);
   background: var(--green-deep);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 .collaboration-member-id {
@@ -240,7 +240,7 @@
 
 .collaboration-notice.is-error {
   border-left-color: var(--red);
-  background: #fff0ef;
+  background: var(--red-soft);
   color: #8b3030;
 }
 
@@ -334,7 +334,7 @@
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface);
 }
 
 .collaboration-event-meta {
@@ -349,7 +349,7 @@
 .collaboration-event-speaker {
   overflow: hidden;
   color: var(--green-deep);
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;

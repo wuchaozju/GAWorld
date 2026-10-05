@@ -17,10 +17,13 @@ the answer the experiment is supposed to produce honestly.
 
 from __future__ import annotations
 
-import os
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any
+
+from gaworld.city.config import run_root_overrides
+from gaworld.settings.overrides import deep_update
 
 #: Config keys a world patch may never set. These are the knobs that make the
 #: comparison valid (seed, horizon, cohort) or that isolate worlds on disk;
@@ -46,6 +49,9 @@ _SLUG_RE = re.compile(r"[^0-9A-Za-z一-鿿]+")
 _ID_RE = re.compile(r"[^0-9A-Za-z_-]+")
 _TIME_RE = re.compile(r"^\d{1,2}:\d{2}$")
 
+#: Roles a world may declare. Only ``placebo`` changes the analysis.
+WORLD_ROLES: frozenset[str] = frozenset({"", "baseline", "treatment", "placebo"})
+
 
 def slugify(text: str, *, fallback: str = "experiment", limit: int = 40) -> str:
     cleaned = _SLUG_RE.sub("_", str(text or "").strip()).strip("_")
@@ -66,6 +72,11 @@ class WorldSpec:
     events: list[dict[str, Any]] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
     note: str = ""
+    #: ``treatment`` / ``placebo`` / ``baseline``, or empty. A placebo world
+    #: bounds the noise the counterfactual estimates are judged against.
+    role: str = ""
+    #: Optional intensity, so worlds can be read as a dose–response series.
+    dose: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -74,6 +85,8 @@ class WorldSpec:
             "events": [dict(item) for item in self.events],
             "config": dict(self.config),
             "note": self.note,
+            "role": self.role,
+            "dose": self.dose,
         }
 
 
@@ -196,6 +209,19 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
             for item in (raw.get("events") or [])
         ]
         events.sort(key=lambda item: (item["day"], item["time"]))
+        role = str(raw.get("role") or "").strip().lower()
+        if role not in WORLD_ROLES:
+            raise ValueError(f"{where}：role 只能是 treatment / placebo / baseline")
+        dose = raw.get("dose")
+        if dose in ("", None):
+            dose = None
+        else:
+            try:
+                dose = float(dose)
+            except (TypeError, ValueError):
+                dose = math.nan
+            if not math.isfinite(dose):
+                raise ValueError(f"{where}：dose 必须是数字")
         worlds.append(
             WorldSpec(
                 id=world_id,
@@ -203,12 +229,18 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
                 events=events,
                 config=sanitize_world_config(raw.get("config"), where=where),
                 note=str(raw.get("note", "")).strip(),
+                role=role,
+                dose=dose,
             )
         )
 
     baseline_id = str(payload.get("baseline_id", "")).strip()
     if baseline_id and baseline_id not in seen:
         raise ValueError(f"基准世界 {baseline_id} 不在世界列表中")
+    if not baseline_id:
+        declared = [item.id for item in worlds if item.role == "baseline"]
+        if declared:
+            baseline_id = declared[0]
     if not baseline_id:
         # Default to the first world with no events — that is what "baseline"
         # means here — and fall back to the first world when every world has
@@ -258,34 +290,27 @@ def world_overrides(
         for item in base_config.get("policy_events", [])
         if isinstance(item, dict)
     ]
-    overrides: dict[str, Any] = {
-        "memory_dir": os.path.join(world_dir, "memory"),
-        "log_dir": os.path.join(world_dir, "logs"),
-        "vector_db_path": os.path.join(world_dir, "memory", "vector_db.sqlite"),
-        "state_output_dir": os.path.join(world_dir, "state"),
-        "network_output_dir": os.path.join(world_dir, "network"),
-        "environment_output_dir": os.path.join(world_dir, "environment"),
-        # `reset` clears the diary and life-event directories too. Left at
-        # their defaults they point at the shared `output/` tree, so forking a
-        # world would wipe the operator's live diaries and queued life events.
-        "diary_output_dir": os.path.join(world_dir, "diaries"),
-        "life_events": {"event_dir": os.path.join(world_dir, "life_events")},
-        "intervention": {"output_dir": os.path.join(world_dir, "intervention")},
-        # `/api/interventions` targets the main run only; each world keeps its
-        # own queue so concurrent worlds don't overwrite one manifest.
-        "kernel": {"interventions_path": os.path.join(world_dir, "kernel", "interventions.json")},
-        "visualization": {
-            "enabled": True,
-            "output_dir": os.path.join(world_dir, "visualization"),
-            "site_path": base_config.get("visualization", {}).get(
-                "site_path", "site/simviz/index.html"
-            ),
+    # Every runtime path moves under the world, from the one table cities and
+    # user worlds use too. `reset` clears several of them (records, diaries,
+    # life events, …): one left at its default would point at the shared tree,
+    # and forking a world would wipe the operator's live run. That includes the
+    # intervention queue, so concurrent worlds don't overwrite one manifest.
+    overrides: dict[str, Any] = run_root_overrides(world_dir)
+    deep_update(
+        overrides,
+        {
+            "visualization": {
+                "enabled": True,
+                "site_path": base_config.get("visualization", {}).get(
+                    "site_path", "site/simviz/index.html"
+                ),
+            },
+            "policy_events": ambient + [dict(item) for item in world.events],
+            "stateful": True,
+            "random_seed": int(spec.seed),
+            "distributed": {"enabled": False},
         },
-        "policy_events": ambient + [dict(item) for item in world.events],
-        "stateful": True,
-        "random_seed": int(spec.seed),
-        "distributed": {"enabled": False},
-    }
+    )
 
     if spec.sim_days is not None:
         overrides["sim_days"] = int(spec.sim_days)
@@ -324,11 +349,18 @@ def world_overrides(
             overrides[key] = merged
         else:
             overrides[key] = value
+    # Nested path keys (``economy.output_dir`` …) are not reserved one by one;
+    # pin them again so no patch can move a world's output back into the shared tree.
+    deep_update(overrides, run_root_overrides(world_dir))
+    # Forks are counterfactuals: none of them may post to the real Moltbook
+    # under the base population's accounts (N worlds would post N times).
+    deep_update(overrides, {"moltbook": {"enabled": False}})
     return overrides
 
 
 __all__ = [
     "RESERVED_CONFIG_KEYS",
+    "WORLD_ROLES",
     "ExperimentSpec",
     "WorldSpec",
     "normalize_event",

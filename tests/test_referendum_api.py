@@ -346,7 +346,7 @@ class HttpTest(unittest.TestCase):
                 "/api/games/referendum/run",
                 {"city": "wuzhen", "agent_ids": [1, 2], "motion_id": "waste"},
             )
-            self.assertEqual(status, 200)
+            self.assertEqual(status, 202)
             job_id = body["job_id"]
             for _ in range(200):
                 record = referendum_api.job_status(job_id)

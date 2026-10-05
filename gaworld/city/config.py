@@ -42,13 +42,53 @@ RUN_PATHS = {
     "diary_output_dir": "diaries",
     "agent_import_output_dir": "imported_agents",
     "economy.output_dir": "economy",
+    "organizations.output_dir": "organizations",
     "intervention.output_dir": "intervention",
     "life_events.event_dir": "life_events",
     "visualization.output_dir": "visualization",
     "collaboration.sessions_dir": "collaboration/sessions",
     "real_work.artifacts_dir": "work",
+    "real_work.queue_path": "work/queue.jsonl",
+    "real_work.capabilities_cache": "work/capabilities.json",
+    "real_work.market.store_path": "work/market.jsonl",
     "twin.root": "twin",
+    "interests.cache_path": "memory/growth_profiles.json",
+    "family.output_dir": "family",
+    "personality.output_dir": "traits",
+    "moltbook.log_dir": "moltbook",
+    "run_manifest.output_dir": "run_manifests",
+    # Defaults that live in code rather than in the config defaults: the
+    # Recorder's streams, the dashboard→simulator queue, and the root every
+    # plugin's own output namespace hangs off (Plugin.output_dir).
+    "records.output_dir": "records",
+    "kernel.interventions_path": "kernel/interventions.json",
+    "output_root": "",
 }
+
+#: Inputs keyed by agent id. Agent ids restart at 1 in every city, so these
+#: belong to one population: a city keeps them in its bundle directory, a world
+#: next to its own copy of the residents. The default world keeps its ``data/``.
+AGENT_FILES = {
+    "personality.profile_path": "agents_big5.csv",
+    "family.overrides_path": "family_overrides.json",
+    "moltbook.accounts_path": "moltbook_accounts.json",
+}
+
+
+def _set_dotted(patch: dict[str, Any], path: str, value: str) -> None:
+    parts = path.split(".")
+    node = patch
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = value
+
+
+def agent_file_overrides(base: str) -> dict[str, Any]:
+    """Config patch pointing every :data:`AGENT_FILES` input into *base*."""
+    patch: dict[str, Any] = {}
+    for path, leaf in AGENT_FILES.items():
+        _set_dotted(patch, path, f"{base}/{leaf}")
+    return patch
 
 
 def run_overrides(slug: str) -> dict[str, Any]:
@@ -68,11 +108,7 @@ def run_root_overrides(base: str) -> dict[str, Any]:
     """Config patch moving every path in :data:`RUN_PATHS` under *base*."""
     patch: dict[str, Any] = {}
     for path, leaf in RUN_PATHS.items():
-        parts = path.split(".")
-        node = patch
-        for part in parts[:-1]:
-            node = node.setdefault(part, {})
-        node[parts[-1]] = f"{base}/{leaf}" if leaf else base
+        _set_dotted(patch, path, f"{base}/{leaf}" if leaf else base)
     return patch
 
 
@@ -83,7 +119,8 @@ def city_overrides(ref: str, root: Any = None) -> dict[str, Any]:
     deleted should fall back to the default world with a warning rather than
     make the simulator unstartable.
     """
-    from gaworld.city.bundle import CityNotFoundError, resolve_city
+    from gaworld.city.bundle import PROJECT_ROOT, CityNotFoundError, resolve_city
+    from gaworld.settings.overrides import deep_update
 
     if not str(ref or "").strip():
         return {}
@@ -94,7 +131,12 @@ def city_overrides(ref: str, root: Any = None) -> dict[str, Any]:
 
     patch: dict[str, Any] = dict(bundle.paths_for_config())
     patch["city"] = bundle.slug
-    patch.update(run_overrides(bundle.slug))
+    deep_update(patch, run_overrides(bundle.slug))
+    try:
+        city_dir = bundle.directory.resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        city_dir = str(bundle.directory)
+    deep_update(patch, agent_file_overrides(city_dir))
 
     if bundle.environment_path.exists():
         try:
@@ -141,8 +183,10 @@ def apply_city(config: dict[str, Any], root: Any = None) -> dict[str, Any]:
 
 
 __all__ = [
+    "AGENT_FILES",
     "ENVIRONMENT_KEYS",
     "RUN_PATHS",
+    "agent_file_overrides",
     "apply_city",
     "city_overrides",
     "run_overrides",

@@ -22,11 +22,21 @@ filter, and anomaly-experience recording on ``interrupt.applied``.
 collects each trip's road load on ``on_agent_post_step`` and commits the
 tick's flows as per-edge travel-time multipliers on the *next*
 ``on_time_tick`` — see ``gaworld/world/traffic.py`` for why the lag matters.
+
+:class:`VenueCapacityPlugin` makes crowding bite: a ``move`` to a full venue
+is rewritten to the nearest same-category venue with room, or refused — see
+``gaworld/world/venue_capacity.py``.
+
+:class:`RoomsPlugin` puts residents in rooms (``local_physical.rooms``,
+default off): each household gets a flat in its building, each step places
+the resident in the room that fits what they are doing, residents only run
+into the people in their own room, and venue capacity is counted per room —
+see ``gaworld/world/spatial_tree.py``.
 """
 
 from __future__ import annotations
 
-from gaworld.kernel import Plugin, Verdict
+from gaworld.kernel import ActionRequest, Plugin, Verdict
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.world.plugin")
@@ -443,3 +453,313 @@ class TrafficPlugin(Plugin):
             return self._FALLBACK_STEP_MINUTES
         delta = (now_min - previous_min) % (24 * 60)
         return float(delta) if delta > 0 else self._FALLBACK_STEP_MINUTES
+
+
+class VenueCapacityPlugin(Plugin):
+    """A full venue turns people away (``local_physical.capacity``, default off).
+
+    Three pieces, all inert unless enabled:
+
+    * ``on_time_tick``: start this tick's ledger from where everyone is (or is
+      heading).
+    * ``tick.agent_order`` filter: a seeded shuffle of who acts first, so the
+      last seat is a fair draw rather than the lowest agent id's.
+    * a ``move`` validator, registered last (priority -10) so its admission
+      bookkeeping is never undone by a later deny: room → admit; full →
+      rewrite to the nearest same-category venue that is open and has room;
+      all full → deny (the resident stays put and perceives why).
+    """
+
+    id = "venue_capacity"
+
+    def setup(self, ctx):
+        from gaworld.world import city_map as cm_impl
+        from gaworld.world import venue_capacity as vc_impl
+
+        self._cm = cm_impl
+        self._vc = vc_impl
+        cfg = (ctx.config.get("local_physical", {}) or {}).get("capacity", {}) or {}
+        if not bool(cfg.get("enabled", False)):
+            return
+        self._categories = tuple(cfg.get("categories") or vc_impl.DEFAULT_CATEGORIES)
+        represent = cfg.get("agents_represent")
+        if represent is None:
+            # One sampled population, one answer to "how many people is a
+            # resident": share the congestion layer's knob unless overridden.
+            represent = (ctx.config.get("traffic", {}) or {}).get("agents_represent", 1.0)
+        self._represent = max(0.0, float(represent))
+        self._top_k = max(0, int(cfg.get("redirect_top_k", 4)))
+        self._seed = ctx.config.get("random_seed")
+        self._ledger = vc_impl.TickLedger()
+        # With rooms on, a venue is full *for an activity* once every room
+        # that hosts it is: the ledger then counts per (venue, room).
+        rooms_cfg = (ctx.config.get("local_physical", {}) or {}).get("rooms", {}) or {}
+        self._by_room = bool(rooms_cfg.get("enabled", False))
+        if self._by_room:
+            from gaworld.world import spatial_tree as st_impl
+
+            self._st = st_impl
+        ctx.bus.on("on_time_tick", self._start_tick)
+        ctx.bus.on("tick.agent_order", self._order)
+        ctx.controller.register_validator(self._validate, priority=-10)
+
+    def _node(self, city_map, location):
+        return self._cm.node_by_name(city_map, location) if city_map and location else None
+
+    def _start_tick(self, hook_ctx):
+        city_map = hook_ctx.get("city_map")
+        if self._by_room:
+            self._ledger.reset(self._room_start_counts(hook_ctx.get("agents", []), city_map))
+            return
+
+        def capped_id(location):
+            node = self._node(city_map, location)
+            return node["id"] if self._vc.is_capped(node, self._categories) else None
+
+        self._ledger.reset(self._vc.start_counts(hook_ctx.get("agents", []), capped_id))
+
+    @staticmethod
+    def _room_slot(node_id, arena):
+        return f"{node_id}\x1f{arena}"
+
+    def _room_start_counts(self, agents, city_map):
+        """Per (venue, room): who is in it, plus who is on the way to it.
+
+        Someone travelling counts in the room they were admitted to; anyone
+        without a room yet counts in the building's default room.
+        """
+        counts = {}
+        for agent in agents or []:
+            locations = agent.get("locations") if isinstance(agent, dict) else None
+            if not isinstance(locations, dict):
+                continue
+            moving = bool(locations.get("in_transit"))
+            node = self._node(city_map, locations.get("destination") if moving else locations.get("current"))
+            if not self._vc.is_capped(node, self._categories):
+                continue
+            if moving:
+                intent = locations.get("room_intent") or {}
+                arena = intent.get("arena") if intent.get("node") == node["id"] else None
+            else:
+                room = locations.get("room") or {}
+                arena = room.get("arena") if room.get("node") == locations.get("current") else None
+            if not arena:
+                arena = self._st.BLUEPRINTS[self._st.blueprint_key(node)]["default"]
+            slot = self._room_slot(node["id"], arena)
+            counts[slot] = counts.get(slot, 0) + 1
+        return counts
+
+    def _rooms_for(self, node, request, agent, city_map):
+        """The rooms this trip's activity could use at *node*, best first."""
+        locations = agent.get("locations") or {}
+
+        def is_here(where):
+            other = self._node(city_map, where)
+            return bool(other) and other["id"] == node["id"]
+
+        key = self._st.blueprint_key(node)
+        slot = self._st.activity_slot(request.params.get("activity"))
+        return key, self._st.rooms_for(
+            key, slot, staff=is_here(locations.get("workplace")), resident=is_here(locations.get("home"))
+        )
+
+    def _free_room(self, node, request, agent, city_map):
+        key, rooms = self._rooms_for(node, request, agent, city_map)
+        try:
+            capacity = float(node.get("capacity"))
+        except (TypeError, ValueError):
+            return rooms[0] if rooms else None  # no capacity, never full
+        for arena in rooms:
+            load = self._ledger.load(self._room_slot(node["id"], arena))
+            if not self._vc.is_full(load, capacity * self._st.room_share(key, arena), self._represent):
+                return arena
+        return None
+
+    def _admit(self, node, request, agent, city_map):
+        """Count the visitor in (per room when rooms are on); False when full."""
+        if not self._by_room:
+            if not self._has_room(node):
+                return False
+            self._ledger.admit(node["id"], request.agent_id)
+            return True
+        arena = self._free_room(node, request, agent, city_map)
+        if arena is None:
+            return False
+        self._ledger.admit(self._room_slot(node["id"], arena), request.agent_id)
+        # RoomsPlugin seats them here on arrival; travellers count here meanwhile.
+        agent.setdefault("locations", {})["room_intent"] = {"node": node["id"], "arena": arena}
+        return True
+
+    def _load(self, node):
+        if not self._by_room:
+            return self._ledger.load(node["id"])
+        rooms = self._st.BLUEPRINTS[self._st.blueprint_key(node)]["rooms"]
+        return sum(self._ledger.load(self._room_slot(node["id"], r["name"])) for r in rooms)
+
+    def _full_reason(self, node, request, agent, city_map):
+        if not self._by_room:
+            return f"【{node['id']}】已经满了，附近同类的地方也都没有空位"
+        key, rooms = self._rooms_for(node, request, agent, city_map)
+        labels = "、".join(dict.fromkeys(self._st.room_label(key, arena) for arena in rooms))
+        return f"【{node['id']}】的{labels}已经满了，附近同类的地方也都没有空位"
+
+    def _order(self, agents, hook_ctx):
+        return self._vc.shuffled(agents, self._seed, hook_ctx.get("day"), hook_ctx.get("time_str"))
+
+    def _has_room(self, node):
+        return not self._vc.is_full(self._ledger.load(node["id"]), node.get("capacity"), self._represent)
+
+    def _validate(self, request, ctx):
+        if request.name != "move":
+            return None
+        city_map = ctx.extras.get("city_map")
+        node = self._node(city_map, str(request.params.get("to", "") or ""))
+        if not self._vc.is_capped(node, self._categories):
+            return None
+        agent = ctx.agents_by_id.get(request.agent_id) or {}
+        locations = agent.get("locations") or {}
+        if locations.get("in_transit"):
+            return None  # move_agent ignores the request until the trip ends
+        here = self._node(city_map, locations.get("current"))
+        if here and here["id"] == node["id"]:
+            return None  # already inside, already counted
+        if self._admit(node, request, agent, city_map):
+            return None
+        time_str = getattr(ctx.clock, "time_str", "")
+        for alt_id, _distance in self._cm.nearest_by_category(
+            city_map, node["id"], node.get("category", ""), top_k=self._top_k
+        ) if self._top_k else []:
+            alt = self._node(city_map, alt_id)
+            if not alt or not self._cm.is_open(city_map, alt_id, time_str):
+                continue
+            if not self._admit(alt, request, agent, city_map):
+                continue
+            if ctx.recorder is not None:
+                ctx.recorder.record("venue.redirect", {
+                    "agent_id": request.agent_id,
+                    "from": node["id"],
+                    "to": alt["id"],
+                    "load": self._load(node),
+                    "capacity": node.get("capacity"),
+                })
+            return Verdict.rewrite(ActionRequest(
+                agent_id=request.agent_id,
+                name=request.name,
+                params={**request.params, "to": alt["id"]},
+                raw_text=request.raw_text,
+            ))
+        return Verdict.deny(self._full_reason(node, request, agent, city_map))
+
+
+class RoomsPlugin(Plugin):
+    """Residents stand in rooms (``local_physical.rooms``, default off).
+
+    * ``agents.built`` (priority -10, after the family plugin has formed the
+      households): every household gets its own flat in its home building.
+    * ``on_time_tick``: last tick's chairs and beds are free again.
+    * ``agent.moved``: place the resident — flat at home, room, the object
+      they use — from what they are doing. A resident keeps their room while
+      it still fits; a trip admitted to a room by venue capacity lands there.
+
+    Whom a resident runs into (``detect_co_located_agents``) then needs the
+    same room, not just the same place, and :class:`VenueCapacityPlugin`
+    counts per room. The room goes into the trace for the indoor views.
+    """
+
+    id = "rooms"
+
+    def setup(self, ctx):
+        from gaworld.world import city_map as cm_impl
+        from gaworld.world import spatial_tree as st_impl
+
+        self._cm = cm_impl
+        self._st = st_impl
+        cfg = (ctx.config.get("local_physical", {}) or {}).get("rooms", {}) or {}
+        if not bool(cfg.get("enabled", False)):
+            return
+        self._flats = {}  # building id -> {household: flat}
+        self._taken = {}  # (building id, flat) -> {room: objects in use this tick}
+        ctx.bus.on("agents.built", self._seat_households, priority=-10)
+        ctx.bus.on("on_time_tick", self._new_tick)
+        ctx.bus.on("agent.moved", self._place)
+
+    def _node(self, city_map, location):
+        return self._cm.node_by_name(city_map, location) if city_map and location else None
+
+    def _flat_for(self, agent, node, city_map):
+        flats = self._flats.setdefault(node["id"], {})
+        household = self._st.household_key(agent)
+        if household not in flats:
+            interior = (city_map.get("interiors") or {}).get(node["id"])
+            flats.update(self._st.assign_units([household], interior, flats))
+        return flats[household]
+
+    def _seat_households(self, hook_ctx):
+        sim = hook_ctx.get("sim")
+        city_map = getattr(sim, "extras", {}).get("city_map") if sim is not None else None
+        if not city_map:
+            return
+        by_building = {}
+        for agent in hook_ctx.get("agents") or []:
+            node = self._node(city_map, (agent.get("locations") or {}).get("home"))
+            if node and self._st.is_residential(self._st.blueprint_key(node)):
+                by_building.setdefault(node["id"], set()).add(self._st.household_key(agent))
+        interiors = city_map.get("interiors") or {}
+        for node_id, households in sorted(by_building.items()):
+            self._flats[node_id] = self._st.assign_units(households, interiors.get(node_id), self._flats.get(node_id))
+        if by_building:
+            flats = sum(len(v) for v in self._flats.values())
+            print(f"🚪 分户：{len(by_building)} 栋住宅楼 / {flats} 户（同屋才算碰面）")
+
+    def _new_tick(self, hook_ctx):
+        self._taken = {}
+
+    def _place(self, hook_ctx):
+        agent = hook_ctx.get("agent") or {}
+        locations = agent.get("locations")
+        if not isinstance(locations, dict):
+            return
+        if locations.get("in_transit"):
+            locations.pop("room", None)
+            return
+        city_map = hook_ctx.get("city_map")
+        current = locations.get("current")
+        node = self._node(city_map, current)
+        intent = locations.pop("room_intent", None) or {}
+        if not node:
+            locations.pop("room", None)
+            return
+        st = self._st
+        key = st.blueprint_key(node)
+
+        def is_here(where):
+            other = self._node(city_map, where)
+            return bool(other) and other["id"] == node["id"]
+
+        resident, staff = is_here(locations.get("home")), is_here(locations.get("workplace"))
+        flat = self._flat_for(agent, node, city_map) if resident and st.is_residential(key) else ""
+        slot = st.activity_slot(hook_ctx.get("activity"))
+        home_type = None
+        observed = agent.get("_home_observation") or {}
+        if resident and observed.get("is_at_home"):
+            home_type = st.HOME_ROOM_TYPES.get((observed.get("current_room") or {}).get("key"))
+        rooms = st.rooms_for(key, slot, staff=staff, resident=resident, home_type=home_type)
+        previous = locations.get("room") or {}
+        same_flat = previous.get("node") == current and (previous.get("unit") or "") == flat
+        taken = self._taken.setdefault((node["id"], flat), {})
+        if intent.get("node") == node["id"] and intent.get("arena") in rooms:
+            arena = intent["arena"]
+        elif same_flat and previous.get("arena") in rooms:
+            arena = previous["arena"]  # still fits: stay put
+        else:
+            # the first fitting room with a free bed / chair / stove, if any
+            arena = next((r for r in rooms if st.pick_object(key, r, slot, taken.get(r, ()))), rooms[0])
+        used = taken.setdefault(arena, set())
+        keep = previous.get("object") if same_flat and previous.get("arena") == arena else None
+        if keep and keep not in used and keep in st.pick_objects(key, arena, slot):
+            obj = keep
+        else:
+            obj = st.pick_object(key, arena, slot, used)
+        if obj:
+            used.add(obj)
+        locations["room"] = {"node": current, "unit": flat, "arena": arena, "object": obj}

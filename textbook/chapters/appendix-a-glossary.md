@@ -9,7 +9,7 @@
 | 中文 | 英文 | 缩写 | 解释 |
 |---|---|---|---|
 | 多智能体仿真 | Multi-Agent Simulation | MAS | 由多个具有行为规则的智能体组成的仿真 |
-| 基于智能体的建模 | Agent-Based Modeling | ABM | 用智能体构建模型的范式 |
+| 基于智能体的建模 | 智能体-Based Modeling | ABM | 用智能体构建模型的范式 |
 | 生成性研究 | Generative Research | — | 用人工社会重演机制的方法论 |
 | 涌现 | Emergence | — | 宏观模式从微观规则中非线性地产生 |
 | 微观—宏观链接 | Micro-Macro Link | — | 微观行为与宏观模式的相互影响 |
@@ -25,7 +25,7 @@
 
 | 中文 | 英文 | 缩写 | 解释 |
 |---|---|---|---|
-| 智能体 | Agent | — | 仿真中的"假人",有身份、状态、决策 |
+| 智能体 | 智能体 | — | 仿真中的"假人",有身份、状态、决策 |
 | 身份 | Identity | — | 智能体不变的数据(姓名、年龄、职业等) |
 | 状态 | State | — | 智能体可变的数据(心情、现金、关系等) |
 | 决策 | Decision | — | 智能体从状态到行动的映射 |
@@ -162,11 +162,11 @@
 
 | 中文 | 英文 | 缩写 | 解释 |
 |---|---|---|---|
-| GAWorld | Generative Agent World | GAWorld | 本书使用的社会仿真平台 |
+| GAWorld | Generative 智能体 World | GAWorld | 本书使用的社会仿真平台 |
 | Persona Distillation | Persona Distillation | — | 从真人/网站生成居民 |
 | Moltbook | Moltbook | — | AI 智能体的社交网络 |
 | 群体模式 | Cohort Mode | — | 大规模仿真的成本优化模式 |
-| 群体智能体 | Cohort Agent | — | 群体的代表决策 |
+| 群体智能体 | Cohort 智能体 | — | 群体的代表决策 |
 | 平行世界实验台 | Parallel Worlds Dashboard | — | 平行世界结果可视化 |
 | 灾害模式 | Disaster Mode | — | 灾害场景仿真 |
 | 灾害分幕 | Disaster Stage | — | 灾害过程的多个阶段 |
@@ -179,7 +179,7 @@
 | 验证门 L4 | L4 Gate | — | 长期动态对比 |
 | 预注册协议 | Preregistration Protocol | — | 跑前固定的假设与判定规则 |
 | 研究工作台 | Research Workbench | — | 预注册 + 实验 + 报告一体化工具 |
-| Agent Studio | Agent Studio | — | 单智能体可视化构建工具 |
+| 智能体 Studio | 智能体 Studio | — | 单智能体可视化构建工具 |
 | 群体采访 | Group Interview | — | 一次采访一群居民 |
 | 斗兽场 | Arena | — | 多居民答题竞赛 |
 | 说服游戏 | Persuasion Game | — | 和居民聊到立场改变 |
@@ -192,7 +192,7 @@
 
 | 缩写 | 全称 |
 |---|---|
-| ABM | Agent-Based Modeling |
+| ABM | 智能体-Based Modeling |
 | LLM | Large Language Model |
 | OCEAN | Openness / Conscientiousness / Extraversion / Agreeableness / Neuroticism |
 | SIR | Susceptible-Infected-Recovered |
@@ -271,7 +271,7 @@
 | 信息不对称 | Information Asymmetry | 交易双方信息不对等 |
 | 逆向选择 | Adverse Selection | 信息不对称导致的市场失灵 |
 | 道德风险 | Moral Hazard | 隐藏行为导致的风险 |
-| 委托代理 | Principal-Agent | 委托人与代理人的激励问题 |
+| 委托代理 | Principal-智能体 | 委托人与代理人的激励问题 |
 | 集体行动 | Collective Action | 多人合作的经典问题 |
 | 公地悲剧 | Tragedy of the Commons | 共享资源被过度使用 |
 | 社会资本 | Social Capital | 信任、规范、网络 |
@@ -367,7 +367,7 @@
 
 | 中文 | 英文 | 解释 |
 |---|---|---|
-| 智能体循环 | Agent Loop | agent 主循环 |
+| 智能体循环 | 智能体 Loop | agent 主循环 |
 | 认知管线 | Cognition Pipeline | agent 的认知处理流程 |
 | 行动选择 | Action Selection | agent 选择行动 |
 | 状态更新 | State Update | agent 状态变化 |
@@ -379,7 +379,7 @@
 | LLM 路由器 | LLM Router | 不同任务路由到不同模型 |
 | 多裁判 | Multi-Judge | 多个 LLM 投票 |
 | Persona 蒸馏 | Persona Distillation | 从真人生成居民 |
-| Agent Studio | Agent Studio | 单智能体可视化构建 |
+| 智能体 Studio | 智能体 Studio | 单智能体可视化构建 |
 | 研究工作台 | Research Workbench | 预注册 + 实验 + 报告 |
 | 平行世界实验台 | Parallel Worlds Dashboard | 平行世界可视化 |
 | 灾害分幕 | Disaster Stage | 灾害过程的阶段 |
@@ -426,7 +426,7 @@
 | 中文 | 英文 | 解释 |
 |---|---|---|
 | 计算社会科学 | Computational Social Science | 用计算方法研究社会科学 |
-| 智能体建模 | Agent-Based Modeling | 用智能体构建模型 |
+| 智能体建模 | 智能体-Based Modeling | 用智能体构建模型 |
 | 离散事件仿真 | Discrete Event Simulation | 离散时间点的仿真 |
 | 连续仿真 | Continuous Simulation | 连续时间的仿真 |
 | 蒙特卡洛仿真 | Monte Carlo Simulation | 随机采样仿真 |

@@ -47,7 +47,11 @@ def main(argv: list[str] | None = None) -> int:
 
     spec = normalize_spec(payload)
     material = deserialize_material(payload.get("material"))
-    interviewer = CityInterviewer(provider=spec.provider)
+    # A research study interviewing a finished world passes that world's state
+    # history, so residents answer as the run left them.
+    interviewer = CityInterviewer(
+        provider=spec.provider, final_state_csv=str(payload.get("final_state_csv") or "")
+    )
 
     def report(done: int, total: int, message: str) -> None:
         _emit({"type": "progress", "done": done, "total": total, "message": message})

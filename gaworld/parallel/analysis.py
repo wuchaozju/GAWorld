@@ -72,7 +72,28 @@ def _finite(value: Any) -> float | None:
     return number if math.isfinite(number) else None
 
 
-def read_state_series(path: str) -> dict[str, Any]:
+def _panel_from_cells(cells: list[tuple[str, int, str, float]], steps: int) -> dict[str, Any]:
+    """``metric -> (agents × steps)`` arrays, NaN where an agent did not report.
+
+    The per-resident view the counterfactual estimators need: every world
+    holds the same residents, so a resident's row in one world is paired with
+    the same row in another. Arrays rather than dicts because a 200-resident,
+    300-step, 20-metric run is over a million cells per world.
+    """
+    import numpy as np
+
+    agents = sorted({cell[0] for cell in cells}, key=lambda item: (len(item), item))
+    row = {agent: index for index, agent in enumerate(agents)}
+    values: dict[str, Any] = {}
+    for agent, step, metric, value in cells:
+        grid = values.get(metric)
+        if grid is None:
+            grid = values[metric] = np.full((len(agents), steps), np.nan)
+        grid[row[agent], step] = value
+    return {"agents": agents, "steps": steps, "values": values}
+
+
+def read_state_series(path: str, *, panel: bool = False) -> dict[str, Any]:
     """Read one world's ``agent_state_history.csv`` into trajectories.
 
     Returns ``{"steps", "metrics": {metric: [mean per step]}, "agents":
@@ -80,6 +101,9 @@ def read_state_series(path: str) -> dict[str, Any]:
     index; a step is averaged over whichever agents reported at it, so a
     cohort where one agent stops early degrades gracefully instead of
     tearing a hole in the curve.
+
+    ``panel=True`` also returns the per-resident ``panel`` (see
+    :func:`_panel_from_cells`) from the same pass over the file.
     """
     empty: dict[str, Any] = {"steps": 0, "metrics": {}, "agents": {}, "rows": 0}
     if not path or not os.path.exists(path):
@@ -88,6 +112,7 @@ def read_state_series(path: str) -> dict[str, Any]:
     # metric -> step -> [values]; agent -> metric -> (max_step, value)
     buckets: dict[str, dict[int, list[float]]] = {}
     per_agent: dict[str, dict[str, tuple[int, float]]] = {}
+    cells: list[tuple[str, int, str, float]] | None = [] if panel else None
     rows = 0
     try:
         with open(path, newline="", encoding="utf-8") as handle:
@@ -107,6 +132,8 @@ def read_state_series(path: str) -> dict[str, Any]:
                     seen = per_agent.setdefault(agent, {}).get(metric)
                     if seen is None or step >= seen[0]:
                         per_agent[agent][metric] = (step, value)
+                    if cells is not None and step >= 0:
+                        cells.append((agent, step, metric, value))
     except OSError:
         return empty
 
@@ -127,7 +154,10 @@ def read_state_series(path: str) -> dict[str, Any]:
         agent: {metric: value for metric, (_, value) in per_metric.items()}
         for agent, per_metric in per_agent.items()
     }
-    return {"steps": steps, "metrics": metrics, "agents": agents, "rows": rows}
+    result = {"steps": steps, "metrics": metrics, "agents": agents, "rows": rows}
+    if cells is not None:
+        result["panel"] = _panel_from_cells(cells, steps)
+    return result
 
 
 def _mean(values: list[float]) -> float:
@@ -296,6 +326,8 @@ def build_report(
             "label": world.get("label", world_id),
             "events": world.get("events", []),
             "config": world.get("config", {}),
+            "role": world.get("role", ""),
+            "dose": world.get("dose"),
             "is_baseline": is_baseline,
             "has_data": has_data,
             "steps": series.get("steps", 0),

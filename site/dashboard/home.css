@@ -38,7 +38,7 @@
 }
 
 .home-room {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface);
   border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
   border-radius: 12px;
   padding: 12px 14px;
@@ -83,7 +83,7 @@
 
 .home-room-tag {
   background: rgba(20, 121, 91, 0.10);
-  color: #13795b;
+  color: var(--green);
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
@@ -116,7 +116,7 @@
 }
 
 .home-ambiance-item {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--surface);
   border-radius: 8px;
   padding: 8px 10px;
   border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
@@ -185,7 +185,7 @@
 .home-observation-row .home-obs-day,
 .home-observation-row .home-obs-time {
   color: var(--muted, #6b7280);
-  font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 

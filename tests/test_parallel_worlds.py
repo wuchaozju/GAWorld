@@ -32,12 +32,15 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
 from gaworld.apps import parallel_worlds_api as api
-from gaworld.parallel import analysis, runner, spec as spec_mod
+from gaworld.apps import runs, world_paths
+from gaworld.parallel import analysis, runner
+from gaworld.parallel import spec as spec_mod
 
 
 def _write_state(path: str, *, steps: int, shift: float, agents=(1, 2)) -> None:
@@ -164,7 +167,38 @@ class SpecTests(unittest.TestCase):
             ]
         })
         overrides = spec_mod.world_overrides(experiment, experiment.worlds[1], "r/b")
-        self.assertEqual(overrides["economy"], {"tax_rate": 0.3})
+        # The patch merges over the section; the world's economy output stays its own.
+        self.assertEqual(overrides["economy"], {"output_dir": "r/b/economy", "tax_rate": 0.3})
+
+    def test_every_run_path_is_isolated_and_no_patch_moves_it(self):
+        from gaworld.city.config import run_root_overrides
+
+        experiment = spec_mod.normalize_experiment({
+            "worlds": [
+                {"label": "a"},
+                {"label": "b", "config": {"economy": {"output_dir": "output/economy"}}},
+            ]
+        })
+        overrides = spec_mod.world_overrides(experiment, experiment.worlds[1], "r/b")
+
+        def leaves(node, prefix=""):
+            for key, value in node.items():
+                if isinstance(value, dict):
+                    yield from leaves(value, f"{prefix}{key}.")
+                else:
+                    yield f"{prefix}{key}", value
+
+        flat = dict(leaves(overrides))
+        for path, value in leaves(run_root_overrides("r/b")):
+            self.assertEqual(flat.get(path), value, path)
+
+    def test_no_fork_posts_to_the_real_moltbook(self):
+        experiment = spec_mod.normalize_experiment({
+            "worlds": [{"label": "a"}, {"label": "b", "config": {"moltbook": {"enabled": True}}}]
+        })
+        for world in experiment.worlds:
+            overrides = spec_mod.world_overrides(experiment, world, f"r/{world.id}")
+            self.assertFalse(overrides["moltbook"]["enabled"], world.id)
 
 
 class AnalysisTests(unittest.TestCase):
@@ -223,6 +257,73 @@ class AnalysisTests(unittest.TestCase):
         dead = [world for world in report["worlds"] if world["id"] == "dead"][0]
         self.assertFalse(dead["has_data"])
         self.assertIn("无状态数据", "".join(analysis.summarize_report(report)))
+
+
+class AdmissionTests(unittest.TestCase):
+    """Experiment worlds wait for a slot under the host's run cap, and count
+    toward it once running."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.allowed = [False]
+        saved = self.saved_admission = runner._ADMISSION["check"]
+        self.addCleanup(runner.set_admission, saved)
+        runner.set_admission(lambda: self.allowed[0])
+        patcher = mock.patch.object(runner, "ADMIT_POLL_SECONDS", 0.02)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        stub = os.path.join(self.tmp.name, "stub_sim.py")
+        with open(stub, "w", encoding="utf-8") as handle:
+            handle.write("import time; time.sleep(0.2)\n")
+        manifest = runner.prepare_experiment(spec_mod.normalize_experiment(BASIC_PAYLOAD), self.tmp.name)
+        self.runner = runner.ExperimentRunner(
+            manifest, self.tmp.name, python_bin=sys.executable, script_path=stub
+        )
+        self.world_id = sorted(manifest["worlds"])[0]
+
+    def _spawn_in_background(self):
+        result = {}
+
+        def spawn():
+            with open(os.devnull, "w") as handle:
+                result["proc"] = self.runner._spawn_when_admitted(self.world_id, dict(os.environ), handle)
+
+        thread = threading.Thread(target=spawn)
+        thread.start()
+        return thread, result
+
+    def test_a_world_waits_for_a_slot_then_counts_toward_the_cap(self):
+        thread, result = self._spawn_in_background()
+        time.sleep(0.15)
+        self.assertNotIn("proc", result)
+        self.assertTrue(self.runner._states[self.world_id].get("waiting_for_slot"))
+        self.allowed[0] = True
+        thread.join(5)
+        proc = result["proc"]
+        self.assertEqual(runner.live_simulations(), 1)
+        proc.wait(5)
+        with runner._LIVE_LOCK:
+            runner._LIVE.discard(proc)
+        self.assertEqual(runner.live_simulations(), 0)
+        self.assertFalse(self.runner._states[self.world_id].get("waiting_for_slot"))
+
+    def test_stopping_while_waiting_starts_nothing(self):
+        thread, result = self._spawn_in_background()
+        time.sleep(0.1)
+        self.runner.stop()
+        thread.join(5)
+        self.assertIsNone(result["proc"])
+
+    def test_the_dashboard_gate_counts_experiment_worlds(self):
+        store = mock.Mock(get_setting=lambda key, default: {"max_concurrent_runs": 2}.get(key, default))
+        with mock.patch.object(runs, "RUN_STATE", {"process": None}), mock.patch.object(runs, "WORLD_RUNS", {}):
+            with mock.patch.object(runner, "live_simulations", return_value=1):
+                self.assertTrue(runs.gate_open(store, None))
+            with mock.patch.object(runner, "live_simulations", return_value=2):
+                self.assertFalse(runs.gate_open(store, None))
+        # The dashboard registers its gate as the runner's admission at import.
+        self.assertIs(self.saved_admission, runs.admit_experiment_world)
 
 
 class RunnerTests(unittest.TestCase):
@@ -355,16 +456,16 @@ class _TempRepo:
     def __init__(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = self.tmp.name
-        self._saved = (ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH)
+        self._saved = (world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH)
 
     def __enter__(self):
-        ds.REPO_ROOT = self.root
-        ds.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
+        world_paths.REPO_ROOT = self.root
+        world_paths.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
         api._reset_for_tests()
         return self
 
     def __exit__(self, *exc):
-        ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH = self._saved
+        world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH = self._saved
         api._reset_for_tests()
         self.tmp.cleanup()
         return False
@@ -440,18 +541,94 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(status, 409)
             self.assertIn("已有平行世界实验在运行", payload["error"])
 
+    def test_every_seed_is_prepared_in_the_world_that_started_the_job(self):
+        """Seeds after the first are prepared on the job thread; they must see
+        the requesting world's config, not the shared default's."""
+        seen = []
+
+        def fake_prepare(spec, repo_root, *, base_config, experiment_id=None, group=None):
+            seen.append(base_config.get("memory_dir"))
+            return {"root": f"output/parallel_worlds/{spec.seed}", "id": str(spec.seed), "spec": {}}
+
+        class FakeRunner:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, on_progress=None):
+                return {"worlds": []}
+
+            def snapshot(self):
+                return []
+
+        world = {"id": "w0123abcd", "owner_id": 1, "name": "w"}
+        with _TempRepo(), mock.patch.object(api.prunner, "prepare_experiment", fake_prepare), \
+                mock.patch.object(api.prunner, "ExperimentRunner", FakeRunner):
+            token = ds._WORLD.set(world)
+            try:
+                started = api.start({**BASIC_PAYLOAD, "seeds": [1, 2, 3]})
+            finally:
+                ds._WORLD.reset(token)
+            deadline = time.time() + 5
+            while api.job_status(started["job_id"])["status"] == "running" and time.time() < deadline:
+                time.sleep(0.02)
+        self.assertEqual(seen, ["output/worlds/w0123abcd/memory"] * 3)
+
     def test_routing_rejects_unknown_endpoints(self):
         with _TempRepo():
             self.assertEqual(api.handle_get("/api/parallel-worlds/nope", {})[1], 404)
             self.assertEqual(api.handle_post("/api/parallel-worlds/nope", {})[1], 404)
 
     def test_dashboard_server_forwards_the_routes(self):
-        """The routing chain is 60 branches long; a missing one is silent."""
-        import inspect
+        """A route missing from the table is silent: the request falls through."""
+        from gaworld.apps import routes
 
-        source = inspect.getsource(ds.DashboardHandler)
-        self.assertIn("/api/parallel-worlds", source)
-        self.assertEqual(source.count('path.startswith("/api/parallel-worlds")'), 2)
+        for table in (routes.GET_ROUTES, routes.POST_ROUTES):
+            route = routes.find(table, "/api/parallel-worlds/start")
+            self.assertEqual(route.module, "parallel_worlds_api")
+
+
+
+class PanelPlacementTests(unittest.TestCase):
+    """The panel lives in the research workbench now; old entry points must
+    still land on it instead of on a blank page."""
+
+    ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+    def _read(self, *parts: str) -> str:
+        with open(os.path.join(self.ROOT, *parts), encoding="utf-8") as handle:
+            return handle.read()
+
+    def test_the_workbench_carries_the_tab_and_every_element_the_script_needs(self):
+        import re
+
+        html = self._read("site", "dashboard", "research.html")
+        self.assertIn('data-tab="worlds"', html)
+        self.assertIn('id="rwPaneWorlds"', html)
+        self.assertIn("/site/dashboard/worlds.js", html)
+        self.assertIn("/site/dashboard/worlds.css", html)
+        script = self._read("site", "dashboard", "worlds.js")
+        wanted = set(re.findall(r'el\("(pw[A-Za-z]+)"\)', script))
+        present = set(re.findall(r'id="(pw[A-Za-z]+)"', html))
+        self.assertEqual(wanted - present, set(), "worlds.js looks up ids research.html does not have")
+
+    def test_the_old_page_and_the_old_console_hash_redirect(self):
+        self.assertIn("research.html?tab=worlds", self._read("site", "dashboard", "worlds.html"))
+        console = self._read("site", "console", "console.js")
+        self.assertNotIn('src: "/site/dashboard/worlds.html"', console)
+        self.assertIn('worlds: { id: "research", src: "/site/dashboard/research.html?tab=worlds" }', console)
+        self.assertNotIn('data-tab="worlds"', self._read("site", "console", "index.html"))
+
+    def test_headless_render(self):
+        import shutil
+        import subprocess
+
+        if shutil.which("node") is None:
+            self.skipTest("Node.js not available")
+        result = subprocess.run(
+            ["node", os.path.join(self.ROOT, "site", "dashboard", "worlds.test.js")],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

@@ -280,6 +280,13 @@ def human_realism_settings() -> dict[str, Any]:
             # Hotel and eating out, per day away, charged through the economy's
             # conserving expense path.
             "daily_surcharge": 180.0,
+            # Working days a family visit or holiday may take as paid annual
+            # leave per simulated year; later ones are unpaid. 5 is the
+            # statutory minimum (1-10 years of service). Business trips are work.
+            "paid_leave_days_per_year": 5,
+            # Away days skip routine generation and per-step cognition; one
+            # day digest (one LLM call) writes a memory and bounded state drift.
+            "compress_away_days": True,
             "business": {
                 # Per working day, before the job multiplier. A salesperson
                 # travels several times more than a librarian.

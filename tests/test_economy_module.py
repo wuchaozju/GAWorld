@@ -432,6 +432,9 @@ class TestEconomyModule(unittest.TestCase):
         self.assertIn("monthly_tax", snap_rows[0])
         self.assertIn("engel_coefficient", snap_rows[0])
         self.assertIn("portfolio_type", snap_rows[0])
+        # GAWorld-Bench restricts the wealth_gini anchor to the labour force.
+        self.assertIn(snap_rows[0]["employment_status"],
+                      {"employed", "unemployed", "retired", "student", "not_in_labor_force"})
 
     def test_different_jobs_produce_different_profiles(self):
         """Doctors should earn more than students; spending patterns differ."""

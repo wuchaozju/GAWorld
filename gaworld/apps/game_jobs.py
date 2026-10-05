@@ -13,6 +13,10 @@ than merely unlikely.
 :mod:`gaworld.apps.arena_api` keeps its own copy — its jobs carry extra
 retain/refill semantics, and rewriting a working panel is not worth the
 diff.
+
+A store opened with ``archive=True`` also writes each finished result to
+disk (:mod:`gaworld.apps.game_archive`), so the games GAWorld-Bench counts
+outlive the process.
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ from collections.abc import Callable
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.apps import game_archive
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.game_jobs")
@@ -36,9 +41,10 @@ DEFAULT_MAX_JOBS = 20
 class JobStore:
     """Jobs for one game: open, update, run in a thread, read back."""
 
-    def __init__(self, kind: str, *, max_jobs: int = DEFAULT_MAX_JOBS) -> None:
+    def __init__(self, kind: str, *, max_jobs: int = DEFAULT_MAX_JOBS, archive: bool = False) -> None:
         self.kind = kind
         self.max_jobs = max_jobs
+        self.archive = archive
         self._jobs: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
@@ -104,6 +110,9 @@ class JobStore:
         def runner() -> None:
             try:
                 result = work(lambda p, m: self.update(job_id, progress=p, message=m))
+                if self.archive and result:
+                    # Before "done", so whoever sees the job finish can find its file.
+                    game_archive.save(self.kind, job_id, result)
                 self.update(job_id, status="done", progress=1.0, finished_at=time.time(), result=result)
             except Exception as exc:  # pragma: no cover - surfaced via the API
                 self.update(

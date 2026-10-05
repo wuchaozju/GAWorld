@@ -96,15 +96,16 @@
     window.history.replaceState(null, "", window.location.pathname + (text ? "?" + text : ""));
   }
 
+  /* Each tab names its pane through aria-controls, so a new tab needs no
+     change here. */
   function showTab(name) {
     document.querySelectorAll(".rw-tab").forEach(function (tab) {
       var on = tab.getAttribute("data-tab") === name;
       tab.classList.toggle("is-active", on);
       tab.setAttribute("aria-selected", on ? "true" : "false");
+      var pane = $(tab.getAttribute("aria-controls"));
+      if (pane) pane.hidden = !on;
     });
-    $("rwPanePlan").hidden = name !== "plan";
-    $("rwPaneGame").hidden = name !== "game";
-    $("rwPanePolicy").hidden = name !== "policy";
     setUrl({ tab: name === "plan" ? "" : name, run: name === "policy" ? params().get("run") : "" });
   }
 
@@ -791,7 +792,7 @@
     var seat = query.get("seat") || "";
     var sessionId = query.get("session") || "";
     if (query.get("tab") === "game" || sessionId) showTab("game");
-    else if (query.get("tab") === "policy") showTab("policy");
+    else if (query.get("tab") === "policy" || query.get("tab") === "worlds") showTab(query.get("tab"));
 
     if (sessionId && seat) {
       // Player view: one role, nothing else on the page.

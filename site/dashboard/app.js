@@ -79,6 +79,7 @@ const els = {
   reloadTraceBtn: document.getElementById("reloadTraceBtn"),
   frameTitle: document.getElementById("frameTitle"),
   mapCanvas: document.getElementById("mapCanvas"),
+  indoorView: document.getElementById("indoorView"),
   timelineSlider: document.getElementById("timelineSlider"),
   timelineLabel: document.getElementById("timelineLabel"),
   followLatestInput: document.getElementById("followLatestInput"),
@@ -156,6 +157,12 @@ const mapView = new CityMapView(els.mapCanvas, {
   // Deferred: this runs at module scope, before the locale file lands.
   emptyText: () => __("trace.waiting_data"),
 });
+
+// Floor plan of the building the selected resident is in (or the busiest
+// one), drawn next to the map from the same frame.
+const indoorView = els.indoorView
+  ? new IndoorView(els.indoorView, { getSelectedAgentId: () => state.selectedAgentId })
+  : null;
 
 function traceAgentMap() {
   const agents = (state.trace && Array.isArray(state.trace.agents)) ? state.trace.agents : [];
@@ -1739,6 +1746,7 @@ function frameWeekday(frame) {
 
 function drawEmptyMap() {
   mapView.renderEmpty(__("trace.waiting"));
+  if (indoorView) indoorView.render(null);
   els.frameTitle.textContent = __("trace.not_loaded");
   els.timelineLabel.textContent = __("trace.no_frames");
   els.latestFrameBox.textContent = __("trace.no_current_frame");
@@ -1751,6 +1759,10 @@ function drawEmptyMap() {
 function drawMap(framesUpTo) {
   mapView.setTrace(state.trace);
   mapView.render(framesUpTo);
+  if (indoorView) {
+    indoorView.setTrace(state.trace);
+    indoorView.render(framesUpTo[framesUpTo.length - 1] || null);
+  }
 }
 
 function setupMapInteractions() {
@@ -2085,8 +2097,9 @@ document.addEventListener("locale-changed", function () {
   if (!els.rawModal.hidden) renderRawModal();
 });
 
-// Re-render dynamic UI when language changes
-window.addEventListener("locale-changed", function () {
+// Re-render dynamic UI when language changes (on document — see above; on
+// window this never fired, leaving the empty map labelled "trace.waiting")
+document.addEventListener("locale-changed", function () {
   refreshStatus().catch(() => {});
   loadTrace(false).catch(() => {});
   loadLifeEvents().catch(() => {});

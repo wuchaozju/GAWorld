@@ -167,6 +167,13 @@ class CityConfigTest(unittest.TestCase):
         self.assertTrue(patch["map_path"].endswith("citymap.md"))
         # Only the allowlisted environment blocks come through.
         self.assertNotIn("not_allowed", patch)
+        # Inputs keyed by agent id belong to this city's residents, not to the
+        # default population's #1, #2, … under data/.
+        self.assertTrue(patch["personality"]["profile_path"].endswith("somewhere/agents_big5.csv"))
+        self.assertTrue(patch["family"]["overrides_path"].endswith("somewhere/family_overrides.json"))
+        self.assertTrue(patch["moltbook"]["accounts_path"].endswith("somewhere/moltbook_accounts.json"))
+        # …while the run outputs of the same sections still move under the run root.
+        self.assertEqual(patch["personality"]["output_dir"], "output/cities/somewhere/traits")
 
     def test_unknown_city_degrades_to_an_empty_patch(self):
         from gaworld.city.config import city_overrides
@@ -246,14 +253,77 @@ class CityRunRootTest(unittest.TestCase):
 
     def _default_for(self, path):
         """The stock (no city selected) value of a dotted config path."""
+        import inspect
+
+        from gaworld.kernel import remote
+        from gaworld.kernel.recorder import Recorder
         from gaworld.settings import build_default_config
 
+        # Two defaults live in code, next to the only code that writes them.
+        in_code = {
+            "records.output_dir": inspect.signature(Recorder).parameters["base_dir"].default,
+            "kernel.interventions_path": remote.DEFAULT_PATH,
+        }
+        if path in in_code:
+            return in_code[path]
         node = build_default_config()
         for part in path.split("."):
             self.assertIsInstance(node, dict, f"{path}: not a config path")
             self.assertIn(part, node, f"{path}: no longer in the defaults")
             node = node[part]
         return node
+
+
+#: Paths in the default config that deliberately stay shared by every city and
+#: world, with the reason. Everything else under ``output/`` or ``data/`` must be
+#: a per-run output (RUN_PATHS) or a per-population input (AGENT_FILES).
+SHARED_PATHS = {
+    # The population and its map: a city bundle or a world's seed/ sets them.
+    "csv_path": "population",
+    "md_path": "population",
+    "map_path": "population",
+    "real_map_path": "population",
+    "environment_config_path": "a city's environment.json layers over it",
+    "skills.global_dir": "the skill library every resident draws on",
+    # Standalone services with their own deployment, not part of a run.
+    "distributed.server.state_path": "relay service",
+    "environment_server.state_path": "environment service",
+    "twin.bindings_path": "twin service",
+    # The real world's news is the same for every simulated one.
+    "news.sources_path": "real-world news",
+    "news.cache_path": "real-world news",
+    "news.sources.registry_path": "real-world news",
+    "news.sources.feed_cache_path": "real-world news",
+}
+
+
+class PathClassificationTest(unittest.TestCase):
+    """A path missing from these tables silently stays shared: two worlds (or
+    two cities) then write one file, or a city reads the default population's
+    agent-keyed data. A new path has to be classified here to pass."""
+
+    def test_every_output_and_data_path_is_classified(self):
+        from gaworld.city.config import AGENT_FILES, RUN_PATHS
+        from gaworld.settings import build_default_config
+
+        def walk(node, prefix=""):
+            for key, value in node.items():
+                path = f"{prefix}{key}"
+                if isinstance(value, dict):
+                    yield from walk(value, f"{path}.")
+                elif isinstance(value, str) and value.startswith(("output", "data/")):
+                    yield path
+
+        for path in walk(build_default_config()):
+            with self.subTest(path=path):
+                self.assertIn(path, {*RUN_PATHS, *AGENT_FILES, *SHARED_PATHS})
+
+    def test_the_tables_do_not_overlap(self):
+        from gaworld.city.config import AGENT_FILES, RUN_PATHS
+
+        self.assertFalse(set(RUN_PATHS) & set(AGENT_FILES))
+        self.assertFalse(set(RUN_PATHS) & set(SHARED_PATHS))
+        self.assertFalse(set(AGENT_FILES) & set(SHARED_PATHS))
 
 
 class DeleteTakesRunStateTest(unittest.TestCase):

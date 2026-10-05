@@ -4,14 +4,16 @@
  *
  * Server: /api/play (gaworld/apps/play_api.py). The claim is a two-minute
  * lease; this page renews it every 30 s and lets go when it is closed. The
- * live feed is the world's record stream (/api/events/stream).
+ * live feed is the world's record stream (/api/events/stream). In a
+ * distributed world (gaworld.cluster) a resident may run on another machine;
+ * its records reach the same stream, so nothing here changes.
  */
 (function () {
   "use strict";
 
   var HEARTBEAT_MS = 30000;
   var REFRESH_MS = 5000;
-  var TABLES = "multiplayer.act,multiplayer.say,multiplayer.presence";
+  var TABLES = "multiplayer.act,multiplayer.say,multiplayer.presence,agent.step";
 
   var $ = function (id) { return document.getElementById(id); };
   var t = function (key, fallback) {
@@ -29,6 +31,7 @@
   var residents = [];
   var play = null;
   var feedEmpty = true;
+  var lastStep = null;
 
   function api(method, url, body) {
     return fetch(url, {
@@ -88,7 +91,11 @@
 
     var mine = play.mine;
     $("pControls").hidden = mine == null;
-    $("pMine").textContent = mine == null ? t("play.none", "还没有认领居民：在左边挑一位。") : nameOf(mine) + " · #" + mine;
+    if (mine == null || (lastStep && Number(lastStep.agent_id) !== Number(mine))) {
+      lastStep = null;
+      $("pNow").hidden = true;
+    }
+    $("pMine").textContent = mine == null ? t("play.none", "还没有认领居民：在居民列表里挑一位。") : nameOf(mine) + " · #" + mine;
     var select = $("pSayTo");
     var keep = select.value;
     select.innerHTML = "";
@@ -129,7 +136,24 @@
     }
   }
 
+  // What my resident is doing right now: its latest step in the record stream.
+  function showStep(row) {
+    if (!play || play.mine == null || Number(row.agent_id) !== Number(play.mine)) return;
+    lastStep = row;
+    var box = $("pNow");
+    box.innerHTML = "";
+    var when = document.createElement("time");
+    when.textContent = "D" + row._day + " " + (row._time || "");
+    box.appendChild(when);
+    box.appendChild(document.createTextNode(tf("play.now", "在{location}：{activity}", {
+      location: row.location || "—",
+      activity: row.action && row.action !== row.activity ? row.activity + "（" + row.action + "）" : row.activity || "",
+    })));
+    box.hidden = false;
+  }
+
   function addFeed(row, table) {
+    if (table === "agent.step") return showStep(row);
     var text;
     if (table === "multiplayer.act") {
       text = tf("play.ev_act", "{player}（{name}）：{text}", { player: row.player, name: row.agent_name, text: row.text });
@@ -185,6 +209,14 @@
   window.addEventListener("pagehide", function () {
     if (play && play.mine != null && navigator.sendBeacon) {
       navigator.sendBeacon("/api/play/release", new Blob(["{}"], { type: "application/json" }));
+    }
+  });
+  // A phone pauses timers while the browser is in the background: renew the
+  // lease (and catch up) as soon as the page is visible again.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      heartbeat();
+      refresh();
     }
   });
   document.addEventListener("locale-changed", render);

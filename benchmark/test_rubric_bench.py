@@ -3,7 +3,7 @@
 import random
 import unittest
 
-from rubric import ablate, aggregate, judge, rules, runner, synth
+from rubric import ablate, aggregate, calibration, judge, rules, runner, synth
 
 
 def _ep(time, location, minutes=0, distance=0.0, mode="walk", **extra):
@@ -247,6 +247,124 @@ class TestEndToEnd(unittest.TestCase):
         llm_items = [v for v in card["items"].values() if v["checker"] != "rule"]
         self.assertTrue(all(v["abstain_rate"] == 1.0 for v in llm_items))
         self.assertTrue(all(v["mean_score"] is None for v in llm_items))
+
+
+class TestCalibration(unittest.TestCase):
+    """P4: the human anchor set, the agreement it yields, and its hold on the gate."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rubric = runner.load_rubric()
+        cls.data = synth.build(n_agents=8, n_days=35, seed=1)
+        cls.set_doc, cls.key = calibration.build_set(cls.data, cls.rubric, n=30, seed=7)
+
+    def _labels(self, fn):
+        return {t["task_id"]: {"score": fn(t)} for t in self.set_doc["tasks"]}
+
+    def _judge(self, fn):
+        return {"providers": ["j1", "j2"], "verdicts": {
+            t["task_id"]: {"score": fn(t), "abstain": False}
+            for t in self.set_doc["tasks"] if t["checker"] in calibration.JUDGED_CHECKERS}}
+
+    def _truth(self, task):
+        """A stand-in for what careful people would say: corrupted samples low."""
+        source = self.key["tasks"][task["task_id"]]["source"]
+        return 0 if source == "ablated" else (2 if int(task["task_id"][1:]) % 3 else 1)
+
+    def test_the_set_is_stratified_blind_and_a_third_corrupted(self):
+        tasks = self.set_doc["tasks"]
+        self.assertEqual(len(tasks), 30)
+        self.assertEqual(set(self.set_doc["dims"]), {"R1", "R2", "R3", "R4"})
+        self.assertTrue(all(count >= 6 for count in self.set_doc["dims"].values()), self.set_doc["dims"])
+        hidden = {"unit_id", "source", "operator", "rule_score"}
+        self.assertFalse(any(hidden & set(t) for t in tasks))
+        self.assertFalse(any(t["facts"] for t in tasks if t["checker"] == "rule"))
+        corrupted = sum(1 for k in self.key["tasks"].values() if k["source"] == "ablated")
+        self.assertGreaterEqual(corrupted, 7)
+        self.assertLessEqual(corrupted, 10)
+        again, _ = calibration.build_set(synth.build(n_agents=8, n_days=35, seed=1), self.rubric, n=30, seed=7)
+        self.assertEqual([t["sample"] for t in again["tasks"]], [t["sample"] for t in tasks])
+
+    def test_agreeing_people_and_a_judge_that_reads_like_them_pass(self):
+        rule = {tid: k["rule_score"] for tid, k in self.key["tasks"].items()}
+        truth = lambda t: rule[t["task_id"]] if t["checker"] == "rule" else self._truth(t)  # noqa: E731
+        labels = {"甲": self._labels(truth), "乙": self._labels(truth)}
+        result = calibration.analyze(self.set_doc, self.key, labels, self._judge(truth))
+        self.assertEqual(result["gate"]["status"], "ok", result["gate"])
+        self.assertGreaterEqual(result["human_alpha"], 0.99)
+        self.assertEqual(result["agreement_summary"]["judge"]["qwk"], 1.0)
+        self.assertGreater(result["ablation_check"]["gap"], 0.3)
+        block = calibration.scorecard_block(result, self.rubric["rubric_hash"], ["j2", "j1"])
+        self.assertEqual(block["status"], "ok")
+        self.assertEqual(calibration.scorecard_block(result, self.rubric["rubric_hash"], ["other"])["status"],
+                         "other_judges")
+        self.assertEqual(calibration.scorecard_block(result, "0" * 12)["status"], "stale")
+
+    def test_people_who_disagree_fail_before_the_judge_is_asked(self):
+        labels = {"甲": self._labels(lambda t: 2), "乙": self._labels(lambda t: int(t["task_id"][1:]) % 3)}
+        result = calibration.analyze(self.set_doc, self.key, labels, None)
+        self.assertEqual(result["gate"]["status"], "fail")
+        self.assertIn("rubric 表述有歧义", result["gate"]["reasons"][0])
+        self.assertTrue(result["rewrite_queue"])
+
+    def test_a_judge_that_does_not_read_like_people_fails(self):
+        labels = {"甲": self._labels(self._truth), "乙": self._labels(self._truth)}
+        result = calibration.analyze(self.set_doc, self.key, labels, self._judge(lambda t: 2 - self._truth(t)))
+        self.assertEqual(result["gate"]["status"], "fail")
+        self.assertIn("judge 与人的一致性不足", result["gate"]["reasons"][0])
+
+    def test_incomplete_until_two_people_finish_and_the_judge_has_scored(self):
+        one = {"甲": self._labels(self._truth)}
+        self.assertEqual(calibration.analyze(self.set_doc, self.key, one)["gate"]["status"], "incomplete")
+        two = {"甲": self._labels(self._truth), "乙": self._labels(self._truth)}
+        result = calibration.analyze(self.set_doc, self.key, two, None)
+        self.assertEqual(result["gate"]["status"], "incomplete")
+        self.assertIn("--judge", result["gate"]["reasons"][0])
+
+    def test_the_gate_cannot_reach_ok_without_a_passing_calibration(self):
+        gates = {"human_alpha_min": 0.6}
+        dims = {"R4": {"status": "ok"}}
+        self.assertEqual(aggregate._trust_gate(dims, {}, gates, {"status": "ok"})["state"], "OK")
+        missing = aggregate._trust_gate(dims, {}, gates, None)
+        self.assertEqual(missing["state"], "UNVERIFIED")
+        self.assertIn("人类锚点校准", missing["reason"])
+        worst = aggregate._trust_gate(dims, {"any_dimension_untrustworthy": True}, gates, None)
+        self.assertEqual(worst["state"], "UNTRUSTWORTHY")
+
+    def test_labels_are_stored_per_annotator_and_checked(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            calibration.save_set(self.set_doc, self.key, root)
+            sid = self.set_doc["set_id"]
+            calibration.save_label(sid, "标注者 甲", "T01", 2, "理由具体", root)
+            calibration.save_label(sid, "标注者 甲", "T02", None, "", root)
+            self.assertEqual(calibration.load_labels(sid, root)["标注者 甲"]["T02"]["score"], None)
+            with self.assertRaises(ValueError):
+                calibration.save_label(sid, "甲", "T01", 3, "", root)
+            with self.assertRaises(ValueError):
+                calibration.save_label(sid, "甲", "T99", 1, "", root)
+            with self.assertRaises(ValueError):
+                calibration.save_label(sid, "  ", "T01", 1, "", root)
+            with self.assertRaises(ValueError):
+                calibration.load_set("../x", root)
+            (row,) = calibration.list_sets(root)
+            self.assertEqual(row["annotators"], {"标注者 甲": 2})
+            self.assertFalse(row["judged"])
+
+    def test_spearman_handles_ties_and_constants(self):
+        self.assertAlmostEqual(calibration.spearman([0, 1, 2, 2], [0, 1, 2, 2]), 1.0)
+        self.assertAlmostEqual(calibration.spearman([0, 1, 2], [2, 1, 0]), -1.0)
+        self.assertIsNone(calibration.spearman([1, 1, 1], [0, 1, 2]))
+
+    def test_a_scorecard_carries_its_calibration(self):
+        card = runner.run(synth.build(n_agents=4, n_days=31, seed=5), providers=[], sample_seed=7,
+                          calibration=lambda rubric: calibration.scorecard_block(None, rubric["rubric_hash"]))
+        self.assertEqual(card["calibration"]["status"], "missing")
+        self.assertEqual(card["gate"]["state"], "UNVERIFIED")
+        self.assertIn("人类锚点校准", aggregate.render_markdown(card))
 
 
 if __name__ == "__main__":

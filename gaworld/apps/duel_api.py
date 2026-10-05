@@ -836,20 +836,20 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("duel GET %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown duel endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     payload = payload if isinstance(payload, dict) else {}
     try:
         if path == "/api/games/duel/run":
-            return {"job_id": start_run(payload)}, 200
+            return {"job_id": start_run(payload)}, 202
     except ValueError as exc:
         return {"error": str(exc)}, 400
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("duel POST %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown duel endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

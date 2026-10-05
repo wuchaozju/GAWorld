@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from unittest import mock
 
 from gaworld.apps import arena_api
 from gaworld.city.create import create_city
@@ -401,20 +402,17 @@ class HttpDelegationTest(unittest.TestCase):
         self.assertIn("error", body)
 
     def test_generate_endpoint_returns_tasks(self) -> None:
-        body, status = arena_api.handle_post(
-            "/api/arena/generate",
-            {"n": 1, "categories": ["math"], "difficulty": "easy"},
-        )
+        authored = json.dumps([{"category": "math", "prompt": "7 + 12 = ?", "expected": "19"}])
+        with mock.patch.object(arena_api, "_default_llm", return_value=authored):
+            body, status = arena_api.handle_post(
+                "/api/arena/generate",
+                {"n": 1, "categories": ["math"], "difficulty": "easy"},
+            )
         self.assertEqual(status, 200)
-        self.assertIsInstance(body["tasks"], list)
-        # We can't guarantee the LLM stub here — but at least the endpoint
-        # should be callable. If the prod LLM is wired, it'll author tasks;
-        # otherwise ``generate_questions`` raises and we get a 400.
-        if not body["tasks"]:
-            return
-        for task in body["tasks"]:
-            self.assertIn("id", task)
-            self.assertIn("prompt", task)
+        self.assertEqual(len(body["tasks"]), 1)
+        task = body["tasks"][0]
+        self.assertTrue(task["id"].startswith("gen-"))
+        self.assertEqual((task["prompt"], task["expected"]), ("7 + 12 = ?", "19"))
 
     def test_run_endpoint_returns_job_id(self) -> None:
         # Run with a stub answer that always matches the strict "19" task.

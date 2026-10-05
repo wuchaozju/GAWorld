@@ -524,6 +524,135 @@ GAWorld 的局限:
 
 ---
 
+### 20.9 扩展:平台选择的深度决策框架
+
+### 20.9.1　决策树:四问选平台
+
+选平台时,问自己四个问题:
+
+1. **研究问题的尺度是多少?** — 个位/小群体/大群体
+2. **决策机制是什么?** — 规则/启发式/学习/LLM
+3. **预算与时间约束?** — 短租/长周期/有 LLM 预算/无 LLM 预算
+4. **结果的目标用户?** — 学生/研究者/工业/政策制定者
+
+### 20.9.2　四象限决策矩阵
+
+| | 规则 ABM | LLM ABM |
+|---|---|---|
+| **教育/演示** | NetLogo | GAWorld Chat |
+| **学术研究** | Mesa / Repast | GAWorld |
+| **工业决策** | AnyLogic | 暂无 |
+| **政策仿真** | Mesa + 校准 | GAWorld |
+
+学生做研究时,要落在矩阵的"学术研究"象限,且根据尺度进一步选。
+
+### 20.9.3　平台迁移路径
+
+学生常用平台迁移路径:
+
+- **入门**:NetLogo → 学 ABM 基本概念
+- **过渡**:NetLogo → Mesa → 学 Python 与面向对象
+- **进阶**:Mesa → Repast → 学高性能仿真
+- **前沿**:任一平台 → GAWorld → 学 LLM 集成
+
+这条路径既是技能成长,也是研究能力升级。
+
+---
+
+### 20.10 扩展:LLM 平台的特殊考量
+
+### 20.10.1　LLM 平台的成本结构**
+
+| 组件 | 占比 | 优化策略 |
+|---|---|---|
+| LLM API 调用 | 60-80% | 缓存、批量化、用更小模型 |
+| 数据库 | 10-20% | 索引、分区 |
+| 计算 | 5-10% | 并行、向量化 |
+| 存储 | 5% | 压缩、定期清理 |
+
+LLM 调用是最贵的——**优化 LLM 调用 = 优化整体成本**。
+
+### 20.10.2　LLM 平台的稳健性挑战
+
+LLM 决策不稳健:
+
+- 同一 prompt,不同时间可能返回不同结果
+- 模型升级会破坏结果
+
+**稳健性策略**:
+
+- 固定模型版本(用 GPT-4-0613 而不是 GPT-5-latest)
+- 固定随机种子
+- 多模型对照(用 GPT-4 + Claude 对照)
+- 缓存决策(同一类型决策只调用一次)
+
+### 20.10.3　LLM 平台的可解释性挑战
+
+LLM 决策黑箱:
+
+- 智能体为什么选这个选项?
+- LLM 推理过程不可见
+
+**可解释性策略**:
+
+- 让 LLM 输出"决策理由"
+- 把 LLM 推理过程存储
+- 用 Chain-of-Thought 提示
+- 用结构化输出(JSON)便于分析
+
+---
+
+### 20.11 扩展:平台生态的健康度评估
+
+### 22.11.1　生态健康度的指标
+
+| 指标 | 描述 | 健康阈值 |
+|---|---|---|
+| 学术引用 | 平台被学术论文引用的频率 | 年增 10%+ |
+| 教学采纳 | 在教学中使用的频率 | 年增 5%+ |
+| 工具成熟度 | IDE 集成、调试器、可视化 | 持续更新 |
+| 社区活跃度 | GitHub stars、PR、讨论 | 持续活跃 |
+| 工业采纳 | 企业用户的数量 | 缓慢增长 |
+
+### 22.11.2　当前生态格局(2026 年)
+
+- **NetLogo**:教学最强,学术增长缓慢
+- **Mesa**:Python 学术圈主流,生态活跃
+- **Repast**:大型仿真主力,但学习曲线陡
+- **AnyLogic**:工业标准,学术渗透有限
+- **GAWorld**:LLM 时代新主线,增长最快
+- **Smallville 系**:实验性平台,可能成主流
+
+### 22.11.3　生态趋势
+
+未来 5-10 年趋势:
+
+- **LLM 平台崛起**:GAWorld 类快速增长
+- **传统平台整合**:NetLogo / Mesa / Repast 互相借鉴
+- **低代码化**:用户友好度提高
+- **云端化**:浏览器内运行
+
+学生做研究时,要根据自己的时间尺度选择平台。短平快选 LLM 平台,长尺度选传统平台。
+
+---
+
+## 20.12　本章收束
+
+选平台不是技术问题,而是研究战略问题。
+
+学生做研究,要:
+
+1. 明确研究问题
+2. 评估时间与预算
+3. 评估团队技能
+4. 选择最匹配的平台
+5. 跨平台复用代码与模型
+6. 持续关注生态变化
+
+**平台是手段,研究是目的**。不要把"用什么平台"做成"决策过贵的"——选择平台是最聪明的。
+
+---
+
 ## 20.9　本章小结
 
 本章从多个维度对比了 8 个 ABM 平台:
@@ -547,438 +676,3 @@ GAWorld 的局限:
 社会仿真是"一种方法",不是"一个工具"。多种平台并存,正是社会仿真生态健康的表现。
 
 EOF
-python3 << 'PYEOF'
-import re
-with open('/Users/cw/dev/GAWorld/textbook/chapters/20-platforms.md') as f:
-    s = f.read()
-text = re.sub(r'```.*?```', '', s, flags=re.S)
-text = re.sub(r'[#*`>|]', '', text)
-text = re.sub(r'\s+', '', text)
-print(f'第 20 章字数: {len(text)}')
-PYEOF
----
-
-## 20.9　平台选择的决策树
-
-### 20.9.1　根据研究规模
-
-- **小规模**(< 1000 智能体):NetLogo、Mesa、NetLogo 2.0+
-- **中规模**(1000-10000):Mesa、GAWorld、Repast
-- **大规模**(> 10000):Repast、AnyLogic、Mason
-
-### 20.9.2　根据研究问题
-
-- **经典 ABM**:NetLogo、Mesa、Repast
-- **现代 ABM + LLM**:GAWorld、Smallville 衍生
-- **多方法集成**:AnyLogic
-- **教学入门**:NetLogo
-
-### 20.9.3　根据研究者背景
-
-- **教师/学生**:NetLogo
-- **数据科学家**:Mesa
-- **Java 工程师**:Repast、AnyLogic
-- **AI 工程师**:GAWorld、Smallville
-
-### 20.9.4　根据预算
-
-- **免费开源**:NetLogo、Mesa、Repast、GAWorld
-- **商业付费**:AnyLogic、ExtendSim
-
----
-
-## 20.10　NetLogo 实战:重做 Schelling 模型
-
-### 20.10.1　完整代码
-
-```netlogo
-;; Schelling 隔离模型
-;; 创建于 1971 年,2026 年仍在被研究
-turtles-own [happy? similar-nearby]
-
-to setup
-  clear-all
-  set-default-shape turtles "circle"
-  ask patches [
-    if random-float 100 < 30 [ sprout 1 [ set color red ] ]
-    if random-float 100 < 30 [ sprout 1 [ set color green ] ]
-  ]
-  reset-ticks
-end
-
-to go
-  ask turtles [
-    let similar count neighbors with [color = [color] of myself]
-    let total count neighbors
-    if total > 0 [
-      set similar-nearby similar / total
-      set happy? (similar / total >= similar-wanted)
-    ]
-    if not happy? [
-      move-to one-of patches with [not any? turtles-here]
-    ]
-  ]
-  tick
-end
-
-;; 测量接口
-to-report percent-similar
-  report mean [similar-nearby] of turtles * 100
-end
-
-to-report percent-happy
-  report (count turtles with [happy?] / count turtles) * 100
-end
-```
-
-### 20.10.2　如何运行
-
-1. 打开 NetLogo
-2. 复制以上代码到代码窗口
-3. 设置滑块:`similar-wanted`(0 到 100,默认 30)
-4. 点击 `setup` 然后 `go`
-5. 观察聚居化过程
-6. 用 BehaviorSpace 跑 1000 次参数扫描
-
-### 20.10.3　预期结果
-
-跑 100 个 tick 后:
-- 颜色块出现(色块化)
-- 平均相似比例 > 0.7(尽管偏好阈值只有 0.3)
-- 大部分智能体快乐(类似偏好满足)
-
-这就是 Schelling 隔离模型的核心发现——**温和偏好产生极端隔离**。
-
----
-
-## 20.11　Mesa 实战:重做 Sugarscape 简化版
-
-### 20.11.1　完整代码
-
-```python
-from mesa import Agent, Model
-from mesa.space import SingleGrid
-from mesa.time import RandomActivation
-import random
-
-class SugarAgent(Agent):
-    """Sugarscape 智能体"""
-    def __init__(self, unique_id, model, vision=2, metabolism=2):
-        super().__init__(unique_id, model)
-        self.vision = vision
-        self.metabolism = metabolism
-        self.sugar = random.randint(5, 25)
-
-    def step(self):
-        self.move()
-        self.harvest()
-        self.consume()
-        self.reproduce_if_possible()
-        self.die_if_starving()
-
-    def move(self):
-        neighbors = self.model.grid.get_neighborhood(
-            self.pos, moore=True, radius=self.vision
-        )
-        best_cell = max(neighbors,
-                       key=lambda c: self.model.grid.get_cell_list_contents([c])[0].sugar
-                       if self.model.grid.get_cell_list_contents([c]) else 0)
-        self.model.grid.move_agent(self, best_cell)
-
-    def harvest(self):
-        cell_agents = self.model.grid.get_cell_list_contents([self.pos])
-        if cell_agents:
-            sugar_at_cell = cell_agents[0].sugar
-            self.sugar += sugar_at_cell
-            cell_agents[0].sugar = 0
-
-    def consume(self):
-        self.sugar -= self.metabolism
-
-    def reproduce_if_possible(self):
-        if self.sugar > 50 and random.random() < 0.05:
-            child = SugarAgent(self.model.next_id(), self.model)
-            self.sugar -= 25
-            self.model.grid.place_agent(child, self.pos)
-            self.model.schedule.add(child)
-
-    def die_if_starving(self):
-        if self.sugar <= 0:
-            self.model.grid.remove_agent(self)
-            self.model.schedule.remove(self)
-
-
-class SugarCell(Agent):
-    """Sugarscape 单元格"""
-    def __init__(self, unique_id, model, capacity):
-        super().__init__(unique_id, model)
-        self.sugar = capacity
-        self.capacity = capacity
-
-    def step(self):
-        self.sugar = min(self.sugar + 1, self.capacity)  # 每天再生
-
-
-class SugarModel(Model):
-    """Sugarscape 模型"""
-    def __init__(self, N=100, width=50, height=50):
-        super().__init__()
-        self.grid = SingleGrid(width, height, torus=False)
-        self.schedule = RandomActivation(self)
-
-        # 创建格子
-        for x in range(width):
-            for y in range(height):
-                capacity = max(0, 4 - abs(x - width//2) - abs(y - height//2))
-                cell = SugarCell(self.next_id(), self, capacity)
-                self.grid.place_agent(cell, (x, y))
-
-        # 创建智能体
-        for i in range(N):
-            x = self.random.randrange(width)
-            y = self.random.randrange(height)
-            agent = SugarAgent(self.next_id(), self, vision=random.randint(1, 6),
-                              metabolism=random.randint(1, 4))
-            self.grid.place_agent(agent, (x, y))
-            self.schedule.add(agent)
-
-    def step(self):
-        self.schedule.step()
-```
-
-### 20.11.2　如何运行
-
-```bash
-pip install mesa
-python sugarscape.py
-```
-
-### 20.11.3　预期结果
-
-跑 100 步后:
-- 财富分布服从幂律(20% 的人占有 80% 的财富)
-- 智能体聚居在糖丰富的中心区域
-- 部分智能体死亡(代谢失败)
-
-这就是 Sugarscape 的核心发现——**财富不平等涌现**。
-
----
-
-## 20.12　Repast 实战:重做 Beer Game
-
-### 20.12.1　完整代码(简化)
-
-```java
-import repast.simphony.engine.environment.RunEnvironment;
-import repast.simphony.parameter.Parameters;
-
-public class BeerGameAgent {
-    private int inventory;
-    private int backlog;
-    private int orderDelay = 2;  // 订单延迟
-
-    public void step() {
-        // 收到订单
-        int incomingOrder = receiveOrder();
-
-        // 决定发货
-        int shipment = Math.min(inventory, incomingOrder);
-        inventory -= shipment;
-        backlog += incomingOrder - shipment;
-
-        // 决定下单
-        int newOrder = decideOrder();
-        sendOrder(newOrder);
-
-        // 更新状态
-        RunEnvironment.getInstance().getTickCount();
-    }
-
-    private int decideOrder() {
-        // 简单启发式:维持 10 单位目标库存
-        int target = 10;
-        int diff = target - inventory;
-        return Math.max(0, diff);
-    }
-}
-
-public class BeerGameModel {
-    public static void main(String[] args) {
-        // 创建 4 个角色:零售商、批发商、工厂、原料商
-        // 运行仿真
-        // 记录订单波动
-    }
-}
-```
-
-### 20.12.2　预期结果
-
-跑 50 步后:
-- 订单波动放大(10% → 200%)
-- 信息延迟导致牛鞭效应
-- 每个角色都"理性", 但系统做不到
-
-这就是 Beer Game 的核心发现——**局部理性 + 信息延迟 = 集体非理性**。
-
----
-
-## 20.13　AnyLogic 实战:概念性介绍
-
-AnyLogic 是商业软件,我们不提供完整代码,但描述关键概念。
-
-### 20.13.1　多方法集成
-
-AnyLogic 的核心特色:
-
-- **Agent-Based**:智能体方法
-- **System Dynamics**:系统动力学(连续)
-- **Discrete Event**:离散事件
-
-同一模型里可以混用三种方法。
-
-### 20.13.2　典型 AnyLogic 应用
-
-- 医院流程优化
-- 供应链管理
-- 交通仿真
-- 行人疏散
-
----
-
-## 20.14　平台选择的常见错误
-
-### 20.14.1　错误一:选最"流行"的平台
-
-NetLogo 是最"流行"的平台,但对大规模仿真不友好。不要因为"流行"就选。
-
-### 20.14.2　错误二:用最适合的平台的反
-
-用 Mesa 做工业级仿真太慢,用 AnyLogic 做学术研究太贵。读者要根据自己的需要选平台。
-
-### 20.14.3　错误三:不重视学习曲线
-
-如果读者只有 2 周时间,选 NetLogo 而不是 Repast。即使 NetLogo 性能差,但能跑通。
-
-### 20.14.4　错误四:忽视社区
-
-社区活跃度影响学习曲线。NetLogo 社区非常活跃,Mesa 也在成长,但 Repast 社区较小。
-
----
-
-## 20.15　平台的未来演化
-
-### 20.15.1　LLM 时代的平台
-
-未来平台会集成更多 LLM:
-
-- NetLogo + LLM:智能体决策更真实
-- Mesa + LLM:Python 生态 + LLM
-- Repast + LLM:Java + LLM
-- 专用平台:Smallville、OASIS、GAWorld
-
-### 20.15.2　多模态时代的平台
-
-未来平台会支持多模态:
-
-- 图像输入
-- 音频输入
-- 视频输入
-- 传感器数据集成
-
-### 20.15.3　云时代的平台
-
-未来平台会云上:
-
-- 浏览器内运行
-- 云存储
-- 云 GPU 加速
-- 协作平台
-
-### 20.15.4　教育市场的融合
-
-未来平台会教育化:
-
-- 内置课程
-- 教学助手
-- 学生项目展示
-- 老师备课工具
-
-### 20.15.5　LLM 平台的"协议化"
-
-LLM 智能体平台正在向"协议化"演化:
-
-- **Agent Protocol**:Anthropic 提出的智能体通信协议
-- **MCP**:Model Context Protocol,Anthropic 提出的上下文协议
-- **A2A**:Agent-to-Agent 协议,Google 提出的智能体间协议
-
-这些协议让"不同平台的智能体"可以互操作:
-
-- 一个 NetLogo 模型可以调用 GAWorld 智能体
-- 一个 Mesa 模型可以和 Smallville 智能体协同
-
-未来学生做研究时,可能不再"选一个平台",而是"组合多个平台的智能体",每个智能体做自己最擅长的事。
-
-### 20.15.6　仿真 + 实时决策:数字孪生
-
-数字孪生(Digital Twin)是仿真的下一步:
-
-- **仿真**(Simulation):离线,事后总结
-- **数字孪生**(Digital Twin):在线,实时决策
-
-区别:
-
-- 仿真:输入参数 → 输出结论(批量)
-- 数字孪生:输入实时数据 → 输出实时建议(持续)
-
-LLM 平台的"数据同化"特性,正好契合数字孪生:
-
-- 每日舆情数据 → 更新智能体信任度 → 输出次日推荐
-- 实时交通数据 → 更新智能体路径 → 输出实时调度
-
-**未来 5–10 年,社会仿真和数字孪生的边界会模糊**。学生做研究时,要意识到这一点。
-
-### 20.15.7　"低代码/无代码"社会仿真
-
-LLM 让"低代码/无代码"社会仿真成为可能:
-
-- 用户用自然语言描述:"我要建一个城市,有 1000 居民,警察破案率提升 20%"
-- LLM 自动生成代码
-
-这就是 GAWorld 的 **Agent Studio** 等平台的设计思路——把"编程"变成"提示"。
-
-学生做研究时,要面对一个方法论选择:
-
-- **写代码**(传统):完全控制,但门槛高
-- **低代码**(LLM 生成):快速原型,但难以精细调优
-- **混合**:LLM 生成骨架,人工微调
-
-未来五年,这种混合方式会成为主流。
-
----
-
-## 20.16　本章小结(扩展版)
-
-本章从多个维度对比了 8 个 ABM 平台:
-
-**NetLogo**:教学友好、入门门槛低、模型库丰富,但性能有限。
-
-**Repast**:Java 实现、性能强、HPC 支持,适合学术研究。
-
-**Mason**:Java 实现、高性能,适合复杂多用户场景。
-
-**Mesa**:Python 实现、数据科学生态丰富,适合数据科学家。
-
-**AnyLogic**:商业平台、多方法集成、企业级稳定,适合工业。
-
-**GAWorld**:LLM 驱动、集成工具链、教学友好,适合社会科学研究。
-
-**Smallville 衍生**:LLM 时代的新平台,正在快速发展。
-
-**OASIS、Project Sid 等**:中国本土 LLM 智能体平台。
-
-读者应该根据自己的研究问题、研究规模、自身背景、预算选择合适的平台。
-
-社会仿真是"一种方法",不是"一个工具"。多种平台并存,正是社会仿真生态健康的表现。
-
-**3 个实战代码示例**(NetLogo Schelling、Mesa Sugarscape、Repast Beer Game)帮助读者快速上手。
-

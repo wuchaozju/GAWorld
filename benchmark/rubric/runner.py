@@ -86,8 +86,13 @@ def _mean(results: list[dict]) -> float | None:
 def run(data: dict, *, providers: list[str] | None = None, sample_seed: int = 42,
         min_days: int = 30, samples_per_judge: int = 3, ablations: list[str] | None = None,
         rubric_path: Path | None = None, targets: dict | None = None,
-        judge_call=None) -> dict:
+        judge_call=None, calibration: dict | None = None) -> dict:
+    """``calibration``: ``calibration.scorecard_block(...)``, or a callable
+    taking the loaded rubric and returning one (the caller may not know the
+    rubric hash before this loads it)."""
     rubric = load_rubric(rubric_path)
+    if callable(calibration):
+        calibration = calibration(rubric)
     providers = providers or []
     data.setdefault("capabilities", loader.capabilities(data))
     sampled = build_units(data, seed=sample_seed, min_days=min_days, targets=targets)
@@ -115,7 +120,7 @@ def run(data: dict, *, providers: list[str] | None = None, sample_seed: int = 42
 
     scorecard = build_scorecard(rubric, item_results, sampled["coverage"],
                                 discrimination_by_item=disc, reliability=reliability,
-                                manifest=manifest)
+                                manifest=manifest, calibration=calibration)
     scorecard["raw_results"] = item_results
     return scorecard
 

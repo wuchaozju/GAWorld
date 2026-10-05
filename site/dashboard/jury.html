@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="jury.page_title">GAWorld · 陪审团</title>
+  <meta name="description" data-i18n-content="jury.meta_description" content="GAWorld 陪审团 — 玩家写一个案件，三到五名居民当陪审员讨论三轮，再匿名投票表决有罪 / 无罪。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="jury.kicker">GAWorld Playground · Jury</p>
+          <h1 data-i18n="jury.headline">陪审团:三个普通人能给一件事定论吗</h1>
+          <p class="sub" data-i18n="jury.sub">
+            你写一个案件(内置的或自己编的),挑三到五个居民当陪审员,他们讨论三轮,再匿名投票表决有罪 / 无罪,
+            顺带对一个量刑问题表态——最终的分歧度比结论更显告诉你这群人在这座城里是不是真的能把事情说清。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="jury.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="jury-grid">
+      <!-- Left column: set up one trial -->
+      <aside class="jury-side panel">
+        <h3 data-i18n="jury.section_setup">本案设置</h3>
+
+        <label class="field">
+          <span data-i18n="jury.city_label">城市</span>
+          <select id="jCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="jury.case_label">案件</span>
+          <select id="jCase"></select>
+        </label>
+        <p id="jCaseText" class="jury-hint"></p>
+
+        <div id="jCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="jury.custom_title_label">案件名</span>
+            <input id="jCustomTitle" type="text" data-i18n-placeholder="jury.custom_title_placeholder" placeholder="例如:邻居凌晨挪车" />
+          </label>
+          <label class="field">
+            <span data-i18n="jury.custom_defendants_label">被告</span>
+            <input id="jCustomDefendants" type="text" data-i18n-placeholder="jury.custom_defendants_placeholder" placeholder="例如:老王" />
+          </label>
+          <label class="field">
+            <span data-i18n="jury.custom_facts_label">发生了什么</span>
+            <textarea id="jCustomFacts" data-i18n-placeholder="jury.custom_facts_placeholder" placeholder="把案情讲清楚:谁、什么时间、做了什么、原告怎么说的、被告怎么说的。"></textarea>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="jury.question_label">第二个问题</span>
+          <select id="jQuestion"></select>
+        </label>
+        <p id="jQuestionText" class="jury-hint"></p>
+
+        <label class="field">
+          <span data-i18n="jury.rounds_label">讨论几轮</span>
+          <input id="jRounds" type="number" min="1" max="5" value="3" />
+        </label>
+        <p id="jCost" class="jury-hint"></p>
+
+        <div class="jury-block">
+          <h4>
+            <span data-i18n="jury.jurors_title">陪审员</span>
+            <b id="jCount">0</b><span class="muted" data-i18n="jury.jurors_suffix">人</span>
+          </h4>
+          <p class="jury-hint" data-i18n="jury.jurors_hint">
+            至少 3 人,最多 5 人。三个人的分歧和五个人的分歧是两个量级;人越少,「沉默的多数」越有戏。
+          </p>
+          <div class="jury-toolbar">
+            <button class="button" id="jPickRandom" data-i18n="jury.pick_random">🎲 随机抽</button>
+            <button class="button" id="jPickNone" data-i18n="jury.pick_none">清空</button>
+          </div>
+          <ul id="jAgents" class="jury-list"></ul>
+        </div>
+
+        <div class="jury-actions">
+          <button id="jRunBtn" class="button primary" data-i18n="jury.run">开庭</button>
+        </div>
+
+        <section class="jury-history">
+          <h4 data-i18n="jury.history">最近庭审</h4>
+          <ul id="jHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the board -->
+      <section class="jury-main panel">
+        <header class="jury-main-head">
+          <div>
+            <h3 id="jTitle" data-i18n="jury.section_board">庭审</h3>
+            <p id="jStatus" class="jury-status" data-i18n="jury.idle">还没开庭</p>
+          </div>
+          <div class="jury-progress">
+            <div class="bar"><span id="jBar" style="width:0%"></span></div>
+            <span id="jPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="jResult" hidden>
+          <section id="jVerdict" class="jury-verdict"></section>
+          <section id="jStats" class="jury-stats"></section>
+          <section id="jRounds" class="jury-rounds"></section>
+          <section id="jBallots" class="jury-ballots"></section>
+        </div>
+
+        <p id="jIdle" class="jury-idle" data-i18n="jury.idle_hint">左边写个案子、抽几个人,点「开庭」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/jury.js"></script>
+</body>
+</html>

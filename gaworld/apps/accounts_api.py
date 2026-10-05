@@ -57,7 +57,7 @@ def handle_get(store: AccountStore | None, user: dict[str, Any] | None, path: st
             for user in store.list_users()
         ]
         return {"users": rows, "quota": store.get_setting("daily_llm_calls_per_user", 0)}, 200, None
-    return {"error": f"unknown endpoint: {path}"}, 404, None
+    return {"error": "Unknown endpoint"}, 404, None
 
 
 def handle_post(
@@ -140,4 +140,4 @@ def _post(
             changed = store.set_can_create_city(target, bool(payload.get("allow")))
             store.audit(user, "city_permission", f"user_id={target} allow={changed['can_create_city']}")
             return {"user": changed}, 200, None
-    return {"error": f"unknown endpoint: {path}"}, 404, None
+    return {"error": "Unknown endpoint"}, 404, None

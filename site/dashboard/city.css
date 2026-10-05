@@ -267,13 +267,13 @@
 }
 
 .city-badge.is-real {
-  color: #0e7a58;
+  color: var(--green);
   background: #e6f4ef;
 }
 
 .city-badge.is-use {
   color: #b45309;
-  background: #fef3c7;
+  background: var(--amber-soft);
 }
 
 /* --------------------------------------------------------------- detail */
@@ -306,13 +306,13 @@
 }
 
 .btn.danger {
-  color: #b91c1c;
+  color: var(--red);
   border-color: #fca5a5;
-  background: #fff;
+  background: var(--card);
 }
 
 .btn.danger:hover {
-  background: #fef2f2;
+  background: var(--red-soft);
 }
 
 /* --------------------------------------------------------------- status */
@@ -324,8 +324,8 @@
   min-height: 1em;
 }
 
-.city-status.is-ok { color: #0e7a58; }
-.city-status.is-error { color: #b91c1c; }
+.city-status.is-ok { color: var(--green); }
+.city-status.is-error { color: var(--red); }
 .city-status.is-busy { color: var(--muted, #6b7280); }
 
 /* Map preview -------------------------------------------------------------
@@ -393,8 +393,8 @@
   border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
 }
 .city-ind-trend { font-weight: 700; color: var(--muted, #6b7280); }
-.city-ind-trend.is-growing { color: #0e7a58; }
-.city-ind-trend.is-declining { color: #b91c1c; }
+.city-ind-trend.is-growing { color: var(--green); }
+.city-ind-trend.is-declining { color: var(--red); }
 .city-ind-weight { color: var(--muted, #6b7280); font-variant-numeric: tabular-nums; }
 .city-ind-note { color: var(--muted, #6b7280); }
 
@@ -414,12 +414,12 @@
 .city-agents-bar { margin-bottom: 8px; }
 .city-agents-bar input {
   width: 100%; padding: 7px 10px; border: 1px solid var(--line, #d8ded9);
-  border-radius: 8px; font: inherit; background: #fff;
+  border-radius: 8px; font: inherit; background: var(--card);
 }
 .city-agents { max-height: 420px; overflow: auto; }
 .ca-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ca-table th {
-  position: sticky; top: 0; background: #fff; text-align: left; font-weight: 500;
+  position: sticky; top: 0; background: var(--card); text-align: left; font-weight: 500;
   color: var(--muted, #6b7280); font-size: 11.5px; padding: 6px 8px 6px 0;
   border-bottom: 1px solid var(--line, #d8ded9); white-space: nowrap;
 }
@@ -427,10 +427,8 @@
 .ca-table tbody tr:hover { background: rgba(19, 121, 91, 0.05); }
 /* Job text is the one free-form column; keep it from pushing the table wide. */
 .ca-job { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ca-open { color: #13795b; font-size: 12px; white-space: nowrap; }
+.ca-open { color: var(--green); font-size: 12px; white-space: nowrap; }
 .ca-empty { font-size: 12.5px; color: var(--muted, #6b7280); font-style: italic; }
 
-@media (prefers-color-scheme: dark) {
-  .city-agents-bar input, .ca-table th { background: var(--panel, #1a1f1c); }
-  .ca-open { color: #6ee7b7; }
-}
+:root[data-theme="dark"] .city-agents-bar input, :root[data-theme="dark"] .ca-table th { background: var(--panel, #1a1f1c); }
+:root[data-theme="dark"] .ca-open { color: #6ee7b7; }

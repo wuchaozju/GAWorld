@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title data-i18n="play.page_title">GAWorld · 多人共玩</title>
@@ -20,15 +21,26 @@
       padding: 8px; border: 1px solid var(--line, #ddd); border-radius: 8px; font: inherit; }
     .play-feed { display: grid; gap: 6px; margin-top: 8px; max-height: 320px; overflow: auto; font-size: 14px; }
     .play-feed p { margin: 0; }
+    .play-now { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--line, #eee); font-size: 14px; }
+    .play-now time { color: var(--muted, #777); margin-right: 6px; font-size: 12px; }
     .play-feed time { color: var(--muted, #777); margin-right: 6px; font-size: 12px; }
-    @media (max-width: 760px) { .play-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) {
+      .play-grid { grid-template-columns: 1fr; }
+      /* A phone: what I do first, the list of residents after. */
+      .play-grid > .panel:last-child { order: -1; }
+      .play-list { max-height: 260px; }
+      .studio-top .sub { display: none; }
+      .studio-top h1 { font-size: 22px; }
+    }
   </style>
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body class="studio-body">
   <main class="studio-shell games-shell">
     <header class="studio-top">
       <div class="brand">
-        <div class="brand-mark">GA</div>
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
         <div class="brand-copy">
           <p class="kicker" data-i18n="play.kicker">GAWorld · Play Together</p>
           <h1 data-i18n="play.headline">多人共玩：认领一位居民，和大家同时生活在这座城市里</h1>
@@ -51,7 +63,8 @@
 
       <section class="panel">
         <h3 data-i18n="play.mine_title">我扮演的居民</h3>
-        <p id="pMine" class="disaster-status" data-i18n="play.none">还没有认领居民：在左边挑一位。</p>
+        <p id="pMine" class="disaster-status" data-i18n="play.none">还没有认领居民：在居民列表里挑一位。</p>
+        <p id="pNow" class="play-now" hidden></p>
         <div id="pControls" hidden>
           <form class="play-form" id="pActForm">
             <label for="pAct" data-i18n="play.act_label">这一步做什么</label>

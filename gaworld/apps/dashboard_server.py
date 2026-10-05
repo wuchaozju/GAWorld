@@ -1,16 +1,13 @@
 import atexit
-import contextvars
-import csv
-import datetime
 import hmac
 import json
-import math
 import os
 import re
 import subprocess
 import sys
 import threading
 import time
+import types
 import uuid
 from copy import deepcopy
 from http.cookies import SimpleCookie
@@ -23,7 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gaworld import accounts, worlds
 from gaworld.accounts import context as request_context
 from gaworld.accounts import policy as access_policy
-from gaworld.apps import accounts_api, analytics, replay_runs
+from gaworld.apps import accounts_api, analytics, replay_runs, residents, routes, runs
+from gaworld.apps import world_paths as paths
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
@@ -35,56 +33,11 @@ from gaworld.settings import CONFIG
 _LOG = get_logger("gaworld.dashboard")
 
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DASHBOARD_ROOT = os.path.join(REPO_ROOT, "site", "dashboard")
-DASHBOARD_CONFIG_PATH = os.path.join(REPO_ROOT, "dashboard_config.json")
-PROFILE_PATH = os.path.join(REPO_ROOT, CONFIG.get("md_path", "data/hangzhou_profiles_with_names.md"))
-STATE_CSV_PATH = os.path.join(REPO_ROOT, CONFIG.get("csv_path", "data/hangzhou_agents_state_init.csv"))
-ECONOMY_SNAPSHOT_PATH = os.path.join(REPO_ROOT, "output", "economy", "wealth_snapshot.csv")
-#: Kernel Recorder output (one JSONL per table). Panels that read a plugin's
-#: recorded stream resolve it from here so tests can redirect it.
-RECORDS_DIR = os.path.join(REPO_ROOT, "output", "records")
-SKILLS_DIR = os.path.join(REPO_ROOT, CONFIG.get("skills", {}).get("global_dir", "data/skills"))
-CAPABILITIES_CACHE_PATH = os.path.join(
-    REPO_ROOT, CONFIG.get("real_work", {}).get("capabilities_cache", "output/work/capabilities.json")
-)
-RELAY_STATE_PATH = os.path.join(
-    REPO_ROOT,
-    CONFIG.get("distributed", {}).get("server", {}).get("state_path", "output/distributed/relay_state.json"),
-)
-RUN_LOG_PATH = os.path.join(REPO_ROOT, "output", "dashboard", "simulation_run.log")
-TODO_BOARD_PATH = os.path.join(REPO_ROOT, "output", "dashboard", "todo_board.json")
-#: Upper bound for the first (non-incremental) run-log read. Later polls only
-#: ship the bytes appended since the client's offset, so this only caps how far
-#: back a freshly opened page starts; the Markdown export is never truncated.
-RUN_LOG_VIEW_MAX_BYTES = 8 * 1024 * 1024
-PROFILE_HEADER_RE = re.compile(r"^## Profile\s+(\d+)\s*[｜|]\s*(.+?)\s*$", re.MULTILINE)
+DASHBOARD_ROOT = os.path.join(paths.REPO_ROOT, "site", "dashboard")
+TODO_BOARD_PATH = os.path.join(paths.REPO_ROOT, "output", "dashboard", "todo_board.json")
 
-# The nine normalized [0,1] state variables that seed each agent. Order matters
-# only for display; the CSV column order is preserved on write regardless.
-STATE_VAR_KEYS = (
-    "emotion",
-    "stress",
-    "econ_security",
-    "city_identity",
-    "policy_sensitivity",
-    "platform_dependence",
-    "risk_preference",
-    "voice_propensity",
-    "mobility_intent",
-)
 
-RUN_STATE = {
-    "process": None,
-    "started_at": None,
-    "log_path": RUN_LOG_PATH,
-    # Pending "定时运行": the timer thread that will start the run, the wall
-    # clock it fires at, the payload to start with, and the error a fired
-    # timer left behind (so a failed auto-start is visible in the panel).
-    "schedule": None,
-}
 
-_SCHEDULE_LOCK = threading.Lock()
 TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
@@ -100,76 +53,33 @@ _USER = request_context.USER
 WORLD_COOKIE = "gaworld_world"
 
 
-def _current_world():
-    return _WORLD.get()
 
 
-def _world_file(*parts):
-    """Absolute path inside the active world's directory."""
-    return os.path.join(REPO_ROOT, worlds.root(_current_world()["id"]), *parts)
 
 
-def _config_path():
-    """Where `POST /api/config` writes: the world's config, else the global file."""
-    world = _current_world()
-    return worlds.config_path(REPO_ROOT, world["id"]) if world else DASHBOARD_CONFIG_PATH
 
 
-def _profile_path():
-    world = _current_world()
-    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[1]) if world else PROFILE_PATH
 
 
-def _state_csv_path():
-    world = _current_world()
-    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[0]) if world else STATE_CSV_PATH
 
 
-def _economy_snapshot_path():
-    return _world_file("economy", "wealth_snapshot.csv") if _current_world() else ECONOMY_SNAPSHOT_PATH
 
 
-def _records_dir():
-    return _world_file("records") if _current_world() else RECORDS_DIR
 
 
-def _run_log_path():
-    return _world_file("run.log") if _current_world() else RUN_LOG_PATH
 
 
-def _deep_update(base, patch):
-    if not isinstance(base, dict) or not isinstance(patch, dict):
-        return base
-    for key, value in patch.items():
-        if isinstance(value, dict) and isinstance(base.get(key), dict):
-            _deep_update(base[key], value)
-        else:
-            base[key] = value
-    return base
 
 
-def _read_json_file(path, default=None):
-    if not os.path.exists(path):
-        return {} if default is None else default
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            payload = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {} if default is None else default
-    return payload
 
 
-def _atomic_write_json(path, payload):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp_path = path + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    os.replace(tmp_path, path)
+
+
 
 
 def _todo_board_payload():
     with TODO_LOCK:
-        payload = _read_json_file(TODO_BOARD_PATH, {"items": []})
+        payload = paths.read_json_file(TODO_BOARD_PATH, {"items": []})
         if isinstance(payload, list):
             payload = {"items": payload}
         if not isinstance(payload, dict):
@@ -186,7 +96,7 @@ def _save_todo_board(items):
             "items": items,
             "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
-        _atomic_write_json(TODO_BOARD_PATH, payload)
+        paths.atomic_write_json(TODO_BOARD_PATH, payload)
         return {"ok": True, **payload}
 
 
@@ -234,53 +144,12 @@ def _update_todo_item(payload):
     raise ValueError(f"todo item {item_id} not found")
 
 
-def _dashboard_config():
-    payload = _read_json_file(DASHBOARD_CONFIG_PATH, {})
-    return payload if isinstance(payload, dict) else {}
 
 
-def _effective_config():
-    """The configuration a fresh process would load, as of right now.
-
-    Deliberately *not* ``deepcopy(CONFIG)``. ``CONFIG`` is assembled once at
-    import and ``settings/overrides.py`` already merges the override files
-    into it, so it is a snapshot that goes stale the moment the dashboard
-    writes one. Reading it back told a user who had just reset a key that it
-    still held its old value — the exact "the edit looks like it worked"
-    failure the 配置 panel exists to prevent — because the reset emptied the
-    override file while the stale copy kept the overridden value.
-
-    So rebuild from the Python defaults and re-apply the layers in the order
-    ``overrides.apply_runtime_overrides`` uses (env last, twice, so it beats
-    the environment file). The dashboard layer comes from
-    ``_dashboard_config()`` rather than the loader's relative path, keeping
-    the module path constants the single lever over where it reads.
-    """
-    from gaworld.city.config import apply_city
-    from gaworld.settings.defaults import build_default_config
-    from gaworld.settings.overrides import load_env_override, load_environment_config
-
-    cfg = build_default_config()
-    env_override = load_env_override()
-    world = _current_world()
-    _deep_update(cfg, _dashboard_config())
-    if world:
-        _deep_update(cfg, worlds.read_config(REPO_ROOT, world["id"]))
-    _deep_update(cfg, env_override)
-    _deep_update(cfg, load_environment_config(cfg.get("environment_config_path")))
-    apply_city(cfg, root=REPO_ROOT)
-    if world:
-        # Last but the environment: a world's paths beat the city's run root.
-        _deep_update(cfg, worlds.overrides(world["id"]))
-    _deep_update(cfg, env_override)
-    return cfg
 
 
-def _city_seed_files(city):
-    """``(slug, state_csv, profiles_md)`` a new world copies its residents from.
-
-    ``city`` empty means the default population under ``data/``.
-    """
+def _city_source_config(city):
+    """``(slug, config)`` of the population a new world is copied from."""
     from gaworld.city.config import apply_city
     from gaworld.settings.defaults import build_default_config
 
@@ -297,23 +166,48 @@ def _city_seed_files(city):
             raise ValueError(f"城市「{bundle.display_name}」还没有居民，无法建立世界")
         slug = bundle.slug
         cfg["city"] = slug
-        apply_city(cfg, root=REPO_ROOT)
-    csv_src = os.path.join(REPO_ROOT, str(cfg.get("csv_path") or ""))
-    md_src = os.path.join(REPO_ROOT, str(cfg.get("md_path") or ""))
+        apply_city(cfg, root=paths.REPO_ROOT)
+    return slug, cfg
+
+
+def _city_seed_files(city):
+    """``(slug, state_csv, profiles_md)`` a new world copies its residents from.
+
+    ``city`` empty means the default population under ``data/``.
+    """
+    slug, cfg = _city_source_config(city)
+    csv_src = os.path.join(paths.REPO_ROOT, str(cfg.get("csv_path") or ""))
+    md_src = os.path.join(paths.REPO_ROOT, str(cfg.get("md_path") or ""))
     if not (os.path.isfile(csv_src) and os.path.isfile(md_src)):
         raise ValueError("找不到这座城市的居民文件")
     return slug, csv_src, md_src
+
+
+def _city_agent_files(city):
+    """``{config path: file}`` of the agent-keyed inputs a new world copies
+    from its city (``worlds.COPIED_AGENT_FILES``) — only those that exist."""
+    _slug, cfg = _city_source_config(city)
+    found = {}
+    for path in worlds.COPIED_AGENT_FILES:
+        node = cfg
+        for part in path.split("."):
+            node = node.get(part) if isinstance(node, dict) else None
+        if isinstance(node, str) and node:
+            source = node if os.path.isabs(node) else os.path.join(paths.REPO_ROOT, node)
+            if os.path.isfile(source):
+                found[path] = source
+    return found
 
 
 def _repo_path(value):
     path = Path(str(value))
     if path.is_absolute():
         return path.resolve()
-    return (Path(REPO_ROOT) / path).resolve()
+    return (Path(paths.REPO_ROOT) / path).resolve()
 
 
 def _collaboration_config():
-    config = _effective_config().get("collaboration", {})
+    config = paths.effective_config().get("collaboration", {})
     return config if isinstance(config, dict) else {}
 
 
@@ -327,7 +221,7 @@ def _get_collaboration_service():
         from gaworld.llm.providers import call_llm
         from gaworld.memory.experience import append_agent_episode
 
-        config = _effective_config()
+        config = paths.effective_config()
         collaboration = config.get("collaboration", {})
         if not isinstance(collaboration, dict):
             collaboration = {}
@@ -342,7 +236,7 @@ def _get_collaboration_service():
             memory_dir=_repo_path(
                 config.get("memory_dir", "output/memory")
             ),
-            agent_loader=lambda agent_id: _agent_detail(int(agent_id)),
+            agent_loader=lambda agent_id: residents.agent_detail(int(agent_id)),
             llm=call_llm,
             episode_writer=lambda agent_id, episode: append_agent_episode(
                 agent_id,
@@ -368,7 +262,7 @@ def _public_collaboration_session(payload):
     result = deepcopy(payload)
     result.pop("artifact_base_url", None)
 
-    repo_root = Path(REPO_ROOT).resolve()
+    repo_root = Path(paths.REPO_ROOT).resolve()
     collaboration = _collaboration_config()
     sessions_dir = _repo_path(
         collaboration.get(
@@ -541,10 +435,10 @@ def _sim_span(cfg):
 
 
 def _config_summary():
-    cfg = _effective_config()
-    world = _current_world()
+    cfg = paths.effective_config()
+    world = paths.current_world()
     # The layer the run toolbar edits: the world's own config, or the global file.
-    layer = worlds.read_config(REPO_ROOT, world["id"]) if world else _dashboard_config()
+    layer = worlds.read_config(paths.REPO_ROOT, world["id"]) if world else paths.dashboard_config()
     routing = cfg.get("llm", {}).get("routing", {})
     return {
         "agent_ids": cfg.get("agent_ids", []),
@@ -562,6 +456,7 @@ def _config_summary():
         },
         "visualization": cfg.get("visualization", {}),
         "multiplayer": cfg.get("multiplayer", {}),
+        "cluster": {"sync_timeout_seconds": (cfg.get("cluster") or {}).get("sync_timeout_seconds", 60)},
         "dashboard_config": layer,
         "city": layer.get("city", ""),
         "cities": _city_choices(),
@@ -612,7 +507,7 @@ def _sanitize_config_patch(payload):
             count = 1
         if unit in ("day", "month", "year"):
             patch["sim_days"] = span_days(
-                unit, count, start_date=_sim_start_date(_effective_config())
+                unit, count, start_date=_sim_start_date(paths.effective_config())
             )
     if "agent_ids" in payload:
         ids = payload.get("agent_ids")
@@ -644,6 +539,11 @@ def _sanitize_config_patch(payload):
         # Each tick waits up to this long for the people playing residents.
         seconds = max(0, min(300, int(multiplayer["wait_for_players_seconds"] or 0)))
         patch["multiplayer"] = {"wait_for_players_seconds": seconds}
+    cluster = payload.get("cluster")
+    if isinstance(cluster, dict) and "sync_timeout_seconds" in cluster:
+        # A distributed world's tick waits up to this long for its slowest machine.
+        seconds = max(0, min(600, int(cluster["sync_timeout_seconds"] or 0)))
+        patch["cluster"] = {"sync_timeout_seconds": seconds}
     if "time_step_minutes" in payload:
         value = payload["time_step_minutes"]
         patch["time_step_minutes"] = None if value in ("", None, 0, "0") else value
@@ -724,15 +624,15 @@ def _validated_city(value):
 
 
 def _save_config_patch(payload):
-    world = _current_world()
-    current = worlds.read_config(REPO_ROOT, world["id"]) if world else _dashboard_config()
+    world = paths.current_world()
+    current = worlds.read_config(paths.REPO_ROOT, world["id"]) if world else paths.dashboard_config()
     patch = _sanitize_config_patch(payload)
     if world:
         # A world's residents were copied from its city when it was made;
         # pointing it at another city would mix two populations.
         patch.pop("city", None)
-    _deep_update(current, patch)
-    _atomic_write_json(_config_path(), current)
+    paths.deep_update(current, patch)
+    paths.atomic_write_json(paths.config_path(), current)
     if "multiplayer" in patch:
         # The multiplayer plugin reads this every tick: hand it to a running
         # simulator now rather than at its next start.
@@ -747,65 +647,37 @@ def _save_config_patch(payload):
             )
         except LookupError:
             pass  # nothing running; the next run reads the saved config
+    if "cluster" in patch:
+        # Every simulator of the world reads it each tick; the nodes' runs pick
+        # it up at their next start.
+        from gaworld.apps import kernel_api
+        from gaworld.kernel import remote
+
+        try:
+            remote.enqueue(
+                kernel_api._queue_path(),
+                "update_config",
+                {"path": "cluster.sync_timeout_seconds", "value": patch["cluster"]["sync_timeout_seconds"]},
+            )
+        except LookupError:
+            pass
+        if world:
+            from gaworld.apps import cluster_api
+
+            cluster_api.broadcast(
+                world["id"],
+                "update_config",
+                {"path": "cluster.sync_timeout_seconds", "value": patch["cluster"]["sync_timeout_seconds"]},
+            )
     return _config_summary()
 
 
-def _profile_sections():
-    try:
-        with open(_profile_path(), "r", encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
-        return "", []
-    matches = list(PROFILE_HEADER_RE.finditer(text))
-    sections = []
-    for index, match in enumerate(matches):
-        start = match.start()
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        sections.append({
-            "id": int(match.group(1)),
-            "name": match.group(2).strip(),
-            "start": start,
-            "end": end,
-            "text": text[start:end].strip() + "\n",
-        })
-    return text, sections
 
 
-def _agents_summary():
-    _, sections = _profile_sections()
-    configured = set(int(item) for item in _effective_config().get("agent_ids", []))
-    return [
-        {
-            "id": section["id"],
-            "name": section["name"],
-            "configured": section["id"] in configured,
-        }
-        for section in sections
-    ]
 
 
-def _agent_profile(agent_id):
-    _, sections = _profile_sections()
-    for section in sections:
-        if section["id"] == int(agent_id):
-            return section
-    return None
 
 
-def _save_agent_profile(agent_id, profile_text):
-    full_text, sections = _profile_sections()
-    target = None
-    for section in sections:
-        if section["id"] == int(agent_id):
-            target = section
-            break
-    if not target:
-        raise ValueError(f"Profile {agent_id} not found")
-    new_block = str(profile_text).strip() + "\n\n"
-    updated = full_text[:target["start"]] + new_block + full_text[target["end"]:]
-    with open(_profile_path(), "w", encoding="utf-8") as f:
-        f.write(updated)
-    return _agent_profile(agent_id)
 
 
 # ---------------------------------------------------------------------------
@@ -815,261 +687,43 @@ def _save_agent_profile(agent_id, profile_text):
 # to the profile block for narrative, mirroring how imported agents are stored.
 # ---------------------------------------------------------------------------
 
-def _read_state_rows():
-    if not os.path.exists(_state_csv_path()):
-        return [], []
-    with open(_state_csv_path(), "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        fieldnames = list(reader.fieldnames or [])
-        rows = [dict(row) for row in reader]
-    return fieldnames, rows
 
 
-def _row_id(row):
-    try:
-        return int(float(row.get("id")))
-    except (TypeError, ValueError):
-        return None
 
 
-def _num(value, default=0.5):
-    try:
-        return round(float(value), 4)
-    except (TypeError, ValueError):
-        return default
 
 
-def _state_row_to_payload(row):
-    try:
-        age = int(float(row.get("age")))
-    except (TypeError, ValueError):
-        age = None
-    return {
-        "id": _row_id(row),
-        "name": (row.get("name") or "").strip(),
-        "gender": (row.get("gender") or "").strip(),
-        "age": age,
-        "hukou": (row.get("hukou") or "").strip(),
-        "residence": (row.get("residence") or "").strip(),
-        "state": {key: _num(row.get(key)) for key in STATE_VAR_KEYS},
-    }
 
 
-def _agent_state(agent_id):
-    _, rows = _read_state_rows()
-    for row in rows:
-        if _row_id(row) == int(agent_id):
-            return _state_row_to_payload(row)
-    return None
 
 
-def _atomic_write_state(fieldnames, rows):
-    target = _state_csv_path()
-    tmp_path = target + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key, "") for key in fieldnames})
-    os.replace(tmp_path, target)
 
 
-def _save_agent_state(agent_id, payload):
-    fieldnames, rows = _read_state_rows()
-    if not fieldnames:
-        raise ValueError("State CSV is missing or empty")
-    target = next((row for row in rows if _row_id(row) == int(agent_id)), None)
-    if target is None:
-        raise ValueError(f"Agent {agent_id} not found in state CSV")
-    for key in ("name", "gender", "hukou", "residence"):
-        if payload.get(key) not in (None, ""):
-            target[key] = str(payload[key])
-    if payload.get("age") not in (None, ""):
-        target["age"] = str(int(payload["age"]))
-    incoming = payload.get("state") or {}
-    for key in STATE_VAR_KEYS:
-        if incoming.get(key) is not None:
-            target[key] = round(max(0.0, min(1.0, float(incoming[key]))), 4)
-    _atomic_write_state(fieldnames, rows)
-    result = _agent_state(agent_id)
-    try:
-        _sync_profile_state_lines(agent_id, result["state"])
-    except Exception:  # noqa: BLE001 - narrative sync is best-effort, never blocks the CSV write
-        _LOG.exception("profile state sync failed for agent %s", agent_id)
-    return result
 
 
-def _sync_profile_state_lines(agent_id, state):
-    """Mirror the CSV state onto the profile Markdown so the two don't drift.
-
-    The CSV is authoritative. This rewrites only the two structured lines a
-    profile block carries — the ``**研究增强变量初始化**`` bullets and the
-    ``**核心状态变量**`` summary — leaving all narrative prose untouched. If a
-    profile lacks those lines, nothing is changed.
-    """
-    section = _agent_profile(agent_id)
-    if not section:
-        return
-    text = section["text"]
-    core = (
-        f"**核心状态变量**：emotion {state['emotion']:.2f}｜stress {state['stress']:.2f}｜"
-        f"econ_security {state['econ_security']:.2f}｜city_identity {state['city_identity']:.2f}"
-    )
-    new_text = re.sub(r"\*\*核心状态变量\*\*：.*", core, text)
-    for key in ("policy_sensitivity", "platform_dependence", "risk_preference", "voice_propensity", "mobility_intent"):
-        new_text = re.sub(rf"^- {key}：.*$", f"- {key}：{state[key]:.2f}", new_text, flags=re.MULTILINE)
-    if new_text != text:
-        _save_agent_profile(agent_id, new_text)
 
 
-def _memory_base_dir():
-    return os.path.join(REPO_ROOT, _effective_config().get("memory_dir", "output/memory"))
 
 
-def _memory_file(agent_id, suffix=""):
-    return os.path.join(_memory_base_dir(), f"agent_{int(agent_id)}{suffix}.json")
 
 
-def _social_snapshot(agent_id):
-    rels = _read_json_file(_memory_file(agent_id, "_relationships"), {})
-    if not isinstance(rels, dict) or not rels:
-        return None
-    tier_counts = {"inner": 0, "close": 0, "acquaintance": 0, "weak": 0}
-    relations = []
-    for key, item in rels.items():
-        if not isinstance(item, dict):
-            continue
-        tier = item.get("dunbar_tier") or ""
-        if tier in tier_counts:
-            tier_counts[tier] += 1
-        profile = item.get("profile") if isinstance(item.get("profile"), dict) else {}
-        relations.append({
-            "id": key,
-            "name": profile.get("name") or str(key),
-            "role": item.get("role") or "",
-            "kind": item.get("kind") or "agent",
-            "tier": tier,
-            "closeness": _num(item.get("closeness"), 0.0),
-            "trust": _num(item.get("trust"), 0.0),
-        })
-    relations.sort(key=lambda r: r["closeness"], reverse=True)
-    return {"count": len(relations), "tier_counts": tier_counts, "relations": relations[:40]}
 
 
-DUNBAR_TIER_KEYS = ("inner", "close", "acquaintance", "weak")
-
-# Shape a manually added tie starts from. The simulator's own relationship
-# schema (gaworld/social/network.py) fills the rest on first load; these are
-# the fields a hand-authored edge needs to be usable straight away.
-_MANUAL_RELATION_DEFAULTS = {
-    "kind": "ghost",
-    "tie_origin": "manual",
-    "channels": ["chat"],
-    "obligation": 0.4,
-    "obligation_base": 0.4,
-    "friction": 0.2,
-    "decay_rate": 0.002,
-    "last_interaction_day": 0,
-    "last_contact_day": 0,
-    "dunbar_tier": "acquaintance",
-}
 
 
-def _new_relation_key(rels):
-    index = 1
-    while f"manual_{index}" in rels:
-        index += 1
-    return f"manual_{index}"
 
 
-def _save_agent_relationships(agent_id, payload):
-    """Upsert / remove relationship edges edited in the Studio.
-
-    Only the fields the UI exposes (name / role / tier / closeness / trust)
-    are touched; every other key the simulator wrote — friction, channels,
-    interaction days — is preserved on existing edges. ``relations`` upserts,
-    ``removed`` deletes; ties outside the snapshot's top-40 window are left
-    alone because neither list mentions them.
-    """
-    path = _memory_file(agent_id, "_relationships")
-    rels = _read_json_file(path, {})
-    if not isinstance(rels, dict):
-        rels = {}
-    for key in payload.get("removed") or []:
-        rels.pop(str(key), None)
-    for item in payload.get("relations") or []:
-        if not isinstance(item, dict):
-            continue
-        key = str(item.get("id") or "").strip() or _new_relation_key(rels)
-        entry = rels.get(key)
-        if not isinstance(entry, dict):
-            entry = deepcopy(_MANUAL_RELATION_DEFAULTS)
-            rels[key] = entry
-        profile = entry.get("profile")
-        if not isinstance(profile, dict):
-            profile = {}
-            entry["profile"] = profile
-        name = str(item.get("name") or "").strip()
-        if name:
-            profile["name"] = name
-        role = str(item.get("role") or "").strip()
-        if role:
-            entry["role"] = role
-        if item.get("tier") in DUNBAR_TIER_KEYS:
-            entry["dunbar_tier"] = item["tier"]
-        for field in ("closeness", "trust"):
-            if item.get(field) is not None:
-                entry[field] = round(max(0.0, min(1.0, float(item[field]))), 4)
-    _atomic_write_json(path, rels)
-    return _social_snapshot(agent_id) or {"count": 0, "tier_counts": {}, "relations": []}
 
 
-def _scan_skill_dir(directory):
-    items = []
-    if os.path.isdir(directory):
-        for name in sorted(os.listdir(directory)):
-            if not name.endswith(".md"):
-                continue
-            title = name[:-3]
-            try:
-                with open(os.path.join(directory, name), "r", encoding="utf-8") as f:
-                    for line in f:
-                        stripped = line.strip()
-                        if stripped.startswith("#"):
-                            title = stripped.lstrip("#").strip() or title
-                            break
-            except OSError:
-                pass
-            items.append({"file": name, "title": title})
-    return items
 
 
-def _skills_library():
-    return _scan_skill_dir(SKILLS_DIR)
 
 
-def _private_skills(agent_id):
-    # Mirrors SkillRegistry._private_dir: {memory_dir}/agent_{id}_skills
-    memory_dir = _effective_config().get("memory_dir", "output/memory")
-    return _scan_skill_dir(os.path.join(REPO_ROOT, memory_dir, f"agent_{int(agent_id)}_skills"))
 
 
-def _capabilities_snapshot(agent_id):
-    data = _read_json_file(CAPABILITIES_CACHE_PATH, {})
-    if not isinstance(data, dict):
-        return None
-    entry = data.get(str(int(agent_id)))
-    return entry if isinstance(entry, dict) else None
 
 
-def _rag_snapshot(memory_items):
-    # External-RAG memories are tagged with the [额外信息…] prefix (gaworld/sim/_rag.py).
-    items = []
-    for item in memory_items if isinstance(memory_items, list) else []:
-        text = str(item).strip()
-        if text.startswith("[额外信息"):
-            items.append(text[:300])
-    return {"count": len(items), "items": items[:20]}
+
 
 
 # --- Memory content (Studio step 4) -----------------------------------------
@@ -1077,113 +731,18 @@ def _rag_snapshot(memory_items):
 # also reads the memory bodies. Lists are capped to keep the detail payload —
 # which the collaboration service reuses per LLM turn — from ballooning.
 
-RAG_TAG_PREFIX = "[额外信息"
-MANUAL_RAG_PREFIX = "[额外信息 | 来源:manual] "
-MEMORY_TEXT_MAX_CHARS = 600
-MEMORY_LIST_LIMIT = 300
 
 
-def _memory_items(memory):
-    rows = []
-    for index, raw in enumerate(memory if isinstance(memory, list) else []):
-        text = str(raw).strip()
-        if not text:
-            continue
-        rows.append({
-            "index": index,
-            "text": text[:MEMORY_TEXT_MAX_CHARS],
-            "rag": text.startswith(RAG_TAG_PREFIX),
-        })
-    return rows[-MEMORY_LIST_LIMIT:]
 
 
-def _habit_rows(habits):
-    """Flatten the ``{phase}|{scope}|{activity}`` habit map into sorted rows."""
-    rows = []
-    for key, item in (habits.items() if isinstance(habits, dict) else []):
-        if not isinstance(item, dict):
-            continue
-        parts = str(key).split("|")
-        rows.append({
-            "key": str(key),
-            "phase": parts[0] if parts else "",
-            "activity": parts[-1] if len(parts) > 1 else "",
-            "preferred_action": str(item.get("preferred_action") or ""),
-            "strength": _num(item.get("strength"), 0.0),
-            "last_updated_day": item.get("last_updated_day"),
-        })
-    rows.sort(key=lambda row: row["strength"], reverse=True)
-    return rows[:60]
 
 
-def _schedule_rows(schedule):
-    rows = []
-    for item in schedule if isinstance(schedule, list) else []:
-        if not isinstance(item, dict):
-            continue
-        rows.append({
-            "time": str(item.get("time") or ""),
-            "activity": str(item.get("activity") or ""),
-        })
-    return rows[:80]
 
 
-def _memory_detail(memory):
-    intentions = memory.get("intentions")
-    return {
-        "long_term": _memory_items(memory.get("memory")),
-        "habits": _habit_rows(memory.get("habits")),
-        "intentions": intentions if isinstance(intentions, dict) else {},
-        "schedule": _schedule_rows(memory.get("schedule")),
-    }
 
 
-def _index_memory_entry(agent_id, text):
-    """Mirror a hand-added memory into the vector DB when one is already built.
-
-    When the DB has no rows for this agent yet the simulator seeds it from the
-    JSON file on its next start, so writing here would be redundant. Failures
-    are swallowed: the JSON file is the source of truth and must not be held
-    hostage to an embedding backend.
-    """
-    if _current_world():
-        # The memory module binds the default world's vector DB at import; a
-        # world's own index is rebuilt from the JSON when its simulator starts.
-        return
-    try:
-        from gaworld.memory.store import vector_db_add_entry, vector_db_count_entries
-
-        if vector_db_count_entries(int(agent_id)) > 0:
-            vector_db_add_entry(int(agent_id), "memory", text)
-    except Exception:  # noqa: BLE001 - best-effort index, never blocks the write
-        _LOG.exception("vector index failed for agent %s", agent_id)
 
 
-def _append_agent_memory(agent_id, payload):
-    """Append one hand-written long-term memory or RAG snippet."""
-    kind = str(payload.get("kind") or "memory").strip().lower()
-    if kind not in ("memory", "rag"):
-        raise ValueError("kind must be 'memory' or 'rag'")
-    text = re.sub(r"\s+", " ", str(payload.get("text") or "")).strip()
-    if not text:
-        raise ValueError("text is required")
-    text = text[:MEMORY_TEXT_MAX_CHARS]
-    if kind == "rag" and not text.startswith(RAG_TAG_PREFIX):
-        text = MANUAL_RAG_PREFIX + text
-    path = _memory_file(agent_id)
-    items = _read_json_file(path, [])
-    if not isinstance(items, list):
-        items = []
-    items.append(text)
-    _atomic_write_json(path, items)
-    _index_memory_entry(agent_id, text)
-    return {
-        "kind": kind,
-        "text": text,
-        "count": len(items),
-        "long_term": _memory_items(items),
-        "rag": _rag_snapshot(items),
-    }
 
 
 # --- Finance (Studio step 7) ------------------------------------------------
@@ -1191,644 +750,67 @@ def _append_agent_memory(agent_id, payload):
 # the next stateful run, so that is what the Studio edits. The wealth snapshot
 # CSV is a run artifact — readable, but not a place to write back into.
 
-FINANCE_ACCOUNT_KEYS = ("checking", "savings", "investment", "housing_fund")
-FINANCE_AMOUNT_KEYS = ("debt", "gross_monthly_salary", "net_monthly_salary", "monthly_rent")
-FINANCE_RATE_KEYS = ("engel_coefficient", "savings_rate")
-# Liquid accounts only — mirrors _total_balance in gaworld/economy/finance.py.
-FINANCE_LIQUID_KEYS = ("checking", "savings", "investment")
 
 
-def _agent_finance(agent_id):
-    econ = _read_json_file(_memory_file(agent_id, "_economy"), {})
-    if isinstance(econ, dict) and econ:
-        accounts = econ.get("accounts") if isinstance(econ.get("accounts"), dict) else {}
-        payload = {
-            "source": "state",
-            "editable": True,
-            "currency": str(econ.get("currency") or "CNY"),
-            "accounts": {key: _num(accounts.get(key), 0.0) for key in FINANCE_ACCOUNT_KEYS},
-            "balance": _num(econ.get("balance"), 0.0),
-        }
-        payload.update({key: _num(econ.get(key), 0.0) for key in FINANCE_AMOUNT_KEYS})
-        payload.update({key: _num(econ.get(key), 0.0) for key in FINANCE_RATE_KEYS})
-        return payload
-    row = _finance_snapshot(agent_id)
-    if not row:
-        return None
-    payload = {
-        "source": "snapshot",
-        "editable": False,
-        "currency": str(row.get("currency") or "CNY"),
-        "accounts": {key: _num(row.get(key), 0.0) for key in FINANCE_ACCOUNT_KEYS},
-        "balance": _num(row.get("balance"), 0.0),
-    }
-    payload.update({key: _num(row.get(key), 0.0) for key in FINANCE_AMOUNT_KEYS})
-    payload.update({key: _num(row.get(key), 0.0) for key in FINANCE_RATE_KEYS})
-    return payload
 
 
-def _save_agent_finance(agent_id, payload):
-    path = _memory_file(agent_id, "_economy")
-    econ = _read_json_file(path, {})
-    if not isinstance(econ, dict) or not econ:
-        raise ValueError("No economy state for this agent yet — run the simulation once first")
-    accounts = econ.get("accounts")
-    if not isinstance(accounts, dict):
-        accounts = {}
-        econ["accounts"] = accounts
-    incoming = payload.get("accounts") if isinstance(payload.get("accounts"), dict) else {}
-    for key in FINANCE_ACCOUNT_KEYS:
-        if incoming.get(key) is not None:
-            accounts[key] = round(max(0.0, float(incoming[key])), 2)
-    for key in FINANCE_AMOUNT_KEYS:
-        if payload.get(key) is not None:
-            econ[key] = round(max(0.0, float(payload[key])), 2)
-    for key in FINANCE_RATE_KEYS:
-        if payload.get(key) is not None:
-            econ[key] = round(max(0.0, min(1.0, float(payload[key]))), 4)
-    econ["balance"] = round(sum(_num(accounts.get(key), 0.0) for key in FINANCE_LIQUID_KEYS), 2)
-    _atomic_write_json(path, econ)
-    return _agent_finance(agent_id)
 
 
-def _growth_snapshot(agent_id):
-    from gaworld.interests import load_agent_growth_profile
-
-    memory_dir = os.path.join(REPO_ROOT, _effective_config().get("memory_dir", "output/memory"))
-    profile = load_agent_growth_profile(int(agent_id), memory_dir)
-    return profile or None
 
 
-def _openclaw_snapshot(agent_id):
-    cfg = CONFIG.get("openclaw", {}) or {}
-    state = _read_json_file(RELAY_STATE_PATH, {})
-    directory = state.get("directory") if isinstance(state, dict) else {}
-    directory = directory if isinstance(directory, dict) else {}
-
-    entry = None
-    openclaw_ids = set()
-    for cluster, cluster_map in directory.items():
-        if not isinstance(cluster_map, dict):
-            continue
-        for aid, item in cluster_map.items():
-            if not isinstance(item, dict):
-                continue
-            if item.get("agent_type") == "openclaw":
-                openclaw_ids.add(str(aid))
-            if str(aid) == str(int(agent_id)) and entry is None:
-                entry = {**item, "cluster": cluster}
-
-    sent = received = 0
-    messages = state.get("messages") if isinstance(state, dict) else []
-    for msg in messages if isinstance(messages, list) else []:
-        if not isinstance(msg, dict):
-            continue
-        frm, to = str(msg.get("from_agent")), str(msg.get("to_agent"))
-        if frm == str(int(agent_id)) and to in openclaw_ids:
-            sent += 1
-        elif to == str(int(agent_id)) and frm in openclaw_ids:
-            received += 1
-
-    is_openclaw = bool(entry and entry.get("agent_type") == "openclaw")
-    return {
-        "enabled": bool(cfg.get("enabled")),
-        "registered": entry is not None,
-        "is_openclaw_agent": is_openclaw,
-        "cluster": entry.get("cluster") if entry else None,
-        "node_id": entry.get("node_id") if entry else None,
-        "messages_sent": sent,
-        "messages_received": received,
-        "connected": is_openclaw or (sent + received) > 0,
-    }
 
 
-def _cognition_snapshot(capabilities, growth, memory_counts, rag):
-    """Derived cognitive index — NOT a measured IQ.
-
-    Transparent composite of what the simulation actually tracks:
-    skill breadth, deliverable capacity, growth levels, memory volume,
-    and external (RAG) knowledge, mapped onto a familiar 60–140 scale.
-    """
-    caps = capabilities or {}
-    growth_items = (growth or {}).get("items", []) or []
-    avg_level = (
-        sum(_num(item.get("level"), 0.0) for item in growth_items) / len(growth_items)
-        if growth_items else 0.0
-    )
-    memory_total = sum(v for v in memory_counts.values() if isinstance(v, (int, float)))
-    components = {
-        "skill_breadth": min(1.0, len(caps.get("skills") or []) / 6.0),
-        "deliverable_capacity": min(1.0, len(caps.get("deliverables") or []) / 4.0),
-        "growth_level": avg_level,
-        "memory_volume": min(1.0, memory_total / 200.0),
-        "external_knowledge": min(1.0, rag.get("count", 0) / 10.0),
-    }
-    weights = {
-        "skill_breadth": 0.25,
-        "deliverable_capacity": 0.15,
-        "growth_level": 0.25,
-        "memory_volume": 0.2,
-        "external_knowledge": 0.15,
-    }
-    score01 = sum(components[key] * weights[key] for key in weights)
-    return {
-        "score": round(60 + score01 * 80),
-        "score01": round(score01, 4),
-        "components": {key: round(value, 4) for key, value in components.items()},
-    }
 
 
-def _agent_card(identity, capabilities, private_skills, growth, openclaw):
-    caps = capabilities or {}
-    skills = list(caps.get("skills") or [])
-    for skill in private_skills:
-        if skill["title"] not in skills:
-            skills.append(skill["title"])
-    interests = list(caps.get("interests") or [])
-    for item in (growth or {}).get("items", []) or []:
-        name = item.get("name")
-        if name and name not in interests:
-            interests.append(name)
-    return {
-        "schema": "gaworld.agent-card/v1",
-        "id": identity["id"],
-        "name": identity["name"],
-        "description": " · ".join(
-            str(part) for part in (identity.get("gender"), f"{identity.get('age')}岁", identity.get("residence")) if part
-        ),
-        "job_label": caps.get("job_label") or "",
-        "skills": skills,
-        "interests": interests,
-        "deliverables": list(caps.get("deliverables") or []),
-        "adapters": list(caps.get("adapter_priority") or []),
-        "openclaw_connected": bool(openclaw.get("connected")),
-        "endpoints": {
-            "detail": f"/api/agents/{identity['id']}/detail",
-            "interview": "/api/interview",
-        },
-    }
 
 
-def _finance_snapshot(agent_id):
-    if not os.path.exists(_economy_snapshot_path()):
-        return None
-    try:
-        with open(_economy_snapshot_path(), "r", encoding="utf-8-sig", newline="") as f:
-            for row in csv.DictReader(f):
-                try:
-                    if int(float(row.get("agent_id"))) == int(agent_id):
-                        return dict(row)
-                except (TypeError, ValueError):
-                    continue
-    except OSError:
-        return None
-    return None
 
 
 # ---------------------------------------------------------------------------
 # Big Five (OCEAN) seed scores — studio panel, step 2.
 # ---------------------------------------------------------------------------
 
-#: Where the plugin reads the frozen z scores from. Editing here takes effect on
-#: the **next** run, like every other seed the studio writes: the plugin loads
-#: this file once at ``agents.built`` and the record is read-only afterwards.
-BIG5_CSV_PATH = os.path.join(
-    REPO_ROOT,
-    (CONFIG.get("personality", {}) or {}).get("profile_path", "data/agents_big5.csv"),
-)
-
-#: The generator's authoring floor. A dimension at or above this was written
-#: into the resident's 人格与行为倾向 paragraph; below it the paragraph is
-#: silent. This one rule is the whole basis of the consistency flags below --
-#: they are arithmetic on the scores, **not** an analysis of the text.
-BIG5_AUTHORING_FLOOR = 0.5
-
-#: Snapshot column: the five values the paragraph was authored from. Without it
-#: the baseline is destroyed by the first edit and the contradiction becomes
-#: invisible on reload -- which is the failure the panel exists to prevent.
-BIG5_AUTHORED_COLUMN = "authored_z"
-
-BIG5_DIMENSIONS = ("o", "c", "e", "a", "n")
-
-#: Shown beside each slider so the reader knows what to look for in the
-#: paragraph. Same wording as ``scripts/calibrate_big5.py``'s anchors, so the
-#: panel and the calibrator describe the same poles.
-BIG5_POLES = {
-    "o": ("只走熟悉的路线、认准的做法很少改", "主动找新鲜事物、爱试没试过的做法"),
-    "c": ("计划容易落空、事情往后拖", "提前排好顺序、被打断也会补回来"),
-    "e": ("回避热闹场合、独处恢复精力", "主动搭话、独处久了会闷"),
-    "a": ("说话直接、不太迁就别人", "先替别人考虑、难以拒绝"),
-    "n": ("情绪很稳、别人急他不急", "容易往坏处想、情绪起落大"),
-}
-
-BIG5_NAMES_ZH = {
-    "o": "开放性", "c": "尽责性", "e": "外向性", "a": "宜人性", "n": "神经质",
-}
-
-#: English twins, shipped alongside so the studio panel can label the sliders
-#: in either language. Same approach as the config docs: both languages travel
-#: in the payload and the client picks, rather than the server guessing from an
-#: Accept-Language header the dashboard never sets.
-BIG5_POLES_EN = {
-    "o": ("sticks to familiar routes, rarely changes a settled approach",
-          "seeks out what is new, likes trying what they have not tried"),
-    "c": ("plans slip, things get put off",
-          "orders things in advance, picks them back up after an interruption"),
-    "e": ("avoids crowded occasions, recovers energy alone",
-          "starts conversations, gets restless alone for long"),
-    "a": ("speaks directly, does not bend much for others",
-          "thinks of others first, finds it hard to refuse"),
-    "n": ("steady, unhurried when others panic",
-          "assumes the worst, large swings of mood"),
-}
-
-BIG5_NAMES_EN = {
-    "o": "Openness", "c": "Conscientiousness", "e": "Extraversion",
-    "a": "Agreeableness", "n": "Neuroticism",
-}
 
 
-def _read_big5_rows():
-    if not os.path.exists(BIG5_CSV_PATH):
-        return [], []
-    with open(BIG5_CSV_PATH, "r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return list(reader.fieldnames or []), [dict(row) for row in reader]
 
 
-def _parse_authored(raw):
-    """``"o=-0.35;c=0.48;..."`` -> dict, tolerating a missing or broken value."""
-    out = {}
-    for chunk in str(raw or "").split(";"):
-        key, _, value = chunk.partition("=")
-        key = key.strip()
-        if key in BIG5_DIMENSIONS:
-            try:
-                out[key] = round(float(value), 4)
-            except (TypeError, ValueError):
-                continue
-    return out
 
 
-def _format_authored(values):
-    return ";".join(f"{dim}={values.get(dim, 0.0):.4f}" for dim in BIG5_DIMENSIONS)
 
 
-def _big5_paragraph(agent_id):
-    section = _agent_profile(agent_id)
-    if not section:
-        return ""
-    match = re.search(r"\*\*人格与行为倾向\*\*：(.+)", section.get("text", "") or "")
-    return match.group(1).strip() if match else ""
 
 
-def _big5_consistency(current, authored, paragraph):
-    """Per-dimension flags for "does the paragraph still describe this?".
-
-    Derived from one rule -- the generator wrote a dimension into the paragraph
-    iff ``|z| >= BIG5_AUTHORING_FLOOR`` -- applied to the value the paragraph
-    was authored from versus the value now. **No keyword matching.** A keyword
-    probe on this corpus already misled once (the personality proposal records
-    an E probe reading -0.13 because the word list used topic nouns rather than
-    valence-bearing phrases), and a wrong-but-confident indicator here would be
-    worse than none: the operator would trust it instead of reading.
-
-    * ``rewrite``      -- the paragraph describes this dimension and the score
-      moved away from what it describes. ``severity: "flip"`` when the sign
-      changed, which is a guaranteed contradiction rather than a drift.
-    * ``now_missing``  -- the paragraph is silent here and the score is now
-      distinctive, so the text under-describes the resident.
-    * ``now_moot``     -- the paragraph describes a pole the resident no longer
-      has, so the text over-describes them.
-    * ``ok``           -- nothing to do.
-    """
-    flags = {}
-    for dim in BIG5_DIMENSIONS:
-        now = float(current.get(dim, 0.0))
-        was = authored.get(dim)
-        was_written = was is not None and abs(was) >= BIG5_AUTHORING_FLOOR
-        is_written = abs(now) >= BIG5_AUTHORING_FLOOR
-        state, severity = "ok", ""
-        if was is None:
-            state = "unknown"
-        elif was_written and is_written:
-            if (now > 0) != (was > 0):
-                state, severity = "rewrite", "flip"
-            elif abs(now - was) >= BIG5_AUTHORING_FLOOR:
-                state, severity = "rewrite", "drift"
-        elif was_written and not is_written:
-            state = "now_moot"
-        elif not was_written and is_written:
-            state = "now_missing"
-        flags[dim] = {
-            "state": state,
-            "severity": severity,
-            "authored": was,
-            "current": round(now, 4),
-            "written_in_paragraph": was_written,
-        }
-    return flags
 
 
-def _agent_big5(agent_id):
-    _, rows = _read_big5_rows()
-    target = next((r for r in rows if _row_id(r) == int(agent_id)), None)
-    if target is None:
-        return None
-    values = {}
-    for dim in BIG5_DIMENSIONS:
-        try:
-            values[dim] = round(float(target.get(dim) or 0.0), 4)
-        except (TypeError, ValueError):
-            values[dim] = 0.0
-    authored = _parse_authored(target.get(BIG5_AUTHORED_COLUMN))
-    if not authored and str(target.get("source", "")).strip() == "sampled_authored":
-        # Never hand-edited: the values on disk *are* what the paragraph was
-        # written from, so they are the baseline.
-        authored = dict(values)
-    paragraph = _big5_paragraph(agent_id)
-    return {
-        "id": int(agent_id),
-        "name": target.get("name", ""),
-        "values": values,
-        "authored": authored,
-        "source": target.get("source", ""),
-        "paragraph": paragraph,
-        "consistency": _big5_consistency(values, authored, paragraph),
-        "poles": BIG5_POLES,
-        "names": BIG5_NAMES_ZH,
-        "poles_en": BIG5_POLES_EN,
-        "names_en": BIG5_NAMES_EN,
-        "floor": BIG5_AUTHORING_FLOOR,
-        "clip": 2.5,
-    }
 
 
-def _save_agent_big5(agent_id, payload):
-    """Write the five z scores back to the seed CSV.
-
-    Three things happen besides the numbers:
-
-    * ``source`` becomes ``hand_edited`` so a later run is not attributed to the
-      sampler that no longer produced these values;
-    * the authored baseline is snapshotted on the first edit, so the paragraph
-      comparison survives reloads;
-    * ``redundant`` is cleared, because it was the verdict of a collinearity
-      gate run against values that have just changed.
-    """
-    fieldnames, rows = _read_big5_rows()
-    if not fieldnames:
-        raise ValueError("Big Five CSV is missing or empty")
-    target = next((r for r in rows if _row_id(r) == int(agent_id)), None)
-    if target is None:
-        raise ValueError(f"Agent {agent_id} not found in {os.path.basename(BIG5_CSV_PATH)}")
-
-    if BIG5_AUTHORED_COLUMN not in fieldnames:
-        fieldnames = list(fieldnames) + [BIG5_AUTHORED_COLUMN]
-    if not str(target.get(BIG5_AUTHORED_COLUMN, "")).strip():
-        baseline = {}
-        for dim in BIG5_DIMENSIONS:
-            try:
-                baseline[dim] = round(float(target.get(dim) or 0.0), 4)
-            except (TypeError, ValueError):
-                baseline[dim] = 0.0
-        target[BIG5_AUTHORED_COLUMN] = _format_authored(baseline)
-
-    incoming = payload.get("values") or {}
-    changed = False
-    for dim in BIG5_DIMENSIONS:
-        if incoming.get(dim) is None:
-            continue
-        try:
-            value = float(incoming[dim])
-        except (TypeError, ValueError):
-            raise ValueError(f"{dim} is not a number") from None
-        if not math.isfinite(value):
-            raise ValueError(f"{dim} is not finite")
-        value = round(max(-2.5, min(2.5, value)), 4)
-        if str(target.get(dim, "")) != str(value):
-            changed = True
-        target[dim] = value
-    if changed:
-        target["source"] = "hand_edited"
-        if "redundant" in fieldnames:
-            target["redundant"] = ""
-
-    tmp_path = BIG5_CSV_PATH + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key, "") for key in fieldnames})
-    os.replace(tmp_path, BIG5_CSV_PATH)
-    return _agent_big5(agent_id)
 
 
-def _agent_detail(agent_id):
-    state = _agent_state(agent_id)
-    if state is None:
-        return None
-    profile = _agent_profile(agent_id) or {}
-    memory = _memory_payload(agent_id)
-    home = _agent_home_payload(agent_id)
-
-    def _count(value):
-        return len(value) if isinstance(value, (list, dict)) else 0
-
-    identity = {
-        "id": state["id"],
-        "name": state["name"],
-        "gender": state["gender"],
-        "age": state["age"],
-        "hukou": state["hukou"],
-        "residence": state["residence"],
-    }
-    memory_counts = {
-        "long_term": _count(memory.get("memory")),
-        "habits": _count(memory.get("habits")),
-        "intentions": _count(memory.get("intentions")),
-        "schedule": _count(memory.get("schedule")),
-    }
-    capabilities = _capabilities_snapshot(agent_id)
-    private_skills = _private_skills(agent_id)
-    growth = _growth_snapshot(agent_id)
-    rag = _rag_snapshot(memory.get("memory"))
-    openclaw = _openclaw_snapshot(agent_id)
-    return {
-        "identity": identity,
-        "state": state["state"],
-        "profile_text": profile.get("text", ""),
-        "memory_counts": memory_counts,
-        "memory": _memory_detail(memory),
-        "finance": _finance_snapshot(agent_id),
-        "finance_state": _agent_finance(agent_id),
-        "social": _social_snapshot(agent_id),
-        "skills": _skills_library(),
-        "private_skills": private_skills,
-        "capabilities": capabilities,
-        "growth": growth,
-        "goals": memory.get("goals", {}),
-        "rag": rag,
-        "openclaw": openclaw,
-        "cognition": _cognition_snapshot(capabilities, growth, memory_counts, rag),
-        "agent_card": _agent_card(identity, capabilities, private_skills, growth, openclaw),
-        "home": home,
-    }
 
 
-def _agent_home_payload(agent_id):
-    """Best-effort home block for the agent-detail payload.
-
-    Defers to :mod:`gaworld.apps.home_api` so the writer (the plugin) and
-    the reader (this endpoint) cannot drift. Returns ``{"has_home": False}``
-    when no design exists yet — the front-end treats that as the empty
-    state rather than as a 404."""
-    try:
-        from gaworld.apps import home_api
-    except ImportError:  # pragma: no cover - import is always available
-        return {"has_home": False}
-    payload, status = home_api.handle_get(f"/api/home/{int(agent_id)}", {})
-    if status != 200 or not isinstance(payload, dict):
-        return {"has_home": False}
-    summary = payload.get("summary") or {}
-    design = payload.get("design") or {}
-    return {
-        "has_home": True,
-        "summary": summary,
-        "design": design,
-        "recent_observations": (payload.get("observations") or [])[-30:],
-    }
 
 
-def _next_agent_id():
-    _, rows = _read_state_rows()
-    ids = [rid for rid in (_row_id(row) for row in rows) if rid is not None]
-    _, sections = _profile_sections()
-    ids.extend(section["id"] for section in sections)
-    return (max(ids) + 1) if ids else 1
 
 
-def _create_agent(payload):
-    from gaworld.sim.agents_loader import _clip_state_value, _format_imported_profile_block
-
-    agent_id = _next_agent_id()
-    state_in = payload.get("state") or {}
-    defaults = {
-        "emotion": 0.55,
-        "stress": 0.5,
-        "econ_security": 0.5,
-        "city_identity": 0.5,
-        "policy_sensitivity": 0.5,
-        "platform_dependence": 0.5,
-        "risk_preference": 0.5,
-        "voice_propensity": 0.5,
-        "mobility_intent": 0.5,
-    }
-    state = {key: _clip_state_value(state_in.get(key), defaults[key]) for key in STATE_VAR_KEYS}
-    profile_payload = {
-        "name": str(payload.get("name") or f"新智能体{agent_id}"),
-        "gender": str(payload.get("gender") or "未知"),
-        "age": int(payload.get("age") or 30),
-        "hukou": str(payload.get("hukou") or "未知"),
-        "residence": str(payload.get("residence") or "杭州"),
-        "job": str(payload.get("job") or "待补充"),
-        "personality": str(payload.get("personality") or "待补充"),
-        "daily_life": str(payload.get("daily_life") or "待补充"),
-        "values": str(payload.get("values") or "待补充"),
-        "education_income": str(payload.get("education_income") or "待补充"),
-        "social_network": str(payload.get("social_network") or "待补充"),
-        "state": state,
-    }
-    fieldnames, rows = _read_state_rows()
-    if not fieldnames:
-        raise ValueError("State CSV is missing or empty")
-    new_row = {
-        "id": agent_id,
-        "name": profile_payload["name"],
-        "gender": profile_payload["gender"],
-        "age": profile_payload["age"],
-        "hukou": profile_payload["hukou"],
-        "residence": profile_payload["residence"],
-    }
-    new_row.update({key: state[key] for key in STATE_VAR_KEYS})
-    rows.append({key: new_row.get(key, "") for key in fieldnames})
-    _atomic_write_state(fieldnames, rows)
-
-    with open(_profile_path(), "a", encoding="utf-8") as f:
-        f.write(_format_imported_profile_block(agent_id, profile_payload))
-
-    return {"id": agent_id, "name": profile_payload["name"], "state": _agent_state(agent_id)}
 
 
-def _tail_text(path, max_chars=12000):
-    if not os.path.exists(path):
-        return ""
-    size = os.path.getsize(path)
-    with open(path, "rb") as f:
-        f.seek(max(0, size - max_chars))
-        data = f.read()
-    return data.decode("utf-8", errors="replace")
 
 
-def _decode_log_bytes(data, aligned):
-    """Decode a run-log slice without splitting a multi-byte UTF-8 character.
-
-    Returns ``(text, consumed)``: `consumed` counts the bytes the text covers
-    (including any dropped leading fragment) so the caller can keep the next
-    read starting on a character boundary. `aligned` says the slice already
-    starts on one, which is true for every incremental read.
-    """
-    skipped = 0
-    if not aligned:
-        while skipped < len(data) and 0x80 <= data[skipped] < 0xC0:
-            skipped += 1
-        data = data[skipped:]
-    pending = 0
-    for back in range(1, min(4, len(data)) + 1):
-        byte = data[-back]
-        if byte < 0x80:
-            break
-        if byte >= 0xC0:
-            width = 2 if byte < 0xE0 else 3 if byte < 0xF0 else 4
-            if back < width:
-                pending = back
-            break
-    if pending:
-        data = data[:-pending]
-    return data.decode("utf-8", errors="replace"), skipped + len(data)
 
 
-def _run_log_slice(path, offset=None):
-    """Read the run log from `offset`, or its tail when `offset` is unusable.
 
-    The browser polls status every couple of seconds, so it sends the offset it
-    already has and only receives what was appended since — that is what lets
-    the panel hold the entire log instead of a trailing window.
-    """
-    if not os.path.exists(path):
-        return {"text": "", "append": False, "offset": 0, "size": 0, "skipped": 0}
-    size = os.path.getsize(path)
-    append = offset is not None and 0 <= offset <= size
-    start = offset if append else max(0, size - RUN_LOG_VIEW_MAX_BYTES)
-    with open(path, "rb") as f:
-        f.seek(start)
-        data = f.read()
-    text, consumed = _decode_log_bytes(data, aligned=append or start == 0)
-    return {
-        "text": text,
-        "append": append,
-        "offset": start + consumed,
-        "size": size,
-        # Only a replacement read can drop the head of the log; on an append
-        # `start` is just where the client left off, nothing was omitted.
-        "skipped": 0 if append else start,
-    }
+
+
+
+
+
+
 
 
 def _run_log_markdown():
     """Render the complete run log as a Markdown document for download."""
-    status = _run_status()
-    path = status["log_path"] or _run_log_path()
+    status = runs.run_status()
+    path = status["log_path"] or paths.run_log_path()
     text = ""
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -1847,7 +829,7 @@ def _run_log_markdown():
         "# GAWorld Run Log",
         "",
         f"- Exported at: {time.strftime('%Y-%m-%d %H:%M:%S')}",
-        f"- Log file: `{os.path.relpath(path, REPO_ROOT)}`",
+        f"- Log file: `{os.path.relpath(path, paths.REPO_ROOT)}`",
         f"- Started at: {status['started_at'] or '-'}",
         f"- Process state: {process_state}",
         f"- Size: {status['log_size']} bytes",
@@ -1863,462 +845,68 @@ def _run_log_markdown():
     return "\n".join(lines), f"gaworld-run-log-{stamp}.md"
 
 
-#: Shock-log entry types written by the employment life events.
-_EMPLOYMENT_RECORD_TYPES = ("job_change", "unemployment", "rehired")
 
 
-def _employment_payload(agent_id):
-    """Current job + the job changes behind it, for the agent panel.
-
-    Read from the per-agent economy state file — the only runtime artefact
-    carrying a *live* job (the profile markdown holds the Day-1 one, which is
-    exactly what stops being true after a 换工作/失业 event fires).
-    """
-    from gaworld.economy.finance import UNEMPLOYED_JOB_TEXT
-
-    econ = _read_json_file(_memory_file(agent_id, "_economy"), {})
-    if not isinstance(econ, dict) or not econ:
-        return {}
-    job = str(econ.get("job") or "")
-    history = [row for row in econ.get("shock_log", [])
-               if isinstance(row, dict) and row.get("type") in _EMPLOYMENT_RECORD_TYPES]
-    return {
-        "job": job,
-        "status": "unemployed" if job == UNEMPLOYED_JOB_TEXT else "employed",
-        "hourly_income": _num(econ.get("base_hourly_income"), 0.0),
-        "previous_job": str(econ.get("previous_job") or ""),
-        "recovery_days": int(_num(econ.get("_layoff_days_remaining"), 0)),
-        "history": history[-5:],
-    }
 
 
-def _memory_payload(agent_id):
-    memory_dir = _effective_config().get("memory_dir", "output/memory")
-    base = os.path.join(REPO_ROOT, memory_dir)
-    memory = _read_json_file(os.path.join(base, f"agent_{agent_id}.json"), [])
-    schedule = _read_json_file(os.path.join(base, f"agent_{agent_id}_schedule.json"), {})
-    habits = _read_json_file(os.path.join(base, f"agent_{agent_id}_habits.json"), {})
-    intentions = _read_json_file(os.path.join(base, f"agent_{agent_id}_intentions.json"), {})
-    goals = _read_json_file(os.path.join(base, f"agent_{agent_id}_goals.json"), {})
-    episodes = _tail_text(os.path.join(base, f"agent_{agent_id}_episodes.jsonl"), max_chars=24000)
-    log_text = _tail_text(os.path.join(REPO_ROOT, "output", "logs", f"agent_{agent_id}.log"), max_chars=24000)
-    return {
-        "memory": memory,
-        "schedule": schedule,
-        "habits": habits,
-        "intentions": intentions,
-        "goals": goals,
-        "episodes_tail": episodes,
-        "log_tail": log_text,
-        "employment": _employment_payload(agent_id),
-    }
 
 
-def _agent_goals_payload(agent_id):
-    memory_dir = _effective_config().get("memory_dir", "output/memory")
-    base = os.path.join(REPO_ROOT, memory_dir)
-    return _read_json_file(os.path.join(base, f"agent_{int(agent_id)}_goals.json"), {})
 
 
-def _save_agent_goals_payload(agent_id, payload):
-    from gaworld.goals import normalize_goals
-
-    if not isinstance(payload, dict):
-        raise ValueError("goals payload must be a JSON object")
-    normalized = normalize_goals(payload, day=int(payload.get("last_review_day", 0) or 0))
-    if not normalized:
-        raise ValueError("goals payload has no valid goals")
-    memory_dir = _effective_config().get("memory_dir", "output/memory")
-    base = os.path.join(REPO_ROOT, memory_dir)
-    os.makedirs(base, exist_ok=True)
-    path = os.path.join(base, f"agent_{int(agent_id)}_goals.json")
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(normalized, f, ensure_ascii=False, indent=2)
-    return normalized
-    return normalized
 
 
-#: Runs of the per-user worlds by world id; the default world keeps RUN_STATE.
-WORLD_RUNS = {}
-#: Starts waiting for a free slot, oldest first. Each entry carries a copy of
-#: the requesting context, so it launches in the world it was asked for.
-RUN_QUEUE = []
-_RUNS_LOCK = threading.RLock()
-_DISPATCHER = {"thread": None}
-DISPATCH_SECONDS = 2.0
-#: Admin-tunable classroom limits (account database `settings`), read on every
-#: check. A daily model-call quota of 0 means unlimited.
-LIMIT_DEFAULTS = {"max_concurrent_runs": 4, "max_runs_per_user": 1, "daily_llm_calls_per_user": 0}
 
 
-def _run_state():
-    world = _current_world()
-    if not world:
-        return RUN_STATE
-    with _RUNS_LOCK:
-        return WORLD_RUNS.setdefault(
-            world["id"],
-            {"process": None, "started_at": None, "log_path": _run_log_path(), "schedule": None},
-        )
 
 
-def _queue_key():
-    world = _current_world()
-    return world["id"] if world else ""
 
 
-def _queue_position():
-    with _RUNS_LOCK:
-        for index, entry in enumerate(RUN_QUEUE):
-            if entry["world_id"] == _queue_key():
-                return index + 1
-    return None
 
 
-def limits(store):
-    return {key: store.get_setting(key, default) for key, default in LIMIT_DEFAULTS.items()}
 
 
-def _limited_user_id():
-    """Whose per-user quota a start counts against; admins have none."""
-    user = _USER.get()
-    if not user or user.get("role") == "admin":
-        return None
-    return user.get("id")
 
 
-def _gate_open(store, user_id):
-    """Room for one more run? Only a deployment with accounts has limits."""
-    if store is None:
-        return True
-    caps = limits(store)
-    with _RUNS_LOCK:
-        running = [
-            state
-            for state in [RUN_STATE, *WORLD_RUNS.values()]
-            if state.get("process") and state["process"].poll() is None
-        ]
-    if len(running) >= caps["max_concurrent_runs"]:
-        return False
-    mine = sum(1 for state in running if user_id is not None and state.get("started_by") == user_id)
-    return user_id is None or mine < caps["max_runs_per_user"]
 
 
-def _ensure_dispatcher():
-    with _RUNS_LOCK:
-        thread = _DISPATCHER["thread"]
-        if thread is not None and thread.is_alive():
-            return
-        thread = threading.Thread(target=_dispatch_queue, name="run-queue", daemon=True)
-        _DISPATCHER["thread"] = thread
-        thread.start()
 
 
-def _dispatch_queue():
-    """Start queued runs, oldest first, whenever the gate lets one through.
-
-    An entry blocked only by its owner's per-user limit does not hold up the
-    entries behind it.
-    """
-    while True:
-        time.sleep(DISPATCH_SECONDS)
-        with _RUNS_LOCK:
-            if not RUN_QUEUE:
-                _DISPATCHER["thread"] = None
-                return
-            store = accounts.enabled_store(REPO_ROOT)
-            for entry in list(RUN_QUEUE):
-                if not _gate_open(store, entry["user_id"]):
-                    continue
-                RUN_QUEUE.remove(entry)
-                entry["context"].run(_launch_queued, entry)
 
 
-def _launch_queued(entry):
-    state = _run_state()
-    try:
-        _launch(state, entry["payload"])
-    except Exception as exc:
-        # Nobody is waiting on this call; park the failure where the panel looks.
-        _LOG.exception("Queued run failed to start: %s", exc)
-        state["start_error"] = str(exc)
 
 
-def _run_status(log_offset=None):
-    state = _run_state()
-    proc = state.get("process")
-    running = bool(proc and proc.poll() is None)
-    code = None if not proc else proc.poll()
-    log_path = state.get("log_path") or _run_log_path()
-    chunk = _run_log_slice(log_path, log_offset)
-    schedule = state.get("schedule") or {}
-    return {
-        "running": running,
-        "returncode": code,
-        "started_at": state.get("started_at"),
-        "log_path": state.get("log_path"),
-        # Only a schedule that still holds a live timer is pending; one whose
-        # timer already fired lingers only to carry `schedule_error`.
-        "scheduled_at": schedule.get("at") if schedule.get("timer") else None,
-        "schedule_error": schedule.get("error"),
-        # With accounts on, a start beyond the run limits waits its turn.
-        "queued": _queue_position(),
-        "start_error": state.get("start_error"),
-        # `log_append` tells the client whether to append `log_tail` to what it
-        # already shows or replace it. Clients that send no offset always get a
-        # replacement, so the field stays backwards compatible.
-        "log_tail": chunk["text"],
-        "log_append": chunk["append"],
-        "log_offset": chunk["offset"],
-        "log_size": chunk["size"],
-        "log_skipped_bytes": chunk["skipped"],
-    }
 
 
-def _check_agent_ids_against_city():
-    """Fail fast when the configured agent_ids do not exist in the chosen city.
-
-    ``agent_ids`` is per-city, so switching to a smaller city leaves ids that
-    point at nobody. ``build_agent`` resolves them with ``.iloc[0]`` on an empty
-    match, which surfaces minutes later as a bare pandas IndexError in the run
-    log — long after the operator has stopped watching. Checking here turns that
-    into a sentence they can act on.
-    """
-    config = _effective_config()
-    ref = str(config.get("city") or "").strip()
-    if not ref:
-        return
-    wanted = _coerce_int_list(config.get("agent_ids", []))
-    if not wanted:
-        return
-    try:
-        from gaworld.city.bundle import resolve_city
-
-        bundle = resolve_city(ref)
-    except Exception:
-        return  # a broken bundle is apply_city's problem, not this check's
-    available = bundle.population_count
-    if available <= 0:
-        raise ValueError(
-            f"城市「{bundle.display_name}」还没有居民，无法运行。"
-            f"先到「城市」页签生成居民，或用 python -m gaworld.city add-agents {bundle.slug} --size 200"
-        )
-    missing = [item for item in wanted if item > available]
-    if missing:
-        raise ValueError(
-            f"城市「{bundle.display_name}」只有 {available} 位居民，"
-            f"但 Agent IDs 里有 {missing}。请改成 1–{available} 之间的编号。"
-        )
 
 
-def _coerce_int_list(values):
-    out = []
-    for item in values or []:
-        try:
-            out.append(int(item))
-        except (TypeError, ValueError):
-            continue
-    return out
 
 
-def _start_simulation(payload):
-    state = _run_state()
-    with _RUNS_LOCK:
-        proc = state.get("process")
-        if proc and proc.poll() is None:
-            raise RuntimeError("Simulation is already running")
-        if _queue_position() is not None:
-            raise RuntimeError("Simulation is already queued")
-        if isinstance(payload.get("config"), dict):
-            _save_config_patch(payload["config"])
-        _check_agent_ids_against_city()
-        state["start_error"] = None
-        user_id = _limited_user_id()
-        # First come, first served: a free slot goes to the queue's head.
-        if RUN_QUEUE or not _gate_open(accounts.enabled_store(REPO_ROOT), user_id):
-            RUN_QUEUE.append(
-                {
-                    "world_id": _queue_key(),
-                    "user_id": user_id,
-                    "payload": {"reset": bool(payload.get("reset"))},
-                    "context": contextvars.copy_context(),
-                }
-            )
-            _ensure_dispatcher()
-            return _run_status()
-        _launch(state, payload)
-    return _run_status()
 
 
-def _simulation_env():
-    from gaworld.accounts import usage
-
-    env = usage.child_env(os.environ.copy())
-    env["PYTHONUNBUFFERED"] = "1"
-    world = _current_world()
-    if world:
-        from gaworld.settings.overrides import load_env_override
-
-        # The simulator layers these over dashboard_config.json and applies them
-        # again after the city, so the world's config and paths have the last
-        # word -- the same layering _effective_config() shows the panels.
-        patch = worlds.read_config(REPO_ROOT, world["id"])
-        _deep_update(patch, worlds.overrides(world["id"]))
-        _deep_update(patch, load_env_override())
-        env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(patch, ensure_ascii=False)
-    return env
 
 
-def _launch(state, payload):
-    log_path = _run_log_path()
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    env = _simulation_env()
-    if payload.get("reset"):
-        with open(log_path, "w", encoding="utf-8") as log_file:
-            log_file.write(f"[dashboard] reset at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            reset = subprocess.run(
-                [sys.executable, os.path.join(REPO_ROOT, "generative_city_sim.py"), "reset"],
-                cwd=REPO_ROOT,
-                env=env,
-                stdout=log_file,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            if reset.returncode != 0:
-                raise RuntimeError("Reset failed; check dashboard run log")
-    log_mode = "a" if payload.get("reset") else "w"
-    log_file = open(log_path, log_mode, encoding="utf-8")
-    log_file.write(f"\n[dashboard] run at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-    log_file.flush()
-    proc = subprocess.Popen(
-        [sys.executable, os.path.join(REPO_ROOT, "generative_city_sim.py"), "run"],
-        cwd=REPO_ROOT,
-        env=env,
-        stdout=log_file,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    state["process"] = proc
-    state["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    state["log_path"] = log_path
-    state["started_by"] = _limited_user_id()
 
 
-def _parse_schedule_time(raw):
-    """Parse the ``datetime-local`` value the dashboard sends ("2026-08-30T21:30").
-
-    Naive local time on purpose: the timer fires against the server's own clock,
-    and the dashboard is a local console — browser and server share a machine.
-    A value that does carry an offset is converted to local time first.
-    """
-    text = str(raw or "").strip().replace(" ", "T")
-    if not text:
-        raise ValueError("Scheduled time is required")
-    try:
-        when = datetime.datetime.fromisoformat(text)
-    except ValueError:
-        raise ValueError(f"Invalid scheduled time: {raw}")
-    if when.tzinfo is not None:
-        when = when.astimezone().replace(tzinfo=None)
-    return when
 
 
-def _schedule_simulation(payload):
-    """Arm a timer that starts the simulation at the requested wall clock.
-
-    The config from the form is kept with the schedule and applied when the
-    timer fires, so a scheduled run behaves exactly like pressing 运行仿真 then.
-    """
-    when = _parse_schedule_time(payload.get("at"))
-    delay = (when - datetime.datetime.now()).total_seconds()
-    if delay <= 0:
-        raise ValueError("Scheduled time must be in the future")
-    start_payload = {
-        "reset": bool(payload.get("reset")),
-        "config": payload.get("config"),
-    }
-    with _SCHEDULE_LOCK:
-        state = _run_state()
-        previous = state.get("schedule") or {}
-        if previous.get("timer"):
-            previous["timer"].cancel()
-        # The timer thread starts with an empty context; hand it this request's
-        # world and user so the run starts where it was scheduled.
-        timer = threading.Timer(delay, contextvars.copy_context().run, args=(_fire_scheduled_simulation,))
-        timer.daemon = True
-        state["schedule"] = {
-            "at": when.strftime("%Y-%m-%d %H:%M:%S"),
-            "timer": timer,
-            "payload": start_payload,
-            "error": None,
-        }
-        timer.start()
-    return _run_status()
 
 
-def _cancel_scheduled_simulation():
-    with _SCHEDULE_LOCK:
-        state = _run_state()
-        schedule = state.get("schedule") or {}
-        if schedule.get("timer"):
-            schedule["timer"].cancel()
-        state["schedule"] = None
-    return _run_status()
 
 
-def _fire_scheduled_simulation():
-    with _SCHEDULE_LOCK:
-        schedule = _run_state().get("schedule")
-        if not schedule:
-            return
-        # Drop the timer first: from here on the schedule is spent, and the
-        # entry only survives long enough to report a failed start.
-        schedule["timer"] = None
-        start_payload = schedule.get("payload") or {}
-    try:
-        _start_simulation(start_payload)
-    except Exception as exc:
-        # Nobody is waiting on this call, so a failure has to be parked where
-        # /api/run/status can show it instead of raising into the timer thread.
-        _LOG.exception("Scheduled run failed to start: %s", exc)
-        with _SCHEDULE_LOCK:
-            schedule = _run_state().get("schedule")
-            if schedule:
-                schedule["error"] = str(exc)
-    else:
-        with _SCHEDULE_LOCK:
-            _run_state()["schedule"] = None
 
 
-def _stop_simulation():
-    with _RUNS_LOCK:
-        RUN_QUEUE[:] = [entry for entry in RUN_QUEUE if entry["world_id"] != _queue_key()]
-    proc = _run_state().get("process")
-    if proc and proc.poll() is None:
-        proc.terminate()
-        try:
-            proc.wait(timeout=8)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-    return _run_status()
 
 
-def _stop_all_simulations():
-    """Server shutdown: no world's simulator outlives the dashboard."""
-    with _RUNS_LOCK:
-        RUN_QUEUE.clear()
-        states = [RUN_STATE, *WORLD_RUNS.values()]
-    for state in states:
-        proc = state.get("process")
-        if proc and proc.poll() is None:
-            proc.terminate()
-    for state in states:
-        proc = state.get("process")
-        if proc and proc.poll() is None:
-            try:
-                proc.wait(timeout=8)
-            except subprocess.TimeoutExpired:
-                proc.kill()
+
+
+
+
+
+
+
+
+
+
 
 
 def _interview_agent(payload):
@@ -2329,14 +917,15 @@ def _interview_agent(payload):
     questions = [str(item).strip() for item in questions if str(item).strip()]
     if not questions:
         raise ValueError("At least one question is required")
-    command = [sys.executable, os.path.join(REPO_ROOT, "generative_city_sim.py"), "interview", "--agent-id", str(agent_id)]
+    script = os.path.join(paths.REPO_ROOT, "generative_city_sim.py")
+    command = [sys.executable, script, "interview", "--agent-id", str(agent_id)]
     for question in questions:
         command.extend(["--question", question])
     if payload.get("context"):
         command.extend(["--context", str(payload["context"])])
     result = subprocess.run(
         command,
-        cwd=REPO_ROOT,
+        cwd=paths.REPO_ROOT,
         env=os.environ.copy(),
         capture_output=True,
         text=True,
@@ -2350,11 +939,11 @@ def _interview_agent(payload):
 
 
 def _trace_payload():
-    output_dir = _effective_config().get("visualization", {}).get("output_dir", "output/visualization")
-    trace_path = os.path.join(REPO_ROOT, output_dir, "simulation_trace.json")
-    latest_path = os.path.join(REPO_ROOT, output_dir, "latest_frame.json")
-    trace = _read_json_file(trace_path, {})
-    latest = _read_json_file(latest_path, {})
+    output_dir = paths.effective_config().get("visualization", {}).get("output_dir", "output/visualization")
+    trace_path = os.path.join(paths.REPO_ROOT, output_dir, "simulation_trace.json")
+    latest_path = os.path.join(paths.REPO_ROOT, output_dir, "latest_frame.json")
+    trace = paths.read_json_file(trace_path, {})
+    latest = paths.read_json_file(latest_path, {})
     return {
         "trace": trace if isinstance(trace, dict) else {},
         "latest": latest if isinstance(latest, dict) else {},
@@ -2371,9 +960,10 @@ def _latest_trace_meta():
 
 def _replay_runs():
     """Every replayable trace on disk: the live run, archives, scenario runs."""
-    visualization_dir = _effective_config().get("visualization", {}).get("output_dir", "output/visualization")
-    runs = replay_runs.list_runs(REPO_ROOT, visualization_dir)
-    store = accounts.enabled_store(REPO_ROOT)
+    visualization = paths.effective_config().get("visualization", {})
+    visualization_dir = visualization.get("output_dir", "output/visualization")
+    runs = replay_runs.list_runs(paths.REPO_ROOT, visualization_dir)
+    store = accounts.enabled_store(paths.REPO_ROOT)
     if store is None:
         return runs
     # The scan finds every world's traces; list only the worlds this user may see.
@@ -2447,7 +1037,7 @@ def _agent_job(agent_id):
     self-employed). Same field `agents_loader.parse_profile` pulls, without
     that parser's hard requirement on the other profile fields.
     """
-    profile = _agent_profile(agent_id) or {}
+    profile = residents.agent_profile(agent_id) or {}
     match = re.search(r"\*\*职业与工作节奏\*\*：(.+)", profile.get("text", ""))
     return match.group(1).strip() if match else ""
 
@@ -2506,11 +1096,11 @@ def _life_event_current_day(history):
 
 def _life_event_candidate_context(agent_id):
     """The gate context for one agent, or None if there is no such agent."""
-    state = _agent_state(agent_id)
+    state = residents.agent_state(agent_id)
     if state is None:
         return None
     record = _agent_family_record(agent_id)
-    finance = _agent_finance(agent_id) or {}
+    finance = residents.agent_finance(agent_id) or {}
     context = candidate_events.context_from_agent(
         {
             "id": state["id"],
@@ -2558,30 +1148,30 @@ def _resolve_output_dir(output_dir: str | None) -> str:
     If it's a relative path, resolve it against REPO_ROOT.
     """
     if not output_dir:
-        return os.path.join(REPO_ROOT, _effective_config().get("run_output_dir", "output"))
+        return os.path.join(paths.REPO_ROOT, paths.effective_config().get("run_output_dir", "output"))
     p = Path(output_dir)
     if p.is_absolute():
         return str(p)
-    return os.path.join(REPO_ROOT, output_dir)
+    return os.path.join(paths.REPO_ROOT, output_dir)
 
 
 def _agent_name_map():
-    return {section["id"]: section["name"] for section in _profile_sections()[1]}
+    return {section["id"]: section["name"] for section in residents.profile_sections()[1]}
 
 
 def _live_analytics_paths():
     """Where the current run writes the artifacts Analytics reads."""
-    config = _effective_config()
+    config = paths.effective_config()
     return {
         # Not a literal "output": a selected city moves the whole run tree to
         # `output/cities/<slug>/`, and Analytics reads `state/` and `economy/`
         # relative to this root.
-        "output_dir": os.path.join(REPO_ROOT, config.get("run_output_dir", "output")),
-        "memory_dir": os.path.join(REPO_ROOT, config.get("memory_dir", "output/memory")),
+        "output_dir": os.path.join(paths.REPO_ROOT, config.get("run_output_dir", "output")),
+        "memory_dir": os.path.join(paths.REPO_ROOT, config.get("memory_dir", "output/memory")),
         "visualization_dir": os.path.join(
-            REPO_ROOT, config.get("visualization", {}).get("output_dir", "output/visualization")
+            paths.REPO_ROOT, config.get("visualization", {}).get("output_dir", "output/visualization")
         ),
-        "diary_dir": os.path.join(REPO_ROOT, config.get("diary_output_dir", "output/diaries")),
+        "diary_dir": os.path.join(paths.REPO_ROOT, config.get("diary_output_dir", "output/diaries")),
     }
 
 
@@ -2599,8 +1189,8 @@ def _analytics_run_paths(run_id, runs=None):
     if run["kind"] == "live":
         return _live_analytics_paths()
 
-    config = _effective_config()
-    visualization_dir = os.path.join(REPO_ROOT, run["id"])
+    config = paths.effective_config()
+    visualization_dir = os.path.join(paths.REPO_ROOT, run["id"])
     if run["kind"] == "archive":
         # An archived run keeps only its trace; its sibling artifacts belong to
         # whichever run overwrote them since, so they are deliberately not read
@@ -2747,7 +1337,14 @@ STATIC_PREFIXES = ("/site/", "/docs/", "/video/public/", "/output/population/")
 STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md"))
 
 
+#: ``/play/<world id>``: the short link a teacher shows the class (a phone
+#: opens the world's 多人共玩 page without the console's world switcher).
+PLAY_LINK_RE = re.compile(r"^/play/(w[0-9a-f]{8})/?$")
+
+
 def _static_path_allowed(path):
+    if PLAY_LINK_RE.match(path):
+        return True
     if path in STATIC_ROUTES or path in STATIC_FILES or path.startswith(STATIC_PREFIXES):
         return True
     # Traces and avatars: the live run, archived runs and every scenario /
@@ -2800,15 +1397,31 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         """
         self.user = None
         self.accounts = None
+        self.cluster_node = None
         _WORLD.set(None)
         _USER.set(None)
+        runs.LOCAL_PORT["port"] = self.server.server_port
+        from gaworld.apps import cluster_api
+
+        if cluster_api.is_node_path(path):
+            # A node of a distributed world: its token is its whole identity
+            # and reaches only its own world's node endpoints.
+            header = self.headers.get("Authorization", "")
+            bearer = header[7:].strip() if header.lower().startswith("bearer ") else ""
+            found = cluster_api.authenticate(bearer) if bearer else None
+            if found is None:
+                self._deny(401, "节点令牌无效或已被吊销")
+                return True
+            self.cluster_node = found
+            _WORLD.set(found[0])
+            return False
         if not path.startswith("/api/") and (
             any(part.startswith(".") for part in path.split("/") if part) or not _static_path_allowed(path)
         ):
             self._deny(404, "Not found")
             return True
         token = os.environ.get("GAWORLD_DASHBOARD_TOKEN", "").strip()
-        self.accounts = accounts.enabled_store(REPO_ROOT)
+        self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         if not token and self.accounts is None:
             return False
         if token:
@@ -2828,7 +1441,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.user is not None and self._enter_world(path):
             return True
         level = access_policy.required(self.command, path)
-        if access_policy.allows(self.user, level, _current_world()):
+        if access_policy.allows(self.user, level, paths.current_world()):
             return False
         if self.user is not None:
             self._deny(403, DENIALS[level])
@@ -2846,8 +1459,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.accounts is None:
             return False
         _USER.set(self.user)
-        if path.startswith("/output/worlds/"):
-            target = self.accounts.get_world(path.split("/")[3])
+        # Judge the path by its non-empty segments, the way translate_path
+        # resolves the file: `/output//worlds/…` serves the same file.
+        parts = [part for part in path.split("/") if part]
+        if parts[:2] == ["output", "worlds"]:
+            target = self.accounts.get_world(parts[2]) if len(parts) > 2 else None
             if target is None or not world_readable(target, self.user):
                 self._deny(404, "Not found")
                 return True
@@ -2891,7 +1507,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=REPO_ROOT, **kwargs)
+        super().__init__(*args, directory=paths.REPO_ROOT, **kwargs)
 
     def end_headers(self):
         # The dashboard JS/CSS and trace JSON change between runs; without
@@ -2899,11 +1515,13 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
-    def _json_response(self, payload, status=200):
+    def _json_response(self, payload, status=200, headers=None):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)
 
@@ -2961,6 +1579,36 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 return "只能修改自己建立的城市"
         return None
 
+    def _serve_node(self, method, path, payload):
+        from gaworld.apps import cluster_api
+
+        world, node = self.cluster_node
+        try:
+            body, status = cluster_api.handle_node(world, node, method, path, payload, {})
+        except Exception as exc:
+            _LOG.exception("%s %s (node %s) failed: %s", method, path, node.get("id"), exc)
+            return self._json_response({"error": str(exc)}, status=500)
+        if isinstance(body, bytes):
+            return self._download_response(body, "application/zip", f"{world['id']}.zip")
+        return self._json_response(body, status=status)
+
+    def _open_play_link(self, world_id):
+        """``/play/<world>``: enter that world and open the 多人共玩 page."""
+        target = "/site/dashboard/play.html"
+        if self.accounts is None:
+            return self._redirect(target)
+        world = self.accounts.get_world(world_id)
+        if world is None or self.user is None or not world_readable(world, self.user):
+            return self._deny(404, "没有这个世界，或它没有对你开放")
+        from gaworld.apps import worlds_api
+
+        self.send_response(303)
+        self.send_header("Set-Cookie", worlds_api.world_cookie(world_id))
+        self.send_header("Location", target)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _download_response(self, data, content_type, filename):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
@@ -2993,7 +1641,30 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         parsed = parse_qs(raw, keep_blank_values=True)
         return {key: values[0] if values else "" for key, values in parsed.items()}
 
+    def _wrong_method(self, path):
+        """Answer 405 when the API document lists *path* under other methods only.
+
+        Paths the document does not know fall through to the handlers as before.
+        """
+        from gaworld.apps import openapi
+
+        allowed = openapi.allowed_methods(path)
+        if not allowed or self.command in allowed:
+            return False
+        methods = ", ".join(sorted(allowed))
+        self._json_response(
+            {"error": f"{self.command} is not supported here; use {methods}", "allowed": sorted(allowed)},
+            status=405,
+            headers={"Allow": methods},
+        )
+        return True
+
     def _handle_api_get(self, path, query):
+        if path == "/api/cluster":
+            from gaworld.apps import cluster_api
+
+            body, status = cluster_api.handle_get(self.user if self.accounts is not None else None, path)
+            return self._json_response(body, status=status)
         if path == "/api/play":
             from gaworld.apps import play_api
 
@@ -3016,108 +1687,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import kernel_api
 
             return kernel_api.serve_stream(self, query)
-        if path == "/api/interventions" or path.startswith("/api/interventions/"):
-            from gaworld.apps import kernel_api
-
-            payload, status = kernel_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/infosources/"):
-            from gaworld.apps import infosources_api
-
-            payload, status = infosources_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/bench/"):
-            from gaworld.apps import bench_api
-
-            payload, status = bench_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/economy/"):
-            from gaworld.apps import economy_api
-
-            payload, status = economy_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        # Population Studio / group mode live in their own module; this file is
-        # already long enough without another subsystem's routes in it.
-        if path.startswith("/api/population"):
-            from gaworld.apps import population_api
-
-            payload, status = population_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/import"):
-            from gaworld.apps import import_api
-
-            payload, status = import_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/arena"):
-            from gaworld.apps import arena_api
-
-            payload, status = arena_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        # 游戏场 (playground). The arena keeps its own older namespace; every
-        # other game hangs off /api/games/<game>/.
-        if path.startswith("/api/games/"):
-            from gaworld.apps import games_api
-
-            payload, status = games_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/family"):
-            from gaworld.apps import family_api
-
-            payload, status = family_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        # Trailing slash on purpose: the single-agent `POST /api/interview`
-        # below is a different, older endpoint and must not be shadowed.
-        if path.startswith("/api/interview/"):
-            from gaworld.apps import interview_api
-
-            payload, status = interview_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/research/"):
-            from gaworld.apps import research_api
-
-            payload, status = research_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/persona/"):
-            from gaworld.apps import persona_api
-
-            payload, status = persona_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/external-systems"):
-            from gaworld.apps import external_systems_api
-
-            payload, status = external_systems_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/parallel-worlds"):
-            from gaworld.apps import parallel_worlds_api
-
-            payload, status = parallel_worlds_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/settings"):
-            from gaworld.apps import settings_api
-
-            payload, status = settings_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/city"):
-            from gaworld.apps import city_api
-
-            payload, status = city_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/moltbook"):
-            from gaworld.apps import moltbook_api
-
-            payload, status = moltbook_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
-        if path.startswith("/api/home"):
-            from gaworld.apps import home_api
-
-            payload, status = home_api.handle_get(path, query)
-            return self._json_response(payload, status=status)
+        # Modules that answer a whole prefix on their own (gaworld/apps/routes.py).
+        delegated = routes.dispatch_get(path, query)
+        if delegated is not None:
+            body, status = delegated
+            return self._json_response(body, status=status)
         if path == "/api/config":
             return self._json_response(_config_summary())
         if path == "/api/agents":
-            return self._json_response({"agents": _agents_summary()})
+            return self._json_response({"agents": residents.agents_summary()})
         if path.startswith("/api/agents/") and path.endswith("/avatar"):
-            agent = _agent_state(path.split("/")[3])
+            agent = residents.agent_state(path.split("/")[3])
             if agent is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             data = build_agent_avatar_svg(agent).encode("utf-8")
@@ -3128,37 +1708,45 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
         if path == "/api/skills":
-            return self._json_response({"skills": _skills_library()})
+            return self._json_response({"skills": residents.skills_library()})
         if path.startswith("/api/agents/") and path.endswith("/profile"):
             agent_id = path.split("/")[3]
-            profile = _agent_profile(agent_id)
+            profile = residents.agent_profile(agent_id)
             if not profile:
                 return self._json_response({"error": "Profile not found"}, status=404)
             return self._json_response(profile)
         if path.startswith("/api/agents/") and path.endswith("/state"):
             agent_id = path.split("/")[3]
-            state = _agent_state(agent_id)
+            state = residents.agent_state(agent_id)
             if state is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             return self._json_response(state)
         if path.startswith("/api/agents/") and path.endswith("/big5"):
             agent_id = path.split("/")[3]
-            data = _agent_big5(agent_id)
+            data = residents.agent_big5(agent_id)
             if data is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             return self._json_response(data)
+        if path.startswith("/api/agents/") and "/autobiography/jobs/" in path:
+            from gaworld.apps import autobiography_api
+            payload, status = autobiography_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/agents/") and path.endswith("/autobiography"):
+            from gaworld.apps import autobiography_api
+            payload, status = autobiography_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path.startswith("/api/agents/") and path.endswith("/detail"):
             agent_id = path.split("/")[3]
-            detail = _agent_detail(agent_id)
+            detail = residents.agent_detail(agent_id)
             if detail is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             return self._json_response(detail)
         if path.startswith("/api/agents/") and path.endswith("/memory"):
             agent_id = path.split("/")[3]
-            return self._json_response(_memory_payload(agent_id))
+            return self._json_response(residents.memory_payload(agent_id))
         if path.startswith("/api/agents/") and path.endswith("/goals"):
             agent_id = path.split("/")[3]
-            return self._json_response(_agent_goals_payload(agent_id))
+            return self._json_response(residents.agent_goals_payload(agent_id))
         if path.startswith("/api/analytics/"):
             section = path[len("/api/analytics/") :]
             if section == "runs":
@@ -3173,7 +1761,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(payload)
         if path == "/api/run/status":
             raw_offset = (query.get("log_offset") or [""])[0].strip()
-            return self._json_response(_run_status(int(raw_offset) if raw_offset else None))
+            return self._json_response(runs.run_status(int(raw_offset) if raw_offset else None))
         if path == "/api/run/log/export":
             markdown, filename = _run_log_markdown()
             return self._download_response(
@@ -3258,77 +1846,19 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import worlds_api
 
             return self._auth_reply(*worlds_api.handle_post(store, self.user, path, payload))
+        if path.startswith("/api/cluster/"):
+            from gaworld.apps import cluster_api
+
+            body, status = cluster_api.handle_post(self.user if store is not None else None, path, payload, store)
+            return self._json_response(body, status=status)
         if path.startswith("/api/play/"):
             from gaworld.apps import play_api
 
             body, status = play_api.handle_post(self.user if store is not None else None, path, payload, store)
             return self._json_response(body, status=status)
-        if path.startswith("/api/interventions/"):
-            from gaworld.apps import kernel_api
-
-            body, status = kernel_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/bench/"):
-            from gaworld.apps import bench_api
-
-            body, status = bench_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/population"):
-            from gaworld.apps import population_api
-
-            body, status = population_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/import"):
-            from gaworld.apps import import_api
-
-            body, status = import_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/arena"):
-            from gaworld.apps import arena_api
-
-            body, status = arena_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/games/"):
-            from gaworld.apps import games_api
-
-            body, status = games_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/family"):
-            from gaworld.apps import family_api
-
-            body, status = family_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        # Trailing slash: `/api/interview` alone stays the single-agent
-        # endpoint handled further down.
-        if path.startswith("/api/interview/"):
-            from gaworld.apps import interview_api
-
-            body, status = interview_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/research/"):
-            from gaworld.apps import research_api
-
-            body, status = research_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/persona/"):
-            from gaworld.apps import persona_api
-
-            body, status = persona_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/external-systems"):
-            from gaworld.apps import external_systems_api
-
-            body, status = external_systems_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/parallel-worlds"):
-            from gaworld.apps import parallel_worlds_api
-
-            body, status = parallel_worlds_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
-        if path.startswith("/api/settings"):
-            from gaworld.apps import settings_api
-
-            body, status = settings_api.handle_post(path, payload)
+        delegated = routes.dispatch_post(path, payload)
+        if delegated is not None:
+            body, status = delegated
             return self._json_response(body, status=status)
         if path.startswith("/api/city"):
             from gaworld.apps import city_api
@@ -3344,51 +1874,50 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 elif route == "/api/city/delete":
                     store.forget_city(os.path.basename(str(body.get("removed") or "")))
             return self._json_response(body, status=status)
-        if path.startswith("/api/moltbook"):
-            from gaworld.apps import moltbook_api
-
-            body, status = moltbook_api.handle_post(path, payload)
-            return self._json_response(body, status=status)
         if path == "/api/config":
             return self._json_response(_save_config_patch(payload))
         if path == "/api/agents":
-            return self._json_response(_create_agent(payload))
+            return self._json_response(residents.create_agent(payload))
         if path.startswith("/api/agents/") and path.endswith("/profile"):
             agent_id = path.split("/")[3]
-            return self._json_response(_save_agent_profile(agent_id, payload.get("text", "")))
+            return self._json_response(residents.save_agent_profile(agent_id, payload.get("text", "")))
         if path.startswith("/api/agents/") and path.endswith("/state"):
             agent_id = path.split("/")[3]
-            return self._json_response(_save_agent_state(agent_id, payload))
+            return self._json_response(residents.save_agent_state(agent_id, payload))
         if path.startswith("/api/agents/") and path.endswith("/big5"):
             agent_id = path.split("/")[3]
             try:
-                return self._json_response(_save_agent_big5(agent_id, payload))
+                return self._json_response(residents.save_agent_big5(agent_id, payload))
             except ValueError as exc:
                 return self._json_response({"error": str(exc)}, status=400)
+        if path.startswith("/api/agents/") and path.endswith("/autobiography"):
+            from gaworld.apps import autobiography_api
+            body, status = autobiography_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
         if path.startswith("/api/agents/") and path.endswith("/goals"):
             agent_id = path.split("/")[3]
             try:
-                saved = _save_agent_goals_payload(agent_id, payload)
+                saved = residents.save_agent_goals_payload(agent_id, payload)
             except ValueError as exc:
                 return self._json_response({"error": str(exc)}, status=400)
             return self._json_response(saved)
         if path.startswith("/api/agents/") and path.endswith("/memory"):
             agent_id = path.split("/")[3]
-            return self._json_response(_append_agent_memory(agent_id, payload))
+            return self._json_response(residents.append_agent_memory(agent_id, payload))
         if path.startswith("/api/agents/") and path.endswith("/relationships"):
             agent_id = path.split("/")[3]
-            return self._json_response(_save_agent_relationships(agent_id, payload))
+            return self._json_response(residents.save_agent_relationships(agent_id, payload))
         if path.startswith("/api/agents/") and path.endswith("/finance"):
             agent_id = path.split("/")[3]
-            return self._json_response(_save_agent_finance(agent_id, payload))
+            return self._json_response(residents.save_agent_finance(agent_id, payload))
         if path == "/api/run/start":
-            return self._json_response(_start_simulation(payload))
+            return self._json_response(runs.start_simulation(payload))
         if path == "/api/run/stop":
-            return self._json_response(_stop_simulation())
+            return self._json_response(runs.stop_simulation())
         if path == "/api/run/schedule":
-            return self._json_response(_schedule_simulation(payload))
+            return self._json_response(runs.schedule_simulation(payload))
         if path == "/api/run/schedule/cancel":
-            return self._json_response(_cancel_scheduled_simulation())
+            return self._json_response(runs.cancel_scheduled_simulation())
         if path == "/api/interview":
             return self._json_response(_interview_agent(payload))
         if path == "/api/life-events":
@@ -3459,7 +1988,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         path = unquote(parsed.path)
         if self._guard(path, parsed.query):
             return
+        if self.cluster_node is not None:
+            return self._serve_node("GET", path, {})
+        link = PLAY_LINK_RE.match(path)
+        if link:
+            return self._open_play_link(link.group(1))
         if path.startswith("/api/"):
+            if self._wrong_method(path):
+                return
             try:
                 return self._handle_api_get(path, parse_qs(parsed.query))
             except (ValueError, KeyError) as exc:
@@ -3513,6 +2049,26 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         path = unquote(parsed.path)
         if self._guard(path, parsed.query):
             return
+        if self.cluster_node is not None:
+            from gaworld.apps import cluster_api
+
+            length = int(self.headers.get("Content-Length", "0") or 0)
+            if length > cluster_api.MAX_BODY:
+                # Read it off the socket anyway (bounded) so the node sees the 413
+                # instead of a broken pipe.
+                remaining = min(length, 16 * cluster_api.MAX_BODY)
+                while remaining > 0:
+                    chunk = self.rfile.read(min(65536, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                self.close_connection = True
+                return self._json_response({"error": "请求太大"}, status=413)
+            try:
+                payload = self._read_json_body()
+            except ValueError as exc:
+                return self._json_response({"error": str(exc)}, status=400)
+            return self._serve_node("POST", path, payload)
         if path == "/api/todos/create-form":
             try:
                 _create_todo_item(self._read_form_body())
@@ -3524,6 +2080,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 return self._json_response({"error": str(exc)}, status=500)
         if not path.startswith("/api/"):
             return self._json_response({"error": "POST is only supported under /api"}, status=404)
+        if self._wrong_method(path):
+            return
         try:
             return self._handle_api_post(path)
         except (ValueError, KeyError) as exc:
@@ -3531,6 +2089,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 {"error": str(exc)},
                 status=400,
             )
+        except runs.RunConflict as exc:
+            return self._json_response({"error": str(exc)}, status=409)
         except Exception as exc:
             # HTTP boundary: log the full traceback and surface a 500.
             _LOG.exception("POST %s failed: %s", path, exc)
@@ -3547,9 +2107,49 @@ def run_server(host="127.0.0.1", port=8766):
     except KeyboardInterrupt:
         pass
     finally:
-        _stop_all_simulations()
+        runs.stop_all_simulations()
         _reset_collaboration_service_for_tests()
         server.server_close()
+
+
+#: Names that used to live here -> ``(module they moved to, name there)``.
+_MOVED = {
+    **{name: (paths, target) for name, target in paths.DASHBOARD_ALIASES.items()},
+    **{name: (runs, target) for name, target in runs.DASHBOARD_ALIASES.items()},
+    **{name: (residents, target) for name, target in residents.DASHBOARD_ALIASES.items()},
+}
+
+
+class _MovedNamesGuard(types.ModuleType):
+    """Fails loudly on a name that moved out of this module.
+
+    Reading ``ds.REPO_ROOT`` raises AttributeError naming the new home. So does
+    *assigning* it: a plain ``ds.REPO_ROOT = tmp`` would otherwise just create
+    an attribute nothing reads, and the code under test would go on using the
+    real path.
+    """
+
+    def _moved(self, name):
+        owner, target = _MOVED[name]
+        return AttributeError(f"{self.__name__}.{name} moved to {owner.__name__}.{target}")
+
+    def __getattr__(self, name):
+        if name in _MOVED:
+            raise self._moved(name)
+        raise AttributeError(f"module {self.__name__!r} has no attribute {name!r}")
+
+    def __setattr__(self, name, value):
+        if name in _MOVED:
+            raise self._moved(name)
+        super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if name in _MOVED:
+            raise self._moved(name)
+        super().__delattr__(name)
+
+
+sys.modules[__name__].__class__ = _MovedNamesGuard
 
 
 if __name__ == "__main__":

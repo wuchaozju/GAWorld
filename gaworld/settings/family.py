@@ -171,5 +171,21 @@ def family_settings() -> dict[str, Any]:
                 # ex-spouse) still transmit, but weakly.
                 "remote_contagion_weight": 0.008,
             },
+            # --- Co-resident children and elders as residents --------------
+            # Off by default: every promoted member is a full resident with
+            # its own schedule and per-step LLM calls. They stay dependants in
+            # the ledger (no account; the household keeps paying for them) and
+            # never travel on their own. Promoted once, before day 1.
+            "members_as_agents": {
+                "enabled": False,
+                # Co-resident children from this age up to 17 (school age).
+                "min_child_age": 6,
+                "elders": True,
+                # Co-resident parents below this age are often still working;
+                # they stay off-screen rather than become "retired" dependants.
+                "min_elder_age": 60,
+                # Hard ceiling on new residents per run (cost guard).
+                "max_new_agents": 20,
+            },
         },
     }

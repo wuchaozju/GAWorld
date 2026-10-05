@@ -9,9 +9,9 @@ patching ``dashboard_config.json``. This module makes both first-class.
 
 Three design points, each of which was a trap worth naming:
 
-**Path constants are read from ``dashboard_server`` at call time**, following
+**Path constants are read from ``world_paths`` at call time**, following
 the precedent set by ``population_api``. The dashboard tests monkeypatch
-``ds.REPO_ROOT`` onto a temp tree, and an import-time binding here would
+``world_paths.REPO_ROOT`` onto a temp tree, and an import-time binding here would
 capture the real repo path first and write into the user's ``output/``.
 
 **Config edits are shape-coerced against the effective config, not
@@ -42,6 +42,7 @@ import urllib.request
 import uuid
 from typing import Any
 
+from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.external")
@@ -78,18 +79,12 @@ _TIMELINE_DAYS = 8
 # ---------------------------------------------------------------------------
 
 
-def _ds():
-    from gaworld.apps import dashboard_server
-
-    return dashboard_server
-
-
 def _effective_config() -> dict[str, Any]:
-    return _ds()._effective_config()
+    return world_paths.effective_config()
 
 
 def _repo_path(*parts: str) -> str:
-    return os.path.join(_ds().REPO_ROOT, *parts)
+    return os.path.join(world_paths.REPO_ROOT, *parts)
 
 
 def _economy_cfg(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -265,7 +260,7 @@ def currency_runtime() -> dict[str, Any]:
         "conservation": _conservation(economy_dir),
         "wealth": _wealth_summary(economy_dir),
         "ledger": _ledger_by_day(economy_dir),
-        "output_dir": os.path.relpath(economy_dir, _ds().REPO_ROOT),
+        "output_dir": os.path.relpath(economy_dir, world_paths.REPO_ROOT),
         "interventions": interventions(),
     }
 
@@ -285,7 +280,7 @@ def traffic_runtime() -> dict[str, Any]:
     file means the layer is off — which is a different statement from "the
     roads were clear" and is reported as such.
     """
-    records_dir = str(_ds()._records_dir())
+    records_dir = str(world_paths.records_dir())
     path = os.path.join(records_dir, "traffic.tick.jsonl")
     rows: list[dict[str, Any]] = []
     try:
@@ -316,7 +311,7 @@ def traffic_runtime() -> dict[str, Any]:
         # The reading that matters most on a small population: if this is 0,
         # the roads never filled up and every trip ran at free flow.
         "ever_congested": bool(congested),
-        "records_path": os.path.relpath(path, _ds().REPO_ROOT),
+        "records_path": os.path.relpath(path, world_paths.REPO_ROOT),
     }
 
 
@@ -362,7 +357,7 @@ def environment_runtime() -> dict[str, Any]:
         "latest_day": days[-1].get("day") if days else None,
         "event_type_counts": type_counts,
         "mean_severity": round(sum(severities) / len(severities), 3) if severities else None,
-        "timeline_path": os.path.relpath(path, _ds().REPO_ROOT),
+        "timeline_path": os.path.relpath(path, world_paths.REPO_ROOT),
     }
 
 
@@ -436,7 +431,7 @@ def _services_runtime(cfg: dict[str, Any]) -> dict[str, Any]:
         "llm_providers": sorted(providers.keys()) if isinstance(providers, dict) else [],
         "llm_routing": llm.get("routing", {}),
         "news_cache": {
-            "path": os.path.relpath(cache_path, _ds().REPO_ROOT),
+            "path": os.path.relpath(cache_path, world_paths.REPO_ROOT),
             "entries": len(cache) if isinstance(cache, (dict, list)) else 0,
             "exists": os.path.exists(cache_path),
         },
@@ -626,13 +621,12 @@ def sanitize_config_patch(payload: dict[str, Any]) -> tuple[dict[str, Any], list
 
 def save_config(payload: dict[str, Any]) -> dict[str, Any]:
     """Merge a sanitized patch into ``dashboard_config.json``."""
-    ds = _ds()
     patch, dropped = sanitize_config_patch(payload)
     if not patch:
         return {"saved": False, "dropped": dropped, "config": _panel_configs()}
-    current = ds._dashboard_config()
-    ds._deep_update(current, patch)
-    ds._atomic_write_json(ds.DASHBOARD_CONFIG_PATH, current)
+    current = world_paths.dashboard_config()
+    world_paths.deep_update(current, patch)
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
     _LOG.info("external-systems config patch applied: %s", sorted(patch))
     return {"saved": True, "dropped": dropped, "applied": sorted(patch), "config": _panel_configs()}
 
@@ -660,7 +654,7 @@ def interventions() -> dict[str, Any]:
     return {
         "pending": queue["pending"],
         "applied": queue["applied"][-20:],
-        "path": os.path.relpath(_intervention_path(), _ds().REPO_ROOT),
+        "path": os.path.relpath(_intervention_path(), world_paths.REPO_ROOT),
     }
 
 
@@ -762,7 +756,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return service_health(), 200
     if path == "/api/external-systems/interventions":
         return _wire_safe(interventions()), 200
-    return {"error": "Unknown external-systems endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -776,7 +770,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return _wire_safe(cancel_intervention(payload)), 200
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown external-systems endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

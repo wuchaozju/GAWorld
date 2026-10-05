@@ -46,6 +46,7 @@ import uuid
 from collections import Counter
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.city.agents import add_population
 from gaworld.city.bundle import resolve_city
 from gaworld.logging_setup import get_logger
@@ -113,8 +114,7 @@ def _run_in_background(job_id: str, work: Any) -> None:
             )
             _LOG.exception("import job %s failed", job_id)
 
-    thread = threading.Thread(target=runner, name=f"import-{job_id}", daemon=True)
-    thread.start()
+    ownership.spawn(runner, name=f"import-{job_id}")
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
@@ -786,7 +786,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         if record is None:
             return {"error": "Unknown job"}, 404
         return record, 200
-    return {"error": "Unknown import endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -799,7 +799,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return {"job_id": job_id}, 202
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown import endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def _handle_preview_payload(payload: dict[str, Any]) -> dict[str, Any]:

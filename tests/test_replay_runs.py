@@ -131,6 +131,29 @@ class ReplayPageTests(unittest.TestCase):
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
+    def test_indoor_view_and_thought_node_suite(self):
+        """Seating residents indoors and picking their bubble text (map + replay)."""
+        result = subprocess.run(
+            ["node", "--test", str(ROOT / "site" / "dashboard" / "indoor-view.test.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_pages_load_the_indoor_view_after_its_dependencies(self):
+        for page in ("site/simviz/index.html", "site/terminal/simviz.html", "site/dashboard/index.html"):
+            html = (ROOT / page).read_text(encoding="utf-8")
+            self.assertIn('id="indoorView"', html, page)
+            order = [html.index(src) for src in (
+                "/site/dashboard/agent-thought.js",
+                "/site/dashboard/citymap-view.js",
+                "/site/simviz/spatial-tree.js",
+                "/site/dashboard/indoor-view.js",
+            )]
+            self.assertEqual(sorted(order), order, page)
+
 
 if __name__ == "__main__":
     unittest.main()

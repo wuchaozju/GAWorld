@@ -216,7 +216,7 @@ def build_agent_step_payload(agent, time_str, location, resolved_location, targe
     for key, value in (agent.get("state", {}) or {}).items():
         if isinstance(value, (int, float)):
             state[key] = round(float(value), 4)
-    return {
+    payload = {
         "agent_id": int(agent.get("id", 0) or 0),
         "name": agent.get("name", str(agent.get("id", "agent"))),
         "avatar_path": str(agent.get("avatar_path", "") or ""),
@@ -238,3 +238,10 @@ def build_agent_step_payload(agent, time_str, location, resolved_location, targe
         "state": state,
         "travel": travel or {},
     }
+    # The room the resident stands in (``local_physical.rooms``); the indoor
+    # views seat them there instead of guessing from the activity.
+    locations = agent.get("locations") or {}
+    room = locations.get("room")
+    if isinstance(room, dict) and not locations.get("in_transit") and room.get("node") == locations.get("current"):
+        payload["room"] = {k: room.get(k) or "" for k in ("node", "unit", "arena", "object")}
+    return payload

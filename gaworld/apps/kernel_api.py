@@ -20,6 +20,8 @@ import os
 import time
 from typing import Any, Callable
 
+from gaworld.accounts import policy
+from gaworld.apps import world_paths
 from gaworld.kernel import remote
 
 #: How often the stream polls the records directory, and how long it may go
@@ -35,9 +37,8 @@ def _ds():
 
 
 def _queue_path() -> str:
-    ds = _ds()
     # The active world's queue; its running simulator drains that file.
-    return os.path.join(ds.REPO_ROOT, remote.path_for(ds._effective_config()))
+    return os.path.join(world_paths.REPO_ROOT, remote.path_for(world_paths.effective_config()))
 
 
 def handle_get(path: str, query: dict) -> tuple[dict[str, Any], int]:
@@ -63,6 +64,11 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     name = path[len("/api/interventions/"):].strip("/")
     if not name or "/" in name:
         return {"error": "POST /api/interventions/{name} with the kwargs as the JSON body"}, 404
+    user = _ds()._USER.get()
+    if name == "update_config" and user is not None and user.get("role") != "admin":
+        refusal = policy.config_update_refusal(payload.get("path"), payload.get("value"))
+        if refusal:
+            return {"error": refusal}, 403
     try:
         item = remote.enqueue(_queue_path(), name, payload)
     except KeyError:  # before LookupError, its base class
@@ -161,6 +167,6 @@ def serve_stream(handler, query: dict) -> None:
         handler.wfile.flush()
 
     try:
-        stream_records(_ds()._records_dir(), write, tables=_parse_tables(query))
+        stream_records(world_paths.records_dir(), write, tables=_parse_tables(query))
     except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
         pass

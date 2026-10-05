@@ -29,6 +29,7 @@ from unittest import mock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import world_paths
 from gaworld.infosources import channels, feed
 from gaworld.infosources.plugin import InfoSourcesPlugin
 from gaworld.infosources.schema import InfoItem, Source
@@ -136,9 +137,9 @@ class HttpTest(unittest.TestCase):
         self.env.ctx.recorder.record("infosources.read", {"agent_id": 8, "source_id": "paper", "url": "u2"})
         self.env.ctx.recorder.close()
         feed.save(self.env.cache_path, feed.runtime().cache)  # what a refresh would have left on disk
-        self._saved = (ds.REPO_ROOT, ds.RECORDS_DIR, ds.CONFIG)
-        ds.REPO_ROOT = self.tmp.name
-        ds.RECORDS_DIR = os.path.join(self.tmp.name, "records")
+        self._saved = (world_paths.REPO_ROOT, world_paths.RECORDS_DIR, ds.CONFIG)
+        world_paths.REPO_ROOT = self.tmp.name
+        world_paths.RECORDS_DIR = os.path.join(self.tmp.name, "records")
         ds.CONFIG = self.env.config
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), ds.DashboardHandler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -147,7 +148,7 @@ class HttpTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
-        ds.REPO_ROOT, ds.RECORDS_DIR, ds.CONFIG = self._saved
+        world_paths.REPO_ROOT, world_paths.RECORDS_DIR, ds.CONFIG = self._saved
         feed.set_runtime(None)
         self.tmp.cleanup()
 

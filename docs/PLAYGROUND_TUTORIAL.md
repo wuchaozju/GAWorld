@@ -3,9 +3,9 @@
 > 和城里的智能体玩一局。游戏场是入口，具体的游戏各自一页。
 >
 > 大厅：`http://localhost:<port>/site/dashboard/games.html`（控制台侧栏「实验 → 游戏场」）
-> 引擎：`gaworld/apps/games_api.py` + `disaster_api.py` + `rumor_api.py` + `referendum_api.py` + `guess_api.py`｜
-> 前端：`site/dashboard/{games,persuade,disaster,rumor}.{html,js}` + `games.css`｜
-> 测试：`tests/test_{games,disaster,rumor}_api.py`
+> 引擎：`gaworld/apps/games_api.py` + `disaster_api.py` + `rumor_api.py` + `referendum_api.py` + `guess_api.py` + `novel_api.py` + `jury_api.py` + `commentary_api.py` + `roommate_api.py`｜
+> 前端：`site/dashboard/{games,persuade,disaster,rumor,jury,commentary,roommate}.{html,js}` + `games.css`｜
+> 测试：`tests/test_{games,disaster,rumor,jury,commentary,roommate}_api.py`
 
 ---
 
@@ -24,6 +24,11 @@
 - [10. 公投局：五分钟跑通](#10-公投局五分钟跑通)
 - [11. 公投局是怎么算的](#11-公投局是怎么算的)
 - [12. 猜人局：五分钟跑通](#12-猜人局五分钟跑通)
+- [12.5 小说局：让城里人当主角](#125-小说局让城里人当主角)
+- [12.6 陪审团：三个普通人能给一件事定论吗](#126-陪审团三个普通人能给一件事定论吗)
+- [12.7 新闻评论：让居民自己说](#127-新闻评论让居民自己说)
+- [12.8 同居模式：让几位居民合租一间公寓](#128-同居模式让几位居民合租一间公寓)
+- [12.9 谁是真人：分得出居民和人吗](#129-谁是真人分得出居民和人吗)
 - [13. 程序化调用：HTTP API](#13-程序化调用http-api)
 - [14. 加一个新游戏](#14-加一个新游戏)
 - [15. 排查清单](#15-排查清单)
@@ -44,6 +49,16 @@
 
 游戏状态**只在内存里**。重启 dashboard，对局记录就清空；游戏永远不会写回城市 bundle。
 
+**例外：对局存档。** 谣言扩散局、公投局、灾害模式每跑完一局，另外存一份到
+`output/games/<rumor|referendum|disaster>/<时间>-<job_id>.json`（整场结果 + 这局调用路由到的
+provider；多人服务器上还记着谁玩的）。它们是 GAWorld-Bench Track B「对局层」的样本——
+三条事先定好的规律（公投从众、灾害中极度恐慌少见而互助常见、辟谣后相信度下降但不归零），
+每条至少要 **5 局**能用的对局，不够就弃权。界面上的「最近对局」照旧只看内存；存档只给评测读，
+写失败不影响这一局的结果。怎么评：`python benchmark/gaworld_bench.py --track B`，
+判据与每条的提示词线索见 [`benchmark/GAWORLD_BENCH_DESIGN.md`](../benchmark/GAWORLD_BENCH_DESIGN.md) Track B。
+想让对局算数：公投**不填宣传口径**（带口径的局是说服，不算从众）；谣言局要真有人辟谣、
+被辟谣的人当时还信。「谁是真人」揭晓的房间也存一份到 `output/games/whois/`，供 Track D 统计（见 §12.9）。
+
 ---
 
 ## 1. 已有的游戏
@@ -57,11 +72,17 @@
 | 双队竞赛 | 两个队拿同一个任务、各走一条相反的路子，评审蒙着队名逐项打分 | `duel.html` | `/api/games/duel/*` |
 | 公投局 | 一个有利害的议案先私下表态、再公开表决，看民意的位移和改票的人 | `referendum.html` | `/api/games/referendum/*` |
 | 猜人局 | 读一份档案猜他在两难里怎么选，一局一次调用；复问还能量档案稳不稳 | `guess.html` | `/api/games/guess/*` |
+| 小说局 | 选 2–6 个居民当主角，写一段大纲和目标字数，按他们的档案（职业、年龄、口吻、价值观）写一本他们做主角的小说 | `novel.html` | `/api/games/novel/*` |
+| 陪审团 | 你写一个案件，挑 3–5 名居民当陪审员；他们讨论三轮，再匿名投票表决有罪 / 无罪，再对一个量刑问题表态 | `jury.html` | `/api/games/jury/*` |
+| 新闻评论 | 给一条新闻（贴一段文字或一个网址），挑 1–12 名居民，每人以自己的口吻写一条短评，挑一个立场（支持 / 反对 / 中立 / 质疑），再给个强度，结尾一段总览 | `commentary.html` | `/api/games/commentary/*` |
+| 同居模式 | 挑 2–6 位居民，给一间公寓和一句氛围，看他们在不同房间活动、碰面、聊天；对话与内心独白从他们头顶冒出来，事件流和心情 / 关系仪表盘在旁边 | `roommate.html` | `/api/games/roommate/*` |
+| 谁是真人 | 居民和真人坐进同一个匿名群聊，每人只显示编号；同时发言聊几轮，然后每个真人给其他号打勾「真人 / 居民」，揭晓后看居民骗过了几个人。**唯一的多人游戏**：真人凭座位链接入座 | `whois.html` | `/api/games/whois/*` |
 
 斗兽场仍然走它自己的 `/api/arena/*` 命名空间——游戏场只是把它收进了同一个入口，
-接口一个都没动。新游戏统一挂在 `/api/games/<game>/` 下。灾害模式和谣言扩散局体量较大，
-逻辑分别放在 `gaworld/apps/disaster_api.py`、`rumor_api.py` 和 `duel_api.py`，`games_api` 只做一层转发，
+接口一个都没动。新游戏统一挂在 `/api/games/<game>/` 下。灾害模式、谣言扩散局、双队竞赛和小说局体量较大，
+逻辑分别放在 `gaworld/apps/disaster_api.py`、`rumor_api.py`、`duel_api.py` 和 `novel_api.py`，`games_api` 只做一层转发，
 并提供两样公共件：`persona_block()`（档案前言）和 `first_json_object()`（把结构化回复从模型的话里抠出来）。
+**同居模式是唯一一个长会话游戏**——其他游戏跑完一轮就把结果交给前端，它把 session 留在内存里，前端按 tick 反复拉。
 
 ---
 
@@ -337,6 +358,184 @@
 
 ---
 
+## 12.5 小说局：让城里人当主角
+
+1. 打开大厅，点「小说局」。
+2. 左边选**城市**和**主角团**（2–6 人）。这里每个居民都会成为小说的有名有姓的人物——他们的职业、年龄、口吻、价值观都会进到正文里，所以挑人不同，写出来就不一样。
+3. 选**写作风格**（现实主义 / 温暖日常 / 悬疑 / 都市情感 / 轻喜），或者自己写一段。自定义风格会再让你定一个视角（第三人称 / 第一人称轮换 / 全知视角）。
+4. 设**目标字数**（默认 10000，最少 1000，最多 80000）。模型会按字数自动分章，一般 8–15 章。
+5. 可选：填**书名**和**故事大纲**。大纲一两段话讲清核心情境、关键转折、想要的结尾氛围——可以留白让模型自由发挥，但写了大纲会更贴你想要的走向。
+6. 点「开始写」。这是一个后台任务，**进度条走完后**右栏出现完整小说：封面 + 核心情境 + 角色标签 + 目录 + 章节正文。
+7. 每章标题、梗概、字数、出场角色都标在卡片上。右下角「下载 Markdown」整本带走。
+8. 右上角的标签切到「📊 故事线」，看三张图：
+   - **章节流向**：每个章节一个节点，宽度=字数，深浅=出场角色数。点节点跳到对应章节。
+   - **角色弧线**：横轴是章节，纵轴是每个角色在该章的「出场强度」（0–100）。一眼读出主角的成长曲线。
+   - **同框关系**：谁跟谁最常一起出场，连线粗细=同章次数。
+
+**成本**：1（角色分配）+ 1（章节大纲）+ N（每章一次）+ 1（封面简介）次模型调用。1 万字、8 章 ≈ 11 次；3 万字、15 章 ≈ 18 次。会跑一两分钟，属于这里比较重的一个游戏。
+
+**为什么角色分配和章节大纲要分两次问**：单次调用会把角色压到大纲已经写的人里——你写「年长的男性邻居」，女性邻居就悄悄掉了。两次问把已锁定的角色团保护住，模型的剧情填补能力放在它该待的地方。
+
+**为什么每章是一次调用而不是按场景切**：切场景免费，但每多一次调用每章就多一份上下文漂移；一次调用一章能在「连贯 + 长度」之间站住。长章（≥ 8000 字）才需要按场景切，留给后续实现。
+
+---
+
+## 12.6 陪审团：三个普通人能给一件事定论吗
+
+1. 打开大厅，点「陪审团」。
+2. 左边选**城市**和**案件**：内置 6 个（老王挪车、菜地之争、邻居蹭网、广场舞噪音、举报同事、外卖送错单），也可以选「自己写一个」自己填**案件名 / 被告 / 案情**。
+3. 选**第二个问题**：除了「有罪 / 无罪」，陪审员还会对一个量刑维度表态。菜单给三个预设——字面量刑、对被告的同情度、能不能改造。挑一个直接影响陪审员怎么写自己的理由。
+4. 设**讨论几轮**（默认 3，上限 5）。每一轮每位陪审员都说一次，后面轮次能听到前面所有发言。
+5. 挑**陪审员**（3–5 人）。左边一个简单的复选框——陪审团就一组，没有甲乙丙之分。点「🎲 随机抽」一键补满。
+6. 点「开庭」。这是一个后台任务，**进度条走完后**右栏依次出现：
+   - **裁决卡**：「无罪 vs 有罪」票数 + 判决方向 + 中位信心 + 意见分歧度（最大信心 − 最小信心）。
+   - **量刑表**：把第二个问题的中位回答、坚决票、票数分布都摆出来。
+   - **庭审记录**：每一轮每个陪审员说过的话按时间排，方便回看谁先动摇了。
+   - **匿名投票**：每张选票只显示立场和理由，不暴露陪审员 ID；最后按支持 / 反对分组列出。
+7. 右上角「下载 Markdown」整场庭审带走。
+
+**成本**：`轮数 × 陪审人数 + 1` 次模型调用。3 轮、3 人 = 10 次；3 轮、5 人 = 16 次。属于这里中等的游戏。
+
+**为什么陪审员不能同一个人出现两次**：陪审员的发言进入下一个人的 prompt，如果同一个人 ID 出现两次，第二轮就拿自己上一轮的话当成别人的说——判决会被一个人反复叠加。
+
+**为什么判决用代码算而不用模型评**：让模型同时当陪审员和当法官，「立场 + 谁赢」会退化成同一个调用；模型倾向于多数派，少数票就被吃掉。陪审员每人交一份结构化票，统计（多数票、信心中位数、最大最小差）是后端代码算出来的——模型说「我有罪」但 confidence 只有 30，统计里就按「不算」。
+
+**为什么默认无罪推定**：所有内置案件的 `starting` 都是「无罪推定」，自定义案件也是。即便票数刚好打平，裁决卡上也是「无罪」——让一场陪审只能通过多数定罪，不能靠平票意外定罪。模型很容易被诱导到多数派那边，平票默认回到起点是对这种倾向的兜底。
+
+---
+
+## 12.7 新闻评论：让居民自己说
+
+1. 打开大厅，点「新闻评论」。
+2. 左边选**城市**——居民从这一城里来。空 = 默认世界。
+3. 写**主新闻**。默认是「贴文本」模式：填标题（可选）+ 正文。点「🔗 给网址」切到 URL 模式，填一个 `https://` 链接——服务端会用 `gaworld.io.web_scrape.fetch_news_excerpt` 抓文章，抓不到会回落到你给的正文，并在卡片区显示「⚠ 网址抓取失败」的提示。
+4. 加**相关新闻**（可选，最多 5 条）。点「➕ 加一条相关新闻」可继续追加，每条同样可以选「贴文本」或「给网址」；它们**只作为背景出现在 prompt 里**，不会单独产生立场 / 强度 / 短评，所有评论卡始终针对第一条主新闻。
+5. 挑**居民**（1–12 人）。点 `🎲 随机 6 人` 一键补满；点「清空」重来。
+6. 点「让他们说」。这是一个后台任务——**进度条走完后**右栏依次出现：
+   - **新闻原文卡**：主新闻的标题 + 正文 + 来源（粘贴 / 网址）+ 抓取错误（如有）。
+   - **相关阅读**：所有附加的新闻列表（标题 + 来源 + 链接 / 抓取错误），不影响评论。
+   - **总览**：用一段话告诉你这群人对主新闻的整体反应——哪种观点占主导、什么容易被忽略、人和人的反应之间有没有张力。
+   - **总览指标**：参与人数 / 出声人数 / 平均强度 / 最坚定的那个人。
+   - **立场分布条**：四种立场 + 兜底的「其他」的横向条形图。
+   - **个人评论卡**：按强度排序。每张卡写立场标签、评论原文、职业、强度条（●○○○○…，5 颗）。
+7. 右上角「下载 Markdown」整场评论带走——导出里会单独列「相关阅读（仅作背景）」一段。
+
+**成本**：`人数 + 1` 次模型调用。每人一次表态，结尾一次总览。相关新闻**不增加调用次数**——它们只占用 prompt 里的字符预算，每条最多截 280 字，最多进 prompt 三条。12 人 + 5 条相关 = 13 次调用。
+
+**为什么「主新闻」是单独的形状**：评论区是各凭各家意见的少数派地图，不是传播图。第一条是「对哪件事表态」的锚点；后面若干条只是帮居民理解「这件事处在什么语境里」。如果同一群居民对两件不同新闻的态度你也想看，最干净的做法是再开一局——一个人对两件事各写一条评论会被压扁成「平均立场」，反而失去信息。
+
+**为什么 URL 抓取失败也能继续跑**：抓取是 `fetch_news_excerpt` 通过 `GuardedSession` 走的，失败了就老老实实把 `fetch_error` 写进结果，prompt 也告诉居民「题目在这里，但正文抓不到」——这种情况下 prompt 里只塞标题，每个人照样表态，只是评论质量会打折。URL 不会把一次 run 变成白板。
+
+**为什么 prompt 里硬塞了「只对主新闻表态」**：相关阅读如果不加约束，模型会被诱导成「对两条新闻各写一段」——模型很擅长把一个 prompt 拆成两半，然后只占半句话的篇幅分别评论两边。这是 prompt 退化比模型退化更常见的失败路径，所以约束直接钉在 prompt 里。
+
+---
+
+## 12.8 同居模式：让几位居民合租一间公寓
+
+游戏场里其他游戏都是「跑一轮 → 出结果 → 收工」，同居模式是唯一一个**长期运行**的游戏：
+session 一直驻留在服务端内存里，前端按 tick 反复拉，每一次 tick 模拟 5 分钟虚拟时间，
+直到玩家点「结束」或到达 `max_hours` 的 deadline。
+
+### 五分钟跑通
+
+1. 打开大厅，点「同居模式」。
+2. 左边选**城市**和**居民**——2–6 位，从下拉里勾。每位居民会自动被分到主卧或次卧（第一位挑的进主卧，其他人进次卧），其余房间（厨房、客厅、书房、卫生间、阳台、走廊）共享。
+3. 写一句**公寓氛围**（可选），比如「三个程序员合租，周末轮流做饭」——这句话会写进每个人的 prompt，让他们知道自己处在什么气氛里。
+4. 调**节奏**：默认 1 刻 = 5 分钟（一个虚拟小时 = 12 刻）。改成 10 分钟一个 tick，半小时跳一次。
+5. 调**最长时长**：默认 6 小时；想做"一个完整周末"就开 24。
+6. 点「🛋️ 开始同居」——右栏出现 **SVG 公寓平面图**（手绘的厨房灶台/沙发/床/书架/盆栽），每个人头像是他们所在房间里的一个圆 + emoji。
+7. 启动后默认是**暂停**——按左下「▶ 继续」让时间走起来。前端每 1.5 秒拉一次 tick；想自己控制节奏，按「+1 刻」单步走，按「+6 刻」跳半小时。
+8. 每次有两个人同处一个非私人房间，模型就**一次调用**写一段对话 + 双方内心独白 + 心情 / 关系 delta：
+   - **canvas 上方**自动冒出两个对话气泡（每人一对：「说的话」+ 「💭 没说出口的」）。
+   - **当前对话面板**（事件流上方）按回合展示整段交换 ——每行带 emoji、姓名和一句台词，最新一轮置顶，新发言自动滚到顶。
+   - **气泡按回合轮流高亮**（2 秒一条），不在台上的人变成半透明浮在后面，方便一眼看清"谁刚说了什么"。
+   - 右侧「**事件流**」按时间倒序追加一行——谁在哪个房间、聊了什么、心情 ↑↓ / 关系 ↑↓。
+   - 右下「**仪表盘**」实时更新：每人心情条 + N×N 关系矩阵 + 累计统计（互动 X 次 · 移动 Y 次 · 共 Z 事件）。
+9. **想影响剧情就点家具。** canvas 上鼠标指针会变成手型，单击任何一个沙发 / 电视 / 床 / 灶台 / 书桌……会弹一个小窗：选择哪个居民过去、做什么（比如"小明 去看电视"）。点完居民立刻走过去、做对应活动，事件流和对话面板同步刷新。这是**玩家指令**，区别于系统自动 tick 触发的互动——心情会被小幅扣（自主权损失），但你可以拿来推动他们撞上彼此、凑成一组对话。
+10. 玩够了按「⏹ 结束同居」冻结 session；或者让它自然跑到 deadline（虚拟时钟会显示「已结束」）。
+11. 顶部「⬇ 导出 Markdown」把整段同居写成一篇文档带回去。
+
+### 它是怎么算的
+
+同居模式是唯一一个**事件驱动的长期 LLM 调用**：
+
+* **每次 tick 三件事**：（1）每位居民按当前虚拟小时选一个活动 + 房间；（2）心情向 0 衰减、关系向 0 衰减——**这两步零模型调用**；（3）扫一遍「同处非私人房间的两人对」，按概率决定要不要触发一次互动。
+* **触发概率 = `BASE_INTERACTION_PROB = 0.55` × 活动调整 × 房间调整 × 关系加成**：
+  - 双方都在做"独处活动"（看书/午睡/练琴…）→ × 0.15（基本不会聊）。
+  - 一方独处一方活跃 → × 0.45。
+  - 厨房里 → × 1.3（做饭的天然借口）。阳台 → × 1.15。走廊 → × 0.6（只是路过）。
+  - 既有亲密度每 100 分让概率 ±0.5。
+* **一次模型调用，一段结构化 JSON**。prompt 把两份 persona + 当前房间 + 当前活动 + 公寓氛围一起塞进去，要模型返回：
+  ```
+  { "room": "<id>",
+    "lines": [{"who": "A", "text": "..."}, ...2~6 回合],
+    "thought_a": "A 的内心独白,一句",
+    "thought_b": "B 的内心独白,一句",
+    "mood_delta_a": -1..1, mood_delta_b: -1..1,
+    "rel_delta": -15..15 }
+  ```
+  `first_json_object()` 抠出来；超出范围的数被 clamp（防止模型一回合把关系从 0 推到 100）。**没有裁判调用**——心情和关系的变化就来自模型自己报的 delta，dashboard 上看到什么就是什么。
+* **空闲 tick 不花模型**。3 人各自在不同私人房间 = 0 调用；3 人挤在厨房 = 最多 3 次调用（每对一次）。一个 6 小时的会话大概触发几十到上百次互动，远低于让每个人每个 tick 都跑模型。
+* **Deadline 锚定开场时钟**。`opening_clock_minutes + max_hours * 60` 一开始就锁好，不会在每次 tick 时重算——避免 deadline 跟着 clock 漂移，导致 session 永远跑不完。
+
+### 一些设计取舍
+
+* **为什么不让模型每个 tick 都跑**？成本。每个居民每刻都跑 = 6 人 × 720 刻 ≈ 4000 次调用。事件驱动让同一个会话压到几十次，差别是咖啡 vs 一顿饭。
+* **为什么卧室算私人空间**？两个居民恰好都进了主卧（一方散步路过）算碰面，但不会自动让"次卧里看书"和"主卧里看书"碰面——卧室是隐私，活动改到非卧室才会触发。`co_present_pairs` 在 `_co_present_pairs()` 里跳过 `master` / `second` 两个房间。
+* **为什么心情和关系都向 0 衰减**？防止"开局高光"固化。第一小时大家都开心到 +0.8，并不代表他们以后都开心——5 个 tick 不到就回到 +0.5，第 20 个 tick 就归零。新事件重新抬升。
+* **为什么 session 在内存里、不写城市包**？和游戏场里其他游戏一样：游戏是沙盒，不是仿真运行。关掉 dashboard 就没了；想保留就点"导出 Markdown"。
+* **为什么没有调"AI 性格"开关**？人物档案已经是他们性格的全部——同居模式不发明新的人设，只是把已有的人凑在一起。氛围（vibe）作为可选的整体调子写到 prompt 里。
+
+---
+
+## 12.9 谁是真人：分得出居民和人吗
+
+游戏场里唯一要**几个真人一起玩**的游戏，也是关于居民的唯一一种不由模型给模型打分的证据：
+人能不能把居民和人分开。
+
+### 五分钟跑通
+
+1. 打开大厅，点「谁是真人」。主持人（老师）在左边选**城市**、**话题**（内置 5 个日常话题，也可以自己写一句）、
+   **居民座位**（1–5）、**真人座位**（1–5，合计 3–8）、**轮数**（2–5，默认 3），点「开房间」。居民随机抽。
+2. 右边出现座位表：居民座位写着是谁，真人座位各有一条**座位链接**。把链接分别发给玩家——谁拿到链接谁就坐那个号。
+   主持人看得到谁是谁，**自己别下场**。
+   链接用的是你打开这个页面的地址：从 `127.0.0.1` 打开的链接只有本机能用。要和别的电脑上的人玩，服务器得监听局域网或公网地址（部署见 [SERVER_DEPLOYMENT](SERVER_DEPLOYMENT.md) 的 `--host 0.0.0.0`），并用那个地址打开大厅；开了账号的服务器上，玩家要先登录。
+3. 玩家打开链接，只看到话题、聊天记录和自己的输入框。每一轮所有人**同时**写一条；最后一个人写完，这一轮一起出现。
+   居民在开房间和每轮结束时自动写，不用等。
+4. 有人一直不写，主持人点「不等了，下一轮」：没写的人这一轮记为「（没说话）」。
+5. 最后一轮结束后，每个玩家给其他每个号选「真人 / 居民」（可写一句理由），提交。全部交齐自动揭晓；
+   有人不交，主持人点「不等了，揭晓」（至少要有一张票）。
+6. 揭晓：每个号是谁、被几个人判成真人、你猜对了几个、全场准确率。
+
+**成本**：`居民数 × 轮数` 次模型调用。3 位居民、3 轮 = 9 次，是这里最便宜的游戏之一。
+
+### 设计取舍（读结果前必看）
+
+* **同时发言、整轮出现。** 谁秒回是最便宜的破绽，所以玩家**看不到**谁已经写了、谁已经投了、房间里有几个真人——
+  只有主持人的面板看得到。
+* **居民不知道有人在猜。** 他们就按仿真里那份档案在群里闲聊，量的是档案本身，不是一个被教着去骗人的模型。
+* **居民被要求短句、口语**（与说服游戏同一套说话规则：一两句、不超过 60 字、别分点、别客套、说自己的生活）。
+  群里突然冒出一段 200 字的小作文，暴露的是提示词，不是人设——但这条要求本身就是结果的前提，引用时要说。
+* **最好至少两个真人座位**：真人之间互相判断，才知道「被判成真人」的基线是多少；只有一个真人时没人判断真人，这一局只给 Track D 贡献对居民的票。
+* 房间只在内存里；**揭晓的那一刻**整局（话题、座位与真身、聊天、每张票、统计，不含座位链接）存进
+  `output/games/whois/`，GAWorld-Bench **Track D** 把所有存档合起来算：居民被判成真人的比例 ÷ 真人被判成真人的比例
+  （见 [`benchmark/GAWORLD_BENCH_DESIGN.md`](../benchmark/GAWORLD_BENCH_DESIGN.md) Track D）。
+
+### 接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/api/games/whois/catalogue` | 话题与座位上限 |
+| `POST` | `/api/games/whois/rooms` | 开房间：`city, agents, humans, rounds, topic_id \| custom:{text}, agent_ids?`；返回主持人视图（含座位链接的 token） |
+| `GET` | `/api/games/whois/rooms` | 我开的房间 |
+| `GET` | `/api/games/whois/rooms/<id>?seat=<token>` | 玩家视图；不带 `seat` 是主持人视图（要求是房主） |
+| `POST` | `/api/games/whois/rooms/<id>/say` | `{seat, text}`，这一轮的发言 |
+| `POST` | `/api/games/whois/rooms/<id>/vote` | `{seat, verdicts: {"3号": "human" \| "resident", …}, reason?}`，必须覆盖其他每个号 |
+| `POST` | `/api/games/whois/rooms/<id>/next` | 主持人：不等没写的人，结束这一轮 |
+| `POST` | `/api/games/whois/rooms/<id>/reveal` | 主持人：按已交的票揭晓 |
+
+---
+
 ## 13. 程序化调用：HTTP API
 
 ### 13.1 `GET /api/games/agents?city=<slug>`
@@ -471,7 +670,8 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
   "rumor": {"id": "bank", "title": "银行要倒闭", "emoji": "🏦", "text": "…"},
   "seeds": [7, 14],
   "nodes": [{"agent_id": 14, "name": "严亮", "heard_round": 0, "heard_from": null,
-             "belief": 72, "action": "转发", "say": "…", "believes": true, "spoke_rounds": [0]}],
+             "belief": 72, "action": "转发", "say": "…", "believes": true, "spoke_rounds": [0],
+             "beliefs": [72]}],
   "edges": [...],
   "transmissions": [{"from": 14, "to": 64, "round": 0, "kind": "rumor", "label": "邻居"}],
   "rounds": [{"round": 0, "reached": 2, "believers": 1, "debunkers": 0, "avg_belief": 53.5}],
@@ -484,6 +684,7 @@ curl -s -X POST http://localhost:<port>/api/games/rumor/run \
 
 `kind` 是 `rumor`（转发）/ `question`（私下求证）/ `debunk`（辟谣）。
 `firewalls` = 听说了、不信、也没往下传的人。`heard_from` 为 `null` 表示他是自己刷到的（种子）。
+`beliefs` 是每次开口后的信任度：两项的只有「信了、又被当面辟谣」的人（辟谣前、辟谣后）。
 
 ### 13.14 `GET /api/games/rumor/runs`
 
@@ -625,6 +826,258 @@ curl -s -X POST http://localhost:<port>/api/games/referendum/run \
 `{"played", "correct", "accuracy", "streak", "best_streak", "resampled", "stable", "history"}`。
 `stable / resampled` = 复问过的局里，几局的答案完全一致——这是顺带量出来的 persona 稳定性。
 
+### 13.28 `GET /api/games/jury/catalogue`
+
+```json
+{
+  "cases": [{"id", "title", "emoji", "defendants", "facts", "starting"}, …],
+  "questions": [{"key", "label", "text"}, …],
+  "min_jurors": 3, "max_jurors": 5,
+  "default_rounds": 3, "max_rounds": 5,
+  "verdicts": ["有罪", "无罪"], "confident_at": 70
+}
+```
+
+案件库里每一个 `facts` 都是陪审员可以直接拿来讨论的短段（包含原告 / 被告双方的说法），`starting` 都是 `无罪推定`。`questions` 是第二个问题的预设清单——每个陪审员最终还会对这个问题表态。
+
+### 13.29 `POST /api/games/jury/run`
+
+```json
+{
+  "city": "<slug>",
+  "case_id": "parking",
+  "agent_ids": [1, 2, 3],
+  "rounds": 3,
+  "question_key": "literal",
+  "custom": null
+}
+```
+
+`case_id` 留空 + 写 `custom = {title, defendants, facts}` = 自己出题。重复 ID、人数不在 3–5 之间、空 ID 都会被 400 拦在第一次模型调用之前。返回 `{"job_id": "jury-xxxxxxxx"}`，再轮询下面这条。
+
+### 13.30 `GET /api/games/jury/jobs/<job_id>`
+
+`{id, kind, status, progress, message, finished_at, result?, error?}`。`status === "done"` 时 `result` 的形状：
+
+```json
+{
+  "run_id", "city", "rounds",
+  "case": {"id", "title", "emoji", "defendants", "facts", "starting"},
+  "question": {"key", "label", "text"},
+  "jurors": [
+    {"agent_id", "name", "age", "job", "residence",
+     "speeches": [{"round", "agent_id", "name", "text"}, …],
+     "verdict": "有罪" | "无罪",
+     "confidence": 0–100,
+     "confident": true | false,
+     "secondary_value": "可选的一句话",
+     "quote": "陪审员写在选票上的理由"}
+  ],
+  "rounds_log": [{"round", "speeches": […]}, …],
+  "tally": {
+    "verdict": "有罪" | "无罪",
+    "guilty", "not_guilty", "spread",
+    "supporting": [{"agent_id", "name", "verdict", "quote"}, …],
+    "dissenting": [{"agent_id", "name", "verdict", "quote"}, …]
+  },
+  "stats": {"jurors", "guilty", "not_guilty", "confident_guilty",
+            "confident_not_guilty", "spread", "median_confidence"},
+  "created_at"
+}
+```
+
+`spread` = 最大 confidence − 最小 confidence；`median_confidence` = 信心中位数。两位陪审员相同票数时，裁决按无罪兜底，所以平票决不可能定罪。
+
+### 13.31 `GET /api/games/jury/runs`
+
+`{"runs": [{job_id, run_id, city, case_title, emoji, verdict, guilty, not_guilty, spread, created_at}, …]}`，新的在上面。一份比赛也能丢——重启 dashboard 会清空。
+
+### 13.32 `GET /api/games/commentary/catalogue`
+
+```bash
+curl -s http://localhost:<port>/api/games/commentary/catalogue
+```
+
+`{"stances": ["支持", "反对", "中立", "质疑"], "max_agents": 12}`。四个立场是模型被要求从中挑的（外加一个兜底的「其他」），不写进 catalogue 是因为它只在模型答错时出现。
+
+### 13.33 `POST /api/games/commentary/run`
+
+请求体接受两种形状 —— 单新闻 + 相关新闻：
+
+```bash
+# 数组形式（主新闻在前，相关在后，最多 5 条相关）
+curl -s -X POST http://localhost:<port>/api/games/commentary/run \
+  -H "Content-Type: application/json" \
+  -d '{
+        "city": "wuzhen",
+        "agent_ids": [1, 2, 3],
+        "news": [
+          {"title": "地铁涨价方案公示", "body": "地铁票价从 2 元调到 3 元……", "source": "paste"},
+          {"url": "https://x.test/related1"},
+          {"title": "历史同类调价", "body": "……"}
+        ]
+      }'
+```
+
+```bash
+# 单条 + related（等价于把 url/body 包成 news[0]，related 放后面）
+curl -s -X POST http://localhost:<port>/api/games/commentary/run \
+  -H "Content-Type: application/json" \
+  -d '{
+        "city": "wuzhen",
+        "agent_ids": [1, 2, 3],
+        "body": "地铁票价从 2 元调到 3 元……",
+        "title": "地铁涨价方案公示",
+        "related": [
+          {"url": "https://x.test/related1"},
+          {"body": "……", "title": "历史同类调价"}
+        ]
+      }'
+```
+
+每条 `url` 都由服务端用 `gaworld.io.web_scrape.fetch_news_excerpt` 抓取——抓不到时把调用方的 `body` 当 fallback，并把 `fetch_error` 写进结果。响应是后台作业 ID：
+
+```json
+{ "job_id": "commentary-c1f281be" }
+```
+
+**主新闻是什么就是单新闻**：`news[0]` 是所有人表态的目标，后续 `news[1:]` 是「相关阅读」，只作为背景出现在 prompt 里（每条最多截 280 字，进 prompt 最多三条），**不**单独产生立场 / 强度 / 短评 —— `nodes` 始终只反映主新闻的反应。
+
+### 13.34 `GET /api/games/commentary/jobs/<job_id>`
+
+进度轮询。`status: "done"` 时 `result` 是一份完整结果：
+
+```json
+{
+  "run_id": "c1f281be", "city": "wuzhen",
+  "news": {"title": "地铁涨价方案公示", "body": "……", "source": "paste", "url": "", "fetch_error": ""},
+  "related": [
+    {"title": "历史同类调价", "body": "……", "source": "paste", "url": "", "fetch_error": ""}
+  ],
+  "nodes": [
+    {"agent_id": 1, "name": "闫然", "stance": "反对", "strength": 80, "comment": "本来就贵", "triggered": true, "error": ""},
+    {"agent_id": 2, "name": "林佳", "stance": "中立", "strength": 40, "comment": "再看看", "triggered": true, "error": ""}
+  ],
+  "stats": {
+    "total": 2, "spoke": 2,
+    "stance_counts": {"支持": 0, "反对": 1, "中立": 1, "质疑": 0, "其他": 0},
+    "avg_strength": 60.0,
+    "strongest": {"agent_id": 1, "name": "闫然", "stance": "反对", "strength": 80}
+  },
+  "summary": "整体偏反对，理由集中在票价已经高于周边城市。",
+  "created_at": 1790329878.02
+}
+```
+
+`related` 始终是数组（没有相关条目时为空数组）；它不带立场 / 强度 / 评论，仅在前端结果区作为「相关阅读」展示。`triggered` 是「这是一位真正表态过的居民」——只有同时落在四种立场之一、`strength > 0` 且 `comment` 非空才算；JSON 解析失败、`strength` 缺失等回落到 `其他` 的居民不计入 `spoke`。
+
+### 13.35 `GET /api/games/commentary/runs`
+
+`{"runs": [{job_id, run_id, city, title, source, url, related_count, total, stance_counts, created_at}, …]}`，新的在上面。一份评论也能丢——重启 dashboard 会清空。`related_count` 是这场 run 携带的相关新闻条目数。
+
+### 13.36 `GET /api/games/roommate/catalogue`
+
+房间布局 + 各种上限，活动清单 + 心情阈值：
+
+```json
+{
+  "max_agents": 6, "min_agents": 2,
+  "default_tick_minutes": 5, "default_max_hours": 8,
+  "max_ticks_per_request": 6,
+  "rooms": [
+    {"id": "kitchen", "label": "厨房", "x": 60, "y": 60, "w": 160, "h": 110},
+    {"id": "living", "label": "客厅", ...},
+    ...
+  ],
+  "activities": ["做早餐", "看书", ...],
+  "mood_labels": [{"threshold": 0.6, "label": "兴高采烈"}, ...]
+}
+```
+
+`rooms` 在所有 session 里都一样——前端可以把它当作常量渲染 SVG。`max_ticks_per_request = 6` 是单次 `tick` 请求最多推进的刻数（防滥用；想跑半小时就连续点两次）。
+
+### 13.37 `POST /api/games/roommate/start`
+
+开一间公寓。**这一步零模型调用**——它只是把居民加载进来、分配卧室、给每人 seed 一个开场活动。模型只在后续 `tick` 里被叫。
+
+```json
+POST /api/games/roommate/start
+{
+  "city": "wuzhen",
+  "agent_ids": [3, 7, 19],
+  "vibe": "三个程序员合租，周末轮流做饭",
+  "tick_minutes": 5,
+  "max_hours": 6
+}
+```
+
+返回完整 session（`id` / `residents` / `rooms` / `virtual_clock` / `events: []` / `relationships: {}`）。
+- `agent_ids` 至少 2 个、至多 6 个、去重。
+- `tick_minutes` ∈ [1, 30]，默认 5。
+- `max_hours` ∈ [1, 48]，默认 8。
+- `vibe` 留空也行，会以「几个合得来的朋友住在同一间公寓里」兜底。
+
+### 13.38 `POST /api/games/roommate/tick`
+
+推进 N 个虚拟刻度。**模型只在有人碰面时调用**，空闲 tick 零开销。
+
+```json
+POST /api/games/roommate/tick
+{"session_id": "roommate-1a2b3c4d", "steps": 1}
+```
+
+`steps` ∈ [1, 6]，超出被 clamp。返回**最新**的完整 session——所有 resident 状态、所有 events、所有 relationships 都在里面，前端用一次 `tick` 调用就能完整重渲染。session 跑到 deadline 时 `running = false`、`finished = true`，下一次 `tick` 自动是 no-op。
+
+### 13.39 `GET /api/games/roommate/sessions[/<id>]`
+
+```json
+GET /api/games/roommate/sessions
+{"sessions": [{"id": "roommate-1a2b3c4d", "city": "wuzhen", "vibe": "...", "tick_index": 12, "running": true, "finished": false, "created_at": 1791010001.0, "residents": ["闫然", "林佳", "蒋颂"]}, ...]}
+```
+
+不传 id 列出当前所有 session（仅返回 owner 自己的），传 id 拿到完整 session。`events` 字段被截到最近 `MAX_EVENTS = 200` 条，但 `events_truncated = true` 会告诉你历史上更多——想拿全部请 `tick` 一次重读。
+
+### 13.40 `POST /api/games/roommate/end`
+
+玩家提前收手。session 标记为 `finished`，虚拟时钟停在当前位置，前端切到「已结束」状态。已经被裁掉的 session 不会复活，结束后 `tick` 永远是 no-op。
+
+```json
+POST /api/games/roommate/end
+{"session_id": "roommate-1a2b3c4d"}
+```
+
+### 13.41 `POST /api/games/roommate/sessions/{id}/direct`
+
+玩家点 canvas 上的家具触发的指令。把居民送到指定房间做某件活动，不消耗虚拟时间、不调模型（或可选一次调用写一句话台词）。返回更新后的 session dict。
+
+```json
+POST /api/games/roommate/sessions/roommate-1a2b3c4d/direct
+{
+  "agent_id": 31,
+  "activity": "看电视",        // 必须在 _DIRECT_ACTIVITIES 里
+  "room": "living",            // 可选；不传则用 activity 的自然房间
+  "note": "让小明去看电视"      // 可选；事件流会带
+}
+```
+
+错误：400 活动名非法或房间里没这位居民；404 session id 未知。
+
+### 13.42 运行速度切换（前端）
+
+同居模式前端工具栏右侧有一组 `0.5× / 1× / 2× / 4×` 按钮，切换虚拟时间推进的速率：
+
+- **0.5×**：每 12 秒一次 tick，单步（适合细看对话和走动）
+- **1×**：每 6 秒一次 tick，单步（默认）
+- **2×**：每 3 秒一次 tick，单步
+- **4×**：每 1.5 秒一次 tick，每次推 2 步（1 虚拟小时 / 4 真实秒）
+
+切换立刻生效（重新拉起 `setInterval`），不需要停止/重启 session；当前 tick 跑完后下一轮就按新速度推进。底层后端没有 `/speed` 端点——纯前端轮询节奏 + 步数控制。
+
+设计取舍：
+
+- **为什么 4× 配 steps=2 而不是 steps=4**？server 端 `tick()` 单次最多推进 6 步（`MAX_TICKS_PER_REQUEST = 6`），更多容易被模型 hang 拖垮；2 步一次在「时间感」和「模型负载」之间是甜点。
+- **为什么不在 server 端做时间加速**？clock 是虚拟的，前端轮询只是节奏选择；server 的虚拟时间一旦加速就和居民的活动 hour-bias 错位（早上 8 点跑 4× 会瞬间跳到中午，但居民还在「做早餐」），所以加速在前端。
+
 ---
 
 ## 14. 加一个新游戏
@@ -637,10 +1090,31 @@ curl -s -X POST http://localhost:<port>/api/games/referendum/run \
    要跑很多次调用的游戏别做成同步接口，用 `gaworld/apps/game_jobs.py` 的 `JobStore`
    开个后台作业 + 进度（每个游戏一个 store，别共用——否则 A 游戏的 jobs 接口能查到 B 的作业）。
    一局只要一两次调用的游戏就别开作业了，照 `guess_api` 直接同步返回。
+   **长会话游戏**（会话驻留内存、前端按 tick 反复拉）照 `roommate_api` 走——
+   不开 `JobStore`，自己持一个 `_SESSIONS` 字典 + `tick()` /
+   `end()` / `get_session()` 三个公开方法。`tick()` 用 `MAX_TICKS_PER_REQUEST` 卡
+   单次请求最多推进的刻数（防滥用），deadline 用 `opening_clock_minutes` 在
+   session 创建时一次性锁定，避免每次 tick 都重算导致漂移。
 2. **前端**：加一个 `site/dashboard/<game>.html` + `.js`，样式复用 `games.css`。
+   长会话游戏前端需要一个 play/pause 控制 + tick 按钮，每次 tick 后整段重渲染
+   （resident 位置、对话气泡、事件流、关系矩阵）。SVG 平面图把所有固定元素
+   （房间、家具）一次性画好，resident 头像放在一个 `<g>` 层里跟着数据走。
 3. **入口**：在 `games.html` 里加一张 `.game-card`，中英文案写进
    `site/dashboard/locales/{zh-CN,en}.json`。
 4. **测试**：`tests/test_games_api.py` 里加一个 TestCase，或单独一个 `tests/test_<game>_api.py`。
+   长会话游戏至少要测四件事：idle tick 零调用、互动触发后模型被调一次、
+   关系矩阵对称、deadline 准时收尾。
+5. **OpenAPI**：在 `gaworld/apps/openapi.py::_games()` 里给新游戏加 5 个路径——
+   catalogue / sessions / sessions/{id} / start / tick / end，照
+   `roommate` 那块逐字改。`tests/test_openapi.py` 会扫所有路径，没注册就 fail。
+6. **真对话 (turns) 和玩家指令 (direct)**：长会话游戏里如果居民会互动，
+   `Event` 数据类里加一个 `turns: list[{"who": str, "text": str}]` 字段保存
+   每条原始台词（不要拍平成字符串），前端才能按回合轮流高亮气泡、
+   在侧面板展开整段交换。如果玩家可以推动剧情（比如点家具 / 给某人
+   下指令），加一个 `direct_*` 函数 + `POST /sessions/{id}/direct` 端点，
+   `Event.kind="direct"` 区分系统自动触发和玩家指令；端点要在
+   `openapi.py` 注册、要有 activity 白名单拒绝非法输入、状态合法
+   （未结束 / 人在 session 里）才接受。
 
 大厅是静态页面，没有 catalogue 接口——加游戏就是加一张卡片，不需要再改后端注册表。
 
@@ -654,7 +1128,7 @@ curl -s -X POST http://localhost:<port>/api/games/referendum/run \
 | 开局报错、状态栏变红 | LLM 调不通（key / DNS / provider 没配） | 检查 `dashboard_config.json::llm.providers` 与 `output/logs/` |
 | 对手回答像客服而不是居民 | 那个人的 profiles.md 档案缺失，只剩 CSV 行 | 补档案，或换一个有完整 profile 的居民 |
 | 明明被说动了却判「没说动」 | 问题太开放，复问答案里没有可比的结论 | 问题改成二选一的形式重开一局 |
-| 「最近对局」空了 | dashboard 重启过 | 正常：对局只在内存里 |
+| 「最近对局」空了 | dashboard 重启过 | 正常：对局只在内存里（谣言 / 公投 / 灾害三种另有存档在 `output/games/`，只给评测读） |
 | 聊天轮数用完还想继续 | 一局的轮数上限是开局时定的 | 换个更大的 `max_turns` 重开一局 |
 | 灾害模式里一堆人被标成「其他」 | 模型没按 JSON 输出（小模型常见） | 换个更听话的 provider；原文还在卡片上，可以先看它说了什么 |
 | 灾害模式跑得很慢 | 开销是 `人数 × 幕数`，顺序调用 | 少选几个人，或先跑 1 幕试试 |
@@ -674,3 +1148,26 @@ curl -s -X POST http://localhost:<port>/api/games/referendum/run \
 | 比分咬得很紧还标了「评审说的赢家和分数对不上」 | 正常：两份方案确实接近 | 加一轮再比，或换一支队伍配置看看谁更吃这个办法 |
 | 某个队员说「这个办法在我这儿行不通」 | 也是正常结果——这正是队伍配置起作用的地方 | 想看反转就把他换到另一队去 |
 | 分队时点不动「甲」 | 一个队已经满 5 人 | 先取消一个，或把人放到另一队 |
+| 小说局「还没开始」不动 | 任务在后台跑，进度条不显示；翻页后会丢 job | 别中途切页，等它走完；1 万字 / 8 章通常 1–2 分钟 |
+| 小说里某个角色突然消失 | 大纲里漏标了他，后台按 outline 里写的角色写 | 重写大纲时把所有想出场的人都点到对应章节里 |
+| 字数差很多（要 10000 实际 15000 或 6000） | 模型按章估算字数，预算会按比例放大 | 重跑会在 `_allocate_budgets` 里把目标归一化；先看 stats.on_target |
+| 章节读起来像「作者」口吻而非档案口吻 | 那位居民 profiles.md 里没有段落可参考 | 补档案（`gaworld/city` 的 `add-agent` 会写），或换一个有完整 profile 的人 |
+| 「下载 Markdown」按钮灰的 | 还没写完，或上一次结果被丢了 | 等进度条走完再点；重启 dashboard 会清掉所有游戏结果 |
+| 封面简介写得太套路（「一部……的小说」） | 简介用了内置 summary 提示，但模型还是套了 | 这是模型的退化；想避免就自己写大纲，把核心冲突写得具体 |
+| 故事线 → 角色弧线里某条线一直贴着 0 | 该角色虽然在主角团里，但模型没怎么写他——每章正文里几乎不出现 | 换 LLM 重跑，或在大纲里强调「这个人必须在第 N 章做某事」 |
+| 章节流向节点是空心的 | 模型某章返回了空字符串 | 在 `output/logs` 里看那次模型调用；通常补一次重跑就好 |
+| 同框关系图没有「孤立」注脚，但有人没连线 | 那个角色有同章对象，但都只出现 1 次——线很细被忽略 | 看 `co_occurrences` 数组，count=1 的对仍然画上了，只是视觉太细 |
+| 陪审团人数选不上 4 人以上 | 案件可选太多人，列表已经满 | 想不开「人数」就保留 3 人；少于 3 人的判定会很快、很脆 |
+| 同居模式 canvas 鼠标点不动 | 当前 session 已结束或没运行；前端忽略点击 | 点「▶ 继续」恢复 session；或者开新会话 |
+| 同居模式点家具弹不出选择 | 鼠标命中的是非交互家具（地毯 / 窗帘 / 窗户边框） | 试着点在更靠近家具中心的像素；`FURNITURE_ACTION` 表里没有的 kind 都不响应 |
+| 同居模式点完指令但事件流没出现 | 后端拒绝了——活动名不在 `_DIRECT_ACTIVITIES` 里，或 agent_id 不在 session 里 | 客户端会弹红条提示「指令被拒」；检查你点的家具支持哪些活动 |
+| 同居模式启动后没动静 | 默认是暂停，要点「▶ 继续」 | 时间才会开始走；想自己控制就点「+1 刻」单步 |
+| 同居模式事件流跑得飞快 / 全是「吃午餐」 | 节奏设太短，5 分钟一个刻让模型每对都触发 | 把 `tick_minutes` 调到 10–15，或减少居民到 2–3 人 |
+| 整局只跑了 6 个 tick 就停 | `MAX_TICKS_PER_REQUEST = 6`，`tick()` 单次最多推 6 刻 | 改成连发 2 次（前端「+6 刻」按钮），或者长 burst 用 `steps` 调到上限 |
+| 「同居模式」卡在 16:00 不动 | session 跑到了 deadline（`opening_clock + max_hours × 60`） | 想看更多就开一个更大的 `max_hours`（最长 48）；或者从已结束 session 旁边点「▶ 继续上一次」开新会话 |
+| 仪表盘上心情全部归零 | 心情向 0 衰减是设计——第一小时的高光不会持续 | 新事件会重新抬升；想看长期画像把 `max_hours` 开到 24 |
+| 居民头像挤成一团 | 房间太小，4+ 人在同一个房间 | 这是真实的——他们在做饭或追剧呢；想分开就把他们的活动写在 `vibe` 里调开（如果模型分得开） |
+| 对话气泡一直挂在那对上次聊的人头上 | 气泡跟的是「最近一次互动事件」，不是当前活动 | 没人互动时气泡会消失；等下一次碰面 |
+| 庭审跑完但裁决写「无罪」，票数 3:0 都向有罪 | 「无罪」只出现一次 | 这是个 bug，请提 bug |
+| 量刑题那栏表错位 / 答案空 | 某个陪审员的 LLM 回复没 JSON 出来 | 翻「下载 Markdown」看 raw；这是 prompt 解析失败，下个版本加更稳的容错 |
+| 第二个问题列出来只有 3 项 | 写死在 `SENTENCE_QUESTIONS` 里 | 想加新量刑维度就改 `gaworld/apps/jury_api.py` 的预设 |

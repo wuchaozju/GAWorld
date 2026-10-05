@@ -47,10 +47,33 @@ def _child_phrase(children: list[dict[str, Any]]) -> str:
     return "、".join(parts)
 
 
+#: How a promoted child or elder names the people they live with.
+_DEPENDANT_LABELS = {
+    "father": ("父亲", "父亲"), "mother": ("母亲", "母亲"), "parent": ("继父", "继母"),
+    "sibling": ("兄弟", "姐妹"), "grandparent": ("祖父", "祖母"),
+    "child": ("儿子", "女儿"), "child_in_law": ("女婿", "儿媳"), "grandchild": ("孙子", "孙女"),
+}
+
+
+def _dependant_brief(record: dict[str, Any]) -> str:
+    """A promoted child's or elder's household, named from where they stand."""
+    hh_type = HOUSEHOLD_TYPE_ZH.get(record.get("household_type", ""), "")
+    people = []
+    for member in _members(record, coresident=True):
+        male, female = _DEPENDANT_LABELS.get(str(member.get("role", "")), ("家人", "家人"))
+        label = female if member.get("gender") == "女" else male
+        people.append(f"{label}{member.get('name', '')}（{int(member.get('age', 0) or 0)}岁）")
+    if not people:
+        return f"{hh_type}，独自生活" if hh_type else ""
+    return f"{hh_type}。和家人同住：" + "、".join(people) if hh_type else "和家人同住：" + "、".join(people)
+
+
 def family_brief(record: dict[str, Any] | None) -> str:
     """One dense line. Empty string when there is no family record."""
     if not record:
         return ""
+    if record.get("dependant"):
+        return _dependant_brief(record)
     status = MARITAL_STATUS_ZH.get(record.get("marital_status", ""), "")
     hh_type = HOUSEHOLD_TYPE_ZH.get(record.get("household_type", ""), "")
     bits: list[str] = []

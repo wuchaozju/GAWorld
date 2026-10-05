@@ -1,0 +1,37 @@
+/* Track R human calibration page. Layout follows the playground pages:
+   settings on the left, one task at a time on the right. */
+.calib-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .calib-grid { grid-template-columns: 1fr; } }
+.calib-side { position: sticky; top: 12px; }
+.calib-side .field { display: block; margin-bottom: 12px; }
+.calib-side .field > span { display: block; font-size: 13px; margin-bottom: 4px; }
+.calib-hint { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 6px 0 10px; }
+.calib-error { font-size: 12px; color: var(--red); }
+.calib-progress { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.calib-progress .bar { flex: 1; height: 6px; background: var(--sunken); border-radius: 999px; overflow: hidden; }
+.calib-progress .bar span { display: block; height: 100%; background: var(--green); }
+.calib-jump { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.calib-jump button { width: 30px; height: 26px; border: 1px solid var(--line); background: var(--card); border-radius: 6px;
+  font-size: 11px; cursor: pointer; color: var(--muted); }
+.calib-jump button.is-done { background: var(--green-pale); color: var(--green); border-color: var(--green); }
+.calib-jump button.is-current { box-shadow: 0 0 0 2px var(--green); }
+.calib-empty { color: var(--muted); padding: 24px 4px; }
+.calib-task-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.calib-prop { font-size: 15px; font-weight: 700; color: var(--ink); margin: 6px 0 10px; }
+.calib-rubric { margin-top: 12px; }
+.calib-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.calib-scores button { text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.calib-scores button b { display: block; font-size: 18px; margin-bottom: 2px; }
+.calib-scores button:hover { border-color: var(--green); }
+.calib-scores button.is-picked { border-color: var(--green); background: var(--green-pale); box-shadow: 0 0 0 1px var(--green); }
+#cAbstain.is-picked { border-color: var(--green); background: var(--green-pale); }
+.calib-failure { font-size: 12px; color: var(--muted); margin: 8px 0; }
+.calib-facts pre, .calib-sample { white-space: pre-wrap; word-break: break-word; font-size: 12.5px; line-height: 1.65;
+  background: var(--sunken); border-radius: 8px; padding: 12px; max-height: 60vh; overflow: auto; }
+.calib-result-gate { font-size: 16px; font-weight: 700; }
+.calib-result-gate.is-ok { color: var(--green); }
+.calib-result-gate.is-bad { color: var(--red); }
+.calib-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 16px; }
+.calib-table th, .calib-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+.calib-table td.num { font-variant-numeric: tabular-nums; }

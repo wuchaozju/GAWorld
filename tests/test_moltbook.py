@@ -661,10 +661,10 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(code, 502)
 
     def test_dashboard_server_forwards_both_verbs(self):
-        source = (REPO / "gaworld" / "apps" / "dashboard_server.py").read_text(encoding="utf-8")
-        self.assertEqual(source.count('path.startswith("/api/moltbook")'), 2)
-        self.assertIn("moltbook_api.handle_get(path, query)", source)
-        self.assertIn("moltbook_api.handle_post(path, payload)", source)
+        from gaworld.apps import routes
+
+        self.assertEqual(routes.find(routes.GET_ROUTES, "/api/moltbook/agents").module, "moltbook_api")
+        self.assertEqual(routes.find(routes.POST_ROUTES, "/api/moltbook/agents").module, "moltbook_api")
 
 
 # ---------------------------------------------------------------------------

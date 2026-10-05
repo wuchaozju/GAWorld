@@ -1,6 +1,6 @@
 # GAWorld-Rubric-Bench 设计文档
 
-**版本**：v0.1.1 · **日期**：2026-08-13 · **状态**：P1–P3 已实现（`benchmark/rubric/` + `benchmark/rubric_bench.py`），P4/P5 未开始
+**版本**：v0.1.2 · **日期**：2026-10-03 · **状态**：P1–P3 已实现（`benchmark/rubric/` + `benchmark/rubric_bench.py`）；P4 的工具已实现（`rubric/calibration.py` + `rubric_calibrate.py` + 标注页），**待两人标注**；P0、P5 未开始
 
 ---
 
@@ -216,6 +216,23 @@ dimension_score = Σ(w_i · item_score_i) / (2 · Σ w_i)      # 仅对非 absta
 - v0.1 用**合成/占位样本**（人工构造的"好样本 / 破坏样本"对）先把管线跑通，
   真人标注留接口。
 
+**v0.1.2 实现（2026-10-03）**：
+
+1. **抽样**（`rubric_calibrate.py --build`）：沿用评测时的单元抽样，按维度轮转、维度内按 item 轮转抽 30 题；
+   这次运行没有数据的维度不硬凑，在集里注明。**约三分之一的题用该 item 自己的破坏算子（§5.4）改坏**，盲标——
+   一是让样本铺满 0–2 档（全是像样的样本，α 没有方差可算），二是顺带检验破坏算子：人也看不出来的破坏是算子的问题。
+   规则项也进校准集，它的"机器分"就是规则分，与人的一致性单独报告（R4.1 的通勤口径之争就属于这类）。
+2. **盲标**：`set.json` 只有标注者该看的（渲染后的样本、rubric 命题与档位、典型失败、hybrid 项的程序事实）；
+   哪些题被改坏、规则打了几分放在 `key.json`，接口不返回。标注页（`/site/dashboard/rubric-calibration.html`）
+   一题一屏，点分即存并跳到下一道没标的；每人只看得到自己的标注，标完全部才能看结果。
+3. **judge 打分**（`--judge --set <id> --judges a,b,c`）：judge 集成对**完全相同**的样本与事实打分，结果写 `judge.json`。
+4. **分析**（`--analyze`，或标注页「看校准结果」）：人-人序数 α；每位标注者与 judge 的 Spearman ρ、QWK（取平均判门槛）；
+   人眼里真实样本与被破坏样本的均分差；逐 item 的分歧与人机差，进**重写队列**的条件是两人在一半以上的题上差一档、
+   或机器分与人平均差一档以上。结论：`ok` / `fail` / `incomplete`（少于两人标完、两人都打分的题少于 20、还没 judge 分数）。
+5. **接进 gate**：`rubric_bench.py` 自动读当前 rubric 版本最新的分析。没有、没过、基于旧版 rubric（hash 不同）、
+   或这次用的 judge 与校准时不同，Track R 的 trust gate 都到不了 OK（UNVERIFIED，并写明原因）；scorecard 里多一行「人类锚点校准」。
+   门槛（α ≥ 0.7、ρ / QWK ≥ 0.6、≥ 20 题、≥ 2 人）写在 `calibration.GATES`，不放进 `rubrics.json`——那会改动 rubric 的 hash。
+
 ### 5.4 消融负控制（判别力检验）⭐
 
 **这是整套方法能不能立住的关键。** 每条 rubric 至少绑定一个"破坏操作"：
@@ -325,6 +342,12 @@ python3 rubric_bench.py --output-dir ../output --judges minimax --ablate N1,N3,N
 # 只跑某维度
 python3 rubric_bench.py --dim R2 --min-days 30
 
+# 人类锚点校准（P4）：抽题 → 两人在标注页标注 → judge 打分 → 分析
+python3 rubric_calibrate.py --build --output-dir ../output
+python3 rubric_calibrate.py --judge --set <set_id> --judges minimax,ollama_gemma4
+python3 rubric_calibrate.py --analyze --set <set_id>
+python3 rubric_calibrate.py --list
+
 # 单测
 python3 -m unittest test_rubric_bench
 ```
@@ -371,7 +394,7 @@ python3 -m unittest test_rubric_bench
 | **P1** ✅ | `rules.py` + R4 全部 + R2.1/R2.5 + R3.1（纯规则项，零 token） | 不依赖 LLM 的硬指标 |
 | **P2** ✅ | `judge.py` + `rubrics.json` + 多 judge 集成 + 证据强约束 | 主观分管线 |
 | **P3** ✅ | `ablate.py` + 判别力检验 → 剔除无效 item | 机制就位；**rubric 表待真实 judge 跑过一轮后定稿** |
-| **P4** | 人类锚点 30 条 + α/QWK 校准 | Track R 从 UNVERIFIED 转 OK |
+| **P4** | 人类锚点 30 条 + α/QWK 校准 | Track R 从 UNVERIFIED 转 OK。**工具已就绪（2026-10-03，§5.3）**，待两名标注者各标一遍。当前 `output/` 已能抽满 30 题、覆盖四个维度（2026-10-03 实测 R1×9、R2×7、R3×5、R4×9，其中 8 题被改坏；R3 只有不依赖社交图的条目），P0 的两档 run 跑完后宜重抽 |
 | **P5** | 真人语料接入 + 配对判别 | 绝对图灵指标 |
 
 **P4 之前产生的任何 Track R 分数都标 UNVERIFIED，不进对外材料。**

@@ -116,7 +116,7 @@ from gaworld.goals import (
 )
 
 from gaworld.policy.intervention import INTERVENTION_METRICS
-from gaworld.plugins import builtin_plugins
+from gaworld.plugins import builtin_plugins, validate_runtime_config
 from gaworld.personality import personality_line
 from gaworld.events.life import life_event_dir
 from gaworld.memory.store import (
@@ -251,6 +251,9 @@ def reset_simulation():
         VISUALIZATION_OUTPUT_DIR,
         INTERVENTION_OUTPUT_DIR,
         life_event_dir(CONFIG),
+        # Recorder rows carry only _day/_time and the next run restarts at Day 1.
+        CONFIG.get("records", {}).get("output_dir", "output/records"),
+        CONFIG.get("organizations", {}).get("output_dir", "output/organizations"),
     ]:
         if output_dir not in (memory_dir, log_dir):
             _clear_dir(output_dir)
@@ -2778,7 +2781,36 @@ def _enforce_memory_model_compat(sim_state):
             "then rerun simulation."
         )
 
+#: The seed the last run drew for itself. Kept so a second run in the same
+#: process (the test suite, a notebook) does not mistake it for a configured one.
+_AUTO_SEED = None
+
+
+def _resolve_run_seed():
+    """Return ``(seed, source)``; draws and installs a seed when none is set.
+
+    An unseeded run used to leave ``random_seed`` empty in its manifest, so
+    it could never be repeated. Drawing the seed from OS entropy keeps the
+    run exactly as random as before, but now the value is known: it goes into
+    ``CONFIG`` (plugin and economy RNGs derive their streams from it) and the
+    manifest records it with ``seed_source="auto"``.
+    """
+    global _AUTO_SEED
+    seed = RANDOM_SEED
+    if seed is None:
+        configured = CONFIG.get("random_seed")
+        if configured is not None and configured != _AUTO_SEED:
+            seed = configured
+    if seed is not None:
+        return seed, "config"
+    _AUTO_SEED = random.SystemRandom().randrange(2**31)
+    CONFIG["random_seed"] = _AUTO_SEED
+    print(f"🎲 random_seed 未设置，本次自动取 {_AUTO_SEED}（已写入运行清单，可用它复现）")
+    return _AUTO_SEED, "auto"
+
+
 def run_simulation():
+    validate_runtime_config(CONFIG)
     # ====================================================================
     # PHASE BANNERS — added in S3/round 4 as navigation aids for a future
     # extraction of this orchestrator.  Each banner marks the start of a
@@ -2788,9 +2820,10 @@ def run_simulation():
     # ``docs/REFACTOR_PLAN.md`` for the deferred-extraction rationale.
     # ====================================================================
     # ----- PHASE 1: Initialise (seed, load data, build agents, restore state, growth bootstrap) -----
-    if RANDOM_SEED is not None:
+    _configured_seed, _seed_source = _resolve_run_seed()
+    if _configured_seed is not None:
         try:
-            seed = int(RANDOM_SEED)
+            seed = int(_configured_seed)
             random.seed(seed)
             np.random.seed(seed)
         except (TypeError, ValueError) as exc:
@@ -2798,7 +2831,7 @@ def run_simulation():
             # so they don't expect reproducibility.
             _LOG.warning(
                 "RANDOM_SEED=%r is not a valid int (%s); running unseeded.",
-                RANDOM_SEED,
+                _configured_seed,
                 exc,
             )
     # Start-of-run manifest (S4). Bootstraps a partial file so a crash
@@ -2812,7 +2845,7 @@ def run_simulation():
             from gaworld.llm.stats import GLOBAL_STATS as _LLM_STATS
 
             _LLM_STATS.mark_run_start()
-            _manifest_builder = start_manifest(config=CONFIG)
+            _manifest_builder = start_manifest(config=CONFIG, seed_source=_seed_source)
             _manifest_builder.bind_llm_stats(_LLM_STATS)
             _manifest_builder.event("run_started", agent_ids=list(AGENT_IDS or []), sim_days=SIM_DAYS)
         except Exception as _exc:  # noqa: BLE001 — manifest must never crash a run
@@ -3098,6 +3131,7 @@ def run_simulation():
         schedules=schedules,
         actions=actions,
         extension_state=extension_state,
+        day=start_day,
     )
 
     # ---- K2: cognition pipeline stages -------------------------------------
@@ -3114,7 +3148,7 @@ def run_simulation():
         # (life events, ...); contributions merge with the day/tick env feed.
         # The life-events plugin also records its events and exposes them as
         # step["life_events"].
-        agent_env_events = list(env_events or []) + hook_bus.collect(
+        agent_env_events = list(step.get("_tick_env_events", env_events) or []) + hook_bus.collect(
             "env.events.compose",
             agent=agent,
             day=day,
@@ -3504,6 +3538,8 @@ def run_simulation():
             step_minutes=step_minutes,
             city_map=city_map,
         )
+        hook_bus.emit("agent.moved", agent=agent, activity=activity, movement=movement, city_map=city_map,
+                      day=day, time_str=time_str)
         if STATEFUL:
             persist_agent_locations_if_changed(agent)
         step["_movement"] = movement
@@ -3589,6 +3625,13 @@ def run_simulation():
                 recall_context=action_recall,
                 decision_refs=action_refs,
                 return_debug=True,
+                candidate_provider=lambda resident, current_activity: hook_bus.collect(
+                    "action.candidates",
+                    agent=resident,
+                    activity=current_activity,
+                    day=day,
+                    time_str=time_str,
+                ),
             )
             # K2: plugins may rewrite the selected action (filter
             # semantics — with no subscribers the value passes through).
@@ -4142,6 +4185,12 @@ def run_simulation():
         _emit_day_start(first_end, first_days, len(chunks) == 1)
 
         def _compute_digest(agent):
+            _candidate_actions = hook_bus.collect(
+                "action.candidates", agent=agent, activity="自由活动", day=day, time_str="fast_forward"
+            )
+            _perception_sections = hook_bus.collect(
+                "fast_forward.perception.sections", agent=agent, day=day, time_str="fast_forward"
+            )
             digest = _ff_simulate_agent_period(
                 agent,
                 period=period,
@@ -4153,8 +4202,15 @@ def run_simulation():
                 agents_by_id=agents_by_id,
                 config=CONFIG,
                 llm_fn=call_llm,
+                perception_sections=_perception_sections,
+                action_candidates=_candidate_actions,
             )
             return agent["id"], digest
+
+        # Group mode (gaworld/group/plugin.py) narrows this to the day's
+        # materialised residents; their cohorts already moved everyone else.
+        digest_agents = hook_bus.filter("fast_forward.digest_agents", agents, day=day)
+        digest_ids = {agent["id"] for agent in digest_agents}
 
         # Digests are one independent LLM call per agent (like routine
         # generation), so they ride the same concurrency knob.
@@ -4164,7 +4220,7 @@ def run_simulation():
         _digest_results = dict(
             parallel_map(
                 _compute_digest,
-                agents,
+                digest_agents,
                 max_workers=_digest_workers,
                 label=f"fast_forward_{period.unit}",
             )
@@ -4179,7 +4235,17 @@ def run_simulation():
         agent_briefs = []
         for agent in agents:
             agent_id = agent["id"]
+            if agent_id not in digest_ids:
+                for metric in state_history.get(agent_id, {}):
+                    if metric in agent["state"]:
+                        state_history[agent_id][metric].append(agent["state"][metric])
+                continue
             digest = _digest_results.get(agent_id) or {}
+            if digest.get("selected_action"):
+                hook_bus.emit(
+                    "action.executed", agent=agent, action=digest["selected_action"],
+                    day=day, time_str="fast_forward", extension_state=extension_state,
+                )
             brief = str(digest.get("brief", "")).strip()
             burst = bool(digest.get("burst"))
             # Mark burst steps so the brief block and log read as eventful.
@@ -4330,7 +4396,7 @@ def run_simulation():
             )
         if _ff_fallbacks:
             print(
-                f"⚠️ {period.title}：{len(_ff_fallbacks)}/{len(agents)} 位居民的简报来自"
+                f"⚠️ {period.title}：{len(_ff_fallbacks)}/{len(digest_agents)} 位居民的简报来自"
                 f"确定性占位（模型未产出可用结果）——{'、'.join(_ff_fallbacks[:5])}"
                 f"{'…' if len(_ff_fallbacks) > 5 else ''}。检查 provider 与日志。"
             )
@@ -4371,7 +4437,7 @@ def run_simulation():
         )
 
         # Step-boundary memory work: once per step, whatever the unit.
-        for agent in agents:
+        for agent in digest_agents:
             try:
                 run_daily_memory_lifecycle(
                     agent, day=day, time_str="end_of_day", llm=call_llm, web_fetch_fn=None
@@ -4545,12 +4611,18 @@ def run_simulation():
         # writers single-writer for now.
         def _compute_daily_routine(agent):
             agent_id = agent["id"]
-            daily_schedule = generate_daily_routine(
-                agent,
-                base_schedule_map[agent_id],
-                day=day,
-                day_context=day_context,
-            )
+            # Kernel extension point: a plugin may keep the base schedule for
+            # an agent whose day it will replace anyway (a day out of town),
+            # instead of paying an LLM call for a routine nobody follows.
+            if hook_bus.filter("day.routine.skip", False, agent=agent, day=day):
+                daily_schedule = list(base_schedule_map[agent_id])
+            else:
+                daily_schedule = generate_daily_routine(
+                    agent,
+                    base_schedule_map[agent_id],
+                    day=day,
+                    day_context=day_context,
+                )
             if TIME_GRID_SNAP:
                 # Pin the schedule to the shared time grid before anything
                 # downstream (routine text, wake time, autoregressive base,
@@ -4711,8 +4783,19 @@ def run_simulation():
                     time_str=time_str,
                 )
 
-            for agent in agents:
+            # Kernel extension point: who acts first in this tick. Unchanged
+            # unless a plugin reorders it (venue capacity shuffles it per tick
+            # so the last free seat is a fair, seeded draw).
+            tick_agents = hook_bus.filter("tick.agent_order", agents, day=day, time_str=time_str)
+            for agent in tick_agents:
                 agent_id = agent["id"]
+                # Kernel extension point: which of this tick's city events reach
+                # this agent (someone out of town does not feel the city's
+                # weather). Default: all of them.
+                agent_tick_events = hook_bus.filter(
+                    "env.events.reach", list(env_events or []),
+                    agent=agent, day=day, time_str=time_str,
+                )
                 if (
                     not daily_routine_logged.get(agent_id)
                     and daily_wake_times.get(agent_id) == time_str
@@ -4733,7 +4816,7 @@ def run_simulation():
                             agent,
                             scheduled_activity=get_activity_for_time(schedule_map[agent_id], time_str),
                             recent_events=[
-                                _format_external_env_event(ev) for ev in (env_events or [])
+                                _format_external_env_event(ev) for ev in agent_tick_events
                             ],
                             day=day,
                             time_str=time_str,
@@ -4767,7 +4850,7 @@ def run_simulation():
                     time_str=time_str,
                     scheduled_activity=get_activity_for_time(schedule_map[agent_id], time_str),
                     recent_events=[
-                        _format_external_env_event(ev) for ev in (env_events or [])
+                        _format_external_env_event(ev) for ev in agent_tick_events
                     ],
                     news_cache=news_cache,
                     news_sources=news_sources,
@@ -4778,8 +4861,8 @@ def run_simulation():
                     config=INFO_SEEK_CONFIG,
                     daily_logs=daily_logs,
                 )
-                if env_events:
-                    for ev in env_events:
+                if agent_tick_events:
+                    for ev in agent_tick_events:
                         vector_db_add_entry(
                             agent_id,
                             "external_env",
@@ -4789,7 +4872,7 @@ def run_simulation():
                         )
                 # K2: the former ~770-line inline step body now runs as the
                 # configurable cognition pipeline (see gaworld/sim/pipeline.py).
-                step_ctx = {}
+                step_ctx = {"_tick_env_events": agent_tick_events}
                 step_pipeline.run_step(agent, step_ctx, sim_ctx)
                 hook_bus.emit(
                     "on_agent_post_step",
@@ -5597,9 +5680,14 @@ def _cli_compare_event(args):
     os.makedirs(baseline_dir, exist_ok=True)
     os.makedirs(event_dir, exist_ok=True)
 
-    # Stamp run metadata so downstream scoring can flag low-fidelity (--fast) runs.
+    # Stamp run metadata so downstream scoring can flag low-fidelity (--fast)
+    # runs and tell which code epoch produced the pair (see
+    # gaworld/core/comparability.py).
+    from gaworld.core.comparability import CURRENT_EPOCH
+
     with open(os.path.join(root, "run_meta.json"), "w", encoding="utf-8") as _meta:
         json.dump({
+            "comparability_epoch": CURRENT_EPOCH,
             "fast": bool(getattr(args, "fast", False)),
             "sim_days": args.sim_days,
             "seed": getattr(args, "seed", None),
@@ -5691,9 +5779,32 @@ def _cli_parallel_worlds(args):
     """
     from gaworld.parallel import ExperimentRunner, normalize_experiment, prepare_experiment
     from gaworld.parallel.analysis import summarize_report
+    from gaworld.parallel.sweep import describe_patch, parse_sweep_arg, sweep_worlds
 
-    with open(args.spec, encoding="utf-8") as f:
-        payload = json.load(f)
+    if not args.spec and not args.sweep:
+        raise SystemExit("parallel-worlds 需要 --spec 或 --sweep")
+    payload = {}
+    if args.spec:
+        with open(args.spec, encoding="utf-8") as f:
+            payload = json.load(f)
+    if args.sweep:
+        # The spec, if any, supplies the shared settings and — through its
+        # baseline world — events every swept world shares; its worlds are replaced.
+        declared = [w for w in payload.get("worlds") or [] if isinstance(w, dict)]
+        base = next(
+            (w for w in declared if w.get("role") == "baseline" or (w.get("id") and w.get("id") == payload.get("baseline_id"))),
+            declared[0] if declared else {},
+        )
+        try:
+            path, values = parse_sweep_arg(args.sweep)
+            expanded = sweep_worlds(CONFIG, path, values, events=base.get("events"), placebo=args.placebo)
+        except ValueError as exc:
+            raise SystemExit(f"参数扫描：{exc}") from None
+        payload["worlds"] = expanded["worlds"]
+        payload["baseline_id"] = expanded["baseline_id"]
+        payload.setdefault("name", f"参数扫描 {path}")
+        for item in expanded["dropped"]:
+            print(f"跳过取值 {item['value']}：{item['reason']}")
     if args.sim_days is not None:
         payload["sim_days"] = int(args.sim_days)
     if args.seed is not None:
@@ -5712,7 +5823,8 @@ def _cli_parallel_worlds(args):
     for world in spec.worlds:
         marker = "（基准）" if world.id == spec.baseline_id else ""
         events = "；".join(
-            f"Day {item['day']} {item['time']} {item['name']}" for item in world.events
+            [f"Day {item['day']} {item['time']} {item['name']}" for item in world.events]
+            + describe_patch(world.config)
         ) or "无事件"
         print(f"  - {world.label}{marker}：{events}")
 
@@ -5885,9 +5997,22 @@ def _build_arg_parser():
     )
     parallel_worlds.add_argument(
         "--spec",
-        required=True,
+        default=None,
         help='Experiment JSON: {"name":…, "worlds":[{"label":…, "events":[{"day":…,"time":…,'
              '"name":…,"description":…}]}, …]}',
+    )
+    parallel_worlds.add_argument(
+        "--sweep",
+        default=None,
+        metavar="PATH=V1,V2,…",
+        help="Sweep one numeric config value: one world per value plus a baseline at the configured "
+             "value, read as a dose-response (e.g. economy.shocks.layoff_base_prob=0.01,0.02,0.04). "
+             "With --spec, the spec supplies the shared settings and its baseline world's events",
+    )
+    parallel_worlds.add_argument(
+        "--placebo",
+        action="store_true",
+        help="With --sweep: add an exact copy of the baseline as the noise floor",
     )
     parallel_worlds.add_argument("--sim-days", type=int, default=None, help="Override simulation days")
     parallel_worlds.add_argument("--seed", type=int, default=None, help="Random seed shared by every world")

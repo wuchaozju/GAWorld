@@ -23,6 +23,8 @@ import threading
 import time
 from typing import Any
 
+from gaworld.apps import residents, runs, world_paths
+
 LEASE_SECONDS = 120
 
 #: world id -> agent id -> {"user_id", "player", "until"}
@@ -34,14 +36,8 @@ class Conflict(Exception):
     """Answered with 409."""
 
 
-def _ds() -> Any:
-    from gaworld.apps import dashboard_server
-
-    return dashboard_server
-
-
 def _world(user: dict[str, Any]) -> dict[str, Any]:
-    world = _ds()._current_world()
+    world = world_paths.current_world()
     if world is None:
         raise PermissionError("先在顶栏选择一个开放的世界（共享的默认世界不能多人共玩）")
     owner_or_admin = user.get("role") == "admin" or world["owner_id"] == user.get("id")
@@ -51,18 +47,28 @@ def _world(user: dict[str, Any]) -> dict[str, Any]:
 
 
 def _residents() -> dict[int, str]:
-    return {int(row["id"]): row["name"] for row in _ds()._agents_summary()}
+    return {int(row["id"]): row["name"] for row in residents.agents_summary()}
 
 
 def _running() -> bool:
-    return bool(_ds()._run_status().get("running"))
+    return bool(runs.run_status().get("running"))
 
 
 def _send(name: str, **kwargs: Any) -> bool:
-    """Queue an intervention for the world's running simulator; False if none."""
-    from gaworld.apps import kernel_api
+    """Queue an intervention for the simulator running ``kwargs["agent_id"]``; False if none.
+
+    In a distributed world that may be a node on another machine
+    (``gaworld.cluster``): the intervention waits in the node's outbox until it
+    collects it, at most a second later.
+    """
+    from gaworld.apps import cluster_api, kernel_api
     from gaworld.kernel import remote
 
+    world = world_paths.current_world()
+    if world is not None and "agent_id" in kwargs:
+        routed = cluster_api.route(world["id"], int(kwargs["agent_id"]), name, kwargs)
+        if routed is not None:
+            return routed
     try:
         remote.enqueue(kernel_api._queue_path(), name, kwargs)
     except LookupError:  # includes KeyError: no live run, or one without the plugin
@@ -72,7 +78,7 @@ def _send(name: str, **kwargs: Any) -> bool:
 
 def _presence(event: str, agent_id: int, player: str) -> None:
     """One row in the world's record stream, so every watcher sees it live."""
-    records = _ds()._records_dir()
+    records = world_paths.records_dir()
     os.makedirs(records, exist_ok=True)
     row = {"_wall": time.time(), "event": event, "agent_id": agent_id, "player": player}
     with open(os.path.join(records, "multiplayer.presence.jsonl"), "a", encoding="utf-8") as handle:
@@ -186,7 +192,22 @@ def say(user: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     text = str(payload.get("text") or "").strip()
     if not text:
         raise ValueError("写下要说的话")
-    if not _send("player_say", agent_id=agent_id, target_id=target_id, text=text):
+    from gaworld.apps import cluster_api
+
+    world_id = _world(user)["id"]
+    if cluster_api.node_of(world_id, agent_id) == cluster_api.node_of(world_id, target_id):
+        sent = _send("player_say", agent_id=agent_id, target_id=target_id, text=text)
+    else:
+        # Speaker and listener run on different machines of a distributed world.
+        residents = _residents()
+        sent = _send(
+            "player_say", agent_id=agent_id, target_id=target_id, text=text, target_name=residents[target_id]
+        )
+        if sent and not _send(
+            "player_hear", agent_id=target_id, speaker_id=agent_id, speaker_name=residents[agent_id], text=text
+        ):
+            raise Conflict(f"{residents[target_id]} 所在的节点不在线：这句话只记在了你这边")
+    if not sent:
         raise Conflict("仿真没有在运行，或这次运行还不支持多人共玩（重新启动仿真即可）")
     return {"agent_id": agent_id, "target_id": target_id, "applies": "next tick"}
 
@@ -195,7 +216,7 @@ def handle_get(user: dict[str, Any] | None, path: str) -> tuple[dict[str, Any], 
     if user is None:
         return {"error": "账号功能未开启"}, 404
     if path.rstrip("/") != "/api/play":
-        return {"error": f"unknown endpoint: {path}"}, 404
+        return {"error": "Unknown endpoint"}, 404
     try:
         return state(user), 200
     except PermissionError as exc:
@@ -215,7 +236,7 @@ def handle_post(
     }
     route = routes.get(path.rstrip("/"))
     if route is None:
-        return {"error": f"unknown endpoint: {path}"}, 404
+        return {"error": "Unknown endpoint"}, 404
     try:
         return route(), 200
     except PermissionError as exc:

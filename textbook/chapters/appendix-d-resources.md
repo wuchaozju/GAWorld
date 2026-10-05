@@ -389,6 +389,7 @@
 
 ```
 data/
+```text
 ├── raw/                    原始数据,只读
 ├── processed/              处理后数据
 │   ├── city_<slug>/
@@ -397,6 +398,7 @@ data/
 │   │   ├── state.csv      状态
 │   │   └── events.jsonl   事件
 └── README.md              数据字典
+```
 ```
 
 **隐私保护**
@@ -500,10 +502,10 @@ Mavis. (2026). Multi-Agent Social Simulation: Principles, Technology, and Cases.
 ### 方法论
 
 6. Epstein (2006). *Generative Social Science*.
-7. Railsback & Grimm (2019). *Agent-Based and Individual-Based Modeling*.
+7. Railsback & Grimm (2019). *智能体-Based and Individual-Based Modeling*.
 8. Grimm et al. (2020). The ODD Protocol.
 9. Klöckner et al. (2023). The ODD Protocol for Social Science.
-10. Wilensky & Rand (2015). *An Introduction to Agent-Based Modeling*.
+10. Wilensky & Rand (2015). *An Introduction to 智能体-Based Modeling*.
 
 ### LLM 仿真
 
@@ -585,11 +587,13 @@ Mavis. (2026). Multi-Agent Social Simulation: Principles, Technology, and Cases.
 ```bash
 # 推荐的目录结构
 data/
+```text
 ├── raw/              # 原始数据,只读
 ├── processed/        # 处理后数据
 ├── interim/          # 中间结果
 ├── external/         # 外部数据
 └── README.md         # 数据字典
+```
 ```
 
 ### 数据共享
@@ -967,7 +971,7 @@ References
 1. JASSS 期刊
 2. arXiv (cs.MA, cs.CY)
 3. Open Science Framework
-4. Wikipedia "Agent-based model"
+4. Wikipedia "智能体-based model"
 5. Complex Systems Society
 
 读完这本教材,您已经掌握了社会仿真的核心知识。

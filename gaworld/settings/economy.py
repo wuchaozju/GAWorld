@@ -127,6 +127,8 @@ def economy_settings() -> dict[str, Any]:
                 "unemployment_from_agents": True,
                 "cycle_phase_duration_days": (60, 180),
                 "phases": ["expansion", "peak", "contraction", "trough"],
+                # layoff_risk / raise_chance: per resident per MONTH, added to
+                # shocks.layoff_base_prob / raise_base_prob.
                 "phase_effects": {
                     "expansion": {
                         "income_mult": 1.05,
@@ -162,13 +164,35 @@ def economy_settings() -> dict[str, Any]:
                     "trade": 1.0,
                     "default": 1.0,
                 },
+                # Endogenous inflation. OFF by default; while off the inflation
+                # rate and price index above are display-only — nothing in the
+                # ledger reads them. See
+                # docs/proposals/2026-10-03-endogenous-inflation.md.
+                "inflation": {
+                    "enabled": False,
+                    # "demand": rate follows real consumption vs its first-30-day
+                    # baseline; "phillips": follows the agents' unemployment;
+                    # "exogenous": the phase random walk, now actually priced in.
+                    "driver": "demand",
+                    "anchor": 0.025,
+                    "sensitivity": 0.5,
+                    "baseline_days": 30,
+                    "window_days": 30,
+                    "natural_unemployment": 0.05,
+                    # The phase expense_mult stood in for "the cycle makes things
+                    # dearer"; with a real price level it would count twice.
+                    "suppress_phase_expense_mult": True,
+                    # Share of last month's price rise passed on to wages at the
+                    # month-end settlement; 0 = wages never follow prices.
+                    "wage_indexation": 0.5,
+                },
             },
             # --- Shock events ---
             "shocks": {
                 "enabled": True,
-                "layoff_base_prob": 0.001,
-                "raise_base_prob": 0.008,
-                "medical_emergency_prob": 0.0005,
+                "layoff_base_prob": 0.001,  # per resident per month
+                "raise_base_prob": 0.008,  # per resident per month
+                "medical_emergency_prob": 0.0005,  # per resident per day
                 "medical_cost_range": (2000.0, 50000.0),
                 "year_end_bonus_enabled": True,
                 "year_end_bonus_months": 1.0,

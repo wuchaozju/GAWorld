@@ -22,10 +22,25 @@
 .doc-search input {
   flex: 1 1 auto; min-width: 0; padding: 8px 11px;
   border: 1px solid var(--line, #dde6de); border-radius: 8px;
-  background: #fff; color: var(--ink, #17251f); font-size: 13px;
+  background: var(--card); color: var(--ink, #17251f); font-size: 13px;
 }
 .doc-search input:focus { outline: none; border-color: var(--green, #0e7a58); }
 .doc-searchhint { font-size: 12.5px; color: var(--muted, #66746c); }
+
+/* 搜索命中高亮 —— 用品牌绿做淡底 + 加粗墨色文字，inline 包裹不动布局。
+   重置浏览器默认的亮黄底色，避免在亮色面板上跳出。 */
+.doc-mark {
+  background: rgba(19, 121, 91, 0.16);
+  color: var(--green, #0e7a58);
+  font-weight: 700;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+/* 当前打开文档里，命中的文字块靠左浮动可读 —— 标题、摘要、列表项一致。 */
+.doc-body .doc-mark { background: rgba(245, 184, 64, 0.32); color: #5a3b00; }
+.doc-body .doc-mark:hover { background: rgba(245, 184, 64, 0.55); }
+/* 侧栏摘要里多行 / 短上下文，深色品牌绿对比度更好 */
+.doc-item-note .doc-mark { background: rgba(19, 121, 91, 0.22); color: var(--ink, #17251f); }
 
 /* ---- 三栏：目录 / 正文 / 大纲 ---- */
 
@@ -67,14 +82,14 @@
 
 .doc-article { min-width: 0; padding: 22px 26px 32px; }
 .doc-loading { color: var(--muted, #66746c); font-size: 13px; }
-.doc-error { color: #c04545; font-size: 13px; line-height: 1.8; }
+.doc-error { color: var(--red); font-size: 13px; line-height: 1.8; }
 
 .doc-head { padding-bottom: 12px; margin-bottom: 6px; border-bottom: 1px solid var(--line, #dde6de); }
 .doc-kicker {
   margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em;
   text-transform: uppercase; color: var(--muted, #66746c);
 }
-.doc-head h1 { margin: 6px 0 4px; font-family: Georgia, "Noto Serif SC", serif; font-size: 26px; }
+.doc-head h1 { margin: 6px 0 4px; font-family: var(--font-sans); font-size: 26px; }
 .doc-source { margin: 0; font-size: 12px; color: var(--muted, #66746c); }
 .doc-source a { color: var(--green, #0e7a58); }
 
@@ -97,7 +112,7 @@
 
 .doc-body { font-size: 14px; line-height: 1.85; color: var(--ink, #17251f); }
 .doc-body h1, .doc-body h2, .doc-body h3, .doc-body h4, .doc-body h5, .doc-body h6 {
-  font-family: Georgia, "Noto Serif SC", serif; line-height: 1.4;
+  font-family: var(--font-sans); line-height: 1.4;
   margin: 26px 0 10px; scroll-margin-top: 16px;
 }
 .doc-body h1 { font-size: 23px; }
@@ -116,8 +131,8 @@
 .doc-body img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line, #dde6de); }
 
 .doc-body code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
-  background: #f0f4f1; border-radius: 5px; padding: 1px 5px; word-break: break-word;
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: var(--sunken); border-radius: 5px; padding: 1px 5px; word-break: break-word;
 }
 .doc-body pre.md-code {
   margin: 12px 0; padding: 12px 14px; overflow: auto;
@@ -130,7 +145,7 @@
 
 .doc-body blockquote {
   margin: 12px 0; padding: 2px 14px; color: var(--muted, #66746c);
-  border-left: 3px solid var(--green, #0e7a58); background: #f4f8f5; border-radius: 0 8px 8px 0;
+  border-left: 3px solid var(--green, #0e7a58); background: var(--sunken); border-radius: 0 8px 8px 0;
 }
 
 .md-tablewrap { overflow-x: auto; margin: 12px 0; }
@@ -138,5 +153,5 @@
 .doc-body th, .doc-body td {
   border: 1px solid var(--line, #dde6de); padding: 7px 10px; text-align: left; vertical-align: top;
 }
-.doc-body th { background: #f4f8f5; font-weight: 700; }
-.doc-body tbody tr:nth-child(even) { background: #fafcfa; }
+.doc-body th { background: var(--sunken); font-weight: 700; }
+.doc-body tbody tr:nth-child(even) { background: var(--surface); }

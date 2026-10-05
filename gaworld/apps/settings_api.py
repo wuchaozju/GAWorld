@@ -35,6 +35,7 @@ import os
 import re
 from typing import Any
 
+from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 from gaworld.settings import config_docs
 from gaworld.settings.defaults import build_default_config
@@ -89,14 +90,8 @@ _PROVIDER_FIELDS: dict[str, dict[str, str]] = {
 _PROVIDER_ENDPOINT = {"ollama": "url", "openai": "base_url", "anthropic": "base_url"}
 
 
-def _ds():
-    from gaworld.apps import dashboard_server
-
-    return dashboard_server
-
-
 def _repo_root() -> str:
-    return _ds().REPO_ROOT
+    return world_paths.REPO_ROOT
 
 
 def _wire_safe(value: Any) -> Any:
@@ -134,11 +129,10 @@ def _override_layers() -> dict[str, dict[str, Any]]:
     first, then the env blob, then ``environment_config.json`` — which is why
     ``env_file`` beats ``env`` for the handful of keys it carries.
     """
-    ds = _ds()
     defaults = build_default_config()
     env_file_path = defaults.get("environment_config_path")
     return {
-        "dashboard": ds._dashboard_config(),
+        "dashboard": world_paths.dashboard_config(),
         "env": load_env_override(),
         "env_file": load_environment_config(env_file_path),
     }
@@ -313,7 +307,7 @@ def _raw_files() -> dict[str, Any]:
     if not os.path.isabs(env_config):
         env_config = os.path.join(root, env_config)
     return {
-        "dashboard_config": _raw_file(_ds().DASHBOARD_CONFIG_PATH),
+        "dashboard_config": _raw_file(world_paths.DASHBOARD_CONFIG_PATH),
         "environment_config": _raw_file(env_config),
     }
 
@@ -373,7 +367,7 @@ def _provider_view(tree: dict[str, Any]) -> list[dict[str, Any]]:
     The key is reported as *which env var* and *is it set* — never the value.
     """
     routing = (tree.get("llm") or {}).get("routing") or {}
-    layer = _ds()._dashboard_config()
+    layer = world_paths.dashboard_config()
     added = set(_providers(layer))
     rows = []
     for name, cfg in sorted(_providers(tree).items()):
@@ -468,10 +462,9 @@ def save_provider(payload: dict[str, Any]) -> dict[str, Any]:
     behind after the user cleared the box.
     """
     name, cfg = _clean_provider(payload)
-    ds = _ds()
-    current = ds._dashboard_config()
+    current = world_paths.dashboard_config()
     current.setdefault("llm", {}).setdefault("providers", {})[name] = cfg
-    ds._atomic_write_json(ds.DASHBOARD_CONFIG_PATH, current)
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
     _LOG.info("llm provider saved: %s (%s)", name, cfg["type"])
     return _wire_safe({"saved": True, "name": name, **overview()})
 
@@ -492,7 +485,7 @@ def test_provider(payload: dict[str, Any]) -> dict[str, Any]:
         name, cfg = _clean_provider(dict(payload, name=payload.get("name") or "draft"))
     else:
         name = str(payload.get("name") or "").strip()
-        cfg = _providers(_ds()._effective_config()).get(name)
+        cfg = _providers(world_paths.effective_config()).get(name)
         if not isinstance(cfg, dict):
             raise ValueError(f"没有名为 {name} 的后端。")
     result = probe_provider(cfg)
@@ -506,8 +499,7 @@ def test_provider(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def overview() -> dict[str, Any]:
-    ds = _ds()
-    effective = ds._effective_config()
+    effective = world_paths.effective_config()
     defaults = build_default_config()
     index = config_docs.section_index()
     sections = []
@@ -574,8 +566,7 @@ def save_config(payload: dict[str, Any]) -> dict[str, Any]:
 
     if not isinstance(payload, dict):
         raise ValueError("config patch must be an object")
-    ds = _ds()
-    effective = ds._effective_config()
+    effective = world_paths.effective_config()
     dropped: list[str] = []
     patch: dict[str, Any] = {}
     for key, value in payload.items():
@@ -591,9 +582,9 @@ def save_config(payload: dict[str, Any]) -> dict[str, Any]:
         return _wire_safe(
             {"saved": False, "dropped": dropped, "blocked": blocked, **overview()}
         )
-    current = ds._dashboard_config()
-    ds._deep_update(current, patch)
-    ds._atomic_write_json(ds.DASHBOARD_CONFIG_PATH, current)
+    current = world_paths.dashboard_config()
+    world_paths.deep_update(current, patch)
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
     _LOG.info("settings patch applied: %s", sorted(_flatten(patch)))
     return _wire_safe(
         {
@@ -630,29 +621,27 @@ def reset_paths(payload: dict[str, Any]) -> dict[str, Any]:
     value in the override file would pin it, so a later change to the Python
     default would silently not take effect.
     """
-    ds = _ds()
     paths = payload.get("paths")
     if isinstance(paths, str):
         paths = [paths]
     if not isinstance(paths, list):
         raise ValueError("paths must be a list of dotted config paths")
-    current = ds._dashboard_config()
+    current = world_paths.dashboard_config()
     removed = [
         path
         for path in paths
         if isinstance(path, str) and path and _prune(current, path.split("."))
     ]
     if removed:
-        ds._atomic_write_json(ds.DASHBOARD_CONFIG_PATH, current)
+        world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
         _LOG.info("settings override reset: %s", removed)
     return _wire_safe({"removed": removed, **overview()})
 
 
 def reset_all() -> dict[str, Any]:
     """Empty the override file entirely — back to the Python defaults."""
-    ds = _ds()
-    before = sorted(_flatten(ds._dashboard_config()))
-    ds._atomic_write_json(ds.DASHBOARD_CONFIG_PATH, {})
+    before = sorted(_flatten(world_paths.dashboard_config()))
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, {})
     _LOG.info("settings overrides cleared (%d paths)", len(before))
     return _wire_safe({"removed": before, **overview()})
 
@@ -665,7 +654,7 @@ def reset_all() -> dict[str, Any]:
 def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
     if path == "/api/settings/overview":
         return overview(), 200
-    return {"error": "Unknown settings endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -684,7 +673,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": str(exc)}, 400
     except OSError as exc:
         return {"error": f"写入配置文件失败：{exc}"}, 500
-    return {"error": "Unknown settings endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = [

@@ -50,8 +50,13 @@ class CityInterviewer:
     for 80 respondents is the difference between one file read and eighty.
     """
 
-    def __init__(self, *, provider: str = "") -> None:
+    def __init__(self, *, provider: str = "", final_state_csv: str = "") -> None:
         self.provider = provider or ""
+        #: A finished run's state history. When given, residents answer in the
+        #: state the run left them in, not the corpus's starting state — which
+        #: is the point of interviewing a world after it ran.
+        self._final_state_csv = final_state_csv or ""
+        self._final_states: dict[int, dict[str, float]] | None = None
         self._df: Any = None
         self._city_map: Any = None
         self._news: tuple[list[Any], list[Any]] | None = None
@@ -98,6 +103,12 @@ class CityInterviewer:
             self._population = load_population(self._selected_city())
         return self._population
 
+    def final_states(self) -> dict[int, dict[str, float]]:
+        """``agent id -> metric -> value`` at each metric's last recorded step."""
+        if self._final_states is None:
+            self._final_states = read_final_states(self._final_state_csv) if self._final_state_csv else {}
+        return self._final_states
+
     def _selected_city(self) -> str:
         sim = self._sim()
         return str(sim.CONFIG.get("city") or "")
@@ -119,6 +130,9 @@ class CityInterviewer:
             if (getattr(sim, "STATEFUL", False) and getattr(sim, "GOALS_ENABLED", False))
             else {}
         )
+        final = self.final_states().get(int(agent["id"]))
+        if final:
+            agent.setdefault("state", {}).update(final)
         sources, cache = self._news_sources()
         sim._bootstrap_agent_external_rag(agent, news_cache=cache, news_sources=sources)
 
@@ -224,4 +238,28 @@ class CityInterviewer:
         return provider_supports_images(task="interview", provider=self.provider or None)
 
 
-__all__ = ["CityInterviewer"]
+def read_final_states(path: str) -> dict[int, dict[str, float]]:
+    """Last value per agent and metric from ``agent_state_history.csv``
+    (long format: ``agent_id, step, metric, value``). Missing file: ``{}``."""
+    import csv
+
+    latest: dict[tuple[int, str], tuple[int, float]] = {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                try:
+                    key = (int(row["agent_id"]), str(row["metric"]))
+                    step, value = int(float(row["step"])), float(row["value"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if key not in latest or step >= latest[key][0]:
+                    latest[key] = (step, value)
+    except OSError:
+        return {}
+    out: dict[int, dict[str, float]] = {}
+    for (agent_id, metric), (_step, value) in latest.items():
+        out.setdefault(agent_id, {})[metric] = value
+    return out
+
+
+__all__ = ["CityInterviewer", "read_final_states"]

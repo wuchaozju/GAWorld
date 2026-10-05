@@ -20,6 +20,27 @@ control for the simulator's own wobble:
 ``unmeasured``
     no seed produced both values.
 
+Each seed's parallel worlds report also carries paired per-resident
+estimates (:mod:`gaworld.parallel.causal`). When a hypothesis's control is
+the world those were computed against, they are a second, stricter gate:
+``supported`` / ``contradicted`` additionally need every seed's paired test
+to be significant (BH q < 0.05, 95% CI excluding 0) in the claimed
+direction, or the verdict falls back to ``inconclusive``. The paired test
+reads the post-event mean, which is why it gates and does not replace the
+pre-registered effect. A seed-level t-interval is reported alongside.
+
+A composite study's survey measures get the same gate from the survey
+itself: the same residents answered in every world, so each resident's
+answer in the treatment world minus their answer in the control world is one
+individual effect (bootstrap CI, sign-flip p, BH across that seed's survey
+hypotheses), whatever the control is.
+
+Every hypothesis also carries the provenance grade of its measure
+(:mod:`gaworld.research.measures`). The verdict rules do not change with it;
+what changes is how the number may be read: on a (c) measure — driven by
+values we chose, not calibrated — the direction is the finding and the size
+is not, and the result says so next to the effect.
+
 Quality checks run alongside and go into the same result: a world without
 state data, or a measure that never varied across any world (the
 ``misinformation_risk == 0.0`` case from the early experiments), is
@@ -31,7 +52,14 @@ from __future__ import annotations
 import math
 from typing import Any
 
+import numpy as np
+
+from gaworld.core.comparability import describe as describe_epoch
+from gaworld.core.comparability import same_epoch
 from gaworld.parallel.analysis import metric_label
+from gaworld.parallel.causal import ALPHA, RNG_SEED, bh_qvalues, bootstrap_ci, sign_flip_p, t_interval
+from gaworld.research import survey as survey_mod
+from gaworld.research.measures import direction_only, registry
 from gaworld.research.protocol import Protocol
 
 VERDICTS = ("supported", "contradicted", "inconclusive", "unmeasured")
@@ -65,6 +93,45 @@ def world_values(report: dict[str, Any], aggregation: str) -> dict[str, dict[str
                 present[-1] if aggregation == "final" else _mean(present)
             )
     return values
+
+
+def survey_values(run: dict[str, Any]) -> dict[str, dict[str, float]]:
+    """``world_id -> measure -> score`` from one seed's survey, scored ones only."""
+    out: dict[str, dict[str, float]] = {}
+    for world_id, block in (run.get("survey") or {}).items():
+        if not isinstance(block, dict):
+            continue
+        for metric, score in (block.get("scores") or {}).items():
+            value = _finite((score or {}).get("value"))
+            if value is not None:
+                out.setdefault(str(world_id), {})[str(metric)] = value
+    return out
+
+
+def _survey_quality(protocol: Protocol, runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    if protocol.kind != "composite":
+        return issues
+    for run in runs:
+        block = run.get("survey")
+        if not isinstance(block, dict) or block.get("error"):
+            issues.append({"seed": run.get("seed"), "condition": None, "issue": "问卷没有跑成",
+                           "detail": str((block or {}).get("error") or "没有问卷结果")})
+            continue
+        for cond in protocol.conditions:
+            world = block.get(cond["id"])
+            if not isinstance(world, dict) or world.get("error"):
+                issues.append({"seed": run.get("seed"), "condition": cond["id"], "issue": "这个世界的问卷没有结果",
+                               "detail": str((world or {}).get("error") or "missing")})
+                continue
+            for metric, score in (world.get("scores") or {}).items():
+                asked = int(score.get("asked") or 0)
+                unparsed = int(score.get("unparsed") or 0)
+                if asked and unparsed / asked > 0.2:
+                    issues.append({"seed": run.get("seed"), "condition": cond["id"],
+                                   "issue": f"{metric}：{unparsed}/{asked} 个回答无法计分",
+                                   "detail": "回答没能对上选项或是/否，已排除在得分之外"})
+    return issues
 
 
 def _judge(
@@ -105,6 +172,91 @@ def _judge(
     return "inconclusive", reasons
 
 
+def paired_estimate(report: dict[str, Any], treatment: str, control: str, metric: str) -> dict[str, Any] | None:
+    """The per-resident estimate of ``treatment`` vs ``control`` in one seed's
+    report, when the report's estimates were computed against that control."""
+    causal = report.get("causal") or {}
+    if causal.get("baseline_id") != control:
+        return None
+    for row in causal.get("estimates") or []:
+        if row.get("world_id") == treatment and row.get("metric") == metric and row.get("ate") is not None:
+            return {
+                key: row.get(key)
+                for key in ("ate", "ci_low", "ci_high", "p_value", "q_value", "n", "verdict")
+            }
+    return None
+
+
+def measure_provenance(protocol: Protocol) -> dict[str, dict[str, str]]:
+    """``measure id -> {grade, basis}``: as the protocol recorded it, else as
+    the catalogue has it today (protocols compiled before grades existed)."""
+    reg = {**registry(), **survey_mod.survey_measures(protocol.survey)}
+    out = {mid: {"grade": m.grade, "basis": m.basis} for mid, m in reg.items()}
+    for item in protocol.measures or []:
+        if isinstance(item, dict) and item.get("grade"):
+            out[str(item.get("id"))] = {"grade": str(item["grade"]), "basis": str(item.get("basis") or "")}
+    return out
+
+
+def survey_paired(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[tuple[int, str, str, str], dict[str, Any]]:
+    """``(seed, treatment, control, measure) -> paired test`` for survey hypotheses."""
+    out: dict[tuple[int, str, str, str], dict[str, Any]] = {}
+    for run in runs:
+        seed = int(run.get("seed", 0))
+        block = run.get("survey") or {}
+        rng = np.random.default_rng(RNG_SEED + seed)
+        tests: dict[tuple[int, str, str, str], dict[str, Any]] = {}
+        for hypothesis in protocol.hypotheses:
+            metric = hypothesis["measure"]
+            key = (seed, hypothesis["treatment"], hypothesis["control"], metric)
+            if not metric.startswith(survey_mod.PREFIX) or key in tests:
+                continue
+            answers = [
+                (((block.get(world) or {}).get("scores") or {}).get(metric) or {}).get("by_resident") or {}
+                for world in (hypothesis["treatment"], hypothesis["control"])
+            ]
+            both = sorted(set(answers[0]) & set(answers[1]))
+            if not both:
+                continue
+            diffs = np.array([float(answers[0][ref]) - float(answers[1][ref]) for ref in both])
+            low, high, _ = bootstrap_ci(diffs, rng)
+            tests[key] = {"ate": float(diffs.mean()), "ci_low": low, "ci_high": high,
+                          "p_value": sign_flip_p(diffs, rng), "n": len(both)}
+        for test, q in zip(tests.values(), bh_qvalues([t["p_value"] for t in tests.values()]), strict=True):
+            test["q_value"] = q
+        out.update(tests)
+    return out
+
+
+def _paired_gate(verdict: str, direction: str, rows: list[dict[str, Any]]) -> tuple[str, list[str]]:
+    """Downgrade a call the residents' own paired tests do not back."""
+    evidence = [row for row in rows if row.get("effect") is not None]
+    paired = [row for row in evidence if row.get("paired")]
+    if not paired:
+        return verdict, []
+    if len(paired) < len(evidence):
+        return verdict, [f"仅 {len(paired)}/{len(evidence)} 个种子有居民配对检验，未作为判定条件"]
+    if verdict not in ("supported", "contradicted"):
+        return verdict, []
+    sign = 1.0 if direction == "increase" else -1.0
+    if verdict == "contradicted":
+        sign = -sign
+    failing = []
+    for row in paired:
+        test = row["paired"]
+        low, high, q = test.get("ci_low"), test.get("ci_high"), test.get("q_value")
+        clears = low is not None and high is not None and (low > 0 if sign > 0 else high < 0)
+        if not (clears and q is not None and q < ALPHA):
+            failing.append(
+                f"种子 {row['seed']}（ATE {test['ate']:+.4f}，95% CI "
+                f"{'—' if low is None else f'{low:+.4f}'} ~ {'—' if high is None else f'{high:+.4f}'}，"
+                f"q={'—' if q is None else f'{q:.3g}'}）"
+            )
+    if failing:
+        return "inconclusive", ["居民配对检验（事件后均值）在以下种子不显著，降为 inconclusive：" + "；".join(failing)]
+    return verdict, [f"所有 {len(paired)} 个种子的居民配对检验都在同一方向显著（q<{ALPHA}）"]
+
+
 def _quality(protocol: Protocol, runs: list[dict[str, Any]], table: dict[str, dict[str, dict[int, float]]]) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
     for run in runs:
@@ -135,6 +287,7 @@ def _quality(protocol: Protocol, runs: list[dict[str, Any]], table: dict[str, di
                 "issue": f"指标 {measure['label']}（{measure['id']}）在所有世界、所有种子里都没有变化",
                 "detail": f"恒为 {values[0]:.4f}",
             })
+    issues += _survey_quality(protocol, runs)
     return {"ok": not issues, "issues": issues}
 
 
@@ -147,10 +300,28 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
     baseline = protocol.baseline_id
     placebo = next((cond["id"] for cond in protocol.conditions if cond["role"] == "placebo"), None)
     per_run: dict[int, dict[str, dict[str, dict[str, float]]]] = {}
+    reports: dict[int, dict[str, Any]] = {}
     for run in runs:
         seed = int(run.get("seed", 0))
         report = run.get("report") or {}
+        reports[seed] = report
         per_run[seed] = {agg: world_values(report, agg) for agg in ("final", "mean")}
+        # A composite study's post-run survey: one score per world, asked once,
+        # so the same number serves both aggregations.
+        for world_id, block in survey_values(run).items():
+            for metric, value in block.items():
+                for agg in ("final", "mean"):
+                    per_run[seed][agg].setdefault(metric, {})[world_id] = value
+
+    # Seeds produced by different code (a pause, a code change, a resume) are
+    # not replicates of one design: the gap between them is the code change.
+    epochs = {seed: report.get("comparability_epoch") for seed, report in reports.items()}
+    mixed_epochs = not same_epoch(epochs.values())
+    epoch_reason = (
+        "各种子来自不同的可比性版本（"
+        + "；".join(f"种子 {seed}：{describe_epoch(epoch)}" for seed, epoch in sorted(epochs.items()))
+        + "），按规定不合并判定"
+    )
 
     # metric -> world -> seed -> final value: the table the report prints.
     table: dict[str, dict[str, dict[int, float]]] = {}
@@ -159,6 +330,9 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
             for world_id, value in by_world.items():
                 table.setdefault(metric, {}).setdefault(world_id, {})[seed] = value
 
+    labels = {str(m.get("id")): str(m.get("label") or "") for m in protocol.measures}
+    provenance = measure_provenance(protocol)
+    surveyed = survey_paired(protocol, runs)
     hypotheses: list[dict[str, Any]] = []
     for hypothesis in protocol.hypotheses:
         metric = hypothesis["measure"]
@@ -183,16 +357,38 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
                 "control_value": control,
                 "effect": effect,
                 "placebo_gap": gap,
+                "paired": (
+                    surveyed.get((seed, hypothesis["treatment"], hypothesis["control"], metric))
+                    if metric.startswith(survey_mod.PREFIX)
+                    else paired_estimate(reports.get(seed) or {}, hypothesis["treatment"], hypothesis["control"], metric)
+                ),
             })
         noise = max(placebo_gaps) if placebo_gaps else None
         verdict, reasons = _judge(
             hypothesis["direction"], effects, float(hypothesis.get("min_effect") or 0.0), noise, placebo is not None
         )
+        verdict, gate_reasons = _paired_gate(verdict, hypothesis["direction"], rows)
+        if mixed_epochs and verdict in ("supported", "contradicted"):
+            verdict = "inconclusive"
+            gate_reasons.append(epoch_reason)
+        seed_ci = t_interval(effects)
+        if seed_ci is not None:
+            reasons.append(f"种子层面 95% t 区间 {seed_ci[0]:+.4f} ~ {seed_ci[1]:+.4f}")
+        reasons += gate_reasons
+        source = provenance.get(metric) or {}
+        grade = source.get("grade") or "?"
+        sized = not direction_only(grade)
+        if not sized and effects:
+            reasons.append(f"指标来源 ({grade}) 级：只读方向，效应大小不作数")
         hypotheses.append({
             **hypothesis,
-            "measure_label": metric_label(metric),
+            "measure_label": labels.get(metric) or metric_label(metric),
+            "measure_grade": grade,
+            "measure_basis": source.get("basis") or "",
+            "direction_only": not sized,
             "effects": rows,
             "mean_effect": _mean(effects) if effects else None,
+            "seed_ci": list(seed_ci) if seed_ci is not None else None,
             "noise": noise,
             "seeds_with_data": len(effects),
             "verdict": verdict,
@@ -208,7 +404,8 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
         "values": table,
         "quality": _quality(protocol, runs, table),
         "summary": summary,
+        "comparability": {"epochs": epochs, "mixed": mixed_epochs},
     }
 
 
-__all__ = ["VERDICTS", "evaluate", "world_values"]
+__all__ = ["VERDICTS", "evaluate", "measure_provenance", "survey_paired", "survey_values", "world_values"]

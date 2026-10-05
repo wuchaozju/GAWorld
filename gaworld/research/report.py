@@ -22,13 +22,20 @@ _L = {
         "preflight": "跑前检查", "errors": "错误", "warnings": "警告", "budget": "估算调用量",
         "runs": "执行记录", "seed": "种子", "dir": "目录", "status": "状态", "worlds": "各世界",
         "results": "结果", "effects_per_seed": "各种子效应", "treatment_value": "处理值", "control_value": "对照值",
-        "effect": "效应", "placebo_gap": "安慰剂偏差", "mean": "均值效应", "noise": "噪声底线", "verdict": "判定",
+        "effect": "效应", "placebo_gap": "安慰剂偏差", "paired": "居民配对检验（事件后 ATE · 95% CI · q）", "mean": "均值效应", "noise": "噪声底线", "verdict": "判定",
         "reasons": "判定依据", "summary": "汇总", "quality": "数据质量", "quality_ok": "所有世界都有数据，所有指标都有变化。",
         "interpretation": "解读", "interpretation_missing": "解读不可用", "findings": "发现", "ungrounded": "（未挂到任何假设，不作数）",
         "limitations": "局限", "next": "后续研究", "change": "改动", "notes": "备注", "values": "各世界终值",
         "world": "世界", "increase": "上升", "decrease": "下降",
         "supported": "支持", "contradicted": "反向", "inconclusive": "不确定", "unmeasured": "未测到",
         "baseline": "基准", "treatment": "处理", "placebo_role": "安慰剂",
+        "survey": "问卷（跑完后在每个世界里用该世界的记忆采访居民）", "survey_context": "开场白",
+        "scale": "量表", "boolean": "是/否", "open": "开放题（不计分）",
+        "survey_answers": "问卷作答", "answered": "计分人数", "unparsed": "无法计分", "respondents": "受访者",
+        "provenance": "指标来源", "grade": "等级", "basis": "由什么驱动",
+        "grade_legend": "等级取它依赖的机制里最弱的一级（定义见 benchmark/MECHANISM_PROVENANCE.md）。(c) = 自定的合理猜测或按目标标定的旋钮：不得单独立论，只读方向，效应大小不作数。",
+        "direction_only": "（{grade} 级：只读方向，大小不作数）",
+        "cites_size": "（对只读方向的指标写了效应大小，大小不作数）",
     },
     "en": {
         "stage": "Stage", "plan": "Source plan", "model": "Compiled by", "created": "Created", "sim_model": "Simulation model",
@@ -40,13 +47,20 @@ _L = {
         "preflight": "Preflight", "errors": "Errors", "warnings": "Warnings", "budget": "Estimated LLM calls",
         "runs": "Execution", "seed": "Seed", "dir": "Directory", "status": "Status", "worlds": "Worlds",
         "results": "Results", "effects_per_seed": "Effect per seed", "treatment_value": "Treatment", "control_value": "Control",
-        "effect": "Effect", "placebo_gap": "Placebo gap", "mean": "Mean effect", "noise": "Noise floor", "verdict": "Verdict",
+        "effect": "Effect", "placebo_gap": "Placebo gap", "paired": "Paired resident test (post-event ATE · 95% CI · q)", "mean": "Mean effect", "noise": "Noise floor", "verdict": "Verdict",
         "reasons": "Reasons", "summary": "Summary", "quality": "Data quality", "quality_ok": "Every world has data and every measure varied.",
         "interpretation": "Interpretation", "interpretation_missing": "Interpretation unavailable", "findings": "Findings", "ungrounded": "(not tied to any hypothesis; disregard)",
         "limitations": "Limitations", "next": "Next studies", "change": "Change", "notes": "Notes", "values": "Final values per world",
         "world": "World", "increase": "increase", "decrease": "decrease",
         "supported": "supported", "contradicted": "contradicted", "inconclusive": "inconclusive", "unmeasured": "unmeasured",
         "baseline": "baseline", "treatment": "treatment", "placebo_role": "placebo",
+        "survey": "Survey (asked in every world after the run, with that world's memories)", "survey_context": "Opening",
+        "scale": "scale", "boolean": "yes/no", "open": "open (not scored)",
+        "survey_answers": "Survey responses", "answered": "Scored", "unparsed": "Unscorable", "respondents": "Respondents",
+        "provenance": "Measure provenance", "grade": "Grade", "basis": "Driven by",
+        "grade_legend": "A measure's grade is the weakest among the mechanisms behind it (defined in benchmark/MECHANISM_PROVENANCE.md). (c) = a reasonable guess of ours or a knob tuned to a target: it cannot carry a conclusion alone — read the direction, not the size.",
+        "direction_only": " (grade {grade}: direction only, the size does not count)",
+        "cites_size": " (states a size on a direction-only measure; the size does not count)",
     },
 }
 
@@ -59,6 +73,16 @@ def _num(value: Any, signed: bool = True) -> str:
     if value is None:
         return "—"
     return f"{float(value):+.4f}" if signed else f"{float(value):.4f}"
+
+
+def _paired(test: dict[str, Any] | None) -> str:
+    if not test:
+        return "—"
+    q = test.get("q_value")
+    return (
+        f"{_num(test.get('ate'))} [{_num(test.get('ci_low'))}, {_num(test.get('ci_high'))}]"
+        f" q={'—' if q is None else f'{float(q):.3g}'}"
+    )
 
 
 def render_study_markdown(study: dict[str, Any]) -> str:
@@ -106,13 +130,31 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         f"| {L['hid']} | {L['statement']} | {L['measure']} | {L['contrast']} | {L['direction']} | {L['min_effect']} | {L['aggregation']} |",
         "|---|---|---|---|---|---|---|",
     ]
+    grades = {str(m.get("id")): m for m in protocol.get("measures") or [] if isinstance(m, dict)}
     for item in protocol.get("hypotheses") or []:
+        grade = (grades.get(str(item.get("measure"))) or {}).get("grade")
         lines.append(
-            f"| {item.get('id')} | {_cell(item.get('statement'))} | {item.get('measure')} "
+            f"| {item.get('id')} | {_cell(item.get('statement'))} | {item.get('measure')}{f' ({grade})' if grade else ''} "
             f"| {item.get('treatment')} vs {item.get('control')} | {L.get(item.get('direction', ''), item.get('direction'))} "
             f"| {_num(item.get('min_effect'), signed=False)} | {item.get('aggregation')} |"
         )
     lines.append("")
+    graded = [m for m in grades.values() if m.get("grade")]
+    if graded:
+        lines += [f"### {L['provenance']}", "", L["grade_legend"], "",
+                  f"| {L['measure']} | {L['grade']} | {L['basis']} |", "|---|---|---|"]
+        lines += [f"| {m.get('id')} | ({m.get('grade')}) | {_cell(m.get('basis'))} |" for m in graded]
+        lines.append("")
+    survey = protocol.get("survey") or {}
+    if survey.get("questions"):
+        lines += [f"### {L['survey']}", ""]
+        if survey.get("context"):
+            lines += [f"{L['survey_context']}：{survey['context']}", ""]
+        for question in survey["questions"]:
+            kind = L.get(question.get("kind", ""), question.get("kind", ""))
+            options = " / ".join(question.get("options") or [])
+            lines.append(f"- **{question.get('id')}**（{kind}{'：' + options if options else ''}）{question.get('text')}")
+        lines.append("")
     if protocol.get("dropped"):
         lines += [f"**{L['dropped']}**", ""]
         lines += [f"- {item.get('what')} · {_cell(item.get('where'))}: {_cell(item.get('reason'))}" for item in protocol["dropped"]]
@@ -155,16 +197,17 @@ def render_study_markdown(study: dict[str, Any]) -> str:
             if item.get("statement"):
                 lines += [item["statement"], ""]
             lines += [
-                f"| {L['seed']} | {L['treatment_value']} | {L['control_value']} | {L['effect']} | {L['placebo_gap']} |",
-                "|---|---|---|---|---|",
+                f"| {L['seed']} | {L['treatment_value']} | {L['control_value']} | {L['effect']} | {L['placebo_gap']} | {L['paired']} |",
+                "|---|---|---|---|---|---|",
             ]
             for row in item.get("effects") or []:
                 lines.append(
                     f"| {row.get('seed')} | {_num(row.get('treatment_value'), signed=False)} | {_num(row.get('control_value'), signed=False)} "
-                    f"| {_num(row.get('effect'))} | {_num(row.get('placebo_gap'), signed=False)} |"
+                    f"| {_num(row.get('effect'))} | {_num(row.get('placebo_gap'), signed=False)} | {_paired(row.get('paired'))} |"
                 )
             lines.append("")
-            lines.append(f"- **{L['mean']}**: {_num(item.get('mean_effect'))} · **{L['noise']}**: {_num(item.get('noise'), signed=False)}")
+            caveat = L["direction_only"].format(grade=item.get("measure_grade") or "?") if item.get("direction_only") else ""
+            lines.append(f"- **{L['mean']}**: {_num(item.get('mean_effect'))}{caveat} · **{L['noise']}**: {_num(item.get('noise'), signed=False)}")
             lines.append(f"- **{L['reasons']}**: " + "；".join(item.get("reasons") or []))
             lines.append("")
 
@@ -192,6 +235,22 @@ def render_study_markdown(study: dict[str, Any]) -> str:
                     lines.append(f"| {metric} | {world_id} | {cells} |")
             lines.append("")
 
+        surveyed = [run for run in runs if isinstance(run.get("survey"), dict)]
+        if surveyed:
+            lines += [f"### {L['survey_answers']}", "",
+                      f"| {L['seed']} | {L['world']} | {L['measure']} | {L['answered']} | {L['unparsed']} |",
+                      "|---|---|---|---|---|"]
+            for run in surveyed:
+                for world_id, block in run["survey"].items():
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("error"):
+                        lines.append(f"| {run.get('seed')} | {world_id} | — | — | {_cell(block['error'])} |")
+                        continue
+                    for metric, score in (block.get("scores") or {}).items():
+                        lines.append(f"| {run.get('seed')} | {world_id} | {metric} | {score.get('n', 0)} | {score.get('unparsed', 0)} |")
+            lines.append("")
+
     # -- interpretation ------------------------------------------------------
     interpretation = study.get("interpretation") or {}
     if evaluation:
@@ -202,7 +261,7 @@ def render_study_markdown(study: dict[str, Any]) -> str:
             if interpretation.get("findings"):
                 lines += [f"### {L['findings']}", ""]
                 for finding in interpretation["findings"]:
-                    tag = "" if finding.get("grounded") else f" {L['ungrounded']}"
+                    tag = ("" if finding.get("grounded") else f" {L['ungrounded']}") + (L["cites_size"] if finding.get("cites_size") else "")
                     lines.append(f"- **{finding.get('hypothesis') or '?'}**{tag}: {finding.get('claim')}"
                                  + (f" — {finding['evidence']}" if finding.get("evidence") else ""))
                 lines.append("")

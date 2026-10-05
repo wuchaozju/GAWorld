@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from gaworld.apps import dashboard_server as ds
 from gaworld.apps import settings_api as api
+from gaworld.apps import world_paths
 from gaworld.settings import config_docs
 
 
@@ -48,14 +49,14 @@ class _TempRepo:
         self.root = self.tmp.name
         self.dashboard_config = dashboard_config
         self.env_config = env_config
-        self._saved = (ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH)
+        self._saved = (world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH)
         self._saved_cwd = os.getcwd()
 
     def __enter__(self):
-        ds.REPO_ROOT = self.root
-        ds.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
+        world_paths.REPO_ROOT = self.root
+        world_paths.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
         if self.dashboard_config is not None:
-            self.write(ds.DASHBOARD_CONFIG_PATH, self.dashboard_config)
+            self.write(world_paths.DASHBOARD_CONFIG_PATH, self.dashboard_config)
         if self.env_config is not None:
             # ``load_environment_config`` resolves the relative default path
             # against the *package* root, not REPO_ROOT, so the cwd is the only
@@ -67,7 +68,7 @@ class _TempRepo:
 
     def __exit__(self, *exc):
         os.chdir(self._saved_cwd)
-        ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH = self._saved
+        world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH = self._saved
         self.tmp.cleanup()
         return False
 
@@ -78,7 +79,7 @@ class _TempRepo:
             json.dump(payload, f, ensure_ascii=False)
 
     def config(self):
-        with open(ds.DASHBOARD_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(world_paths.DASHBOARD_CONFIG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
 
@@ -163,7 +164,7 @@ class SaveTests(unittest.TestCase):
         # written at all — not an empty file.
         with _TempRepo():
             result = api.save_config({"nope": 1, "economy": {"not_a_knob": 2}})
-            self.assertFalse(os.path.exists(ds.DASHBOARD_CONFIG_PATH))
+            self.assertFalse(os.path.exists(world_paths.DASHBOARD_CONFIG_PATH))
         self.assertFalse(result["saved"])
         self.assertIn("nope", result["dropped"])
         self.assertIn("economy.not_a_knob", result["dropped"])
@@ -191,7 +192,7 @@ class SaveTests(unittest.TestCase):
     def test_a_credential_only_patch_writes_nothing_at_all(self):
         with _TempRepo():
             result = api.save_config({"llm": {"providers": {"omlx_qwen": {"api_key": "sk-leak"}}}})
-            self.assertFalse(os.path.exists(ds.DASHBOARD_CONFIG_PATH))
+            self.assertFalse(os.path.exists(world_paths.DASHBOARD_CONFIG_PATH))
         self.assertFalse(result["saved"])
         self.assertIn("llm.providers", result["blocked"])
 
@@ -218,10 +219,10 @@ class ResetTests(unittest.TestCase):
         with _TempRepo(dashboard_config={"sim_days": 9}):
             self.assertEqual(9, api.overview()["tree"]["sim_days"])
             # A write made *after* import has to be visible immediately.
-            _TempRepo.write(ds.DASHBOARD_CONFIG_PATH, {"sim_days": 77})
+            _TempRepo.write(world_paths.DASHBOARD_CONFIG_PATH, {"sim_days": 77})
             self.assertEqual(77, api.overview()["tree"]["sim_days"])
             # ...and so does its removal.
-            _TempRepo.write(ds.DASHBOARD_CONFIG_PATH, {})
+            _TempRepo.write(world_paths.DASHBOARD_CONFIG_PATH, {})
             payload = api.overview()
             self.assertEqual(
                 payload["defaults"]["sim_days"], payload["tree"]["sim_days"],
@@ -310,7 +311,7 @@ class LlmProviderTests(unittest.TestCase):
         self.assertEqual("••••••", payload["tree"]["llm"]["providers"]["omlx_qwen"]["api_key"])
         self.assertEqual("••••••", payload["defaults"]["llm"]["providers"]["omlx_qwen"]["api_key"])
         # Masking is on the wire only — the real value still reaches the router.
-        self.assertEqual("omlx-local", ds._effective_config()["llm"]["providers"]["omlx_qwen"]["api_key"])
+        self.assertEqual("omlx-local", world_paths.effective_config()["llm"]["providers"]["omlx_qwen"]["api_key"])
 
     def test_added_provider_lands_in_the_override_file_and_the_choices(self):
         with _TempRepo() as repo:
@@ -354,7 +355,7 @@ class LlmProviderTests(unittest.TestCase):
                     {"name": "cloud", "config": {"type": "openai", "base_url": "https://a/v1",
                                                  "model": "m", "api_key": "sk-leak"}}
                 )
-            self.assertFalse(os.path.exists(ds.DASHBOARD_CONFIG_PATH))
+            self.assertFalse(os.path.exists(world_paths.DASHBOARD_CONFIG_PATH))
         self.assertIn("密钥", str(caught.exception))
 
     def test_incomplete_or_unsupported_providers_are_refused(self):
@@ -367,7 +368,7 @@ class LlmProviderTests(unittest.TestCase):
             ):
                 with self.assertRaises(ValueError, msg=bad):
                     api.save_provider(bad)
-            self.assertFalse(os.path.exists(ds.DASHBOARD_CONFIG_PATH))
+            self.assertFalse(os.path.exists(world_paths.DASHBOARD_CONFIG_PATH))
 
     def test_deleting_an_added_provider_reuses_the_reset_path(self):
         # The panel's 删除 button posts to /api/settings/reset; a provider added
@@ -422,7 +423,7 @@ class LlmProviderTests(unittest.TestCase):
         # router's construction drifted — the one failure it exists to catch.
         from gaworld.llm import providers
 
-        cfg = ds._effective_config()["llm"]["providers"]["minimax"]
+        cfg = world_paths.effective_config()["llm"]["providers"]["minimax"]
         built = providers.build_provider(cfg)
         self.assertIsInstance(built, type(providers.LLM_ROUTER.providers["minimax"]))
         self.assertEqual(providers.LLM_ROUTER.providers["minimax"].base_url, built.base_url)

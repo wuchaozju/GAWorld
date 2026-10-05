@@ -169,7 +169,10 @@ class TestTwinPipelineIntegration(unittest.TestCase):
             except SystemExit as exc:
                 self.fail(f"run_simulation exited unexpectedly: {exc}")
 
-        audit_path = os.path.join("output", "records", "controller.intervention.jsonl")
+        from gaworld.settings import CONFIG
+
+        records = (CONFIG.get("records") or {}).get("output_dir", "output/records")
+        audit_path = os.path.join(records, "controller.intervention.jsonl")
         self.assertTrue(
             os.path.exists(audit_path),
             "no intervention audit file — the mirror never reached the controller",

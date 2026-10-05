@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GAWorld 功能地图</title>
+<style>
+  :root {
+    --ink: #1a1d24;
+    --ink-soft: #5a6473;
+    --paper: #fbfaf6;
+    --paper-2: #f3efe6;
+    --line: #d9d2bf;
+
+    /* 5 主轴调色板 — 互不撞色 */
+    --c-research: #2b6cb0;       /* 蓝 — 研究者 */
+    --c-world:    #6b8e23;       /* 绿 — 世界构建者 */
+    --c-resident: #b94a48;       /* 红 — 居民设计者 */
+    --c-player:   #8e6cb0;       /* 紫 — 玩家 */
+    --c-dev:      #c0820a;       /* 橙 — 平台开发者 */
+  }
+  html, body { background: var(--paper); color: var(--ink); }
+  body {
+    font-family: "Songti SC", "STSong", "Source Han Serif", "Noto Serif CJK SC",
+                 Georgia, serif;
+    max-width: 1180px;
+    margin: 2rem auto;
+    padding: 0 1.5rem 4rem;
+    line-height: 1.7;
+  }
+  h1 { font-size: 1.95rem; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.4rem; margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; }
+  h3 { font-size: 1.15rem; margin-top: 1.6rem; }
+  .meta { color: var(--ink-soft); font-size: 0.92rem; margin-bottom: 1.2rem; }
+  .lead { background: var(--paper-2); padding: 0.9rem 1.1rem; border-left: 3px solid var(--c-research); margin: 1rem 0 1.6rem; font-size: 0.97rem; }
+  .nav { font-size: 0.9rem; color: var(--ink-soft); margin: 0.4rem 0 1.4rem; }
+  .nav a { color: var(--c-research); text-decoration: none; border-bottom: 1px dotted var(--c-research); margin-right: 1rem; }
+  .nav a:hover { color: var(--c-resident); }
+
+  /* 主轴跳板 */
+  .axis-jump {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.6rem;
+    margin: 0.8rem 0 1.6rem;
+  }
+  .axis-jump a {
+    display: block;
+    text-align: center;
+    padding: 0.7rem 0.4rem;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .axis-jump a:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  .axis-jump .j-research { border-top: 4px solid var(--c-research); }
+  .axis-jump .j-world    { border-top: 4px solid var(--c-world); }
+  .axis-jump .j-resident { border-top: 4px solid var(--c-resident); }
+  .axis-jump .j-player   { border-top: 4px solid var(--c-player); }
+  .axis-jump .j-dev      { border-top: 4px solid var(--c-dev); }
+
+  /* 主轴锚点 */
+  .axis {
+    scroll-margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    margin: 1.6rem 0 0.4rem;
+    border-radius: 6px;
+    background: var(--paper-2);
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .axis .cnt { font-weight: 400; font-size: 0.85rem; color: var(--ink-soft); }
+  .axis.research { border-left: 5px solid var(--c-research); }
+  .axis.world    { border-left: 5px solid var(--c-world); }
+  .axis.resident { border-left: 5px solid var(--c-resident); }
+  .axis.player   { border-left: 5px solid var(--c-player); }
+  .axis.dev      { border-left: 5px solid var(--c-dev); }
+
+  /* Mermaid 区块 */
+  .mermaid-wrap {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.8rem 1.2rem 0.4rem;
+    margin: 0.4rem 0 1.6rem;
+    overflow-x: auto;
+  }
+  .mermaid-wrap.research { border-left: 4px solid var(--c-research); }
+  .mermaid-wrap.world    { border-left: 4px solid var(--c-world); }
+  .mermaid-wrap.resident { border-left: 4px solid var(--c-resident); }
+  .mermaid-wrap.player   { border-left: 4px solid var(--c-player); }
+  .mermaid-wrap.dev      { border-left: 4px solid var(--c-dev); }
+  .mermaid {
+    text-align: center;
+    font-size: 14px;
+  }
+  .mermaid .nodeLabel { font-family: "Songti SC", "STSong", "Source Han Serif", Georgia, serif !important; }
+
+  /* 折叠表 */
+  details.group {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin: 0.5rem 0 0.6rem;
+    background: #fff;
+  }
+  details.group > summary {
+    cursor: pointer;
+    padding: 0.55rem 0.9rem;
+    font-weight: 600;
+    list-style: none;
+    background: var(--paper-2);
+    border-radius: 6px 6px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary .count { font-weight: 400; color: var(--ink-soft); font-size: 0.85rem; }
+  details.group[open] > summary { border-bottom: 1px solid var(--line); }
+  details.group ul { padding: 0.4rem 1.2rem 0.6rem; margin: 0; }
+  details.group li { margin: 0.3rem 0; }
+  details.group li code {
+    background: var(--paper-2);
+    padding: 0.05rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.88em;
+    color: var(--c-resident);
+  }
+
+  .controls { margin: 0.6rem 0 1rem; font-size: 0.88rem; }
+  .controls button {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    font-family: inherit;
+  }
+  .controls button:hover { background: #ebe6d6; }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 720px) {
+    .axis-jump { grid-template-columns: 1fr 1fr; }
+  }
+  @media print {
+    .controls, footer, .nav, .axis-jump { display: none; }
+    details.group { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>GAWorld 功能地图</h1>
+<p class="meta">
+  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 每主轴 3–5 个能力子轴 → 共 79 个具体功能点。
+  每个功能点都在 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 中有详细的作用与访问方法。
+</p>
+
+<div class="lead">
+  <strong>读图路径</strong>：先选你要扮演的角色（蓝/绿/红/紫/橙），沿子轴找到需要的能力，再点叶子查 FEATURES.md。
+  跨主轴共享的能力（如"本地 Dashboard"同时服务多类使用者）按其主要服务对象归位，并在 FEATURES.md 中可定位。
+</div>
+
+<h2>角色跳板</h2>
+<div class="axis-jump">
+  <a class="j-research" href="#axis-research">🔬 研究者</a>
+  <a class="j-world"    href="#axis-world">🌍 世界构建者</a>
+  <a class="j-resident" href="#axis-resident">👤 居民设计者</a>
+  <a class="j-player"   href="#axis-player">🎮 玩家</a>
+  <a class="j-dev"      href="#axis-dev">🛠 平台开发者</a>
+</div>
+
+<div class="nav">
+  <a href="#mindmap">↓ 思维导图</a>
+  <a href="#index">↓ 三层分类索引</a>
+  <a href="./FEATURES.md">↗ FEATURES.md（详细）</a>
+  <a href="./README.md">↗ 项目结构</a>
+</div>
+
+<!-- ============== 思维导图 ============== -->
+<h2 id="mindmap">一、五主轴思维导图</h2>
+
+<h3 id="axis-research">🔬 研究者 — 把 GAWorld 当实验台</h3>
+<pre class="mermaid-wrap research">
+<pre class="mermaid">
+mindmap
+  root((研究者))
+    调研与提问
+      智能体采访
+      群体采访
+      RAG_外部知识注入
+      从社交内容创建智能体
+    单点对照
+      事件对照实验
+      平行世界实验
+      平行世界实验台
+      轨迹回放查看器
+    预注册与长程仿真
+      运行仿真
+      长时段快进
+      大跨度模拟_月年
+      时间单位_天月年
+      AI社会科学家_阶段一
+    研究设计
+      研究工作台
+      论文解读_预注册
+      剂量反应_反事实
+      结果解读与代码判定
+</pre>
+
+<h3 id="axis-world">🌍 世界构建者 — 造一座可仿真的城市</h3>
+<pre class="mermaid-wrap world">
+<pre class="mermaid">
+mindmap
+  root((世界构建者))
+    城市与地图
+      城市地图生成
+      从地名新建城市
+      城市面板
+      切换当前城市
+    人口构成
+      参数化人口合成
+      Population_Studio
+      往城市里加智能体
+      跨城市查看居民
+    仿真环境与配置
+      本地_Dashboard
+      外部系统观测台
+      配置覆盖
+      可复现性
+      重置
+    大跨度与群体
+      群体_cohort_模拟
+      群体模式验证门
+      Cohort_遥测插件
+      日程网格对齐
+</pre>
+
+<h3 id="axis-resident">👤 居民设计者 — 让居民"像个人"</h3>
+<pre class="mermaid-wrap resident">
+<pre class="mermaid">
+mindmap
+  root((居民设计者))
+    画像与状态
+      Agent_Studio
+      九维状态雷达
+      大五人格_OCEAN
+      大五人格生成闸门
+    记忆与社交
+      记忆系统
+      社交网络
+      家庭与户
+      离开本市
+      Moltbook_开关
+    行为与决策
+      动态行为系统
+      兴趣爱好与技能成长
+      经验_自动提炼Skill
+      可复用Skill库
+    工作与产出
+      真实工作任务系统
+      就业事件_换工作失业
+      生命事件
+      状态候选事件_点触发
+      政策环境事件
+      PolicySim_干预评估
+    经济与社会环境
+      经济仿真
+      多后端LLM路由
+      位置系统与交通
+      外部信息源与食谱
+</pre>
+
+<h3 id="axis-player">🎮 玩家 — 把居民当对手</h3>
+<pre class="mermaid-wrap player">
+<pre class="mermaid">
+mindmap
+  root((玩家))
+    多人共玩
+      居民认领
+      双向对话
+      会话与私信
+    互动游戏场
+      斗兽场
+      说服游戏
+      灾害模式
+      谣言扩散局
+      双队竞赛
+      公投局
+      猜人局
+      谁是真人
+    协作与创作
+      Dashboard_智能体互动
+      Dashboard_合作任务
+      合作产物导出
+    观察与回放
+      轨迹回放查看器
+      平行世界实验台
+</pre>
+
+<h3 id="axis-dev">🛠 平台开发者 — 改 GAWorld 自己</h3>
+<pre class="mermaid-wrap dev">
+<pre class="mermaid">
+mindmap
+  root((平台开发者))
+    插件与扩展
+      微内核与21个扩展点
+      第三方插件
+      认知管线消融定制
+      运行时干预
+      动作校验门
+    部署与运维
+      分布式_relay
+      日志模式
+      日志级别
+      可复现性
+    仿真v2能力
+      物理环境感知_P0
+      异常一等公民_P2
+      当日反应式重规划_P3
+      结构化空间学习_P4
+      大跨度五件套
+</pre>
+
+<!-- ============== 三层分类索引 ============== -->
+<h2 id="index">二、三层分类索引（可折叠）</h2>
+
+<div class="controls">
+  <button onclick="document.querySelectorAll('details.group').forEach(d=>d.open=true)">展开全部</button>
+  <button onclick="document.querySelectorAll('details.group').forEach(d=>d.open=false)">折叠全部</button>
+</div>
+
+<!-- 研究者 -->
+<div class="axis research"><span>研究者</span><span class="cnt">5 子轴 · 15 功能</span></div>
+
+<details class="group"><summary><span>调研与提问</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>智能体采访</strong> — 单 agent 深度访谈 <code>interview --agent-id 31 --question "..."</code></li>
+  <li><strong>群体采访</strong> — 一群受访者同一套题，可跨城市，连续追问 <code>/site/dashboard/survey.html</code></li>
+  <li><strong>RAG 外部知识注入</strong> — 向某 agent 注入外部信息改变认知 <code>rag-add --agent-id 31 --text ...</code></li>
+  <li><strong>从社交内容创建智能体</strong> — 社媒页面 / 文本生成画像 <code>create-agent-from-social --url ...</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>单点对照实验</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>事件对照实验</strong> — 有/无事件两分支并行 <code>compare-event --event-name ... --seed 42</code></li>
+  <li><strong>平行世界实验</strong> — 最多 8 个世界共用居民/种子 <code>parallel-worlds --spec worlds.json</code></li>
+  <li><strong>平行世界实验台</strong> — 设计实验 + 分叉图 + 偏离曲线 <code>/site/dashboard/worlds.html</code></li>
+  <li><strong>轨迹回放查看器</strong> — 回放任意一次仿真运行 <code>serve-viz --port 8000</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>预注册与长程仿真</span><span class="count">5 项</span></summary>
+<ul>
+  <li><strong>运行仿真</strong> — 让一批智能体按天循环生活 <code>python generative_city_sim.py run</code></li>
+  <li><strong>长时段快进</strong> — 每 agent 每步 1 次调用 <code>--fast-forward</code></li>
+  <li><strong>大跨度模拟（月/年）</strong> — 一步 = 一月或一年 <code>--sim-years 10</code> / <code>--time-unit month</code></li>
+  <li><strong>时间单位：天/月/年</strong> — 月年步长 + 日边界钩子按 ≤30 天区块补跑 <code>CONFIG["long_run"]["unit"]</code></li>
+  <li><strong>AI 社会科学家（阶段一）</strong> — 方案编译成预注册协议 + 平行世界跑 + 代码判定 <code>POST /api/research/studies</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>研究设计</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>研究工作台</strong> — 想法/论文 → 多种实验设计 → 预注册 <code>/site/dashboard/research.html</code></li>
+  <li><strong>论文解读</strong> — 从 .txt/.md/.pdf 解读出理论/方法/变量/发现/假设 <code>POST /api/research/digest</code></li>
+  <li><strong>多设计与推荐</strong> — 2–3 种不同思路的设计，城市/人口/时间/条件/事件/指标全标</li>
+  <li><strong>代码判定与报告</strong> — supported/contradicted/inconclusive/unmeasured，附判定依据 <code>GET /api/research/studies/&lt;id&gt;/report</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>副作用：仿真加速器</span><span class="count">3 项 · 跨主轴共用</span></summary>
+<ul>
+  <li><strong>大跨度的社交影响</strong> — 关系有走向，单步上限 0.25，正增量重置衰减计时</li>
+  <li><strong>大跨度的个体发展</strong> — 技能长、人会变老，幂律曲线 + 年龄推进</li>
+  <li><strong>大跨度的动作与事件空间</strong> — 动作空间按跨度换档，事件显形生成</li>
+</ul>
+</details>
+
+<!-- 世界构建者 -->
+<div class="axis world"><span>世界构建者</span><span class="cnt">4 子轴 · 15 功能</span></div>
+
+<details class="group"><summary><span>城市与地图</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>城市地图生成</strong> — 自然语言生成节点/道路/地铁 <code>scripts/generate_citymap.py --description ...</code></li>
+  <li><strong>从地名新建城市</strong> — 真实地名造出可仿真城市 <code>python -m gaworld.city create "绍兴柯桥"</code></li>
+  <li><strong>城市面板</strong> — 可视化建城/列表/批量加居民/删除 <code>/site/dashboard/city.html</code></li>
+  <li><strong>切换当前城市</strong> — 切换 map_path/csv_path/profile/环境事件 <code>python -m gaworld.city use</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>人口构成</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>参数化人口合成</strong> — 按人口学旋钮生成小镇 <code>python -m gaworld.population --size 500</code></li>
+  <li><strong>Population Studio</strong> — 5 步可视化人口设计 <code>/site/dashboard/population.html</code></li>
+  <li><strong>往城市里加智能体</strong> — 批量/单个/迁入 三条路径 <code>python -m gaworld.city add-agents</code></li>
+  <li><strong>跨城市查看居民（只读）</strong> — 不切换就查看任意城市居民 <code>GET /api/city/agents?city=</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>仿真环境与配置</span><span class="count">5 项</span></summary>
+<ul>
+  <li><strong>本地 Dashboard</strong> — 配置编辑/运行控制/记忆查看 <code>dashboard --port 8766</code></li>
+  <li><strong>外部系统观测台</strong> — 观察/编辑货币/环境/对外服务 ~150 旋钮 <code>/site/dashboard/external.html</code></li>
+  <li><strong>配置覆盖</strong> — 不改源码即可覆盖基础配置 <code>dashboard_config.json</code> / <code>GAWORLD_CONFIG_OVERRIDES</code></li>
+  <li><strong>可复现性</strong> — 固定随机种子复现实验 <code>--seed</code> / <code>CONFIG["random_seed"]</code></li>
+  <li><strong>重置</strong> — 清除有状态产物，从 Day 1 重新开始 <code>python generative_city_sim.py reset</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>大跨度与群体近似</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>群体（cohort）模拟</strong> — 大规模人群低成本模拟 <code>python -m gaworld.group --size 500 --days 7</code></li>
+  <li><strong>群体模式验证门</strong> — L1–L4 量化 cohort 近似代价 <code>python -m gaworld.group.validate</code></li>
+  <li><strong>Cohort 遥测插件</strong> — 在个体运行中发布群体划分与漂移，只观测不改行为</li>
+  <li><strong>日程网格对齐</strong> — 把 agent 日程对齐固定时间网格，1440/step 恒定</li>
+</ul>
+</details>
+
+<!-- 居民设计者 -->
+<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 26 功能</span></div>
+
+<details class="group"><summary><span>画像与状态</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>Agent Studio</strong> — 7 步可视化构建/查看单智能体 <code>/site/dashboard/studio.html</code></li>
+  <li><strong>九维状态雷达</strong> — 状态变量可视化与编辑（Agent Studio 第 2 步）</li>
+  <li><strong>大五人格（OCEAN）</strong> — rules/prompt/voice 三通道影响行为 <code>CONFIG["personality"]["enabled"]</code></li>
+  <li><strong>大五人格生成与合入闸门</strong> — 离线生成 + 两条闸门校验 <code>scripts/author_personality.py</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>记忆与社交关系</span><span class="count">5 项</span></summary>
+<ul>
+  <li><strong>记忆系统</strong> — 短期/情景/长期总结/关系记忆 + 向量召回</li>
+  <li><strong>社交网络</strong> — 关系衰减、Dunbar 分层、off-screen ghost 事件</li>
+  <li><strong>家庭与户</strong> — 婚姻抽样/共居/家庭日程与账目/情绪传染 <code>CONFIG["family"]</code></li>
+  <li><strong>离开本市（出差/探亲/旅行）</strong> — 真实距离票务，不占本地拥挤度 <code>CONFIG["travel"]["enabled"]</code></li>
+  <li><strong>Moltbook 开关</strong> — 逐人接 AI 智能体社交网络 <code>data/moltbook_accounts.json</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>行为与决策</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>动态行为系统</strong> — 承诺度感知中断、情绪即兴行为、社交偶遇链</li>
+  <li><strong>兴趣爱好与技能成长</strong> — 成长画像幂律学习/里程碑/遗忘 <code>CONFIG["interests"]["enabled"]</code></li>
+  <li><strong>经验 → Skill 自动提炼</strong> — agent 从最近经历自总结私有技能</li>
+  <li><strong>可复用 Skill 库</strong> — 全局/私有 Markdown 技能注入认知 <code>CONFIG["skills"]</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>工作与产出</span><span class="count">6 项</span></summary>
+<ul>
+  <li><strong>真实工作任务系统</strong> — agent 按职业产出 HTML/Python/文章/教案并接单结算 <code>CONFIG["real_work"]["enabled"]</code></li>
+  <li><strong>就业事件（换工作/失业）</strong> — 真改 job/收入，日程跟着换</li>
+  <li><strong>生命事件</strong> — 生日、疾病、关系破裂等调度事件</li>
+  <li><strong>状态候选事件（一点即触发）</strong> — 42 条目录按门槛过滤 + 冷却期</li>
+  <li><strong>政策/环境事件</strong> — 政策冲击与环境扰动注入 <code>CONFIG["policy_events"]</code></li>
+  <li><strong>PolicySim 干预评估</strong> — 推荐/曝光的本地无网络评估 <code>CONFIG["intervention"]["enabled"]</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>经济与外部环境</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>经济仿真</strong> — 货币守恒、部门池、个税五险一金、恩格尔消费 <code>CONFIG["economy"]</code></li>
+  <li><strong>多后端 LLM 路由</strong> — Ollama / OpenAI / Anthropic，按任务路由模型 <code>CONFIG["llm"]["routing"]</code></li>
+  <li><strong>位置系统与交通</strong> — 类别空间匹配、真实出行成本、通勤记忆</li>
+  <li><strong>外部信息源与信息食谱</strong> — 新闻/社交/专业源 37 站，每人一份食谱 <code>CONFIG["news"]["sources"]</code></li>
+</ul>
+</details>
+
+<!-- 玩家 -->
+<div class="axis player"><span>玩家</span><span class="cnt">4 子轴 · 12 功能</span></div>
+
+<details class="group"><summary><span>多人共玩</span><span class="count">3 项</span></summary>
+<ul>
+  <li><strong>居民认领</strong> — 在 open 世界认领居民、获得两分钟租约</li>
+  <li><strong>双向对话</strong> — 干预队列走感知 + 动作通路</li>
+  <li><strong>会话与私信</strong> — 逐条记录到 <code>output/records/</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>互动游戏场</span><span class="count">8 项</span></summary>
+<ul>
+  <li><strong>斗兽场</strong> — 居民同台答题，按正确率+中位耗时排座次，淘汰补人</li>
+  <li><strong>说服游戏</strong> — 有立场的问题 → 聊天 → 复问；裁判 LLM 判定核心结论是否变</li>
+  <li><strong>灾害模式</strong> — ≤12 人过一场灾难，每幕一次调用，六类行动+恐慌+互助</li>
+  <li><strong>谣言扩散局</strong> — 沿熟人图走，每人回一 JSON（信任度/动作/原话）</li>
+  <li><strong>双队竞赛</strong> — 同任务两条相反的路子，评审拿到「方案一/方案二」洗队名</li>
+  <li><strong>公投局</strong> — ≤14 人先私下表态，再公开表决，中间那屏带票数与最响原话</li>
+  <li><strong>猜人局</strong> — 读档案猜两难里怎么选，「再问一次」量 persona 稳不稳</li>
+  <li><strong>谁是真人</strong> — 真人和居民匿名同聊几轮，再互猜谁是真人；存档供 Bench Track D</li>
+</ul>
+</details>
+
+<details class="group"><summary><span>协作与创作</span><span class="count">3 项</span></summary>
+<ul>
+  <li><strong>Dashboard 智能体互动</strong> — 两位以上居民建立双向好友，多轮讨论 <code>/dashboard</code> 互动面板</li>
+  <li><strong>Dashboard 合作任务</strong> — 规划→分工→汇总 <code>/site/dashboard/collaboration.html</code></li>
+  <li><strong>合作产物导出</strong> — Markdown 产物落到 <code>&lt;sessions_dir&gt;/&lt;session_id&gt;/artifacts/</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>观察与回放</span><span class="count">2 项</span></summary>
+<ul>
+  <li><strong>轨迹回放查看器</strong> — 可视化回放任意一次仿真 <code>serve-viz --port 8000</code></li>
+  <li><strong>平行世界实验台</strong> — 读分叉图、偏离曲线、终局差异 <code>/site/dashboard/worlds.html</code></li>
+</ul>
+</details>
+
+<!-- 平台开发者 -->
+<div class="axis dev"><span>平台开发者</span><span class="cnt">3 子轴 · 11 功能</span></div>
+
+<details class="group"><summary><span>插件与扩展</span><span class="count">5 项</span></summary>
+<ul>
+  <li><strong>微内核与 21 个扩展点</strong> — 感知注入/中断源/动作过滤/状态效果等</li>
+  <li><strong>第三方插件</strong> — 不改核心加子系统（CONFIG["plugins"] 或 entry point）</li>
+  <li><strong>认知管线消融/定制</strong> — agent step 12 个命名阶段可配置 <code>CONFIG["pipeline"]["agent_step"]</code></li>
+  <li><strong>运行时干预</strong> — 改状态/配置/注入人生事件/移除 agent，审计全留痕</li>
+  <li><strong>动作校验门</strong> — move 过校验链，deny 审计落盘并在下一 tick 感知回注</li>
+</ul>
+</details>
+
+<details class="group"><summary><span>部署与运维</span><span class="count">4 项</span></summary>
+<ul>
+  <li><strong>分布式 relay</strong> — 多机协同仿真，各节点处理本地 agent 子集 <code>serve-distributed --port 8877</code></li>
+  <li><strong>日志模式</strong> — simple ~4 行/tick, verbose 全字段 <code>GAWORLD_LOG_MODE</code></li>
+  <li><strong>日志级别</strong> — DEBUG 下显示每次 LLM 调用的 token 与延迟 <code>GAWORLD_LOG_LEVEL</code></li>
+  <li><strong>统一事件流</strong> — 跨插件时间线对齐的结构化记录 <code>output/records/*.jsonl</code></li>
+</ul>
+</details>
+
+<details class="group"><summary><span>仿真v2 能力</span><span class="count">4 项 · 与运行时能力相关</span></summary>
+<ul>
+  <li><strong>物理环境感知（P0）</strong> — 节点级占用/营业状态 <code>CONFIG["environment"]["local_physical"]["enabled"]</code></li>
+  <li><strong>异常一等公民（P2）</strong> — anomaly/anomaly_score 区分常态波动 <code>CONFIG["environment"]["anomaly"]["enabled"]</code></li>
+  <li><strong>当日反应式重规划（P3）</strong> — 持续异常时只重排受影响区间 <code>CONFIG["environment"]["replan"]["enabled"]</code></li>
+  <li><strong>结构化空间学习（P4）</strong> — 累积地点规避偏好，跨运行持久化 <code>CONFIG["environment"]["spatial_preferences"]["enabled"]</code></li>
+</ul>
+</details>
+
+<footer>
+  <p>数据源：<a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 的 79 个功能条目，重新按"使用者 × 能力子轴"组织。</p>
+  <p>跨主轴共用的能力（如<em>本地 Dashboard</em>同时服务世界构建者与研究者）按其主要服务对象归位，详细仍见 FEATURES.md。</p>
+  <p>维护约定：新增/移除/重组功能时，请同步本图。</p>
+  <p>图形：<a href="https://mermaid.js.org/">Mermaid</a> 思维导图（CDN 加载 <code>mermaid@10</code>）。</p>
+</footer>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "default",
+    securityLevel: "loose",
+    mindmap: { useMaxWidth: true, padding: 12 },
+    themeVariables: {
+      fontFamily: '"Songti SC","STSong","Source Han Serif",Georgia,serif',
+      fontSize: "14px"
+    }
+  });
+  // 让所有 mindmap 整块 markdown 都被识别
+  document.querySelectorAll("pre.mermaid").forEach((el, i) => {
+    el.id = "mm-" + i;
+  });
+</script>
+
+<section style="padding:24px;margin:24px;border:1px solid #ccd5d9;border-radius:12px"><h2>持久组织主体 · 默认关闭</h2><p>社区资助：等额分配 / 困难优先。企业：有限岗位、抽签 / 技能优先、工资与欠付。稳定身份、规则、账目与历史随本世界保存。</p><p>支持单机逐 tick 和按日快进。<a href="/site/dashboard/organizations.html">组织管理</a> · <a href="/docs/ORGANIZATIONS_TUTORIAL.md">教程</a></p></section>
+</body>
+</html>

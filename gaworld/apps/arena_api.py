@@ -732,7 +732,7 @@ def handle_get(
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("arena GET %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown arena endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -763,7 +763,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             }, 200
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown arena endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def _one(query: dict[str, Any], key: str) -> str:

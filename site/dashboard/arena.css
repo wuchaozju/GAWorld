@@ -356,27 +356,25 @@
 }
 
 /* ---- Dark mode — every value derives from the global tokens ---- */
-@media (prefers-color-scheme: dark) {
-  .arena-list { background: var(--card, #1a1f1b); border-color: var(--line, #2a302d); }
-  .arena-list li:hover { background: var(--arena-bg-soft); }
-  .arena-progress .bar { background: var(--paper, #eef3ee); }
-  .arena-leaderboard-row {
+:root[data-theme="dark"] .arena-list { background: var(--card, #1a1f1b); border-color: var(--line, #2a302d); }
+:root[data-theme="dark"] .arena-list li:hover { background: var(--arena-bg-soft); }
+:root[data-theme="dark"] .arena-progress .bar { background: var(--paper, #eef3ee); }
+:root[data-theme="dark"] .arena-leaderboard-row {
     background: var(--card, #1a1f1b);
     border-color: var(--line, #2a302d);
   }
-  .arena-leaderboard-row:hover { background: var(--arena-bg-soft); }
-  .arena-leaderboard-row.is-eliminated {
+:root[data-theme="dark"] .arena-leaderboard-row:hover { background: var(--arena-bg-soft); }
+:root[data-theme="dark"] .arena-leaderboard-row.is-eliminated {
     background: var(--arena-danger-soft);
     border-color: color-mix(in srgb, var(--arena-danger) 30%, transparent);
   }
-  .arena-leaderboard-empty {
+:root[data-theme="dark"] .arena-leaderboard-empty {
     border-color: var(--line, #2a302d);
     color: var(--arena-muted);
   }
   .arena-survivors input[type="number"],
-  .refill-toolbar input {
+:root[data-theme="dark"] .refill-toolbar input {
     background: var(--card, #1a1f1b);
     border-color: var(--line, #2a302d);
   }
-  .arena-custom h5 { color: var(--arena-muted); }
-}
+:root[data-theme="dark"] .arena-custom h5 { color: var(--arena-muted); }

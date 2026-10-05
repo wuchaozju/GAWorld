@@ -103,7 +103,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return run, 200
     if len(parts) == 2 and parts[1] == "export":
         return {"filename": f"{run['id']}.md", "markdown": ps.export_markdown(run)}, 200
-    return {"error": "Unknown policy endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -118,7 +118,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return {"deleted": ps.delete_run(parts[0]), "run_id": parts[0]}, 200
     except ValueError as exc:
         return {"error": str(exc)}, 400
-    return {"error": "Unknown policy endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 __all__ = ["handle_get", "handle_post", "reset", "start_run"]

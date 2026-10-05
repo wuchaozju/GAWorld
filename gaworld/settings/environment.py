@@ -96,6 +96,29 @@ def environment_settings() -> dict[str, Any]:
             # to the recorder. Off by default: it is one row per tick and only
             # the Track B redistribution analysis reads it.
             "record_occupancy": False,
+            # A full venue turns people away: a move to a commerce / leisure
+            # node whose represented crowd would exceed its capacity goes to the
+            # nearest same-category venue with room, or is refused. OFF by
+            # default — it changes who is where, so runs before and after are
+            # not comparable. See docs/proposals/2026-10-03-venue-capacity.md.
+            "capacity": {
+                "enabled": False,
+                "categories": ["commerce", "leisure"],
+                # People one resident stands for; None = traffic.agents_represent.
+                # A MODELLING KNOB: at 1.0 nothing ever fills up.
+                "agents_represent": None,
+                # Same-category venues tried before refusing; 0 = refuse at once.
+                "redirect_top_k": 4,
+            },
+            # Residents stand in rooms: each household gets its own flat
+            # (city_map interiors, floors added when short), each step puts the
+            # resident in the room that fits the activity, encounters need the
+            # same room, and venue capacity is counted per room (room capacity
+            # = venue capacity × floor-area share). OFF by default — it changes
+            # who meets whom. See gaworld/world/spatial_tree.py.
+            "rooms": {
+                "enabled": False,
+            },
         },
         # P5: per-agent home design + at-home perception. Default-on so a
         # fresh checkout ships with every resident having a home; turn it

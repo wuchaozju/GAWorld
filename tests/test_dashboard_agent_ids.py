@@ -14,9 +14,8 @@ import importlib
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import mock
 
-from gaworld.apps import dashboard_server
+from gaworld.apps import dashboard_server, world_paths
 
 
 def _reload_with_temp_config(temp_dir: Path):
@@ -36,15 +35,17 @@ class AgentIdsParseTest(unittest.TestCase):
     def setUp(self):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self._original_path = dashboard_server.DASHBOARD_CONFIG_PATH
-        # Replace the config path before the helper reloads.
-        dashboard_server.DASHBOARD_CONFIG_PATH = (
+        self._original_path = world_paths.DASHBOARD_CONFIG_PATH
+        # Replace the config path before the helper reloads. It lives in
+        # world_paths now, so the reload no longer resets it to the real
+        # repo file (which this test used to overwrite).
+        world_paths.DASHBOARD_CONFIG_PATH = str(
             Path(self._tmp.name) / "dashboard_config.json"
         )
         self._mod = _reload_with_temp_config(Path(self._tmp.name))
 
     def tearDown(self):
-        dashboard_server.DASHBOARD_CONFIG_PATH = self._original_path
+        world_paths.DASHBOARD_CONFIG_PATH = self._original_path
         _reload_with_temp_config(Path(self._tmp.name).parent)
 
     def _save(self, payload):

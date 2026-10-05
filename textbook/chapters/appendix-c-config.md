@@ -401,6 +401,7 @@ LLM_PROVIDERS = {
 
 ```
 config/
+```text
 ├── default.yaml            # 基础默认值
 ├── development.yaml        # 开发环境
 ├── production.yaml         # 生产环境
@@ -409,6 +410,7 @@ config/
 └── experiments/
     ├── exp_2026_09_26.yaml # 特定实验
     └── exp_2026_10_01.yaml
+```
 ```
 
 切换方法:

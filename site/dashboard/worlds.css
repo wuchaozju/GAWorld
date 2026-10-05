@@ -67,6 +67,15 @@
 }
 .pw-preset:hover { color: var(--green); border-color: var(--green); }
 
+/* ---- parameter sweep ---- */
+.pw-sweep-box { border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+.pw-sweep-box > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.pw-sweep-box[open] > summary { margin-bottom: 10px; }
+.pw-sweep-current, .pw-sweep-msg { margin: -4px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+.pw-sweep-msg.is-error { color: var(--red); }
+.pw-config { margin: 2px 0 4px; font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; word-break: break-all; }
+.pw-config span { font-family: inherit; font-weight: 700; }
+
 /* ---- world cards ---- */
 .pw-worlds { display: grid; gap: 12px; }
 .pw-world {
@@ -74,14 +83,14 @@
   border-left: 4px solid var(--w-color, var(--green));
   border-radius: 10px;
   padding: 12px;
-  background: #fff;
+  background: var(--card);
 }
 .pw-world.is-baseline { background: rgba(19, 121, 91, 0.045); }
 .pw-world-top { display: flex; align-items: center; gap: 8px; }
 .pw-world-top input[type="text"] { flex: 1 1 auto; min-width: 0; font-weight: 700; }
 .pw-world-tools { display: flex; gap: 4px; }
 .pw-icon {
-  border: 1px solid var(--line); background: #fff; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); cursor: pointer;
   border-radius: 6px; width: 28px; height: 28px; font-size: 13px; color: var(--muted);
   display: grid; place-items: center;
 }
@@ -116,7 +125,7 @@
 .pw-legend-item {
   display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
-  font-size: 11.5px; font-weight: 700; cursor: pointer; background: #fff; color: var(--ink);
+  font-size: 11.5px; font-weight: 700; cursor: pointer; background: var(--card); color: var(--ink);
 }
 .pw-legend-item.is-off { opacity: .38; text-decoration: line-through; }
 .pw-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
@@ -186,3 +195,66 @@
   margin-top: 8px; font-size: 12px; color: var(--red);
   white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow: auto;
 }
+
+/* ---- as a research-workbench tab ---- */
+.pw-pane[hidden] { display: none; }
+.pw-intro {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 18px; flex-wrap: wrap;
+}
+.pw-intro h2 { margin: 0 0 4px; font-size: 18px; }
+.pw-intro .rw-hint { margin: 0; max-width: 680px; }
+.pw-chart-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* styles.css stretches every select to 100%; in a card header that pushes the title aside. */
+.pw-chart-tools select { width: auto; max-width: 220px; }
+.pw-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.pw-inline select { width: auto; }
+.pw-subtle { font-size: 12px; color: var(--muted); font-weight: 700; }
+.pw-muted { color: var(--muted); }
+.pw-table tr.is-muted td { color: var(--muted); }
+
+/* ---- world role / dose ---- */
+.pw-world-meta { display: grid; grid-template-columns: 1fr 96px; gap: 6px; margin: 2px 0 4px; }
+.pw-world-meta label { gap: 3px; font-size: 10.5px; }
+
+/* ---- counterfactual estimates ---- */
+.pw-band { opacity: .14; stroke: none; }
+.pw-noise { fill: var(--amber); opacity: .16; }
+.pw-forest-label { fill: var(--ink); font-size: 11px; }
+.pw-forest-verdict { font-weight: 700; }
+.pw-verdict-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.pw-count { font-size: 12px; margin-right: 6px; }
+.pw-verdict {
+  display: inline-block; border-radius: 999px; padding: 1px 8px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  background: var(--paper); color: var(--muted); border: 1px solid var(--line);
+}
+.pw-verdict.v-robust, .pw-verdict.v-replicated { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.pw-verdict.v-suggestive, .pw-verdict.v-consistent { color: var(--amber); border-color: var(--amber); }
+.pw-verdict.v-below_noise, .pw-verdict.v-unbalanced, .pw-verdict.v-mixed { color: var(--red); border-color: var(--red); }
+.pw-forest-verdict.v-robust { fill: var(--green); }
+.pw-forest-verdict.v-below_noise, .pw-forest-verdict.v-unbalanced { fill: var(--red); }
+.pw-forest-verdict.v-suggestive { fill: var(--amber); }
+.pw-seedval { font-size: 11px; white-space: nowrap; }
+.pw-causal .pw-table { max-height: 360px; }
+
+/* ---- heterogeneity ---- */
+.pw-hte-attr { border-top: 1px solid var(--line); padding: 8px 0 4px; }
+.pw-hte-attr:first-of-type { border-top: none; }
+.pw-hte-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.pw-hte-attr table td:nth-child(2) { width: 46%; }
+.pw-cibar { position: relative; height: 12px; }
+.pw-cibar-zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.pw-cibar-range { position: absolute; top: 5px; height: 2px; border-radius: 1px; }
+.pw-cibar-dot {
+  position: absolute; top: 2px; width: 8px; height: 8px; margin-left: -4px;
+  border-radius: 50%; border: 2px solid; background: var(--card); box-sizing: border-box;
+}
+
+/* ---- model interpretation ---- */
+.pw-summary { margin: 4px 0 10px; font-size: 13.5px; line-height: 1.75; }
+.pw-subhead { margin: 12px 0 6px; font-size: 13px; }
+#pwInterpret ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.7; }
+.pw-findings { list-style: none; padding-left: 0 !important; display: grid; gap: 8px; }
+.pw-findings li { border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.pw-findings li.is-ungrounded { opacity: .6; }

@@ -91,6 +91,9 @@ class DistributedRelayClient:
         self.node_id = str(cfg.get("node_id", "")).strip() or self._default_node_id()
         self.base_url = str(relay_cfg.get("base_url", "http://127.0.0.1:8877")).rstrip("/")
         self.timeout = max(0.5, _to_float(relay_cfg.get("timeout", 3), 3.0))
+        # A world's relay lives inside the dashboard (gaworld.cluster) and
+        # only answers requests carrying the node's token.
+        self.token = str(relay_cfg.get("token") or "").strip()
         self.send_probability = _clamp(_to_float(cfg.get("send_probability", 0.18), 0.18), 0.0, 1.0)
         self.max_inbound_per_step = max(1, _to_int(cfg.get("max_inbound_per_step", 3), 3))
         self.max_outbound_per_step = max(0, _to_int(cfg.get("max_outbound_per_step", 1), 1))
@@ -115,6 +118,7 @@ class DistributedRelayClient:
                 url=url,
                 json=payload,
                 params=params,
+                headers={"Authorization": f"Bearer {self.token}"} if self.token else None,
                 timeout=self.timeout,
             )
             response.raise_for_status()

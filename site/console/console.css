@@ -2,6 +2,10 @@
 
 * { box-sizing: border-box; }
 
+/* `display: flex` on .world-chip / .user-chip used to beat the hidden attribute,
+   so a single-user install showed an empty world picker and a sign-out button. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   height: 100%;
@@ -14,7 +18,8 @@ body {
   overflow: hidden;
   color: var(--ink);
   background: var(--paper);
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ---------------------------------------------------------------- top bar */
@@ -77,11 +82,11 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: var(--green-deep);
+  background: var(--green);
   color: #ffffff;
-  font-family: Georgia, serif;
   font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .brand-name {
@@ -107,7 +112,7 @@ body {
   overflow: hidden;
 }
 
-.crumb-sep { color: #b9c8c0; }
+.crumb-sep { color: var(--faint); }
 .crumb-view { color: var(--ink); font-weight: 700; }
 
 .bar-right {
@@ -119,20 +124,22 @@ body {
 
 .open-new {
   flex-shrink: 0;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--muted);
+  padding: 5px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink-soft);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  transition: color 0.12s ease, border-color 0.12s ease;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
 .open-new:hover {
-  color: var(--green-deep);
-  border-color: var(--green);
+  color: var(--ink);
+  border-color: var(--faint);
+  background: var(--sunken);
 }
 
 /* ------------------------------------------------- signed-in user (accounts) */
@@ -159,9 +166,13 @@ body {
 
 .world-chip select {
   max-width: 220px;
-  padding: 5px 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
   font-size: 13px;
 }
 
@@ -172,7 +183,9 @@ body {
 }
 
 .world-dialog {
-  width: min(420px, 92vw);
+  width: min(460px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 20px 22px;
@@ -217,7 +230,69 @@ body {
 }
 
 .world-dialog button.danger {
-  background: #b3261e;
+  background: var(--red);
+}
+
+.world-cluster {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.world-cluster h3 {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.world-nodes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.world-nodes li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.world-nodes li small {
+  display: block;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.world-nodes li.online {
+  border-color: var(--green-deep);
+}
+
+.world-dialog button.secondary,
+.world-nodes button {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+
+.world-cluster pre {
+  margin: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--line);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
 }
 
 .world-note {
@@ -230,7 +305,7 @@ body {
   min-height: 18px;
   margin: 0 0 8px;
   font-size: 13px;
-  color: #b3261e;
+  color: var(--red);
 }
 
 /* --------------------------------------------------------- language switch */
@@ -259,13 +334,13 @@ body {
 }
 
 .lang-btn:hover:not(.is-active) {
-  background: rgba(14, 122, 88, 0.08);
   color: var(--ink);
 }
 
 .lang-btn.is-active {
-  background: var(--green-deep);
-  color: #ffffff;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
 }
 
 .lang-btn:focus-visible,
@@ -293,7 +368,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: #f7faf8;
+  background: var(--card);
   border-right: 1px solid var(--line);
   scrollbar-width: thin;
   transition: width 0.18s ease;
@@ -318,7 +393,7 @@ body {
   gap: 6px;
   margin: 0 0 4px;
   padding: 0 10px;
-  color: var(--muted);
+  color: var(--faint);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -336,12 +411,12 @@ body {
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 40px;
+  min-height: 38px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--ink);
+  color: var(--ink-soft);
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
@@ -383,17 +458,18 @@ body {
 }
 
 .tab:hover {
-  background: rgba(14, 122, 88, 0.08);
-  color: var(--green-deep);
+  background: var(--sunken);
+  color: var(--ink);
 }
 
-.tab:hover svg { color: var(--green-deep); }
+.tab:hover svg { color: var(--ink-soft); }
 
 .tab.is-active {
   background: var(--green-soft);
   color: var(--green-deep);
-  box-shadow: inset 3px 0 0 var(--green);
 }
+
+.tab.is-active .en { color: var(--green); opacity: 0.8; }
 
 .tab.is-active svg { color: var(--green); }
 
@@ -493,7 +569,7 @@ html[lang="en"] .sidebar .en {
   position: absolute;
   inset: 0;
   z-index: 3;
-  background: rgba(12, 26, 20, 0.35);
+  background: rgba(16, 24, 40, 0.35);
 }
 
 .nav-backdrop[hidden] {
@@ -523,7 +599,7 @@ html[lang="en"] .sidebar .en {
 
   body.nav-open .sidebar {
     transform: none;
-    box-shadow: 0 12px 36px rgba(10, 74, 55, 0.18);
+    box-shadow: var(--shadow-lg);
   }
 }
 

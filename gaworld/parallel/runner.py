@@ -27,8 +27,15 @@ import threading
 import time
 from typing import Any, Callable
 
+from gaworld.core.comparability import CURRENT_EPOCH
 from gaworld.logging_setup import get_logger
-from gaworld.parallel.analysis import build_report, read_state_series, summarize_report
+from gaworld.parallel.analysis import (
+    DEFAULT_SPLIT_THRESHOLD,
+    build_report,
+    read_state_series,
+    summarize_report,
+)
+from gaworld.parallel.causal import estimate_effects, summarize_effects
 from gaworld.parallel.spec import ExperimentSpec, world_overrides
 
 _LOG = get_logger("gaworld.parallel.runner")
@@ -48,6 +55,30 @@ _LOG_TAIL_BYTES = 8192
 
 DEFAULT_OUTPUT_ROOT = os.path.join("output", "parallel_worlds")
 
+#: Every world process any runner in this process has running, so a host that
+#: caps concurrent simulations (the dashboard) can count them with its own.
+_LIVE: set[subprocess.Popen] = set()
+#: Guards ``_LIVE`` only and is never held while taking another lock, so the
+#: host's gate may count it while holding its own run lock.
+_LIVE_LOCK = threading.Lock()
+#: Held from the admission check to the spawn, so two worlds can't take one
+#: slot. Order: this lock, then the host's (inside the check), then _LIVE_LOCK.
+_ADMIT_LOCK = threading.Lock()
+#: ``() -> bool``: may one more simulation start now? None = always. Set by the
+#: host through :func:`set_admission`; checked before each world process.
+_ADMISSION: dict[str, Callable[[], bool] | None] = {"check": None}
+ADMIT_POLL_SECONDS = 1.0
+
+
+def live_simulations() -> int:
+    with _LIVE_LOCK:
+        _LIVE.difference_update([proc for proc in _LIVE if proc.poll() is not None])
+        return len(_LIVE)
+
+
+def set_admission(check: Callable[[], bool] | None) -> None:
+    _ADMISSION["check"] = check
+
 
 # ---------------------------------------------------------------------------
 # Manifest
@@ -61,12 +92,16 @@ def prepare_experiment(
     output_root: str = DEFAULT_OUTPUT_ROOT,
     base_config: dict[str, Any] | None = None,
     experiment_id: str | None = None,
+    group: str | None = None,
 ) -> dict[str, Any]:
     """Create the on-disk tree for an experiment and write its manifest.
 
     Paths in the manifest are relative to ``repo_root`` because the worlds run
     with the repo as their working directory and the manifest is meant to stay
     readable after the tree is moved or shared.
+
+    ``group`` ties together the experiments that run one design under
+    several seeds, so the analysis can pool them as replicates.
     """
     stamp = time.strftime("%Y%m%d_%H%M%S")
     exp_id = experiment_id or f"{stamp}_{spec.slug}"
@@ -95,6 +130,8 @@ def prepare_experiment(
         "worlds": worlds,
         "status": "prepared",
     }
+    if group:
+        manifest["group"] = group
     write_manifest(repo_root, manifest)
     return manifest
 
@@ -296,15 +333,12 @@ class ExperimentRunner:
         run_log = self._abs(entry["run_log"])
         os.makedirs(os.path.dirname(run_log), exist_ok=True)
         handle = open(run_log, "w", encoding="utf-8")
+        proc = None
         try:
-            proc = subprocess.Popen(
-                [self.python_bin, self.script_path, "run"],
-                cwd=self.repo_root,
-                env=env,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
+            proc = self._spawn_when_admitted(world_id, env, handle)
+            if proc is None:  # stopped while waiting for a slot
+                self._set(world_id, status="stopped", finished_at=time.time())
+                return
             with self._lock:
                 self._procs[world_id] = proc
             code = proc.wait()
@@ -312,6 +346,8 @@ class ExperimentRunner:
             handle.close()
             with self._lock:
                 self._procs.pop(world_id, None)
+            with _LIVE_LOCK:
+                _LIVE.discard(proc)
 
         if self._stop.is_set() and code != 0:
             self._set(world_id, status="stopped", returncode=code, finished_at=time.time())
@@ -397,6 +433,37 @@ class ExperimentRunner:
         if sig is not None:
             self._signal_procs(sig)
         self._go.set()
+
+    def _spawn_when_admitted(
+        self, world_id: str, env: dict[str, str], handle: Any
+    ) -> subprocess.Popen | None:
+        """Start the world's simulator once the host has room for one more
+        simulation; None if the run is stopped while it waits."""
+        waiting = False
+        try:
+            while not self._stop.is_set():
+                with _ADMIT_LOCK:
+                    check = _ADMISSION["check"]
+                    if check is None or check():
+                        proc = subprocess.Popen(
+                            [self.python_bin, self.script_path, "run"],
+                            cwd=self.repo_root,
+                            env=env,
+                            stdout=handle,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                        )
+                        with _LIVE_LOCK:
+                            _LIVE.add(proc)
+                        return proc
+                if not waiting:
+                    waiting = True
+                    self._set(world_id, waiting_for_slot=True)
+                self._stop.wait(ADMIT_POLL_SECONDS)
+            return None
+        finally:
+            if waiting:
+                self._set(world_id, waiting_for_slot=False)
 
     def _wait_until_go(self) -> None:
         """Block while paused. Stopping wins over pausing, so a paused run can
@@ -491,6 +558,10 @@ class ExperimentRunner:
             else "done"
         )
         self.manifest["finished_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        # The code that produced these worlds; seeds of one design are only
+        # pooled when they share it (gaworld/core/comparability.py).
+        self.manifest["comparability_epoch"] = CURRENT_EPOCH
+        report["comparability_epoch"] = CURRENT_EPOCH
         self.manifest["world_status"] = {
             state["id"]: state["status"] for state in states
         }
@@ -505,16 +576,38 @@ class ExperimentRunner:
 
 
 def analyze_experiment(repo_root: str, manifest: dict[str, Any]) -> dict[str, Any]:
-    """Build the divergence report for a manifest from artifacts on disk."""
+    """Build the divergence report and the counterfactual estimates for a
+    manifest from artifacts on disk."""
     series = {
-        world_id: read_state_series(os.path.join(repo_root, entry["state_csv"]))
+        world_id: read_state_series(os.path.join(repo_root, entry["state_csv"]), panel=True)
         for world_id, entry in manifest.get("worlds", {}).items()
     }
     report = build_report(manifest, series)
+    # A placebo world measures how far histories drift with nothing real
+    # happening; the fixed default threshold is only a guess at that number.
+    placebo_peak = max(
+        (world["divergence_peak"] for world in report["worlds"]
+         if world.get("role") == "placebo" and world.get("has_data") and not world["is_baseline"]),
+        default=0.0,
+    )
+    if placebo_peak > DEFAULT_SPLIT_THRESHOLD:
+        report = build_report(manifest, series, split_threshold=placebo_peak)
+    report["split_threshold_source"] = "placebo" if placebo_peak > DEFAULT_SPLIT_THRESHOLD else "default"
+    report["causal"] = estimate_effects(
+        manifest.get("spec", {}),
+        {world_id: data["panel"] for world_id, data in series.items() if data.get("panel")},
+        baseline_id=report["baseline_id"],
+        steps=report["steps"],
+        steps_per_day=report["steps_per_day"],
+        noise_reference_id=manifest.get("spec", {}).get("reference_id"),
+    )
     report["experiment_id"] = manifest.get("id")
     report["root"] = manifest.get("root")
     report["name"] = manifest.get("spec", {}).get("name")
     report["created_at"] = manifest.get("created_at")
+    report["group"] = manifest.get("group")
+    report["seed"] = manifest.get("spec", {}).get("seed")
+    report["comparability_epoch"] = manifest.get("comparability_epoch")
     report["summary"] = summarize_report(report)
     for world in report.get("worlds", []):
         entry = manifest.get("worlds", {}).get(world["id"], {})
@@ -578,7 +671,35 @@ def write_report(repo_root: str, manifest: dict[str, Any], report: dict[str, Any
             f"（{row['label']}）: 基准={row['baseline_final']:.4f}, "
             f"本世界={row['final']:.4f}, Δ={row['delta_final']:+.4f}"
         )
-    lines += ["", f"- 指标明细：`{os.path.relpath(csv_path, repo_root)}`", ""]
+    causal = report.get("causal") or {}
+    effects_path = os.path.join(root, "causal_effects.csv")
+    with open(effects_path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        columns = [
+            "world_id", "metric", "n", "ate", "ci_low", "ci_high", "p_value", "q_value", "d_z",
+            "ate_final", "pre_gap", "did", "noise", "verdict",
+        ]
+        writer.writerow(columns)
+        for row in causal.get("estimates", []):
+            writer.writerow([
+                "" if row.get(key) is None else (f"{row[key]:.6f}" if isinstance(row[key], float) else row[key])
+                for key in columns
+            ])
+    lines += [
+        "",
+        f"## 反事实推断（对照：{labels.get(causal.get('baseline_id'), causal.get('baseline_id'))}）",
+        "",
+        "每位居民在两个世界里各有一段历史，个体效应 = 处理世界 − 对照世界（事件后窗口均值）；"
+        "区间为按居民重抽样的 95% bootstrap，p 为符号翻转随机化检验，q 为 BH-FDR 校正。",
+        "",
+    ]
+    lines += [f"- {line}" for line in summarize_effects(causal, labels)]
+    lines += [
+        "",
+        f"- 指标明细：`{os.path.relpath(csv_path, repo_root)}`",
+        f"- 效应估计：`{os.path.relpath(effects_path, repo_root)}`",
+        "",
+    ]
     with open(md_path, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
     return json_path

@@ -24,11 +24,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from gaworld.apps import dashboard_server as ds
-from gaworld.apps import family_api
+from gaworld.apps import family_api, world_paths
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DASHBOARD = os.path.join(REPO_ROOT, "site", "dashboard")
@@ -133,9 +133,9 @@ class ApiTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        original = ds.RECORDS_DIR
-        self.addCleanup(lambda: setattr(ds, "RECORDS_DIR", original))
-        ds.RECORDS_DIR = self.tmp.name
+        original = world_paths.RECORDS_DIR
+        self.addCleanup(lambda: setattr(world_paths, "RECORDS_DIR", original))
+        world_paths.RECORDS_DIR = self.tmp.name
 
     def _write(self, table, rows):
         with open(os.path.join(self.tmp.name, f"{table}.jsonl"), "w", encoding="utf-8") as fh:
@@ -234,14 +234,18 @@ class StudioEditorApiTests(unittest.TestCase):
     re-derive the assignment: the question is what happens *next* run."""
 
     def setUp(self):
-        from gaworld.settings import CONFIG
-
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        original = CONFIG.get("family")
-        self.addCleanup(lambda: CONFIG.__setitem__("family", original))
-        CONFIG["family"] = dict(original)
-        CONFIG["family"]["overrides_path"] = os.path.join(self.tmp.name, "overrides.json")
+        real_config = family_api._config
+
+        def config():
+            cfg = real_config()
+            cfg["family"]["overrides_path"] = os.path.join(self.tmp.name, "overrides.json")
+            return cfg
+
+        patcher = mock.patch.object(family_api, "_config", config)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_preview_returns_a_family_for_every_agent(self):
         payload, status = family_api.handle_get("/api/family/preview", {})
@@ -331,10 +335,10 @@ class StudioEditorApiTests(unittest.TestCase):
         self.assertEqual(status, 404)
 
     def test_the_dashboard_server_forwards_both_verbs(self):
-        path = os.path.join(REPO_ROOT, "gaworld", "apps", "dashboard_server.py")
-        with open(path, encoding="utf-8") as handle:
-            source = handle.read()
-        self.assertEqual(source.count('path.startswith("/api/family")'), 2)
+        from gaworld.apps import routes
+
+        self.assertEqual(routes.find(routes.GET_ROUTES, "/api/family/preview").module, "family_api")
+        self.assertEqual(routes.find(routes.POST_ROUTES, "/api/family/override").module, "family_api")
 
 
 class FrontendWiringTests(unittest.TestCase):

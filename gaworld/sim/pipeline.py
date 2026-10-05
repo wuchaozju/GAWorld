@@ -112,7 +112,16 @@ class StagePipeline:
         return text, None
 
     def run_step(self, agent, step: dict, ctx) -> dict:
-        """Run every stage over the shared step dict. Errors propagate."""
-        for _name, fn in self.stages:
+        """Run every stage over the shared step dict. Errors propagate.
+
+        A stage whose name is in ``step["_skip_stages"]`` is skipped for this
+        step only. The set is read before every stage, so a plugin can set it
+        from the ``on_agent_pre_step`` hook (which ``prepare`` emits); it then
+        owns whatever working keys the skipped stages would have produced
+        (``_act``, ``_effective_activity``, ...) that later stages read.
+        """
+        for name, fn in self.stages:
+            if name in (step.get("_skip_stages") or ()):
+                continue
             fn(agent, step, ctx)
         return step

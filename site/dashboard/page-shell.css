@@ -22,21 +22,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 16px 22px;
+  padding: 18px 22px;
   border: 1px solid var(--line);
-  background: linear-gradient(110deg, rgba(255, 255, 252, 0.96), rgba(226, 239, 230, 0.9));
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(90deg, var(--green-pale), rgba(255, 255, 255, 0) 55%),
+    var(--card);
+  box-shadow: var(--shadow-sm);
 }
 .brand { display: flex; align-items: center; gap: 16px; }
 .brand-mark {
   width: 46px; height: 46px; flex: none;
   display: grid; place-items: center;
-  background: var(--ink); color: var(--paper);
-  font-family: Georgia, serif; font-weight: 700; font-size: 20px;
-  border-radius: 10px;
+  background: var(--green); color: var(--on-accent);
+  font-weight: 800; font-size: 17px;
+  border-radius: var(--radius);
 }
-.brand-copy h1 { font-family: Georgia, "Noto Serif SC", serif; font-size: 28px; margin-top: 4px; }
-.brand-copy .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.brand-copy h1 { font-size: var(--fs-xl); font-weight: 750; letter-spacing: -0.01em; margin-top: 4px; }
+.brand-copy .sub { margin: 4px 0 0; color: var(--muted); font-size: var(--fs-sm); }
 
 /* Hosted inside the console shell (html.is-embedded is set by i18n.js): the
    shell already carries the GA mark and names the view, so the page header
@@ -44,24 +47,39 @@
 html.is-embedded .studio-shell { padding-top: 12px; }
 html.is-embedded .studio-top { padding: 12px 18px; }
 html.is-embedded .brand-mark { display: none; }
-html.is-embedded .brand-copy h1 { font-size: 22px; }
+html.is-embedded .brand-copy h1 { font-size: var(--fs-lg); }
 
 /* ---- Step rail ---- */
+/* The rail container. Studio styles its own .step-rail; every other page uses
+   .studio-steps, which used to have no rule at all, so the steps stacked
+   (external and settings patched it per page; population and survey never did). */
+.studio-steps {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin-top: 12px; padding: 6px;
+  border: 1px solid var(--line); background: var(--card);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+}
+.studio-steps .step > i {
+  width: 22px; height: 22px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-style: normal;
+  border: 1px solid var(--line-strong); color: var(--muted); background: var(--card);
+}
+.studio-steps .step.is-active > i { background: var(--green); color: var(--on-accent); border-color: var(--green); }
 .step {
   flex: 1 1 auto; min-width: 118px;
   display: flex; align-items: center; gap: 9px;
-  padding: 10px 14px; border: 1px solid transparent; border-radius: 8px;
+  padding: 9px 14px; border: 1px solid transparent; border-radius: var(--radius-sm);
   background: transparent; color: var(--muted); cursor: pointer;
   font-weight: 600; font-size: 13px; white-space: nowrap; transition: all .12s ease;
 }
-.step:hover { color: var(--ink); background: rgba(19, 121, 91, 0.06); }
+.step:hover { color: var(--ink); background: var(--sunken); }
 .step .num {
   width: 22px; height: 22px; flex: none; border-radius: 50%;
   display: grid; place-items: center; font-size: 12px;
-  border: 1px solid var(--line); color: var(--muted); background: #fff;
+  border: 1px solid var(--line-strong); color: var(--muted); background: var(--card);
 }
-.step.is-active { color: var(--ink); border-color: var(--green); background: rgba(19, 121, 91, 0.09); }
-.step.is-active .num { background: var(--green); color: #fff; border-color: var(--green); }
+.step.is-active { color: var(--green-deep); border-color: transparent; background: var(--green-soft); }
+.step.is-active .num { background: var(--green); color: var(--on-accent); border-color: var(--green); }
 .step.is-done .num { background: var(--ink); color: #fff; border-color: var(--ink); }
 /* The step rail is the primary navigation on six pages and had no focus
    indicator at all — .button's ring lives in styles.css and never applied
@@ -74,11 +92,11 @@ html.is-embedded .brand-copy h1 { font-size: 22px; }
 /* ---- Panel ---- */
 .panel {
   border: 1px solid var(--line); background: var(--panel);
-  box-shadow: var(--shadow); border-radius: 12px; padding: 18px;
+  box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); padding: 20px;
 }
 
 /* ---- buttons (extra tones layered on base .button) ---- */
-.button.steel { background: var(--steel); color: #fff; border-color: var(--steel); }
+.button.steel { background: var(--steel); color: var(--on-accent); border-color: var(--steel); }
 .button.ghost { background: transparent; }
 .button:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -86,6 +104,6 @@ html.is-embedded .brand-copy h1 { font-size: 22px; }
 .studio-foot {
   display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
   margin-top: 14px; padding: 12px 20px; font-size: 12px; color: var(--muted);
-  border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius);
 }
 .studio-foot b { color: var(--ink); font-weight: 700; }

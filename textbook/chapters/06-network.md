@@ -4,6 +4,15 @@
 
 ---
 
+## 6.X 跨章交叉引用
+
+**网络科学的理论深度**:本章是网络科学的方法应用,第六章是网络科学的理论深度。
+
+具体细节详见:
+- **第 21 章 网络科学与社会**:Watts-Strogatz 模型详解、Barabási-Albert 模型、无标度争议、Albert 鲁棒性研究
+- **第 3 章 简史**:Christakis-Fowler 肥胖传播的网络实验
+- **第 11 章 数据分析**:网络指标的可视化与统计
+
 ## 6.1　关系的数据结构
 
 在社会仿真里,"关系"不是一根线,而是一个有结构的记录。GAWorld 把一条关系建模成 5 元组:
@@ -272,22 +281,7 @@ plt.axis('off')
 plt.savefig('social_opinion_network.png', dpi=100, bbox_inches='tight')
 ```
 
-跑这段代码会生成一张 50 节点的社群网络图,节点颜色按意见值冷暖渐变(蓝=保守,红=开放)。读者可以直观看到:相同意见的人倾向于聚在一起,意见极端的人要么在网络中心,要么在边缘。
-
----
-
-## 6.7　本章小结
-
-- 关系是 5 元组(对象、强度、亲密度、义务、可信度、上次接触)+ 互动历史,6 个字段让社会图比一般 ABM 更真实。
-- 社会图生成走"小世界 + 无标度 + 高聚类 + Dunbar 分层"四步,GAWorld 用 Watts-Strogatz + 富者愈富组合。
-- 传染分四类:信息(SIR)、情绪(阈值)、规范(多代)、行为(Christakis-Fowler),不同传染用不同模型。
-- 网络演化包括关系衰减、强化、新关系生成,共演化是网络与行为的双向耦合。
-- 幽灵节点是"不在城里但有关系"的人,让仿真有"远程生活"的存在感。
-- 用 NetworkX 可以 30 行代码生成 + 可视化社会网络。
-
----
-
-## 6.8　思考题
+跑这段代码会生成一张 50 节点的社群网络图,节点颜色按意见值冷暖渐变(蓝=保守,红=开放)。读者可以直观看到:相同意见的人倾向于聚在一起,意见极端的人要么在网络中心,要么在边缘。## 6.8　思考题
 
 1. **为你的家人/朋友画一张关系图**:列出 10–15 个最亲密的人,标注关系类型(家人/老友/同事/邻居)、亲密度、义务、可信度。看看是否符合"Dunbar 分层"——是否最内圈 1–2 人,次内圈 5 人,外圈 15–30 人?
 2. **用 6.3 节的 SIR 代码跑一次**:改变 β(感染率)和 γ(恢复率),画出感染曲线。观察:**β 远大于 γ 时**会发生什么?**γ 远大于 β 时**会发生什么?
@@ -316,7 +310,7 @@ plt.savefig('social_opinion_network.png', dpi=100, bbox_inches='tight')
 > 6.3 节的 SIR 模型是社会仿真里**最经典也最有用**的模型——读者如果只能学一个模型,就学这个。把它和 6.4 节的共演化模型组合,就能解释"谣言如何传播""意见如何极化""行为如何传染"等一大类社会现象。第 15 章的案例三会用到这些模型。下一章我们进入"语言模型作为仿真引擎"——LLM 如何让社会仿真产生"人味"?
 ---
 
-## 6.10　扩展:社会网络的高级主题
+### 6.10 扩展:社会网络的高级主题
 
 本节讨论社会网络研究的高级主题,适合研究生或博士生。
 
@@ -435,7 +429,7 @@ def network_intervention_effect(baseline_network, treated_node, treatment_effect
 
 ---
 
-## 6.11　扩展:网络研究的应用领域
+### 6.11 扩展:网络研究的应用领域
 
 ### 6.11.1　公共卫生
 
@@ -473,7 +467,7 @@ GAWorld 在所有这些领域都有应用潜力。
 
 ---
 
-## 6.12　扩展:网络的批判性视角
+### 6.12 扩展:网络的批判性视角
 
 社会网络不是万能的,本节讨论局限。
 
@@ -515,23 +509,7 @@ GAWorld 在所有这些领域都有应用潜力。
 - 网络因果识别是社会网络研究的前沿。
 - 应用领域:公共卫生、市场营销、组织管理、公共政策。
 - 批判性视角:测量、同质性、网络结构与权力。
-
-
----
-
-## 6.14　扩展:网络分析工具与算法
-
-### 6.14.1　常用网络指标
-
-```python
-def compute_network_metrics(G):
-    """计算网络的所有常用指标"""
-    return {
-        "nodes": G.number_of_nodes(),
-        "edges": G.number_of_edges(),
-        "density": nx.density(G),
-        "average_degree": sum(dict(G.degree()).values()) / G.number_of_nodes(),
-        "clustering": nx.average_clustering(G),
+rage_clustering(G),
         "path_length": nx.average_shortest_path_length(G),
         "components": nx.number_connected_components(G),
         "diameter": nx.diameter(G) if nx.is_connected(G) else float("inf")
@@ -592,7 +570,7 @@ def visualize_network(G, communities=None, output="network.png"):
 
 ---
 
-## 6.15　扩展:网络传播的工程细节
+### 6.15 扩展:网络传播的工程细节
 
 ### 6.15.1　SIR 模型变种
 
@@ -662,7 +640,7 @@ def network_intervention(G, intervention_type, params):
 
 ---
 
-## 6.16　扩展:网络结构的批判性视角
+### 6.16 扩展:网络结构的批判性视角
 
 ### 6.16.1　网络假设的现实检验
 
@@ -703,7 +681,7 @@ def network_intervention(G, intervention_type, params):
 
 ---
 
-## 6.18　扩展:网络与制度的交叉
+### 6.18 扩展:网络与制度的交叉
 
 ### 6.18.1　制度作为网络
 
@@ -741,15 +719,12 @@ class InstitutionalNetwork:
         self.social_relations = nx.Graph()
 
     def add_legal_relation(self, u, v, type_):
-        self.legal_relations.add_edge(u, v, type=type_)
-
-    def add_economic_relation(self, u, v, transaction_volume):
-        self.economic_relations.add_edge(u, v, weight=transaction_volume)
+        self.legal_relations.add_edge(u, v, type=type_)v, weight=transaction_volume)
 ```
 
 ---
 
-## 6.19　扩展:网络与社会资本
+### 6.19 扩展:网络与社会资本
 
 ### 6.19.1　社会资本的定义
 
@@ -801,7 +776,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 
 ---
 
-## 6.21　扩展:网络与传播的细节
+### 6.21 扩展:网络与传播的细节
 
 ### 6.21.1　传播的鲁棒性
 
@@ -838,7 +813,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 
 ---
 
-## 6.22　扩展:网络与博弈的结合
+### 6.22 扩展:网络与博弈的结合
 
 ### 6.22.1　网络博弈
 
@@ -870,28 +845,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 
 - 中心化网络 → 易协调
 - 分散网络 → 难协调
-- 模块化网络 → 局部行动
-
----
-
-## 6.23　本章小结(最终扩展版)
-
-- 网络传播的细节:鲁棒性、修复、多层、免疫策略。
-- 网络与博弈的结合:网络博弈、合作涌现、社会规范、集体行动。
-- 网络是社会仿真里最复杂、最有研究价值的子系统。
-
-
----
-
-## 6.24　扩展:网络与文化
-
-### 6.24.1　文化传播的网络
-
-文化通过网络传播:
-
-- 习俗的扩散
-- 语言的传播
-- 时尚的演化
+- 模块化网络 → 局部行动化
 - 价值观的传染
 
 ### 6.24.2　文化网络特性
@@ -922,7 +876,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 
 ---
 
-## 6.25　扩展:网络与权力
+### 6.25 扩展:网络与权力
 
 ### 6.25.1　权力的网络基础
 
@@ -982,22 +936,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 - 网络伦理的思考
 
 最后,祝读者用好社会网络,做出更好的仿真!
-
-
----
-
-## 6.28　扩展:网络科学的实证方法
-
-网络研究需要严谨的实证方法。本节讨论这些方法。
-
-### 6.28.1　网络数据的收集
-
-网络数据的收集有多种方式:
-
-- **问卷调查**:问"你的好朋友有哪些?"
-- **观察研究**:在现实场景观察谁和谁互动
-- **数字足迹**:用社交媒体、通信记录
-- **档案数据**:组织档案、历史记录
+史记录
 
 每种方式各有优劣:
 
@@ -1040,7 +979,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 
 ---
 
-## 6.29　扩展:网络分析的具体技术
+### 6.29 扩展:网络分析的具体技术
 
 ### 6.29.1　中心性指标
 
@@ -1049,13 +988,7 @@ def compute_social_capital(G: nx.Graph, agents: list) -> dict:
 - **度中心性**(Degree Centrality):节点的直接连接数
 - **中介中心性**(Betweenness Centrality):节点作为"桥梁"的程度
 - **接近中心性**(Closeness Centrality):节点到其他节点的平均距离的倒数
-- **特征向量中心性**(Eigenvector Centrality):节点的连接对象的"重要性"加权
-- **PageRank**:Google 的网页排名算法
-
-```python
-import networkx as nx
-
-G = nx.karate_club_graph()
+- **特征向量中心性**(Eigenvector Centrality):ub_graph()
 
 print("度中心性:", nx.degree_centrality(G))
 print("中介中心性:", nx.betweenness_centrality(G))
@@ -1101,7 +1034,7 @@ print("模块化:", community_louvain.modularity(partition, G))
 
 ---
 
-## 6.30　扩展:网络与行为的双向耦合
+### 6.30 扩展:网络与行为的双向耦合
 
 ### 6.30.1　选择 vs 影响
 
@@ -1139,7 +1072,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.31　扩展:网络与制度
+### 6.31 扩展:网络与制度
 
 ### 6.31.1　制度作为网络
 
@@ -1171,7 +1104,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.32　扩展:网络与文化
+### 6.32 扩展:网络与文化
 
 ### 6.32.1　文化通过网络传播
 
@@ -1212,7 +1145,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.33　扩展:网络与权力
+### 6.33 扩展:网络与权力
 
 ### 6.33.1　权力的网络基础
 
@@ -1248,7 +1181,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.34　扩展:网络与健康
+### 6.34 扩展:网络与健康
 
 ### 6.34.1　健康传染
 
@@ -1284,7 +1217,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.35　扩展:网络与经济
+### 6.35 扩展:网络与经济
 
 ### 6.35.1　经济网络
 
@@ -1319,7 +1252,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.36　扩展:网络与组织
+### 6.36 扩展:网络与组织
 
 ### 6.36.1　组织网络
 
@@ -1347,7 +1280,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.37　扩展:网络与教育
+### 6.37 扩展:网络与教育
 
 ### 6.37.1　教育网络
 
@@ -1375,7 +1308,7 @@ Christakis-Fowler 区分:
 
 ---
 
-## 6.38　扩展:网络与传播学
+### 6.38 扩展:网络与传播学
 
 ### 6.38.1　新闻传播
 

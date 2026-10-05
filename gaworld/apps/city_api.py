@@ -606,7 +606,7 @@ def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
     except Exception as exc:  # a panel read must never take the dashboard down
         _LOG.warning("city GET %s failed: %s", path, exc)
         return {"error": f"读取失败：{exc}"}, 500
-    return {"error": f"unknown city endpoint: {path}"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 _POST_ROUTES = {
@@ -625,7 +625,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     """Route ``/api/city/*`` POSTs. Returns ``(payload, status)``."""
     handler = _POST_ROUTES.get(path.rstrip("/") or path)
     if handler is None:
-        return {"error": f"unknown city endpoint: {path}"}, 404
+        return {"error": "Unknown endpoint"}, 404
     try:
         return handler(payload if isinstance(payload, dict) else {}), 200
     except CityNotFoundError as exc:

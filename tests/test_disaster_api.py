@@ -262,7 +262,7 @@ class HttpTest(unittest.TestCase):
                 "/api/games/disaster/run",
                 {"city": "wuzhen", "agent_ids": [1, 2], "disaster_id": "earthquake"},
             )
-            self.assertEqual(status, 200)
+            self.assertEqual(status, 202)
             job_id = body["job_id"]
             for _ in range(200):  # the job runs on its own thread
                 record = disaster_api.job_status(job_id)

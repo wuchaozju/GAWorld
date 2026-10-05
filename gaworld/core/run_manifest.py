@@ -56,14 +56,17 @@ A manifest is a plain dict with these top-level keys::
       "started_at":     "<iso-8601>",
       "finished_at":    "<iso-8601>",
       "duration_s":     123.4,
-      "outcome":        "ok" | "failed" | "in_progress",
+      "outcome":        "ok" | "degraded" | "failed" | "in_progress",
+      "comparability_epoch": 5,   # see gaworld/core/comparability.py
       "environment":    {"python": "...", "platform": "...", "hostname": "..."},
       "git":            {"commit": "...", "branch": "...", "dirty": true},
       "dependencies":   {"pandas": "2.0.3", ...},
       "config":         {...},   # curated subset
-      "run":            {"sim_days": 30, "agent_ids": [...], "random_seed": 42},
+      "run":            {"sim_days": 30, "agent_ids": [...], "random_seed": 42,
+                         "seed_source": "config" | "auto"},
       "llm":            {"call_count": 512, "by_task": {...}, "by_provider": {...},
-                          "failure_count": 3},
+                          "failure_count": 3, "requests": 500,
+                          "requests_failed": 1, "requests_fell_back": 11},
       "artefacts":      {"logs": [...], "memory": [...], "state": [...]}
     }
 """
@@ -82,11 +85,19 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
+from gaworld.core.comparability import CURRENT_EPOCH
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.run_manifest")
 
 SCHEMA_VERSION = 1
+
+#: Share of model requests lost after every fallback above which a run that
+#: finished is reported as ``degraded`` rather than ``ok``. A lost request
+#: means some decision fell back to a heuristic default, so the run is not
+#: the run its config describes. (c)-class judgement, see
+#: ``run_manifest.degraded_failure_share``.
+DEFAULT_DEGRADED_FAILURE_SHARE = 0.05
 
 # ---------------------------------------------------------------------
 # Curated config keys. Everything not on this list is shape-summarised.
@@ -152,7 +163,10 @@ def _git_info(repo_root: str) -> dict[str, Any]:
     def _run(args: list[str]) -> str:
         try:
             proc = subprocess.run(
-                ["git", *args],
+                # --no-optional-locks: a read-only status must not take
+                # .git/index.lock (it collides with an editor's git, and a
+                # sandbox that cannot unlink leaves the lock behind).
+                ["git", "--no-optional-locks", *args],
                 cwd=repo_root,
                 capture_output=True,
                 text=True,
@@ -220,6 +234,9 @@ def _curate_config(cfg: Mapping[str, Any] | None) -> dict[str, Any]:
     for key in _CONFIG_KEYS_VERBATIM:
         if key in cfg:
             out[key] = cfg[key]
+    organizations = cfg.get("organizations")
+    if isinstance(organizations, Mapping):
+        out["organizations"] = dict(organizations)
     for key in _CONFIG_ENABLE_BLOCKS:
         block = cfg.get(key)
         if isinstance(block, Mapping):
@@ -253,6 +270,45 @@ def _curate_config(cfg: Mapping[str, Any] | None) -> dict[str, Any]:
             },
         }
     return out
+
+
+def _run_scoped_llm(snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    """The run's own LLM numbers, not the process's.
+
+    :class:`gaworld.llm.stats.LLMCallStats` counts per process. A run started
+    from a process that already made calls — the dashboard, or a test suite
+    where every earlier test shares the counter — would otherwise report
+    those calls (and their failures) as its own.
+    """
+    run = snapshot.get("run") if isinstance(snapshot, Mapping) else None
+    if not isinstance(run, Mapping):
+        return dict(snapshot or {})
+    out = dict(run)
+    out["process_call_count"] = snapshot.get("call_count", 0)
+    return out
+
+
+def _llm_verdict(llm: Mapping[str, Any], threshold: float) -> tuple[bool, list[str]]:
+    """``(degraded, notes)`` from the request-level counters."""
+    notes: list[str] = []
+    requests = int(llm.get("requests", 0) or 0)
+    if not requests:
+        return False, notes
+    failed = int(llm.get("requests_failed", 0) or 0)
+    fell_back = int(llm.get("requests_fell_back", 0) or 0)
+    share = failed / requests
+    degraded = share > threshold
+    if failed:
+        notes.append(
+            f"{failed}/{requests} model requests ({share:.1%}) were lost after every "
+            f"fallback; threshold for 'degraded' is {threshold:.0%}."
+        )
+    if fell_back:
+        notes.append(
+            f"{fell_back}/{requests} model requests were answered by a fallback "
+            "provider, not the configured one."
+        )
+    return degraded, notes
 
 
 def _list_artefacts(root: str, subdirs: Iterable[str]) -> dict[str, list[dict[str, Any]]]:
@@ -304,6 +360,10 @@ class ManifestBuilder:
         "pandas", "numpy", "requests", "matplotlib", "networkx",
     )
     partial_write: bool = True
+    #: "config" when the run's random_seed was configured, "auto" when the
+    #: simulator drew one because none was set (it is still recorded, so the
+    #: run can be repeated).
+    seed_source: str = ""
     _run_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     _started_iso: str = field(default_factory=_iso_now)
     _started_perf: float = field(default_factory=time.perf_counter)
@@ -357,6 +417,20 @@ class ManifestBuilder:
             except Exception as exc:  # noqa: BLE001 — snapshot must never crash finalisation
                 _LOG.warning("LLM stats snapshot failed: %s", exc)
                 llm_snapshot = {"error": _safe_str(exc)}
+        llm_snapshot = _run_scoped_llm(llm_snapshot)
+        notes = list(self._notes)
+        if outcome == "ok":
+            block = self.config.get("run_manifest", {})
+            threshold = DEFAULT_DEGRADED_FAILURE_SHARE
+            if isinstance(block, Mapping):
+                try:
+                    threshold = float(block.get("degraded_failure_share", threshold))
+                except (TypeError, ValueError):
+                    pass
+            degraded, llm_notes = _llm_verdict(llm_snapshot, threshold)
+            notes += llm_notes
+            if degraded:
+                outcome = "degraded"
 
         artefacts_root = str(self.config.get("output_root") or _default_output_root(self.config))
         artefact_subs: tuple[str, ...] = (
@@ -375,6 +449,7 @@ class ManifestBuilder:
             "finished_at": finished_iso,
             "duration_s": duration,
             "outcome": outcome,
+            "comparability_epoch": CURRENT_EPOCH,
             "error": error or "",
             "environment": _environment_snapshot(),
             "git": _git_info(self.repo_root),
@@ -384,11 +459,12 @@ class ManifestBuilder:
                 "sim_days": self.config.get("sim_days"),
                 "agent_ids": list(self.config.get("agent_ids", []) or []),
                 "random_seed": self.config.get("random_seed"),
+                "seed_source": self.seed_source,
                 "stateful": bool(self.config.get("stateful", False)),
             },
             "llm": llm_snapshot,
             "artefacts": _list_artefacts(self.repo_root, artefact_subs) if outcome != "in_progress" else {},
-            "notes": list(self._notes),
+            "notes": notes,
             "events": list(self._events),
         }
         return manifest
@@ -474,6 +550,7 @@ def start_manifest(
     config: Mapping[str, Any],
     repo_root: str | None = None,
     manifest_dir: str | None = None,
+    seed_source: str = "",
 ) -> ManifestBuilder:
     """Instantiate a :class:`ManifestBuilder` with sensible defaults.
 
@@ -492,6 +569,7 @@ def start_manifest(
         manifest_dir=str(target),
         config=dict(config) if isinstance(config, Mapping) else {},
         partial_write=bool(block.get("partial_write", True)),
+        seed_source=seed_source,
     )
     builder.write_partial()
     return builder

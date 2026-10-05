@@ -8,7 +8,9 @@ the one that makes every ablation arm in the design proposal meaningful.
 
 from __future__ import annotations
 
+import os
 import random
+import tempfile
 import unittest
 from copy import deepcopy
 
@@ -377,7 +379,9 @@ class TestPlugin(unittest.TestCase):
         config = deepcopy(CONFIG)
         config["personality"] = deepcopy(CONFIG["personality"])
         config["personality"]["profile_path"] = ""       # force the sampled path
-        config["personality"]["output_dir"] = "output/traits/test"
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        config["personality"]["output_dir"] = os.path.join(scratch.name, "traits")
         config["personality"].update(overrides or {})
         ctx = _Ctx(config)
         plugin = BigFivePlugin()

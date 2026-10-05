@@ -156,7 +156,7 @@ EpiSimdemics 给社会仿真的贡献:
 
 **2023 年 7 月:AgentSociety 挑战赛**(ACM 等机构联合主办)。研究者用 LLM 智能体模拟社会调查、政策评估、市场博弈,提出"LLM 社会仿真可信度"作为独立议题。
 
-**2024–2026:工程化阶段**。LLM 驱动的社会仿真从论文原型进入工程化阶段。多个平台涌现——**GAWorld**(LLM 驱动 + 完整研究工作台)、**Smallville 衍生项目**、**OASIS**(Open Agent Social Interaction Simulator)、**Project Sid**(Alibaba)、**AgentSociety**(清华大学)。
+**2024–2026:工程化阶段**。LLM 驱动的社会仿真从论文原型进入工程化阶段。多个平台涌现——**GAWorld**(LLM 驱动 + 完整研究工作台)、**Smallville 衍生项目**、**OASIS**(Open 智能体 Social Interaction Simulator)、**Project Sid**(Alibaba)、**AgentSociety**(清华大学)。
 
 ### 3.4.2　LLM 改变社会仿真的认识论后果
 
@@ -193,11 +193,16 @@ GAWorld 作为 LLM 驱动的社会仿真平台,贡献了:
 把 70 年历史浓缩成一张图谱,可以分出五个流派:
 
 ```
+```text
                          ┌──────────────────┐
+```
                          │   符号 ABM 流    │
                          │  (NetLogo, Repast)│
+```text
                          └────────┬─────────┘
+```
                                   │
+```text
     ┌─────────────────┐          │          ┌──────────────────┐
     │  行为主义流派   │          │          │   复杂系统流派   │
     │  (启发式/规则)  │          │          │   (Sugarscape)   │
@@ -205,16 +210,23 @@ GAWorld 作为 LLM 驱动的社会仿真平台,贡献了:
              │                   │                    │
              │            ┌──────┴──────┐             │
              └────────────│  生成式流派  ├─────────────┘
+```
                           │  (LLM 驱动) │
                           │   GAWorld   │
+```text
                           └──────┬──────┘
+```
                                  │
+```text
               ┌──────────────────┴──────────────────┐
+```
               │                                     │
+```text
     ┌─────────┴─────────┐                 ┌──────────┴────────┐
     │   计算社会学流派  │                 │   经济学/博弈流派 │
     │  (Lazer, Pentland)│                 │  (Axelrod, Bowles)│
     └───────────────────┘                 └────────────────────┘
+```
 ```
 
 **符号 ABM 流**:以 NetLogo、Repast 为工具,智能体是"符号",行为是规则的推演。代表人物 Epstein、Wilensky、Bonabeau。典型应用:Schelling 隔离、Sugarscape、Santa Fe 人工股市。
@@ -823,12 +835,3 @@ GAWorld 是 2026 年综合性的代表:横跨多个流派,以 LLM 驱动为主,�
 **附录**:本章涉及的论文和工具列在附录 D,具体平台命令见附录 B,配置细节见附录 C。
 
 EOF
-python3 << 'PYEOF'
-import re
-with open('/Users/cw/dev/GAWorld/textbook/chapters/03-history.md') as f:
-    s = f.read()
-text = re.sub(r'```.*?```', '', s, flags=re.S)
-text = re.sub(r'[#*`>|]', '', text)
-text = re.sub(r'\s+', '', text)
-print(f'第 3 章字数: {len(text)}')
-PYEOF

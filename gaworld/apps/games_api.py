@@ -25,6 +25,34 @@ games against the residents of a city. Seven games live there today:
 * **双队竞赛 (Team Duel)** — two teams of residents get the same task and two
   different methods, and a blind judge scores what each produced.
   ``/api/games/duel/*`` forwards to :mod:`gaworld.apps.duel_api`.
+* **小说局 (Novel Writer)** — pick a cast of residents, hand in an outline
+  and a target word count, and the model writes a short novel where every
+  named character is one of those residents. The persona (occupation, age,
+  voice, values) shapes who they become in the story; the outline decides
+  what happens. ``/api/games/novel/*`` forwards to :mod:`gaworld.apps.novel_api`.
+* **陪审团 (Jury Deliberation)** — the player writes a *case* and a
+  :class:`JobStore`-backed run lets three-to-five residents deliberate
+  for three rounds and then cast anonymous ballots on guilt and on a
+  second question (sentence / sympathy / reformability). The verdict
+  falls out of the answers, not out of a separate judge call.
+  ``/api/games/jury/*`` forwards to :mod:`gaworld.apps.jury_api`.
+* **新闻评论 (News Commentary)** — the player hands the game a piece of
+  news (a URL the server fetches, or a pasted text), and one model call
+  per picked resident records their comment, their stance, and how
+  strongly they hold it. Cost is ``residents + 1`` model calls, so the
+  board is small and parallel. ``/api/games/commentary/*`` forwards to
+  :mod:`gaworld.apps.commentary_api`.
+* **同居模式 (Roommate Mode)** — the playground's first long-lived game.
+  The player picks 2–6 residents, sets a one-line vibe, and watches them
+  share an apartment. The dashboard renders the floor plan, animates the
+  residents between rooms, plays their dialogue and inner thoughts as
+  speech bubbles, and keeps an event log + relationship dashboard running
+  in the side panel. ``/api/games/roommate/*`` forwards to
+  :mod:`gaworld.apps.roommate_api`.
+* **谁是真人 (Who's Human)** — residents and people in one anonymous group
+  chat; after a few simultaneous rounds every person marks each number
+  human or resident. Revealed rooms are archived for GAWorld-Bench Track D.
+  ``/api/games/whois/*`` forwards to :mod:`gaworld.apps.whois_api`.
 
 Adding another game means adding a ``/api/games/<game>/*`` branch in
 :func:`handle_get` / :func:`handle_post` plus a page under
@@ -524,6 +552,26 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         from gaworld.apps import duel_api
 
         return duel_api.handle_get(path, query)
+    if path.startswith("/api/games/novel/"):
+        from gaworld.apps import novel_api
+
+        return novel_api.handle_get(path, query)
+    if path.startswith("/api/games/jury/"):
+        from gaworld.apps import jury_api
+
+        return jury_api.handle_get(path, query)
+    if path.startswith("/api/games/commentary/"):
+        from gaworld.apps import commentary_api
+
+        return commentary_api.handle_get(path, query)
+    if path.startswith("/api/games/roommate/"):
+        from gaworld.apps import roommate_api
+
+        return roommate_api.handle_get(path, query)
+    if path.startswith("/api/games/whois/"):
+        from gaworld.apps import whois_api
+
+        return whois_api.handle_get(path, query)
     try:
         if path == "/api/games/agents":
             return {"agents": list_agents(_one(query, "city"))}, 200
@@ -540,7 +588,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("games GET %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown games endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -565,6 +613,26 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         from gaworld.apps import duel_api
 
         return duel_api.handle_post(path, payload)
+    if path.startswith("/api/games/novel/"):
+        from gaworld.apps import novel_api
+
+        return novel_api.handle_post(path, payload)
+    if path.startswith("/api/games/jury/"):
+        from gaworld.apps import jury_api
+
+        return jury_api.handle_post(path, payload)
+    if path.startswith("/api/games/commentary/"):
+        from gaworld.apps import commentary_api
+
+        return commentary_api.handle_post(path, payload)
+    if path.startswith("/api/games/roommate/"):
+        from gaworld.apps import roommate_api
+
+        return roommate_api.handle_post(path, payload)
+    if path.startswith("/api/games/whois/"):
+        from gaworld.apps import whois_api
+
+        return whois_api.handle_post(path, payload)
     try:
         if path == "/api/games/persuasion/start":
             return start_session(
@@ -587,7 +655,7 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     except Exception as exc:  # pragma: no cover - defensive
         _LOG.warning("games POST %s failed: %s", path, exc)
         return {"error": str(exc)}, 500
-    return {"error": "Unknown games endpoint"}, 404
+    return {"error": "Unknown endpoint"}, 404
 
 
 def _one(query: dict[str, Any], key: str) -> str:

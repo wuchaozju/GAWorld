@@ -153,7 +153,7 @@ class PolicyTest(unittest.TestCase):
             ("POST", "/api/city/create"): "city",
             ("POST", "/api/city/delete"): "city",
             ("POST", "/api/agents/3/memory"): "world",
-            ("POST", "/api/agents/3/big5"): "admin",
+            ("POST", "/api/agents/3/big5"): "world",  # the world's own copy under seed/
         }
         for (method, path), level in cases.items():
             self.assertEqual(policy.required(method, path), level, (method, path))
@@ -250,6 +250,15 @@ class HttpTest(unittest.TestCase):
         resp, me = self._req("GET", "/api/auth/me")
         self.assertEqual((resp.status, me), (200, {"mode": "single"}))
         self.assertEqual(self._req("GET", "/api/interventions")[0].status, 200)
+
+    def test_sign_in_logo_is_public_but_other_assets_stay_gated(self):
+        store = _store(self.tmp.name)
+        store.create_user("老师", PASSWORD, role="admin")
+        for method in ("GET", "HEAD"):
+            resp, _ = self._req(method, "/site/assets/logo-emergent.png")
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(resp.getheader("Content-Type"), "image/png")
+        self.assertEqual(self._req("GET", "/site/assets/city-lab-atlas.svg")[0].status, 303)
 
     def test_classroom_flow(self):
         store = _store(self.tmp.name)

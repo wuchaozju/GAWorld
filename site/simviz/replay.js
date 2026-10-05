@@ -47,7 +47,7 @@
     return new URLSearchParams(global.location.search || "").get("run") || "";
   }
 
-  function renderAgents(container, frame) {
+  function renderAgents(container, frame, selectedId) {
     if (!container) return;
     const agents = frame && Array.isArray(frame.agents) ? frame.agents : [];
     if (!agents.length) {
@@ -61,7 +61,7 @@
       const thought = agent.plan || agent.action || agent.reflection || "";
       return (
         '<article class="agent-card">' +
-        `<strong>${escapeHtml(name)}</strong>` +
+        `<button type="button" data-agent-id="${escapeHtml(agent.agent_id)}" aria-pressed="${Number(agent.agent_id) === selectedId}">${escapeHtml(name)}</button>` +
         `<p>${escapeHtml(location)} · ${escapeHtml(activity)}</p>` +
         (thought ? `<p>${escapeHtml(thought)}</p>` : "") +
         "</article>"
@@ -91,6 +91,7 @@
       frameStamp: document.getElementById("frameStamp"),
       frameTitle: document.getElementById("frameTitle"),
       agentList: document.getElementById("agentList"),
+      indoorView: document.getElementById("indoorView"),
     };
     if (!els.runSelect || !els.canvas || !global.CityMapView) return null;
 
@@ -99,10 +100,14 @@
       run: null,
       trace: null,
       index: 0,
+      selectedId: null,
+      loadRequest: 0,
       timer: null,
       view: new global.CityMapView(els.canvas, {
         emptyText: "等待轨迹数据...",
+        getSelectedAgentId: () => state.selectedId,
       }),
+      indoor: els.indoorView && global.IndoorView ? new global.IndoorView(els.indoorView, {getSelectedAgentId: () => state.selectedId}) : null,
     };
 
     function setStatus(text) {
@@ -127,21 +132,29 @@
       els.timeline.value = String(state.index);
       els.frameStamp.textContent = frameLabel(frame, state.index);
       els.frameTitle.textContent = state.run ? (state.run.label || state.run.id) : "-";
-      if (state.trace) state.view.setTrace(state.trace);
+      state.view.setTrace(state.trace);
       state.view.avatarBase = (state.run && state.run.avatar_base) || "/output/visualization/";
       state.view.render(framesUntil(state.trace, state.index));
-      renderAgents(els.agentList, frame);
+      if (state.indoor) {
+        state.indoor.setTrace(state.trace);
+        state.indoor.avatarBase = state.view.avatarBase;
+        state.indoor.render(frame);
+      }
+      renderAgents(els.agentList, frame, state.selectedId);
     }
 
     async function loadRun(run) {
+      const request = ++state.loadRequest;
+      state.run = run || null; state.trace = null; state.index = 0; state.selectedId = null;
+      render();
       if (!run) {
         setStatus("没有可回放的运行");
         state.view.renderEmpty("没有可回放的运行");
         return;
       }
-      state.run = run;
       setStatus("读取轨迹...");
       const trace = await fetchJson(run.trace_url);
+      if (request !== state.loadRequest) return;
       state.trace = trace;
       const frames = Array.isArray(trace.frames) ? trace.frames : [];
       state.index = Math.max(0, frames.length - 1);
@@ -179,6 +192,12 @@
     els.runSelect.addEventListener("change", () => {
       const run = selectRun(state.runs, els.runSelect.value);
       loadRun(run).catch((error) => setStatus(error.message));
+    });
+    els.agentList.addEventListener("click", event => {
+      const button = event.target.closest("[data-agent-id]");
+      if (!button) return;
+      state.selectedId = Number(button.dataset.agentId);
+      render();
     });
     els.timeline.addEventListener("input", () => {
       state.index = Number(els.timeline.value) || 0;

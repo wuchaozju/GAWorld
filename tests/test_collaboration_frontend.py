@@ -472,12 +472,13 @@ def test_cooperation_layout_and_console_tabs_are_responsive():
         page_css,
         re.DOTALL,
     )
-    assert re.search(
-        r"@media\s*\(max-width:\s*860px\).*?"
-        r"overflow-x:\s*auto",
-        console_css,
-        re.DOTALL,
-    )
+    # On a phone the console's tab list is an off-canvas drawer (it used to
+    # be a horizontally scrolling strip): hidden to the left, slid in by
+    # `body.nav-open`.
+    phone = re.search(r"@media\s*\(max-width:\s*860px\)\s*\{(.*?)\n\}", console_css, re.DOTALL)
+    assert phone
+    assert re.search(r"\.sidebar\s*\{[^}]*transform:\s*translateX\(-100%\)", phone.group(1))
+    assert re.search(r"body\.nav-open \.sidebar\s*\{[^}]*transform:\s*none", phone.group(1))
     assert "flex-shrink: 0" in console_css
     assert ":focus-visible" in page_css
 

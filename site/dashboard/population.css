@@ -128,7 +128,7 @@
 }
 
 .pop-issue.error {
-  border-color: #dc2626;
+  border-color: var(--red);
 }
 
 .pop-issue.warning {
@@ -269,7 +269,7 @@
 }
 
 .pop-layer.fail {
-  border-left-color: #dc2626;
+  border-left-color: var(--red);
 }
 
 .pop-layer.inconclusive {
@@ -354,7 +354,7 @@
   font-style: normal;
   font-size: 10px;
   color: var(--muted, #9ca3af);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 /* In-panel action bar. The primary action must live *in* the panel — relying on
@@ -525,7 +525,7 @@
   font-style: normal;
   font-size: 10px;
   color: var(--muted, #9ca3af);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 .pop-layer-fact {
@@ -551,7 +551,7 @@
 }
 
 .pop-progress-err {
-  color: #dc2626;
+  color: var(--red);
   font-weight: 600;
 }
 

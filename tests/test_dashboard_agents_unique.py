@@ -15,9 +15,9 @@ import tempfile
 import unittest
 from collections import Counter
 
-import gaworld.apps.dashboard_server as ds
+from gaworld.apps import residents, world_paths
 
-REPO_ROOT = ds.REPO_ROOT
+REPO_ROOT = world_paths.REPO_ROOT
 REAL_MD = os.path.join(REPO_ROOT, "data", "hangzhou_profiles_with_names.md")
 REAL_CSV = os.path.join(REPO_ROOT, "data", "hangzhou_agents_state_init.csv")
 
@@ -31,7 +31,7 @@ def _profile_blocks(path):
     """Split the seed markdown into (id, name, body) tuples, headers only."""
     with open(path, encoding="utf-8") as f:
         text = f.read()
-    matches = list(ds.PROFILE_HEADER_RE.finditer(text))
+    matches = list(residents.PROFILE_HEADER_RE.finditer(text))
     blocks = []
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
@@ -52,7 +52,7 @@ class TestSeedProfilesUnique(unittest.TestCase):
         self.assertEqual([], duplicates, f"duplicate profile ids in seed markdown: {duplicates}")
 
     def test_agents_summary_returns_one_entry_per_id(self):
-        agents = ds._agents_summary()
+        agents = residents.agents_summary()
         ids = [agent["id"] for agent in agents]
         self.assertEqual(len(ids), len(set(ids)), "/api/agents returned duplicate agent ids")
         self.assertEqual(len(ids), len(_profile_blocks(REAL_MD)))
@@ -99,18 +99,18 @@ class TestDuplicateHeaderIsDetectable(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
-        self._md = ds.PROFILE_PATH
-        ds.PROFILE_PATH = os.path.join(self.tmp, "profiles.md")
-        shutil.copy(REAL_MD, ds.PROFILE_PATH)
+        self._md = world_paths.PROFILE_PATH
+        world_paths.PROFILE_PATH = os.path.join(self.tmp, "profiles.md")
+        shutil.copy(REAL_MD, world_paths.PROFILE_PATH)
 
     def tearDown(self):
-        ds.PROFILE_PATH = self._md
+        world_paths.PROFILE_PATH = self._md
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_duplicate_header_surfaces_in_agents_summary(self):
-        before = ds._agents_summary()
-        with open(ds.PROFILE_PATH, "a", encoding="utf-8") as f:
+        before = residents.agents_summary()
+        with open(world_paths.PROFILE_PATH, "a", encoding="utf-8") as f:
             f.write("\n## Profile 05｜王思远\n**基础信息**：男，30岁。\n\n---\n")
-        after = ds._agents_summary()
+        after = residents.agents_summary()
         self.assertEqual(len(before) + 1, len(after))
         self.assertEqual(2, Counter(a["id"] for a in after)[5])

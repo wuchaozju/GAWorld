@@ -1,0 +1,52 @@
+{
+  "agent_ids": [
+    1,
+    2,
+    3
+  ],
+  "sim_days": 3,
+  "stateful": false,
+  "random_seed": 71,
+  "economy": {
+    "enabled": true
+  },
+  "organizations": {
+    "enabled": true,
+    "seeds": [
+      {
+        "organization_id": "mutual-aid",
+        "name": "社区互助会",
+        "kind": "community",
+        "leader_id": 1,
+        "member_ids": [
+          1,
+          2,
+          3
+        ],
+        "goal": "按公开规则分配有限资助",
+        "initial_balance_cents": 30000,
+        "funding_source": "government",
+        "rule": "need_first",
+        "rule_params": {
+          "max_award_cents": 15000
+        },
+        "seed": 71
+      },
+      {
+        "organization_id": "workshop",
+        "name": "社区工作坊",
+        "kind": "company",
+        "leader_id": 1,
+        "member_ids": [
+          1
+        ],
+        "goal": "公开招聘并从自身预算支付工资",
+        "initial_balance_cents": 1000000,
+        "funding_source": "firms",
+        "rule": "skill_first",
+        "rule_params": {},
+        "seed": 71
+      }
+    ]
+  }
+}

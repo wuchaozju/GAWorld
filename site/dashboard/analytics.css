@@ -2,15 +2,16 @@
    only the figure-specific layout lives here. */
 
 .hero-status .an-status {
-  padding: 6px 12px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.16);
-  color: #f2faf6;
+  background: var(--sunken);
+  color: var(--muted);
 }
-.an-status.is-ok { background: rgba(159, 224, 196, 0.28); }
-.an-status.is-error { background: rgba(192, 69, 69, 0.42); }
+.an-status.is-ok { background: var(--green-soft); border-color: transparent; color: var(--green-deep); }
+.an-status.is-error { background: var(--red-soft); border-color: transparent; color: var(--red); }
 
 /* ------------------------------------------------------------- run picker */
 
@@ -19,17 +20,15 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(240, 250, 245, 0.82);
+  color: var(--muted);
 }
 .an-run-picker select {
   /* The run label carries the scenario path, so it needs room — but not so
      much that it pushes the export menu off the hero. */
+  width: auto;
   max-width: 320px;
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #f2faf6;
+  min-height: 32px;
+  padding: 0 10px;
   font-size: 12px;
 }
 .an-run-picker select option { color: var(--ink); }
@@ -93,7 +92,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, #ffffff 0%, #f7faf7 100%);
+  background: var(--surface);
 }
 .an-kpi-label { font-size: 12px; color: var(--muted); }
 .an-kpi-value { font-size: 24px; font-weight: 700; color: var(--green-deep); line-height: 1.15; }
@@ -134,9 +133,10 @@
   background: var(--green-soft);
   color: var(--green-deep);
 }
-.an-badge.is-down { background: #fbeaea; color: var(--red); }
+.an-badge.is-down { background: var(--red-soft); color: var(--red); }
 
 .an-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.an-chart line, .an-chart path, .an-chart polygon { vector-effect: non-scaling-stroke; }
 /* Radar and heatmap have small viewBoxes; letting them fill a wide card
    scales their type to poster size. */
 .an-chart.is-compact { max-width: 380px; margin: 0 auto; }
@@ -204,7 +204,7 @@
 .an-graph-wrap {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: radial-gradient(600px 300px at 50% 40%, #f6faf7, var(--card));
+  background: var(--surface);
 }
 .an-graph { width: 100%; height: auto; display: block; }
 

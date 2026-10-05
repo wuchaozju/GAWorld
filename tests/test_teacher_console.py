@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from gaworld import worlds
 from gaworld.accounts import AccountError, AccountStore, policy, usage
 from gaworld.apps import dashboard_server as ds
+from gaworld.apps import runs, world_paths
 
 PASSWORD = "correct horse"
 
@@ -73,11 +74,11 @@ class ConsoleHttpTest(unittest.TestCase):
         self.store.create_user("小李", PASSWORD)
         self.patches = [
             mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": db}),
-            mock.patch.object(ds, "REPO_ROOT", root),
-            mock.patch.object(ds, "DASHBOARD_CONFIG_PATH", os.path.join(root, "dashboard_config.json")),
+            mock.patch.object(world_paths, "REPO_ROOT", root),
+            mock.patch.object(world_paths, "DASHBOARD_CONFIG_PATH", os.path.join(root, "dashboard_config.json")),
             mock.patch.object(ds, "_city_seed_files", return_value=("", self.csv, self.md)),
-            mock.patch.object(ds, "WORLD_RUNS", {}),
-            mock.patch.object(ds, "RUN_QUEUE", []),
+            mock.patch.object(runs, "WORLD_RUNS", {}),
+            mock.patch.object(runs, "RUN_QUEUE", []),
             mock.patch.object(usage, "TALLY", usage.Tally()),
         ]
         for patch in self.patches:
@@ -146,7 +147,7 @@ class ConsoleHttpTest(unittest.TestCase):
                 return self.code
 
         proc = Running()
-        ds.WORLD_RUNS[self.world_id] = {"process": proc, "log_path": "", "schedule": None}
+        runs.WORLD_RUNS[self.world_id] = {"process": proc, "log_path": "", "schedule": None}
         listed = self._req("GET", "/api/worlds", cookies=[self.teacher])[1]["worlds"][0]
         self.assertEqual((listed["running"], listed["queued"], listed["calls_today"]), (True, None, 0))
         self.assertEqual(self._req("POST", f"/api/worlds/{self.world_id}/stop", {}, [self.li])[0].status, 404)

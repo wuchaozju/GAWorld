@@ -79,7 +79,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 大五人格（OCEAN）：每位居民带一组 O/C/E/A/N 的 z 分数，通过三条可独立开关的通道影响行为——`rules`（确定性、零 token：动作选择里的加性 style-fit 分量，中断阈值 / 自发行为 / 社交偶遇概率 / 决策噪声 / 冲动绕过 / 财富驱动上的有界乘子，以及个人情绪基准点）、`prompt`（把人格锚句注入日程生成、活动调整、目标与新闻 prompt）、`voice`（锚句只进日记 prompt）。三条通道分开，才能让实验把「决策变了」和「文风变了」分开归因。特质在构建智能体时一次性种入——有 `data/agents_big5.csv` 就用离线生成的值（**先独立采样五维分数，再据此改写每个人 profile 里的行为描述**，而不是从 profile 文本反推分数），没有就从带相关结构的人口先验采样——且运行期间不漂移（成年人的 OCEAN 每十年只变 0.1–0.2 个标准差）。没有特质的智能体、或被关掉的通道，行为与加人格之前**逐位一致**
 - 家庭与户：按年龄段 × 性别抽样婚姻状态（未婚/已婚/离异/丧偶），匹配得上的居民在仿真内配成夫妻并**共享同一个住处**，配不上的补场外家人；子女、同住长辈、合租室友随之生成。户型（独居/合租/与父母同住/未婚同居/夫妻二人/核心家庭/单亲/三代同堂）是分配结果的**读数**而不是预设配额。家庭进入日程（接送、陪写作业、照料老人、回家吃晚饭）、账本（育儿与赡养开销按收入分摊、伴侣互相补现金缺口，全程货币守恒）、事件（一件家事同一 tick 落到全家人身上）与户内情绪传染；可在配置面板调整整体分布，也可在 Agent Studio 里逐人精确指定并跨运行生效
 - 真实位置系统：基于类别的空间匹配、出行成本计算、高峰时段和天气影响、通勤记忆
-- 离开本市（出差 / 探亲 / 旅行，**默认关**）：城市不再是封闭的盒子——居民会离开几天再回来。三类出行各由系统里已有的量驱动：出差看职业（销售 / 外贸 / 咨询远高于图书管理员）在工作日触发、活动仍是工作因而收入照常；探亲由关系 obligation 与距上次联系的天数触发——这是社交模块每天都在抬高、此前却**无处可去**的那个量的第一个出口，回去一趟会重置联系日并让 obligation 回落；旅行要周末 + 够用的流动储蓄 + 大五开放性 + 累积压力。目的地是**真实距离**（复用数字孪生的省级中心点与 haversine，起点取地图自身的几何中心节点），按距离分高铁 / 飞机定时长与票价。在外期间不占本市任何地点的拥挤度、不与本市任何人构成共处、不上本市的路，家庭责任改为明说「你不在家」而非静默消失。全程纯规则、按种子可复现，不调用 LLM
+- 离开本市（出差 / 探亲 / 旅行，**默认关**）：城市不再是封闭的盒子——居民会离开几天再回来。三类出行各由系统里已有的量驱动：出差看职业（销售 / 外贸 / 咨询远高于图书管理员）在工作日触发、活动仍是工作因而收入照常；探亲由关系 obligation 与距上次联系的天数触发——这是社交模块每天都在抬高、此前却**无处可去**的那个量的第一个出口，回去一趟会重置联系日并让 obligation 回落；旅行要周末 + 够用的流动储蓄 + 大五开放性 + 累积压力。目的地是**真实距离**（复用数字孪生的省级中心点与 haversine，起点取地图自身的几何中心节点），按距离分高铁 / 飞机定时长与票价。在外期间不占本市任何地点的拥挤度、不与本市任何人构成共处、不上本市的路，家庭责任改为明说「你不在家」而非静默消失。探亲 / 旅行占用的工作日按带薪年假发工资（每年 5 天，之后无薪）。出行决定全程纯规则、按种子可复现，不调用 LLM；在外的日子默认每天只调一次日摘要
 - 动态行为系统：情绪驱动的即兴行为、社交偶遇链、需求中断、环境事件连锁反应、承诺度感知的日程中断
 - 物理环境感知与反应式重规划：节点级拥挤度 / 营业时间感知、异常检测、当日受影响区间重排、习得的地点规避偏好
 - 兴趣爱好与技能成长系统：为每个智能体生成兴趣、计划发展的技能、练习时间、成长进度，并影响日程、行动、工作和生活选择——含幂律学习曲线、连击动量、里程碑事件、日终遗忘衰减、兴趣发展四阶段与社交兴趣传染
@@ -94,7 +94,7 @@ GAWorld 的目标不是简单地“跑一群 Agent”，而是提供一个可控
 - 本地 dashboard：配置编辑、profile 编辑、运行控制、记忆查看、访谈
 - Agent Studio：面向单个智能体的 7 步可视化构建/查看器——身份、九个 [0,1] 状态变量（可编辑雷达）、技能、分层记忆、Dunbar 社交圈、行为拨盘、复核/部署；改动写回状态 CSV 与 profile Markdown，并可创建新智能体
 - 参数化人口合成：把面板级旋钮（规模、年龄金字塔、就业率、收入基尼、家庭结构、社交图形态）变成一座完整的小镇——IPF 拟合联合分布（含结构性零）、最大余数法整数化让边缘精确命中、收入用秩变换使中位数与基尼严格成立同时仍与教育/行业相关、儿童优先建户、幂律规模的工作单位。产出与现有格式完全一致的状态 CSV + profile Markdown，`build_agent` 无需改动
-- 群体（cohort）模拟：把居民划分成同时携带**均值与离散度**的群体，每群每天只花 1 次 LLM 调用，并按预算把一小批个体（focal / event / tail / audit）提升到完整保真度；群内零均值的社交图耦合项让邻居共变在聚合后依然存在。实体化预算 20 人/天时约比逐个体模拟省 25 倍
+- 群体（cohort）模拟：把居民划分成同时携带**均值与离散度**的群体，每群每天只花 1 次 LLM 调用，并按预算把一小批个体（focal / event / tail / audit）提升到完整保真度；群内零均值的社交图耦合项让邻居共变在聚合后依然存在。实体化预算 20 人/天时约比逐个体模拟省 25 倍。可以在主运行里开（`simulation_mode: "group"` + 按天快进）：群体推进大多数人，实体化的少数人跑普通快进简报，审计样本的变化偏离群体预测时第二天自动加审计；产物与普通运行相同（每个居民的状态历史）外加 `group.*` 记录。不能用来研究网络扩散
 - 群体模式验证门（L1–L4）：配对实验，量化 cohort 近似的代价——分布距离、网络共变、尾部保留、政策冲击下的因果响应；判定阈值来自参照层自身的跨种子噪声，而不是拍脑袋的常数。分水岭层不通过时退出码非零，可直接进 CI
 - Population Studio：5 步 dashboard 面板，生成人口 → 群体模拟 → 阅读验证结论，并带实时可行性预检（参数冲突时直接指出该动哪个旋钮）
 - 外部系统观测台：观察并编辑世界本身——货币系统（宏观周期、部门池、每日货币守恒审计、财富分布与基尼）、外部环境生成器、对外服务连接。配置表单按配置自身的 JSON 形状生成（约 150 个旋钮，加旋钮不用改面板），并可对**跑着的**仿真排一次货币干预，由仿真在下一个日边界消费；给部门池注资会同步移动守恒基准，因此审计把有意的注资记成注资而不是漏钱
@@ -160,11 +160,12 @@ GAWorld/
 - `gaworld/sim/`：从主仿真器拆分出来的子模块（持续细化中）
 - `gaworld/work/`：real-work 任务系统（runtime、worker pool、queue、market）
 - `gaworld/population/`：参数化人口合成——`schema`（旋钮契约 + 可行性预检）、`synth`（IPF + 条件采样 + 收入秩变换）、`network`（家庭、工作单位、同质性社交图）、`report`（校验门 + 复核图表）、`writer`（状态 CSV + profile MD + manifest）
-- `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（观测型 cohort 遥测）
+- `gaworld/group/`：群体（cohort）模拟——`cohort`（划分、均值**与**离散度、群内零均值网络耦合）、`cohort_day`（每群每天 1 次 LLM 调用）、`materialize`（focal/event/tail/audit 选取与审计残差）、`driver`（日循环 + 成本核算）、`metrics` + `validate`（L1–L4 验证门）、`plugin`（主运行里的群体模式——`simulation_mode: "group"`，按天快进，影子审计自动加样本；或普通运行里的 cohort 遥测）
 - `gaworld/city/`：从地名造城——`geocode`（Nominatim → 坐标 / bbox / 规模）、`osm`（Overpass 抓取，粘住可用镜像 + 整体预算）、`procedural`（按地名种子化的兜底地图）、`environment`（按气候与规模推导事件与 background）、`bundle`（磁盘布局、清单、注册表）、`agents`（批量合成 / 单个追加 / 迁入）、`config`（把仿真指向某个城市包）、`knowledge`（联网搜集的产业与就业画像，带分层兜底）、`news`（按真实时间抓取、按仿真时间投喂的本地新闻）、`context`（城市知识影响居民的四条通道统一出口）
-- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及各面板后端 `population_api`（Population Studio）、`city_api`（城市）、`interview_api`（群体采访）、`external_systems_api`（外部系统观测台）、`arena_api`、`games_api` 与各游戏模块 `disaster_api` / `rumor_api` / `duel_api` / `referendum_api` / `guess_api`（游戏场）
+- `gaworld/apps/`：dashboard、外部环境服务器、分布式 relay，以及各面板后端 `population_api`（Population Studio）、`city_api`（城市）、`interview_api`（群体采访）、`external_systems_api`（外部系统观测台）、`arena_api`、`games_api` 与各游戏模块 `disaster_api` / `rumor_api` / `duel_api` / `referendum_api` / `guess_api` / `whois_api`（游戏场）
+- `gaworld/experiments/`：居民当被试的一次性提示词实验——需求估计实验，以及 `classics/` 经典实验库（六个教科书范式，按人配对、只读方向）
 - `gaworld/parallel/`：平行世界实验——`spec`（世界/事件校验 + 各世界磁盘隔离的配置覆盖）、`runner`（用小型进程池分叉 N 个世界并跟踪进度）、`analysis`（逐步偏离度、分叉点、逐人影响）
-- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 群体采访 `survey.html` + 外部系统 `external.html` + 平行世界 `worlds.html` + 游戏场 `games.html` / 斗兽场 `arena.html` / 说服游戏 `persuade.html` / 灾害模式 `disaster.html` / 谣言扩散局 `rumor.html` / 双队竞赛 `duel.html` / 公投局 `referendum.html` / 猜人局 `guess.html`）
+- `site/dashboard/`：dashboard 前端（控制台 `index.html` + Agent Studio `studio.html` + Population Studio `population.html` + 城市 `city.html` + 群体采访 `survey.html` + 外部系统 `external.html` + 平行世界 `worlds.html` + 游戏场 `games.html` / 斗兽场 `arena.html` / 说服游戏 `persuade.html` / 灾害模式 `disaster.html` / 谣言扩散局 `rumor.html` / 双队竞赛 `duel.html` / 公投局 `referendum.html` / 猜人局 `guess.html` / 谁是真人 `whois.html`）
 - `site/simviz/`：轨迹回放页面
 - `output/`：生成结果
 
@@ -323,6 +324,9 @@ cat > worlds.json <<'JSON'
 JSON
 
 python generative_city_sim.py parallel-worlds --spec worlds.json --seed 42 --fast
+
+# 参数扫描：基准保持当前配置值，每个取值一个世界，按剂量反应来读
+python generative_city_sim.py parallel-worlds --sweep economy.shocks.layoff_base_prob=0.0005,0.002,0.004 --placebo --fast
 ```
 
 所有世界共用同一批居民、同一个随机种子、同一个天数与模型，各自跑在独立的记忆 / 状态 /
@@ -577,6 +581,7 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 | GET | `/api/parallel-worlds/experiment?root=…` | 某次实验的完整偏离报告 |
 | GET | `/api/parallel-worlds/job` | 任务状态，运行中带每个世界的实时快照 |
 | POST | `/api/parallel-worlds/preview` | 只校验 spec 并回显计划，不跑任何东西 |
+| POST | `/api/parallel-worlds/sweep` | 把一个参数的几组取值展开成世界（基准 + 每个取值一个），不跑任何东西 |
 | POST | `/api/parallel-worlds/start` / `/stop` | 分叉世界 / 停止 |
 
 同一时刻只允许一个实验在跑——第二次 `start` 返回 `409`，而不是让机器被超额占用；
@@ -646,6 +651,15 @@ Population Studio 是 Agent Studio 的群体版：Agent Studio 造一个居民�
 「🔁 再问他一次」用同一道题复问同一个人（最多三次）：三次一样说明档案扛得住，
 三次不同说明档案太薄。这个数字进记分牌的「档案稳定」一栏，也正好是 `benchmark/` 想要的
 persona 一致性数据——玩的人顺手就把它标出来了。
+
+---
+
+**谁是真人**（`whois.html`）：游戏场里唯一要几个人一起玩的。1–5 个真人和 1–5 位居民匿名进同一个群聊，
+每个座位只显示编号、顺序打乱，聊 2–5 轮，然后每个真人给其他每个号选「真人 / 居民」。
+主持人把座位链接发出去（一个链接一个座位）；每一轮所有人同时写、整轮一起出现，谁秒回看不出来。
+居民只被要求像在群里随口说话，不知道有人在猜。揭晓后看谁是谁、每个号被判成真人几次；
+整局存到 `output/games/whois/`，GAWorld-Bench Track D 把所有局合起来算（居民被判成真人的比例 ÷ 真人的）。
+成本 `居民数 × 轮数` 次调用。
 
 ---
 
@@ -972,9 +986,10 @@ GAWorld-Bench Track A 将守恒作为硬门槛。部门池允许为负（企业�
 
 仿真级别维护一个四阶段宏观周期——扩张、峰值、收缩、谷底——每个阶段持续 60–180 天。不同阶段
 对收入、支出、裁员风险和加薪概率施加不同倍率。行业景气度（科技、金融、医疗、教育、服务、贸易）
-独立波动。通胀按日累积，侵蚀购买力。个体层面有随机经济冲击事件：裁员（收入削减 50–85% 且月度
-税基同步下调，恢复期 30–90 天）、涨薪/晋升、大病医疗（社保报销 50–85%，由政府池支付）、年终奖
-（第13个月工资，奖金税入政府池）。经济模块使用独立随机流（由 `random_seed` 派生），其它模块
+独立波动。通胀按日累积成物价指数，但默认只是显示用、不进账本；打开 `economy.macro.inflation` 后支出按物价计价，
+通胀率由居民的实际消费（或失业率）决定，工资按比例滞后跟涨。个体层面有随机经济冲击事件：裁员（收入削减 50–85% 且月度
+税基同步下调，30–90 天后回到原工资的 85–100%）、涨薪/晋升、大病医疗（社保报销 50–85%，由政府池支付）、年终奖
+（第13个月工资，奖金税入政府池）。裁员和加薪的概率是每人每月的（按天平摊抽签），大病是每人每天的。经济模块使用独立随机流（由 `random_seed` 派生），其它模块
 增删随机调用不影响经济轨迹的可复现性。
 
 经济模块的输出包括 `output/economy/daily_ledger.csv`（含 `debt` 列）、每智能体账本、财富快照、
@@ -1213,6 +1228,7 @@ LLM 调用之前完成决策。
 - [外部系统 — 教程](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md)（货币系统、外部环境、对外服务的观察与编辑，以及运行时干预）
 - [平行世界 — 教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)（多分支反事实实验：设计实验、读分叉与偏离图、剂量反应设计，以及为什么要先跑安慰剂世界）
 - [研究工作台 — 教程](./docs/RESEARCH_WORKBENCH_TUTORIAL.md)（上传论文、审阅解读、比较几种实验设计，再编译成预注册协议跑平行世界，由代码判定假设并出报告）
+- [经典实验库](./docs/CLASSIC_EXPERIMENTS.md)（居民当被试的六个教科书范式：框架、锚定、独裁者 / 最后通牒、信任、公共品；按人配对、只读方向，人类结果并排对照）
 - [游戏场 — 教程](./docs/PLAYGROUND_TUTORIAL.md)（斗兽场排座次与留存、说服游戏的判定规则与 HTTP 接口、怎么加一个新游戏） · [斗兽场 — 教程](./docs/ARENA_TUTORIAL.md)
 - [大五人格（OCEAN）— 设计](./docs/proposals/2026-08-20-big-five-personality.md)（三条独立通道、效应量与共线性两道合入门、离线特质标定）
 - [手机端数字孪生](./docs/TWIN_MOBILE.md)（通过 HTTPS 隧道让手机连上、邀请码绑定、镜像/感知/标定三条通道，以及为什么孪生服务必须与控制台分进程）

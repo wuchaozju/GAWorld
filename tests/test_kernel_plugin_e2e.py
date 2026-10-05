@@ -193,7 +193,10 @@ class TestPluginEndToEnd(unittest.TestCase):
         #    tails, for both agents, with the activity that was actually done.
         import json
 
-        with open(os.path.join("output", "records", "agent.step.jsonl"), encoding="utf-8") as f:
+        from gaworld.settings import CONFIG
+
+        records = (CONFIG.get("records") or {}).get("output_dir", "output/records")
+        with open(os.path.join(records, "agent.step.jsonl"), encoding="utf-8") as f:
             rows = [json.loads(line) for line in f if line.strip()]
         self.assertEqual({r["agent_id"] for r in rows}, {4, 5})
         self.assertTrue(all(r.get("activity") and r.get("_time") for r in rows))

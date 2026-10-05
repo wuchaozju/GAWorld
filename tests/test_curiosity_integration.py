@@ -44,7 +44,8 @@ class TestCuriosityTickTrigger(unittest.TestCase):
         budget = {3: 2}
         with patch.object(sim, "propose_contextual_keywords",
                           return_value=["配送费规则 最新", "骑手收入 政策"]), \
-             patch.object(sim, "info_seek_and_store", side_effect=fake_seek):
+             patch.object(sim, "info_seek_and_store", side_effect=fake_seek), \
+             patch.object(sim, "append_agent_log"):  # not the real output/logs
             triggered = sim._maybe_curiosity_seek(
                 agent,
                 day=1,

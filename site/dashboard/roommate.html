@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld · 同居模式</title>
+  <meta name="description" content="GAWorld 同居模式 — 选几位居民,给他们一间像素风的公寓,看他们怎么一起过日子:谁在做饭、谁在吵架、谁躲进房间。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/dashboard/roommate.css?v=20261004-pixel1" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker">GAWorld Playground · Roommate</p>
+          <h1>同居模式:他们一起过日子</h1>
+          <p class="sub">挑几位居民,给一间公寓、一句氛围,按播放——他们在像素房间里做饭、吵架、发呆,对话和内心独白会从他们头顶冒出来。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <!-- ======= Setup panel (visible only before a session exists) ======= -->
+    <section id="rSetup" class="roommate-setup panel">
+      <div class="setup-grid">
+        <div class="setup-col">
+          <h3>开一间公寓</h3>
+          <label class="field">
+            <span>城市</span>
+            <select id="rCity"></select>
+          </label>
+          <label class="field">
+            <span>公寓氛围(一句话)</span>
+            <input id="rVibe" type="text" placeholder="例如:三个程序员合租,周末轮流做饭" />
+          </label>
+          <div class="setup-row">
+            <label class="field">
+              <span>1 刻 = ? 分钟</span>
+              <input id="rTick" type="number" min="1" max="30" value="5" />
+            </label>
+            <label class="field">
+              <span>最长小时数</span>
+              <input id="rHours" type="number" min="1" max="999" value="24" />
+            </label>
+          </div>
+        </div>
+
+        <div class="setup-col">
+          <div class="picker-head">
+            <h3>同居居民 <b id="rPicked">0</b> / 6</h3>
+            <input id="rFilter" type="search" placeholder="搜名字 / 职业" autocomplete="off" />
+          </div>
+          <p class="roommate-hint">至少 2 人。背景差异越大戏越多——默认随机抽 4 人。</p>
+          <div class="roommate-toolbar">
+            <button class="button" id="rPickRandom">🎲 随机 4 人</button>
+            <button class="button" id="rPickNone">清空</button>
+          </div>
+          <ul id="rAgents" class="roommate-agent-list"></ul>
+        </div>
+      </div>
+
+      <div class="roommate-actions">
+        <button id="rStartBtn" class="button primary big">🛋️ 开始同居</button>
+        <button id="rResumeBtn" class="button" hidden>▶ 继续上一次的会话</button>
+      </div>
+    </section>
+
+    <!-- ======= Apartment view (visible once a session is live) ======= -->
+    <section id="rLive" class="roommate-live" hidden>
+      <div class="roommate-toolbar-top panel">
+        <div class="roommate-clock">
+          <span class="clock-label">虚拟时间</span>
+          <b id="rClock">08:00</b>
+        </div>
+        <div class="roommate-controls">
+          <button class="button primary" id="rPauseBtn">⏸ 暂停</button>
+          <button class="button" id="rResumeCtrl" hidden>▶ 继续</button>
+          <div class="speed-group" role="group" aria-label="运行速度">
+            <button class="speed-btn" type="button" data-speed="0.5" title="0.5× — 慢放">0.5×</button>
+            <button class="speed-btn speed-btn-active" type="button" data-speed="1" title="1× — 正常速度">1×</button>
+            <button class="speed-btn" type="button" data-speed="2" title="2× — 快进">2×</button>
+            <button class="speed-btn" type="button" data-speed="4" title="4× — 跳到 4×">4×</button>
+          </div>
+          <button class="button" id="rTick1Btn">+1 刻</button>
+          <button class="button" id="rTick6Btn">+6 刻</button>
+          <button class="button subtle" id="rEndBtn">⏹ 结束</button>
+        </div>
+        <div class="roommate-status">
+          <span id="rStatus">运行中</span>
+          <a class="button subtle" id="rExportLink" href="#" download="同居模式.md">⬇ 导出</a>
+        </div>
+      </div>
+
+      <div class="roommate-board">
+        <section class="panel roommate-apartment">
+          <header class="apartment-head">
+            <h3 id="rAptTitle">🏠 公寓</h3>
+            <p id="rAptVibe" class="apartment-vibe"></p>
+          </header>
+          <div class="apartment-stage">
+            <canvas id="rCanvas" width="640" height="400" aria-label="像素公寓"></canvas>
+            <div id="rBubbles" class="apartment-bubbles" aria-live="polite"></div>
+          </div>
+          <p class="apartment-foot" id="rActivityLine">—</p>
+        </section>
+
+        <aside class="roommate-side">
+          <section class="panel roommate-conversation">
+            <h3>💬 当前对话</h3>
+            <div id="rConversation" class="conversation-feed">
+              <p class="event-empty">点两人的对话暂未开始 — 时间走起来,他们碰到一起就会开聊。</p>
+            </div>
+          </section>
+
+          <section class="panel roommate-events">
+            <h3>📜 事件流</h3>
+            <ul id="rEvents" class="event-list"></ul>
+          </section>
+
+          <section class="panel roommate-dashboard">
+            <h3>📊 仪表盘</h3>
+            <div class="dash-block">
+              <h4>心情</h4>
+              <ul id="rMood" class="mood-list"></ul>
+            </div>
+            <div class="dash-block">
+              <h4>关系</h4>
+              <div id="rRelations" class="relation-grid"></div>
+            </div>
+            <p class="dash-tally" id="rTally">—</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/roommate.js?v=20261004-pixel1"></script>
+</body>
+</html>

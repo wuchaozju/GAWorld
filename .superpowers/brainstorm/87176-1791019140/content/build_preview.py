@@ -1,0 +1,20 @@
+from pathlib import Path
+
+current = Path(__file__).parent
+previous = Path('/Users/cw/dev/GAWorld/.superpowers/brainstorm/77415-1791014564/content/visual-style-v2.html').read_text()
+(current / 'previous-preview.html').write_text(previous)
+css = (current / 'city-lab.css').read_text()
+bold = previous.replace('</style>', css + '\n</style>', 1)
+bold = bold.replace('class="app" id="app"', 'class="app bold" id="app"', 1)
+bold = bold.replace('GAWorld · 网页设计预览', 'GAWorld · 城市实验室 · 大胆版预览')
+bold = bold.replace('现代研究工作台</button>', '城市实验室</button>', 1)
+bold = bold.replace('极简浅色</button>', '浅色档案</button>', 1)
+bold = bold.replace('深色科技</button>', '夜间观测</button>', 1)
+bold = bold.replace('<span class="preview-note">独立设计稿 · 所有数据为示意</span>', '<a class="compare-link" href="/files/previous-preview.html#dashboard" target="_blank" rel="noopener">对比上一版 ↗</a>')
+bold = bold.replace('<p class="eyebrow"><i class="dot"></i>Generative agent simulation</p><h1>让城市里的每个人，<br>成为研究的<em>起点。</em></h1>', '<p class="eyebrow"><i class="dot"></i>GAWorld / A laboratory of possible lives</p><h1>为一座城市，<br>打开另一种<br><em>可能。</em></h1>')
+bold = bold.replace('<div><h1>观察城市的每一天</h1>', '<div><p class="lab-index">CITY OBSERVATORY / WORLD 001</p><h1>城市，正在发生。</h1>')
+bold = bold.replace('<div><h1>把想法，变成一场实验</h1>', '<div><p class="lab-index">RESEARCH LAB / FROM IDEA TO EVIDENCE</p><h1><span>每个问题，</span><span>都有另一种可能。</span></h1>')
+bold = bold.replace('Forest / Paper / Amber', 'INK / PAPER / SIGNAL')
+bold = bold.replace('background:#122e26', 'background:#242820').replace('background:#187d61', 'background:#bc451d').replace('background:#c98642', 'background:#ef7041').replace('background:#e2e9e4', 'background:#d7d4c8')
+bold = bold.replace('城市、居民、状态和趋势均为设计示例', 'CITY LAB · V3 / 城市、居民和趋势均为设计示例')
+(current / 'city-lab-v3.1.html').write_text(bold)

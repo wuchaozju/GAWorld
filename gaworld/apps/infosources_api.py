@@ -12,6 +12,7 @@ import json
 import os
 from typing import Any
 
+from gaworld.apps import world_paths
 from gaworld.infosources import feed as feed_impl
 from gaworld.infosources import registry as registry_impl
 
@@ -27,7 +28,7 @@ def _cfg() -> dict[str, Any]:
 
 
 def _repo(path: str) -> str:
-    return path if os.path.isabs(path) else os.path.join(_ds().REPO_ROOT, path)
+    return path if os.path.isabs(path) else os.path.join(world_paths.REPO_ROOT, path)
 
 
 def _first(query: dict, key: str, default: str = "") -> str:
@@ -72,7 +73,9 @@ def feed_payload(query: dict) -> dict[str, Any]:
 
 
 def diets_payload(query: dict) -> tuple[dict[str, Any], int]:
-    path = _repo(os.path.join(_ds().CONFIG.get("output_root", "output"), "infosources", "diets.json"))
+    # The plugin's own namespace under the active run's root (Plugin.output_dir).
+    root = world_paths.effective_config().get("output_root", "output")
+    path = _repo(os.path.join(root, "infosources", "diets.json"))
     try:
         with open(path, "r", encoding="utf-8") as f:
             diets = json.load(f)
@@ -88,7 +91,7 @@ def diets_payload(query: dict) -> tuple[dict[str, Any], int]:
 
 def reads_payload(query: dict) -> dict[str, Any]:
     """Recent ``infosources.read`` rows, newest first, filterable by item/source/agent."""
-    path = os.path.join(_ds()._records_dir(), "infosources.read.jsonl")
+    path = os.path.join(world_paths.records_dir(), "infosources.read.jsonl")
     want = {k: _first(query, k) for k in ("url", "source_id", "agent_id")}
     limit = _int(query, "limit", 100)
     rows: list[dict[str, Any]] = []

@@ -24,6 +24,7 @@ import os
 import re
 from pathlib import Path
 
+from gaworld.apps import residents, world_paths
 from gaworld.moltbook import accounts
 from gaworld.moltbook import log as action_log
 from gaworld.moltbook.client import DEFAULT_BASE_URL, MoltbookClient, MoltbookError
@@ -44,9 +45,10 @@ _NAME_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 
 
 def _cfg():
-    from gaworld.settings import CONFIG
+    # The active world's: accounts are keyed by agent id, so each population
+    # (a city, a world) keeps its own file.
 
-    return dict(CONFIG.get("moltbook", {}) or {})
+    return dict(world_paths.effective_config().get("moltbook", {}) or {})
 
 
 def _abs(path):
@@ -73,9 +75,8 @@ def _client(api_key=""):
 
 def _agent_identity(agent_id):
     """``{id, name, age, residence, …}`` from the running city, or ``None``."""
-    from gaworld.apps import dashboard_server
 
-    return dashboard_server._agent_state(agent_id)
+    return residents.agent_state(agent_id)
 
 
 # ---------------------------------------------------------------------------

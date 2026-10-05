@@ -141,9 +141,9 @@
       title: "平行世界教程",
       en: "Parallel Worlds",
       group: "专题教程",
-      summary: "同一批人换一件事：多分支反事实实验怎么设计、怎么读分叉图、为什么先跑安慰剂。",
-      en_summary: "Same people, one different event: designing multi-branch counterfactuals, reading the fork diagram, and why to run a placebo first.",
-      tags: ["parallel", "counterfactual", "平行世界", "对照", "反事实"],
+      summary: "同一批人换一件事：多分支反事实实验怎么设计、怎么读分叉图、为什么先跑安慰剂，以及效应估计、异质性与跨种子重复（研究工作台页签）。",
+      en_summary: "Same people, one different event: designing multi-branch counterfactuals, reading the fork diagram, why to run a placebo first, and effect estimates, heterogeneity and seed replication (a research-workbench tab).",
+      tags: ["parallel", "counterfactual", "平行世界", "对照", "反事实", "causal", "ATE", "因果推断"],
     },
     {
       id: "playground",
@@ -154,6 +154,16 @@
       summary: "和居民玩一局：斗兽场按 benchmark 排座次并留存 Top-K，说服游戏在限定轮数内劝他改口，复问时答案真的变了才算赢。",
       en_summary: "Play a round against the residents: the Arena ranks them on a benchmark and keeps the top K, while Persuasion gives you a turn limit to change one resident's mind — only a real change on the re-ask counts as a win.",
       tags: ["playground", "arena", "persuasion", "game", "游戏场", "斗兽场", "说服", "对局"],
+    },
+    {
+      id: "classic-experiments",
+      path: "/docs/CLASSIC_EXPERIMENTS.md",
+      title: "经典实验库",
+      en: "Classic Experiments",
+      group: "专题教程",
+      summary: "居民当被试：框架、锚定、独裁者 / 最后通牒、信任、公共品六个范式，每人答两个条件按人配对，只读方向，人类结果并排对照。",
+      en_summary: "Residents as subjects: six textbook paradigms (framing, anchoring, dictator / ultimatum, trust, public goods), each resident answering both conditions, scored on the paired direction with human results alongside.",
+      tags: ["experiment", "replication", "经典实验", "框架效应", "锚定", "博弈", "被试"],
     },
     {
       id: "openclaw",
@@ -372,15 +382,116 @@
 
   // ------------------------------------------------------------ 搜索
 
-  function snippetOf(text, needle) {
-    var lines = text.split("\n");
-    for (var i = 0; i < lines.length; i++) {
-      if (lines[i].toLowerCase().indexOf(needle) >= 0) {
-        var line = lines[i].trim();
-        return line.length > 90 ? line.slice(0, 90) + "…" : line;
+  // highlight / escapeHtml / tokensOf / snippetOf 都是无副作用的纯函数，
+  // 写在 highlight.js 里：浏览器走 globalThis.GAWorldHighlight，Node 测试走
+  // require()。这里只保留 wrap，用一致 API 接管三处调用。
+  var H = (typeof window !== "undefined" && window.GAWorldHighlight) || {};
+  function highlight(text, needle, opts) { return H.highlight(text, needle, opts); }
+  function snippetOf(text, needle) { return H.snippetOf(text, needle); }
+
+  /* Replace every <mark class="doc-mark"> in the article body with its text
+     content, leaving the surrounding text nodes intact. Cheap (no Markdown
+     re-parse) and safe even when marks sit inside headings or list items. */
+  function clearMarks() {
+    var body = articleEl.querySelector(".doc-body");
+    if (!body) return;
+    var marks = body.querySelectorAll("mark.doc-mark");
+    Array.prototype.forEach.call(marks, function (mark) {
+      var parent = mark.parentNode;
+      if (!parent) return;
+      // Splice the mark back out as a plain text node; multiple sibling marks
+      // become one text node each, preserving the original whitespace.
+      while (mark.firstChild) {
+        parent.insertBefore(mark.firstChild, mark);
       }
-    }
-    return "";
+      parent.removeChild(mark);
+    });
+  }
+
+  /* Walk the rendered article body and mark every occurrence of any token in
+     `query` with <mark class="doc-mark">. Done in place over text nodes so we
+     don't re-parse Markdown (which would lose anchors and strip markup).
+     Returns the slug (id attribute) of the first block-level element that
+     contains at least one mark, so the caller can scroll the user there.
+
+     Code blocks and inline code are excluded: a hit inside `\`fast-forward\``
+     would just decorate a token the reader has mentally marked as "literal",
+     and dark-background code on the dark background wouldn't carry the green
+     highlight cleanly anyway. */
+  function highlightArticle() {
+    // Strip any marks left over from a previous search before drawing new ones;
+    // otherwise a sequence of searches would leave <mark> inside <mark> and
+    // double-count hits when the user widens their query.
+    clearMarks();
+    var tokens = H.tokensOf(query).filter(function (t) { return t.length >= 2; });
+    if (!tokens.length) return "";
+    var pattern = tokens
+      .map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); })
+      .join("|");
+    var re = new RegExp("(" + pattern + ")", "gi");
+    var body = articleEl.querySelector(".doc-body");
+    if (!body) return "";
+
+    var firstHitId = "";
+    var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        // Skip empty text, whitespace-only text, and any text inside <code> /
+        // <pre> / <script> — those are literal contexts.
+        if (!node.nodeValue || !/\S/.test(node.nodeValue)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        var p = node.parentNode;
+        while (p && p !== body) {
+          var tag = p.nodeName;
+          if (tag === "CODE" || tag === "PRE" || tag === "SCRIPT" || tag === "STYLE") {
+            return NodeFilter.FILTER_REJECT;
+          }
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    var textNodeList = [];
+    var n;
+    while ((n = walker.nextNode())) textNodeList.push(n);
+
+    textNodeList.forEach(function (textNode) {
+      var value = textNode.nodeValue;
+      if (!re.test(value)) {
+        re.lastIndex = 0;
+        return;
+      }
+      re.lastIndex = 0;
+      var container = document.createDocumentFragment();
+      var lastIndex = 0;
+      var match;
+      while ((match = re.exec(value)) !== null) {
+        var before = value.slice(lastIndex, match.index);
+        if (before) container.appendChild(document.createTextNode(before));
+        var mark = document.createElement("mark");
+        mark.className = "doc-mark";
+        mark.textContent = match[0];
+        container.appendChild(mark);
+        lastIndex = match.index + match[0].length;
+        if (!firstHitId) {
+          // Walk up to the closest block-level ancestor that has an id, so the
+          // scroll target lines up with a heading rather than the middle of a
+          // paragraph (which has no id of its own).
+          var block = textNode.parentNode;
+          while (block && block !== body) {
+            if (block.id) { break; }
+            block = block.parentNode;
+          }
+          if (block && block.id) firstHitId = block.id;
+        }
+      }
+      var tail = value.slice(lastIndex);
+      if (tail) container.appendChild(document.createTextNode(tail));
+      textNode.parentNode.replaceChild(container, textNode);
+    });
+
+    return firstHitId;
   }
 
   function matchDoc(doc, needle) {
@@ -468,10 +579,20 @@
         var item = document.createElement("a");
         item.className = "doc-item" + (current && current.id === doc.id ? " is-active" : "");
         item.href = "#" + doc.id;
-        item.innerHTML = "<strong>" + doc.title + "</strong><em>" + doc.en + "</em>";
+        // Highlight query matches in the title and English subtitle too; users
+        // typing a Chinese keyword get the Chinese title highlighted, an English
+        // keyword the subtitle. textContent is built from already-trusted DOCS
+        // metadata, but we run the strings through escapeHtml() so the
+        // highlight machinery's escaping is the only path into innerHTML.
+        item.innerHTML = "<strong>" + highlight(doc.title, query)
+          + "</strong><em>" + highlight(doc.en, query) + "</em>";
         var note = document.createElement("span");
         note.className = "doc-item-note";
-        note.textContent = shown[doc.id] || summaryOf(doc);
+        // Prefer the matched snippet from the body when one was captured; fall
+        // back to the static summary otherwise. Both are run through
+        // highlight() so a keyword in the summary also shows up.
+        var noteText = shown[doc.id] || summaryOf(doc);
+        note.innerHTML = highlight(noteText, query);
         item.appendChild(note);
         section.appendChild(item);
       });
@@ -555,8 +676,13 @@
         + doc.path + "</a></p>"
         + "</header>"
         + '<div class="doc-body">' + result.html + "</div>";
+      var firstHitId = highlightArticle();
       renderToc();
-      scrollToSlug(slug);
+      // A direct #id/anchor in the URL wins over a search hit, but if the user
+      // opened this document via search we jump to the first matching block so
+      // they can see where the term appeared. After that, the scroll listener
+      // keeps the active section in the TOC.
+      scrollToSlug(slug || firstHitId);
     }).catch(function (error) {
       if (current !== doc) return;
       headings = [];

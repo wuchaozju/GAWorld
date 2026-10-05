@@ -47,6 +47,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # dependencies" property.
 from gaworld.personality.traits import trait_modifier, traits_of
 from gaworld.world.away import is_away_location
+from gaworld.world.spatial_tree import same_room
 
 try:
     import numpy as np  # type: ignore
@@ -540,6 +541,9 @@ def detect_co_located_agents(
     text, not a node id, so two residents on unrelated trips can carry the
     same string ("异地", or "异地（北京）" for the same province) and would
     otherwise be judged to be standing next to each other.
+
+    With ``local_physical.rooms`` on, both must also be in the same room (and
+    flat): neighbours at home in one building do not run into each other.
     """
     my_loc = agent.get("locations", {}).get("current", "")
     if not my_loc or is_away_location(my_loc):
@@ -552,7 +556,7 @@ def detect_co_located_agents(
         other_loc = other.get("locations", {}).get("current", "")
         if is_away_location(other_loc):
             continue
-        if other_loc == my_loc and not other.get("locations", {}).get("in_transit"):
+        if other_loc == my_loc and not other.get("locations", {}).get("in_transit") and same_room(agent, other):
             co_located.append(other)
     return co_located
 

@@ -702,9 +702,27 @@ L2 的失败是**结构性的，不是调参问题**。实体化预算扫描：
 但**交互路径（点生成、看进度条、跑验证门）需要你本地起 `python -m gaworld.apps.dashboard_server`
 自己点一遍**。
 
-### ⬜ Phase 5 — 未开始
+### ✅ Phase 5 — 主运行开关 + 影子审计自适应（2026-10-04，路线图 P3-16）
 
-shadow-audit 自适应回路、`CONFIG["simulation_mode"]` 开关（关口已过，可以接了）。
+`CONFIG["simulation_mode"] = "individual" | "group"`，默认 individual。group 只在**按天快进**下可用
+（`gaworld.group.plugin.validate_config`，开跑前在 `validate_runtime_config` 里拒绝）。
+
+- **形态**：`GroupPlugin` 进了 `builtin_plugins()`。`on_day_start` 选实体化名单、每群体一次调用、
+  平移非实体化成员；新过滤钩子 `fast_forward.digest_agents` 把快进简报收窄到实体化名单；
+  `on_day_end`（priority 100，早于经济等日边界子系统）回流 + 审计 + 自适应。
+  主循环快进分支多了 10 行：过滤钩子、不出简报的居民只记状态历史、记忆生命周期只给出简报的人。
+- **个体层不再是占位**：实体化与审计样本跑的就是普通快进简报。所以主运行里的审计残差是对**真实个体层**的
+  在线度量——这是验证门（对着合成参照过程）给不了的。
+- **两层同一组量**：群体变化限制在快进简报能动的 `LONG_RUN_STATE_KEYS`（7 个）。否则群体动了
+  `voice_propensity` 而个体层永远不动，审计会因定义差异而不是近似误差告警。
+- **自适应**（`materialize.adapt_audit_boost`）：残差 > `group.residual_alarm` → 该群体次日审计 ×2（上限 ×8）；
+  连续 3 天不告警降一档。`select_materialized` 新增 `audit_boost`，加的样本在全局审计目标之外，
+  不挤占别的群体；不传时行为与之前逐位相同（有测试）。
+- **记录**：`group.partition` / `group.day` / `group.summary`；状态历史里所有居民都在。
+- **没做**：网络耦合（需要合成器的社交图）→ 主运行的群体模式不能用于网络扩散类问题；事件触发的实体化；
+  逐 tick 模式。独立驱动器 `python -m gaworld.group` 与验证门不变（默认不加审计倍数）。
+- 原 `GroupPlugin` 的遥测处理器按 `handler(ctx=...)` 写，与真实 EventBus 的 `fn(ctx_dict)` 不符，
+  因为从未注册所以没暴露；这次改成真实约定，测试一并改。
 
 ---
 

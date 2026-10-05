@@ -88,11 +88,22 @@ tests/test_population.py::StructuralValidityTests
 # C-22 平行世界实验规格
 tests/test_parallel_worlds.py::SpecTests
 
+# 同居模式:长会话、tick 推进、模型调用、心情/关系
+tests/test_roommate_api.py
+
 # C-23 Dashboard 访问控制与 API 契约
 tests/test_dashboard_auth.py
 tests/test_accounts.py
 tests/test_worlds.py
 tests/test_ownership.py
 tests/test_multiplayer.py
+tests/test_cluster.py::NodesTest
+tests/test_cluster.py::HubTest
+tests/test_cluster.py::BundleTest
+tests/test_cluster.py::SyncPluginTest
+tests/test_cluster.py::RemoteSpeechTest
+tests/test_cluster.py::ClusterHttpTest
+tests/test_cluster.py::NodeRunnerTest
 tests/test_teacher_console.py
 tests/test_openapi.py
+tests/test_client.py

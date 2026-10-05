@@ -27,7 +27,7 @@ during a run rather than only in a post-hoc L0 double-run.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -118,6 +118,7 @@ def select_materialized(
     event_ids: Sequence[int] = (),
     audit_fraction: float = 0.03,
     rng: np.random.Generator | None = None,
+    audit_boost: Mapping[str, int] | None = None,
 ) -> MaterializationPlan:
     """Pick today's individual-fidelity agents within ``budget``.
 
@@ -127,6 +128,10 @@ def select_materialized(
     from ``audit_fraction`` of the population and takes priority over tail
     selection, because an unmeasured approximation is worse than a slightly
     less well-targeted one. Whatever budget remains goes to the tail.
+
+    ``audit_boost`` multiplies one cohort's audit share (see
+    :func:`adapt_audit_boost`); the extra members come on top of the
+    population-wide audit target rather than out of other cohorts' shares.
     """
     generator = rng if rng is not None else np.random.default_rng(day)
     all_members = [m for cohort in cohorts for m in cohort.members]
@@ -137,6 +142,8 @@ def select_materialized(
     reserved = set(focal) | set(event)
 
     audit_target = round(max(0.0, float(audit_fraction)) * population)
+    boost = audit_boost or {}
+    extra = 0
     audit: list[int] = []
     if audit_target > 0:
         # Stratify by cohort so the audit covers the whole population rather
@@ -144,14 +151,16 @@ def select_materialized(
         for cohort in cohorts:
             if not cohort.members:
                 continue
-            share = max(1, round(audit_target * cohort.size / max(population, 1)))
+            base = max(1, round(audit_target * cohort.size / max(population, 1)))
+            share = base * max(1, int(boost.get(cohort.id, 1)))
             candidates = [m for m in cohort.members if m not in reserved]
             if not candidates:
                 continue
             take = min(share, len(candidates))
+            extra += max(0, take - base)
             picked = generator.choice(len(candidates), size=take, replace=False)
             audit.extend(int(candidates[int(i)]) for i in picked)
-        audit = sorted(set(audit) - reserved)[:audit_target]
+        audit = sorted(set(audit) - reserved)[: audit_target + extra]
     reserved |= set(audit)
 
     remaining = max(0, int(budget) - len(focal) - len(event) - len(audit))
@@ -245,8 +254,63 @@ def audit_residual(
     }
 
 
+def adapt_audit_boost(
+    boost: dict[str, int],
+    quiet_days: dict[str, int],
+    residuals: Sequence[dict[str, Any]],
+    *,
+    alarm: float,
+    factor: int = 2,
+    max_multiplier: int = 8,
+    cooldown_days: int = 3,
+) -> list[dict[str, Any]]:
+    """Shadow audit, adaptive half: more audit where the cohort was wrong.
+
+    A cohort whose audit residual crosses ``alarm`` gets its audit share
+    multiplied by ``factor`` for the next day, up to ``max_multiplier``; after
+    ``cooldown_days`` consecutive days under the alarm it steps back down by
+    the same factor. A bigger audit sample answers the question the alarm
+    raises — was that residual the cohort, or the handful who were sampled?
+
+    Mutates ``boost`` / ``quiet_days`` in place and returns the changes, so a
+    run can record every adjustment it made.
+    """
+    changes: list[dict[str, Any]] = []
+    step = max(2, int(factor))
+    for residual in residuals:
+        if not residual.get("sample_size"):
+            continue
+        cohort_id = str(residual["cohort_id"])
+        current = int(boost.get(cohort_id, 1))
+        if float(residual["residual_l1"]) > alarm:
+            quiet_days[cohort_id] = 0
+            new = min(max(1, int(max_multiplier)), current * step)
+        else:
+            quiet_days[cohort_id] = quiet_days.get(cohort_id, 0) + 1
+            if current == 1 or quiet_days[cohort_id] < cooldown_days:
+                continue
+            quiet_days[cohort_id] = 0
+            new = max(1, current // step)
+        if new == current:
+            continue
+        if new == 1:
+            boost.pop(cohort_id, None)
+        else:
+            boost[cohort_id] = new
+        changes.append(
+            {
+                "cohort_id": cohort_id,
+                "from": current,
+                "to": new,
+                "residual_l1": round(float(residual["residual_l1"]), 4),
+            }
+        )
+    return changes
+
+
 __all__ = [
     "MaterializationPlan",
+    "adapt_audit_boost",
     "apply_individual_deltas_to_cohort",
     "audit_residual",
     "cohort_distance",

@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from gaworld import worlds
 from gaworld.accounts import AccountStore, policy
 from gaworld.apps import dashboard_server as ds
-from gaworld.apps import play_api
+from gaworld.apps import play_api, world_paths
 from gaworld.kernel import build_kernel
 from gaworld.multiplayer import plugin as mp
 from gaworld.plugins import builtin_plugins
@@ -146,8 +146,8 @@ class PlayHttpTest(unittest.TestCase):
         self.store.create_user("小李", PASSWORD)
         self.patches = [
             mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": db}),
-            mock.patch.object(ds, "REPO_ROOT", root),
-            mock.patch.object(ds, "DASHBOARD_CONFIG_PATH", os.path.join(root, "dashboard_config.json")),
+            mock.patch.object(world_paths, "REPO_ROOT", root),
+            mock.patch.object(world_paths, "DASHBOARD_CONFIG_PATH", os.path.join(root, "dashboard_config.json")),
             mock.patch.object(ds, "_city_seed_files", return_value=("", self.csv, self.md)),
         ]
         for patch in self.patches:
@@ -302,10 +302,12 @@ class FullSimTest(unittest.TestCase):
     def test_player_intent_reaches_perception_and_action(self):
         import generative_city_sim as sim
         from gaworld.settings import CONFIG
+        from tests.fixtures import scratch_cwd
         from tests.fixtures.mock_llm import install
 
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
+        scratch_cwd.enter(self)  # keep the run's output/ out of the repo
         touched = (
             "agent_ids",
             "sim_days",

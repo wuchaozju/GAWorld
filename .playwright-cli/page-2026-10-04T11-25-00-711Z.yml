@@ -1,0 +1,166 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - link "GAWorld home" [ref=e4] [cursor=pointer]:
+      - /url: /terminal/index.html
+      - text: GAWorld // terminal_view
+    - navigation "页面导航" [ref=e6]:
+      - link "abstract" [ref=e7] [cursor=pointer]:
+        - /url: "#abstract"
+      - link "capabilities" [ref=e8] [cursor=pointer]:
+        - /url: "#capabilities"
+      - link "console" [ref=e9] [cursor=pointer]:
+        - /url: "#entries"
+      - link "/console" [ref=e10] [cursor=pointer]:
+        - /url: /console
+    - generic [ref=e11]: SIM_LIVE · 51 agents · day 14
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - paragraph [ref=e14]:
+        - generic [ref=e15]: $ gaworld --view=landing --palette=terminal
+        - text: // same model, same 51 residents, same seed
+        - generic [ref=e16]: // render only differs
+      - heading "把政策影响 从讨论变成 对照实验." [level=1] [ref=e17]
+      - paragraph [ref=e18]: GAWorld 把人物画像 / 环境扰动 / 政策冲击 / 长期记忆整合为一个可回放的城市社会仿真系统。 同一批居民、同一个种子,只换一件事,看历史怎么分叉。
+      - generic [ref=e19]:
+        - link "$ open_console" [ref=e20] [cursor=pointer]:
+          - /url: /console
+        - link "$ read_abstract" [ref=e21] [cursor=pointer]:
+          - /url: "#abstract"
+        - link "$ docs" [ref=e22] [cursor=pointer]:
+          - /url: /console#docs
+      - list "平台特点" [ref=e23]:
+        - listitem [ref=e24]: local_run仿真 / 数据 / 面板都在你的机器上
+        - listitem [ref=e25]: counterfactual有事件 / 无事件两个世界并行推进
+        - listitem [ref=e26]: replay逐帧回看每位居民的位置、状态与活动
+        - listitem [ref=e27]: bilingual控制台全程双语,无构建步骤
+    - complementary "GAWorld 终端面板预览:点阵小城 + 实时事件" [ref=e28]:
+      - generic [ref=e29]:
+        - text: CITY // HANGZHOU · LINAN · DAY 14 · 09:42
+        - generic [ref=e30]: seed:2026-0317 ● live
+      - generic [ref=e31]:
+        - text: · · · · · · · · · · · · · · · T T T T T [!] ┌─┐ ┌───┐ ┌─┐ ┌───┐ T ┌─┐ ▮ │·│ │·c·│ │·│ │·o·│ │·│
+        - generic [ref=e32]: EVENT
+        - text: └┬┘ └─┬─┘ └┬┘ └─┬─┘ └┬┘
+        - generic [ref=e33]: "ON"
+        - text: │ │ │ │ │ ~~~~ ~~~~~ ~~~~ ~~~~ ~~~ │ │ │ │ │ ┌─┐ T ┌───┐ ┌─┐ ┌───┐ ┌─┐ T │·│ T │·c·│ │·│ │·o·│ │·│ └┬┘ └─┬─┘ └┬┘ └─┬─┘ └┬┘ │ │ │ │ │ T T T T T T ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▶ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: 居民
+          - generic [ref=e37]: 建筑
+          - generic [ref=e38]: 水系
+          - generic [ref=e39]: 事件点
+          - generic [ref=e40]: 道路
+        - text: tick 0.25s · step_size 5min
+  - region "项目事实" [ref=e41]:
+    - generic [ref=e42]: 51位居民 · 默认人口
+    - generic [ref=e43]: 13个视图 · 控制台面板
+    - generic [ref=e44]: 5阶段工作流
+    - generic [ref=e45]: 2个反事实
+    - generic [ref=e46]: zh / EN全程双语
+    - generic [ref=e47]: 2026-09-26最近更新
+  - generic [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - paragraph [ref=e51]: // graphical_abstract
+        - heading "城市输入 → 有记忆的智能体 → 反事实对照" [level=2] [ref=e52]
+      - paragraph [ref=e53]: 城市输入经由具有记忆的智能体,在「有事件 / 无事件」两个世界里分别演化; 两个世界的差异,就是事件影响的估计。
+    - generic "研究总览流程" [ref=e54]:
+      - generic [ref=e55]:
+        - text: "[01]"
+        - generic [ref=e56]: INPUTS 地图 / 政策 / 环境 / 外部信息 — 城市侧的所有变量
+      - generic [ref=e57]:
+        - text: "[02]"
+        - generic [ref=e58]: AGENTS 51 位居民,每位持有状态 / 记忆 / 关系 / 习惯 — 跨天持续体
+      - generic [ref=e59]:
+        - text: "[03]"
+        - generic [ref=e60]: LOOP perceive → plan → act → reflect — 每个 tick 的认知循环
+      - generic [ref=e61]:
+        - text: "[04]"
+        - generic [ref=e62]: WITH_EVENT 同一种子,叠加政策冲击 — 一个世界
+      - generic [ref=e63]:
+        - text: "[05]"
+        - generic [ref=e64]: WITHOUT 同一种子,不叠加 — 另一个世界
+      - generic [ref=e65]:
+        - text: "[06]"
+        - generic [ref=e66]: IMPACT Δ(with, without) → 行为轨迹 / 状态演化 / 社会动态 / 对照摘要 — 影响估计
+  - generic [ref=e67]:
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - paragraph [ref=e70]: // what_it_is_for
+        - heading "你可以用它做什么" [level=2] [ref=e71]
+      - paragraph [ref=e72]: 三个最常用的研究姿势。剩下的能力在控制台 13 个视图里。
+    - generic [ref=e73]:
+      - article [ref=e74]:
+        - text: 01 // counterfactual
+        - heading "政策前后对照" [level=3] [ref=e75]
+        - paragraph [ref=e76]: 并行运行「有事件 / 无事件」两组仿真,量化压力 / 情绪 / 出行等指标的差异。
+        - text: uses // parallel_worlds · analytics
+      - article [ref=e77]:
+        - text: 02 // memory
+        - heading "跨天经验积累" [level=3] [ref=e78]
+        - paragraph [ref=e79]: 居民不是一次性脚本角色,而是会形成习惯 / 关系 / 日常行为倾向的持续体。
+        - text: uses // memory · interview
+      - article [ref=e80]:
+        - text: 03 // extensible
+        - heading "可扩展社会实验" [level=3] [ref=e81]
+        - paragraph [ref=e82]: 通过插件、配置和外部环境服务快速接入经济 / 环境 / 外部信息等新模块。
+        - text: uses // plugin · external_system
+  - generic [ref=e83]:
+    - generic [ref=e84]:
+      - generic [ref=e85]:
+        - paragraph [ref=e86]: // console_views
+        - heading "功能入口" [level=2] [ref=e87]
+      - paragraph [ref=e88]: 下面每一项都是控制台里的一个视图,共用同一批居民 / 同一份配置 / 同一条仿真轨迹。
+    - generic [ref=e89]:
+      - generic [ref=e90]:
+        - heading "1BUILD · 构建" [level=3] [ref=e91]
+        - generic [ref=e92]:
+          - link "cities城市给一个地名,自动取地理坐标与 OpenStreetMap 路网。" [ref=e93] [cursor=pointer]:
+            - /url: /console#city
+          - link "population人口与群体设定人口结构,生成几百个居民,先按群体低成本试跑。" [ref=e94] [cursor=pointer]:
+            - /url: /console#population
+          - link "agent_studio智能体工作台逐个设计具有状态 / 记忆 / 社交 / 目标的数字居民。" [ref=e95] [cursor=pointer]:
+            - /url: /console#studio
+      - generic [ref=e96]:
+        - heading "2RUN · 运行" [level=3] [ref=e97]
+        - generic [ref=e98]:
+          - link "dashboard控制台配置 / 运行 / 采访 / 记忆 — 一站式本地仿真面板。" [ref=e99] [cursor=pointer]:
+            - /url: /console#dashboard
+          - link "simulation仿真回放按帧回看每个时刻居民在城市中的位置、状态与活动。" [ref=e100] [cursor=pointer]:
+            - /url: /console#simviz
+      - generic [ref=e101]:
+        - heading "3EXPERIMENT · 实验" [level=3] [ref=e102]
+        - generic [ref=e103]:
+          - link "parallel_worlds平行世界同一批人 / 同一个种子,只换一件事。" [ref=e104] [cursor=pointer]:
+            - /url: /console#worlds
+          - link "cooperation合作任务给一组居民一个共同目标,看他们怎么分工。" [ref=e105] [cursor=pointer]:
+            - /url: /console#collaboration
+          - link "survey群体采访把同一问题抛给多个居民,收集结构化答复。" [ref=e106] [cursor=pointer]:
+            - /url: /console#survey
+          - link "external_system外部系统接外部 LLM / API / 数据源,做联合仿真。" [ref=e107] [cursor=pointer]:
+            - /url: /console#external
+      - generic [ref=e108]:
+        - heading "4ANALYZE · 分析" [level=3] [ref=e109]
+        - generic [ref=e110]:
+          - link "analytics结果分析指标 / 折线 / 雷达 / 事件时间线。" [ref=e111] [cursor=pointer]:
+            - /url: /console#analytics
+          - link "research研究工作台把一次实验写进可复现的 research notebook。" [ref=e112] [cursor=pointer]:
+            - /url: /console#research
+      - generic [ref=e113]:
+        - heading "5PLAYGROUND · 游戏场" [level=3] [ref=e114]
+        - generic [ref=e115]:
+          - link "games互动游戏场辩论 / 灾难 / 谣言扩散 — 三个轻量交互。" [ref=e116] [cursor=pointer]:
+            - /url: /console#games
+          - link "docs文档13 个视图的入门与教程。" [ref=e117] [cursor=pointer]:
+            - /url: /console#docs
+          - link "settings设置语言 / 默认城市 / 性能参数。" [ref=e118] [cursor=pointer]:
+            - /url: /console#settings
+  - contentinfo [ref=e119]:
+    - text: $ gaworld --version // 2026-09-26 · still iterating
+    - generic [ref=e120]:
+      - link "/console" [ref=e121] [cursor=pointer]:
+        - /url: /console
+      - link "docs" [ref=e122] [cursor=pointer]:
+        - /url: /console#docs
+      - link "cream_view" [ref=e123] [cursor=pointer]:
+        - /url: /site/index.html

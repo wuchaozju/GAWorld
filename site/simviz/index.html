@@ -1,18 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GAWorld · 仿真回放</title>
   <meta name="description" content="GAWorld simulation replay viewer" />
-  <link rel="stylesheet" href="/site/simviz/replay.css" />
+  <link rel="stylesheet" href="/site/simviz/replay.css?v=20261004-pixel7" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body>
-  <main class="page">
+  <main class="page" data-scene-workspace>
     <header class="topbar">
       <div>
         <p class="eyebrow">GAWorld</p>
         <h1>仿真回放</h1>
+      </div>
+      <div class="scene-modes" role="group" aria-label="视图模式">
+        <button type="button" data-scene-mode="city" aria-pressed="true">城市地图</button>
+        <button type="button" data-scene-mode="indoor" aria-pressed="false">室内模式</button>
       </div>
       <label class="run-picker">
         <span>运行</span>
@@ -21,9 +28,10 @@
     </header>
 
     <section class="workspace">
-      <div class="map-shell">
+      <div class="map-shell" data-city-view>
         <canvas id="mapCanvas" width="1200" height="760" aria-label="simulation map"></canvas>
       </div>
+      <div id="indoorView" class="indoor-shell" aria-label="indoor activity view" hidden></div>
       <aside class="inspector">
         <div class="now">
           <span id="frameStamp">等待数据</span>
@@ -51,7 +59,12 @@
     </footer>
   </main>
 
+  <script src="/site/dashboard/agent-thought.js"></script>
   <script src="/site/dashboard/citymap-view.js"></script>
-  <script src="/site/simviz/replay.js"></script>
+  <script src="/site/simviz/spatial-tree.js?v=20261005-rooms1"></script>
+  <script src="/site/vendor/phaser.min.js"></script>
+  <script src="/site/simviz/phaser-app.js?v=20261005-rooms1" data-indoor-only></script>
+  <script src="/site/dashboard/indoor-view.js?v=20261005-rooms1"></script>
+  <script src="/site/simviz/replay.js?v=20261004-pixel7"></script>
 </body>
 </html>

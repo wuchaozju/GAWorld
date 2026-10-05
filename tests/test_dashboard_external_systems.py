@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from gaworld.apps import dashboard_server as ds
 from gaworld.apps import external_systems_api as api
+from gaworld.apps import world_paths
 from gaworld.economy import finance
 
 
@@ -42,21 +43,21 @@ class _TempRepo:
     def __init__(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = self.tmp.name
-        self._saved = (ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH)
+        self._saved = (world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH)
 
     def __enter__(self):
-        ds.REPO_ROOT = self.root
-        ds.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
+        world_paths.REPO_ROOT = self.root
+        world_paths.DASHBOARD_CONFIG_PATH = os.path.join(self.root, "dashboard_config.json")
         os.makedirs(os.path.join(self.root, "output", "economy"), exist_ok=True)
         return self
 
     def __exit__(self, *exc):
-        ds.REPO_ROOT, ds.DASHBOARD_CONFIG_PATH = self._saved
+        world_paths.REPO_ROOT, world_paths.DASHBOARD_CONFIG_PATH = self._saved
         self.tmp.cleanup()
         return False
 
     def config(self):
-        with open(ds.DASHBOARD_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(world_paths.DASHBOARD_CONFIG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
 

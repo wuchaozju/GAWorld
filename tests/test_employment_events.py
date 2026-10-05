@@ -13,7 +13,7 @@ import unittest
 from copy import deepcopy
 from unittest import mock
 
-from gaworld.apps import dashboard_server as ds
+from gaworld.apps import residents, world_paths
 from gaworld.economy import finance as eco
 from gaworld.events.life import list_life_event_templates, normalize_life_event
 from gaworld.sim._schedule import (
@@ -202,13 +202,13 @@ class TestDashboardEmploymentPayload(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, "agent_1_economy.json"), "w", encoding="utf-8") as fh:
                 json.dump(econ, fh, ensure_ascii=False)
-            with mock.patch.object(ds, "_memory_base_dir", return_value=tmp):
-                return ds._employment_payload(1)
+            with mock.patch.object(world_paths, "memory_base_dir", return_value=tmp):
+                return residents._employment_payload(1)
 
     def test_empty_without_economy_state(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with mock.patch.object(ds, "_memory_base_dir", return_value=tmp):
-                self.assertEqual({}, ds._employment_payload(1))
+            with mock.patch.object(world_paths, "memory_base_dir", return_value=tmp):
+                self.assertEqual({}, residents._employment_payload(1))
 
     def test_reports_the_current_job(self):
         payload = self._payload({"job": "算法工程师", "base_hourly_income": 60.0})

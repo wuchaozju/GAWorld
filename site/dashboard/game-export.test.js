@@ -102,6 +102,30 @@ test("arena: ranking rows", () => {
   assert(md.includes("#9"));
 });
 
+test("novel: title, cast, chapters and stats", () => {
+  const md = gx.novel({
+    title: "巷口的雨",
+    city: "wuzhen",
+    style: { title: "温暖日常", point_of_view: "第三人称" },
+    cast: [{ name: "甲", role: "主角" }, { name: "乙", role: "推动情节" }],
+    premise: "一个雨天的小误会。",
+    back_cover: "巷口那家面馆的女店主遇到一位常客。",
+    target_words: 2000,
+    stats: { total_words: 1990, target_words: 2000, chapters: 2 },
+    chapters: [
+      { chapter: 1, title: "雨", summary: "下雨了。", word_count: 980, text: "这是第一章正文……" },
+      { chapter: 2, title: "伞", summary: "她借了伞。", word_count: 1010, text: "这是第二章正文……" },
+    ],
+  }, NOW);
+  assert(md.includes("# 巷口的雨"));
+  assert(md.includes("甲（主角）"));
+  assert(md.includes("乙（推动情节）"));
+  assert(md.includes("## 第1章　雨"));
+  assert(md.includes("## 目录"));
+  assert(md.includes("- 第1章　雨（980字）"));
+  assert(md.includes("目标：2000字"));
+});
+
 test("fileName is filesystem safe", () => {
   assert.strictEqual(gx.fileName("arena", "a/b c", NOW), "arena-a-b-c-20260929-1005.md");
   assert(gx.fileName("x", "", NOW).includes("-result-"));

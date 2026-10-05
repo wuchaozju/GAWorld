@@ -1795,6 +1795,18 @@ function stepReview() {
       <button id="interviewBtn" class="button" ${store.creating ? "disabled" : ""}>${esc(__("sd.interview_start"))}</button>
       <div class="interview-out" id="interviewOut" hidden></div>
     </div>
+    <div class="card">
+      <h3>${esc(__("sd.autobio_title"))}</h3>
+      <p class="section-note">${esc(__("sd.autobio_note"))}</p>
+      <button id="autobioBtn" class="button ${store.creating ? "" : "primary"}" ${store.creating ? "disabled" : ""}>${esc(__("sd.autobio_start"))}</button>
+      <div class="autobio-out" id="autobioOut" hidden>
+        <div class="autobio-meta" id="autobioMeta"></div>
+        <div class="autobio-actions">
+          <a id="autobioDownload" class="button mini" hidden download>${esc(__("sd.autobio_download"))}</a>
+        </div>
+        <div class="profile-md md-body" id="autobioBody"></div>
+      </div>
+    </div>
     <div class="deploy-actions">
       <button id="saveBtn2" class="button primary">${esc(store.creating ? __("sd.create_resident") : __("sd.save_changes"))}</button>
       <button id="runBtn2" class="button steel" ${store.creating ? "disabled" : ""}>${esc(__("sd.run_with_resident"))}</button>
@@ -1919,6 +1931,7 @@ function bindStep() {
   bindFinanceStep();
   bindMoltbookStep();
   const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", runInterview);
+  const aBtn = $("#autobioBtn"); if (aBtn) aBtn.addEventListener("click", runAutobiography);
   const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", save);
   const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", runSim);
 }
@@ -2108,6 +2121,107 @@ async function runInterview() {
     const res = await api("/api/interview", { method: "POST", body: JSON.stringify({ agent_id: store.currentId, questions: [q] }) });
     out.textContent = (res.stdout || res.stderr || __("sd.no_output")).trim();
   } catch (err) { out.textContent = __("sd.interview_failed") + err.message; }
+}
+
+/* Compose ~20k-character autobiographical Markdown from the panel's own
+ * detail payload. The LLM call writes 15-30k output tokens and easily runs
+ * for several minutes; we therefore treat it as a job (POST enqueues,
+ * GET polls) so the dashboard's request handler never blocks and the panel
+ * can show live progress. The shape is identical to ``interview_api``'s
+ * jobs so the panel's mental model is the same. */
+async function runAutobiography() {
+  if (store.creating || store.currentId == null) {
+    foot(__("sd.autobio_no_agent"), "err"); return;
+  }
+  const btn = $("#autobioBtn");
+  const out = $("#autobioOut");
+  const meta = $("#autobioMeta");
+  const body = $("#autobioBody");
+  const dl = $("#autobioDownload");
+  if (!btn || !out) return;
+  btn.disabled = true;
+  out.hidden = false;
+  body.innerHTML = "";
+  if (dl) { dl.hidden = true; dl.removeAttribute("href"); }
+
+  /* Reset stuck handlers if a previous run died before this one started. */
+  if (store.autobioTimer) { clearInterval(store.autobioTimer); store.autobioTimer = null; }
+
+  let job;
+  try {
+    job = await api(`/api/agents/${store.currentId}/autobiography`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  } catch (err) {
+    btn.disabled = false;
+    meta.textContent = __("sd.autobio_failed") + err.message;
+    foot(__("sd.autobio_failed_short"), "err");
+    return;
+  }
+
+  meta.textContent = __("sd.autobio_running");
+  foot(__("sd.autobio_started"), "ok");
+
+  const startedMs = Date.now();
+  store.autobioTimer = setInterval(async () => {
+    let res;
+    try {
+      res = await api(`/api/agents/${store.currentId}/autobiography/jobs/${job.job_id}`);
+    } catch (err) {
+      // Network blip — keep polling until the watchdog kicks in.
+      return;
+    }
+    const elapsed = Math.round((Date.now() - startedMs) / 1000);
+    if (res.status === "done") {
+      finishAutobiography(res.result, { length: res.result.length_cjk || 0 });
+    } else if (res.status === "error") {
+      meta.textContent = __("sd.autobio_failed") + (res.message || "");
+      body.innerHTML = "";
+      foot(__("sd.autobio_failed_short"), "err");
+      clearInterval(store.autobioTimer); store.autobioTimer = null;
+      btn.disabled = false;
+    } else {
+      // running: refresh progress line so the user sees the panel is alive.
+      meta.textContent = `${__("sd.autobio_running")}（${elapsed}s · ${res.message || ""}）`;
+    }
+  }, 3000);
+
+  // Watchdog: if the backend never says done after 12 minutes, give up
+  // rather than spinning forever. 24k output tokens at the slowest model
+  // finishes inside that ceiling with plenty of margin.
+  store.autobioWatchdog = setTimeout(() => {
+    if (!store.autobioTimer) return;
+    clearInterval(store.autobioTimer); store.autobioTimer = null;
+    meta.textContent = __("sd.autobio_timeout");
+    foot(__("sd.autobio_failed_short"), "err");
+    btn.disabled = false;
+  }, 12 * 60 * 1000);
+}
+
+function finishAutobiography(result, meta) {
+  const btn = $("#autobioBtn");
+  const body = $("#autobioBody");
+  const dl = $("#autobioDownload");
+  const metaEl = $("#autobioMeta");
+  if (store.autobioTimer) { clearInterval(store.autobioTimer); store.autobioTimer = null; }
+  if (store.autobioWatchdog) { clearTimeout(store.autobioWatchdog); store.autobioWatchdog = null; }
+
+  metaEl.textContent = __f("sd.autobio_meta", {
+    length: result.length || 0,
+    cjk: result.length_cjk || 0,
+    profile: result.profile_block_size || 0,
+  });
+  body.innerHTML = renderMarkdown(result.markdown || "");
+  if (dl && result.markdown) {
+    const blob = new Blob([result.markdown], { type: "text/markdown;charset=utf-8" });
+    dl.href = URL.createObjectURL(blob);
+    dl.download = `agent-${store.currentId}-autobiography.md`;
+    dl.hidden = false;
+    setTimeout(() => URL.revokeObjectURL(dl.href), 60_000);
+  }
+  foot(__f("sd.autobio_done", { length: result.length_cjk || 0 }), "ok");
+  if (btn) btn.disabled = false;
 }
 
 /* ---------- wire up ---------- */

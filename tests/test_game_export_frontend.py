@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = ROOT / "site" / "dashboard"
-GAMES = ["persuade", "disaster", "rumor", "duel", "referendum", "guess", "arena"]
+GAMES = ["persuade", "disaster", "rumor", "duel", "referendum", "guess", "arena", "novel"]
 
 
 def test_game_export_node_suite():

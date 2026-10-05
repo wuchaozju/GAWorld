@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="whois.page_title">GAWorld · 谁是真人</title>
+  <meta name="description" data-i18n-content="whois.meta_description" content="GAWorld 谁是真人 — 居民和真人坐进同一个匿名群聊，聊几轮后每个人猜：哪几个号是真人？" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="whois.kicker">GAWorld Playground · Who's Human</p>
+          <h1 data-i18n="whois.headline">谁是真人</h1>
+          <p class="sub" data-i18n="whois.sub">
+            几位居民和几个真人坐进同一个匿名群聊，每个人只显示编号。聊几轮之后，每个真人给其他每个号打勾：真人还是居民？
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="whois.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <aside id="wSetup" class="disaster-side panel">
+        <h3 data-i18n="whois.section_setup">开一个房间</h3>
+
+        <label class="field">
+          <span data-i18n="whois.city_label">城市</span>
+          <select id="wCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="whois.topic_label">话题</span>
+          <select id="wTopic"></select>
+        </label>
+        <label id="wCustomBlock" class="field" hidden>
+          <span data-i18n="whois.custom_label">自己写的话题</span>
+          <input id="wCustom" type="text" maxlength="200" data-i18n-placeholder="whois.custom_placeholder" placeholder="一句能聊出各自生活的话，例如：你通勤要多久？" />
+        </label>
+
+        <div class="whois-counts">
+          <label class="field">
+            <span data-i18n="whois.agents_label">居民座位</span>
+            <input id="wAgents" type="number" min="1" max="5" value="3" />
+          </label>
+          <label class="field">
+            <span data-i18n="whois.humans_label">真人座位</span>
+            <input id="wHumans" type="number" min="1" max="5" value="2" />
+          </label>
+          <label class="field">
+            <span data-i18n="whois.rounds_label">轮数</span>
+            <input id="wRounds" type="number" min="2" max="5" value="3" />
+          </label>
+        </div>
+        <p class="disaster-hint" data-i18n="whois.setup_hint">
+          居民随机抽。至少放两个真人座位，真人之间互相判断才有对照；主持人看得到谁是谁，自己别下场。
+        </p>
+
+        <div class="disaster-actions">
+          <button id="wCreate" class="button primary" data-i18n="whois.create">开房间</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="whois.history">我开的房间</h4>
+          <ul id="wRooms"></ul>
+        </section>
+      </aside>
+
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="wTitle" data-i18n="whois.section_room">房间</h3>
+            <p id="wStatus" class="disaster-status" data-i18n="whois.idle">还没有房间</p>
+          </div>
+          <div id="wHostActions" class="disaster-actions" hidden>
+            <button id="wNext" class="button" data-i18n="whois.next">不等了，下一轮</button>
+            <button id="wReveal" class="button" data-i18n="whois.reveal">不等了，揭晓</button>
+          </div>
+        </header>
+
+        <section id="wLinks" class="whois-links" hidden>
+          <h4 data-i18n="whois.links">座位</h4>
+          <ul id="wSeats"></ul>
+        </section>
+
+        <section id="wChat" class="whois-chat" hidden></section>
+
+        <section id="wCompose" class="whois-compose" hidden>
+          <textarea id="wText" maxlength="200" data-i18n-placeholder="whois.compose_placeholder" placeholder="像在群里说话一样，一两句就行"></textarea>
+          <button id="wSay" class="button primary" data-i18n="whois.say">发出</button>
+        </section>
+
+        <section id="wBallot" class="whois-ballot" hidden>
+          <h4 data-i18n="whois.ballot">你觉得他们是谁？</h4>
+          <ul id="wBallotRows"></ul>
+          <textarea id="wReason" maxlength="200" data-i18n-placeholder="whois.reason_placeholder" placeholder="（可选）凭什么这么猜"></textarea>
+          <button id="wVote" class="button primary" data-i18n="whois.vote">提交</button>
+        </section>
+
+        <section id="wResults" class="whois-results" hidden></section>
+
+        <p id="wError" class="disaster-status is-error" hidden></p>
+        <p id="wIdle" class="disaster-idle" data-i18n="whois.idle_hint">左边开一个房间，把座位链接发给真人玩家。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/dashboard/whois.js"></script>
+</body>
+</html>

@@ -91,7 +91,7 @@
   border: 1px solid var(--green, #13795b);
   border-radius: 8px;
   background: var(--green, #13795b);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -138,7 +138,7 @@
   padding: 7px 9px;
   border: 1px solid var(--line, #e5e7eb);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card);
   color: var(--ink, #14201b);
   font-size: 13px;
   width: 100%;

@@ -80,7 +80,12 @@ class RumorPlugin(Plugin):
 | `agents.built` | observe | `agents` `config`（agent 构建后、初始快照前——做 per-agent 状态播种用这里） |
 | `on_simulation_start` / `on_simulation_end` | observe | `config` `agents` `agents_by_id` `city_map` |
 | `on_day_start` / `on_day_end` | observe | `day` + 同上 |
+| `day.routine.skip` | **filter**（value=`False`） | `agent` `day`（日程生成前逐居民问一次；返回 `True` 则沿用基础日程、不调 LLM 生成当天日程。离城插件对在外的居民返回 `True`——那天的日程反正会被行程替换。可能在并发的日程生成线程里调用，处理器别写共享状态） |
+| `fast_forward.digest_agents` | **filter**（value=本步要出简报的居民列表） | `day`（按天快进时每步问一次：今天谁跑快进简报。默认全部。群体模式返回当天实体化的那几个人，其余居民已由所属群体在 `on_day_start` 推进过，只记状态历史。返回新列表，别原地改） |
 | `on_time_tick` | observe | `day` `time_str` |
+| `env.events.reach` | **filter**（value=本 tick 的城市环境事件列表） | `agent` `day` `time_str`（逐居民问一次：这些城市事件里哪些到得了他。默认全部。结果同时用于感知、状态更新里的事件影响推断、`external_env` 记忆和好奇心检索。离城插件对在外的居民去掉 `natural` / `social` 两类——本市的天气和街面事件；经济 / 政治 / 技术照旧；`policy_events` 不走这里。返回新列表） |
+| `tick.agent_order` | **filter**（value=本 tick 的居民列表） | `day` `time_str`（谁先行动；默认原样返回。场所容量插件开启时按种子逐 tick 洗牌，让「最后一个空位」是公平抽签而不是编号靠前者的特权。返回新列表，别原地改） |
+| `agent.moved` | observe | `agent` `activity` `movement` `city_map` `day` `time_str`（每步移动阶段 `move_agent` 之后：居民已到达，或已在路上。房间插件在这里把人放进房间；`activity` 是这次出行用的活动） |
 | `on_agent_pre_step` / `on_agent_post_step` | observe | `agent` `day` `time_str` `step`（post_step 的 `step` 含 `action`/`outcome`/`reflection` 等全步数据） |
 | `perception.compose` | **collect** | `agent` `day` `time_str` `scheduled_activity` `env_context` `social_context` `env_events` `policy` `policy_desc` `news`（贡献并入环境上下文，会出现在 Env 日志行） |
 | `perception.sections` | **collect** | `agent` `day` `time_str` `scheduled_activity` `social_context`（贡献渲染在感知 prompt 内部的专属段落，不污染环境上下文——技能块用这里） |
@@ -125,6 +130,11 @@ hook 可见键沿用旧名，阶段间工作键以下划线开头，如 `_percep
 step 键在此写入）是结构性阶段，消融目标应是中间的认知阶段。
 消融后下游阶段以默认值容错（如去掉 `reflect` 后 `reflection` 为空串）。
 参考测试：`tests/test_pipeline_ablation.py`。
+
+**按步跳过**：`step["_skip_stages"]` 里列出的阶段只在这一步被跳过（每个阶段执行前读一次，
+所以插件可以在 `on_agent_pre_step`——由 `prepare` 发射——里设置）。设置者要负责补上被跳过
+阶段本该产出、后续阶段会读的工作键（如 `_act`、`_effective_activity`）。离城插件用它让在外
+的居民跳过感知 / 计划 / 选动作 / 反思这些逐步的 LLM 调用。
 
 后续 K 阶段将新增 `interrupt.candidates`、`schedule.compose`、`plan.prompt`
 等事件（见设计文档第 5.7 节事件目录）。

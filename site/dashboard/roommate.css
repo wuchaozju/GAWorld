@@ -1,0 +1,626 @@
+/* 同居模式 (Roommate Mode) — pixel-art apartment + clean two-column board.
+ *
+ * Color rules follow games.css (tokens from site/tokens.css). The apartment
+ * itself uses a custom warm palette drawn from the same tokens.
+ *
+ *   --apt-floor    the wooden floor color
+ *   --apt-wall     the inner walls
+ *   --apt-grout    the gaps between tiles
+ *   --apt-soft     a warm cream for furniture
+ *   --apt-accent   a brick red for highlights
+ *
+ * Everything pixel-perfect: the canvas is 640x400, every sprite snaps to a
+ * 16-pixel grid so the image never gets blurry on retina.
+ */
+
+:root {
+  --apt-floor: #d9b783;
+  --apt-floor-dark: #b88f55;
+  --apt-wall: #6b4a2b;
+  --apt-grout: #3a2716;
+  --apt-soft: #e9d8a6;
+  --apt-cream: #f3e7c3;
+  --apt-accent: #b45c3c;
+  --apt-leaf: #6ea05c;
+  --apt-water: #6fb1c4;
+  --apt-shadow: rgba(0, 0, 0, 0.18);
+}
+
+.roommate-shell { padding: 0 0 32px; }
+
+/* ===== Setup panel ===== */
+.roommate-setup { padding: 20px 24px; max-width: 1080px; margin: 16px auto 0; }
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.setup-col h3 { margin: 0 0 12px; font-size: 15px; color: var(--ink, #1a2420); }
+.setup-col .field { display: block; margin-bottom: 10px; }
+.setup-col .field > span {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--muted, #616f67);
+}
+.setup-col input,
+.setup-col select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink, #1a2420);
+}
+.setup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.picker-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.picker-head h3 { margin: 0; }
+.picker-head input[type="search"] {
+  width: 200px;
+  padding: 6px 10px;
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface);
+}
+
+.roommate-hint { font-size: 11px; color: var(--muted, #616f67); margin: -4px 0 8px; }
+.roommate-toolbar { display: flex; gap: 6px; margin: 6px 0 8px; }
+
+.roommate-agent-list {
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 6px;
+  background: var(--surface);
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+.roommate-agent-list li {
+  display: block;
+  border-bottom: 0;
+  margin: 2px;
+}
+.roommate-agent-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  line-height: 1.35;
+  flex: none;
+  max-width: 320px;
+}
+.roommate-agent-list label:hover {
+  background: var(--surface);
+  border-color: var(--line, #dde6de);
+}
+.roommate-agent-list input[type="checkbox"] {
+  margin: 0;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.roommate-agent-list .who { font-weight: 500; }
+.roommate-agent-list .meta {
+  color: var(--muted, #616f67);
+  font-size: 10px;
+  margin-left: 4px;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+.roommate-agent-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  line-height: 1.35;
+  flex: none;
+  max-width: 320px;
+}
+.roommate-agent-list label.is-picked {
+  background: var(--game-success-soft, color-mix(in srgb, var(--green, #0e7a58) 12%, transparent));
+  border-color: var(--game-accent, var(--green, #0e7a58));
+}
+.roommate-empty { padding: 14px; text-align: center; color: var(--muted, #616f67); font-size: 12px; }
+.roommate-empty.is-error { color: var(--red, #c04545); }
+
+.roommate-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #dde6de);
+}
+.button.big { padding: 10px 20px; font-size: 14px; }
+
+/* ===== Live board ===== */
+.roommate-live { max-width: 1280px; margin: 16px auto 0; padding: 0 16px; }
+
+/* Top toolbar: clock + controls + status */
+.roommate-toolbar-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+}
+.roommate-clock { display: flex; flex-direction: column; }
+.clock-label { font-size: 11px; color: var(--muted, #616f67); }
+.roommate-clock b { font-size: 22px; color: var(--ink, #1a2420); font-variant-numeric: tabular-nums; }
+
+.roommate-controls { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; align-items: center; }
+.roommate-controls .button { padding: 6px 12px; font-size: 12px; }
+
+/* Speed selector — a tight pill group of 4 buttons that share a border
+ * so the player can sweep through 0.5× / 1× / 2× / 4×. The active speed
+ * gets the same accent as the primary buttons so it's obvious which
+ * speed is running. */
+.speed-group {
+  display: inline-flex;
+  border: 1px solid #5d6b62;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fffbe9;
+}
+.speed-btn {
+  border: 0;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink, #1a2420);
+  font-family: inherit;
+  min-width: 36px;
+}
+.speed-btn + .speed-btn {
+  border-left: 1px solid #5d6b62;
+}
+.speed-btn:hover {
+  background: #f3e7c3;
+}
+.speed-btn-active {
+  background: #5d6b62;
+  color: #fffbe9;
+}
+.speed-btn-active:hover {
+  background: #5d6b62;
+}
+
+.roommate-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted, #616f67);
+  font-size: 12px;
+}
+.roommate-status .is-error { color: var(--red, #c04545); font-weight: 600; }
+.roommate-status .is-done { color: var(--green, #0e7a58); font-weight: 600; }
+
+/* Main board: apartment (left, wide) + side (right) */
+.roommate-board {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
+}
+
+/* Apartment: pixel canvas + bubbles */
+.roommate-apartment { padding: 14px 18px 16px; }
+.apartment-head { margin-bottom: 8px; }
+.apartment-head h3 { margin: 0; font-size: 14px; }
+.apartment-vibe { font-size: 11px; color: var(--muted, #616f67); margin: 4px 0 0; min-height: 14px; }
+
+.apartment-stage {
+  position: relative;
+  background: #1a120a;
+  border-radius: 6px;
+  overflow: hidden;
+  /* Slight padding so the canvas doesn't touch the rounded corners. */
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.apartment-stage canvas {
+  display: block;
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.apartment-bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.apartment-foot {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--muted, #616f67);
+  min-height: 18px;
+}
+
+/* Speech bubble (HTML overlay above canvas) */
+.speech-bubble {
+  position: absolute;
+  background: var(--amber-soft);
+  border: 2px solid #5d6b62;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  max-width: 180px;
+  box-shadow: 1px 1px 0 #1a2420;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.speech-bubble header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--apt-accent);
+  margin-bottom: 2px;
+}
+.speech-bubble .bubble-turn-idx {
+  margin-left: auto;
+  font-size: 9px;
+  background: rgba(93, 107, 98, 0.15);
+  border-radius: 8px;
+  padding: 0 4px;
+}
+.speech-bubble .bubble-say {
+  margin: 0;
+  font-weight: 500;
+  color: var(--ink, #1a2420);
+}
+.speech-bubble .bubble-think {
+  margin: 2px 0 0;
+  color: var(--muted, #616f67);
+  font-style: italic;
+  font-size: 10px;
+}
+/* Queued (not currently active) speech bubble — dimmer, behind the active one */
+.speech-bubble-queued {
+  opacity: 0.55;
+  transform: translate(-50%, -100%) scale(0.96);
+}
+
+/* Furniture-action dialog — a small popup that appears above the canvas
+ * when the player clicks a clickable piece of furniture. The popup lists
+ * which activities the piece supports and which resident to send. */
+.furniture-dialog {
+  position: absolute;
+  z-index: 30;
+  background: var(--panel, #f6f1e3);
+  border: 2px solid #5d6b62;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  min-width: 220px;
+  max-width: 260px;
+  transform: translate(-50%, 8px);
+  box-shadow: 2px 2px 0 #1a2420;
+  color: var(--ink, #1a2420);
+}
+.furniture-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--apt-accent);
+  margin-bottom: 4px;
+}
+.furniture-dialog .furniture-close {
+  background: transparent;
+  border: 1px solid #5d6b62;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  line-height: 14px;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+}
+.furniture-dialog .furniture-room {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--muted, #616f67);
+}
+.furniture-dialog .furniture-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.furniture-dialog .furniture-act {
+  background: #fffbe9;
+  border: 1px solid #5d6b62;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: inherit;
+}
+.furniture-dialog .furniture-act-active {
+  background: #5d6b62;
+  color: #fffbe9;
+}
+.furniture-dialog .furniture-pick-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--muted, #616f67);
+}
+.furniture-dialog .furniture-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.furniture-dialog .furniture-pick {
+  background: #fffbe9;
+  border: 1px solid #5d6b62;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: inherit;
+}
+.furniture-dialog .furniture-pick:hover {
+  background: #f3e7c3;
+}
+.furniture-dialog .furniture-pick-emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Transient error / status bar — appears at the top of the apartment
+ * panel when a player action is rejected. */
+.transient-notice {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  background: #b45c3c;
+  color: #fffbe9;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+  z-index: 40;
+  box-shadow: 1px 1px 0 #1a2420;
+}
+.transient-notice.transient-notice-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Hover cursor — the canvas itself gives feedback that the apartment
+ * is interactive. */
+#rCanvas {
+  cursor: pointer;
+}
+
+/* Conversation feed — turn-by-turn chat log under the canvas */
+.conversation-feed {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 2px;
+}
+.conversation-feed .conv-empty {
+  color: var(--muted, #616f67);
+  font-size: 11px;
+  margin: 0;
+}
+.conversation-feed .conv-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.conversation-feed .conv-emoji {
+  flex: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.conversation-feed .conv-name {
+  flex: 0 0 56px;
+  color: var(--apt-accent);
+  font-weight: 600;
+  font-size: 10px;
+}
+.conversation-feed .conv-text {
+  flex: 1 1 auto;
+  word-break: break-word;
+  color: var(--ink, #1a2420);
+}
+.conversation-feed .conv-room {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--muted, #616f67);
+}
+.roommate-conversation {
+  padding: 14px 16px;
+}
+.roommate-conversation h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+/* Right column: events + dashboard */
+.roommate-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.roommate-events, .roommate-dashboard { padding: 14px 16px; }
+.roommate-events h3, .roommate-dashboard h3 { margin: 0 0 10px; font-size: 13px; }
+
+/* Event stream */
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.event-empty { padding: 12px; text-align: center; color: var(--muted, #616f67); font-size: 12px; }
+.event-list li {
+  background: var(--surface);
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.event-list li header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--muted, #616f67);
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.event-list li header b { color: var(--ink, #1a2420); font-size: 12px; }
+.event-list li .muted { color: var(--muted, #616f67); }
+.event-list li pre {
+  margin: 4px 0 0;
+  padding: 4px 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink, #1a2420);
+}
+.event-list .event-deltas { display: flex; gap: 6px; font-size: 11px; }
+.event-list .delta-mood.pos, .event-list .delta-rel.pos { color: var(--green, #0e7a58); }
+.event-list .delta-mood.neg, .event-list .delta-rel.neg { color: var(--red, #c04545); }
+.event-list .event-thought {
+  margin: 4px 0 0;
+  padding: 4px 6px;
+  background: var(--amber-soft);
+  border-left: 2px solid var(--apt-accent);
+  font-style: italic;
+  font-size: 11px;
+  color: #6b4a2b;
+}
+
+/* Dashboard */
+.dash-block { margin-bottom: 12px; }
+.dash-block h4 { margin: 0 0 6px; font-size: 11px; color: var(--muted, #616f67); font-weight: 600; }
+
+.mood-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.mood-list li {
+  display: grid;
+  grid-template-columns: 90px 1fr 60px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.mood-list .mood-name { color: var(--ink, #1a2420); overflow: hidden; text-overflow: ellipsis; }
+.mood-list .mood-bar {
+  position: relative;
+  height: 8px;
+  background: #ece4d4;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mood-list .mood-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.mood-list .mood-label { color: var(--muted, #616f67); text-align: right; }
+
+.relation-grid { overflow-x: auto; }
+.relation-table { border-collapse: collapse; font-size: 10px; min-width: 100%; }
+.relation-table th, .relation-table td {
+  border: 1px solid var(--line, #dde6de);
+  padding: 3px 4px;
+  text-align: center;
+  min-width: 26px;
+  color: var(--ink, #1a2420);
+}
+.relation-table th { background: var(--surface); font-weight: 600; }
+.relation-table td.pos { background: rgba(14, 122, 88, 0.18); color: #0e7a58; font-weight: 600; }
+.relation-table td.neg { background: rgba(192, 69, 69, 0.18); color: #c04545; font-weight: 600; }
+.relation-table td.rel-self { background: #ece4d4; color: var(--muted, #616f67); }
+
+.dash-tally {
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--muted, #616f67);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .setup-grid { grid-template-columns: 1fr; }
+  .roommate-board { grid-template-columns: 1fr; }
+  .roommate-toolbar-top { grid-template-columns: 1fr; gap: 10px; }
+}
+
+/* Keep the entire dollhouse visible on narrow screens. */
+.roommate-apartment, .roommate-side { min-width: 0; }
+.apartment-stage { background: #443d3c; border: 1px solid #a89279; }
+.apartment-stage canvas { display: block; min-width: 0; aspect-ratio: 8 / 5; }
+@media (max-width: 600px) {
+  .roommate-live { padding: 0 8px; }
+  .roommate-apartment { padding: 12px 8px; }
+  .apartment-stage { padding: 4px; border-radius: 8px; }
+  .furniture-dialog { max-width: calc(100% - 16px); }
+}
+
+.furniture-dialog { pointer-events: auto; box-sizing: border-box; }
+.speech-bubble { max-height: 120px; overflow: auto; }
+@media (max-width: 600px) {
+  .speech-bubble { max-width: 140px; max-height: 90px; font-size: 10px; }
+  .furniture-dialog { min-width: 200px; font-size: 11px; }
+}
+
+.roommate-board { align-items: start; }

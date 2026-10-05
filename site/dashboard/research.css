@@ -27,16 +27,24 @@
 
 .rw-side-card,
 .rw-card {
-  background: var(--card, #fff);
-  border: 1px solid var(--line, #e5e7eb);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-.rw-side-card { padding: 14px; }
-.rw-card { padding: 16px 18px; }
+.rw-side-card { padding: 14px 14px 10px; }
+.rw-card { padding: 18px 20px; }
+/* The last side card on each tab explains how the tab works; it reads as a
+   note, not as one more list. */
+.rw-side-card:last-child:not(:has(.rw-history)) {
+  background: var(--sunken);
+  border-color: transparent;
+  box-shadow: none;
+}
 
-.rw-side-card h3 { margin: 0 0 8px; font-size: 14px; }
-.rw-card > h3 { margin: 0 0 4px; font-size: 17px; }
+.rw-side-card h3 { margin: 0 0 8px; font-size: var(--fs-sm); font-weight: 650; color: var(--ink); }
+.rw-card > h3 { margin: 0 0 4px; font-size: var(--fs-md); font-weight: 650; color: var(--ink); }
 .rw-card h4 { margin: 20px 0 8px; font-size: 14px; color: var(--ink, #14201b); }
 
 .rw-hint {
@@ -52,24 +60,28 @@
 
 .rw-card .btn,
 .rw-side-card .btn {
-  padding: 7px 13px;
-  border: 1px solid var(--green, #13795b);
-  border-radius: 8px;
-  background: var(--green, #13795b);
-  color: #fff;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--green);
+  border-radius: var(--radius-sm);
+  background: var(--green);
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter .12s ease;
+  box-shadow: var(--shadow-sm);
+  transition: background .12s ease, border-color .12s ease;
 }
 .rw-card .btn:hover:not(:disabled),
-.rw-side-card .btn:hover:not(:disabled) { filter: brightness(1.07); }
+.rw-side-card .btn:hover:not(:disabled) { background: var(--green-deep); border-color: var(--green-deep); }
 .rw-card .btn.ghost,
 .rw-side-card .btn.ghost {
-  background: transparent;
-  color: var(--ink, #14201b);
-  border-color: var(--line, #e5e7eb);
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
+.rw-card .btn.ghost:hover:not(:disabled),
+.rw-side-card .btn.ghost:hover:not(:disabled) { background: var(--sunken); border-color: var(--faint); }
 .rw-card .btn.danger { color: #b3541e; }
 .rw-card .btn.tiny,
 .rw-side-card .btn.tiny { padding: 3px 8px; font-size: 12px; font-weight: 500; }
@@ -105,7 +117,7 @@
   padding: 7px 9px;
   border: 1px solid var(--line, #e5e7eb);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card);
   color: var(--ink, #14201b);
   font-size: 13px;
 }
@@ -190,7 +202,7 @@
   padding: 10px 12px 10px 44px;
   border: 1px solid var(--line, #e5e7eb);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--surface);
 }
 .rw-step::before {
   counter-increment: rw-step;
@@ -200,7 +212,7 @@
   display: grid; place-items: center;
   border-radius: 50%;
   background: var(--green, #13795b);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 12px; font-weight: 700;
 }
 .rw-step-title { font-weight: 700; font-size: 13px; color: var(--ink, #14201b); }
@@ -249,23 +261,41 @@
 
 /* ---- history ---- */
 
-.rw-history { display: grid; gap: 6px; }
+/* Rows rather than boxed cards, and capped: the side column is sticky, so an
+   uncapped list taller than the window left its last entries unreachable. */
+.rw-history {
+  display: grid;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0 -6px;
+  scrollbar-width: thin;
+}
 .rw-history-item {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 8px 10px;
-  border: 1px solid var(--line, #e5e7eb);
-  border-radius: 8px;
+  padding: 8px 6px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
   background: transparent;
   cursor: pointer;
   font-size: 12px;
-  color: var(--ink, #14201b);
+  color: var(--ink);
 }
-.rw-history-item:hover { border-color: var(--green, #13795b); }
-.rw-history-item.is-active { border-color: var(--green, #13795b); background: rgba(19, 121, 91, 0.06); }
-.rw-history-item .rw-hist-title { display: block; font-weight: 600; margin-bottom: 2px; }
-.rw-history-item .rw-hist-meta { color: var(--muted, #6b7280); }
+.rw-history-item:first-child { border-top: 0; }
+.rw-history-item:hover { background: var(--sunken); }
+.rw-history-item.is-active { background: var(--green-soft); box-shadow: inset 2px 0 0 var(--green); }
+.rw-history-item .rw-hist-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 2px;
+}
+.rw-history-item .rw-hist-meta { display: block; color: var(--faint); font-size: 11px; }
 
 /* ---- studies ---- */
 
@@ -273,7 +303,7 @@
 .rw-stage-approved,
 .rw-stage-running { border-color: var(--green, #13795b); color: var(--green, #13795b); }
 .rw-stage-evaluated,
-.rw-stage-reported { border-color: var(--green, #13795b); color: #fff; background: var(--green, #13795b); }
+.rw-stage-reported { border-color: var(--green, #13795b); color: var(--on-accent); background: var(--green, #13795b); }
 .rw-stage-error { border-color: #b3541e; color: #b3541e; }
 .rw-stage-paused { border-color: #c48a2b; color: #a16f1c; }
 
@@ -303,6 +333,8 @@
 .rw-gap-warn,
 .rw-gap-warn b { color: #a16f1c; }
 .rw-reasons { margin: 4px 0 0; font-size: 12px; color: var(--muted, #6b7280); line-height: 1.6; }
+/* A measure's provenance grade (a/b/c); the title says what drives it. */
+.rw-grade { font-size: 11px; font-weight: 700; color: var(--muted, #6b7280); cursor: help; border-bottom: 1px dotted currentColor; }
 .rw-study .rw-table td.rw-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 @media (max-width: 960px) {
@@ -346,7 +378,7 @@
   padding: 0 6px;
   border-radius: 999px;
   background: var(--green, #13795b);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 500;
 }
@@ -444,7 +476,7 @@
 .ps-check { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; font-size: 13px; color: var(--ink, #14201b); }
 .ps-check input { margin: 0; }
 .ps-policy-text { white-space: pre-wrap; }
-.ps-best { border-color: var(--green, #13795b); color: #fff; background: var(--green, #13795b); margin-left: 4px; }
+.ps-best { border-color: var(--green, #13795b); color: var(--on-accent); background: var(--green, #13795b); margin-left: 4px; }
 .ps-best-row td { background: rgba(19, 121, 91, 0.06); }
 .ps-score { position: relative; min-width: 90px; height: 20px; border-radius: 4px; background: rgba(19, 121, 91, 0.08); overflow: hidden; }
 .ps-score-bar { position: absolute; inset: 0 auto 0 0; background: rgba(19, 121, 91, 0.35); }

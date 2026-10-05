@@ -1,0 +1,156 @@
+{
+  "generated": "2026-10-03T14:25:45",
+  "trust_gate": "FIXTURE",
+  "trust_reasons": [
+    "合成夹具：只验证评测代码路径"
+  ],
+  "provenance": {
+    "source": "synthetic",
+    "inputs": {
+      "output_dir": "/sessions/rcw-01gukbq7cvhcww27sc6bsfhy/tmp/gaworld_bench_vv1od53m/output",
+      "placebo_dir": "/sessions/rcw-01gukbq7cvhcww27sc6bsfhy/tmp/gaworld_bench_vv1od53m/output/comparisons/placebo_library_hours",
+      "det_a": "/sessions/rcw-01gukbq7cvhcww27sc6bsfhy/tmp/gaworld_bench_vv1od53m/output/state/baseline_run_a.csv",
+      "det_b": "/sessions/rcw-01gukbq7cvhcww27sc6bsfhy/tmp/gaworld_bench_vv1od53m/output/state/baseline_run_b.csv"
+    },
+    "git": {
+      "commit": "6c5740bfd4dab442dd1cd2f72ec3ee705ab378aa",
+      "dirty": true
+    },
+    "argv": [
+      "--synthetic"
+    ]
+  },
+  "fast": false,
+  "composite_hint": 0.9361,
+  "headline_track": "A",
+  "tracks": {
+    "A": {
+      "track": "A",
+      "status": "ok",
+      "score": 0.8721,
+      "pass": true,
+      "metrics": {
+        "engel_coefficient": {
+          "sim": 0.29,
+          "anchor": 0.288,
+          "rel_err": 0.0069,
+          "scope": "national_urban",
+          "source": "国家统计局2024公报 (城镇28.8%)",
+          "grade": "c",
+          "weakest": "spending.engel_curve 按月净收入分五档查表（系数未注明出处）",
+          "echo": "快照里的值就是按收入查 engel_curve 得到的预算参数，不是从实际分类消费算出来的——拟合量的是这张表",
+          "score": 0.9537
+        },
+        "savings_rate": {
+          "sim": 0.328,
+          "anchor": 0.35,
+          "rel_err": 0.0629,
+          "scope": "national_urban",
+          "source": "2024 口径敏感, 区间30-43%",
+          "grade": "c",
+          "weakest": "spending.engel_curve 按月净收入分五档查表（系数未注明出处）",
+          "echo": "快照里的值就是按收入查 engel_curve 得到的计划储蓄率，不是从实际收支算出来的——拟合量的是这张表",
+          "score": 0.7905
+        }
+      },
+      "n_samples": 5,
+      "sim_scope": "district"
+    },
+    "C": {
+      "track": "C",
+      "status": "ok",
+      "sign": {
+        "score": 1.0,
+        "n_eval": 4,
+        "n_correct": 4,
+        "effect_col": "delta_final",
+        "tests": [
+          {
+            "name": "traffic_restriction",
+            "metric": "mobility_intent",
+            "sign": 1,
+            "why": "限行→出行摩擦上升→流动意愿上升",
+            "grade": "c",
+            "delta": 0.08,
+            "delta_final": 0.08,
+            "delta_mean": 0.08,
+            "correct": true
+          },
+          {
+            "name": "layoff_shock",
+            "metric": "econ_security",
+            "sign": -1,
+            "why": "裁员→收入骤降→经济安全感下降",
+            "grade": "c",
+            "delta": -0.12,
+            "delta_final": -0.12,
+            "delta_mean": -0.12,
+            "correct": true
+          },
+          {
+            "name": "layoff_shock",
+            "metric": "stress",
+            "sign": 1,
+            "why": "裁员→压力上升",
+            "grade": "c",
+            "delta": 0.09,
+            "delta_final": 0.09,
+            "delta_mean": 0.09,
+            "correct": true
+          },
+          {
+            "name": "tax_cut",
+            "metric": "econ_security",
+            "sign": 1,
+            "why": "减税→可支配收入上升→经济安全感上升",
+            "grade": "c",
+            "delta": 0.06,
+            "delta_final": 0.06,
+            "delta_mean": 0.06,
+            "correct": true
+          }
+        ]
+      },
+      "provenance": {
+        "grade": "c",
+        "weakest": "事件对九维状态的影响由一次模型调用直接给出（infer_event_effect），再经手写均值回归（update_state）——已知符号检验检的是模型对这件事的判断能否穿过状态动态传到指标上，不是对现实因果的独立检验"
+      },
+      "placebo": {
+        "score": 1.0,
+        "eps": 0.05,
+        "n_metrics": 4,
+        "max_abs_delta": 0.011
+      },
+      "determinism": {
+        "score": 1.0,
+        "n_points": 4,
+        "status": "ok"
+      },
+      "fast": false,
+      "epochs": {
+        "traffic_restriction": null,
+        "layoff_shock": null,
+        "tax_cut": null,
+        "placebo": null
+      },
+      "coverage": 1.0,
+      "score": 1.0,
+      "score_uncovered": 1.0,
+      "pass": true,
+      "det_status": "ok"
+    },
+    "B": {
+      "status": "n/a",
+      "note": "未实现 (v0.3)"
+    },
+    "D": {
+      "status": "n/a",
+      "note": "未实现 (v0.4)"
+    },
+    "E": {
+      "status": "n/a",
+      "note": "确定性见 Track C; 成本未实现 (v0.2)"
+    }
+  },
+  "note": "composite is a trend hint only — read tracks separately (design §3)."
+}

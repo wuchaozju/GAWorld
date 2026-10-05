@@ -249,9 +249,9 @@ class TestBig5BilingualParity(unittest.TestCase):
     """
 
     def _module(self):
-        from gaworld.apps import dashboard_server
+        from gaworld.apps import residents
 
-        return dashboard_server
+        return residents
 
     def test_every_dimension_is_named_in_both_languages(self):
         mod = self._module()
@@ -287,7 +287,7 @@ class TestBig5BilingualParity(unittest.TestCase):
 
     def test_the_payload_carries_both_sides(self):
         mod = self._module()
-        payload = mod._agent_big5(1)
+        payload = mod.agent_big5(1)
         if payload is None:
             self.skipTest("no agent 1 in the seed roster")
         for field in ("poles", "poles_en", "names", "names_en"):

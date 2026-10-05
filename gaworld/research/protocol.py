@@ -32,13 +32,15 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from gaworld.parallel.spec import normalize_event, sanitize_world_config
+from gaworld.research import survey as survey_mod
 from gaworld.research.measures import Measure, registry, render_registry, resolve
 from gaworld.research.workbench import ResearchError
 
-#: Study designs the compiler may emit. Surveys, prompt grids and composite
-#: designs are later phases; naming them here would let a plan compile into
-#: something nothing can run.
-KINDS = ("parallel_worlds",)
+#: Study designs the compiler may emit. ``composite`` is parallel worlds plus
+#: a post-run survey of every world's residents (phase two). Stand-alone
+#: surveys and prompt grids are later phases; naming them here would let a
+#: plan compile into something nothing can run.
+KINDS = ("parallel_worlds", "composite")
 DIRECTIONS = ("increase", "decrease")
 ROLES = ("baseline", "treatment", "placebo")
 
@@ -90,6 +92,9 @@ class Protocol:
     conditions: list[dict[str, Any]] = field(default_factory=list)
     measures: list[dict[str, Any]] = field(default_factory=list)
     hypotheses: list[dict[str, Any]] = field(default_factory=list)
+    #: ``composite`` only: ``{"questions": [...], "context": ""}`` — asked of
+    #: every world's residents after the run (:mod:`gaworld.research.survey`).
+    survey: dict[str, Any] = field(default_factory=dict)
     validity: dict[str, Any] = field(default_factory=dict)
     budget: dict[str, Any] = field(default_factory=dict)
     dropped: list[dict[str, Any]] = field(default_factory=list)
@@ -136,9 +141,10 @@ _PROMPT = """你是 GAWorld 平台的实验方法学家。下面是一份研究�
 ## 规则
 1. conditions 至少 2 个、最多 {max_conditions} 个（含安慰剂）。恰好一个 role 为 baseline 的基准世界，通常没有事件；处理条件 role 为 treatment；需要剂量反应就给多个 treatment。
 2. 事件：day 是从 1 开始的整数，time 形如 09:00，name 简短，description 是居民当天会「看到」的那段话，写得具体。sim_days 必须大于最晚的事件日，并给效应留出显形的时间。
-3. 每条假设：measure 是目录里的 id；treatment 与 control 是 conditions 里的 id；direction 只能是 increase / decrease（treatment 相对 control）；min_effect 是能算作「有效应」的最小绝对差——指标多为 0–1 归一化，量级通常在 0.01–0.10；aggregation 是 final（终值）或 mean（全程均值）。
+3. 每条假设：measure 是目录里的 id；treatment 与 control 是 conditions 里的 id；direction 只能是 increase / decrease（treatment 相对 control）；min_effect 是能算作「有效应」的最小绝对差——指标多为 0–1 归一化，量级通常在 0.01–0.10；aggregation 是 final（终值）或 mean（全程均值）。目录里「等级」为 (c) 的指标由我们自定的参数与模型判断驱动，结论只读方向、不读大小——假设写成方向性的论断（「上升」「下降」），不要写成具体幅度。
 4. 方案里测不到的东西不要硬凑成假设，写进 notes。
-5. 输出语言：{language_label}。
+5. 如果方案要测的是居民的**态度、看法、感受**（信任、满意度、支持与否……），而不是状态变量，就把 kind 写成 composite，并给出 survey：跑完后会在每个世界里用该世界的记忆采访全部居民。题型只有 scale（有序单选，默认五级同意度，可自己给 3–7 个有序选项）、boolean（是/否）、open（开放题，只进报告不计分）；最多 {max_questions} 题，题目要中性、不诱导。scale 与 boolean 题会成为指标 `survey.<题号>`（0–1：量表按选项位置归一，是非题为答「是」的比例），假设可以引用它。不需要问卷就写 parallel_worlds、省略 survey。
+6. 输出语言：{language_label}。
 
 ## 输出
 只输出一个 JSON 对象，不要解释：
@@ -156,6 +162,8 @@ _PROMPT = """你是 GAWorld 平台的实验方法学家。下面是一份研究�
     {{"id": "H1", "statement": "一句话假设", "measure": "stress", "treatment": "t1", "control": "baseline", "direction": "decrease", "min_effect": 0.02, "aggregation": "final"}}
   ],
   "validity": {{"seeds": [42, 43], "placebo": true}},
+  "kind": "parallel_worlds",
+  "survey": {{"context": "（composite 才需要）采访前对居民说的一句话", "questions": [{{"id": "Q1", "text": "我信任市政府会处理好这件事。", "kind": "scale"}}]}},
   "notes": "测不到的东西、简化之处"
 }}"""
 
@@ -202,6 +210,7 @@ def build_compile_prompt(plan: dict[str, Any], *, registry_table: str | None = N
         plan=_plan_text(plan),
         registry=registry_table if registry_table is not None else render_registry(),
         max_conditions=MAX_CONDITIONS,
+        max_questions=survey_mod.MAX_SURVEY_QUESTIONS,
         language_label=_LANGUAGE_LABELS.get(language, "简体中文"),
     )
 
@@ -409,6 +418,10 @@ def _hypotheses(
 
         measure = resolve(item.get("measure"), reg)
         if measure is None:
+            # A survey measure named by its question id alone ("Q1").
+            bare = str(item.get("measure") or "").strip().upper().replace("SURVEY.", "")
+            measure = reg.get(survey_mod.PREFIX + bare) if bare else None
+        if measure is None:
             dropped.append({"what": "hypothesis", "where": where, "reason": f"指标不在可测量目录里：{_text(item.get('measure'), 40)!r}"})
             continue
         treatment = condition_id(item.get("treatment"))
@@ -450,7 +463,11 @@ def _measures(raw: Any, hypotheses: list[dict[str, Any]], reg: dict[str, Measure
     for hypothesis in hypotheses:
         if hypothesis["measure"] not in ids:
             ids.append(hypothesis["measure"])
-    return [{"id": mid, "label": reg[mid].label, "source": reg[mid].source, "note": reg[mid].note} for mid in ids]
+    return [
+        {"id": mid, "label": reg[mid].label, "source": reg[mid].source, "note": reg[mid].note,
+         "grade": reg[mid].grade, "basis": reg[mid].basis}
+        for mid in ids
+    ]
 
 
 def protocol_from_answer(
@@ -471,6 +488,14 @@ def protocol_from_answer(
     dropped: list[dict[str, Any]] = []
 
     kind = str(answer.get("kind") or "parallel_worlds").strip().lower()
+    survey: dict[str, Any] = {}
+    if kind == "composite" or answer.get("survey"):
+        survey = survey_mod.normalize_survey(answer.get("survey"), language=language, dropped=dropped)
+        if any(q["kind"] in survey_mod.MEASURED_KINDS for q in survey["questions"]):
+            kind = "composite"
+        elif kind != "composite":
+            survey = {}
+    reg = {**reg, **survey_mod.survey_measures(survey)}
     conditions = _conditions(answer.get("conditions"), dropped)
     if not conditions:
         raise ResearchError("模型没有返回任何实验条件，无法生成协议")
@@ -500,6 +525,7 @@ def protocol_from_answer(
         conditions=conditions,
         measures=_measures(answer.get("measures"), hypotheses, reg),
         hypotheses=hypotheses,
+        survey=survey,
         validity={"seeds": seeds, "placebo": placebo},
         dropped=dropped,
         notes=_text(answer.get("notes"), 2000),
@@ -541,6 +567,12 @@ def estimate_calls(protocol: Protocol, agents: int) -> int:
     return int(max(1, agents) * protocol.sim_days * per_day * len(protocol.conditions) * max(1, len(protocol.seeds)))
 
 
+def estimate_survey_calls(protocol: Protocol, agents: int) -> int:
+    """One model call per resident, question, world and seed."""
+    questions = len((protocol.survey or {}).get("questions") or [])
+    return int(max(1, agents) * questions * len(protocol.conditions) * max(1, len(protocol.seeds)))
+
+
 def preflight(
     protocol: Protocol,
     *,
@@ -556,7 +588,12 @@ def preflight(
     warnings: list[str] = []
 
     if protocol.kind not in KINDS:
-        errors.append(f"阶段一只支持 {' / '.join(KINDS)}，协议的 kind 是 {protocol.kind!r}")
+        errors.append(f"目前只支持 {' / '.join(KINDS)}，协议的 kind 是 {protocol.kind!r}")
+    survey_questions = (protocol.survey or {}).get("questions") or []
+    if protocol.kind == "composite" and not any(
+        q.get("kind") in survey_mod.MEASURED_KINDS for q in survey_questions
+    ):
+        errors.append("composite 研究需要至少一道可计分的问卷题（scale 或 boolean）")
     if not any(cond["role"] == "treatment" for cond in protocol.conditions):
         errors.append("没有处理条件：至少要有一个 role 为 treatment 的世界")
     if not protocol.hypotheses:
@@ -576,7 +613,8 @@ def preflight(
         warnings.append(f"已丢弃{item.get('what', '')}「{item.get('where', '')}」：{item.get('reason', '')}")
 
     agents = len(protocol.sample.get("agent_ids") or []) or max(1, int(default_agents))
-    calls = estimate_calls(protocol, agents)
+    survey_calls = estimate_survey_calls(protocol, agents) if protocol.kind == "composite" else 0
+    calls = estimate_calls(protocol, agents) + survey_calls
     protocol.budget = {
         "agents": agents,
         "worlds": len(protocol.conditions),
@@ -584,6 +622,7 @@ def preflight(
         "sim_days": protocol.sim_days,
         "calls_per_agent_day": CALLS_PER_AGENT_DAY["fast" if protocol.fast else "full"],
         "estimated_calls": calls,
+        "survey_calls": survey_calls,
         "limit": int(call_budget),
     }
     if calls > call_budget:
@@ -606,6 +645,7 @@ __all__ = [
     "apply_overrides",
     "build_compile_prompt",
     "estimate_calls",
+    "estimate_survey_calls",
     "preflight",
     "protocol_from_answer",
 ]

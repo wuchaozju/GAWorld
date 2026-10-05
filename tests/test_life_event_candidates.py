@@ -21,6 +21,7 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from gaworld.apps import residents
 from gaworld.events import candidates as candidate_events
 from gaworld.events import life as life_events
 
@@ -405,7 +406,7 @@ class ServerTests(unittest.TestCase):
         """End to end against the repo's own data files, whatever a run left."""
         from gaworld.apps import dashboard_server as ds
 
-        agent_id = ds._agents_summary()[0]["id"]
+        agent_id = residents.agents_summary()[0]["id"]
         payload = ds._life_event_candidates_payload(agent_id)
         self.assertEqual(agent_id, payload["agent_id"])
         self.assertTrue(payload["signature"])
@@ -459,7 +460,7 @@ class ServerTests(unittest.TestCase):
 
         from gaworld.apps import dashboard_server as ds
 
-        agent_id = ds._agents_summary()[0]["id"]
+        agent_id = residents.agents_summary()[0]["id"]
         with mock.patch.object(ds, "list_life_events", return_value=[]):
             before = [item["key"] for item in ds._life_event_candidates_payload(agent_id)["candidates"]]
         self.assertTrue(before, "the seeded agent should have candidates to begin with")

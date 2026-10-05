@@ -367,7 +367,7 @@ class HttpTest(unittest.TestCase):
                 "/api/games/duel/run",
                 {"city": "", "team_a": [1], "team_b": [2], "task_id": TASK["id"], "rounds": 1},
             )
-            self.assertEqual(status, 200)
+            self.assertEqual(status, 202)
             job_id = body["job_id"]
             for _ in range(200):
                 record = duel_api.job_status(job_id)

@@ -596,7 +596,7 @@ python scripts/big5_effect_ceiling.py                         # 复核幅度
 **不报错**，而是返回「空路线、0 公里」——直接从标签算回程，会得到一趟免费、
 一个 tick 就到家的旅程，而且完全静默。
 
-**全程纯规则、按种子可复现，不调用 LLM。** 谁在第几天去了哪里，同一个种子跑两次完全一致。
+**出行决定全程纯规则、按种子可复现，不调用 LLM。** 谁在第几天去了哪里，同一个种子跑两次完全一致。在外的日子默认压缩：不生成当天日程、不逐步感知 / 计划 / 反思，每天只调一次日摘要（`compress_away_days`）。
 
 **常用旋钮**（配置面板 →「离开本市」相关项，或直接改 `CONFIG["travel"]`）：
 
@@ -607,21 +607,24 @@ CONFIG["travel"]["family"]["obligation_threshold"] = 0.72      # 多愧疚才动
 CONFIG["travel"]["business"]["base_daily_prob"] = 0.004        # 出差基础概率（再按职业调制）
 CONFIG["travel"]["leisure"]["min_cash_months"] = 1.5           # 存款不够就不旅行
 CONFIG["travel"]["daily_surcharge"] = 180.0                    # 在外日均开销
+CONFIG["travel"]["paid_leave_days_per_year"] = 5               # 每年带薪年假（工作日）
+CONFIG["travel"]["compress_away_days"] = True                  # 在外一天一次模型调用
 CONFIG["travel"]["seed"] = 20260919                            # 换一批出发日
 ```
 
 **怎么观察它生效**：
 
-- 日志里出现 `[Travel Day 12] 出发去北京（探亲，3 天，1123 km，飞机）` 与 `[Travel Day 15] 从北京回到本市`；
+- 日志里出现 `[Travel Day 12] 出发去北京（探亲，3 天，1123 km，飞机）` 与 `[Travel Day 15] 从北京回到本市`，
+  工作日在外还会有 `带薪年假（今年第 1/5 天，…元）` 或 `无薪假`，以及每天一行日摘要；
 - 产物 `output/records/travel.depart.jsonl` / `travel.return.jsonl`，每行一整份行程；
 - 感知文本里出现「你现在不在本市，人在……」。
 
 ⚠️ **默认关是有原因的**：它改变每天城里还剩多少人，进而改变相遇密度与社交动力学。
 **开启前后的 run 不可比**，和货币改造、道路拥堵是同一类。
 
-⚠️ **一个已知的简化**：探亲 / 旅行期间没有「工作」活动，按经济模块的判定
-（认活动不认地点）就不产生小时收入。对月薪制居民这是**错的**（带薪年假）。
-改对要动薪资结算路径，暂未做——在此之前，任何依赖离城期间收入的结论都不成立。
+**休假的收入**：探亲 / 旅行占用的工作日，在职居民按一天的合同工资领带薪年假，每年
+`paid_leave_days_per_year` 天（默认 5，法定最低档），之后记无薪假；周末不算，出差本来就是工作。
+（2026-10-03 之前这里不发钱，而经济模块又会在外地把人改去「工作」——两处都已修。）
 
 设计与踩过的坑见
 [`docs/proposals/2026-09-19-agents-leaving-the-city.md`](proposals/2026-09-19-agents-leaving-the-city.md)。
@@ -1170,7 +1173,8 @@ Agent Studio 造一个居民，Population Studio 造一座小镇并按群体模�
 
 干预不去写 `output/economy/macro_state.json`——那是 run 的*产物*，仿真在
 `on_simulation_start` 从配置重建宏观状态、从不回读它，改它会看起来生效而实际无效。
-干预排在周期推进**之后**执行，所以你设的通胀率就是那天真正被使用的值。给部门池注资会
+干预排在周期推进**之后**执行，所以你设的值不会被当天的周期漂移乘掉；但当天的物价累积已经做完，
+设的通胀率从次日起才参与累积，而且只有打开 `economy.macro.inflation` 时物价才进账本（默认只是显示）。给部门池注资会
 同步移动守恒基准 `initial_system_total`，因此每日审计把有意的注资记成注资，而不是
 报成 drift（漏钱）。
 
@@ -1361,6 +1365,7 @@ CONFIG["time_grid_snap"] = True    # 默认 False
 | `dynamic_behavior` | 动态行为系统开关 |
 | `travel` | **新**：离开本市——出差 / 探亲 / 旅行的触发、目的地、天数、票价与在外开销，`max_away_share` 是在外人数上限（**默认 OFF**，开启前后的 run 不可比），见 [5.9](#59-离开本市出差--探亲--旅行) |
 | `environment.local_physical` / `.anomaly` / `.replan` / `.spatial_preferences` | **新**：物理感知与反应式重规划 |
+| `local_physical.rooms` | **新**：室内房间——分户、按活动放进房间、同屋才算碰面；场所容量也开着时按房间算（**默认 OFF**，见 [室内房间设计](proposals/2026-10-04-indoor-rooms.md)） |
 | `external_environment` | 外部环境生成器：四类事件的日概率、天气池、生成方式（`llm` / 规则）、日内突发（面板可编辑，见 [12.3](#123-外部系统观测台)） |
 | `external_environment_service` / `environment_server` / `external_rag` / `news` | 对外服务连接：远端环境服务、外部信息注入、新闻源（面板可编辑并可即时探测连通性） |
 | `skills` | **新**：Skill 库（全局目录、注入开关、单提示上限） |
@@ -1369,6 +1374,7 @@ CONFIG["time_grid_snap"] = True    # 默认 False
 | `intervention` | PolicySim 风格干预评估 |
 | `policy_events` / `distributed` | 政策事件 / 多机通信（relay，详见第 11 节） |
 | `time_grid_snap` | **新**：日程对齐到 `time_step_minutes` 网格，tick 数恒为 `1440/step`（默认 OFF；只设 `time_step_minutes` 不够，见 [13.4](#134-顺带一个与群体无关的性能修复)） |
+| `simulation_mode` / `group.*` | **新**：`simulation_mode: "group"` 在**按天快进**的主运行里开群体模式——群体推进大多数人，`group.materialization_budget` 个人跑普通快进简报，`group.audit_fraction` 的审计样本量群体的误差、超过 `group.residual_alarm` 自动加样本；不能用于网络扩散类问题，见 [群体模拟教程 §6.5](GROUP_SIMULATION_TUTORIAL.md#65-主运行里的群体模式) |
 | `group.enabled` | **新**：`GroupPlugin` — 在个体运行中发布 cohort 划分与逐日漂移到 recorder，只观测不改行为 |
 
 日志模式：`GAWORLD_LOG_MODE=simple|verbose`，`GAWORLD_LOG_LEVEL=DEBUG` 看 token / 延迟。
