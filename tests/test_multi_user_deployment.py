@@ -7,11 +7,13 @@ import threading
 from email.message import Message
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlencode
 
 import pytest
 
 from gaworld import accounts
 from gaworld.accounts import __main__ as accounts_cli
+from gaworld.accounts import policy
 from gaworld.apps import dashboard_server, deploy_services, world_paths
 
 
@@ -38,10 +40,10 @@ def dashboard(account_db):
         thread.join(timeout=5)
 
 
-def request(port, path, method="GET", headers=None):
+def request(port, path, method="GET", headers=None, body=None):
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
     try:
-        conn.request(method, path, headers=headers or {})
+        conn.request(method, path, body=body, headers=headers or {})
         response = conn.getresponse()
         return response.status, response.read()
     finally:
@@ -153,3 +155,55 @@ def test_gateway_routes_include_multi_user_entries():
     dropin = (root / "deployment/multi-user/gaworld-dashboard.conf").read_text()
     assert "GAWORLD_REQUIRE_ACCOUNTS=1" in dropin
     assert "GAWORLD_ACCOUNTS_DB=%h/.local/share/gaworld/accounts.sqlite" in dropin
+
+
+def test_members_can_collaborate_on_board_but_not_clear_it():
+    member = {"id": "member-1", "role": "member"}
+    for path in ("/api/todos/create", "/api/todos/create-form", "/api/todos/update"):
+        assert policy.allows(member, policy.required("POST", path))
+        assert not policy.allows(None, policy.required("POST", path))
+    for path in ("/api/todos/clear", "/api/todos"):
+        assert not policy.allows(member, policy.required("POST", path))
+
+
+def test_production_watcher_and_dev_tests_use_separate_worktrees():
+    root = Path(__file__).resolve().parents[1] / "deployment/multi-user"
+    watcher = (root / "gaworld-deploy-watch.conf").read_text()
+    test_loop = (root / "gaworld-test-loop.conf").read_text()
+    assert "--branch main" in watcher
+    assert "WorkingDirectory=%h/GAWorld-test" in test_loop
+    assert "TEST_REMOTE_BRANCH=Dev" in test_loop
+    assert "TEST_BRANCH=testing/Dev" in test_loop
+
+
+@pytest.mark.parametrize("form", [False, True])
+def test_member_board_submission_and_claim_over_http(dashboard, account_db, monkeypatch, form):
+    store = initialize(account_db)
+    member = store.create_user("board-member", "test-only-password")
+    cookie = "gaworld_session=" + store.open_session(member["id"])
+    monkeypatch.setattr(dashboard_server, "TODO_BOARD_PATH", str(account_db.parent / "todos.json"))
+    payload = {"title": "Review", "proposer": "member", "details": "Board HTTP verification"}
+    headers = {"Cookie": cookie, "Content-Type": "application/json"}
+    path, body = "/api/todos/create", json.dumps(payload)
+    if form:
+        path, body = "/api/todos/create-form", urlencode(payload)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    status, _ = request(dashboard, path, method="POST", headers=headers, body=body)
+    assert status == (303 if form else 200)
+    status, raw = request(dashboard, "/api/todos", headers={"Cookie": cookie})
+    assert status == 200
+    item = json.loads(raw)["items"][0]
+    assert item["title"] == "Review"
+    status, raw = request(
+        dashboard,
+        "/api/todos/update",
+        method="POST",
+        headers={
+            "Cookie": cookie,
+            "Content-Type": "application/json",
+        },
+        body=json.dumps({"id": item["id"], "owner": "board-member", "status": "doing"}),
+    )
+    assert status == 200
+    assert json.loads(raw)["items"][0]["owner"] == "board-member"
+    assert request(dashboard, "/api/todos/clear", method="POST", headers=headers, body="{}")[0] == 403

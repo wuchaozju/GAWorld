@@ -149,6 +149,14 @@ celerybeat.pid
 !/site/
 /site/*
 !/site/tokens.css
+!/site/index.html
+!/site/theme.js
+!/site/theme.test.js
+!/site/city-lab.css
+!/site/vendor/
+!/site/vendor/**
+!/site/terminal/
+!/site/terminal/simviz.html
 !/site/dashboard/
 !/site/dashboard/**
 !/site/console/

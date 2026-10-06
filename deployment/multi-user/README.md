@@ -47,8 +47,27 @@ curl -fsS http://127.0.0.1:8766/api/health
 3. 成员注册后各自创建世界，在自己的世界内配置居民、启动仿真和查看结果。
 4. 教师可设置并发上限、查看世界和停止运行。世界默认私有，共玩需要明确调整可见性。
 
-现有看板的写入权限仍按 `gaworld/accounts/policy.py` 执行，目前属于管理员操作；
-多用户登录不等于所有成员自动获得看板编辑权。
+已登录成员可以提交、认领和更新团队看板任务；清空和批量替换仍仅限管理员。
+未登录访客不能提交。权限定义在 `gaworld/accounts/policy.py`。
+
+## 正式版本和测试目录分离
+
+正式目录 `%h/GAWorld` 部署 `main`。把 `gaworld-deploy-watch.conf` 安装为
+`~/.config/systemd/user/gaworld-deploy-watch.service.d/main.conf`，替换旧的 Dev 监听命令。
+
+测试目录先单独创建：
+
+```bash
+git -C ~/GAWorld worktree add -b testing/Dev ~/GAWorld-test origin/Dev
+```
+
+把 `gaworld-test-loop.conf` 安装为
+`~/.config/systemd/user/gaworld-test-loop.service.d/isolated.conf`。
+测试会在独立 worktree 快进到 `origin/Dev`，不会切换线上目录的分支；
+有已跟踪文件修改、fetch 失败或不能快进时不运行混合版本。
+安装完成后 `systemctl --user daemon-reload`，再重启对应服务。
+
+`main` 的 push 权限必须限制给发布维护者；CLI 的健康检查不替代发布前的审查和测试。
 
 ## 公网入口
 

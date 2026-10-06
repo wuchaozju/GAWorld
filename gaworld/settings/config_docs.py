@@ -2434,7 +2434,7 @@ LABELS: dict[str, str] = {
     "residual_ratio": "个体差异比例", "render_midpoint": "写入门槛", "render_spread": "门槛过渡带",
     "strong_z": "强描述阈值", "max_dims": "每段最多几条", "floor_z": "不写下限",
     "emotion_baseline": "情绪基准线",
-    "contagion_weight": "情绪传染强度", "recovery_rate": "回归速率",
+    "recovery_rate": "回归速率",
     "n_recovery_slope": "神经质·回归放缓", "n_baseline_slope": "神经质·基线下移",
     "e_baseline_slope": "外向性·基线上移",
     "sampling": "先验采样", "correlations": "维度间相关",

@@ -251,13 +251,13 @@ class HttpTest(unittest.TestCase):
         self.assertEqual((resp.status, me), (200, {"mode": "single"}))
         self.assertEqual(self._req("GET", "/api/interventions")[0].status, 200)
 
-    def test_sign_in_logo_is_public_but_other_assets_stay_gated(self):
+    def test_sign_in_is_public_but_assets_stay_gated(self):
         store = _store(self.tmp.name)
         store.create_user("老师", PASSWORD, role="admin")
         for method in ("GET", "HEAD"):
-            resp, _ = self._req(method, "/site/assets/logo-emergent.png")
+            resp, _ = self._req(method, "/login")
             self.assertEqual(resp.status, 200)
-            self.assertEqual(resp.getheader("Content-Type"), "image/png")
+            self.assertIn("text/html", resp.getheader("Content-Type"))
         self.assertEqual(self._req("GET", "/site/assets/city-lab-atlas.svg")[0].status, 303)
 
     def test_classroom_flow(self):

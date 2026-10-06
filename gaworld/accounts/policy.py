@@ -65,6 +65,9 @@ def quota_gated(path: str) -> bool:
 
 
 MEMBER_WRITES_EXACT = {
+    "/api/todos/create",
+    "/api/todos/create-form",
+    "/api/todos/update",
     "/api/auth/logout",
     "/api/auth/password",
     "/api/interview",
@@ -108,9 +111,6 @@ CITY_WRITES = {
 
 def required(method: str, path: str) -> Level:
     path = path.rstrip("/") or "/"
-    # The sign-in page shares this public brand asset; other assets stay gated.
-    if method in ("GET", "HEAD") and path == "/site/assets/logo-emergent.png":
-        return "public"
     if (method, path) in PUBLIC_API or path in PUBLIC_PAGES or path.startswith(PUBLIC_PREFIXES):
         return "public"
     if method in ("GET", "HEAD"):

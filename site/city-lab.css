@@ -1,0 +1,34 @@
+/* Shared refinements; page layouts and colors remain in their existing sheets. */
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+.brand-copy { min-width: 0; }
+h1, h2, h3, .brand-name { letter-spacing: 0; }
+button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent, #176a49); outline-offset: 3px; }
+#themeMode {
+  max-width: 100%;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+@media (max-width: 860px) {
+  .console-bar { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 8px; }
+  .console-bar .brand-name { display: inline; white-space: normal; font-size: 14px; }
+  .console-bar .crumb { display: none; }
+  .console-bar .bar-right {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    gap: 8px;
+  }
+  #themeMode { grid-column: 1; grid-row: 1; justify-self: start; }
+  .console-bar .lang-switch { grid-column: 2; grid-row: 1; }
+  .console-bar .world-chip, .console-bar .user-chip { grid-column: 1 / -1; min-width: 0; }
+  .console-bar .world-chip select { min-width: 0; max-width: none; flex: 1; }
+  .console-bar .world-chip .open-new, .console-bar .user-chip .open-new { display: inline-flex; }
+  .console-bar #userName { min-width: 0; overflow-wrap: anywhere; white-space: normal; flex: 1; }
+}

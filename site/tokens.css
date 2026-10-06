@@ -1,7 +1,4 @@
-/* GAWorld design tokens — shared by the console shell and every dashboard page.
- * The terminal variant re-declares each of these in terminal/terminal-override.css;
- * a token added here must be added there too or it leaks the light value. */
-@import url("/site/brand.css");
+/* GAWorld design tokens shared by the console shell and dashboard pages. */
 
 :root {
   /* neutrals */

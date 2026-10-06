@@ -68,9 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             nickname = check_nickname(args.admin)
             password = check_password(_read_password(args.password_stdin))
             store.init_schema()
-            user = store.create_user(
-                nickname, password, role="admin", can_create_city=True
-            )
+            user = store.create_user(nickname, password, role="admin", can_create_city=True)
             store.audit(user, "init")
             print(f"已创建账号库 {path}，管理员「{user['nickname']}」。从现在起控制台需要登录。")
             return 0
