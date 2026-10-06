@@ -1401,6 +1401,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         _WORLD.set(None)
         _USER.set(None)
         runs.LOCAL_PORT["port"] = self.server.server_port
+        # Readiness exposes no user data and works with either authentication mode.
+        if path == "/api/health" and self.command in ("GET", "HEAD"):
+            return False
+        try:
+            self.accounts = accounts.enabled_store(paths.REPO_ROOT)
+        except accounts.AccountConfigurationError:
+            self._deny(503, "Account service unavailable; contact the administrator")
+            return True
         from gaworld.apps import cluster_api
 
         if cluster_api.is_node_path(path):
@@ -1421,7 +1429,6 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._deny(404, "Not found")
             return True
         token = os.environ.get("GAWORLD_DASHBOARD_TOKEN", "").strip()
-        self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         if not token and self.accounts is None:
             return False
         if token:
@@ -1523,7 +1530,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         for name, value in (headers or {}).items():
             self.send_header(name, value)
         self.end_headers()
-        self.wfile.write(data)
+        if self.command != "HEAD":
+            self.wfile.write(data)
 
     def _auth_reply(self, payload, status, set_cookie):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -2028,6 +2036,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         path = unquote(parsed.path)
         if self._guard(path, parsed.query):
             return
+        if path == "/api/health":
+            return self._handle_api_get(path, parse_qs(parsed.query))
         # "/" is the project landing page — the intro and the way in to every
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the

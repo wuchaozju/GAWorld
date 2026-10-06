@@ -722,7 +722,7 @@
   "family.title_hint": "Who is married, who lives with whom, and who they look after.",
   "family.empty": "No household data yet — run a full simulation and each resident's family shows up here.",
   "family.not_in_run": "This resident was not part of the last run, so there is no household record.",
-  "home.kicker": "Home Mode",
+  "home.kicker": "Living Environment",
   "home.title": "Home Mode",
   "home.title_hint": "Each resident's home environment (rooms, furniture, overall vibe) and what they do when they are actually at home — which room and the surrounding ambiance (lighting / sound / smell / temperature / tidiness).",
   "home.empty": "No home-mode data yet. Run a simulation and each resident's home shows up here.",

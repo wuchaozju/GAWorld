@@ -215,6 +215,11 @@ AGENT_FIELDS = {
 
 def _core() -> dict[str, Any]:
     return {
+        "/api/health": {
+            "get": _op("meta", "Public readiness without user data", errors={"503": "Accounts unavailable"},
+                       ok=_obj(ok=BOOL, service=STR, accounts=BOOL, accounts_required=BOOL)),
+            "head": _op("meta", "Readiness headers only", errors={"503": "Accounts unavailable"}),
+        },
         "/api/openapi.json": {"get": _op("meta", "This document")},
         # accounts (gaworld/apps/accounts_api.py)
         "/api/auth/me": {"get": _op(

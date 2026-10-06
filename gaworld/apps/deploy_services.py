@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import signal
 import subprocess
@@ -79,7 +80,7 @@ def service_specs(args, python_bin: str) -> list[ServiceSpec]:
                 "--port",
                 str(args.dashboard_port),
             ],
-            health_url=f"http://{health_host}:{args.dashboard_port}/api/config",
+            health_url=f"http://{health_host}:{args.dashboard_port}/api/health",
             systemd_unit=getattr(args, "dashboard_unit", "gaworld-dashboard.service"),
         ),
         ServiceSpec(
@@ -181,8 +182,13 @@ def _restart_systemd_user_services(repo: Path, specs: list[ServiceSpec], *, dry_
 def _health_ok(url: str, timeout: float = 2.0) -> bool:
     try:
         with urlopen(url, timeout=timeout) as response:
-            return 200 <= int(response.status) < 500
-    except (OSError, URLError):
+            if response.status != 200 or response.headers.get_content_type() != "application/json":
+                return False
+            payload = json.load(response)
+            if not isinstance(payload, dict) or payload.get("ok") is not True:
+                return False
+            return not url.endswith("/api/health") or payload.get("service") == "gaworld-dashboard"
+    except (OSError, URLError, ValueError):
         return False
 
 

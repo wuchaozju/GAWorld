@@ -155,6 +155,8 @@ celerybeat.pid
 !/site/console/**
 !/site/auth/
 !/site/auth/**
+!/site/assets/
+!/site/assets/**
 !/site/mobile/
 !/site/mobile/**
 !/site/simviz/

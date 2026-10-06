@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from . import AccountError, AccountStore, db_path
+from .store import check_nickname, check_password
 
 REPO_ROOT = str(Path(__file__).resolve().parents[2])
 
@@ -64,9 +65,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "init":
             if os.path.exists(path) and store.list_users():
                 raise AccountError(f"账号库已存在：{path}")
+            nickname = check_nickname(args.admin)
+            password = check_password(_read_password(args.password_stdin))
             store.init_schema()
             user = store.create_user(
-                args.admin, _read_password(args.password_stdin), role="admin", can_create_city=True
+                nickname, password, role="admin", can_create_city=True
             )
             store.audit(user, "init")
             print(f"已创建账号库 {path}，管理员「{user['nickname']}」。从现在起控制台需要登录。")

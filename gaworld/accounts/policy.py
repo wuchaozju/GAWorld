@@ -24,6 +24,8 @@ Level = Literal["public", "member", "city", "world", "admin"]
 PUBLIC_PAGES = ("/login", "/join", "/reset")
 PUBLIC_PREFIXES = ("/site/auth/",)
 PUBLIC_API = {
+    ("GET", "/api/health"),
+    ("HEAD", "/api/health"),
     ("POST", "/api/auth/login"),
     ("POST", "/api/auth/register"),
     ("POST", "/api/auth/reset"),

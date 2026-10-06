@@ -37,7 +37,7 @@ git pull --ff-only origin <branch>
 pip install -r requirements.txt
 重启 Dashboard 服务
 重启 Relay 服务
-检查 /api/config 和 /health
+检查 /api/health 和 /health
 ```
 
 `--process-manager systemd-user` 适合当前团队服务器，因为 8766/8877 已经由
@@ -61,14 +61,14 @@ python scripts/deploy_services.py status \
 期望看到：
 
 ```text
-dashboard: running=True healthy=True url=http://127.0.0.1:8766/api/config
+dashboard: running=True healthy=True url=http://127.0.0.1:8766/api/health
 relay:     running=True healthy=True url=http://127.0.0.1:8877/health
 ```
 
 也可以直接 curl：
 
 ```bash
-curl http://127.0.0.1:8766/api/config
+curl http://127.0.0.1:8766/api/health
 curl http://127.0.0.1:8766/api/todos
 curl http://127.0.0.1:8877/health
 ```
@@ -236,6 +236,8 @@ Environment=GAWORLD_DASHBOARD_TOKEN=<令牌>
 ### 多人账号（课堂 / 工作坊）
 
 多人共用一台服务器时开启账号。账号库是开关：库不存在时一切照旧；创建后控制台需要登录。
+正式服务器应再启用 `GAWORLD_REQUIRE_ACCOUNTS=1`，防止数据库丢失后回退单人模式。
+可复用的配置和验收步骤见 [多用户服务器配置](../deployment/multi-user/README.md)。
 
 ```bash
 python -m gaworld.accounts init --admin 老师                 # 建库 + 第一个管理员（交互输入密码）
