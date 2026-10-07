@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-10-07T05:08:02.093Z",
+  "main": "581b12acd5b48bbab6707467e27092cc6f03fe9a",
+  "Dev": "581b12acd5b48bbab6707467e27092cc6f03fe9a",
+  "glf": "cec3342b527e71824cfa3b1a24b03a0d00a5e78a",
+  "main_glf_ahead_behind": [
+    34,
+    1
+  ],
+  "glf_only_commits": [
+    "cec3342b527e71824cfa3b1a24b03a0d00a5e78a"
+  ],
+  "glf_only_non_merge_commits": [],
+  "glf_tip_parents": [
+    {
+      "commit": "ebdad18ce2e28cba030ded918641f7f3a324db83",
+      "ancestor_of_main": true
+    },
+    {
+      "commit": "8f45771f13690c7ad368d15575a35f6fec33d603",
+      "ancestor_of_main": true
+    }
+  ],
+  "merge_bases": [
+    "8f45771f13690c7ad368d15575a35f6fec33d603",
+    "ebdad18ce2e28cba030ded918641f7f3a324db83"
+  ],
+  "merge_tree_status": 1,
+  "conflicts": [
+    "README.md",
+    "README.zh-CN.md",
+    "dashboard_config.json",
+    "data/hangzhou_profiles_with_names.v1.md",
+    "data/news_cache.json",
+    "generative_city_sim.py",
+    "site/dashboard/app.js",
+    "site/dashboard/index.html",
+    "tests/test_distributed_comm.py"
+  ],
+  "candidate_changed_paths": [
+    "README.md",
+    "README.zh-CN.md",
+    "dashboard_config.json",
+    "data/hangzhou_profiles_with_names.v1.md",
+    "data/news_cache.json",
+    "generative_city_sim.py",
+    "site/dashboard/app.js",
+    "site/dashboard/index.html",
+    "tests/test_distributed_comm.py"
+  ],
+  "non_conflicting_deltas": [],
+  "hypothetical_tree_if_all_conflict_files_keep_main": "593ba7ee9d1caaf35b1a275f90e719697de83f46",
+  "main_tree": "593ba7ee9d1caaf35b1a275f90e719697de83f46",
+  "worktree_and_real_index_unchanged": true,
+  "actual_merge_performed": false,
+  "hypothetical_tree_equals_main": true
+}
