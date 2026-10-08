@@ -43,6 +43,7 @@ city bundle — a game is a sandbox, not a simulation run.
 
 from __future__ import annotations
 
+import contextvars
 import random
 import threading
 import time
@@ -1069,7 +1070,7 @@ def _advance_one_tick(
         a_id, b_id = a.agent_id, b.agent_id
         tick_idx = session.tick_index
         vibe = session.vibe
-        future = _INTERACTION_EXECUTOR.submit(_run_interaction_worker,
+        future = _INTERACTION_EXECUTOR.submit(contextvars.copy_context().run, _run_interaction_worker,
                                               session.id, a_id, b_id, room, prompt, fn, tick_idx, vibe)
         future._submit_time = time.time()  # type: ignore[attr-defined]
         with _INTERACTION_LOCK:

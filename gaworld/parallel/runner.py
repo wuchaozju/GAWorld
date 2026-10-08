@@ -17,6 +17,7 @@ show eight worlds advancing instead of a spinner.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import re
@@ -277,7 +278,9 @@ class ExperimentRunner:
         return os.path.join(self.repo_root, rel)
 
     def _env(self, world_id: str) -> dict[str, str]:
-        env = os.environ.copy()
+        from gaworld.accounts.usage import child_env
+
+        env = child_env(os.environ.copy())
         env["PYTHONUNBUFFERED"] = "1"
         env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(
             self.manifest["worlds"][world_id]["overrides"], ensure_ascii=False
@@ -515,7 +518,8 @@ class ExperimentRunner:
                     )
 
         threads = [
-            threading.Thread(target=worker, name=f"world-{index}", daemon=True)
+            threading.Thread(target=contextvars.copy_context().run, args=(worker,),
+                             name=f"world-{index}", daemon=True)
             for index in range(min(self.max_parallel, max(1, len(pending))))
         ]
         for thread in threads:

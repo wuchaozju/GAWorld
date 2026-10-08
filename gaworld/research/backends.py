@@ -268,7 +268,9 @@ def default_survey_runner(*, repo_root: str, provider: str = "", timeout: float 
             }
             with open(spec_path, "w", encoding="utf-8") as handle:
                 json.dump(payload, handle, ensure_ascii=False)
-            env = os.environ.copy()
+            from gaworld.accounts.usage import child_env
+
+            env = child_env(os.environ.copy())
             env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(world.get("overrides") or {}, ensure_ascii=False)
             env["PYTHONUNBUFFERED"] = "1"
             proc = subprocess.run(

@@ -70,7 +70,7 @@
 
   var state = {
     data: null,
-    tab: null,
+    tab: new URLSearchParams(window.location.search).get("tab") === "llm" ? "llm" : null,
     query: "",
     onlyOverridden: false,
     dirty: {},   // "economy.macro.initial_inflation_rate" -> value
@@ -456,10 +456,11 @@
           ? '<span class="set-badge is-dashboard">' + esc(__("set.badge_added_here")) + "</span>" : "") +
         key + "</div>" +
         '<div class="llm-row-meta">' + meta + "</div>" +
+        credentialHtml(item) +
         '<div class="llm-row-actions">' +
         '<button type="button" class="button subtle" data-test-provider="' + esc(item.name) + '">' +
           esc(__("set.test_connection")) + "</button>" +
-        (item.editable
+        (item.editable && state.data.can_edit_config !== false
           ? '<button type="button" class="button subtle" data-drop-provider="' + esc(item.name) +
             '" title="' + esc(__("set.drop_provider_title")) + '">' + esc(__("set.drop_provider")) + "</button>"
           : "") +
@@ -472,6 +473,20 @@
       ' <span class="set-count">' + providerRows().length + "</span>" +
       '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
       (rows || '<p class="set-hint">' + esc(__("set.no_providers")) + "</p>") + "</div>";
+  }
+
+  function credentialHtml(item) {
+    if (!item.needs_key || item.managed_supported === false || !state.data.can_manage_credentials) return "";
+    return '<div class="llm-credential" data-credential="' + esc(item.name) + '">' +
+      '<label class="llm-field"><span>' + esc(__("set.team_key")) +
+      '<span class="help-tip" data-help="' + esc(__("set.team_key_help")) + '"></span></span>' +
+      '<input type="password" autocomplete="new-password" spellcheck="false" maxlength="4096"' +
+      ' aria-label="' + esc(item.name + " API Key") + '" /></label>' +
+      '<button type="button" class="button primary" data-save-key="' + esc(item.name) + '">' +
+      esc(__(item.managed_key ? "set.replace_key" : "set.save_key")) + "</button>" +
+      (item.managed_key ? '<button type="button" class="button subtle" data-delete-key="' + esc(item.name) +
+        '">' + esc(__("set.delete_key")) + "</button>" : "") +
+      '<span class="llm-result" role="status" data-key-result></span></div>';
   }
 
   function renderAddForm() {
@@ -516,7 +531,7 @@
   }
 
   function renderLlmPanel() {
-    return renderPicker() + renderProviderList() + renderAddCard();
+    return renderPicker() + renderProviderList() + (state.data.can_edit_config !== false ? renderAddCard() : "");
   }
 
   /* ------------------------------------------------------------ 各页签内容 */
@@ -735,6 +750,11 @@
     $("setBody").innerHTML = '<h2 class="set-section-title">' + esc(currentTabTitle()) + "</h2>" + body;
     $("setSide").innerHTML = renderSide();
 
+    if (state.data.can_edit_config === false) {
+      document.querySelectorAll('input[data-path], select[data-path], textarea[data-path], [data-revert], #setResetAll')
+        .forEach(function (el) { el.disabled = true; });
+    }
+
     var sources = state.data.sources || {};
     $("setTopMeta").innerHTML =
       '<span class="set-chip">' + esc(__("set.chip_items")) +
@@ -896,6 +916,44 @@
 
   /* -------------------------------------------------------- 语言模型的动作 */
 
+  function updateCredential(button, remove) {
+    var box = button.closest(".llm-credential");
+    var name = box.getAttribute("data-credential");
+    var input = box.querySelector("input");
+    var slot = box.querySelector("[data-key-result]");
+    if (remove && !window.confirm(__("set.confirm_delete_key"))) return;
+    if (!remove && !input.value) {
+      slot.textContent = __("set.enter_key");
+      input.focus();
+      return;
+    }
+    var payload = { name: name, action: remove ? "delete" : "save" };
+    if (!remove) payload.api_key = input.value;
+    input.value = "";
+    var buttons = box.querySelectorAll("button");
+    buttons.forEach(function (el) { el.disabled = true; });
+    slot.textContent = __("set.key_saving");
+    api("POST", "/api/settings/llm/credential", payload).then(function (result) {
+      var row = providerRows().find(function (item) { return item.name === name; });
+      row.key_ready = result.key_ready;
+      row.managed_key = result.managed_key;
+      var badge = box.closest(".llm-row").querySelector(".llm-key");
+      badge.className = "llm-key " + (row.key_ready ? "is-ok" : "is-bad");
+      badge.textContent = row.key_ready ? __("set.key_ready") : __f("set.key_missing", {
+        envs: row.api_key_envs.join("、") || __("set.key_env_unset"),
+      });
+      delete state.probes[name];
+      paintProbe(name);
+      box.outerHTML = credentialHtml(row);
+      var replacement = document.querySelector('[data-credential="' + name + '"]');
+      replacement.querySelector("[data-key-result]").textContent = __(remove ? "set.key_deleted" : "set.key_saved");
+      if (window.HelpTips) window.HelpTips.scan(replacement);
+    }).catch(function (err) {
+      slot.textContent = err.message || __("set.probe_failed");
+      buttons.forEach(function (el) { el.disabled = false; });
+    }).finally(function () { delete payload.api_key; });
+  }
+
   /** 测试结果就地更新：整页重绘会把用户正在填的表单和滚动位置一起清掉。 */
   function paintProbe(key) {
     var slot = key === "__draft" ? $("llmDraftResult") : document.querySelector('[data-result="' + key + '"]');
@@ -903,6 +961,8 @@
   }
 
   function probe(key, payload) {
+    var credentialResult = document.querySelector('[data-credential="' + key + '"] [data-key-result]');
+    if (credentialResult) credentialResult.textContent = "";
     var label = key === "__draft"
       ? __("set.probe_draft_label")
       : __f("set.probe_provider_label", { name: key });
@@ -991,6 +1051,11 @@
   });
 
   body.addEventListener("click", function (event) {
+    var keyAction = event.target.closest("[data-save-key], [data-delete-key]");
+    if (keyAction) {
+      updateCredential(keyAction, keyAction.hasAttribute("data-delete-key"));
+      return;
+    }
     var test = event.target.closest("[data-test-provider]");
     if (test) {
       probe(test.getAttribute("data-test-provider"), { name: test.getAttribute("data-test-provider") });

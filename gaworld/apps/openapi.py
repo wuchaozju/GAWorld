@@ -580,6 +580,10 @@ def _panels() -> dict[str, Any]:
         "/api/settings/llm/test": {"post": _op(
             "settings", "One real generation against a saved provider or a draft",
             body=_obj(name=STR, config=_d(OBJ, "Draft provider, tested before saving")))},
+        "/api/settings/llm/credential": {"post": _op(
+            "settings", "Write-only personal credential scoped to the signed-in account; never returned",
+            body=_obj(("name",), name=STR, action=_d(STR, "save or delete"),
+                      api_key={"type": "string", "format": "password", "writeOnly": True}))},
         "/api/external-systems/overview": {"get": _op("external-systems", "Economy, environment and services")},
         "/api/external-systems/health": {"get": _op("external-systems", "Reachability of external services")},
         "/api/external-systems/interventions": {

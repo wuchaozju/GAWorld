@@ -11,6 +11,7 @@ dead backend.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import threading
@@ -165,7 +166,7 @@ def _execute(spec: ClassicSpec, todo: list[Cell], results_path: Path, abort_afte
     lock = threading.Lock()
     completed = failed = 0
     with open(results_path, "a", encoding="utf-8") as handle, ThreadPoolExecutor(spec.max_workers) as pool:
-        futures = [pool.submit(_record, spec, cell) for cell in todo]
+        futures = [pool.submit(contextvars.copy_context().run, _record, spec, cell) for cell in todo]
         for future in as_completed(futures):
             row = future.result()
             with lock:

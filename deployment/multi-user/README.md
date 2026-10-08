@@ -50,6 +50,28 @@ curl -fsS http://127.0.0.1:8766/api/health
 已登录成员可以提交、认领和更新团队看板任务；清空和批量替换仍仅限管理员。
 未登录访客不能提交。权限定义在 `gaworld/accounts/policy.py`。
 
+## 个人模型密钥
+
+团队不共用 API 额度时，在账号模式已经正常工作的前提下安装：
+
+```bash
+install -d -m 700 "$HOME/.config/gaworld-credentials"
+install -m 600 deployment/multi-user/personal-keys.conf \
+  "$HOME/.config/systemd/user/gaworld-dashboard.service.d/personal-keys.conf"
+systemctl --user daemon-reload
+systemctl --user restart gaworld-dashboard.service
+```
+
+先确认没有正在运行的实验，再重启。配置只启用个人密钥存储，不写入任何人的 Key。
+每人以自己的账号打开 `/site/dashboard/settings.html?tab=llm`，填写「我的 API Key」，
+保存并点击「测试连通性」，然后在自己的世界里运行。连通性测试会消耗本人的模型额度。
+不要共用管理员账号，否则密钥和计费仍会归到同一个账号。
+
+启用后，服务器的环境变量 Key 和配置里的内嵌 Key 都不会被付费模型当作备用。
+没有个人 Key 就报错；管理员也不能通过页面查看、修改别人的 Key。
+密钥文件是权限保护的明文，运维账号可读取；须与账号数据库一起保密备份。
+更多边界和 CLI 说明见 [服务器部署](../../docs/SERVER_DEPLOYMENT.md#每人使用自己的-api-key)。
+
 ## 正式版本和测试目录分离
 
 正式目录 `%h/GAWorld` 部署 `main`。把 `gaworld-deploy-watch.conf` 安装为

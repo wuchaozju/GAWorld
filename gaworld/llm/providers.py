@@ -260,8 +260,34 @@ class OllamaProvider:
         return _retrying(_do, attempts=self.attempts, provider=f"ollama:{self.model}", task="")
 
 
-class OpenAIProvider:
+class _CredentialProvider:
+    """Resolve managed credentials on use, including after rotation/deletion."""
+
+    @property
+    def api_key(self):
+        from gaworld.llm.credentials import enabled, lookup
+
+        if enabled():
+            return lookup({"type": self._credential_type, "base_url": self.base_url})
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, value):
+        self._api_key = value
+
+    def _request_key(self):
+        from gaworld.llm.credentials import enabled
+
+        key = self.api_key
+        if enabled() and not key:
+            raise ValueError("当前账号尚未配置此模型的 API Key，请打开「配置 → 模型」保存个人密钥。")
+        return key
+
+
+class OpenAIProvider(_CredentialProvider):
     """OpenAI Chat Completions wrapper (single-turn)."""
+
+    _credential_type = "openai"
 
     def __init__(
         self,
@@ -295,7 +321,7 @@ class OpenAIProvider:
 
     def call(self, prompt, system=None, temperature=None, images=None, max_tokens=None):
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self._request_key()}",
             "Content-Type": "application/json",
         }
         messages = []
@@ -342,6 +368,7 @@ class OpenAIProvider:
                 json=stream_payload,
                 timeout=(10, self.timeout),
                 stream=True,
+                allow_redirects=False,
             ) as r:
                 r.raise_for_status()
                 parts: list[str] = []
@@ -400,6 +427,7 @@ class OpenAIProvider:
                 headers=headers,
                 json=payload,
                 timeout=self.timeout,
+                allow_redirects=False,
             )
             r.raise_for_status()
             data = r.json()
@@ -428,7 +456,7 @@ class OpenAIProvider:
         if not texts:
             return []
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {self._request_key()}",
             "Content-Type": "application/json",
         }
         payload = {
@@ -442,6 +470,7 @@ class OpenAIProvider:
                 headers=headers,
                 json=payload,
                 timeout=self.timeout,
+                allow_redirects=False,
             )
             r.raise_for_status()
             data = r.json()
@@ -453,8 +482,10 @@ class OpenAIProvider:
         return _retrying(_do, provider=f"openai:{payload['model']}", task="embed")
 
 
-class AnthropicProvider:
+class AnthropicProvider(_CredentialProvider):
     """Anthropic/Claude message API wrapper."""
+
+    _credential_type = "anthropic"
 
     def __init__(
         self,
@@ -484,10 +515,10 @@ class AnthropicProvider:
             env_names.insert(0, api_key_env)
         self.api_key = api_key
         self.api_key_source = "config.api_key" if api_key else ""
-        if not self.api_key:
+        if not self._api_key:
             for env_name in env_names:
-                self.api_key = os.getenv(env_name)
-                if self.api_key:
+                self._api_key = os.getenv(env_name)
+                if self._api_key:
                     self.api_key_source = env_name
                     break
         self.api_key_envs = env_names
@@ -514,7 +545,7 @@ class AnthropicProvider:
         return _model_looks_multimodal(self.model)
 
     def call(self, prompt, system=None, temperature=None, images=None, max_tokens=None):
-        if not self.api_key:
+        if not self._request_key():
             env_names = ", ".join(self.api_key_envs) or "ANTHROPIC_API_KEY"
             raise ValueError(f"Anthropic provider API key not found. Set one of: {env_names}")
         cleaned = _clean_images(images)
@@ -557,6 +588,7 @@ class AnthropicProvider:
         )
 
     def _call_once(self, payload):
+        api_key = self._request_key()
         schemes = [self.authorization_scheme]
         for scheme in self.authorization_retry_schemes:
             if scheme not in schemes:
@@ -570,11 +602,11 @@ class AnthropicProvider:
                 "Content-Type": "application/json",
             }
             if self.include_x_api_key:
-                headers["x-api-key"] = self.api_key
+                headers["x-api-key"] = api_key
             if scheme == "bearer":
-                headers["Authorization"] = f"Bearer {self.api_key}"
+                headers["Authorization"] = f"Bearer {api_key}"
             elif scheme == "raw":
-                headers["Authorization"] = self.api_key
+                headers["Authorization"] = api_key
             if self.beta:
                 headers["anthropic-beta"] = self.beta
             r = requests.post(
@@ -582,6 +614,7 @@ class AnthropicProvider:
                 headers=headers,
                 json=payload,
                 timeout=self.timeout,
+                allow_redirects=False,
             )
             try:
                 r.raise_for_status()
@@ -620,6 +653,8 @@ class AnthropicProvider:
                 continue
 
         body = last_response.text.strip() if last_response is not None else ""
+        if api_key:
+            body = body.replace(api_key, "[REDACTED]")
         if len(body) > 800:
             body = body[:800] + "..."
         env_names = ", ".join(self.api_key_envs) or "ANTHROPIC_API_KEY"
@@ -724,23 +759,33 @@ def probe_provider(cfg: dict[str, Any], *, timeout: int = 30) -> dict[str, Any]:
     # Checked before the call so a missing key reads as "set this env var"
     # rather than as the backend's own 401.
     if isinstance(provider, (OpenAIProvider, AnthropicProvider)) and not provider.api_key:
+        from gaworld.llm.credentials import enabled
+
+        if enabled():
+            return {"ok": False, "error": "当前账号尚未配置此模型的 API Key。请在「配置 → 模型」中保存你自己的密钥后再测试。"}
         envs = getattr(provider, "api_key_envs", None) or [getattr(provider, "api_key_env", "")]
         return {
             "ok": False,
             "error": "没有拿到密钥：环境变量 " + "、".join(n for n in envs if n) + " 没有设置。"
-            "请在仓库根目录的 .env 里配好，然后重启仿真进程。",
+            "请在「配置 → 模型」中保存你自己的 API Key；单人部署也支持服务器环境变量。",
         }
     started = time.perf_counter()
     try:
         reply = provider.call(_PROBE_PROMPT)
     except Exception as exc:  # every transport/auth/shape failure is a verdict
         detail = str(exc)
+        key = getattr(provider, "api_key", None)
+        if key:
+            detail = detail.replace(key, "[REDACTED]")
         return {
             "ok": False,
             "latency_ms": int((time.perf_counter() - started) * 1000),
             "error": detail if len(detail) <= 600 else detail[:600] + "…",
         }
     text = str(reply or "").strip()
+    key = getattr(provider, "api_key", None)
+    if key:
+        text = text.replace(key, "[REDACTED]")
     return {
         "ok": True,
         "latency_ms": int((time.perf_counter() - started) * 1000),

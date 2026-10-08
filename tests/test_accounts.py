@@ -331,6 +331,39 @@ class HttpTest(unittest.TestCase):
         resp, body = self._req("POST", f"/api/auth/users/{pupil['id']}/city", {"allow": True}, cookie=teacher)
         self.assertTrue(body["user"]["can_create_city"])
 
+    def test_personal_keys_are_isolated_over_http(self):
+        from pathlib import Path
+
+        from gaworld.apps import settings_api
+
+        store = _store(self.tmp.name)
+        store.create_user("teacher", PASSWORD, role="admin")
+        store.create_user("student", PASSWORD)
+        teacher, student = self._login("teacher"), self._login("student")
+        endpoint = "/api/settings/llm/credential"
+        cfg = {"llm": {"providers": {"test": {
+            "type": "openai", "base_url": "https://test.invalid/v1", "model": "test",
+        }}}}
+        path = str(Path(self.tmp.name).resolve() / "private-keys" / "keys.json")
+        with mock.patch.dict(os.environ, {"GAWORLD_LLM_SECRETS_PATH": path}), \
+                mock.patch.object(settings_api.world_paths, "effective_config", return_value=cfg):
+            self.assertEqual(self._req("POST", endpoint, {"name": "test", "api_key": "unused"})[0].status, 401)
+            resp, body = self._req("POST", endpoint, {"name": "test", "api_key": "student-test-key"}, cookie=student)
+            self.assertEqual(resp.status, 200)
+            self.assertNotIn("student-test-key", json.dumps(body))
+            overview = self._req("GET", "/api/settings/overview", cookie=student)[1]
+            self.assertTrue(overview["providers"][0]["key_ready"])
+            self.assertTrue(overview["can_manage_credentials"])
+            teacher_view = self._req("GET", "/api/settings/overview", cookie=teacher)[1]
+            self.assertFalse(teacher_view["providers"][0]["key_ready"])
+            self.assertNotIn("student-test-key", json.dumps(teacher_view))
+            self.assertEqual(self._req("POST", endpoint, {
+                "name": "test", "action": "delete", "user_id": 2}, cookie=teacher)[0].status, 400)
+            self.assertEqual(self._req("POST", "/api/settings/llm/test", {
+                "name": "test", "config": cfg["llm"]["providers"]["test"]}, cookie=student)[0].status, 403)
+            self.assertEqual(self._req("POST", endpoint, {
+                "name": "test", "action": "delete"}, cookie=student)[0].status, 200)
+
     def test_operator_token_is_still_an_admin(self):
         _store(self.tmp.name)
         with mock.patch.dict(os.environ, {"GAWORLD_DASHBOARD_TOKEN": "op-token"}):

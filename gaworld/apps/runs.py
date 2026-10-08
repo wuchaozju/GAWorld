@@ -436,11 +436,13 @@ def simulation_env():
 
 
 def validate_launch_config(config, *, reset=False):
+    from gaworld.llm.credentials import validate_launch
     from gaworld.plugins import validate_runtime_config
 
     # Reset discards existing checkpoints. Unsupported runtime combinations
     # and malformed seed definitions must still fail before that mutation.
     validate_runtime_config({**config, "stateful": False} if reset else config)
+    validate_launch(config)
 
 
 def launch(state, payload):

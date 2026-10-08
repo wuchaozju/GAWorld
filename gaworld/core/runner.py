@@ -39,6 +39,7 @@ once they're inside :mod:`requests`), but their results are dropped.
 
 from __future__ import annotations
 
+import contextvars
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Iterable, Mapping, Sequence, TypeVar
 
@@ -91,7 +92,8 @@ def parallel_map(
 
     results: list[R | None] = [None] * n
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(fn, item): index for index, item in enumerate(materialised)}
+        futures = {pool.submit(contextvars.copy_context().run, fn, item): index
+                   for index, item in enumerate(materialised)}
         for future in futures:
             index = futures[future]
             # ``result()`` re-raises whatever fn raised; the executor's

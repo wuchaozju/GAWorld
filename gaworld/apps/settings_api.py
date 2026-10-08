@@ -24,9 +24,9 @@ validator would be longer than this module and would rot on the next knob. The
 coercion in ``external_systems_api`` already solves this, so it is reused
 rather than reimplemented — one behaviour, one place to fix it.
 
-**Secrets are reported as present/absent, never echoed.** Env vars come back
-masked and read-only; the panel links to ``.env`` instead of editing it. A
-dashboard bound to 0.0.0.0 should not be a key-exfiltration endpoint.
+**Secrets are reported as present/absent, never echoed.** Env vars stay masked
+and read-only. The opt-in personal-key endpoint writes outside the checkout,
+scoped to the authenticated account, never into the config tree.
 """
 
 from __future__ import annotations
@@ -35,7 +35,9 @@ import os
 import re
 from typing import Any
 
+from gaworld.accounts.context import USER
 from gaworld.apps import world_paths
+from gaworld.llm import credentials
 from gaworld.logging_setup import get_logger
 from gaworld.settings import config_docs
 from gaworld.settings.defaults import build_default_config
@@ -387,7 +389,9 @@ def _provider_view(tree: dict[str, Any]) -> list[dict[str, Any]]:
                 "api_key_envs": envs,
                 # Inline keys are the local-backend placeholders; "has a key" is
                 # all the browser needs to know about them.
-                "key_ready": bool(cfg.get("api_key")) or any(os.environ.get(n) for n in envs),
+                "key_ready": credentials.key_ready(cfg),
+                "managed_key": bool(credentials.lookup(cfg)),
+                "managed_supported": credentials.supported(cfg),
                 "needs_key": p_type in ("openai", "anthropic", "claude"),
                 "editable": name in added,
                 "is_default": name == routing.get("default"),
@@ -444,7 +448,7 @@ def _clean_provider(payload: Any) -> tuple[str, dict[str, Any]]:
     if "api_key" in body:
         raise ValueError(
             "不接受在这里填密钥：dashboard_config.json 会进版本库。"
-            "请填「密钥环境变量」的名字，并在 .env 里配好它的值。"
+            "请先保存模型配置，再在「我的 API Key」中单独保存；单人部署也支持 .env。"
         )
     if not cfg.get("model"):
         raise ValueError("必须填模型名（model）。")
@@ -480,6 +484,8 @@ def test_provider(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("请求体必须是一个对象")
     if isinstance(payload.get("config"), dict):
+        if USER.get() is not None and USER.get().get("role") != "admin":
+            raise PermissionError("Only administrators can test unsaved provider endpoints.")
         # A draft is tested before it has a name; borrow one so the shared
         # validation still runs on everything that does matter.
         name, cfg = _clean_provider(dict(payload, name=payload.get("name") or "draft"))
@@ -488,9 +494,40 @@ def test_provider(payload: dict[str, Any]) -> dict[str, Any]:
         cfg = _providers(world_paths.effective_config()).get(name)
         if not isinstance(cfg, dict):
             raise ValueError(f"没有名为 {name} 的后端。")
+    if cfg.get("type") == "ollama" or credentials.key_ready(cfg):
+        from gaworld.accounts import usage
+
+        usage.record("provider_probe")
     result = probe_provider(cfg)
     _LOG.info("llm provider probe: %s ok=%s", name, result.get("ok"))
     return _wire_safe({"name": name, **result})
+
+
+def save_credential(payload: dict[str, Any]) -> dict[str, Any]:
+    # Scope comes from the authenticated session, never from a client-supplied id.
+    if not (USER.get() or {}).get("id"):
+        raise PermissionError("Sign in with a personal account to configure an API Key.")
+    if not isinstance(payload, dict) or set(payload) - {"name", "action", "api_key"}:
+        raise ValueError("Only name, action and api_key are accepted.")
+    name = payload.get("name")
+    if not isinstance(name, str) or not _PROVIDER_NAME.fullmatch(name):
+        raise ValueError("Invalid provider name.")
+    cfg = _providers(world_paths.effective_config()).get(name)
+    if not isinstance(cfg, dict):
+        raise ValueError("Provider not found. Save the provider configuration first.")
+    action = payload.get("action", "save")
+    if action not in ("save", "delete"):
+        raise ValueError("Action must be save or delete.")
+    if action == "save" and not isinstance(payload.get("api_key"), str):
+        raise ValueError("API Key is required.")
+    credentials.save(cfg, None if action == "delete" else payload["api_key"])
+    _LOG.info("personal credential %s: %s user=%s", action, name, credentials.user_id())
+    return {
+        "saved": True,
+        "name": name,
+        "key_ready": credentials.key_ready(cfg),
+        "managed_key": bool(credentials.lookup(cfg)),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -532,6 +569,8 @@ def overview() -> dict[str, Any]:
             "choices": _choice_map(effective),
             "providers": _provider_view(effective),
             "provider_types": sorted(_PROVIDER_FIELDS),
+            "can_manage_credentials": credentials.enabled() and bool((USER.get() or {}).get("id")),
+            "can_edit_config": USER.get() is None or USER.get().get("role") == "admin",
             "env": _env_snapshot(),
             "files": _raw_files(),
         }
@@ -669,6 +708,10 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return save_provider(payload), 200
         if path == "/api/settings/llm/test":
             return test_provider(payload), 200
+        if path == "/api/settings/llm/credential":
+            return save_credential(payload), 200
+    except PermissionError as exc:
+        return {"error": str(exc)}, 403
     except (ValueError, TypeError) as exc:
         return {"error": str(exc)}, 400
     except OSError as exc:

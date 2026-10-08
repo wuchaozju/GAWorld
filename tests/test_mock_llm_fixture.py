@@ -63,6 +63,44 @@ class TestDefaultsCoverFrequentTasks(unittest.TestCase):
 
 
 class TestInstallPatch(unittest.TestCase):
+    def test_previously_captured_callable_cannot_reach_a_real_model(self):
+        from unittest.mock import patch
+
+        from gaworld.llm.providers import call_llm as captured
+
+        with install() as mock, patch("gaworld.llm.providers.requests.post") as post:
+            captured("test", task="daily_intentions", system="test")
+            self.assertEqual(mock.call_count("daily_intentions"), 1)
+            post.assert_not_called()
+
+    def test_install_covers_cognition_and_nested_contexts(self):
+        from gaworld.cognition import realism
+
+        original = realism.call_llm
+        with install() as outer:
+            self.assertIs(realism.call_llm, outer)
+            with install() as inner:
+                self.assertIs(realism.call_llm, inner)
+            self.assertIs(realism.call_llm, outer)
+        self.assertIs(realism.call_llm, original)
+
+    def test_install_restores_aliases_first_imported_inside_context(self):
+        import sys
+        import types
+
+        from gaworld.llm import providers
+
+        name = "gaworld._mock_fixture_late_import"
+        module = types.ModuleType(name)
+        original = providers.call_llm
+        try:
+            with install():
+                module.call_llm = providers.call_llm
+                sys.modules[name] = module
+            self.assertIs(module.call_llm, original)
+        finally:
+            sys.modules.pop(name, None)
+
     def test_install_swaps_llm_providers_call_llm(self):
         from gaworld.llm import providers as llm_providers
 

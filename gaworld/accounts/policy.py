@@ -38,6 +38,7 @@ ADMIN_READS = ("/api/auth/users", "/api/auth/invites", "/api/auth/audit", "/api/
 #: up (the dashboard checks; admins are exempt). Saving config, stopping a run
 #: or deleting something never is.
 QUOTA_GATED_EXACT = {
+    "/api/settings/llm/test",
     "/api/run/start",
     "/api/run/schedule",
     "/api/interview",
@@ -65,6 +66,8 @@ def quota_gated(path: str) -> bool:
 
 
 MEMBER_WRITES_EXACT = {
+    "/api/settings/llm/credential",
+    "/api/settings/llm/test",
     "/api/todos/create",
     "/api/todos/create-form",
     "/api/todos/update",

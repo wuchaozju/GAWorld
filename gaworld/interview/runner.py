@@ -27,6 +27,7 @@ carries its error and the other 79 still produce a survey — the alternative
 
 from __future__ import annotations
 
+import contextvars
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -188,7 +189,9 @@ def run_round(
         return []
     workers = max(1, min(spec.concurrency, len(spec.respondents)))
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="interview") as pool:
-        transcripts = list(pool.map(work, spec.respondents))
+        futures = [pool.submit(contextvars.copy_context().run, work, respondent)
+                   for respondent in spec.respondents]
+        transcripts = [future.result() for future in futures]
     return transcripts
 
 
