@@ -225,17 +225,28 @@ ACTIVITIES: tuple[str, ...] = (
 ROOMS: tuple[dict[str, Any], ...] = (
     {"id": "kitchen", "label": "厨房", "x": 60, "y": 60, "w": 160, "h": 110},
     {"id": "living", "label": "客厅", "x": 230, "y": 60, "w": 200, "h": 140},
-    {"id": "master", "label": "主卧", "x": 440, "y": 60, "w": 150, "h": 130},
-    {"id": "second", "label": "次卧", "x": 600, "y": 60, "w": 130, "h": 130},
-    {"id": "study", "label": "书房", "x": 60, "y": 190, "w": 130, "h": 120},
-    {"id": "bath", "label": "卫生间", "x": 200, "y": 190, "w": 110, "h": 90},
-    {"id": "balcony", "label": "阳台", "x": 320, "y": 210, "w": 110, "h": 100},
-    {"id": "hallway", "label": "走廊", "x": 440, "y": 200, "w": 290, "h": 110},
+    # Five single-occupancy bedrooms stacked on the right side. The
+    # names follow the original "master / second" for backwards
+    # compatibility, but ``third`` / ``fourth`` / ``fifth`` were added
+    # so a 3–6 person session still gives every resident a private room.
+    # The front-end draws the matching sprite for each label.
+    {"id": "master",  "label": "主卧",   "x": 440, "y": 60,  "w": 90,  "h": 70},
+    {"id": "second",  "label": "次卧①", "x": 540, "y": 60,  "w": 90,  "h": 70},
+    {"id": "third",   "label": "次卧②", "x": 640, "y": 60,  "w": 90,  "h": 70},
+    {"id": "fourth",  "label": "次卧③", "x": 440, "y": 140, "w": 90,  "h": 70},
+    {"id": "fifth",   "label": "次卧④", "x": 540, "y": 140, "w": 90,  "h": 70},
+    {"id": "study",   "label": "书房",   "x": 60,  "y": 190, "w": 130, "h": 120},
+    {"id": "bath",    "label": "卫生间", "x": 200, "y": 190, "w": 110, "h": 90},
+    {"id": "balcony", "label": "阳台",   "x": 320, "y": 210, "w": 110, "h": 100},
+    {"id": "hallway", "label": "走廊",   "x": 440, "y": 220, "w": 290, "h": 90},
 )
 
-#: Rooms a resident can be assigned to sleep in. The master bedroom is
-#: reserved for the eldest or first picked; the rest get one of the seconds.
-SLEEP_ROOMS: tuple[str, ...] = ("master", "second")
+#: Rooms a resident can be assigned to sleep in. The first picked gets
+#: the master; the rest get the next free bedroom in the list. With 5
+#: bedrooms the simulation supports up to 5 residents each with a
+#: private room (and one extra gets shared — which is still less weird
+#: than stacking three people in the same ``second`` cell).
+SLEEP_ROOMS: tuple[str, ...] = ("master", "second", "third", "fourth", "fifth")
 
 #: Activity → room mapping. The simulation picks an activity first, then
 #: routes it to the matching room. Activities not in this dict fall back to
@@ -249,11 +260,34 @@ ACTIVITY_ROOM: dict[str, str] = {
     "刷短视频": "living", "打电话": "living", "看电视": "living", "追剧": "living",
     "健身": "living", "跟宠物玩": "living",
     "打电话给家人": "living",
-    "午睡": "master", "睡前阅读": "master", "发呆": "master", "看窗外": "master",
+    # "Personal" activities don't have a single room — residents fall
+    # back to their own bedroom (see ``_activity_to_room``). The bare
+    # ``master`` here is kept for backwards-compatibility (the model
+    # still emits these activity names); the resolver below picks the
+    # resident's actual bedroom when the activity is private.
     "洗澡": "bath", "洗衣服": "bath",
     "晾衣服": "balcony", "下楼散步": "balcony", "泡茶": "kitchen",
     "打扫房间": "living",
 }
+
+
+#: Personal activities — the destination is *this* resident's own bedroom,
+#: not a shared one. Listed here so the activity→room resolver can pick
+#: the right room per resident instead of a single hard-coded one.
+_PERSONAL_ACTIVITIES: frozenset[str] = frozenset({
+    "午睡", "睡前阅读", "发呆", "看窗外", "睡觉",
+})
+
+
+def _activity_to_room(activity: str, resident: Resident) -> str:
+    """Map an activity to a room id, honouring a resident's own bedroom
+    for personal activities. The activity is the model-written verb; the
+    resident carries the room it should land in (mostly relevant for
+    private activities, which the resolver can place in the
+    resident's bedroom rather than a shared one)."""
+    if activity in _PERSONAL_ACTIVITIES:
+        return resident.bedroom or ACTIVITY_ROOM.get(activity, "living")
+    return ACTIVITY_ROOM.get(activity, "living")
 
 #: Activities that hint "I am busy / in my own world" — used to dampen
 #: the probability of an interaction when two residents meet in a room.
@@ -274,7 +308,7 @@ MOOD_LABELS: tuple[tuple[float, str], ...] = (
 
 #: A resident's mood drifts toward 0 over time even when nothing happens,
 #: so a great first hour doesn't stay great forever.
-MOOD_DECAY_PER_TICK = 0.05
+MOOD_DECAY_PER_TICK = 0.02
 
 #: Relationship score: -100 (actively dislike) .. +100 (best friends). One
 #: interaction nudges it by a small amount; the model is asked for a delta.
@@ -389,7 +423,13 @@ class Event:
             "thought": self.thought,
             "turns": [{"who": t.get("who", ""), "text": t.get("text", "")} for t in (self.turns or [])],
             "mood_delta": round(self.mood_delta, 2),
-            "relationship_delta": {str(k): round(float(v), 2) for k, v in self.relationship_delta.items()},
+            # 3-dim relationship deltas on the event; old fixtures that
+            # used a scalar value survive via the fallback branch.
+            "relationship_delta": {
+                str(k): (round(float(v), 2) if not isinstance(v, dict)
+                         else {dk: round(float(dv), 2) for dk, dv in v.items() if dk in REL_DIMENSIONS})
+                for k, v in self.relationship_delta.items()
+            },
             "note": self.note,
         }
 
@@ -409,8 +449,12 @@ class RoommateSession:
     #: not drift forward each time the front-end advances the simulation.
     opening_clock_minutes: int = 8 * 60
     events: list[Event] = field(default_factory=list)
-    #: relationship[other_id] = -100..+100; stored bidirectionally.
-    relationships: dict[int, dict[int, float]] = field(default_factory=dict)
+    #: ``relationships[a_id][b_id]`` is a dict with three dimension
+    #: scores (``affinity``, ``trust``, ``closeness``), a derived
+    #: ``stage`` label, and a small ``history`` list of recent events.
+    #: The two directions of every pair point at the same record so
+    #: ``rel[a][b] is rel[b][a]``.
+    relationships: dict[int, dict[int, dict[str, Any]]] = field(default_factory=dict)
     #: ``True`` while the simulation may still advance. The front-end toggles
     #: this for its play/pause control; the server also flips it off when the
     #: virtual clock passes ``max_hours``.
@@ -460,10 +504,25 @@ class RoommateSession:
             "residents": [r.to_dict() for r in self.residents],
             "events": [e.to_dict() for e in self.events[-MAX_EVENTS:]],
             "events_truncated": len(self.events) > MAX_EVENTS,
+            # Each entry is the full record (3 dims + stage + history)
+            # so the front-end can render a relationship matrix, a
+            # stage badge, and a recent-events tooltip without further
+            # server round-trips. The dict is symmetric: rel[a][b] and
+            # rel[b][a] are the same record.
             "relationships": {
-                str(a): {str(b): round(v, 2) for b, v in pairs.items()}
+                str(a): {
+                    str(b): {
+                        "affinity": round(float(v.get("affinity", 0.0)), 2),
+                        "trust": round(float(v.get("trust", 0.0)), 2),
+                        "closeness": round(float(v.get("closeness", 0.0)), 2),
+                        "stage": v.get("stage", "陌生人"),
+                        "history": (v.get("history") or [])[:6],
+                    }
+                    for b, v in pairs.items()
+                }
                 for a, pairs in self.relationships.items()
             },
+            "day_phase": _day_phase((self.virtual_clock_minutes // 60) % 24),
             "rooms": list(ROOMS),
         }
 
@@ -515,12 +574,17 @@ def _load_residents(city: str, agent_ids: list[int]) -> list[Resident]:
 
 
 def _assign_bedrooms(residents: list[Resident]) -> None:
-    """First resident gets the master; the others get the second bedroom."""
+    """Hand out bedrooms in :data:`SLEEP_ROOMS` order. Each resident
+    gets a unique room until the list runs out; any extras share the
+    last (smallest) room. The apartment physically has 5 bedrooms —
+    a 6-person session means one pair shares."""
     if not residents:
         return
-    residents[0].bedroom = SLEEP_ROOMS[0]
-    for r in residents[1:]:
-        r.bedroom = SLEEP_ROOMS[1] if len(SLEEP_ROOMS) > 1 else SLEEP_ROOMS[0]
+    for i, r in enumerate(residents):
+        if i < len(SLEEP_ROOMS):
+            r.bedroom = SLEEP_ROOMS[i]
+        else:
+            r.bedroom = SLEEP_ROOMS[-1]
 
 
 # ---------------------------------------------------------------------------
@@ -545,19 +609,73 @@ def _format_clock(total_minutes: int) -> str:
 
 
 def _pair_score(session: RoommateSession, a_id: int, b_id: int) -> float:
-    return session.relationships.get(int(a_id), {}).get(int(b_id), 0.0)
+    """Backwards-compat pair score: returns the ``affinity`` dimension of
+    the (a, b) relationship. Used to nudge interaction probability — the
+    same role the legacy scalar score served."""
+    rel = session.relationships.get(int(a_id), {}).get(int(b_id))
+    if not rel:
+        return 0.0
+    return float(rel.get("affinity", 0.0))
 
 
-def _bump_relationship(session: RoommateSession, a_id: int, b_id: int, delta: float) -> None:
+def _bump_relationship(
+    session: RoommateSession,
+    a_id: int,
+    b_id: int,
+    deltas: dict[str, float],
+    *,
+    note: str = "",
+    tick: int = 0,
+) -> None:
+    """Apply a per-interaction update to the (a, b) relationship.
+
+    The relationship is stored as a 4-key record (affinity, trust,
+    closeness, stage, history). This function is the single writer —
+    interaction events, time-of-day nudges, and player commands all
+    route through it so the stage label stays in sync with the
+    underlying scores.
+    """
     a_id = int(a_id)
     b_id = int(b_id)
     if a_id == b_id:
         return
-    delta = max(-15.0, min(15.0, float(delta)))
     pairs = session.relationships.setdefault(a_id, {})
-    pairs[b_id] = max(-100.0, min(100.0, pairs.get(b_id, 0.0) + delta))
     mirror = session.relationships.setdefault(b_id, {})
-    mirror[a_id] = pairs[b_id]
+    if not isinstance(pairs.get(b_id), dict):
+        pairs[b_id] = _empty_rel_record()
+    if not isinstance(mirror.get(a_id), dict):
+        mirror[a_id] = _empty_rel_record()
+    record = pairs[b_id]
+    # Apply each dimension's delta, clamped to its absolute range.
+    for dim in REL_DIMENSIONS:
+        lo_abs, hi_abs = REL_DIMENSION_ABS[dim]
+        try:
+            d = float(deltas.get(dim) or 0)
+        except (TypeError, ValueError):
+            d = 0.0
+        record[dim] = max(lo_abs, min(hi_abs, float(record.get(dim, 0.0)) + d))
+    # Re-derive the stage from the new scores.
+    new_stage = _rel_stage_from_scores(
+        record["affinity"], record["trust"], record["closeness"]
+    )
+    stage_changed = new_stage != record.get("stage")
+    record["stage"] = new_stage
+    # Push a history entry on stage change OR when the note is non-empty
+    # (so the relationship detail panel has something to show even
+    # without an explicit stage transition).
+    if note or stage_changed:
+        record["history"] = (record.get("history") or [])[:5]
+        record["history"].insert(0, {
+            "tick": int(tick),
+            "stage": new_stage,
+            "affinity": round(record["affinity"], 2),
+            "trust": round(record["trust"], 2),
+            "closeness": round(record["closeness"], 2),
+            "note": note,
+        })
+    # Mirror: both directions point at the same record so the UI sees
+    # the same number from either lookup. Symmetric, identical.
+    mirror[a_id] = record
 
 
 def _mood_decay(session: RoommateSession) -> None:
@@ -571,11 +689,31 @@ def _mood_decay(session: RoommateSession) -> None:
 
 
 def _relationship_decay(session: RoommateSession) -> None:
+    """Pull each of the three relationship dimensions gently toward 0
+    every tick — the same role the legacy scalar decay used to play.
+    Old fixtures that stored a plain float instead of a record are
+    silently upgraded to the new shape on first decay."""
     decay = RELATIONSHIP_DECAY_PER_TICK
-    for a_id, pairs in list(session.relationships.items()):
+    for _a_id, pairs in list(session.relationships.items()):
         for b_id, value in list(pairs.items()):
-            new_value = 0.0 if abs(value) <= decay else (value - decay if value > 0 else value + decay)
-            pairs[b_id] = new_value
+            if not isinstance(value, dict):
+                # Legacy scalar — promote to the new shape and stop; a
+                # tiny decay applied to a scalar would corrupt the dict
+                # shape the rest of the code now expects.
+                pairs[b_id] = _empty_rel_record()
+                continue
+            for dim in REL_DIMENSIONS:
+                v = float(value.get(dim, 0.0))
+                if abs(v) <= decay:
+                    value[dim] = 0.0
+                elif v > 0:
+                    value[dim] = v - decay
+                else:
+                    value[dim] = v + decay
+            # Re-derive the stage so the label tracks the scores.
+            value["stage"] = _rel_stage_from_scores(
+                value["affinity"], value["trust"], value["closeness"]
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -616,7 +754,60 @@ def _activity_for_hour(hour: int, rng: random.Random) -> str:
 
 
 def _room_for_activity(activity: str) -> str:
+    """Legacy single-arg resolver. The simulation now goes through
+    :func:`_activity_to_room` so personal activities can land in the
+    resident's own bedroom rather than a shared one."""
     return ACTIVITY_ROOM.get(activity, "living")
+
+
+#: Per-tick mood nudges for the activity a resident settles on. Positive
+#: values lift mood (a warm meal, a relaxing read); negative values
+#: drag it down (loneliness, aimless scrolling). The numbers are small
+#: enough that one tick is not jarring but cumulative over an hour or
+#: two the bar moves in a visible direction.
+_ACTIVITY_MOOD_NUDGE: dict[str, float] = {
+    "做早餐": +0.04, "吃早餐": +0.08, "做午餐": +0.04, "吃午餐": +0.08,
+    "做晚餐": +0.06, "吃晚餐": +0.10, "泡茶": +0.05,
+    "看书": +0.03, "写日记": +0.05, "画一会儿画": +0.06, "练琴": +0.04,
+    "看电视": +0.02, "追剧": +0.01, "刷短视频": -0.02,
+    "健身": +0.05, "午睡": +0.04, "睡前阅读": +0.04, "睡觉": +0.02,
+    "洗澡": +0.06, "看窗外": +0.01, "打电话给家人": +0.10,
+    "打电话": +0.02, "跟宠物玩": +0.08, "处理工作邮件": -0.03,
+    "发呆": -0.04, "下楼散步": +0.03, "晾衣服": +0.01, "洗衣服": -0.01,
+    "打扫房间": +0.02,
+}
+
+
+def _mood_nudge_for_activity(
+    resident: Resident,
+    activity: str,
+    is_night: bool,
+    session: RoommateSession,
+) -> None:
+    """Move ``resident.mood`` by a small amount based on the activity
+    they just settled into. The nudge is clamped to ``[-1, +1]`` so
+    heavy activity streaks don't blow the bar past the scale."""
+    delta = _ACTIVITY_MOOD_NUDGE.get(activity, 0.0)
+    # A co-present peer makes even an otherwise lonely activity feel
+    # less bleak. A living-room dweller is rarely alone; a bedroom
+    # book reader sees nobody until someone else walks in. This rewards
+    # co-presence with a tiny positive bias.
+    # Going to bed at the right time is mildly pleasant; staying up
+    # at 03:00 is a small drag.
+    if (
+        is_night
+        and activity in {"睡前阅读", "睡觉", "午睡"}
+        and (_current_hour(session) >= NIGHT_HOUR - 1 or _current_hour(session) < DAWN_HOUR)
+    ):
+        delta += 0.02
+    co_present = sum(
+        1 for r in session.residents
+        if r.agent_id != resident.agent_id and r.room == resident.room
+    )
+    if co_present and activity not in {"做早餐", "做午餐", "做晚餐", "做饭"}:
+        # Doing something with company is mildly nicer than alone.
+        delta += min(0.03, 0.015 * co_present)
+    resident.mood = max(-1.0, min(1.0, resident.mood + delta))
 
 
 def _step_resident(resident: Resident, session: RoommateSession, rng: random.Random) -> Event | None:
@@ -627,17 +818,28 @@ def _step_resident(resident: Resident, session: RoommateSession, rng: random.Ran
     resident gets pulled back to their own bedroom regardless of what
     they were doing. This keeps the apartment from feeling restless
     when the player's virtual clock rolls past bedtime, and gives the
-    scene an obvious day/night rhythm."""
+    scene an obvious day/night rhythm.
+
+    Time-of-day mood nudge: each activity that resolves to a
+    satisfying (or lonely) state nudges ``resident.mood`` by a small
+    amount. The nudge is the primary driver of the mood bar; the
+    conversation deltas are layered on top. This makes the bar move
+    even when two residents never crossed paths in a tick.
+    """
     old_room = resident.room
     hour = _current_hour(session)
     is_night = hour >= NIGHT_HOUR or hour < DAWN_HOUR
     activity = _activity_for_hour(hour, rng)
-    room = _room_for_activity(activity)
+    room = _activity_to_room(activity, resident)
 
     if is_night and resident.bedroom:
         # Bedrooms are private — once they're home, leave them there.
         activity = "睡前阅读" if hour >= NIGHT_HOUR - 1 else "睡觉"
         room = resident.bedroom
+
+    # Apply the time-of-day mood nudge for the resolved activity. This
+    # is the base driver of mood movement; interactions layer on top.
+    _mood_nudge_for_activity(resident, activity, is_night, session)
 
     resident.activity = activity
     if room != old_room:
@@ -663,9 +865,11 @@ def _co_present_pairs(session: RoommateSession) -> list[tuple[Resident, Resident
     for room, group in by_room.items():
         if len(group) < 2:
             continue
-        if room in {"master", "second"}:
-            # Bedrooms are private; only count when the two residents *happen*
-            # to be there together (e.g. one walks in).
+        if room in set(SLEEP_ROOMS):
+            # All bedrooms are private — only count co-presence when two
+            # residents happen to be in the same one (e.g. one walks in
+            # for a chat).  This used to whitelist only ``master`` and
+            # ``second``; now any of the 5 bedroom ids is a private room.
             continue
         for i, a in enumerate(group):
             for b in group[i + 1:]:
@@ -692,19 +896,56 @@ def _interaction_probability(a: Resident, b: Resident, room: str) -> float:
     return min(0.95, max(0.05, prob))
 
 
-def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str) -> str:
+#: Day phases — coarse labels the LLM can lean on so it does not write
+#: "good morning" at 22:00. The mapping is by virtual hour.
+_DAY_PHASES: tuple[tuple[tuple[int, int], str], ...] = (
+    ((5, 8),   "清晨"),   # 5-8
+    ((8, 11),  "上午"),   # 8-11
+    ((11, 14), "中午"),   # 11-14
+    ((14, 18), "下午"),   # 14-18
+    ((18, 21), "傍晚"),   # 18-21
+    ((21, 24), "夜晚"),   # 21-24
+    ((0, 5),   "深夜"),   # 0-5
+)
+
+
+def _day_phase(hour: int) -> str:
+    for (lo, hi), name in _DAY_PHASES:
+        if lo <= hour < hi:
+            return name
+    return "白天"
+
+
+def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: RoommateSession) -> str:
     persona_a = {"name": a.name, "age": a.age, "gender": a.gender, "job": a.job, "profile_md": a.profile_md}
     persona_b = {"name": b.name, "age": b.age, "gender": b.gender, "job": b.job, "profile_md": b.profile_md}
+    clock_str = _format_clock(session.virtual_clock_minutes) if session else "08:00"
+    hour = _current_hour(session)
+    phase = _day_phase(hour)
+    rel = session.relationships.get(a.agent_id, {}).get(b.agent_id) if session else None
+    rel_stage = (rel or {}).get("stage", "初识")
+    rel_summary = (
+        f"当前关系: {rel_stage}"
+        + (f", 好感 {rel.get('affinity', 0):.0f}, 信任 {rel.get('trust', 0):.0f}, 亲密 {rel.get('closeness', 0):.0f}"
+           if rel else "")
+        if rel else "当前关系: 还没说过几次话"
+    )
     return (
         f"{persona_block(persona_a)}\n\n"
         f"{persona_block(persona_b)}\n\n"
-        f"现在是虚拟时间 {_format_clock(0)}。{a.name}和{b.name}在公寓的「{_room_label(room)}」碰上了。"
+        f"现在是虚拟时间 **{clock_str} ({phase})**。{a.name}和{b.name}在公寓的「{_room_label(room)}」碰上了。"
         f"两人刚才各自在：{a.activity} / {b.activity}。\n"
-        f"公寓的氛围：{vibe or '几个合得来的朋友住在同一间公寓里。'}\n\n"
-        "请扮演**这场相遇的导演**:以这两人的身份写一段真实、自然的日常对话(可以寒暄、可以聊今天的新闻/工作/感情、可以拌嘴、可以沉默),然后告诉他们各自心里在想什么。\n\n"
+        f"公寓的氛围：{vibe or '几个合得来的朋友住在同一间公寓里。'}\n"
+        f"{rel_summary}。\n\n"
+        "请扮演**这场相遇的导演**:以这两人的身份写一段真实、自然、**符合时段**的日常对话"
+        "(可以寒暄、可以聊今天的新闻/工作/感情、可以拌嘴、可以沉默),"
+        "然后告诉他们各自心里在想什么。\n\n"
+        "**时间一致性硬要求**:早 6 点前不要谈「还没休息」「熬夜」;"
+        "中午别提「早餐 / 晚饭」;晚上 9 点后别说「明天早起 / 早安 / 早上好」。"
+        "对话内容必须和时段自洽。\n\n"
         "请严格用以下 JSON 输出(不要解释、不要 Markdown):\n"
         "{\n"
-        '  "room": "房间id(kitchen/living/master/second/study/bath/balcony/hallway)",\n'
+        '  "room": "房间id",\n'
         '  "lines": [\n'
         '    {"who": "a_name", "text": "一句中文对话"},'
         '    {"who": "b_name", "text": "一句中文对话"},\n'
@@ -712,14 +953,19 @@ def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str) -> str:
         "  ],\n"
         '  "thought_a": "a 这时的内心独白,一句话,中文",\n'
         '  "thought_b": "b 这时的内心独白,一句话,中文",\n'
-        '  "mood_delta_a": -1 到 1 的小数(这场相遇让 a 的心情变了多少),\n'
+        '  "mood_delta_a": -1 到 1 的小数,\n'
         '  "mood_delta_b": -1 到 1 的小数,\n'
-        '  "rel_delta": -15 到 15 的小数(两人关系的变化,正值更亲近,负值更疏远)\n'
+        '  "rel_deltas": {\n'
+        '    "affinity": -15 到 15,   // 好感:聊得开心/臭味相投就 +,吵架/互相烦就 -\n'
+        '    "trust":    -10 到 10,   // 信任:愿不愿意把心里话/后背交给他\n'
+        '    "closeness":-10 到 10    // 亲密:肢体/情感距离的远近\n'
+        "  }\n"
         "}\n\n"
         "要求:\n"
         "- 对话生活化,符合两人各自的职业、年龄、口吻\n"
         "- 内心独白是「他/她没说出口的话」,反映真实想法而不是客套\n"
-        "- 心情和关系的小数请如实反映事件强度:一次普通寒暄 ±0.05,一场认真聊天 ±0.2,一次冲突 ±0.4"
+        "- 心情和关系的小数请如实反映事件强度:一次普通寒暄 心情 ±0.05, 认真聊天 ±0.2, 冲突 ±0.4\n"
+        "- rel_deltas 三项独立:一次深夜谈心 affinity +3 trust +8 closeness +5;一次冷嘲热讽 affinity -5 trust -3 closeness -2"
     )
 
 
@@ -730,12 +976,81 @@ def _room_label(room_id: str) -> str:
     return room_id
 
 
+#: Three relationship dimensions the LLM is asked to update. Each is a
+#: continuous score in roughly ``-50..+50``; the absolute range is loose,
+#: only the *delta* per interaction is what matters.
+REL_DIMENSIONS: tuple[str, ...] = ("affinity", "trust", "closeness")
+REL_DIMENSION_RANGES: dict[str, tuple[float, float]] = {
+    "affinity":  (-15.0, 15.0),
+    "trust":     (-10.0, 10.0),
+    "closeness": (-10.0, 10.0),
+}
+#: Caps on the absolute scores (the deltas are bounded by the
+#: per-dimension range; the totals here keep the bar from drifting
+#: past 100 in either direction).
+REL_DIMENSION_ABS: dict[str, tuple[float, float]] = {
+    "affinity":  (-100.0, 100.0),
+    "trust":     (-100.0, 100.0),
+    "closeness": (-100.0, 100.0),
+}
+#: Discrete stages the relationship can sit in. The stage is derived from
+#: the three dimension scores by ``_rel_stage_from_scores`` below. New
+#: stages are added as the model and the players both expect them.
+REL_STAGES: tuple[str, ...] = (
+    "陌生人", "初识", "熟客", "朋友", "好友", "亲密", "恋人", "敌对",
+)
+
+
+def _rel_stage_from_scores(affinity: float, trust: float, closeness: float) -> str:
+    """Map the three dimension scores to a discrete stage label.
+
+    The state machine is intentionally heuristic — exact thresholds are
+    tuned for a 6-person session running a 24h day, where neighbours
+    usually hover around "朋友" once they have talked a few times.
+    """
+    if affinity <= -30 and trust <= -10 and closeness <= -10:
+        return "敌对"
+    if affinity >= 60 and closeness >= 50 and trust >= 30:
+        return "恋人"
+    if affinity >= 40 and closeness >= 30:
+        return "亲密"
+    if affinity >= 25 and trust >= 15:
+        return "好友"
+    if affinity >= 10 and trust >= 5:
+        return "朋友"
+    if affinity >= 0 and trust >= 0 and closeness >= 0:
+        return "熟客"
+    if affinity > -20:
+        return "初识"
+    return "陌生人"
+
+
+def _empty_rel_record() -> dict[str, Any]:
+    """Initial shape for one (a, b) relationship. Three zero scores, the
+    '陌生人' stage, no history. Both directions share a single record —
+    ``relationships`` is symmetric: ``rel[a][b] == rel[b][a]``."""
+    return {
+        "affinity": 0.0,
+        "trust": 0.0,
+        "closeness": 0.0,
+        "stage": "陌生人",
+        # Last 6 notable events (most recent first). Used to populate the
+        # relationship-detail panel — see ``rel_history`` in the front-end.
+        "history": [],
+    }
+
+
 def _parse_interaction(raw: str, default_room: str) -> dict[str, Any]:
     """Pull the structured fields out of the model's reply.
 
     The model is asked for a JSON object; ``first_json_object`` already walks
     the braces. The post-processing here only enforces shape (clamp numbers,
     drop empty dialogue lines) so the dashboard never crashes on a stray key.
+
+    Relationship deltas live under ``rel_deltas`` (3-dim) and fall back to
+    the legacy scalar ``rel_delta`` if the model returns that — every
+    field on that scalar is treated as an "affinity" delta so older
+    models do not silently lose interaction deltas.
     """
     parsed = first_json_object(raw) if isinstance(raw, str) else {}
     if not parsed:
@@ -746,7 +1061,7 @@ def _parse_interaction(raw: str, default_room: str) -> dict[str, Any]:
             "thought_b": "",
             "mood_delta_a": 0.0,
             "mood_delta_b": 0.0,
-            "rel_delta": 0.0,
+            "rel_deltas": {"affinity": 0.0, "trust": 0.0, "closeness": 0.0},
         }
     lines = []
     for item in parsed.get("lines") or []:
@@ -765,10 +1080,29 @@ def _parse_interaction(raw: str, default_room: str) -> dict[str, Any]:
         mood_b = max(-1.0, min(1.0, float(parsed.get("mood_delta_b") or 0)))
     except (TypeError, ValueError):
         mood_b = 0.0
-    try:
-        rel = max(-15.0, min(15.0, float(parsed.get("rel_delta") or 0)))
-    except (TypeError, ValueError):
-        rel = 0.0
+    # 3-dim rel deltas. Accept the new shape and fall back to a single
+    # "affinity" delta from the legacy ``rel_delta`` field.
+    rel_deltas: dict[str, float] = {}
+    rel_block = parsed.get("rel_deltas")
+    if isinstance(rel_block, dict):
+        for dim in REL_DIMENSIONS:
+            lo, hi = REL_DIMENSION_RANGES[dim]
+            try:
+                v = float(rel_block.get(dim) or 0)
+            except (TypeError, ValueError):
+                v = 0.0
+            rel_deltas[dim] = max(lo, min(hi, v))
+    else:
+        try:
+            legacy = float(parsed.get("rel_delta") or 0)
+        except (TypeError, ValueError):
+            legacy = 0.0
+        legacy = max(-15.0, min(15.0, legacy))
+        rel_deltas = {"affinity": legacy, "trust": 0.0, "closeness": 0.0}
+    # Backfill any missing dims (model only returned one).
+    for dim in REL_DIMENSIONS:
+        if dim not in rel_deltas:
+            rel_deltas[dim] = 0.0
     return {
         "room": str(parsed.get("room") or default_room),
         "lines": lines,
@@ -776,7 +1110,10 @@ def _parse_interaction(raw: str, default_room: str) -> dict[str, Any]:
         "thought_b": str(parsed.get("thought_b") or "").strip(),
         "mood_delta_a": mood_a,
         "mood_delta_b": mood_b,
-        "rel_delta": rel,
+        "rel_deltas": rel_deltas,
+        # Legacy field, kept for backwards-compat with older test fixtures
+        # and the existing ``Event.relationship_delta`` shape.
+        "rel_delta": rel_deltas.get("affinity", 0.0),
     }
 
 
@@ -938,7 +1275,7 @@ def direct_resident(
     # one stashed on the session at start time (tests inject there).
     if reaction_fn is None:
         reaction_fn = getattr(session, "_reaction_fn", None)
-    target_room = (room or _room_for_activity(activity) or "").strip() or resident.room
+    target_room = (room or _activity_to_room(activity, resident) or "").strip() or resident.room
     if not any(r["id"] == target_room for r in ROOMS):
         raise ValueError(f"房间 '{target_room}' 不存在")
     old_room = resident.room
@@ -1065,7 +1402,7 @@ def _advance_one_tick(
         # Capture locals now — the worker cannot reach the live session
         # object safely without the session lock.
         fn = reaction_fn or _default_reaction_llm
-        prompt = _interact_prompt(a, b, room, session.vibe)
+        prompt = _interact_prompt(a, b, room, session.vibe, session)
         a_id, b_id = a.agent_id, b.agent_id
         tick_idx = session.tick_index
         vibe = session.vibe
@@ -1117,7 +1454,12 @@ def _run_interaction_worker(
         return
     a.mood = max(-1.0, min(1.0, a.mood + parsed["mood_delta_a"]))
     b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
-    _bump_relationship(session, a_id, b_id, parsed["rel_delta"])
+    rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
+    _bump_relationship(
+        session, a_id, b_id, rel_deltas,
+        note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
+        tick=tick_idx,
+    )
     lines = parsed.get("lines") or []
     event = Event(
         seq=0,
@@ -1130,7 +1472,11 @@ def _run_interaction_worker(
         thought=f"{a.name}:{parsed['thought_a']} | {b.name}:{parsed['thought_b']}",
         turns=[{"who": t.get("who", ""), "text": t.get("text", "")} for t in lines],
         mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
-        relationship_delta={str(b_id): parsed["rel_delta"], str(a_id): parsed["rel_delta"]},
+        # 3-dim relationship deltas on the event; old scalar field
+        # preserved as ``affinity`` for the legacy UI strip.
+        relationship_delta={
+            str(b_id): rel_deltas, str(a_id): rel_deltas,
+        },
     )
     _append_event(session, event)
 
@@ -1147,7 +1493,7 @@ def _trigger_interaction(
     and want the event appended before the assertion runs."""
     fn = reaction_fn or _default_reaction_llm
     try:
-        raw = fn(_interact_prompt(a, b, room, session.vibe))
+        raw = fn(_interact_prompt(a, b, room, session.vibe, session))
     except Exception as exc:  # pragma: no cover - provider failure
         _LOG.warning("roommate reaction failed for %s/%s: %s", a.agent_id, b.agent_id, exc)
         return
@@ -1155,7 +1501,12 @@ def _trigger_interaction(
 
     a.mood = max(-1.0, min(1.0, a.mood + parsed["mood_delta_a"]))
     b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
-    _bump_relationship(session, a.agent_id, b.agent_id, parsed["rel_delta"])
+    rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
+    _bump_relationship(
+        session, a.agent_id, b.agent_id, rel_deltas,
+        note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
+        tick=session.tick_index,
+    )
 
     lines = parsed.get("lines") or []
     event = Event(
@@ -1169,7 +1520,9 @@ def _trigger_interaction(
         thought=f"{a.name}:{parsed['thought_a']} | {b.name}:{parsed['thought_b']}",
         turns=[{"who": t.get("who", ""), "text": t.get("text", "")} for t in lines],
         mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
-        relationship_delta={str(b.agent_id): parsed["rel_delta"], str(a.agent_id): parsed["rel_delta"]},
+        relationship_delta={
+            str(b.agent_id): rel_deltas, str(a.agent_id): rel_deltas,
+        },
     )
     _append_event(session, event)
 

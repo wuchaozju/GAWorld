@@ -61,6 +61,11 @@ const store = {
   personaSlug: null, // set when the draft came out of 真人蒸馏 (see save())
   moltbook: null, // { enabled, status, name, claim_url, actions, ... } from /api/moltbook/agent (step 7)
   moltbookLoading: false, // guards the lazy fetch against retry loops
+  /* Autobiography cache. The panel hydrates from disk on every render so the
+   * user sees the last essay even after closing and reopening the panel; the
+   * cache survives step switches because renderStep() rewrites the DOM. */
+  autobioCache: null, // { markdown, length, length_cjk, from_cache, path } from /api/agents/<id>/autobiography
+  autobioLoading: false, // guards the lazy fetch against retry loops
   /* Cross-city browsing. `cities` is the catalogue, `runningCity` the slug the
    * simulator is pointed at, `cityRef` the one being looked at. They differ
    * only in browse mode, which is read-only — see browseBody() for why. */
@@ -215,6 +220,8 @@ async function selectAgent(id) {
   store.familyPreview = null;
   store.familyDraft = null;
   store.moltbook = null; // fetched lazily by moltbookCard() when step 7 renders
+  store.autobioCache = null;
+  store.autobioLoading = false;
   $("#saveHint").textContent = __("sd.loaded");
   renderSubject();
   renderStep();
@@ -227,6 +234,7 @@ async function selectAgent(id) {
   store.big5Draft = null;
   store.big5Dirty = false;
   loadBig5().then(() => { if (store.step === 2) renderStep(); });
+  loadAutobiography().then(() => { if (store.step === 7) renderStep(); });
 }
 
 /* ---------- cross-city browsing ----------
@@ -564,6 +572,24 @@ async function loadBig5() {
     store.big5Draft = null;
   } finally {
     store.big5Loading = false;
+  }
+}
+
+/* Hydrate the saved autobiography from disk so the panel keeps showing the
+ * last essay across step switches. The GET endpoint returns 404 when there
+ * is nothing on disk yet — that just means we have never run the job, which
+ * is the natural "show the empty Start button" state. */
+async function loadAutobiography() {
+  if (store.creating || store.currentId == null || store.autobioLoading) return;
+  store.autobioLoading = true;
+  try {
+    store.autobioCache = await api(`/api/agents/${store.currentId}/autobiography`);
+  } catch (err) {
+    /* 404: nothing saved yet — clear the cache so the button reads as
+     * "Start", not "Regenerate", until the user actually runs a job. */
+    store.autobioCache = null;
+  } finally {
+    store.autobioLoading = false;
   }
 }
 
@@ -1778,6 +1804,24 @@ function stepReview() {
     .map(([k, v]) => `<div><span class="k">${esc(__(k))}</span><span class="v">${esc(v)}</span></div>`).join("");
   const stRows = STATE_VARS.map((v) => `<div><span class="k">${esc(varLabel(v))}</span><span class="v">${st[v.key].toFixed(2)}</span></div>`).join("");
   const finCard = financeCard();
+  /* The autobiography card has three visual states: nothing generated yet
+   * (Start), a saved essay on disk (cached body + Regenerate), and a running
+   * job (the live progress line — handled by runAutobiography() itself). The
+   * server is the source of truth for "have we ever written one?" so a hard
+   * refresh or a new tab shows the same content. */
+  const hasCache = !!store.autobioCache && !!store.autobioCache.markdown;
+  const btnLabel = hasCache ? __("sd.autobio_regen") : __("sd.autobio_start");
+  const btnClass = store.creating ? "" : "primary";
+  const cachedMeta = hasCache
+    ? __f("sd.autobio_loaded", { cjk: store.autobioCache.length_cjk || 0 })
+    : "";
+  /* Anchor to the server endpoint, not a Blob URL — Blob URLs die the moment
+   * the panel re-renders, so they are the typical cause of "download
+   * failed". The server streams the saved file with the right
+   * Content-Disposition header so the browser saves it directly. */
+  const dlHref = store.currentId == null
+    ? ""
+    : `/api/agents/${store.currentId}/autobiography/download`;
   return `
     <h2 class="section-title">${esc(__("sd.review_title"))}</h2>
     <p class="section-note">${esc(store.creating ? __("sd.review_create_note") : __("sd.review_save_note"))}</p>
@@ -1798,13 +1842,13 @@ function stepReview() {
     <div class="card">
       <h3>${esc(__("sd.autobio_title"))}</h3>
       <p class="section-note">${esc(__("sd.autobio_note"))}</p>
-      <button id="autobioBtn" class="button ${store.creating ? "" : "primary"}" ${store.creating ? "disabled" : ""}>${esc(__("sd.autobio_start"))}</button>
-      <div class="autobio-out" id="autobioOut" hidden>
-        <div class="autobio-meta" id="autobioMeta"></div>
+      <button id="autobioBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
+      <div class="autobio-out" id="autobioOut" ${hasCache ? "" : "hidden"}>
+        <div class="autobio-meta" id="autobioMeta">${esc(cachedMeta)}</div>
         <div class="autobio-actions">
-          <a id="autobioDownload" class="button mini" hidden download>${esc(__("sd.autobio_download"))}</a>
+          <a id="autobioDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-autobiography.md`)}">${esc(__("sd.autobio_download"))}</a>
         </div>
-        <div class="profile-md md-body" id="autobioBody"></div>
+        <div class="profile-md md-body" id="autobioBody">${hasCache ? renderMarkdown(store.autobioCache.markdown) : ""}</div>
       </div>
     </div>
     <div class="deploy-actions">
@@ -2142,7 +2186,6 @@ async function runAutobiography() {
   btn.disabled = true;
   out.hidden = false;
   body.innerHTML = "";
-  if (dl) { dl.hidden = true; dl.removeAttribute("href"); }
 
   /* Reset stuck handlers if a previous run died before this one started. */
   if (store.autobioTimer) { clearInterval(store.autobioTimer); store.autobioTimer = null; }
@@ -2207,21 +2250,19 @@ function finishAutobiography(result, meta) {
   if (store.autobioTimer) { clearInterval(store.autobioTimer); store.autobioTimer = null; }
   if (store.autobioWatchdog) { clearTimeout(store.autobioWatchdog); store.autobioWatchdog = null; }
 
-  metaEl.textContent = __f("sd.autobio_meta", {
+  /* Persist into the in-memory cache and re-render the step so the button
+   * flips to "Regenerate", the body stays put across step switches, and the
+   * download link points at the server endpoint (no Blob URL to outlive the
+   * next renderStep). */
+  store.autobioCache = {
+    markdown: result.markdown || "",
     length: result.length || 0,
-    cjk: result.length_cjk || 0,
-    profile: result.profile_block_size || 0,
-  });
-  body.innerHTML = renderMarkdown(result.markdown || "");
-  if (dl && result.markdown) {
-    const blob = new Blob([result.markdown], { type: "text/markdown;charset=utf-8" });
-    dl.href = URL.createObjectURL(blob);
-    dl.download = `agent-${store.currentId}-autobiography.md`;
-    dl.hidden = false;
-    setTimeout(() => URL.revokeObjectURL(dl.href), 60_000);
-  }
+    length_cjk: result.length_cjk || 0,
+    from_cache: false,
+  };
+  if (dl) dl.removeAttribute("href");
+  renderStep();
   foot(__f("sd.autobio_done", { length: result.length_cjk || 0 }), "ok");
-  if (btn) btn.disabled = false;
 }
 
 /* ---------- wire up ---------- */

@@ -1731,6 +1731,26 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             from gaworld.apps import autobiography_api
             payload, status = autobiography_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/agents/") and path.endswith("/autobiography/download"):
+            from gaworld.apps import autobiography_api
+            filename, content_type, body, status = autobiography_api.handle_download(path)
+            if status != 200:
+                return self._json_response(
+                    {"error": "尚未生成自传"} if status == 404 else {"error": body},
+                    status=status,
+                )
+            data = body.encode("utf-8") if isinstance(body, str) else body
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header(
+                "Content-Disposition",
+                f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}',
+            )
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if path.startswith("/api/agents/") and path.endswith("/autobiography"):
             from gaworld.apps import autobiography_api
             payload, status = autobiography_api.handle_get(path, query)

@@ -29,29 +29,41 @@
   const CANVAS_W = 640;
   const CANVAS_H = 400;
   const TILE = 8;
+  // Five bedrooms stacked on the right side, each with its own door, bed,
+//   and standing spots. The back-end mirrors this with a single SLEEP_ROOMS
+//   tuple (master, second, third, fourth, fifth) and assigns residents
+//   to the next free one when the session opens.
   const ROOMS = [
-    { id: "kitchen", label: "厨房", x: 12, y: 12, w: 168, h: 172 },
-    { id: "living", label: "客厅", x: 188, y: 12, w: 208, h: 172 },
-    { id: "master", label: "主卧", x: 404, y: 12, w: 108, h: 172 },
-    { id: "second", label: "次卧", x: 520, y: 12, w: 108, h: 172 },
-    { id: "study", label: "书房", x: 12, y: 248, w: 180, h: 140 },
-    { id: "bath", label: "卫生间", x: 200, y: 248, w: 128, h: 140 },
-    { id: "balcony", label: "阳台", x: 336, y: 248, w: 160, h: 140 },
-    { id: "hallway", label: "走廊", x: 12, y: 192, w: 616, h: 48 },
+    { id: "kitchen", label: "厨房",  x: 12,  y: 12,  w: 168, h: 172 },
+    { id: "living",  label: "客厅",  x: 188, y: 12,  w: 168, h: 172 },
+    // Bedrooms — five small, vertically stacked cells. Each is 60×82
+    // so a single bed + standing spots fit comfortably.
+    { id: "master",  label: "主卧",  x: 364, y: 12,  w: 80,  h: 82 },
+    { id: "second",  label: "次卧①", x: 448, y: 12,  w: 80,  h: 82 },
+    { id: "third",   label: "次卧②", x: 532, y: 12,  w: 80,  h: 82 },
+    { id: "fourth",  label: "次卧③", x: 364, y: 102, w: 80,  h: 82 },
+    { id: "fifth",   label: "次卧④", x: 448, y: 102, w: 80,  h: 82 },
+    { id: "study",   label: "书房",  x: 12,  y: 248, w: 180, h: 140 },
+    { id: "bath",    label: "卫生间", x: 200, y: 248, w: 128, h: 140 },
+    { id: "balcony", label: "阳台",  x: 336, y: 248, w: 160, h: 140 },
+    { id: "hallway", label: "走廊",  x: 12,  y: 192, w: 600, h: 48 },
   ];
   const ROOM_DOORS = {
     kitchen: { x: 108, y: 184, side: "bottom" },
-    living: { x: 310, y: 184, side: "bottom" },
-    master: { x: 458, y: 184, side: "bottom" },
-    second: { x: 574, y: 184, side: "bottom" },
-    study: { x: 154, y: 248, side: "top" },
-    bath: { x: 282, y: 248, side: "top" },
+    living:  { x: 290, y: 184, side: "bottom" },
+    master:  { x: 404, y: 94,  side: "bottom" },
+    second:  { x: 488, y: 94,  side: "bottom" },
+    third:   { x: 572, y: 94,  side: "bottom" },
+    fourth:  { x: 404, y: 184, side: "bottom" },
+    fifth:   { x: 488, y: 184, side: "bottom" },
+    study:   { x: 154, y: 248, side: "top" },
+    bath:    { x: 282, y: 248, side: "top" },
     balcony: { x: 424, y: 248, side: "top" },
   };
   const ROOM_SPOTS = Object.fromEntries(ROOMS.map(r => [r.id,
     [0.18,0.4,0.62,0.84].flatMap(t => [20,Math.min(52,r.h-16)].map(offset =>
       ({x: Math.round(r.x + r.w * t), y: r.y + r.h - offset})))]));
-  const HALLWAY_PATH = [{x: 24, y: 216}, {x: 616, y: 216}];
+  const HALLWAY_PATH = [{x: 24, y: 216}, {x: 600, y: 216}];
 
   const SOLID_FURNITURE = new Set(["counter", "stove", "fridge", "sofa", "sofa_table",
     "tv", "tv_stand", "bed", "desk", "shelf", "tub", "toilet", "plant"]);
@@ -850,6 +862,65 @@ function play() {
     bar.classList.add("transient-notice-show");
     clearTimeout(showTransientNotice._t);
     showTransientNotice._t = setTimeout(() => bar.classList.remove("transient-notice-show"), 2200);
+  }
+
+  // ---- relationship detail modal --------------------------------------
+  // Each cell in the relationship matrix opens a small dialog with the
+  // three dimension scores, the current stage, and a chronological log
+  // of stage transitions + the latest events that nudged the scores.
+  // The dialog is a single shared DOM node — we re-render in place
+  // when the player clicks a different cell, and close on backdrop.
+  function openRelDetail(aId, bId) {
+    if (!state.session) return;
+    const a = state.session.residents.find((r) => r.agent_id === aId);
+    const b = state.session.residents.find((r) => r.agent_id === bId);
+    if (!a || !b) return;
+    const rec = (((state.session.relationships || {})[aId] || {})[bId]) || {};
+    const dims = [
+      { key: "affinity",  label: "好感" },
+      { key: "trust",     label: "信任" },
+      { key: "closeness", label: "亲密" },
+    ];
+    const stage = rec.stage || "陌生人";
+    const header = '<header><b>' + esc(a.name) + '</b> ↔ <b>' + esc(b.name) + '</b>'
+      + '<button type="button" class="furniture-close" aria-label="关闭">×</button></header>';
+    const body = '<div class="rel-detail-stage ' + (stage === "敌对" ? "rel-stage-hostile" : (stage === "恋人" || stage === "亲密" ? "rel-stage-close" : (stage === "好友" || stage === "朋友" ? "rel-stage-warm" : ""))) + '">' + esc(stage) + '</div>'
+      + '<div class="rel-detail-dims">'
+      + dims.map((d) => {
+          const v = Number(rec[d.key] || 0);
+          return '<div class="rel-detail-dim"><span class="rel-detail-label">' + esc(d.label) + '</span><span class="rel-detail-num">' + v.toFixed(1) + '</span></div>';
+        }).join("")
+      + '</div>';
+    const history = rec.history || [];
+    const historyHtml = history.length
+      ? '<ol class="rel-detail-history">' + history.map((h) =>
+            '<li><span class="rel-detail-tick">第 ' + (h.tick || 0) + ' 刻</span> '
+            + esc(h.stage || "") + ' · 好感 ' + (h.affinity || 0).toFixed(0)
+            + ' 信任 ' + (h.trust || 0).toFixed(0)
+            + ' 亲密 ' + (h.closeness || 0).toFixed(0)
+            + (h.note ? ' <span class="rel-detail-note">— ' + esc(h.note) + '</span>' : '')
+            + '</li>').join("") + '</ol>'
+      : '<p class="muted">还没有互动记录。</p>';
+    let overlay = document.getElementById("rRelDetail");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "rRelDetail";
+      overlay.className = "rel-detail-overlay";
+      const layer = $("#rBubbles");
+      if (layer && layer.parentElement) layer.parentElement.appendChild(overlay);
+    }
+    overlay.innerHTML = '<div class="rel-detail-modal">' + header
+      + '<div class="rel-detail-body">' + body + historyHtml + '</div></div>';
+    overlay.classList.add("rel-detail-overlay-show");
+    overlay.addEventListener("click", (ev) => {
+      if (ev.target === overlay) closeRelDetail();
+    }, { once: true });
+    overlay.querySelector(".furniture-close").addEventListener("click", closeRelDetail);
+  }
+
+  function closeRelDetail() {
+    const overlay = document.getElementById("rRelDetail");
+    if (overlay) overlay.classList.remove("rel-detail-overlay-show");
   }
 
   function renderClock() {
@@ -1793,23 +1864,39 @@ function play() {
       {kind:"rug",x:212,y:80,w:142,h:66},
       {kind:"sofa",x:208,y:58,w:110,h:34},
       {kind:"sofa_table",x:230,y:114,w:72,h:20},
-      {kind:"tv_stand",x:336,y:88,w:44,h:14},
-      {kind:"tv",x:338,y:58,w:40,h:30},
-      {kind:"plant",x:366,y:136,w:16,h:24},
+      {kind:"tv_stand",x:320,y:88,w:34,h:14},
+      {kind:"tv",x:322,y:58,w:30,h:30},
+      {kind:"plant",x:336,y:150,w:16,h:24},
     ],
     master: [
-      {kind:"bed",x:416,y:68,w:84,h:56,blanket:"#7888a0"},
-      {kind:"lamp",x:416,y:128,w:12,h:18},
-      {kind:"shelf",x:474,y:136,w:26,h:28},
-      {kind:"rug",x:430,y:130,w:40,h:30},
+      {kind:"bed",   x:374,y:30,w:60,h:38,blanket:"#7888a0"},
+      {kind:"lamp",  x:370,y:72,w:8,h:12},
+      {kind:"rug",   x:378,y:72,w:52,h:14},
+      {kind:"picture", x:430,y:18,w:12,h:12},
     ],
     second: [
-      {kind:"bed",x:532,y:58,w:84,h:52,blanket:"#9a887f"},
-      {kind:"desk",x:532,y:128,w:68,h:18},
-      {kind:"chair",x:542,y:150,w:16,h:16},
-      {kind:"books",x:576,y:130,w:14,h:12},
-      {kind:"lamp",x:600,y:132,w:10,h:14},
-      {kind:"rug",x:534,y:116,w:74,h:12},
+      {kind:"bed",   x:458,y:30,w:60,h:38,blanket:"#9a887f"},
+      {kind:"lamp",  x:514,y:18,w:8,h:12},
+      {kind:"rug",   x:462,y:72,w:52,h:14},
+      {kind:"books", x:514,y:30,w:12,h:12},
+    ],
+    third: [
+      {kind:"bed",   x:542,y:30,w:60,h:38,blanket:"#a8b8a0"},
+      {kind:"lamp",  x:600,y:18,w:8,h:12},
+      {kind:"rug",   x:546,y:72,w:52,h:14},
+      {kind:"chair", x:556,y:48,w:14,h:14},
+    ],
+    fourth: [
+      {kind:"bed",   x:374,y:120,w:60,h:38,blanket:"#b89880"},
+      {kind:"desk",  x:370,y:104,w:44,h:12},
+      {kind:"chair", x:418,y:104,w:12,h:12},
+      {kind:"books", x:396,y:104,w:12,h:10},
+    ],
+    fifth: [
+      {kind:"bed",   x:458,y:120,w:60,h:38,blanket:"#889aa0"},
+      {kind:"lamp",  x:514,y:108,w:8,h:12},
+      {kind:"rug",   x:462,y:162,w:52,h:14},
+      {kind:"shelf", x:514,y:120,w:12,h:40},
     ],
     study: [
       {kind:"window",x:58,y:258,w:42,h:24},
@@ -2564,7 +2651,11 @@ function play() {
     if (residents.length < 2) {
       rel.innerHTML = '<p class="muted">至少 2 位居民才能看关系。</p>';
     } else {
-      let html = '<table class="relation-table"><thead><tr><th></th>';
+      // Three-dimension relationship matrix: each cell shows
+      //   affinity / trust / closeness as small bars (the dimension that
+      //   is currently driving the relationship stage is bolded), plus
+      //   the discrete stage label below the names.
+      let html = '<table class="relation-table relation-table-3d"><thead><tr><th></th>';
       residents.forEach((r) => {
         html += '<th>' + esc(r.name) + '</th>';
       });
@@ -2574,16 +2665,54 @@ function play() {
         residents.forEach((col) => {
           if (row.agent_id === col.agent_id) {
             html += '<td class="rel-self">—</td>';
-          } else {
-            const v = (((state.session.relationships || {})[row.agent_id] || {})[col.agent_id] || 0);
-            const cls = v > 10 ? "pos" : v < -10 ? "neg" : "";
-            html += '<td class="' + cls + '">' + v.toFixed(0) + '</td>';
+            return;
           }
+          const rec = (((state.session.relationships || {})[row.agent_id] || {})[col.agent_id]) || {};
+          const dims = [
+            { key: "affinity",  label: "好感" },
+            { key: "trust",     label: "信任" },
+            { key: "closeness", label: "亲密" },
+          ];
+          let bars = "";
+          dims.forEach((d) => {
+            const v = Number(rec[d.key] || 0);
+            // Map -100..+100 onto a 0..100% bar. A neutral record has
+            // three 50% bars; positive extends right, negative extends
+            // left. The bar's color is the same hue the dashboard uses
+            // for mood (green/red) so the eye sees red <-> green
+            // without reading numbers.
+            const width = Math.min(50, Math.abs(v) / 2);
+            const dir = v >= 0 ? "right" : "left";
+            const color = v > 10 ? "#6ea05c" : v < -10 ? "#b45c3c" : "#a8b8a0";
+            bars += '<div class="rel-dim" title="' + esc(d.label) + ' ' + v.toFixed(0) + '">'
+              + '<span class="rel-dim-label">' + esc(d.label) + '</span>'
+              + '<span class="rel-bar">'
+              + '<span class="rel-bar-fill" style="width:' + width + '%; background:' + color + '; ' + (dir === "left" ? "right:auto; left:50%;" : "left:50%;") + '"></span>'
+              + '</span>'
+              + '<span class="rel-dim-num">' + v.toFixed(0) + '</span>'
+              + '</div>';
+          });
+          const stage = rec.stage || "陌生人";
+          const stageCls = stage === "敌对" ? "rel-stage-hostile" : (
+            stage === "恋人" || stage === "亲密" ? "rel-stage-close"
+            : (stage === "好友" || stage === "朋友" ? "rel-stage-warm" : ""));
+          html += '<td class="rel-cell" data-row="' + row.agent_id + '" data-col="' + col.agent_id + '">'
+            + bars
+            + '<div class="rel-stage ' + stageCls + '">' + esc(stage) + '</div>'
+            + '</td>';
         });
         html += '</tr>';
       });
       html += '</tbody></table>';
       rel.innerHTML = html;
+      // Click a cell to open a detail modal (history + raw scores).
+      rel.querySelectorAll(".rel-cell").forEach((td) => {
+        td.addEventListener("click", () => {
+          const a = parseInt(td.getAttribute("data-row"), 10);
+          const b = parseInt(td.getAttribute("data-col"), 10);
+          openRelDetail(a, b);
+        });
+      });
     }
 
     const events = state.session.events || [];
@@ -2598,7 +2727,10 @@ function play() {
     const line = $("#rActivityLine");
     if (!state.session) return;
     const items = state.session.residents.map((r) => r.name + " " + r.activity);
-    line.textContent = "各自在:" + items.join(" · ");
+    const phase = state.session.day_phase || "";
+    const clock = state.session.virtual_clock || "";
+    const prefix = clock ? clock + " · " + phase : phase;
+    line.textContent = (prefix ? prefix + " · " : "") + "各自在:" + items.join(" · ");
   }
 
   // -- export -------------------------------------------------------------

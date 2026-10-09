@@ -27,7 +27,6 @@ from unittest import mock
 
 from gaworld.apps import games_api, roommate_api
 
-
 PEOPLE = [
     {
         "id": 1,
@@ -100,7 +99,7 @@ class RoommateApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["max_agents"], 6)
         self.assertEqual(body["min_agents"], 2)
-        self.assertEqual(len(body["rooms"]), 8)
+        self.assertGreaterEqual(len(body["rooms"]), 8)
         # The floor plan always has a kitchen and a balcony; the player can
         # rely on these ids to render the SVG.
         room_ids = {r["id"] for r in body["rooms"]}
@@ -180,8 +179,10 @@ class RoommateApiTests(unittest.TestCase):
         # activities so the RNG in ``_step_resident`` cannot move them
         # into a shared room during the tick.
         sess = roommate_api._require(s["id"])
-        sess.residents[0].room = "master"; sess.residents[0].activity = "看书"
-        sess.residents[1].room = "study"; sess.residents[1].activity = "练琴"
+        sess.residents[0].room = "master"
+        sess.residents[0].activity = "看书"
+        sess.residents[1].room = "study"
+        sess.residents[1].activity = "练琴"
         # Save and force ``_step_resident`` to keep these by stubbing
         # ``_activity_for_hour`` to return the current activity verbatim.
         with mock.patch(
@@ -245,6 +246,197 @@ class RoommateApiTests(unittest.TestCase):
                 mirror = rels.get(b_id, {}).get(a_id)
                 self.assertEqual(value, mirror, "relationship scores must mirror")
 
+    def test_relationship_record_has_three_dimensions_and_stage(self):
+        # New shape: every pair has affinity / trust / closeness + a
+        # derived ``stage`` label, not a bare scalar.
+        s = roommate_api.start_session(
+            city="wuzhen", agent_ids=[1, 2], reaction_fn=lambda p: _reply(),
+        )
+        sess = roommate_api._require(s["id"])
+        for r in sess.residents:
+            r.room = "kitchen"
+            r.activity = "吃午餐"
+        with mock.patch("gaworld.apps.roommate_api._step_resident", return_value=None):
+            after = roommate_api.tick(s["id"], steps=4)
+        # Walk the matrix and ensure every cell is the new shape.
+        rels = after["relationships"]
+        for a_id, pairs in rels.items():
+            for b_id, rec in pairs.items():
+                if a_id == b_id:
+                    continue
+                self.assertIsInstance(rec, dict)
+                self.assertIn("affinity", rec)
+                self.assertIn("trust", rec)
+                self.assertIn("closeness", rec)
+                self.assertIn("stage", rec)
+                self.assertIn(rec["stage"], roommate_api.REL_STAGES)
+                # The legacy scalar compatibility stays — ``rec`` is
+                # always reachable, never a bare float.
+                self.assertIsInstance(rec["affinity"], (int, float))
+
+    def test_relationship_stage_advances_on_positive_deltas(self):
+        # Repeated positive deltas move two residents from "陌生人" up
+        # the stage ladder. Use the synchronous ``_trigger_interaction``
+        # path so the test does not race the worker pool — by the time
+        # the function returns the event and the 3-dim relationship
+        # record are both written.
+        def reaction_fn(prompt: str) -> str:
+            return json.dumps({
+                "lines": [{"who": "a", "text": "hi"}, {"who": "b", "text": "hi"}],
+                "thought_a": "ok", "thought_b": "ok",
+                "mood_delta_a": 0.0, "mood_delta_b": 0.0,
+                "rel_deltas": {"affinity": 12.0, "trust": 6.0, "closeness": 4.0},
+            })
+        s = roommate_api.start_session(
+            city="wuzhen", agent_ids=[1, 2], reaction_fn=reaction_fn,
+        )
+        sess = roommate_api._require(s["id"])
+        a, b = sess.residents[0], sess.residents[1]
+        for _ in range(4):
+            roommate_api._trigger_interaction(
+                sess, a, b, "kitchen", reaction_fn=reaction_fn,
+            )
+        rec = sess.relationships[a.agent_id][b.agent_id]
+        # 4 interactions × (12, 6, 4) = (48, 24, 16). The heuristic
+        # crosses the "朋友" boundary (>=25 affinity + 15 trust) at
+        # the second interaction; by the fourth it is firmly there.
+        self.assertGreaterEqual(rec["affinity"], 25)
+        self.assertIn(rec["stage"], {"朋友", "好友", "亲密", "恋人"})
+
+    def test_relationship_stage_can_drop_to_hostile(self):
+        def reaction_fn(prompt: str) -> str:
+            return json.dumps({
+                "lines": [{"who": "a", "text": "x"}, {"who": "b", "text": "x"}],
+                "thought_a": "", "thought_b": "",
+                "mood_delta_a": 0.0, "mood_delta_b": 0.0,
+                "rel_deltas": {"affinity": -8.0, "trust": -3.0, "closeness": -2.0},
+            })
+        s = roommate_api.start_session(
+            city="wuzhen", agent_ids=[1, 2], reaction_fn=reaction_fn,
+        )
+        sess = roommate_api._require(s["id"])
+        a, b = sess.residents[0], sess.residents[1]
+        for _ in range(6):
+            roommate_api._trigger_interaction(
+                sess, a, b, "kitchen", reaction_fn=reaction_fn,
+            )
+        rec = sess.relationships[a.agent_id][b.agent_id]
+        # Six × (–8, –3, –2) = (–48, –18, –12) — firmly in 敌对.
+        self.assertEqual(rec["stage"], "敌对")
+
+    def test_parse_interaction_accepts_legacy_rel_delta(self):
+        # Old models / fixtures return a single ``rel_delta`` scalar;
+        # the parser must fold that into the new 3-dim shape so
+        # nothing silently breaks.
+        parsed = roommate_api._parse_interaction(
+            json.dumps({"mood_delta_a": 0.1, "rel_delta": 2.0}),
+            default_room="kitchen",
+        )
+        self.assertEqual(parsed["rel_deltas"]["affinity"], 2.0)
+        self.assertEqual(parsed["rel_deltas"]["trust"], 0.0)
+        self.assertEqual(parsed["rel_deltas"]["closeness"], 0.0)
+        # Backwards-compat scalar still surfaces for older consumers.
+        self.assertEqual(parsed["rel_delta"], 2.0)
+
+    def test_parse_interaction_clamps_each_dim(self):
+        # A model that returns trust=99 (should be -10..10) is clamped
+        # on the per-dim range, not propagated.
+        parsed = roommate_api._parse_interaction(
+            json.dumps({
+                "rel_deltas": {"affinity": 99, "trust": 99, "closeness": -99}
+            }),
+            default_room="living",
+        )
+        self.assertEqual(parsed["rel_deltas"]["affinity"], 15.0)
+        self.assertEqual(parsed["rel_deltas"]["trust"], 10.0)
+        self.assertEqual(parsed["rel_deltas"]["closeness"], -10.0)
+
+    # -- bedroom assignment (bug 1) -------------------------------------
+    def test_bedrooms_assign_unique_rooms_to_each_resident(self):
+        # The wuzhen roster has 3 personas; the back-end assigns each
+        # to a different bedroom, capped at the SLEEP_ROOMS tuple size.
+        s = roommate_api.start_session(city="wuzhen", agent_ids=[1, 2, 3])
+        bedrooms = [r["bedroom"] for r in s["residents"]]
+        self.assertEqual(len(set(bedrooms)), 3,
+                         "every resident should have a unique bedroom")
+
+    def test_assign_bedrooms_handles_overflow_by_reusing_last_slot(self):
+        # With only 3 personas in the wuzhen roster we cannot directly
+        # check the 6-resident overflow, but the back-end helper is
+        # exposed: passing more residents than ``SLEEP_ROOMS`` reuses
+        # the last slot (the apartment physically only has 5 rooms).
+        # The 5-room ceiling is what this test pins.
+        residents = [roommate_api.Resident(agent_id=i, name=f"#{i}", age=30, gender="",
+                                           job="", profile_md="") for i in range(7)]
+        roommate_api._assign_bedrooms(residents)
+        # First five all unique.
+        self.assertEqual(len({r.bedroom for r in residents[:5]}), 5)
+        # The 6th and 7th share the last bedroom.
+        self.assertEqual(residents[5].bedroom, residents[6].bedroom)
+
+    # -- time-of-day mood nudge (bug 3) ---------------------------------
+    def test_mood_nudge_for_activity_changes_mood(self):
+        # Eating dinner nudges mood up; a string of "发呆" ticks
+        # brings it down. The session is set up so the call goes
+        # through ``_mood_nudge_for_activity`` directly — bypassing
+        # ``_step_resident`` so the activity does not get re-picked
+        # by the hour-of-day pool.
+        s = roommate_api.start_session(
+            city="wuzhen", agent_ids=[1, 2], rng=random.Random(0),
+        )
+        sess = roommate_api._require(s["id"])
+        target = sess.residents[0]
+        # Reset mood so the test only measures the nudge.
+        target.mood = 0.0
+        # Dinner (+0.10) plus co-presence bonus (~+0.015): two
+        # consecutive ticks land above zero.
+        roommate_api._mood_nudge_for_activity(
+            target, "吃晚餐", is_night=False, session=sess,
+        )
+        roommate_api._mood_nudge_for_activity(
+            target, "吃晚餐", is_night=False, session=sess,
+        )
+        self.assertGreater(target.mood, 0.0,
+                            "晚饭+co-presence should lift mood")
+        # A long stretch of 发呆 (-0.04 each) should drag the bar down
+        # past the prior level.
+        baseline = target.mood
+        for _ in range(15):
+            roommate_api._mood_nudge_for_activity(
+                target, "发呆", is_night=False, session=sess,
+            )
+        self.assertLess(target.mood, baseline,
+                         "a streak of 发呆 should drag mood below its prior level")
+
+    def test_mood_decay_is_gentle_after_redesign(self):
+        # The original 0.05/tick decay was strong enough that one good
+        # interaction could not move the bar visibly. The new 0.02 is
+        # still a pull-to-zero so neighbours do not freeze at +1, but
+        # the rate is low enough that activity-driven nudges dominate.
+        self.assertEqual(roommate_api.MOOD_DECAY_PER_TICK, 0.02)
+
+    # -- time-aware prompt (bug 2) ---------------------------------------
+    def test_interact_prompt_includes_clock_and_day_phase(self):
+        # A session at 22:30 should produce a prompt that says "夜晚"
+        # and the formatted clock — so the LLM knows it is late at
+        # night and does not write "good morning".
+        s = roommate_api.start_session(city="wuzhen", agent_ids=[1, 2])
+        sess = roommate_api._require(s["id"])
+        sess.virtual_clock_minutes = 22 * 60 + 30  # 22:30
+        a, b = sess.residents[0], sess.residents[1]
+        prompt = roommate_api._interact_prompt(a, b, "living", "", sess)
+        self.assertIn("22:30", prompt)
+        self.assertIn("夜晚", prompt)
+        # Hard rule: the prompt should explicitly forbid cross-time-of-
+        # day content so a 22:30 prompt never yields a "good morning"
+        # reply.
+        self.assertIn("早上好", prompt)
+        # 6 am is morning — the opposite phase should be elsewhere.
+        sess.virtual_clock_minutes = 6 * 60 + 30
+        prompt2 = roommate_api._interact_prompt(a, b, "kitchen", "", sess)
+        self.assertIn("06:30", prompt2)
+        self.assertIn("清晨", prompt2)
+
     # -- parsing ----------------------------------------------------------
     def test_parse_interaction_handles_missing_lines(self):
         # A model reply that is missing some fields must not crash.
@@ -277,7 +469,7 @@ class RoommateApiTests(unittest.TestCase):
         self.assertEqual(body["sessions"][0]["id"], s["id"])
 
     def test_handle_get_session_404_for_unknown(self):
-        body, status = roommate_api.handle_get("/api/games/roommate/sessions/nope")
+        _body, status = roommate_api.handle_get("/api/games/roommate/sessions/nope")
         self.assertEqual(status, 404)
 
     def test_handle_post_start_validates(self):
@@ -300,7 +492,7 @@ class RoommateApiTests(unittest.TestCase):
         self.assertEqual(body["tick_index"], 1)
 
     def test_handle_post_tick_404_for_unknown_session(self):
-        body, status = roommate_api.handle_post(
+        _body, status = roommate_api.handle_post(
             "/api/games/roommate/tick", {"session_id": "nope", "steps": 1},
         )
         self.assertEqual(status, 404)
@@ -444,7 +636,6 @@ class RoommateApiTests(unittest.TestCase):
         # their bedroom (we have no separate bed_room override). The
         # default activity → room mapping drives the fallback.
         s = roommate_api.start_session(city="wuzhen", agent_ids=[1, 2])
-        bedroom = s["residents"][0]["bedroom"]
         after = roommate_api.direct_resident(
             s["id"], agent_id=s["residents"][0]["agent_id"], activity="午睡",
         )

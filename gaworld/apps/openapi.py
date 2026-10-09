@@ -357,9 +357,19 @@ def _simulation() -> dict[str, Any]:
                 ("values",), values=_d(OBJ, "openness … neuroticism, each 0–1")), errors={"400": "Bad values"}),
         },
         "/api/agents/{agent_id}/detail": {"get": _op("agents", "Everything about one resident", errors=agent_404)},
-        "/api/agents/{agent_id}/autobiography": {"get": _op(
-            "agents", "Autobiography written from the resident's memories (one model call)",
-            errors={"400": "Invalid agent id", "502": "The model call failed"})},
+        "/api/agents/{agent_id}/autobiography": {
+            "get": _op(
+                "agents", "Autobiography written from the resident's memories (one model call)",
+                errors={"400": "Invalid agent id", "502": "The model call failed"}),
+            "post": _op(
+                "agents", "Enqueue an autobiography job; returns {job_id} immediately",
+                body=_obj(provider=_d(STR, "Optional LLM provider override")),
+                errors={"400": "Invalid agent id", "409": "An autobiography is already running"}),
+        },
+        "/api/agents/{agent_id}/autobiography/download": {"get": _op(
+            "agents", "Download the saved autobiography as a Markdown attachment",
+            response={"description": "Markdown", "content": {"text/markdown": {"schema": STR}}},
+            errors={"404": "尚未生成自传"})},
         "/api/agents/{agent_id}/memory": {
             "get": _op("agents", "Memories, summary and tag counts"),
             "post": _op("agents", "Append a memory", body=_obj(("text",), text=STR, kind=STR)),

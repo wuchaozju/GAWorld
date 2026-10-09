@@ -430,6 +430,195 @@
   transform: translate(-50%, 0);
 }
 
+/* 3-dim relationship matrix. Each cell holds three small dim rows
+ * (label + bar + numeric) and a stage badge underneath. Hover lifts the
+ * cell; clicking opens the relationship detail modal below. */
+.relation-table-3d th {
+  font-size: 10px;
+  padding: 4px 6px;
+}
+.relation-table-3d td {
+  font-size: 10px;
+  padding: 4px 6px;
+  vertical-align: top;
+  min-width: 110px;
+  cursor: pointer;
+}
+.rel-cell {
+  transition: background 0.15s ease;
+}
+.rel-cell:hover {
+  background: rgba(93, 107, 98, 0.08);
+}
+.rel-dim {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.rel-dim-label {
+  flex: 0 0 24px;
+  color: var(--muted, #616f67);
+  font-size: 9px;
+}
+.rel-bar {
+  position: relative;
+  flex: 1 1 auto;
+  height: 5px;
+  background: #e9e0c8;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rel-bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.rel-dim-num {
+  flex: 0 0 22px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 9px;
+}
+.rel-stage {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  background: #e9e0c8;
+  color: var(--ink, #1a2420);
+}
+.rel-stage-warm {
+  background: #f3d488;
+  color: #5d4a30;
+}
+.rel-stage-close {
+  background: #f0a8a0;
+  color: #6e1d18;
+}
+.rel-stage-hostile {
+  background: #b45c3c;
+  color: #fffbe9;
+}
+
+/* Relationship detail modal — opened by clicking any cell in the matrix. */
+.rel-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 18, 10, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.rel-detail-overlay-show {
+  display: flex;
+}
+.rel-detail-modal {
+  background: var(--panel, #f6f1e3);
+  border: 2px solid #5d6b62;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 #1a2420;
+  width: 320px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 12px;
+}
+.rel-detail-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #5d6b62;
+  color: #fffbe9;
+  font-size: 13px;
+}
+.rel-detail-modal header b {
+  font-weight: 600;
+}
+.rel-detail-modal header .furniture-close {
+  background: transparent;
+  border: 1px solid #fffbe9;
+  color: #fffbe9;
+  width: 22px;
+  height: 22px;
+  line-height: 18px;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.rel-detail-body {
+  padding: 10px 14px 14px;
+  overflow-y: auto;
+}
+.rel-detail-stage {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  background: #e9e0c8;
+  color: var(--ink, #1a2420);
+}
+.rel-detail-dims {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.rel-detail-dim {
+  text-align: center;
+  background: #fffbe9;
+  border: 1px solid #d8c8a0;
+  border-radius: 4px;
+  padding: 4px 2px;
+}
+.rel-detail-label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted, #616f67);
+}
+.rel-detail-num {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rel-detail-history {
+  list-style: decimal inside;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 11px;
+  color: var(--ink, #1a2420);
+}
+.rel-detail-history li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.rel-detail-tick {
+  display: inline-block;
+  background: #5d6b62;
+  color: #fffbe9;
+  font-size: 9px;
+  padding: 0 5px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+.rel-detail-note {
+  color: var(--muted, #616f67);
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
+  margin-left: 4px;
+}
+
 /* Hover cursor — the canvas itself gives feedback that the apartment
  * is interactive. */
 #rCanvas {
