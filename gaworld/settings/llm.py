@@ -83,6 +83,35 @@ def llm_settings() -> dict[str, Any]:
                     # plus a full document-length answer.
                     "max_tokens": int(os.environ.get("MINIMAX_MAX_TOKENS", "16384")),
                 },
+                # Public endpoints only; each account supplies its own key.
+                # Non-thinking presets preserve short simulation output budgets.
+                "deepseek_flash": {
+                    "type": "openai",
+                    "base_url": "https://api.deepseek.com",
+                    "model": "deepseek-flash",
+                    "api_key_env": "DEEPSEEK_API_KEY",
+                    "thinking": "disabled",
+                    "max_tokens": 8192,
+                    "timeout": 180,
+                },
+                "deepseek_pro": {
+                    "type": "openai",
+                    "base_url": "https://api.deepseek.com",
+                    "model": "deepseek-v4-pro",
+                    "api_key_env": "DEEPSEEK_API_KEY",
+                    "thinking": "disabled",
+                    "max_tokens": 8192,
+                    "timeout": 180,
+                },
+                "glm_5": {
+                    "type": "openai",
+                    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                    "model": "glm-5",
+                    "api_key_env": "ZHIPU_API_KEY",
+                    "thinking": "disabled",
+                    "max_tokens": 8192,
+                    "timeout": 180,
+                },
                 "local_qwen4b": {
                     "type": "openai",
                     "base_url": "http://127.0.0.1:8080/v1",

@@ -192,12 +192,14 @@ def _retrying(
 class OllamaProvider:
     """Simple wrapper for Ollama-compatible text generation."""
 
-    def __init__(self, url, model, timeout=600, attempts=3, vision=None):
+    def __init__(self, url, model, timeout=600, attempts=3, vision=None, think=None, num_ctx=None):
         self.url = url
         self.model = model
         self.timeout = timeout
         self.attempts = attempts
         self.vision = vision
+        self.think = think
+        self.num_ctx = num_ctx
 
     @property
     def supports_images(self) -> bool:
@@ -211,6 +213,8 @@ class OllamaProvider:
             "prompt": prompt,
             "stream": True,
         }
+        if self.think is not None:
+            payload["think"] = self.think
         # Ollama's /api/generate takes bare base64 strings, no data URL.
         cleaned = _clean_images(images)
         if cleaned:
@@ -218,6 +222,8 @@ class OllamaProvider:
         if system:
             payload["system"] = system
         options = {}
+        if self.num_ctx is not None:
+            options["num_ctx"] = int(self.num_ctx)
         if temperature is not None:
             options["temperature"] = float(temperature)
         if max_tokens is not None:
@@ -301,6 +307,7 @@ class OpenAIProvider(_CredentialProvider):
         temperature=None,
         attempts=3,
         vision=None,
+        thinking=None,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -312,6 +319,9 @@ class OpenAIProvider(_CredentialProvider):
         self.temperature = temperature
         self.attempts = attempts
         self.vision = vision
+        if thinking not in (None, "enabled", "disabled"):
+            raise ValueError("thinking must be enabled or disabled")
+        self.thinking = thinking
 
     @property
     def supports_images(self) -> bool:
@@ -350,6 +360,8 @@ class OpenAIProvider(_CredentialProvider):
             "model": self.model,
             "messages": messages,
         }
+        if self.thinking is not None:
+            payload["thinking"] = {"type": self.thinking}
         effective_max_tokens = self.max_tokens if max_tokens is None else int(max_tokens)
         if effective_max_tokens is not None:
             payload["max_tokens"] = effective_max_tokens
@@ -692,6 +704,8 @@ def build_provider(cfg: dict[str, Any], *, attempts: int = 3):
             timeout=cfg.get("timeout", 600),
             attempts=attempts,
             vision=cfg.get("vision"),
+            think=cfg.get("think"),
+            num_ctx=cfg.get("num_ctx"),
         )
     if p_type == "openai":
         return OpenAIProvider(
@@ -705,6 +719,7 @@ def build_provider(cfg: dict[str, Any], *, attempts: int = 3):
             temperature=cfg.get("temperature"),
             attempts=attempts,
             vision=cfg.get("vision"),
+            thinking=cfg.get("thinking"),
         )
     if p_type in ("claude", "anthropic"):
         return AnthropicProvider(
@@ -783,6 +798,12 @@ def probe_provider(cfg: dict[str, Any], *, timeout: int = 30) -> dict[str, Any]:
             "error": detail if len(detail) <= 600 else detail[:600] + "…",
         }
     text = str(reply or "").strip()
+    if not text:
+        return {
+            "ok": False,
+            "latency_ms": int((time.perf_counter() - started) * 1000),
+            "error": "模型未返回正文，请检查模型的思考模式和输出 token 预算。",
+        }
     key = getattr(provider, "api_key", None)
     if key:
         text = text.replace(key, "[REDACTED]")

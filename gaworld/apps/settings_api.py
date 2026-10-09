@@ -69,7 +69,9 @@ _PROVIDER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 #: file, so a key typed into this panel would land in git; the panel takes an
 #: env var *name* instead and reports whether it is set.
 _PROVIDER_FIELDS: dict[str, dict[str, str]] = {
-    "ollama": {"url": "str", "model": "str", "timeout": "int"},
+    "ollama": {
+        "url": "str", "model": "str", "timeout": "int", "think": "bool", "num_ctx": "int",
+    },
     "openai": {
         "base_url": "str",
         "model": "str",
@@ -78,6 +80,7 @@ _PROVIDER_FIELDS: dict[str, dict[str, str]] = {
         "stream": "bool",
         "max_tokens": "int",
         "temperature": "float",
+        "thinking": "str",
     },
     "anthropic": {
         "base_url": "str",
@@ -455,6 +458,10 @@ def _clean_provider(payload: Any) -> tuple[str, dict[str, Any]]:
     endpoint = _PROVIDER_ENDPOINT[p_type]
     if not cfg.get(endpoint):
         raise ValueError(f"必须填接口地址（{endpoint}）。")
+    if "thinking" in cfg and cfg["thinking"] not in ("enabled", "disabled"):
+        raise ValueError("thinking 必须是 enabled 或 disabled。")
+    if "num_ctx" in cfg and cfg["num_ctx"] <= 0:
+        raise ValueError("num_ctx 必须大于 0。")
     return name, cfg
 
 
