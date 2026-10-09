@@ -1,6 +1,13 @@
 # GAWorld 重构方案（诊断 + 分阶段执行计划）
 
 > 状态：等待 review。这是诊断报告与执行计划，**尚未动代码**。
+>
+> **2026-10-10 进度**：搁置期间主循环继续长大（`run_simulation` 1,370 → 2,285 行，主文件 6,254 行），现加了只减不增的行数闸门
+> `tests/test_line_budget.py`（上限在 `tests/line_budget.json`，超了失败，低于上限 50 行以上也失败、要求把上限调低）。
+> 主循环本身的抽取顺序见 `docs/RUN_SIMULATION_EXTRACTION_PLAN.md`。阶段 1 先迁了两段与主循环无关、不读模块级配置常量、测试也不打桩的辅助函数：作图与状态历史 → `gaworld/sim/_plots.py`，
+> `compare-event` / `parallel-worlds` 子命令 → `gaworld/sim/_compare.py`（主文件 6,254 → 5,679 行）。
+> 下一批候选：外部信息导入（`_cli_rag_add` 等，约 270 行，需把测试对 `vector_db_add_entry` 等的打桩改到新模块）、
+> 读配置常量的计划 / 日程辅助函数（要连常量一起迁，测试里 `patch.object(sim, "STATEFUL")` 一类的打桩要跟着改）。
 
 ---
 

@@ -723,7 +723,7 @@
   "family.empty": "No household data yet — run a full simulation and each resident's family shows up here.",
   "family.not_in_run": "This resident was not part of the last run, so there is no household record.",
   "home.kicker": "Home Mode",
-  "home.title": "Home Mode",
+  "home.title": "Life at Home",
   "home.title_hint": "Each resident's home environment (rooms, furniture, overall vibe) and what they do when they are actually at home — which room and the surrounding ambiance (lighting / sound / smell / temperature / tidiness).",
   "home.empty": "No home-mode data yet. Run a simulation and each resident's home shows up here.",
   "home.not_in_run": "This resident was not part of the last run, so there is no home record.",

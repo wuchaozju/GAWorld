@@ -18,6 +18,11 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `remove_agent`).
 - `gaworld/sim/pipeline.py`: the agent step as a configurable sequence of
   12 named stages (`CONFIG["pipeline"]["agent_step"]`).
+- `gaworld/sim/_plots.py` (end-of-run charts, state history) and
+  `gaworld/sim/_compare.py` (the `compare-event` / `parallel-worlds`
+  subcommands): moved out of `generative_city_sim.py`, which re-exports
+  them. `tests/test_line_budget.py` holds that file and `run_simulation` to
+  budgets that may only go down (`tests/line_budget.json`).
 - `gaworld/sim/_fastforward.py`: the *other* driver — long-horizon
   fast-forward, which compresses one step into a single per-agent brief
   instead of running the 12 stages per tick. `long_run.unit` picks how much
@@ -277,6 +282,10 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   scenario output trees) for the replay page's run picker; it reads only the head
   of each trace, because a listing must not parse a hundred multi-megabyte files.
 - `scripts/`: developer and launch utilities that are not imported by runtime modules.
+  `lint_ratchet.py` is the CI lint step (changed files may not get worse; repo totals in
+  `lint_baseline.json`); `build_feature_map.py` renders `docs/FEATURE_MAP.html` from the feature
+  registry `docs/features.toml`, which `tests/test_feature_registry.py` holds `docs/FEATURES.md`,
+  the docs panel and both READMEs to.
 - `examples/`: sample external-agent inputs and integration examples.
 
 ## Configuration Layout

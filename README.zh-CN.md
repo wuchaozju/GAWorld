@@ -1228,6 +1228,7 @@ LLM 调用之前完成决策。
 - [外部系统 — 教程](./docs/EXTERNAL_SYSTEMS_TUTORIAL.md)（货币系统、外部环境、对外服务的观察与编辑，以及运行时干预）
 - [平行世界 — 教程](./docs/PARALLEL_WORLDS_TUTORIAL.md)（多分支反事实实验：设计实验、读分叉与偏离图、剂量反应设计，以及为什么要先跑安慰剂世界）
 - [研究工作台 — 教程](./docs/RESEARCH_WORKBENCH_TUTORIAL.md)（上传论文、审阅解读、比较几种实验设计，再编译成预注册协议跑平行世界，由代码判定假设并出报告）
+- [持久组织 — 教程](./docs/ORGANIZATIONS_TUTORIAL.md)（社区资助与企业招聘：稳定身份、版本化规则、有限账户与执行历史；默认关闭）
 - [经典实验库](./docs/CLASSIC_EXPERIMENTS.md)（居民当被试的六个教科书范式：框架、锚定、独裁者 / 最后通牒、信任、公共品；按人配对、只读方向，人类结果并排对照）
 - [游戏场 — 教程](./docs/PLAYGROUND_TUTORIAL.md)（斗兽场排座次与留存、说服游戏的判定规则与 HTTP 接口、怎么加一个新游戏） · [斗兽场 — 教程](./docs/ARENA_TUTORIAL.md)
 - [大五人格（OCEAN）— 设计](./docs/proposals/2026-08-20-big-five-personality.md)（三条独立通道、效应量与共线性两道合入门、离线特质标定）

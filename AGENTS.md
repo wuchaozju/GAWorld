@@ -52,7 +52,7 @@ GAWorld/
 **规则：新代码只写进 `gaworld/` 包，不添加新的根目录模块。**
 旧 flat 模块的正式位置见 `legacy/README.md`。
 
-**规则：新子系统写成插件，不在 `generative_city_sim.py` 里加内联逻辑。**
+**规则：新子系统写成插件，不在 `generative_city_sim.py` 里加内联逻辑。** 这个文件和 `run_simulation` 有只减不增的行数上限（`tests/test_line_budget.py`，上限在 `tests/line_budget.json`）。
 写一个 `gaworld.kernel.Plugin` 子类，经 `gaworld/plugins/builtin_plugins()`
 （内置）或 `CONFIG["plugins"]` / entry point（第三方）装配；扩展点目录见
 `docs/PLUGIN_AUTHORING.md`。
@@ -176,6 +176,11 @@ There is no build step beyond installing Python dependencies.
 - Naming: `snake_case` for functions/vars, `UpperCamelCase` for classes, constants in `ALL_CAPS`.
 - Formatter / linter / type-checker are configured in `pyproject.toml`:
   - `ruff check .` and `ruff format --check .` (rules pinned to `E`/`F`/`W`/`I`/`UP`/`B`/`C4`/`SIM`/`PIE`/`RUF`).
+    The repo carries an older backlog, so CI runs the ratchet instead:
+    `python scripts/lint_ratchet.py --base origin/<target>` — a changed file may not gain findings,
+    a new or already-formatted file must be formatted, and the repo totals may not rise above
+    `scripts/lint_baseline.json` (`--update-baseline` after a cleanup). Run it locally with no
+    arguments to check uncommitted work.
   - `black .` (line length 110).
   - `mypy gaworld` (strict typing on the new `gaworld/` tree, advisory elsewhere).
 - All new code goes into `gaworld/` sub-packages. No new root-level modules.

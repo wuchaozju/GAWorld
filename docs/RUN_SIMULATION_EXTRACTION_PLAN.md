@@ -104,6 +104,23 @@ and people working on the simulator can't avoid the orchestrator.
 After the lift, `generative_city_sim.py` becomes a thin CLI + glue
 shim of well under 1,500 lines.
 
+## 2026-10-10: line budget + one more batch
+
+- Prerequisites 1–2 above are done (`gaworld/sim/_memory_recall.py`,
+  `gaworld/sim/_action.py`); meanwhile `run_simulation` grew back to
+  2,285 lines and the file to 6,254.
+- `tests/test_line_budget.py` now holds the file and `run_simulation` to
+  upper bounds in `tests/line_budget.json` that may only go down (over
+  fails; 50+ lines under fails too, asking for the bound to come down).
+- Moved out (no module-level constants, nothing tests patch): the
+  end-of-run charts → `gaworld/sim/_plots.py`, and the `compare-event` /
+  `parallel-worlds` subcommands → `gaworld/sim/_compare.py`. File
+  6,254 → 5,679 lines; `run_simulation` unchanged (2,280).
+- Next, in plan order: prerequisite 3 (per-step routines → `_step.py`)
+  together with 4 for the constants they read — tests patch
+  `sim.ROUTINE_CHANGE_RANDOMNESS`, `sim.HUMAN_REALISM_ENABLED`,
+  `sim.maybe_adjust_activity` and friends, so those patches move with them.
+
 ## Round-4 outcome
 
 - ✅ Audit finished, plan written, phase banners inserted.

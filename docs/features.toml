@@ -1,0 +1,689 @@
+# GAWorld 功能注册表：功能地图（docs/FEATURE_MAP.html）由它生成。
+#
+# 加一个功能：在 docs/FEATURES.md 写一行详细说明，再在这里的合适分组下加一项，
+# features 填那一行的「功能特性」列（或 FEATURES.md 里的 ## 标题），然后运行
+#     python scripts/build_feature_map.py
+# tests/test_feature_registry.py 检查：两边一一对得上、地图是最新的、doc 指向的教程
+# 在文档面板（site/dashboard/docs.js）和两份 README 里都列出来了。
+#
+# 字段：name 名称；desc 一句话；entry 入口（反引号里是代码）；features 对应 FEATURES.md
+# 的行；doc 可选的教程；mind 可选的导图短名（默认由 name 生成）。
+
+[[axis]]
+id = "research"
+name = "研究者"
+emoji = "🔬"
+tagline = "把 GAWorld 当实验台"
+
+[[axis.group]]
+name = "调研与提问"
+
+[[axis.group.feature]]
+name = "智能体采访"
+desc = "单 agent 深度访谈"
+entry = "`interview --agent-id 31 --question \"...\"`"
+features = ["智能体采访"]
+
+[[axis.group.feature]]
+name = "群体采访"
+desc = "一群受访者同一套题，可跨城市，连续追问"
+entry = "`/site/dashboard/survey.html`"
+features = ["群体采访"]
+doc = "docs/GROUP_INTERVIEW_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "RAG 外部知识注入"
+desc = "向某 agent 注入外部信息改变认知"
+entry = "`rag-add --agent-id 31 --text ...`"
+features = ["RAG 外部知识注入"]
+
+[[axis.group.feature]]
+name = "从社交内容创建智能体"
+desc = "社媒页面 / 文本生成画像"
+entry = "`create-agent-from-social --url ...`"
+features = ["从社交内容创建智能体"]
+
+[[axis.group]]
+name = "单点对照实验"
+
+[[axis.group.feature]]
+name = "事件对照实验"
+desc = "有/无事件两分支并行"
+entry = "`compare-event --event-name ... --seed 42`"
+features = ["事件对照实验"]
+
+[[axis.group.feature]]
+name = "平行世界实验"
+desc = "最多 8 个世界共用居民/种子"
+entry = "`parallel-worlds --spec worlds.json`"
+features = ["平行世界实验"]
+doc = "docs/PARALLEL_WORLDS_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "平行世界实验台"
+desc = "设计实验 + 分叉图 + 偏离曲线"
+entry = "`/site/dashboard/worlds.html`"
+features = ["平行世界实验"]
+
+[[axis.group.feature]]
+name = "轨迹回放查看器"
+desc = "回放任意一次仿真运行"
+entry = "`serve-viz --port 8000`"
+features = ["轨迹回放查看器"]
+
+[[axis.group.feature]]
+name = "反事实推断（研究工作台页签）"
+desc = "一个世界的事件换成另一种，读它带来的差别"
+entry = "`/site/dashboard/research.html`"
+features = ["平行世界 · 反事实推断（研究工作台页签）"]
+
+[[axis.group]]
+name = "预注册与长程仿真"
+
+[[axis.group.feature]]
+name = "运行仿真"
+desc = "让一批智能体按天循环生活"
+entry = "`python generative_city_sim.py run`"
+features = ["运行仿真"]
+
+[[axis.group.feature]]
+name = "长时段快进"
+desc = "每 agent 每步 1 次调用"
+entry = "`--fast-forward`"
+features = ["长时段快进", "长时段快进（fast-forward）"]
+
+[[axis.group.feature]]
+name = "大跨度模拟（月/年）"
+desc = "一步 = 一月或一年"
+entry = "`--sim-years 10` / `--time-unit month`"
+features = ["大跨度模拟（以月 / 年为单位）"]
+
+[[axis.group.feature]]
+name = "时间单位：天/月/年"
+desc = "月年步长 + 日边界钩子按 ≤30 天区块补跑"
+entry = "`CONFIG[\"long_run\"][\"unit\"]`"
+features = ["时间单位：天 / 月 / 年"]
+
+[[axis.group.feature]]
+name = "AI 社会科学家（阶段一）"
+desc = "方案编译成预注册协议 + 平行世界跑 + 代码判定"
+entry = "`POST /api/research/studies`"
+features = ["AI 社会科学家（研究闭环）"]
+
+[[axis.group]]
+name = "研究设计"
+
+[[axis.group.feature]]
+name = "研究工作台"
+desc = "想法/论文 → 多种实验设计 → 预注册"
+entry = "`/site/dashboard/research.html`"
+features = ["研究工作台"]
+doc = "docs/RESEARCH_WORKBENCH_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "论文解读"
+desc = "从 .txt/.md/.pdf 解读出理论/方法/变量/发现/假设"
+entry = "`POST /api/research/digest`"
+features = ["研究工作台"]
+
+[[axis.group.feature]]
+name = "多设计与推荐"
+desc = "2–3 种不同思路的设计，城市/人口/时间/条件/事件/指标全标"
+features = ["研究工作台"]
+
+[[axis.group.feature]]
+name = "代码判定与报告"
+desc = "supported/contradicted/inconclusive/unmeasured，附判定依据"
+entry = "`GET /api/research/studies/<id>/report`"
+features = ["AI 社会科学家（研究闭环）"]
+
+[[axis.group.feature]]
+name = "经典实验库（居民当被试）"
+desc = "六个教科书范式按人配对，只读方向"
+entry = "`python -m gaworld.experiments.classics run`"
+features = ["经典实验库（居民当被试）"]
+doc = "docs/CLASSIC_EXPERIMENTS.md"
+
+[[axis.group]]
+name = "副作用：仿真加速器"
+note = "跨主轴共用"
+
+[[axis.group.feature]]
+name = "大跨度的社交影响"
+desc = "关系有走向，单步上限 0.25，正增量重置衰减计时"
+features = ["大跨度的社交影响"]
+
+[[axis.group.feature]]
+name = "大跨度的个体发展"
+desc = "技能长、人会变老，幂律曲线 + 年龄推进"
+features = ["大跨度的个体发展"]
+
+[[axis.group.feature]]
+name = "大跨度的动作与事件空间"
+desc = "动作空间按跨度换档，事件显形生成"
+features = ["大跨度的动作与事件空间"]
+
+[[axis.group.feature]]
+name = "大跨度的模拟框架"
+desc = "月 / 年步长下的状态、日程与钩子如何折算"
+features = ["大跨度的模拟框架"]
+
+[[axis.group]]
+name = "基准评测（GAWorld-Bench）"
+
+[[axis.group.feature]]
+name = "Rubric-Bench 人类锚点校准"
+desc = "两人标注 + judge，α/ρ/QWK 闸门"
+entry = "`python benchmark/rubric_calibrate.py`"
+features = ["Rubric-Bench 人类锚点校准（Track R · P4）"]
+
+[[axis.group.feature]]
+name = "Track B · 对局层规律"
+desc = "谣言 / 公投 / 灾害对局存档检三条规律"
+entry = "`python benchmark/gaworld_bench.py --track B`"
+features = ["GAWorld-Bench Track B · 对局层规律"]
+
+[[axis.group.feature]]
+name = "Track D · 人类判别"
+desc = "「谁是真人」里居民被判成真人的比例 ÷ 真人的"
+entry = "`python benchmark/gaworld_bench.py --track D`"
+features = ["GAWorld-Bench Track D · 人类判别"]
+
+[[axis]]
+id = "world"
+name = "世界构建者"
+emoji = "🌍"
+tagline = "造一座可仿真的城市"
+
+[[axis.group]]
+name = "城市与地图"
+
+[[axis.group.feature]]
+name = "城市地图生成"
+desc = "自然语言生成节点/道路/地铁"
+entry = "`scripts/generate_citymap.py --description ...`"
+features = ["城市地图生成"]
+
+[[axis.group.feature]]
+name = "从地名新建城市"
+desc = "真实地名造出可仿真城市"
+entry = "`python -m gaworld.city create \"绍兴柯桥\"`"
+features = ["从地名新建城市"]
+
+[[axis.group.feature]]
+name = "城市面板"
+desc = "可视化建城/列表/批量加居民/删除"
+entry = "`/site/dashboard/city.html`"
+features = ["城市面板"]
+doc = "docs/CITY_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "切换当前城市"
+desc = "切换 map_path/csv_path/profile/环境事件"
+entry = "`python -m gaworld.city use`"
+features = ["切换当前城市"]
+
+[[axis.group]]
+name = "人口构成"
+
+[[axis.group.feature]]
+name = "参数化人口合成"
+desc = "按人口学旋钮生成小镇"
+entry = "`python -m gaworld.population --size 500`"
+features = ["参数化人口合成"]
+
+[[axis.group.feature]]
+name = "Population Studio"
+desc = "5 步可视化人口设计"
+entry = "`/site/dashboard/population.html`"
+features = ["Population Studio"]
+
+[[axis.group.feature]]
+name = "往城市里加智能体"
+desc = "批量/单个/迁入 三条路径"
+entry = "`python -m gaworld.city add-agents`"
+features = ["往城市里加智能体"]
+
+[[axis.group.feature]]
+name = "跨城市查看居民（只读）"
+desc = "不切换就查看任意城市居民"
+entry = "`GET /api/city/agents?city=`"
+features = ["跨城市查看居民（只读）"]
+
+[[axis.group]]
+name = "仿真环境与配置"
+
+[[axis.group.feature]]
+name = "本地 Dashboard"
+desc = "配置编辑/运行控制/记忆查看"
+entry = "`dashboard --port 8766`"
+features = ["本地 Dashboard"]
+
+[[axis.group.feature]]
+name = "外部系统观测台"
+desc = "观察/编辑货币/环境/对外服务"
+entry = "`/site/dashboard/external.html`"
+features = ["外部系统观测台"]
+doc = "docs/EXTERNAL_SYSTEMS_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "配置覆盖"
+desc = "不改源码即可覆盖基础配置"
+entry = "`dashboard_config.json` / `GAWORLD_CONFIG_OVERRIDES`"
+features = ["配置覆盖"]
+
+[[axis.group.feature]]
+name = "可复现性"
+desc = "固定随机种子复现实验"
+entry = "`--seed` / `CONFIG[\"random_seed\"]`"
+features = ["可复现性"]
+
+[[axis.group.feature]]
+name = "重置"
+desc = "清除有状态产物，从 Day 1 重新开始"
+entry = "`python generative_city_sim.py reset`"
+features = ["重置"]
+
+[[axis.group]]
+name = "大跨度与群体近似"
+
+[[axis.group.feature]]
+name = "群体（cohort）模拟"
+desc = "大规模人群低成本模拟"
+entry = "`python -m gaworld.group --size 500 --days 7`"
+features = ["群体（cohort）模拟"]
+doc = "docs/GROUP_SIMULATION_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "群体模式验证门"
+desc = "L1–L4 量化 cohort 近似代价"
+entry = "`python -m gaworld.group.validate`"
+features = ["群体模式验证门"]
+
+[[axis.group.feature]]
+name = "Cohort 遥测插件"
+desc = "在个体运行中发布群体划分与漂移，只观测不改行为"
+features = ["Cohort 遥测插件"]
+
+[[axis.group.feature]]
+name = "日程网格对齐"
+desc = "把 agent 日程对齐固定时间网格，1440/step 恒定"
+features = ["日程网格对齐"]
+
+[[axis]]
+id = "resident"
+name = "居民设计者"
+emoji = "👤"
+tagline = "让居民\"像个人\""
+
+[[axis.group]]
+name = "画像与状态"
+
+[[axis.group.feature]]
+name = "Agent Studio"
+desc = "7 步可视化构建/查看单智能体"
+entry = "`/site/dashboard/studio.html`"
+features = ["Agent Studio"]
+
+[[axis.group.feature]]
+name = "九维状态雷达"
+desc = "状态变量可视化与编辑（Agent Studio 第 2 步）"
+features = ["Agent Studio"]
+
+[[axis.group.feature]]
+name = "大五人格（OCEAN）"
+desc = "rules/prompt/voice 三通道影响行为"
+entry = "`CONFIG[\"personality\"][\"enabled\"]`"
+features = ["大五人格（OCEAN）"]
+
+[[axis.group.feature]]
+name = "大五人格生成与合入闸门"
+desc = "离线生成 + 两条闸门校验"
+entry = "`scripts/author_personality.py`"
+features = ["大五人格生成与合入闸门"]
+
+[[axis.group.feature]]
+name = "工作台家庭编辑"
+desc = "在 Agent Studio 里逐人改婚姻、子女、共居，跨运行生效"
+entry = "`/site/dashboard/studio.html`"
+features = ["智能体工作台家庭编辑"]
+
+[[axis.group]]
+name = "记忆与社交关系"
+
+[[axis.group.feature]]
+name = "记忆系统"
+desc = "短期/情景/长期总结/关系记忆 + 向量召回"
+features = ["记忆系统"]
+
+[[axis.group.feature]]
+name = "社交网络"
+desc = "关系衰减、Dunbar 分层、off-screen ghost 事件"
+features = ["社交网络"]
+
+[[axis.group.feature]]
+name = "家庭与户"
+desc = "婚姻抽样/共居/家庭日程与账目/情绪传染"
+entry = "`CONFIG[\"family\"]`"
+features = ["家庭与户"]
+doc = "docs/FAMILY_DESIGN.md"
+
+[[axis.group.feature]]
+name = "离开本市（出差/探亲/旅行）"
+desc = "真实距离票务，不占本地拥挤度"
+entry = "`CONFIG[\"travel\"][\"enabled\"]`"
+features = ["离开本市（出差 / 探亲 / 旅行）"]
+
+[[axis.group.feature]]
+name = "Moltbook 开关"
+desc = "逐人接 AI 智能体社交网络"
+entry = "`data/moltbook_accounts.json`"
+features = ["智能体工作台 Moltbook 开关"]
+
+[[axis.group]]
+name = "行为与决策"
+
+[[axis.group.feature]]
+name = "动态行为系统"
+desc = "承诺度感知中断、情绪即兴行为、社交偶遇链"
+features = ["动态行为系统"]
+
+[[axis.group.feature]]
+name = "兴趣爱好与技能成长"
+desc = "成长画像幂律学习/里程碑/遗忘"
+entry = "`CONFIG[\"interests\"][\"enabled\"]`"
+features = ["兴趣爱好与技能成长"]
+
+[[axis.group.feature]]
+name = "经验 → Skill 自动提炼"
+desc = "agent 从最近经历自总结私有技能"
+features = ["经验 → Skill 自动提炼"]
+
+[[axis.group.feature]]
+name = "可复用 Skill 库"
+desc = "全局/私有 Markdown 技能注入认知"
+entry = "`CONFIG[\"skills\"]`"
+features = ["可复用 Skill 库"]
+
+[[axis.group]]
+name = "工作与产出"
+
+[[axis.group.feature]]
+name = "真实工作任务系统"
+desc = "agent 按职业产出 HTML/Python/文章/教案并接单结算"
+entry = "`CONFIG[\"real_work\"][\"enabled\"]`"
+features = ["真实工作任务系统"]
+
+[[axis.group.feature]]
+name = "就业事件（换工作/失业）"
+desc = "真改 job/收入，日程跟着换"
+features = ["就业事件（换工作 / 失业）"]
+
+[[axis.group.feature]]
+name = "生命事件"
+desc = "生日、疾病、关系破裂等调度事件"
+features = ["生命事件"]
+
+[[axis.group.feature]]
+name = "状态候选事件（一点即触发）"
+desc = "42 条目录按门槛过滤 + 冷却期"
+features = ["状态候选事件（一点即触发）"]
+
+[[axis.group.feature]]
+name = "政策/环境事件"
+desc = "政策冲击与环境扰动注入"
+entry = "`CONFIG[\"policy_events\"]`"
+features = ["政策 / 环境事件"]
+
+[[axis.group.feature]]
+name = "PolicySim 干预评估"
+desc = "推荐/曝光的本地无网络评估"
+entry = "`CONFIG[\"intervention\"][\"enabled\"]`"
+features = ["PolicySim 干预评估"]
+
+[[axis.group]]
+name = "经济与外部环境"
+
+[[axis.group.feature]]
+name = "经济仿真"
+desc = "货币守恒、部门池、个税五险一金、恩格尔消费"
+entry = "`CONFIG[\"economy\"]`"
+features = ["经济仿真"]
+
+[[axis.group.feature]]
+name = "多后端 LLM 路由"
+desc = "Ollama / OpenAI / Anthropic，按任务路由模型"
+entry = "`CONFIG[\"llm\"][\"routing\"]`"
+features = ["多后端 LLM 路由"]
+
+[[axis.group.feature]]
+name = "位置系统与交通"
+desc = "类别空间匹配、真实出行成本、通勤记忆"
+features = ["位置系统与交通"]
+
+[[axis.group.feature]]
+name = "外部信息源与信息食谱"
+desc = "新闻/社交/专业源 37 站，每人一份食谱"
+entry = "`CONFIG[\"news\"][\"sources\"]`"
+features = ["外部信息源与信息食谱"]
+
+[[axis.group.feature]]
+name = "内生通胀"
+desc = "需求拉动的物价，部分工资指数化（默认关）"
+entry = "`CONFIG[\"economy\"][\"inflation\"]`"
+features = ["内生通胀（默认关）"]
+
+[[axis.group.feature]]
+name = "持久组织主体"
+desc = "社区资助与企业招聘：稳定身份、版本化规则、账目与历史（默认关）"
+entry = "`/site/dashboard/organizations.html`"
+features = ["持久组织主体（默认关闭）"]
+doc = "docs/ORGANIZATIONS_TUTORIAL.md"
+
+[[axis]]
+id = "player"
+name = "玩家"
+emoji = "🎮"
+tagline = "把居民当对手"
+
+[[axis.group]]
+name = "多人共玩"
+
+[[axis.group.feature]]
+name = "居民认领"
+desc = "在 open 世界认领居民、获得两分钟租约"
+features = ["多人共玩（认领居民）"]
+
+[[axis.group.feature]]
+name = "双向对话"
+desc = "干预队列走感知 + 动作通路"
+features = ["多人共玩（认领居民）"]
+
+[[axis.group.feature]]
+name = "会话与私信"
+desc = "逐条记录到"
+entry = "`output/records/`"
+features = ["多人共玩（认领居民）"]
+
+[[axis.group]]
+name = "互动游戏场"
+
+[[axis.group.feature]]
+name = "斗兽场"
+desc = "居民同台答题，按正确率+中位耗时排座次，淘汰补人"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+doc = "docs/PLAYGROUND_TUTORIAL.md"
+
+[[axis.group.feature]]
+name = "说服游戏"
+desc = "有立场的问题 → 聊天 → 复问；裁判 LLM 判定核心结论是否变"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "灾害模式"
+desc = "≤12 人过一场灾难，每幕一次调用，六类行动+恐慌+互助"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "谣言扩散局"
+desc = "沿熟人图走，每人回一 JSON（信任度/动作/原话）"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "双队竞赛"
+desc = "同任务两条相反的路子，评审拿到「方案一/方案二」洗队名"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "公投局"
+desc = "≤14 人先私下表态，再公开表决，中间那屏带票数与最响原话"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "猜人局"
+desc = "读档案猜两难里怎么选，「再问一次」量 persona 稳不稳"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group.feature]]
+name = "谁是真人"
+desc = "真人和居民匿名同聊几轮，再互猜谁是真人；存档供 Bench Track D"
+features = ["游戏场（斗兽场 · 说服游戏 · 灾害模式 · 谣言扩散局 · 双队竞赛 · 公投局 · 猜人局 · 谁是真人）"]
+
+[[axis.group]]
+name = "协作与创作"
+
+[[axis.group.feature]]
+name = "Dashboard 智能体互动"
+desc = "两位以上居民建立双向好友，多轮讨论"
+entry = "`/dashboard` 互动面板"
+features = ["Dashboard 智能体互动"]
+
+[[axis.group.feature]]
+name = "Dashboard 合作任务"
+desc = "规划→分工→汇总"
+entry = "`/site/dashboard/collaboration.html`"
+features = ["Dashboard 合作任务"]
+
+[[axis.group.feature]]
+name = "合作产物导出"
+desc = "Markdown 产物落到"
+entry = "`<sessions_dir>/<session_id>/artifacts/`"
+features = ["Dashboard 合作任务"]
+
+[[axis.group]]
+name = "观察与回放"
+
+[[axis.group.feature]]
+name = "轨迹回放查看器"
+desc = "可视化回放任意一次仿真"
+entry = "`serve-viz --port 8000`"
+features = ["轨迹回放查看器"]
+
+[[axis.group.feature]]
+name = "平行世界实验台"
+desc = "读分叉图、偏离曲线、终局差异"
+entry = "`/site/dashboard/worlds.html`"
+features = ["平行世界实验"]
+
+[[axis]]
+id = "dev"
+name = "平台开发者"
+emoji = "🛠"
+tagline = "改 GAWorld 自己"
+
+[[axis.group]]
+name = "插件与扩展"
+
+[[axis.group.feature]]
+name = "微内核与 21 个扩展点"
+desc = "感知注入/中断源/动作过滤/状态效果等"
+features = ["第三方插件"]
+doc = "docs/PLUGIN_AUTHORING.md"
+
+[[axis.group.feature]]
+name = "第三方插件"
+desc = "不改核心加子系统（CONFIG[\"plugins\"] 或 entry point）"
+features = ["第三方插件"]
+
+[[axis.group.feature]]
+name = "认知管线消融/定制"
+desc = "agent step 12 个命名阶段可配置"
+entry = "`CONFIG[\"pipeline\"][\"agent_step\"]`"
+features = ["认知管线消融 / 定制"]
+
+[[axis.group.feature]]
+name = "运行时干预"
+desc = "改状态/配置/注入人生事件/移除 agent，审计全留痕"
+features = ["运行时干预"]
+
+[[axis.group.feature]]
+name = "动作校验门"
+desc = "move 过校验链，deny 审计落盘并在下一 tick 感知回注"
+features = ["动作校验门"]
+
+[[axis.group]]
+name = "部署与运维"
+
+[[axis.group.feature]]
+name = "分布式 relay"
+desc = "多机协同仿真，各节点处理本地 agent 子集"
+entry = "`serve-distributed --port 8877`"
+features = ["分布式 relay"]
+
+[[axis.group.feature]]
+name = "日志模式"
+desc = "simple ~4 行/tick, verbose 全字段"
+entry = "`GAWORLD_LOG_MODE`"
+features = ["日志模式"]
+
+[[axis.group.feature]]
+name = "日志级别"
+desc = "DEBUG 下显示每次 LLM 调用的 token 与延迟"
+entry = "`GAWORLD_LOG_LEVEL`"
+features = ["日志级别"]
+
+[[axis.group.feature]]
+name = "统一事件流"
+desc = "跨插件时间线对齐的结构化记录"
+entry = "`output/records/*.jsonl`"
+features = ["统一事件流"]
+
+[[axis.group]]
+name = "仿真v2 能力"
+note = "与运行时能力相关"
+
+[[axis.group.feature]]
+name = "物理环境感知（P0）"
+desc = "节点级占用/营业状态"
+entry = "`CONFIG[\"environment\"][\"local_physical\"][\"enabled\"]`"
+features = ["物理环境感知（P0）"]
+
+[[axis.group.feature]]
+name = "异常一等公民（P2）"
+desc = "anomaly/anomaly_score 区分常态波动"
+entry = "`CONFIG[\"environment\"][\"anomaly\"][\"enabled\"]`"
+features = ["异常一等公民（P2）"]
+
+[[axis.group.feature]]
+name = "当日反应式重规划（P3）"
+desc = "持续异常时只重排受影响区间"
+entry = "`CONFIG[\"environment\"][\"replan\"][\"enabled\"]`"
+features = ["当日反应式重规划（P3）"]
+
+[[axis.group.feature]]
+name = "结构化空间学习（P4）"
+desc = "累积地点规避偏好，跨运行持久化"
+entry = "`CONFIG[\"environment\"][\"spatial_preferences\"][\"enabled\"]`"
+features = ["结构化空间学习（P4）"]
+
+[[axis.group.feature]]
+name = "场所容量（满了就进不去）"
+desc = "满员改去同类最近有空位的场所，都满则去不成（默认关）"
+entry = "`CONFIG[\"local_physical\"][\"capacity\"]`"
+features = ["场所容量（满了就进不去）"]
+
+[[axis.group.feature]]
+name = "室内房间（同屋才算碰面）"
+desc = "分户、按活动进房间、同屋才算偶遇、容量按房间算（默认关）"
+entry = "`CONFIG[\"local_physical\"][\"rooms\"]`"
+features = ["室内房间（同屋才算碰面）"]

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-10-10 — 工程：行数闸门、lint 棘轮、功能注册表、浏览器冒烟
+
+### Added
+
+- **行数闸门** `tests/test_line_budget.py` — `generative_city_sim.py` 与 `run_simulation` 只许减不许增（上限在 `tests/line_budget.json`；超了失败，低于上限 50 行以上也失败、要求把上限调低）。
+- **先迁一批辅助函数**：作图与状态历史 → `gaworld/sim/_plots.py`，`compare-event` / `parallel-worlds` 子命令 → `gaworld/sim/_compare.py`（主文件 6,254 → 5,679 行，原名照旧可用）。下一步见 `docs/RUN_SIMULATION_EXTRACTION_PLAN.md`。
+- **lint 棘轮** `scripts/lint_ratchet.py` — CI 不再跑全仓 `ruff check .` / `ruff format --check .`（存量约 1,070 条、440 个文件未格式化，每次都失败）：改动过的文件 ruff 问题不许变多，新文件和原本已格式化的文件必须格式化，全仓总数不许超过 `scripts/lint_baseline.json`。本地不带参数运行即检查未提交的改动。
+- **功能注册表** `docs/features.toml` — 功能地图 `docs/FEATURE_MAP.html` 由它生成（`python scripts/build_feature_map.py`）；`tests/test_feature_registry.py` 检查地图是最新的、注册表与 FEATURES.md 一一对得上、引用的教程在文档面板和两份 README 里都列着。补上了图上缺的 11 项（基准评测、经典实验库、场所容量、室内房间、组织等）和 FEATURES.md 缺的「多人共玩」一行；文档面板补了研究工作台与持久组织两篇教程。
+- **浏览器冒烟** `tests/test_browser_smoke.py`（Playwright + Chromium，缺了就跳过；CI 安装）：Population Studio 走到第 2 步并重新体检，工作台家庭编辑添加一个子女，全程无页面错误。
+
+### Fixed
+
+- 英文界面里「居家模式」面板的小标题与标题同为 “Home Mode”（`PanelHeadingTest` 一直失败），标题改为 “Life at Home”。
+
 ## [Unreleased] — 2026-10-05 — 室内房间：空间树进入仿真
 
 ### Added

@@ -16,6 +16,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The lint ratchet compares changed files with the target branch.
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -28,11 +31,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Ruff lint
-        run: ruff check .
+      - name: Chromium for the browser smoke tests
+        run: python -m playwright install --with-deps chromium
 
-      - name: Ruff format check
-        run: ruff format --check .
+      - name: Lint ratchet (changed files may not get worse)
+        # The repo predates enforcement (~1,000 findings, ~400 unformatted
+        # files), so `ruff check .` would fail every run. Instead: a changed
+        # file may not gain findings, a formatted or new file must stay
+        # formatted, and the repo totals may not rise (scripts/lint_baseline.json).
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then BASE="HEAD~1"; fi
+          python scripts/lint_ratchet.py --base "$BASE"
 
       - name: Mypy (gaworld package)
         # mypy is advisory until the migration is complete: don't fail the build.
