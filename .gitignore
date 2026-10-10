@@ -230,3 +230,6 @@ data/moltbook_accounts.json
 /output_archive_202606/
 /_to_delete/
 .claude/settings.local.json
+# Agent tool scratch: Playwright CLI page snapshots, brainstorm / delivery pages
+/.playwright-cli/
+/.superpowers/
