@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld // console</title>
+  <meta name="description" content="GAWorld Terminal Console — 13 个视图的终端入口。" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+  <link rel="stylesheet" href="/terminal/console.css" />
+</head>
+<body class="brand-on-dark">
+  <div class="crt crt-scanlines" aria-hidden="true"></div>
+  <div class="crt crt-sweep"     aria-hidden="true"></div>
+  <div class="crt crt-vignette"  aria-hidden="true"></div>
+  <div class="bg-grid"           aria-hidden="true"></div>
+
+  <div class="shell">
+
+    <!-- sidebar -->
+    <aside class="bar">
+      <div class="bar-head">
+        <span class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></span>
+        <span class="brand-name">GAWorld</span>
+        <span class="brand-tag">// console</span>
+      </div>
+      <div class="bar-status">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>SIM_LIVE · 51 agents · day 14</span>
+      </div>
+
+      <nav class="nav" aria-label="控制台视图">
+        <div class="nav-section">
+          <span class="nav-label">// build</span>
+          <a href="#city" data-view="city"><span>城市</span><span class="nav-en">city</span></a>
+          <a href="#population"><span>人口与群体</span><span class="nav-en">population</span></a>
+          <a href="#studio"><span>智能体工作台</span><span class="nav-en">agent_studio</span></a>
+        </div>
+        <div class="nav-section">
+          <span class="nav-label">// run</span>
+          <a href="#dashboard" class="is-active"><span>控制台</span><span class="nav-en">dashboard</span></a>
+          <a href="/terminal/simviz.html"><span>仿真回放</span><span class="nav-en">simulation</span></a>
+        </div>
+        <div class="nav-section">
+          <span class="nav-label">// experiment</span>
+          <a href="#worlds"><span>平行世界</span><span class="nav-en">parallel_worlds</span></a>
+          <a href="#collaboration"><span>合作任务</span><span class="nav-en">cooperation</span></a>
+          <a href="#survey"><span>群体采访</span><span class="nav-en">survey</span></a>
+          <a href="#external"><span>外部系统</span><span class="nav-en">external</span></a>
+        </div>
+        <div class="nav-section">
+          <span class="nav-label">// analyze</span>
+          <a href="#analytics"><span>结果分析</span><span class="nav-en">analytics</span></a>
+          <a href="#research"><span>研究工作台</span><span class="nav-en">research</span></a>
+        </div>
+        <div class="nav-section">
+          <span class="nav-label">// playground</span>
+          <a href="#games"><span>互动游戏场</span><span class="nav-en">games</span></a>
+          <a href="#docs"><span>文档</span><span class="nav-en">docs</span></a>
+          <a href="#settings"><span>设置</span><span class="nav-en">settings</span></a>
+        </div>
+      </nav>
+
+      <div class="bar-foot">
+        <a href="/terminal/index.html">↗ landing</a>
+        <a href="/terminal/citymap.html">↗ citymap</a>
+        <a href="/site/index.html">↗ cream_view</a>
+        <span>$ gaworld // 2026-09-26</span>
+      </div>
+    </aside>
+
+    <!-- main view -->
+    <main class="main">
+      <div class="crumb">
+        <span class="crumb-group">// run</span>
+        <span class="crumb-sep">/</span>
+        <strong class="crumb-view">dashboard</strong>
+      </div>
+
+      <section class="view">
+        <p class="view-kicker">// run · dashboard</p>
+        <h2>控制台 <span style="color: var(--muted); font-weight: 400;">/ 控制 · 运行 · 采访 · 记忆</span></h2>
+        <p class="view-lead">
+          一站式本地仿真面板。当前默认人口 51,默认城市 <span style="color: var(--phosphor)">杭州 · 临安</span>,
+          仿真已运行 14 天。下面是控制台当前最重要的 4 个运行指标。
+        </p>
+
+        <div class="view-grid">
+          <div class="metric">
+            <p class="metric-kicker">// agents_live</p>
+            <div class="metric-num">51</div>
+            <p class="metric-trend up">↑ 0 · 全部在线 · last tick 09:42</p>
+          </div>
+          <div class="metric">
+            <p class="metric-kicker">// sim_day</p>
+            <div class="metric-num">14</div>
+            <p class="metric-trend flat">↔ 14 / 30 · 进度正常</p>
+          </div>
+          <div class="metric">
+            <p class="metric-kicker">// event_on</p>
+            <div class="metric-num" style="color: var(--amber)">YES</div>
+            <p class="metric-trend">policy_event // transit_delay</p>
+          </div>
+          <div class="metric">
+            <p class="metric-kicker">// memory_avg</p>
+            <div class="metric-num">8.4</div>
+            <p class="metric-trend up">↑ 1.1 vs day 7</p>
+          </div>
+        </div>
+
+        <h3 style="margin: 36px 0 14px; font-size: 1.05rem; color: var(--ink);">
+          // recent_events <span style="color: var(--muted); font-weight: 400; font-size: 0.85rem;">— last 6 ticks</span>
+        </h3>
+        <div class="log">
+          <div class="line"><span class="ts">09:42:08</span><span class="msg"><span class="who amber">agent#14</span> 从「家 · 林家村 12 号」步行到「茶馆 · 山语间」</span></div>
+          <div class="line"><span class="ts">09:41:55</span><span class="msg"><span class="who">agent#03</span> 早市买完菜,沿 022 县道返回</span></div>
+          <div class="line"><span class="ts">09:41:30</span><span class="msg"><span class="who steel">event</span> 公交线路 32 路延误 4 分钟 <span class="quiet">(policy_event.transit_delay)</span></span></div>
+          <div class="line"><span class="ts">09:40:12</span><span class="msg"><span class="who">agent#22</span> 在图书馆 1F 浏览《城市与记忆》<span class="quiet">— 反思入栈</span></span></div>
+          <div class="line"><span class="ts">09:39:48</span><span class="msg"><span class="who red">alert</span> agent#07 的睡眠评分低于阈值 <span class="quiet">(-0.18 vs day-7 baseline)</span></span></div>
+          <div class="line"><span class="ts">09:39:02</span><span class="msg"><span class="who">agent#11</span> 完成与 agent#14 的对话 <span class="quiet">— 关系强度 +0.04</span></span></div>
+        </div>
+
+        <p style="margin-top: 28px; color: var(--muted); font-size: 0.85rem;">
+          完整的 13 个视图都在左侧导航里。仿真回放已接入 → <a href="/terminal/simviz.html" style="color: var(--phosphor); text-decoration: none;">/terminal/simviz.html</a>;城市地图接入 → <a href="/terminal/citymap.html" style="color: var(--phosphor); text-decoration: none;">/terminal/citymap.html</a>。
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

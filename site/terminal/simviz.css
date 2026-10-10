@@ -1,0 +1,264 @@
+/* Simviz / replay terminal variant — wraps the existing canvas + inspector
+ * + transport in the terminal palette. Behaviour comes from replay.js,
+ * unchanged. */
+
+@import url("/terminal/tokens-terminal.css");
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ------------------------------------------------- hero strip */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(26, 29, 27, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.page-head .meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page-head .eyebrow {
+  color: var(--phosphor);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.page-head h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.page-head .run-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* ------------------------------------------------- workspace */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr) 320px;
+  gap: 16px;
+  padding: 16px 22px;
+  min-height: 0;
+}
+
+/* Floor plan of the building in focus, next to the map. */
+.indoor-shell {
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  align-self: start;
+}
+
+@media (max-width: 1280px) {
+  .workspace { grid-template-columns: minmax(0, 1fr) 320px; }
+  .indoor-shell { grid-column: 1; grid-row: 2; }
+  .inspector { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+.map-shell {
+  position: relative;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 540px;
+  display: flex;
+}
+
+.map-shell::before {
+  content: "STAGE";
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.map-shell::after {
+  content: attr(data-frame);
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--phosphor);
+  z-index: 2;
+  pointer-events: none;
+}
+
+#mapCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(rgba(95, 227, 161, 0.04) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(95, 227, 161, 0.04) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--bg-deep);
+}
+
+/* ------------------------------------------------- inspector */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.now {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.now #frameStamp {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.now #frameTitle {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.agent-list {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.agent-list .agent-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  transition: background 0.12s ease;
+}
+
+.agent-list .agent-row:hover,
+.agent-list .agent-row.is-active {
+  background: rgba(95, 227, 161, 0.08);
+  color: var(--phosphor);
+}
+
+.agent-list .agent-row .avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--phosphor-dim);
+  color: var(--phosphor);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.agent-list .agent-row .state {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------- transport */
+
+.controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
+  background: rgba(26, 29, 27, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.controls button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.controls button:hover,
+.controls button.is-on {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+  background: rgba(95, 227, 161, 0.06);
+}
+
+.controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--phosphor);
+}
+
+.controls .speed-select,
+.controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.controls .status {
+  font-size: 0.74rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 920px) {
+  .workspace { grid-template-columns: 1fr; }
+  .indoor-shell, .inspector { grid-column: auto; grid-row: auto; }
+  .controls { grid-template-columns: 1fr 1fr; row-gap: 10px; }
+}

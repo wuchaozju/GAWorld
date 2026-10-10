@@ -149,6 +149,25 @@ celerybeat.pid
 !/site/
 /site/*
 !/site/tokens.css
+# The landing page, the shared theme and brand files every dashboard page
+# loads, the vendored Phaser build and the terminal page variants. They were
+# left out by the /site rule above (Python template, for mkdocs), so a fresh
+# clone had an unstyled dashboard and no pixel town.
+!/site/index.html
+!/site/styles.css
+!/site/brand.css
+!/site/city-lab.css
+!/site/theme.js
+!/site/theme.test.js
+!/site/assets/
+/site/assets/*
+!/site/assets/logo-emergent.png
+!/site/assets/city-lab-atlas.svg
+!/site/assets/og-image.png
+!/site/vendor/
+!/site/vendor/**
+!/site/terminal/
+!/site/terminal/**
 !/site/dashboard/
 !/site/dashboard/**
 !/site/console/
@@ -161,6 +180,8 @@ celerybeat.pid
 !/site/simviz/**
 !/site/citymap/
 !/site/citymap/**
+# The negations above would otherwise take Finder's files in with them.
+/site/**/.DS_Store
 dashboard_config.json
 
 # mypy

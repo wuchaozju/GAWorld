@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld // docs</title>
+  <meta name="description" content="GAWorld Terminal Docs — 文档概览与导航" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+  <link rel="stylesheet" href="/terminal/docs.css" />
+</head>
+<body class="brand-on-dark">
+  <div class="crt crt-scanlines" aria-hidden="true"></div>
+  <div class="crt crt-sweep"     aria-hidden="true"></div>
+  <div class="crt crt-vignette"  aria-hidden="true"></div>
+  <div class="bg-grid"           aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/terminal/index.html" aria-label="GAWorld home">
+        <span class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></span>
+        <span class="brand-name">GAWorld</span>
+        <span class="brand-tag">// docs</span>
+      </a>
+      <nav class="topnav" aria-label="页面导航">
+        <a href="/terminal/index.html">landing</a>
+        <a href="/terminal/console.html">console</a>
+        <a href="/terminal/simviz.html">simviz</a>
+        <a href="/terminal/citymap.html">citymap</a>
+        <a href="/site/dashboard/docs.html" class="is-active">cream_docs</a>
+      </nav>
+      <span class="topbar-status">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        DOC_LIVE · 17 files
+      </span>
+    </header>
+
+    <div class="layout">
+      <aside class="toc" aria-label="文档目录">
+        <p class="toc-label">// table_of_contents</p>
+        <ul>
+          <li><a href="#overview" class="is-active">overview</a></li>
+          <li><a href="#install">install · 安装</a></li>
+          <li><a href="#first-run">first_run · 第一次跑仿真</a></li>
+          <li><a href="#counterfactual">counterfactual · 反事实对照</a></li>
+          <li><a href="#city">city · 造一座城</a></li>
+          <li><a href="#persona">persona · 从真人蒸馏</a></li>
+          <li><a href="#plugin">plugin · 写自己的插件</a></li>
+          <li><a href="#research">research · 实验写作</a></li>
+          <li><a href="#playground">playground · 互动场</a></li>
+        </ul>
+        <p class="toc-label" style="margin-top: 22px;">// all_docs</p>
+        <ul>
+          <li><a href="/site/dashboard/docs.html">cream view ↗</a></li>
+          <li><a href="/console#docs">in-console docs ↗</a></li>
+        </ul>
+      </aside>
+
+      <article class="prose">
+        <p class="kicker" style="color: var(--phosphor); font-size: 0.74rem; letter-spacing: 0.12em; margin: 28px 0 8px;">// documentation · overview</p>
+        <h1 style="margin: 0 0 18px; font-size: 2.2rem; letter-spacing: -0.02em;">
+          从第一次运行<br/>
+          到<span style="color: var(--amber);">写自己的插件</span><span style="color: var(--phosphor);">.</span>
+        </h1>
+        <p>
+          这里显示的就是仓库 <code>docs/</code> 里的文档本身 <span class="quiet">— 不是复制过来的副本</span>。
+          改了代码库里的文档,这里立刻同步。下面给一份终端风的快速入口。
+        </p>
+
+        <div class="callout">
+          <b>// QUICK PATH</b>
+          如果你只是想跑一次仿真:<code>python generative_city_sim.py run --sim-days 30</code>。
+          想做对照实验,加 <code>--with-event policy.json</code>。
+        </div>
+
+        <h2 id="overview">overview · 概览</h2>
+        <p>
+          GAWorld 把城市社会仿真拆成 5 个阶段: <b>build</b> → <b>run</b> → <b>experiment</b> → <b>analyze</b> → <b>playground</b>。
+          每个阶段对应控制台里的若干视图。下表把 13 个视图按阶段排好:
+        </p>
+        <pre><span class="comment"># 13 views · 5 stages · 同一批居民 + 同一份配置</span>
+1 build    · cities · population · agent_studio
+2 run      · dashboard · simulation_replay
+3 experiment · parallel_worlds · cooperation · survey · external
+4 analyze  · analytics · research
+5 playground · games (persuasion / disaster / rumor) · docs · settings</pre>
+
+        <h2 id="install">install · 安装</h2>
+        <p>Python ≥ 3.11。本地运行,无构建步骤,无需联网即可查看控制台。</p>
+<pre>$ git clone https://github.com/&lt;org&gt;/gaworld.git
+$ cd gaworld
+$ pip install -r requirements.txt
+$ python generative_city_sim.py run   <span class="comment"># 打开控制台</span></pre>
+
+        <h2 id="first-run">first_run · 第一次跑仿真</h2>
+        <p>
+          默认人口 51,默认城市 <code style="color: var(--phosphor)">杭州 · 临安</code>。控制台打开后:
+        </p>
+        <ul>
+          <li>进入 <code>/terminal/console.html</code>(或 cream 版 <code>/console</code>)</li>
+          <li>侧栏 <b>run / dashboard</b> → 看 4 个核心指标</li>
+          <li>侧栏 <b>run / simulation</b> → 进入 <code>/terminal/simviz.html</code> 逐帧回放</li>
+        </ul>
+
+        <div class="callout steel">
+          <b>// TIP · LIVE</b>
+          仿真默认就在跑。控制台右上角会显示 <code>SIM_LIVE · 51 agents · day 14</code>。
+          想暂停,直接关掉终端进程即可 — 数据会写到 <code>output/state/</code>。
+        </div>
+
+        <h2 id="counterfactual">counterfactual · 反事实对照</h2>
+        <p>
+          「同一批居民 / 同一个种子 / 只换一件事」是 GAWorld 的核心姿势。
+          通过 <code>parallel_worlds</code> 视图同时跑两个世界,然后在 <code>analytics</code> 里看 Δ。
+        </p>
+<pre><span class="comment"># 例:拥堵对出行的影响</span>
+<span class="who">with_event</span>   = baseline + transit_delay(8min)
+<span class="who">without</span>      = baseline
+<span class="who">impact</span>       = Δ(with, without) → stress / time_use / mood</pre>
+
+        <h2 id="city">city · 造一座城</h2>
+        <p>
+          通过 <code>gaworld.city create</code> 命令创建可复用的城市 bundle,落到 <code>data/cities/&lt;slug&gt;/</code>。
+          控制台顶部会自动列出已建城市,直接切换即可。
+        </p>
+
+        <h2 id="persona">persona · 从真人蒸馏</h2>
+        <p>
+          Agent Studio 的「+ 从真人蒸馏」入口,接受人名或 URL,自动调研 + 提炼
+          思维框架,落到 <code>output/personas/&lt;slug&gt;/persona.json</code>。
+          <b>蒸馏</b>与<b>部署</b>是分开的两步 — 部署才会写 seed CSV。
+        </p>
+
+        <h2 id="plugin">plugin · 写自己的插件</h2>
+        <p>
+          写一个 <code>gaworld.kernel.Plugin</code> 子类,经 <code>CONFIG["plugins"]</code> 或
+          entry point 装配。新代码只写进 <code>gaworld/</code> 包,不再加根目录模块。
+        </p>
+        <div class="callout red">
+          <b>// WARNING</b>
+          旧 <code>legacy/</code> 是 flat 模块的归档,与新代码不互通。导入请走 <code>gaworld.*</code>。
+        </div>
+
+        <h2 id="research">research · 实验写作</h2>
+        <p>
+          <code>research</code> 视图把一次实验写进可复现的 research notebook —
+          配置 / 事件 / 种子 / 关键指标全在;Markdown 可直接导出。
+        </p>
+
+        <h2 id="playground">playground · 互动场</h2>
+        <p>
+          控制台 <code>games</code> 视图聚合了三个轻量交互:
+        </p>
+        <ul>
+          <li><b>persuasion</b> — 辩论,在 turn 限制内反复说服</li>
+          <li><b>disaster mode</b> — 一批居民走完一个灾难阶段,结构化作答</li>
+          <li><b>rumor spread</b> — 谣言沿社会网络扩散,报告扩散树</li>
+        </ul>
+
+        <p style="margin-top: 36px; color: var(--muted); font-size: 0.85rem;">
+          完整文档请看 <a href="/site/dashboard/docs.html" style="color: var(--phosphor); text-decoration: none;">cream 版的 /dashboard/docs.html</a>,
+          或在控制台内的 <code>docs</code> 视图里搜索。
+        </p>
+      </article>
+    </div>
+  </div>
+</body>
+</html>

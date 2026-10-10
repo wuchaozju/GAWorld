@@ -1,0 +1,152 @@
+/* GAWorld Terminal Shell — drop-in replacement for /site/dashboard/page-shell.css.
+ *
+ * Reuses the SAME .studio-* class names used by 6 pages + Agent Studio.
+ * Only the palette / typography / chrome differs.
+ */
+
+.studio-shell {
+  width: min(1680px, calc(100vw - 28px));
+  margin: 0 auto;
+  padding: 16px 0 28px;
+}
+
+/* ---- Top bar ---- */
+.studio-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 22px;
+  border: 1px solid var(--line);
+  background: rgba(26, 29, 27, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand { display: flex; align-items: center; gap: 16px; }
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #0a1614;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--green);
+  letter-spacing: 0.04em;
+}
+
+.brand-copy h1 {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 22px;
+  margin-top: 4px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.brand-copy .sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+html.is-embedded .studio-shell { padding-top: 12px; }
+html.is-embedded .studio-top { padding: 12px 18px; }
+html.is-embedded .brand-mark { display: none; }
+html.is-embedded .brand-copy h1 { font-size: 18px; }
+
+/* ---- Step rail ---- */
+.step {
+  flex: 1 1 auto;
+  min-width: 118px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.step:hover {
+  color: var(--ink);
+  background: rgba(95, 227, 161, 0.06);
+}
+.step .num {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--card);
+}
+.step.is-active {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(95, 227, 161, 0.08);
+}
+.step.is-active .num {
+  background: var(--green);
+  color: #0a1614;
+  border-color: var(--green);
+}
+.step.is-done .num {
+  background: var(--ink);
+  color: #0a1614;
+  border-color: var(--ink);
+}
+.step:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* ---- Panel ---- */
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+/* ---- buttons (extra tones layered on base .button) ---- */
+.button.steel {
+  background: var(--steel);
+  color: #0a1614;
+  border-color: var(--steel);
+}
+.button.ghost { background: transparent; }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- footer ---- */
+.studio-foot {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px 20px;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+}
+.studio-foot b { color: var(--ink); font-weight: 700; }
