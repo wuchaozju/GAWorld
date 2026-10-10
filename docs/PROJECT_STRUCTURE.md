@@ -18,6 +18,11 @@ CLI/backward-compat entrypoints until their callers have been migrated.
   `remove_agent`).
 - `gaworld/sim/pipeline.py`: the agent step as a configurable sequence of
   12 named stages (`CONFIG["pipeline"]["agent_step"]`).
+- `gaworld/sim/_stages.py`: the twelve built-in stages of one agent step
+  (`prepare` … `record`), formerly closures inside `run_simulation`. They read
+  the run / day / tick state from a `StepScope` that `run_simulation` refreshes
+  before every agent step; `builtin_stages(scope)` is what
+  `StagePipeline.from_config` gets.
 - `gaworld/sim/_step.py`: the per-step routine change and transient thoughts
   (`maybe_adjust_activity`, `maybe_generate_transient_thought`, the life event
   that reshapes the day), with their `routine_change.*` / `spontaneity.*` knobs

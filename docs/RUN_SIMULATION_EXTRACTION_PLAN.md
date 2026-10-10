@@ -147,6 +147,42 @@ shim of well under 1,500 lines.
   `append_agent_log`, `vector_db_add_entry`, `maybe_adjust_activity`, `CONFIG`).
   Lifting them needs a per-tick context object and a decision on those patches.
 
+## 2026-10-10 (evening): the twelve stages leave `run_simulation`
+
+- `_stage_prepare` … `_stage_record` → `gaworld/sim/_stages.py`, now plain
+  functions `fn(agent, step, sim, *, scope)`; `builtin_stages(scope)` binds
+  the scope for `StagePipeline.from_config`. `run_simulation` 2,280 → 1,359
+  lines, the file 5,232 → 4,264.
+- `StepScope` carries what the closures used to see. The run / day / tick
+  state (22 names: `agents`, `hook_bus`, `day`, `schedule_map`, `daily_logs`,
+  `time_str`, `env_context`, `policy`, …) is written into it before every
+  agent step, which keeps the late-binding the closures had. This module's
+  settings (`STATEFUL`, `HUMAN_REALISM_*`, `GOALS_*`, `REPLAN_*`,
+  `LIFE_EVENT_RESHAPE_*`, `DISTRIBUTED_CONFIG`, `CONFIG`, `_LOG_SIMPLE`) and
+  six helpers that still live here (`planning`, `reflection`,
+  `update_state`, `infer_event_effect`, `resolve_location`,
+  `persist_agent_locations_if_changed`) are handed in once per run.
+- Why settings ride the scope instead of becoming `CONFIG` lookups now: the
+  end-to-end tests set `sim.STATEFUL`, `sim.HUMAN_REALISM_ENABLED`, … and one
+  replaces `sim.CONFIG` wholesale, without touching the global `CONFIG` the
+  stages would otherwise read — `human_realism.enabled` defaults to on, so the
+  stages would quietly run with realism on while the rest of the run had it
+  off. Passing the values `run_simulation` already uses keeps one source.
+  They become `CONFIG` lookups in the step that lifts `run_simulation`
+  itself, where every reader and those tests change together.
+- Everything else the stages use is imported from where it lives. Two tests
+  intercepted a function inside a full run through `sim`
+  (`maybe_adjust_activity`, `choose_action`); they now patch
+  `gaworld.sim._stages`, and with the old target they fail.
+  `get_activity_for_time` / `apply_schedule_override` moved to
+  `gaworld/sim/_schedule.py`; the imports that only the stages used left this
+  file (`update_needs` and `get_social_context` stay as re-exports, tests call
+  them on `sim`).
+- Next candidates inside `run_simulation`: the fast-forward closure
+  (`_run_fast_forward_step` and its three nested helpers, ~350 lines) the
+  same way; then the six helpers above to `gaworld/sim/_cognition.py` (as
+  its docstring anticipates) and `_location.py`.
+
 ## Round-4 outcome
 
 - ✅ Audit finished, plan written, phase banners inserted.

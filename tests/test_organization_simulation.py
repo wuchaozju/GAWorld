@@ -16,6 +16,7 @@ from tests.fixtures.mock_llm import install
 @pytest.mark.parametrize("governance", [False, True])
 def test_resident_application_executes_in_real_simulation(tmp_path, monkeypatch, fast_forward, governance):
     import generative_city_sim as sim
+    from gaworld.sim import _stages
 
     repo = Path(__file__).resolve().parents[1]
     shutil.copytree(repo / "data", tmp_path / "data")
@@ -81,7 +82,7 @@ def test_resident_application_executes_in_real_simulation(tmp_path, monkeypatch,
             return choices[0], {"decision_driver": "test-controlled-choice", "scores": {}}
         return original_choose(agent, activity, actions, **kwargs)
 
-    monkeypatch.setattr(sim, "choose_action", choose)
+    monkeypatch.setattr(_stages, "choose_action", choose)  # the select_action stage looks it up here
     with install() as mock:
         if fast_forward:
 

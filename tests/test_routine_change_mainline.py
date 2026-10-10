@@ -145,6 +145,7 @@ class TestRoutineChangeMainline(unittest.TestCase):
 
     def test_llm_adjustment_survives_to_final_step(self) -> None:
         import generative_city_sim as sim
+        from gaworld.sim import _stages  # the adjust_activity stage looks it up here
 
         self._patch_config()
         self._patch_module_constants(sim)
@@ -152,7 +153,7 @@ class TestRoutineChangeMainline(unittest.TestCase):
         def always_change(agent, time_str, scheduled_activity, *args, **kwargs):
             return "临时去公园散步", "测试强制改变", True
 
-        with install(), patch.object(sim, "maybe_adjust_activity", always_change):
+        with install(), patch.object(_stages, "maybe_adjust_activity", always_change):
             sim.run_simulation()
 
         self.assertTrue(POST_STEPS)
@@ -170,6 +171,7 @@ class TestRoutineChangeMainline(unittest.TestCase):
 
     def test_pre_step_hook_override_still_wins(self) -> None:
         import generative_city_sim as sim
+        from gaworld.sim import _stages  # the adjust_activity stage looks it up here
 
         self._patch_config(
             extra_pre_step_hooks=(
@@ -181,7 +183,7 @@ class TestRoutineChangeMainline(unittest.TestCase):
         def always_change(agent, time_str, scheduled_activity, *args, **kwargs):
             return "临时去公园散步", "测试强制改变", True
 
-        with install(), patch.object(sim, "maybe_adjust_activity", always_change):
+        with install(), patch.object(_stages, "maybe_adjust_activity", always_change):
             sim.run_simulation()
 
         self.assertTrue(POST_STEPS)

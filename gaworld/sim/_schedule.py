@@ -893,8 +893,39 @@ def normalize_flexible_schedule(
         return None
     return cleaned
 
+# Where an agent's day stands at a given time (moved from generative_city_sim).
+
+
+def get_activity_for_time(schedule, time_str):
+    if not schedule:
+        return "个人时间"
+    current_minutes = _time_str_to_minutes(time_str)
+    if current_minutes is None:
+        return schedule[-1][1]
+    last_activity = None
+    for t, activity in schedule:
+        t_minutes = _time_str_to_minutes(t)
+        if t_minutes is None:
+            continue
+        if t_minutes <= current_minutes:
+            last_activity = activity
+        else:
+            break
+    return last_activity or "个人时间"
+
+
+def apply_schedule_override(schedule, time_str, activity):
+    if not schedule:
+        return [(time_str, activity)]
+    updated = [(t, a) for t, a in schedule if t != time_str]
+    updated.append((time_str, activity))
+    updated.sort(key=lambda x: _time_str_to_minutes(x[0]) or 0)
+    return updated
+
 
 __all__ = [
+    "apply_schedule_override",
+    "get_activity_for_time",
     "SLEEP_KEYWORDS",
     "_action_style_tags",
     "_activity_commitment_level",
