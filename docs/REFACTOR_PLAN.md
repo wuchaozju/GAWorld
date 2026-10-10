@@ -8,6 +8,7 @@
 > `compare-event` / `parallel-worlds` 子命令 → `gaworld/sim/_compare.py`（主文件 6,254 → 5,679 行）。
 > 下一批候选：外部信息导入（`_cli_rag_add` 等，约 270 行，需把测试对 `vector_db_add_entry` 等的打桩改到新模块）、
 > 读配置常量的计划 / 日程辅助函数（要连常量一起迁，测试里 `patch.object(sim, "STATEFUL")` 一类的打桩要跟着改）。
+> 第二批已迁：每步的临时改程与临时念头 → `gaworld/sim/_step.py`，相关旋钮改为调用时读配置（主文件 5,679 → 5,232 行）。
 
 ---
 

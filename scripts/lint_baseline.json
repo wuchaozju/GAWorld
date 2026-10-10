@@ -1,5 +1,5 @@
 {
-  "ruff": "ruff 0.16.10",
-  "ruff_findings": 1044,
-  "unformatted_files": 445
+  "ruff": "ruff 0.17.0",
+  "ruff_findings": 1043,
+  "unformatted_files": 443
 }

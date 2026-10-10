@@ -121,6 +121,32 @@ shim of well under 1,500 lines.
   `sim.ROUTINE_CHANGE_RANDOMNESS`, `sim.HUMAN_REALISM_ENABLED`,
   `sim.maybe_adjust_activity` and friends, so those patches move with them.
 
+## 2026-10-10 (later): prerequisite 3, with 4 for its knobs
+
+- Per-step routines → `gaworld/sim/_step.py`: `maybe_generate_transient_thought`,
+  `format_transient_thought`, `maybe_adjust_activity`, `_pick_reshape_life_event`
+  and the nine helpers behind them (13 functions). Re-exported, so
+  `run_simulation`'s bare-name calls and `patch.object(sim, "maybe_adjust_activity")`
+  are unchanged.
+- Their knobs (`routine_change.*`, `spontaneity.*`,
+  `life_events.reshape.severity_threshold`) are read at call time; the 23
+  module-level snapshots in the file are gone (one, `SPONTANEITY_RANDOM_ACTION_CHANCE`,
+  had been dead since `_action.py` started reading it at call time). Same
+  defaults and coercions; the only difference is that a `CONFIG` changed after
+  import is now honoured.
+- Tests that patched `sim.ROUTINE_CHANGE_RANDOMNESS` / `sim.call_llm` around
+  `maybe_adjust_activity` now pin `CONFIG["routine_change"]["randomness"]` and
+  patch `gaworld.llm.providers.call_llm`; the Big Five prompt-wiring test counts
+  the routine-change prompt in `_step.py`.
+- File 5,679 → 5,232 lines; `run_simulation` unchanged (2,280).
+- Next: the twelve stage closures inside `run_simulation` (`_stage_prepare` …
+  `_stage_record`, 937 lines). They close over ~15 run / tick locals (`day`,
+  `time_str`, `hook_bus`, `agents_by_id`, `city_map`, `daily_logs`, …) and use
+  20 names defined in this file plus 47 imported ones, nine of which tests patch
+  on `sim` (`STATEFUL`, `GOALS_ENABLED`, `HUMAN_REALISM_*`, `evoke_memory`,
+  `append_agent_log`, `vector_db_add_entry`, `maybe_adjust_activity`, `CONFIG`).
+  Lifting them needs a per-tick context object and a decision on those patches.
+
 ## Round-4 outcome
 
 - ✅ Audit finished, plan written, phase banners inserted.
