@@ -347,7 +347,7 @@ def is_simulator_process(pid):
     is not enough: after a crash the manifest can name a pid since reused."""
     try:
         result = subprocess.run(
-            ["ps", "-p", str(int(pid)), "-o", "command="], capture_output=True, text=True, timeout=5
+            ["ps", "-ww", "-p", str(int(pid)), "-o", "command="], capture_output=True, text=True, timeout=5
         )
     except (OSError, ValueError, subprocess.SubprocessError):
         return False

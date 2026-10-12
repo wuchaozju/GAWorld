@@ -149,6 +149,21 @@ class ForeignSimulatorTest(unittest.TestCase):
         runs.stop_simulation()
         self.assertIsNotNone(sim.wait(timeout=10))
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux ps width regression")
+    def test_a_long_simulator_command_is_detected_with_narrow_ps_output(self):
+        import subprocess
+
+        # Keep the child alive until stdin closes, without an arbitrary sleep.
+        with (
+            subprocess.Popen(
+                [sys.executable, "-c", "import sys; sys.stdin.read()", "x" * 256, "generative_city_sim.py"],
+                stdin=subprocess.PIPE,
+            ) as sim,
+            mock.patch.dict(os.environ, {"COLUMNS": "80"}),
+        ):
+            self._publish(sim.pid)
+            self.assertEqual(runs.run_status()["foreign_pid"], sim.pid)
+
     def test_a_reused_pid_is_not_mistaken_for_a_simulator(self):
         self._publish(os.getpid())  # alive, but this is pytest
         self.assertIsNone(runs.run_status()["foreign_pid"])
