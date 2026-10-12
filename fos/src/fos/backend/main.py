@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from litestar import Litestar, Router, get
 from litestar.config.cors import CORSConfig
@@ -235,10 +235,65 @@ def create_app() -> Litestar:
         directories=[str(upload_dir)],
         name="uploads",
     )
-    upload_router_fos = create_static_files_router(
+
+    async def _serve_fos_upload(file_name: str, request: Request) -> Response[bytes]:
+        """Serve an uploaded file under /fos/uploads.
+
+        Uploads are stored user-scoped (uploads/<user_id>/<name>) while the
+        public URL is flat (/fos/uploads/<name>), so resolve a bare name
+        through the *authenticated* user's scope as a fallback. Path
+        traversal is rejected outright; only files inside the upload root
+        are ever served.
+        """
+        import mimetypes
+        from urllib.parse import unquote
+
+        from .core.database import get_session
+        from .dependencies import extract_bearer_token, resolve_current_user
+
+        pure = PurePosixPath(unquote(file_name))
+        if (
+            pure.is_absolute()
+            or any(part in ("..", "") for part in pure.parts)
+            or "\\" in file_name
+            or "\x00" in file_name
+        ):
+            return Response(content=b"", status_code=404)
+
+        async def _lookup() -> Path | None:
+            token = extract_bearer_token(request)
+            scope: str | None = None
+            async with get_session() as session:
+                user = await resolve_current_user(session, token)
+                if user is not None:
+                    scope = str(user.id)
+            candidates = [upload_dir / pure]
+            if scope:
+                candidates.append(upload_dir / scope / pure)
+            for candidate in candidates:
+                resolved = candidate.resolve()
+                try:
+                    resolved.relative_to(upload_dir)
+                except ValueError:
+                    return None
+                if resolved.is_file():
+                    return resolved
+            return None
+
+        found = await _lookup()
+        if found is None:
+            return Response(content=b"", status_code=404)
+        media_type = mimetypes.guess_type(found.name)[0] or MediaType.TEXT
+        return Response(content=found.read_bytes(), media_type=media_type)
+
+    upload_router_fos = Router(
         path="/fos/uploads",
-        directories=[str(upload_dir)],
-        name="uploads_fos",
+        route_handlers=[
+            get(
+                "/{file_name:str}",
+                name="uploads_fos",
+            )(_serve_fos_upload)
+        ],
     )
 
     route_handlers = [
