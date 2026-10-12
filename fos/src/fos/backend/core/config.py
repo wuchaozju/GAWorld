@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
+    # Single-user mode (GAWorld integrated deployment): skip authentication and
+    # auto-provision one local user. Never enable on a shared network.
+    single_user_mode: bool = False
+    single_user_username: str = "local"
+    single_user_allow_remote_bind: bool = False
+
     database_url: str = "sqlite+aiosqlite:///./fos.db"
     # Optional SQLAlchemy engine pool tuning
     db_pool_size: int | None = None
@@ -104,6 +110,11 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
     )
+
+    @property
+    def is_loopback_bind(self) -> bool:
+        host = (self.backend_host or "").lower()
+        return host in ("127.0.0.1", "localhost", "::1") or host.startswith("127.")
 
     @property
     def email_enabled(self) -> bool:

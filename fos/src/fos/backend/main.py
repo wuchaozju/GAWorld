@@ -30,6 +30,79 @@ except ModuleNotFoundError:
 _simtree_cleanup_task: asyncio.Task | None = None
 
 
+def _guard_single_user_bind(settings) -> None:
+    """Refuse a non-loopback bind while single_user_mode is on, unless the
+    explicit override (FOS_SINGLE_USER_ALLOW_REMOTE_BIND) is set.
+
+    Only a bind host *explicitly requested* through FOS_BACKEND_HOST counts:
+    the settings default (0.0.0.0) is not an affirmative choice, so the normal
+    single-user startup (uvicorn run entrypoint forces loopback) keeps working.
+    Runs at app construction time so refusal is a clean SystemExit.
+    """
+    import os
+    import logging
+
+    if not settings.single_user_mode:
+        return
+    logging.getLogger(__name__).warning(
+        "[SINGLE-USER MODE] Authentication is BYPASSED; every request is "
+        "attributed to the local user %r. Do not expose this instance.",
+        settings.single_user_username,
+    )
+    requested_host = os.environ.get("FOS_BACKEND_HOST", "").strip()
+    remote_requested = bool(requested_host) and not settings.is_loopback_bind
+    if not remote_requested or settings.single_user_allow_remote_bind:
+        return
+    logging.getLogger(__name__).error(
+        "[SINGLE-USER MODE] Refusing to bind non-loopback host %r with auth "
+        "bypassed. Set FOS_SINGLE_USER_ALLOW_REMOTE_BIND=true to override.",
+        settings.backend_host,
+    )
+    raise SystemExit(1)
+
+
+async def _provision_single_user() -> None:
+    """Idempotently create the local user for single_user_mode via the normal
+    persistence model. Existing users are never modified or replaced."""
+    import secrets
+
+    from sqlalchemy import select
+
+    from .core.database import get_session
+    from .core.security import hash_password
+    from .models.user import User
+
+    settings = get_settings()
+    if not settings.single_user_mode:
+        return
+    username = settings.single_user_username
+    email = f"{username}@example.com"
+    async with get_session() as session:
+        existing = (
+            await session.execute(select(User).where(User.username == username))
+        ).scalar_one_or_none()
+        if existing is not None:
+            return
+        if (
+            await session.execute(select(User).where(User.email == email))
+        ).scalar_one_or_none() is not None:
+            # A real user already owns that address; never touch their row.
+            email = f"{username}.{secrets.token_hex(4)}@example.com"
+        session.add(
+            User(
+                organization=None,
+                email=email,
+                username=username,
+                full_name="Local User",
+                phone_number=None,
+                hashed_password=hash_password(secrets.token_urlsafe(32)),
+                is_active=True,
+                is_verified=True,
+            )
+        )
+        await session.commit()
+
+
 async def _start_polling_service() -> None:
     """Start the PollingService to load enabled data sources and register poll jobs."""
     if PollingService is None:
@@ -135,6 +208,10 @@ def internal_error_handler(request: Request, exc: Exception) -> Response:
 def create_app() -> Litestar:
     settings = get_settings()
 
+    # Refuse an unsafe single-user bind before anything else runs (at app
+    # construction, so the failure surfaces as a clean SystemExit).
+    _guard_single_user_bind(settings)
+
     cors_config = None
     if settings.allowed_origins:
         cors_config = CORSConfig(
@@ -147,6 +224,7 @@ def create_app() -> Litestar:
     api_prefix = settings.api_prefix or "/api"
     api_routes = Router(path=api_prefix, route_handlers=[api_router])
     api_routes_css = Router(path="/css/fos/api", route_handlers=[api_router])
+    api_routes_fos = Router(path="/fos/api", route_handlers=[api_router])
 
     # Static uploads
     root_dir = Path(__file__).resolve().parents[3]
@@ -157,8 +235,19 @@ def create_app() -> Litestar:
         directories=[str(upload_dir)],
         name="uploads",
     )
+    upload_router_fos = create_static_files_router(
+        path="/fos/uploads",
+        directories=[str(upload_dir)],
+        name="uploads_fos",
+    )
 
-    route_handlers = [api_routes, api_routes_css, upload_router]
+    route_handlers = [
+        api_routes,
+        api_routes_css,
+        api_routes_fos,
+        upload_router,
+        upload_router_fos,
+    ]
 
     # 只在生产模式（有 dist 目录）时服务静态文件
     dist_dir = Path(
@@ -245,6 +334,7 @@ def create_app() -> Litestar:
     on_startup = [
         set_app_start_time,
         _prepare_database,
+        _provision_single_user,
         _initialize_vector_store,
         _start_polling_service,
         _start_simtree_cleanup,
@@ -252,7 +342,18 @@ def create_app() -> Litestar:
     ]
     on_shutdown = [_stop_simtree_cleanup]
     if PollingService is not None:
-        on_shutdown.append(PollingService.get_instance().shutdown)
+
+        def _stop_polling_service() -> None:
+            # A startup that aborted early (e.g. the single-user bind guard)
+            # never started the scheduler; shutdown must not mask the error.
+            from apscheduler.schedulers import SchedulerNotRunningError
+
+            try:
+                PollingService.get_instance().shutdown()
+            except SchedulerNotRunningError:
+                pass
+
+        on_shutdown.append(_stop_polling_service)
 
     app_kwargs: dict = {
         "route_handlers": [base_router],

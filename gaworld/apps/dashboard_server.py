@@ -14,7 +14,10 @@ from copy import deepcopy
 from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
+from urllib.request import Request as _UpstreamRequest
+from urllib.request import urlopen as _urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -1319,8 +1322,8 @@ def _fos_route(path):
 
     - /fos and /fos/ (and any deep SPA route) → the built index.html;
     - /fos/assets/<file> → that file from the build output (missing → None);
-    - /fos/api/* is reserved for Phase 2 and /fos/uploads is not
-      implemented — both stay None so they never SPA-fallback.
+    - /fos/api/* and /fos/uploads/* belong to the FOS backend — do_GET /
+      do_HEAD / do_POST forward them there before classification.
     """
     if path != FOS_PREFIX and not path.startswith(FOS_PREFIX + "/"):
         return None
@@ -1332,6 +1335,22 @@ def _fos_route(path):
     if rest.startswith("assets/"):
         return ("asset", rest[len("assets/"):])
     return "index"
+
+
+def _fos_backend_url() -> str:
+    """Base URL of the separate FOS backend process (Phase 2 integration)."""
+    return os.environ.get("FOS_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+
+
+def _is_fos_backend_path(path: str) -> bool:
+    """True for the paths the FOS backend owns: /fos/api and /fos/uploads.
+
+    The /fos prefix is KEPT when forwarding: the backend natively mounts the
+    same router under /api and /fos/api (and /uploads and /fos/uploads), so
+    dev, GAWorld-direct and the Caddy /fos/* proxy all interpret a URL the
+    same way with no rewrite.
+    """
+    return path.startswith("/fos/api") or path.startswith("/fos/uploads")
 
 
 def world_readable(world, user):
@@ -1366,9 +1385,9 @@ PLAY_LINK_RE = re.compile(r"^/play/(w[0-9a-f]{8})/?$")
 FOS_PREFIX = "/fos"
 
 #: The built FOS frontend (grafted at fos/, built into fos/frontend/dist with
-#: FRONTEND_BASE_URL=/fos/). Phase 1 only hosts that static build: everything
-#: under /fos/ that is not an asset is the SPA entry, /fos/api/* stays reserved
-#: for Phase 2 and /fos/uploads is not implemented.
+#: FRONTEND_BASE_URL=/fos/). Static SPA routes are hosted here; /fos/api/* and
+#: /fos/uploads/* are forwarded to the separate FOS backend process
+#: (FOS_BACKEND_URL, default http://127.0.0.1:8000) with the /fos prefix kept.
 FOS_DIST = os.path.join(paths.REPO_ROOT, "fos", "frontend", "dist")
 
 
@@ -1430,6 +1449,50 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         if self.command != "HEAD":
+            self.wfile.write(data)
+
+    # -- FOS backend forwarding (Phase 2) ---------------------------------
+
+    def _forward_fos(self):
+        """Forward /fos/api and /fos/uploads requests to the FOS backend.
+
+        The full original path (including the /fos prefix) and query string
+        are preserved; the backend answers those exact paths natively.
+        """
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        body = self.rfile.read(length) if length else None
+        headers = {
+            key: value
+            for key, value in self.headers.items()
+            if key.lower() not in ("host", "connection", "accept-encoding")
+        }
+        request = _UpstreamRequest(
+            _fos_backend_url() + self.path,
+            data=body,
+            headers=headers,
+            method=self.command,
+        )
+        try:
+            with _urlopen(request, timeout=60) as upstream:
+                status, upstream_headers, data = (
+                    upstream.status,
+                    upstream.headers,
+                    upstream.read(),
+                )
+        except HTTPError as exc:
+            status, upstream_headers, data = exc.code, exc.headers, exc.read()
+        except URLError:
+            return self._json_response(
+                {"error": "FOS backend unreachable"}, status=502
+            )
+        self.send_response(status)
+        for key, value in upstream_headers.items():
+            if key.lower() in ("connection", "transfer-encoding", "content-length", "server", "date"):
+                continue
+            self.send_header(key, value)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD" and data:
             self.wfile.write(data)
 
     def _deny(self, status, message):
@@ -2058,6 +2121,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.cluster_node is not None:
             return self._serve_node("GET", path, {})
         if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
             return self._serve_fos(path)
         link = PLAY_LINK_RE.match(path)
         if link:
@@ -2100,6 +2165,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if path == "/api/health":
             return self._handle_api_get(path, parse_qs(parsed.query))
         if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
             return self._serve_fos(path)
         # "/" is the project landing page — the intro and the way in to every
         # console view. The console itself keeps the /console route it already
@@ -2152,6 +2219,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 _LOG.exception("POST %s failed: %s", path, exc)
                 return self._json_response({"error": str(exc)}, status=500)
         if not path.startswith("/api/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
             return self._json_response({"error": "POST is only supported under /api"}, status=404)
         if self._wrong_method(path):
             return
@@ -2168,6 +2237,26 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             # HTTP boundary: log the full traceback and surface a 500.
             _LOG.exception("POST %s failed: %s", path, exc)
             return self._json_response({"error": str(exc)}, status=500)
+
+    def _do_fos_or_404(self):
+        """Shared body of do_PUT / do_DELETE / do_PATCH: only FOS backend
+        paths are accepted (forwarded verbatim); everything else 404s."""
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
+        if self._guard(path, parsed.query):
+            return
+        if _is_fos_backend_path(path):
+            return self._forward_fos()
+        return self._json_response({"error": "Not found"}, status=404)
+
+    def do_PUT(self):
+        return self._do_fos_or_404()
+
+    def do_DELETE(self):
+        return self._do_fos_or_404()
+
+    def do_PATCH(self):
+        return self._do_fos_or_404()
 
 
 def run_server(host="127.0.0.1", port=8766):
