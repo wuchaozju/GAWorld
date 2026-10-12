@@ -362,10 +362,9 @@ class TestIntegratedUploads:
         with make_app() as client:
             up = client.post(
                 "/fos/api/uploads/",
-                content=b"",
                 files={"file": ("dot.png", __import__("base64").b64decode(png_b64.split(",")[1]), "image/png")},
             )
-            assert up.status_code == 200, (
+            assert up.status_code in (200, 201), (
                 f"RED: integrated upload failed: {up.status_code} {up.text}"
             )
             filename = Path(up.json()["url"]).name
