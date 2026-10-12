@@ -1,0 +1,8 @@
+/*
+ * This file groups the topology explorer styles into one route-level stylesheet.
+ */
+
+@import "../pages/workspace.css";
+@import "../pages/topology-explorer.css";
+
+@tailwind components;

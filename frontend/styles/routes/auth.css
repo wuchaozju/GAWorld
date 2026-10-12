@@ -1,0 +1,8 @@
+/*
+ * This file groups the login and register page styles into one route-level stylesheet.
+ */
+
+@import "../pages/product-pages.css";
+@import "../pages/auth.css";
+
+@tailwind components;

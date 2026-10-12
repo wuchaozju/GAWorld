@@ -1,0 +1,9 @@
+/*
+ * This file groups the simulation workspace styles into one route-level stylesheet.
+ */
+
+@import "../pages/workspace.css";
+@import "../pages/workbench.css";
+@import "../pages/experiment-setup.css";
+
+@tailwind components;

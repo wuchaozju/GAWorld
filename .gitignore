@@ -1,0 +1,144 @@
+# Worktrees
+.worktrees/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+venv/
+.venv/
+dist/
+build/
+.eggs/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example.local
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.ruff_cache/
+test_results/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/test-logs/
+frontend/.vite/
+node_modules/.vite/
+
+# Playwright
+frontend/e2e/collected-results/
+!frontend/e2e/collected-results/.gitkeep
+frontend/e2e/test-results/
+
+# Local AI agent config (never commit local agent state)
+.claude/
+/.pi/
+
+# Databases
+fos.db*
+data/experiment_state.db*
+chroma_db/
+
+# Experiment outputs (large, regenerable — do not commit)
+/runs
+/artifacts
+/results
+/extracted_users
+/personas
+/persona_samples
+reddit_data/
+/multi_model_results.json
+/tests/fixtures/r1yesno_v2/qwen38_27b_unblinded_cells.csv
+/multi_model_table.txt
+
+# Temporary / scratch
+tmp/
+uploads/*/*
+/*.csv
+*.zst
+*.mp4
+coverage.json
+
+# Internal planning and investigation docs
+.planning/
+docs/plans/
+MIGRATION.md
+*.progress
+
+# Traffic logs
+*.jsonl
+
+# Scratch scripts
+_write_scene.py
+scripts/generate_paper_figures.py
+
+# Local dev / machine-specific files
+*.cmd
+run_fos.sh
+opencode.json
+
+# Python package build artifacts (scoped to the src package)
+/src/fos.egg-info/
+
+# Local research data and planning docs (kept on disk, never committed)
+/LOGPROB-DESIGN.md
+/LAUNCH-READY.md
+/QUICKSTART.md
+/TESTING_PLAN.md
+docs/FOS_GRANULARITY.md
+docs/MODEL_ROUTING_DIAGNOSIS.md
+docs/MODEL_SCHEDULING.md
+docs/environment-agent-current-state.md
+docs/environment-agent-design.md
+docs/mock_council_pilot.md
+docs/superpowers/specs/2026-06-02-results-section-design.md
+frontend/docs/scenario-parameter-parity-checklist.md
+frontend/docs/ai-scientist-draft-schema-v1.md
+data/configs/balance_table.md
+data/populations/balance_table.md
+data/populations/leakage_screen.md
+/docs
+
+# One-off experiment scripts (kept on disk, untracked)
+scripts/april_2019_authors.py
+scripts/check_vision_model.py
+scripts/context_barrier_test.py
+scripts/dress_rehearsal_batching.py
+scripts/leak_audit.py
+scripts/r1_interim_analysis.py
+scripts/r1_interim_benchmark.py
+scripts/r1_interim_render.py
+scripts/r1_interim_report.py
+scripts/test_json_reliability.py
+scripts/test_lm_studio_model_switch.py
+scripts/test_one_persona.py
+scripts/test_one_persona_deepseek_baseline.py
+scripts/test_persona_conditions.py
+scripts/test_persona_conditions_31_40.py
+scripts/test_persona_conditions_inverted.py
+scripts/test_persona_reasoning_deepseek.py
+scripts/test_persona_reasoning_deepseek_nos5.py
+scripts/test_persona_reasoning_local.py
+scripts/test_persona_reasoning_openrouter_nos5.py
+scripts/test_template_propagation.py
