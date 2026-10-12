@@ -219,3 +219,6 @@ data/moltbook_accounts.json
 /output_archive_202606/
 /_to_delete/
 .claude/settings.local.json
+
+# Local agent checkouts have independent Git history
+.claude/worktrees/
