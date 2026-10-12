@@ -2813,6 +2813,7 @@
   "city.agents_title": "城市居民",
   "city.agents_search_ph": "按姓名 / 职业 / 编号搜索",
   "nav.research": "研究工作台",
+  "nav.fos": "FOS",
   "research.page_title": "GAWorld · 研究工作台",
   "research.meta_description": "GAWorld 研究工作台：提出一个研究想法或一篇社会科学论文，由大模型分析如何用 GAWorld 的功能实现它，并产出实施方案",
   "research.kicker": "GAWorld 研究工作台",

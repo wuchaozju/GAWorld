@@ -2813,6 +2813,7 @@
   "city.agents_title": "Residents",
   "city.agents_search_ph": "Search by name / work / id",
   "nav.research": "Research",
+  "nav.fos": "FOS",
   "research.page_title": "GAWorld · Research Workbench",
   "research.meta_description": "GAWorld research workbench: bring a research idea or a social-science paper, and a model works out how to run it with GAWorld's features and writes the implementation plan",
   "research.kicker": "GAWorld Research Workbench",

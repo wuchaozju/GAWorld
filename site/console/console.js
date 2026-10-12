@@ -19,6 +19,7 @@
     { id: "play", src: "/site/dashboard/play.html" },
     { id: "survey", src: "/site/dashboard/survey.html" },
     { id: "research", src: "/site/dashboard/research.html" },
+    { id: "fos", src: "/fos/" },
     { id: "collaboration", src: "/site/dashboard/collaboration.html" },
     { id: "games", src: "/site/dashboard/games.html" },
     { id: "external", src: "/site/dashboard/external.html" },
