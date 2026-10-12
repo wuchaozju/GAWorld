@@ -1,0 +1,37 @@
+# FOS Translation Template
+# Copyright (C) 2025
+# This file is distributed under the same license as the FOS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FOS 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-02-24 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: Backend translation keys for experiment builder
+msgid "error.simulation.not_found"
+msgstr ""
+
+msgid "agent.joined"
+msgstr ""
+
+msgid "scenario.category.game_theory"
+msgstr ""
+
+msgid "scenario.category.sociology"
+msgstr ""
+
+msgid "actions.comply_publicly.description"
+msgstr ""
+
+msgid "actions.comply_publicly.execute"
+msgstr ""

@@ -1,0 +1,351 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-04T09:26:47.750964+00:00",
+  "configs": [
+    {
+      "config_id": 0,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.1,
+      "primary_level": 0,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 6.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "k": 6,
+        "p": 0.1
+      }
+    },
+    {
+      "config_id": 1,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.1,
+      "primary_level": 0,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 8.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "k": 8,
+        "p": 0.1
+      }
+    },
+    {
+      "config_id": 2,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.3,
+      "primary_level": 1,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 6.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "k": 6,
+        "p": 0.3
+      }
+    },
+    {
+      "config_id": 3,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.3,
+      "primary_level": 1,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 8.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "k": 8,
+        "p": 0.3
+      }
+    },
+    {
+      "config_id": 4,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.5,
+      "primary_level": 2,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 6.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "k": 6,
+        "p": 0.5
+      }
+    },
+    {
+      "config_id": 5,
+      "generator": "watts_strogatz",
+      "primary_dial_name": "rewiring_probability",
+      "primary_dial_value": 0.5,
+      "primary_level": 2,
+      "secondary_dial_name": "mean_degree",
+      "secondary_dial_value": 8.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "k": 8,
+        "p": 0.5
+      }
+    },
+    {
+      "config_id": 6,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.2,
+      "primary_level": 0,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 3.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "m": 3,
+        "p_triad": 0.2
+      }
+    },
+    {
+      "config_id": 7,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.2,
+      "primary_level": 0,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 4.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "m": 4,
+        "p_triad": 0.2
+      }
+    },
+    {
+      "config_id": 8,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.5,
+      "primary_level": 1,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 3.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "m": 3,
+        "p_triad": 0.5
+      }
+    },
+    {
+      "config_id": 9,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.5,
+      "primary_level": 1,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 4.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "m": 4,
+        "p_triad": 0.5
+      }
+    },
+    {
+      "config_id": 10,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.8,
+      "primary_level": 2,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 3.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "m": 3,
+        "p_triad": 0.8
+      }
+    },
+    {
+      "config_id": 11,
+      "generator": "holme_kim",
+      "primary_dial_name": "triad_probability",
+      "primary_dial_value": 0.8,
+      "primary_level": 2,
+      "secondary_dial_name": "m",
+      "secondary_dial_value": 4.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "m": 4,
+        "p_triad": 0.8
+      }
+    },
+    {
+      "config_id": 12,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 3.0,
+      "primary_level": 0,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 10.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "n_blocks": 10,
+        "block_sizes": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "p_in": 0.15384615384615385,
+        "p_out": 0.05128205128205128,
+        "r": 3,
+        "deg_target": 6
+      }
+    },
+    {
+      "config_id": 13,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 3.0,
+      "primary_level": 0,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 20.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "n_blocks": 5,
+        "block_sizes": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "p_in": 0.13138686131386862,
+        "p_out": 0.043795620437956206,
+        "r": 3,
+        "deg_target": 6
+      }
+    },
+    {
+      "config_id": 14,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 10.0,
+      "primary_level": 1,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 10.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "n_blocks": 10,
+        "block_sizes": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "p_in": 0.3333333333333333,
+        "p_out": 0.03333333333333333,
+        "r": 10,
+        "deg_target": 6
+      }
+    },
+    {
+      "config_id": 15,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 10.0,
+      "primary_level": 1,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 20.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "n_blocks": 5,
+        "block_sizes": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "p_in": 0.22222222222222224,
+        "p_out": 0.022222222222222223,
+        "r": 10,
+        "deg_target": 6
+      }
+    },
+    {
+      "config_id": 16,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 50.0,
+      "primary_level": 2,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 10.0,
+      "secondary_level": 0,
+      "params": {
+        "n": 100,
+        "n_blocks": 10,
+        "block_sizes": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "p_in": 0.5555555555555556,
+        "p_out": 0.011111111111111112,
+        "r": 50,
+        "deg_target": 6
+      }
+    },
+    {
+      "config_id": 17,
+      "generator": "sbm",
+      "primary_dial_name": "within_between_ratio",
+      "primary_dial_value": 50.0,
+      "primary_level": 2,
+      "secondary_dial_name": "group_size",
+      "secondary_dial_value": 20.0,
+      "secondary_level": 1,
+      "params": {
+        "n": 100,
+        "n_blocks": 5,
+        "block_sizes": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "p_in": 0.2912621359223301,
+        "p_out": 0.005825242718446602,
+        "r": 50,
+        "deg_target": 6
+      }
+    }
+  ]
+}
