@@ -1,6 +1,7 @@
 import atexit
 import hmac
 import json
+import mimetypes
 import os
 import re
 import subprocess
@@ -1313,6 +1314,26 @@ DENIALS = {
 }
 
 
+def _fos_route(path):
+    """Classify a /fos request: "index", ("asset", name), or None (404).
+
+    - /fos and /fos/ (and any deep SPA route) → the built index.html;
+    - /fos/assets/<file> → that file from the build output (missing → None);
+    - /fos/api/* is reserved for Phase 2 and /fos/uploads is not
+      implemented — both stay None so they never SPA-fallback.
+    """
+    if path != FOS_PREFIX and not path.startswith(FOS_PREFIX + "/"):
+        return None
+    rest = path[len(FOS_PREFIX):].lstrip("/")
+    if rest.startswith("api/") or rest == "api":
+        return None
+    if rest.startswith("uploads"):
+        return None
+    if rest.startswith("assets/"):
+        return ("asset", rest[len("assets/"):])
+    return "index"
+
+
 def world_readable(world, user):
     """Owners and admins see a world; others only once it is shared."""
     if user is None:
@@ -1342,8 +1363,19 @@ STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md"))
 PLAY_LINK_RE = re.compile(r"^/play/(w[0-9a-f]{8})/?$")
 
 
+FOS_PREFIX = "/fos"
+
+#: The built FOS frontend (grafted at fos/, built into fos/frontend/dist with
+#: FRONTEND_BASE_URL=/fos/). Phase 1 only hosts that static build: everything
+#: under /fos/ that is not an asset is the SPA entry, /fos/api/* stays reserved
+#: for Phase 2 and /fos/uploads is not implemented.
+FOS_DIST = os.path.join(paths.REPO_ROOT, "fos", "frontend", "dist")
+
+
 def _static_path_allowed(path):
     if PLAY_LINK_RE.match(path):
+        return True
+    if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
         return True
     if path in STATIC_ROUTES or path in STATIC_FILES or path.startswith(STATIC_PREFIXES):
         return True
@@ -1372,6 +1404,33 @@ class DashboardHandler(SimpleHTTPRequestHandler):
     AUTH_COOKIE = "gaworld_token"
     user = None
     accounts = None
+
+    # -- FOS frontend hosting (Phase 1) -----------------------------------
+
+    def _serve_fos(self, path):
+        """Serve the built FOS frontend; shared by do_GET and do_HEAD."""
+        route = _fos_route(path)
+        if route == "index":
+            file_path = os.path.join(FOS_DIST, "index.html")
+            ctype = "text/html; charset=utf-8"
+        elif isinstance(route, tuple):
+            name = route[1]
+            if not name or os.path.isabs(name) or ".." in name.split("/"):
+                return self._deny(404, "Not found")
+            file_path = os.path.join(FOS_DIST, "assets", *name.split("/"))
+            ctype = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        else:
+            return self._deny(404, "Not found")
+        if not os.path.isfile(file_path):
+            return self._deny(404, "Not found")
+        with open(file_path, "rb") as handle:
+            data = handle.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
 
     def _deny(self, status, message):
         if self.path.startswith("/api/"):
@@ -1998,6 +2057,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
         if self.cluster_node is not None:
             return self._serve_node("GET", path, {})
+        if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            return self._serve_fos(path)
         link = PLAY_LINK_RE.match(path)
         if link:
             return self._open_play_link(link.group(1))
@@ -2038,6 +2099,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
         if path == "/api/health":
             return self._handle_api_get(path, parse_qs(parsed.query))
+        if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            return self._serve_fos(path)
         # "/" is the project landing page — the intro and the way in to every
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
