@@ -109,3 +109,34 @@ produce an English summary of (typically Chinese) simulation output.
    `/site/dashboard/locales/{code}.json`.
 
 
+
+## 3. Integrated deployment (FOS UI + backend under GAWorld)
+
+The built FOS frontend is served by the GAWorld dashboard at `/fos/`; API and
+upload requests under `/fos/api/*` and `/fos/uploads/*` are forwarded to the
+FOS backend, a **separate process** (default `http://127.0.0.1:8000`, override
+with `FOS_BACKEND_URL`). The `/fos` prefix is kept end-to-end — the backend
+natively answers `/fos/api` and `/fos/uploads`, so development, GAWorld-direct
+and the Caddy `/fos/*` proxy all behave identically.
+
+### Development startup (two terminals)
+
+```bash
+# Terminal 1 — FOS backend (single-user mode, loopback only)
+cd fos && ../.venv-fos-integration/bin/python -m uvicorn fos.backend.main:app \
+    --host 127.0.0.1 --port 8000
+# single-user mode via normal config (env or fos/.env):
+#   FOS_SINGLE_USER_MODE=true
+#   FOS_SINGLE_USER_USERNAME=local        # optional, default "local"
+#
+# Safety: with single-user mode on, the backend refuses to bind a non-loopback
+# host unless FOS_SINGLE_USER_ALLOW_REMOTE_BIND=true is also set.
+
+# Terminal 2 — GAWorld dashboard (serves /fos/ and forwards /fos/api, /fos/uploads)
+python gaworld/apps/dashboard_server.py
+```
+
+Open `http://127.0.0.1:8766/fos/` — with single-user mode on, no login is
+required (a local user is provisioned automatically on first startup);
+GAWorld console pages under `/` are unaffected. With
+`FOS_SINGLE_USER_MODE=false` (default), normal FOS login applies.

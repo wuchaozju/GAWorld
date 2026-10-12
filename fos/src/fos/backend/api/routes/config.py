@@ -9,6 +9,7 @@ async def read_config() -> dict:
         "app_name": settings.app_name,
         "debug": settings.debug,
         "allowed_origins": settings.allowed_origins,
+        "single_user_mode": settings.single_user_mode,
     }
 
 

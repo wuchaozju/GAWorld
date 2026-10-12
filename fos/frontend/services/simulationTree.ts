@@ -32,9 +32,11 @@ function toWsUrl(base: string, path: string, token?: string): string {
   const b = base.replace(/\/$/, "");
   const url = new URL(b, window.location.origin);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  const full = new URL(path.replace(/^\//, "/"), url);
-  if (token) full.searchParams.set("token", token);
-  return full.toString();
+  // Append the path to the base's pathname so a base like /fos/api keeps its
+  // prefix (new URL with a root-absolute path would wipe it).
+  url.pathname = url.pathname.replace(/\/$/, "") + "/" + path.replace(/^\//, "");
+  if (token) url.searchParams.set("token", token);
+  return url.toString();
 }
 
 /**
