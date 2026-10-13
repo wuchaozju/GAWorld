@@ -85,7 +85,7 @@ describe('useGAWorldPopulation', () => {
     });
     expect(result.current.city).toBe('liuxi-cun');
     expect(result.current.agents).toHaveLength(2);
-    expect((fetchMock.mock.calls[1][0] as string).toContain('city=liuxi-cun'));
+    expect(String(fetchMock.mock.calls[1][0])).toContain('city=liuxi-cun');
   });
 
   it('test_selection_survives_pagination', async () => {
