@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/github-cover.svg" width="100%" alt="GAWorld — Generative agents, culture and everyday life" /></p>
+<p align="center"><img src="docs/assets/github-cover.svg" width="100%" alt="GAWorld — Generative Social Simulation" /></p>
 
 <p align="center">
 <a href="https://s2014628.github.io/gaworld-bench/world/">项目主页 / Website</a> ·
@@ -8,20 +8,20 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Python-3.11%2B-376556?style=flat-square" alt="Python 3.11+" />
-<img src="https://img.shields.io/badge/Install-pip%20from%20GitHub-a34533?style=flat-square" alt="Install with pip from GitHub" />
-<a href="https://github.com/wuchaozju/GAWorld/graphs/contributors"><img src="https://img.shields.io/github/contributors/wuchaozju/GAWorld?color=376556&amp;style=flat-square" alt="GitHub contributors" /></a>
+<img src="https://img.shields.io/badge/Python-3.11%2B-142f43?style=flat-square" alt="Python 3.11+" />
+<img src="https://img.shields.io/badge/Install-pip%20from%20GitHub-86534e?style=flat-square" alt="Install with pip from GitHub" />
+<a href="https://github.com/wuchaozju/GAWorld/graphs/contributors"><img src="https://img.shields.io/github/contributors/wuchaozju/GAWorld?color=142f43&amp;style=flat-square" alt="GitHub contributors" /></a>
 </p>
 
-# GAWorld · 人间实验室
+# GAWorld · 生成式社会仿真平台
 
-**让记忆、关系与日常文化，进入一个可以研究的世界。**
+**在城市环境中模拟居民行为，比较不同事件与政策的影响。**
 
-GAWorld 是生成式多智能体社会仿真平台。人物档案、人格、家庭责任与过往经历共同构成居民的情境；城市、经济、天气与社会网络让行动产生后果。研究者可以观察轨迹、访谈居民，也可以在平行世界中比较不同事件与政策。
+GAWorld 是生成式多智能体社会仿真平台。人物档案、人格、家庭责任和过往经历构成居民的决策情境；城市、经济、天气和社会网络构成仿真环境，并影响行动结果。研究者可以观察轨迹、访谈居民，在平行世界中比较不同事件与政策。
 
-文化情境是设计的起点，是否真实则需要实验验证。
+文化情境是建模的起点，仿真行为是否真实需要实验验证。
 
-## Contributors · 一起构建这个世界的人
+## Contributors · 项目贡献者
 
 <p align="center">
 <a href="https://github.com/wuchaozju"><img src="https://avatars.githubusercontent.com/u/597007?v=4&amp;s=128" width="64" height="64" alt="wuchaozju" /></a>
@@ -33,7 +33,7 @@ GAWorld 是生成式多智能体社会仿真平台。人物档案、人格、家
 
 <p align="center"><a href="https://github.com/wuchaozju">wuchaozju</a> · <a href="https://github.com/s2014628">s2014628</a> · <a href="https://github.com/justinmiller1104">justinmiller1104</a> · <a href="https://github.com/G-luckily">G-luckily</a> · <a href="https://github.com/Luciddreamzz">Luciddreamzz</a></p>
 
-感谢每一份代码、审阅与反馈。以上账号来自 GitHub 的真实贡献记录，不额外推断个人角色。
+感谢大家的代码、审阅和反馈。以下账号来自 GitHub 的公开贡献记录，未额外标注个人项目角色。
 [查看全部贡献者](https://github.com/wuchaozju/GAWorld/graphs/contributors) · [协作流程](CONTRIBUTING.md) · [提交问题](https://github.com/wuchaozju/GAWorld/issues)
 
 ## 一条 pip 命令安装
@@ -64,16 +64,16 @@ gaworld dashboard
 
 当前通过 GitHub 分发，尚未发布 PyPI 包，因此安装命令使用项目地址。已初始化的工作区保留原版本；升级安装包后可用新目录初始化新版本，并单独迁移自己的数据。
 
-## 从人，到城市，到问题
+## 平台功能
 
-| 视角 | 能做什么 | 入口 |
+| 模块 | 功能 | 文档 |
 | --- | --- | --- |
-| **有来处的人** | 居民画像、大五人格、情景记忆、长期目标与家庭责任 | [Agent Studio 与完整指南](docs/PROJECT_GUIDE.zh-CN.md) |
-| **会发生生活的城市** | 从地名创建城市，连接空间、通勤、天气、工作与经济系统 | [城市教程](docs/CITY_TUTORIAL.md) |
-| **可以走进去的世界** | 创建人群、访谈居民、开展社会游戏、共享与分布式参与 | [群体访谈](docs/GROUP_INTERVIEW_TUTORIAL.md) · [游戏场](docs/PLAYGROUND_TUTORIAL.md) |
-| **可以检验的问题** | 平行世界、政策与事件干预、配对结果和不确定性分析 | [研究工作台](docs/RESEARCH_WORKBENCH_TUTORIAL.md) · [平行世界](docs/PARALLEL_WORLDS_TUTORIAL.md) |
+| **居民与记忆** | 居民画像、大五人格、情景记忆、长期目标与家庭责任 | [Agent Studio 与完整指南](docs/PROJECT_GUIDE.zh-CN.md) |
+| **城市环境** | 从地名创建城市，连接空间、通勤、天气、工作与经济系统 | [城市教程](docs/CITY_TUTORIAL.md) |
+| **人群与参与** | 创建人群、访谈居民、开展社会游戏、共享与分布式参与 | [群体访谈](docs/GROUP_INTERVIEW_TUTORIAL.md) · [游戏场](docs/PLAYGROUND_TUTORIAL.md) |
+| **对照实验** | 平行世界、政策与事件干预、配对结果和不确定性分析 | [研究工作台](docs/RESEARCH_WORKBENCH_TUTORIAL.md) · [平行世界](docs/PARALLEL_WORLDS_TUTORIAL.md) |
 
-## GAWorld Bench · 两个问题，两条轴
+## GAWorld Bench · 功能效度与人类效度
 
 - **功能效度**：任务是否完成？记忆、工具与平台机制是否发挥作用？
 - **人类效度**：回答和行为是否接近匹配的真实人类参照？
@@ -89,7 +89,7 @@ python -m pip install -e ".[dev]"
 python -m pytest --suite core
 ```
 
-新的子系统通过微内核插件接入。[插件开发](docs/PLUGIN_AUTHORING.md) · [团队协作](CONTRIBUTING.md) · [部署指南](docs/SERVER_DEPLOYMENT.md)
+新子系统通过微内核插件接入。[插件开发](docs/PLUGIN_AUTHORING.md) · [团队协作](CONTRIBUTING.md) · [部署指南](docs/SERVER_DEPLOYMENT.md)
 
 ## 文档与使用边界
 

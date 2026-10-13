@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/github-cover.svg" width="100%" alt="GAWorld — Generative agents, culture and everyday life" /></p>
+<p align="center"><img src="docs/assets/github-cover.svg" width="100%" alt="GAWorld — Generative Social Simulation" /></p>
 
 <p align="center">
 <a href="https://s2014628.github.io/gaworld-bench/world/">项目主页 / Website</a> ·
@@ -8,20 +8,20 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Python-3.11%2B-376556?style=flat-square" alt="Python 3.11+" />
-<img src="https://img.shields.io/badge/Install-pip%20from%20GitHub-a34533?style=flat-square" alt="Install with pip from GitHub" />
-<a href="https://github.com/wuchaozju/GAWorld/graphs/contributors"><img src="https://img.shields.io/github/contributors/wuchaozju/GAWorld?color=376556&amp;style=flat-square" alt="GitHub contributors" /></a>
+<img src="https://img.shields.io/badge/Python-3.11%2B-142f43?style=flat-square" alt="Python 3.11+" />
+<img src="https://img.shields.io/badge/Install-pip%20from%20GitHub-86534e?style=flat-square" alt="Install with pip from GitHub" />
+<a href="https://github.com/wuchaozju/GAWorld/graphs/contributors"><img src="https://img.shields.io/github/contributors/wuchaozju/GAWorld?color=142f43&amp;style=flat-square" alt="GitHub contributors" /></a>
 </p>
 
-# GAWorld · A world of people
+# GAWorld · Generative Social Simulation
 
-**Memory, relationships and everyday culture, inside a world you can study.**
+**Model resident behavior in cities and compare event or policy conditions.**
 
-GAWorld is a generative multi-agent platform for social simulation. Resident portraits, personality, family obligations and past experiences provide the context for decisions. Cities, economies, weather and social networks give those decisions consequences. Researchers can inspect traces, interview residents and compare policies or events across parallel worlds.
+GAWorld is a generative multi-agent platform for social simulation. Resident profiles, personality, family obligations and past experiences provide the context for decisions. Cities, economies, weather and social networks define the environment and affect action outcomes. Researchers can inspect traces, interview residents and compare policy or event conditions across parallel worlds.
 
 Cultural context is a design commitment; fidelity remains a question to test.
 
-## Contributors · The people behind the world
+## Contributors
 
 <p align="center">
 <a href="https://github.com/wuchaozju"><img src="https://avatars.githubusercontent.com/u/597007?v=4&amp;s=128" width="64" height="64" alt="wuchaozju" /></a>
@@ -59,16 +59,16 @@ Configure your own model endpoint and API key under **Settings → Models**, tes
 
 Distribution is currently through GitHub, not PyPI. Existing workspaces retain their runtime version; initialize a new directory after upgrading the package, then migrate your data separately.
 
-## People, places and possibilities
+## Platform capabilities
 
-| Perspective | Capabilities | Guide |
+| Module | Capabilities | Guide |
 | --- | --- | --- |
-| **People with context** | Resident portraits, Big Five personality, episodic memory, long-term goals and household obligations | [Complete guide](docs/PROJECT_GUIDE.en.md) |
-| **Places that live** | Cities from place names; geography, movement, weather, work and an auditable economy | [Cities](docs/CITY_TUTORIAL.md) |
-| **Worlds you can enter** | Population creation, crowd interviews, social games, shared and distributed participation | [Interviews](docs/GROUP_INTERVIEW_TUTORIAL.md) · [Games](docs/PLAYGROUND_TUTORIAL.md) |
-| **Questions you can test** | Parallel worlds, interventions, paired outcomes and uncertainty analysis | [Research workbench](docs/RESEARCH_WORKBENCH_TUTORIAL.md) · [Parallel worlds](docs/PARALLEL_WORLDS_TUTORIAL.md) |
+| **Residents and memory** | Resident portraits, Big Five personality, episodic memory, long-term goals and household obligations | [Complete guide](docs/PROJECT_GUIDE.en.md) |
+| **City environments** | Cities from place names; geography, movement, weather, work and an auditable economy | [Cities](docs/CITY_TUTORIAL.md) |
+| **Population and participation** | Population creation, crowd interviews, social games, shared and distributed participation | [Interviews](docs/GROUP_INTERVIEW_TUTORIAL.md) · [Games](docs/PLAYGROUND_TUTORIAL.md) |
+| **Controlled experiments** | Parallel worlds, interventions, paired outcomes and uncertainty analysis | [Research workbench](docs/RESEARCH_WORKBENCH_TUTORIAL.md) · [Parallel worlds](docs/PARALLEL_WORLDS_TUTORIAL.md) |
 
-## GAWorld Bench · Two questions, two axes
+## GAWorld Bench · Functional validity and human validity
 
 **Functional validity** asks whether tasks and mechanisms work. **Human validity** compares responses and behavior against matched human references. [Explore the benchmark](https://s2014628.github.io/gaworld-bench/).
 
