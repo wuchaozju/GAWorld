@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from litestar import post, get, Router
 from litestar.exceptions import HTTPException
@@ -17,6 +17,36 @@ from fos.backend.dependencies import extract_bearer_token, resolve_current_user
 from fos.backend.models.simulation import Simulation
 from fos.backend.models.user import ProviderConfig
 from fos.backend.models.llm_usage import LLMUsage
+
+try:  # Phase 4: GAWorld routing validation + secret-free status when available
+    from gaworld.llm.providers import llm_routing_status as _llm_routing_status
+    from gaworld.llm.providers import validate_llm_routing as _validate_llm_routing
+except Exception:  # pragma: no cover — fos must work standalone
+    _SECRET_KEYS = {"api_key", "api-key", "apikey", "authorization", "token", "secret", "password", "headers"}
+
+    def _llm_routing_status(routing):
+        def _clean(value):
+            if isinstance(value, dict):
+                return {k: _clean(v) for k, v in value.items() if str(k).lower() not in _SECRET_KEYS}
+            if isinstance(value, (list, tuple)):
+                return [_clean(v) for v in value]
+            return value
+
+        return _clean(routing or {})
+
+    def _validate_llm_routing(cfg, selected_agent_ids=None, known_providers=None):
+        cfg = cfg or {}
+        if not cfg:
+            return
+        if not cfg.get("default"):
+            raise ValueError("llm routing config is missing a default provider assignment")
+        known = set(known_providers or [])
+        names = [cfg["default"].get("provider") if isinstance(cfg["default"], dict) else cfg["default"]]
+        for entry in (cfg.get("agents") or {}).values():
+            names.append(entry.get("provider") if isinstance(entry, dict) else entry)
+        for name in names:
+            if known and name not in known:
+                raise ValueError(f"llm routing references unknown provider {name!r}")
 from fos.backend.services.experiment_runner import (
     create_experiment_db,
     start_experiment_run_background,
@@ -36,6 +66,10 @@ class CreateExperimentRequest(BaseModel):
     # Accept numeric base_node (float allowed) and coerce to int in handler.
     base_node: float
     variants: List[VariantSpec]
+    # Phase 4: optional experiment-level LLM routing config
+    # {default, agents, failure_policy, fallback_order} — provider references
+    # only, never credentials. Persisted into the experiment's JSON storage.
+    llm: Optional[dict] = None
 
 
 class RunExperimentRequest(BaseModel):
@@ -57,7 +91,14 @@ async def create_experiment(request: Request, simulation_id: str, data: CreateEx
         await get_simulation_and_tree_for_owner(session, current_user.id, simulation_id)
     # persist experiment to DB
     # coerce base_node to int (floor) to tolerate frontend float inputs like 2.1
-    exp_id = await create_experiment_db(simulation_id, int(data.base_node), data.name, None, [v.dict() for v in data.variants])
+    exp_id = await create_experiment_db(
+        simulation_id,
+        int(data.base_node),
+        data.name,
+        None,
+        [v.dict() for v in data.variants],
+        llm=data.llm,
+    )
     async with get_session() as session:
         current_user = await resolve_current_user(session, token)
         sim = await session.get(Simulation, simulation_id.upper())
@@ -174,12 +215,14 @@ async def get_experiment(request: Request, simulation_id: str, exp_id: str) -> d
         exp = res.scalars().first()
         if exp is None:
             return {"error": T('api.experiments.not_found')}
-        # serialize minimal experiment info
+        # serialize minimal experiment info (llm block is secret-free —
+        # credential keys are stripped before persistence and again on read)
         return {
             "experiment": {
                 "id": exp.id,
                 "name": exp.name,
                 "base_node": exp.base_node,
+                "llm": _llm_routing_status((exp.model_meta or {}).get("llm")),
                 "variants": [{"id": v.id, "name": v.name, "ops": v.ops, "node_id": v.node_id} for v in (exp.variants or [])],
                 "runs": [{"id": r.id, "turns": r.turns, "status": r.status, "result_meta": r.result_meta} for r in (exp.runs or [])],
             }
