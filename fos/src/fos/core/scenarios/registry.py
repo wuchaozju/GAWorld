@@ -744,6 +744,16 @@ GAWORLD: Dict[str, Any] = {
             "options": ["in_the_moment", "some_continuity", "rich_memory"],
         },
         {
+            "id": "gaworld_city",
+            "key": "gaworld_city",
+            "label": "GAWorld City",
+            "description": "GAWorld city slug whose residents populate the run "
+            "(populations/agents are chosen in the Agents step)",
+            "type": "string",
+            "default": "",
+            "ui_hint": "text",
+        },
+        {
             "id": "seed",
             "key": "seed",
             "label": "scenario_templates.gaworld.parameters.seed.label",

@@ -483,10 +483,18 @@ class GAWorldScene(ExperimentScene):
     def _launch_subprocess(self, target_day: int) -> None:
         launch_started_at = time.perf_counter()
         bounded_sim_days = max(1, int(target_day))
-        profiles = load_profiles()
-        if self._agent_ids:
-            selected = set(self._agent_ids)
-            profiles = [profile for profile in profiles if profile.id in selected]
+        population = (
+            self.config.parameters.get("population")
+            if isinstance(self.config.parameters.get("population"), dict)
+            else {}
+        ) or {}
+        live_population = str(population.get("source", "")).strip() == "gaworld"
+        profiles: list[Any] = []
+        if not live_population:
+            profiles = load_profiles()
+            if self._agent_ids:
+                selected = set(self._agent_ids)
+                profiles = [profile for profile in profiles if profile.id in selected]
 
         temp_dir = Path(tempfile.mkdtemp(prefix="gaworld_"))
         output_dir = Path(self.config.parameters.get("output_dir", temp_dir / "output"))
@@ -514,7 +522,22 @@ class GAWorldScene(ExperimentScene):
             profiles_path = temp_dir / "profiles.csv"
             export_profiles_csv(profiles, profiles_path)
             config_overrides["csv_path"] = str(profiles_path)
-        config_overrides["agent_ids"] = list(self._agent_ids)
+        if live_population:
+            # GAWorld owns the residents on this path — pass the city ref and
+            # the exact int agent IDs; no duplicate FOS profile CSV is written.
+            city_slug = str(population.get("city", "") or "").strip()
+            if city_slug:
+                config_overrides["city"] = city_slug
+            if population.get("generation_job_id"):
+                config_overrides["population_job_id"] = str(population["generation_job_id"])
+            try:
+                config_overrides["agent_ids"] = [
+                    int(str(agent_id).strip()) for agent_id in self._agent_ids
+                ]
+            except ValueError:
+                config_overrides["agent_ids"] = list(self._agent_ids)
+        else:
+            config_overrides["agent_ids"] = list(self._agent_ids)
         llm_settings = self._resolve_llm_settings()
         config_overrides.update(_build_llm_config_overrides(llm_settings))
         env_overrides: dict[str, str] = {}
@@ -686,6 +709,11 @@ class GAWorldScene(ExperimentScene):
         data = super().serialize_config()
         data["config"]["agents"] = self.config.agents
         data["skipped_days"] = list(self.skipped_days)
+        population = self.config.parameters.get("population")
+        if isinstance(population, dict) and population.get("source") == "gaworld":
+            # Provenance: GAWorld is the source of truth for these residents;
+            # agent IDs stay the exact ints GAWorld issued.
+            data["config"]["population"] = dict(population)
         return data
 
     def cleanup_runtime_resources(self) -> None:

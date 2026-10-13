@@ -117,6 +117,7 @@ interface ExperimentBuilderActions {
   removeAgentType: (id: string) => void;
   updateAgentType: (id: string, updates: Partial<ManualAgentType>) => void;
   loadDefaultAgentsForScenario: (scenarioId: string, agentIds?: string) => Promise<void>;
+  loadGAWorldAgentConfigs: (configs: DefaultScenarioAgent[]) => void;
   loadProviders: () => Promise<void>;
   setSelectedProviderId: (id: number | null) => void;
   getSelectedProviderId: () => number | null;
@@ -337,6 +338,22 @@ export const useExperimentBuilder = create<ExperimentBuilderState & ExperimentBu
 
     const defaultAgents = await getScenarioDefaultAgents(scenarioId, agentIds);
     const agentTypes = defaultAgents.map((agent) => normalizeDefaultAgent(agent));
+
+    set((state) => {
+      const newErrors = { ...state.validationErrors };
+      if (agentTypes.length > 0 && newErrors.agents) {
+        delete newErrors.agents;
+      }
+      return {
+        agentMode: 'manual',
+        agentTypes,
+        validationErrors: newErrors,
+      };
+    });
+  },
+
+  loadGAWorldAgentConfigs: (configs) => {
+    const agentTypes = configs.map((agent) => normalizeDefaultAgent(agent));
 
     set((state) => {
       const newErrors = { ...state.validationErrors };
