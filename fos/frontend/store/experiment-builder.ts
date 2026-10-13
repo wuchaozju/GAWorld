@@ -81,6 +81,9 @@ export interface ExperimentBuilderState {
   agentTypes: ManualAgentType[];
   llmProviders: LLMProvider[];
   selectedProviderId: number | null;
+  // Phase 4: LLM failure policy (experiment-level)
+  failurePolicy: 'pause_and_ask' | 'fail' | 'ordered_fallback';
+  fallbackProviderIds: number[];
 
   // Step 5: Network Configuration
   socialNetwork: SocialNetwork;
@@ -120,6 +123,8 @@ interface ExperimentBuilderActions {
   loadGAWorldAgentConfigs: (configs: DefaultScenarioAgent[]) => void;
   loadProviders: () => Promise<void>;
   setSelectedProviderId: (id: number | null) => void;
+  setFailurePolicy: (policy: 'pause_and_ask' | 'fail' | 'ordered_fallback') => void;
+  setFallbackProviderIds: (ids: number[]) => void;
   getSelectedProviderId: () => number | null;
 
   // Step 5: Network Configuration
@@ -148,6 +153,8 @@ const getInitialState = (): ExperimentBuilderState => ({
   agentTypes: [],
   llmProviders: [],
   selectedProviderId: null,
+  failurePolicy: 'pause_and_ask',
+  fallbackProviderIds: [],
   socialNetwork: {},
   validationErrors: {},
   interactionTypes: [],
@@ -385,6 +392,8 @@ export const useExperimentBuilder = create<ExperimentBuilderState & ExperimentBu
   },
 
   setSelectedProviderId: (id) => set({ selectedProviderId: id }),
+  setFailurePolicy: (policy) => set({ failurePolicy: policy }),
+  setFallbackProviderIds: (ids) => set({ fallbackProviderIds: ids }),
 
   getSelectedProviderId: () => get().selectedProviderId,
 

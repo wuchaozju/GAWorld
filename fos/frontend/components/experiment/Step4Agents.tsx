@@ -21,6 +21,7 @@ import { applyLlmDistribution } from '../../utils/llmDistribution';
 import { Button } from '../ui/button';
 import { ChevronDown } from 'lucide-react';
 import GAWorldPopulationChooser, { GAWorldPopulationSelection } from './GAWorldPopulationChooser';
+import LlmRoutingPolicy from './LlmRoutingPolicy';
 import { getGAWorldStarterCohortIds, RECOMMENDED_STARTER_POPULATION } from './gaworldStarterCohorts';
 import { isPolicyCascadeScenario } from '../../utils/policyCascade';
 
@@ -1466,6 +1467,10 @@ export const Step4Agents: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Phase 4: LLM routing policy (default assignment, failure policy,
+          explicit ordered fallback list) */}
+      <LlmRoutingPolicy />
     </div>
   );
 };
