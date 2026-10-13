@@ -301,7 +301,9 @@
         "empty_response": "LLM返回了原型'{archetype}'的空响应",
         "no_json_in_response": "LLM响应中未包含原型'{archetype}'的有效JSON",
         "invalid_json": "LLM返回了原型'{archetype}'的无效JSON：{error}",
-        "missing_field": "LLM响应缺少原型'{archetype}'的必填字段'{field}'"
+        "missing_field": "LLM响应缺少原型'{archetype}'的必填字段'{field}'",
+        "routing_missing_default": "LLM路由配置缺少默认提供商",
+        "routing_unknown_provider": "LLM路由引用了未知提供商{name}"
       },
       "simtree": {
         "unsupported_scene_type": "不支持的场景类型：{scene_type}",

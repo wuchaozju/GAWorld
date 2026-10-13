@@ -39,14 +39,14 @@ except Exception:  # pragma: no cover — fos must work standalone
         if not cfg:
             return
         if not cfg.get("default"):
-            raise ValueError("llm routing config is missing a default provider assignment")
+            raise ValueError(T("api.errors.llm.routing_missing_default"))
         known = set(known_providers or [])
         names = [cfg["default"].get("provider") if isinstance(cfg["default"], dict) else cfg["default"]]
         for entry in (cfg.get("agents") or {}).values():
             names.append(entry.get("provider") if isinstance(entry, dict) else entry)
         for name in names:
             if known and name not in known:
-                raise ValueError(f"llm routing references unknown provider {name!r}")
+                raise ValueError(T("api.errors.llm.routing_unknown_provider", name=str(name)))
 from fos.backend.services.experiment_runner import (
     create_experiment_db,
     start_experiment_run_background,

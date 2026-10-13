@@ -212,6 +212,46 @@ export const STEPS = [
     { id: 6, title: 'Review', description: 'Preview what agents will see' },
 ];
 
+export interface LlmRoutingPayload {
+  default: { provider: string; model: string };
+  agents?: Record<string, { provider: string; model: string }>;
+  failure_policy: 'pause_and_ask' | 'fail' | 'ordered_fallback';
+  fallback_order?: string[];
+}
+
+/**
+ * Phase 4: turn the builder's routing choices into the experiment `llm` block
+ * ({default, agents, failure_policy, fallback_order}). Agent keys are the exact
+ * GAWorld agent ids carried in `properties.gaworld_agent_id`. Returns null when
+ * no default provider is selected so experiments without routing config keep the
+ * legacy payload (backward compatible).
+ */
+export function buildLlmRoutingPayload(): LlmRoutingPayload | null {
+  const { llmProviders, selectedProviderId, agentTypes, failurePolicy, fallbackProviderIds } =
+    useExperimentBuilder.getState();
+  const byId = (id: number | null | undefined) =>
+    llmProviders.find((p: LLMProvider) => p.id === id);
+  const target = (p?: LLMProvider) =>
+    p ? { provider: p.provider, model: p.model || 'default' } : null;
+  const def = target(byId(selectedProviderId));
+  if (!def) return null;
+  const agents: Record<string, { provider: string; model: string }> = {};
+  for (const at of agentTypes) {
+    const gid = at.properties?.gaworld_agent_id;
+    if (gid === undefined || gid === null) continue;
+    const t = target(byId(at.providerId ?? selectedProviderId));
+    if (t) agents[String(gid)] = t;
+  }
+  const payload: LlmRoutingPayload = { default: def, failure_policy: failurePolicy };
+  if (Object.keys(agents).length > 0) payload.agents = agents;
+  if (failurePolicy === 'ordered_fallback' && fallbackProviderIds.length > 0) {
+    payload.fallback_order = fallbackProviderIds
+      .map((id) => byId(id)?.provider)
+      .filter((p): p is string => Boolean(p));
+  }
+  return payload;
+}
+
 export const useExperimentBuilder = create<ExperimentBuilderState & ExperimentBuilderActions>((set, get) => ({
   ...initialState,
 
