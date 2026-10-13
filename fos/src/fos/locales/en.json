@@ -301,7 +301,9 @@
         "empty_response": "LLM returned an empty response for archetype '{archetype}'",
         "no_json_in_response": "LLM response did not contain valid JSON for archetype '{archetype}'",
         "invalid_json": "LLM returned invalid JSON for archetype '{archetype}': {error}",
-        "missing_field": "LLM response is missing required field '{field}' for archetype '{archetype}'"
+        "missing_field": "LLM response is missing required field '{field}' for archetype '{archetype}'",
+        "routing_missing_default": "LLM routing config is missing a default provider assignment",
+        "routing_unknown_provider": "LLM routing references unknown provider {name}"
       },
       "simtree": {
         "unsupported_scene_type": "Unsupported scene type: {scene_type}",

@@ -11,6 +11,7 @@ import type { ExperimentVariant, SimulationReport, SocialNetwork, SimNode } from
 import * as experimentsApi from '../services/experiments';
 import type { EnvironmentSuggestion } from '../services/environmentSuggestions';
 import { addTime } from './helpers';
+import { buildLlmRoutingPayload } from './experiment-builder';
 import { listMetrics, computeMetricTrajectories, hydrateAgentHistoryFromLogs, filterLogsToSelectedBranch } from '../utils/resultsComputations';
 import { buildSummaryPrompt } from '../utils/summaryPrompt';
 import { extractApiErrorMessage, getBackendErrorDetail } from '../utils/apiError';
@@ -566,7 +567,13 @@ export const createExperimentsSlice: StateCreator<
           // Step 1: create experiment (with 504 recovery)
           let createRes: any;
           try {
-            createRes = await experimentsApi.createExperiment(simId, experimentName, parentNumeric, variantSpecs);
+            createRes = await experimentsApi.createExperiment(
+              simId,
+              experimentName,
+              parentNumeric,
+              variantSpecs,
+              buildLlmRoutingPayload() ?? undefined,
+            );
           } catch (createError: any) {
             // Proxy timeout (504) — backend likely created the experiment already.
             // Poll experiments list to find it by name.
