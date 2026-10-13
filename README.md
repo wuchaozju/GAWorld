@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/github-cover.svg" width="100%" alt="GAWorld — Generative Social Simulation" /></p>
+<p align="center"><img src="docs/assets/github-cover-british-blue.svg" width="100%" alt="GAWorld — Generative Social Simulation" /></p>
 
 <p align="center">
 <a href="https://s2014628.github.io/gaworld-bench/world/">项目主页 / Website</a> ·

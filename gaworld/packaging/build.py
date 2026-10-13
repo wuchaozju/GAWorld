@@ -31,6 +31,10 @@ class BuildRuntime(build_py):
             ".yaml",
             ".yml",
             ".toml",
+            ".ttf",
+            ".otf",
+            ".woff",
+            ".woff2",
         }
         files = [
             root / name
