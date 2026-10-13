@@ -1,0 +1,12 @@
+include generative_city_sim.py environment.py dashboard_server.py distributed_comm_server.py
+recursive-include site *.html *.js *.css *.svg *.png *.jpg *.json *.txt
+recursive-include gaworld *.json *.md *.txt
+recursive-include data *.csv *.md *.json *.geojson *.txt
+recursive-include scripts *.py *.sh *.md *.json
+recursive-include docs *.md *.json *.txt
+prune output
+prune backup
+prune legacy
+prune node_modules
+global-exclude __pycache__ *.py[cod] .DS_Store
+exclude data/twin_bindings.json data/moltbook_accounts.json data/news_cache.json
