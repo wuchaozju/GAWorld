@@ -3408,6 +3408,21 @@
       "costRatioLabel": "惩罚成本比率",
       "costRatioHint": "数值越高，惩罚效果越强",
       "anonymousLabel": "匿名惩罚模式"
+    },
+    "llmRouting": {
+      "title": "模型路由与失败处理",
+      "defaultLabel": "本实验的默认模型",
+      "usesBackendDefault": "使用后端默认端点",
+      "policyLabel": "当模型调用失败时",
+      "policy_pause_and_ask": "暂停并询问我（默认）",
+      "policy_fail": "停止并将实验标记为失败",
+      "policy_ordered_fallback": "按顺序尝试备用模型",
+      "hintPauseAndAsk": "只要有居民的模型调用失败，运行即暂停。不会悄悄改用其他模型回答。可修复提供商后重新开始。",
+      "hintFail": "运行停止并标记为失败，不会使用其他模型。",
+      "hintOrderedFallback": "仅按下方明确选择的顺序尝试备用模型；全部失败则运行停止。备用回答始终标注实际使用的模型。",
+      "fallbackHint": "按顺序选择备用模型（仅在“按顺序尝试备用模型”时使用）：",
+      "moveUp": "上移",
+      "moveDown": "下移"
     }
   },
   "simulation": {

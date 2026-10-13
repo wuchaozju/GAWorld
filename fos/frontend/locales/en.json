@@ -3414,6 +3414,21 @@
       "costRatioLabel": "Cost Ratio",
       "costRatioHint": "Higher values mean stronger deduction effect",
       "anonymousLabel": "Anonymous Deduction Mode"
+    },
+    "llmRouting": {
+      "title": "Model routing & failures",
+      "defaultLabel": "Default model for this experiment",
+      "usesBackendDefault": "Uses the backend default endpoint",
+      "policyLabel": "If a model call fails",
+      "policy_pause_and_ask": "Pause and ask me (default)",
+      "policy_fail": "Stop and mark the experiment failed",
+      "policy_ordered_fallback": "Try fallback models in order",
+      "hintPauseAndAsk": "The run stops as soon as a resident's model call fails. Nothing is silently answered by another model. You can fix the provider and start again.",
+      "hintFail": "The run stops and is marked failed. No other model is used.",
+      "hintOrderedFallback": "The exact fallback list below is tried, in order. If all fail, the run stops. Fallback answers are always labelled with the model that produced them.",
+      "fallbackHint": "Pick fallback models in order (only used with “Try fallback models in order”):",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
     }
   },
   "simulation": {

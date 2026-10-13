@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -25,10 +25,19 @@ except Exception:
     run_experiment_task = None
 
 
-async def create_experiment_db(simulation_id: str, base_node: int, name: str, description: str | None, variants: List[dict]) -> str:
+async def create_experiment_db(simulation_id: str, base_node: int, name: str, description: str | None, variants: List[dict], llm: dict | None = None) -> str:
     async with get_session() as session:
         exp_id = f"exp-{int(time.time() * 1000)}"
-        exp = Experiment(id=exp_id, simulation_id=simulation_id.upper(), base_node=int(base_node), name=name or exp_id, description=description or "", model_meta={})
+        exp = Experiment(
+            id=exp_id,
+            simulation_id=simulation_id.upper(),
+            base_node=int(base_node),
+            name=name or exp_id,
+            description=description or "",
+            # Phase 4: experiment-level LLM routing lives in the existing JSON
+            # storage (no schema migration); secret-free by construction.
+            model_meta={"llm": llm} if llm else {},
+        )
         session.add(exp)
         await session.flush()
         for v in variants:
@@ -236,6 +245,26 @@ _USE_CELERY_EXPERIMENTS = str(os.environ.get("FOS_USE_CELERY_EXPERIMENTS") or ""
 
 def _experiment_runtime_task_id(run_id: int) -> str:
     return f"experiment_run:{int(run_id)}"
+
+
+def _llm_failure_meta(exc: BaseException) -> dict:
+    """Plain-language LLM failure fields for run-status surfacing (no secrets,
+    no tracebacks). Empty unless the exception carries GAWorld routing-failure
+    attributes (pause_and_ask / fail policy stops)."""
+    provider_id = getattr(exc, "provider_id", None)
+    if provider_id is None:
+        return {}
+    return {
+        "llm_failure": {
+            "agent_id": getattr(exc, "agent_id", None),
+            "provider_id": provider_id,
+            "model": getattr(exc, "model", None),
+            "policy": getattr(exc, "policy", None),
+            "error_type": getattr(exc, "error_type", "unknown"),
+            "message": str(exc).split("\n")[0][:300],
+            "simulation_day": getattr(exc, "simulation_day", None),
+        }
+    }
 
 
 async def start_experiment_run_background(simulation_id: str, exp_id: str, turns: int) -> int:
@@ -477,7 +506,7 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
             run = await session.get(ExperimentRun, run_id)
             if run:
                 run.status = "error"
-                run.result_meta = {"error": str(e)}
+                run.result_meta = {"error": str(e), **_llm_failure_meta(e)}
                 await session.commit()
         RUNTIME_TASKS.fail(runtime_task_id, e)
         raise

@@ -815,6 +815,172 @@ def probe_provider(cfg: dict[str, Any], *, timeout: int = 30) -> dict[str, Any]:
     }
 
 
+# Failure policies (experiment-level, Phase 4). ``pause_and_ask`` is the
+# default: a failing provider stops the run (stopped-needs-intervention) and
+# never quietly routes to the default. ``fail`` behaves the same but marks the
+# run failed. ``ordered_fallback`` tries exactly the explicit list.
+FAILURE_POLICIES = ("pause_and_ask", "fail", "ordered_fallback")
+
+
+def _routing_entry_value(entry):
+    """Normalise a routing entry to a ``(provider, model)`` tuple.
+
+    Phase 4 entries are dicts ``{"provider": ..., "model": ...}``; legacy
+    routing values are plain provider-name strings.
+    """
+    if isinstance(entry, dict):
+        return entry.get("provider"), entry.get("model")
+    return entry, None
+
+
+def resolve_llm_target(routing, task=None, agent_id=None, provider=None):
+    """Resolve which provider/model a call should hit — the single
+    resolution point for Phase 4 routing.
+
+    Precedence, deterministic and never dict/registration/env order:
+
+    1. explicit per-call ``provider`` override
+    2. per-agent assignment (``routing["agents"][str(agent_id)]`` —
+       keys are exact GAWorld int IDs, JSON gives them as strings)
+    3. per-task assignment (``routing["tasks"][task]``)
+    4. experiment/default (``routing["default"]``)
+
+    Returns ``{"provider": str|None, "model": str|None,
+    "source": "explicit"|"agent"|"task"|"default"}``. A ``None``
+    provider means "no routing config matched — fall back to the
+    registered default", preserving standalone GAWorld behaviour.
+    """
+    routing = routing or {}
+    if provider:
+        return {"provider": str(provider), "model": None, "source": "explicit"}
+    agents = routing.get("agents") or {}
+    if agent_id is not None:
+        hit = agents.get(str(agent_id))
+        if hit:
+            name, model = _routing_entry_value(hit)
+            if name:
+                return {"provider": str(name), "model": model, "source": "agent"}
+    tasks = routing.get("tasks") or {}
+    if task:
+        hit = tasks.get(task)
+        if hit:
+            name, model = _routing_entry_value(hit)
+            if name:
+                return {"provider": str(name), "model": model, "source": "task"}
+    name, model = _routing_entry_value(routing.get("default"))
+    if name:
+        return {"provider": str(name), "model": model, "source": "default"}
+    return {"provider": None, "model": None, "source": "default"}
+
+
+def validate_llm_routing(cfg, selected_agent_ids=None, known_providers=None):
+    """Validate an experiment ``llm`` routing config before launch.
+
+    Raises :class:`ValueError` naming the offending agent id, provider, or
+    the missing default — cheaply, before any run starts.
+    """
+    cfg = cfg or {}
+    if not isinstance(cfg, dict):
+        raise ValueError("llm routing config must be an object")
+    if not cfg:
+        return
+    policy = cfg.get("failure_policy")
+    if policy is not None and policy not in FAILURE_POLICIES:
+        raise ValueError(f"unknown failure_policy: {policy!r}")
+    default = cfg.get("default")
+    default_name, _ = _routing_entry_value(default)
+    if not default_name:
+        raise ValueError("llm routing config is missing a default provider assignment")
+
+    def _check_provider(name, where):
+        if known_providers is not None and name not in known_providers:
+            raise ValueError(
+                f"llm routing references unknown provider {name!r} in {where}"
+            )
+
+    _check_provider(str(default_name), "default")
+    selected = {int(a) for a in (selected_agent_ids or [])}
+    agents = cfg.get("agents") or {}
+    for key, entry in agents.items():
+        try:
+            agent_id = int(key)
+        except (TypeError, ValueError) as err:
+            raise ValueError(
+                f"llm routing agent key must be an exact int GAWorld ID, got {key!r}"
+            ) from err
+        if selected and agent_id not in selected:
+            raise ValueError(
+                f"llm routing assigns agent {agent_id} which is not in the selected agents"
+            )
+        name, _ = _routing_entry_value(entry)
+        if not name:
+            raise ValueError(f"llm routing assignment for agent {agent_id} has no provider")
+        _check_provider(str(name), f"agent {agent_id}")
+    order = cfg.get("fallback_order") or []
+    if isinstance(order, str):
+        order = [order]
+    for name in order:
+        _check_provider(str(name), "fallback_order")
+
+
+def llm_routing_status(routing):
+    """Frontend-safe view of a routing config — never any credential material.
+
+    Provider IDs and model names are kept (the UI needs them); anything that
+    could carry a secret (``api_key``, ``headers``, nested provider bodies)
+    is stripped recursively.
+    """
+    _FORBIDDEN_KEYS = {"api_key", "api-key", "apikey", "authorization", "token", "secret", "password", "headers"}
+
+    def _clean(value):
+        if isinstance(value, dict):
+            return {
+                k: _clean(v)
+                for k, v in value.items()
+                if str(k).lower() not in _FORBIDDEN_KEYS
+            }
+        if isinstance(value, (list, tuple)):
+            return [_clean(v) for v in value]
+        return value
+
+    return _clean(routing or {})
+
+
+def _classify_llm_failure(exc: BaseException) -> str:
+    """Small, stable failure classification (no secrets in messages)."""
+    text = f"{type(exc).__name__}: {exc}".lower()
+    if isinstance(exc, TimeoutError) or "timed out" in text or "timeout" in text:
+        return "timeout"
+    if isinstance(exc, ConnectionError) or "connection" in text or "unreachable" in text or "refused" in text:
+        return "provider_unavailable"
+    if "401" in text or "403" in text or "auth" in text or "unauthorized" in text or "invalid api key" in text:
+        return "auth"
+    if "429" in text or "rate limit" in text:
+        return "rate_limit"
+    if "404" in text or ("model" in text and ("not found" in text or "unavailable" in text)):
+        return "model_unavailable"
+    if "llm provider" in text or "request" in text or "500" in text or "502" in text or "503" in text:
+        return "provider_request_error"
+    return "unknown"
+
+
+class LLMRoutingFailure(Exception):
+    """Structured, secret-free failure raised under pause_and_ask / fail.
+
+    Carries the fields the FOS run-status surface needs in plain language.
+    """
+
+    def __init__(self, message, *, agent_id=None, provider_id=None, model=None,
+                 policy=None, error_type="unknown", simulation_day=None):
+        super().__init__(message)
+        self.agent_id = agent_id
+        self.provider_id = provider_id
+        self.model = model
+        self.policy = policy
+        self.error_type = error_type
+        self.simulation_day = simulation_day
+
+
 class LLMRouter:
     """Lightweight router for selecting providers by task or agent."""
 
@@ -822,6 +988,8 @@ class LLMRouter:
         self.config = config
         self.providers = self._init_providers()
         self.routing = config.get("llm", {}).get("routing", {})
+        # Provenance of the most recent call (resolved target + attempts).
+        self.last_call: dict | None = None
 
     def _init_providers(self):
         providers = {}
@@ -837,23 +1005,22 @@ class LLMRouter:
         return providers
 
     def _select_provider(self, task=None, agent_id=None):
-        tasks = self.routing.get("tasks", {})
-        if task and task in tasks:
-            return tasks[task]
-        agents = self.routing.get("agents", {})
-        if agent_id is not None and str(agent_id) in agents:
-            return agents[str(agent_id)]
-        return self.routing.get("default") or next(iter(self.providers))
+        target = resolve_llm_target(self.routing, task=task, agent_id=agent_id)
+        if target["provider"]:
+            return target["provider"]
+        return next(iter(self.providers))
 
     def _resolve_chain(self, task=None, agent_id=None, provider=None):
         """Return an ordered list of provider names to try for a single call.
 
         Resolution order:
 
-        1. Primary provider chosen by :meth:`_select_provider`.
-        2. Optional ``llm.routing.fallback`` list (global) — these are
-           appended after the primary, deduplicated, and any unknown
-           name is silently skipped.
+        1. Primary provider chosen by :meth:`_select_provider`
+           (explicit > agent > task > default, via
+           :func:`resolve_llm_target`).
+        2. Optional ``llm.routing.fallback`` list (global, legacy) —
+           appended after the primary, deduplicated, any unknown name
+           silently skipped.
 
         The returned list is never empty (the primary is always
         included), so callers don't have to special-case fallback being
@@ -888,18 +1055,47 @@ class LLMRouter:
         allow_fallback=True,
         images=None,
         max_tokens=None,
+        failure_policy=None,
+        fallback_order=None,
     ):
-        chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
+        resolved = resolve_llm_target(
+            self.routing, task=task, agent_id=agent_id, provider=provider
+        )
+        primary = resolved["provider"] or next(iter(self.providers))
+        policy = failure_policy or self.routing.get("failure_policy") or "pause_and_ask"
+        if policy == "ordered_fallback":
+            order = fallback_order
+            if order is None:
+                order = self.routing.get("fallback_order") or []
+            if isinstance(order, str):
+                order = [order]
+            chain = [str(p) for p in order if str(p) != primary]
+            chain.insert(0, primary)
+        else:
+            # pause_and_ask / fail / unset: no fallback is invented. The only
+            # exception is the legacy global ``fallback`` list, which keeps
+            # its pre-Phase-4 semantics for standalone runs.
+            chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
+            if failure_policy is not None or self.routing.get("failure_policy"):
+                chain = chain[:1]
         if not allow_fallback:
+            chain = chain[:1]
+
+        self.last_call = {
+            "agent_id": agent_id,
+            "task": task,
+            "resolved": dict(resolved, provider=primary),
+            "policy": policy,
+            "attempts": [],
+        }
+        if not chain or chain[0] not in self.providers:
+            raise ValueError(f"Provider '{chain[0] if chain else ''}' not found in config.")
             # Falling back to a different model is the right default for a
             # simulation — a finished run beats a crashed one. It is the
             # wrong default for an experiment: cells answered by different
             # models turn a between-arm comparison into a between-model
             # one, silently, and nothing downstream can detect it.
             chain = chain[:1]
-        if not chain or chain[0] not in self.providers:
-            raise ValueError(f"Provider '{chain[0] if chain else ''}' not found in config.")
-
         # Only forward the overrides the caller actually set. Passing
         # ``system=None`` unconditionally would break any provider-shaped
         # object whose ``call`` still takes the prompt alone.
@@ -925,6 +1121,9 @@ class LLMRouter:
                 if not str(result or "").strip():
                     raise _empty_completion(provider_name)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
+                self.last_call["attempts"].append(
+                    {"provider": provider_name, "fallback_index": index, "ok": True, "error": None}
+                )
                 GLOBAL_STATS.record(
                     task=task or "",
                     provider=provider_name,
@@ -970,6 +1169,14 @@ class LLMRouter:
                     exc,
                 )
                 last_exc = exc
+                self.last_call["attempts"].append(
+                    {
+                        "provider": provider_name,
+                        "fallback_index": index,
+                        "ok": False,
+                        "error_type": _classify_llm_failure(exc),
+                    }
+                )
                 # Only fall through to the next provider if there is one
                 # AND the failure looks transient (or auth/config).
                 # Auth errors on the primary may indicate misconfig;
@@ -988,6 +1195,18 @@ class LLMRouter:
         )
         GLOBAL_STATS.record_request(ok=False)
         assert last_exc is not None
+        # Phase 4: an explicit experiment policy stops progression with a
+        # structured, secret-free failure instead of the raw exception.
+        policy_configured = failure_policy is not None or "failure_policy" in self.routing
+        if policy_configured and policy in ("pause_and_ask", "fail"):
+            raise LLMRoutingFailure(
+                str(last_exc),
+                agent_id=agent_id,
+                provider_id=primary,
+                model=resolved.get("model"),
+                policy=policy,
+                error_type=_classify_llm_failure(last_exc),
+            )
         raise last_exc
 
 
@@ -1019,7 +1238,8 @@ def resolve_provider(task=None, agent_id=None, provider=None) -> str:
     Lets a caller record *which model actually answered* alongside the
     answer, so model provenance survives into the artifact.
     """
-    return LLM_ROUTER._resolve_chain(task=task, agent_id=agent_id, provider=provider)[0]
+    target = resolve_llm_target(LLM_ROUTER.routing, task=task, agent_id=agent_id, provider=provider)
+    return target["provider"] or next(iter(LLM_ROUTER.providers))
 
 
 def provider_supports_images(task=None, agent_id=None, provider=None) -> bool:

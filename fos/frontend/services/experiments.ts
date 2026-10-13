@@ -6,8 +6,22 @@ export interface VariantSpec {
   ops: any[];
 }
 
-export async function createExperiment(simulationId: string, name: string, baseNode: number, variants: VariantSpec[]) {
-  const body = { name, base_node: baseNode, variants };
+export interface LlmRoutingConfig {
+  default: { provider: string; model: string } | null;
+  agents?: Record<string, { provider: string; model: string }>;
+  failure_policy?: 'pause_and_ask' | 'fail' | 'ordered_fallback';
+  fallback_order?: string[];
+}
+
+export async function createExperiment(
+  simulationId: string,
+  name: string,
+  baseNode: number,
+  variants: VariantSpec[],
+  llm?: LlmRoutingConfig,
+) {
+  const body: Record<string, unknown> = { name, base_node: baseNode, variants };
+  if (llm) body.llm = llm;
   return apiPost<{ experiment_id: string }>(`/simulations/${simulationId}/experiments`, body);
 }
 
