@@ -3263,7 +3263,19 @@
         "populationOptionLabel": "Population",
         "populationOptionStarter": "Starter Population",
         "populationTitle": "Population",
-        "recommended": "Recommended"
+        "recommended": "Recommended",
+        "populationLabel": "Population",
+        "cityLabel": "City",
+        "agentsLabel": "Agents",
+        "generate": "Generate population",
+        "generating": "Generating population…",
+        "selectedAgents": "Selected agents: {{count}}",
+        "addSelected": "Add selected agents",
+        "previousPage": "Previous",
+        "nextPage": "Next",
+        "noAgents": "No residents on this page.",
+        "unavailable": "GAWorld backend unavailable",
+        "retry": "Retry"
       }
     },
     "step5": {

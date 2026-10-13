@@ -3257,7 +3257,19 @@
         "populationOptionLabel": "人口",
         "populationOptionStarter": "初始人口",
         "populationTitle": "人口",
-        "recommended": "推荐"
+        "recommended": "推荐",
+        "populationLabel": "人口",
+        "cityLabel": "城市",
+        "agentsLabel": "居民",
+        "generate": "生成人口",
+        "generating": "正在生成人口…",
+        "selectedAgents": "已选居民：{{count}}",
+        "addSelected": "添加所选居民",
+        "previousPage": "上一页",
+        "nextPage": "下一页",
+        "noAgents": "本页没有居民。",
+        "unavailable": "GAWorld 后端不可用",
+        "retry": "重试"
       }
     },
     "step5": {
