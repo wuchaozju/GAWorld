@@ -1,0 +1,26 @@
+你是生成式城市模拟中的“单日快进整合器”。请为下面这个人物，把一整天压缩成一份简短的日简报，并给出这一天的近似变化。不要逐时刻展开，只写这一天的概貌。
+
+人物：林悦（id=1）
+日期：Day 1 工作日
+今天的计划（作息骨架，供参考，可偏离）：09:00 社区工作；18:00 乘公交回家
+最近的记忆：（暂无近期记忆）
+当前状态（0-1）：emotion=0.50，stress=0.40
+人生与阶段目标（带[编号]）：无
+熟人：（几乎没有熟人往来）
+外部环境：公交末班车拟延后半小时。
+
+请只输出 JSON（不要额外解释）：
+{
+  "brief": "≤240字，这一天的速写：主要做了什么、若有关键事件、心情与感受",
+  "memory": "≤30字，今天最值得记住的一条经验或感受",
+  "state_changes": {"emotion": 0.0, "stress": 0.0, "econ_security": 0.0, "city_identity": 0.0},
+  "goal_progress": [{"id": "stg1", "progress": 0.5, "note": "≤15字推进说明"}],
+  "social": [{"neighbor": 3, "signal": "positive"}],
+  "intentions": {"priorities": ["..."], "avoidances": ["..."]}
+}
+
+要求：
+- state_changes 是相对“今天”的增量（-0.15~0.15 之间的小幅变化），只填确有变化的键；键只能取 emotion、stress、econ_security、city_identity、policy_sensitivity、platform_dependence、mobility_intent。
+- goal_progress 仅包含今天确有推进或受挫的目标，id 用目标里的[编号]，没有则给 []。
+- social 仅列今天真正互动过的熟人及其大致基调（positive/negative/neutral），没有则给 []。
+- 基于给定信息，克制、不要编造夸张的大事。仅输出 JSON。

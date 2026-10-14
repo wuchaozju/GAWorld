@@ -1,0 +1,594 @@
+<!doctype html>
+<html class="no-js" lang="zh-CN" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="GAWorld 文档：研究与实验提示词。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="修改与验证" href="editing.html"><link rel="prev" title="访谈问答提示词" href="interviews.html">
+        <link rel="prefetch" href="../_static/logo.svg" as="image">
+
+    <link rel="shortcut icon" href="../_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>研究与实验提示词 - GAWorld 文档</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=c01bd06b" />
+    <link rel="stylesheet" type="text/css" href="../_static/prompts.css?v=56adfc9f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">GAWorld 文档</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container"><img class="sidebar-logo" src="../_static/logo.svg" alt="GAWorld" width="480" height="281"></div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">工作区、城市与世界</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">模型与运行配置</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills-work.html">技能与真实工作</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interviews.html">访谈与群体采访</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policy-games.html">政策推演与严肃游戏</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">提示词</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">提示词总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真认知提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈问答提示词</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">研究与实验提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editing.html">修改与验证</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">案例分析</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">案例总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cases/simulation-records.html">已有仿真实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cases/classics.html">经典行为实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cases/demand.html">需求估计提示词</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code-structure.html">代码结构与阅读路径</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">HTTP 客户端</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">开发与贡献</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/blob/main/site/documentation/prompts/research.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/edit/main/site/documentation/prompts/research.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="id1">
+<h1>研究与实验提示词<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
+<p>研究流程中的提示词承担不同任务：读懂材料、提出方案、编译协议、解释结果，或让居民对政策和实验题面作答。先确定当前阶段，再修改它使用的输入与模板，可以保持研究设计和结果分析的一致性。</p>
+<section id="id2">
+<h2>研究工作台的四个阶段<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<ol class="prompt-flow" aria-label="研究提示词的四个阶段">
+<li><strong>读材料</strong><span>从论文中提取理论、方法、变量与发现，供研究者核对。</span></li>
+<li><strong>拟方案</strong><span>结合平台功能目录，将研究问题转成候选实验设计。</span></li>
+<li><strong>编译协议</strong><span>确定条件、事件、指标、假设与重复种子。</span></li>
+<li><strong>解释结果</strong><span>读取已经计算的估计与判定，解释发现并提出后续研究。</span></li>
+</ol><section id="id3">
+<h3>论文解读与研究方案<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">workbench.py::build_digest_prompt()</span></code> 接收论文标题、正文和语言，生成论文解读任务。解读内容包括理论、方法、变量、发现、研究问题和假设，研究者可以核对后继续生成方案。</p>
+<p><code class="docutils literal notranslate"><span class="pre">build_prompt()</span></code> 在研究材料之外加入平台概况、功能目录与已确认的论文解读。功能目录来自 <code class="docutils literal notranslate"><span class="pre">docs/FEATURES.md</span></code>；模型根据这些内容提出方案，并按固定 JSON 结构返回研究问题、假设、功能对应关系、候选设计、操作步骤与验证方法。</p>
+<p><strong>操作。</strong> 在 <a class="reference internal" href="../research.html"><span class="std std-doc">研究工作台</span></a> 输入研究问题或论文，先检查材料解读，再选择研究设计。需要补充研究对象、时间尺度或比较条件时，先完善输入材料。要调整方案的固定要求，则定位 <code class="docutils literal notranslate"><span class="pre">workbench.py</span></code> 中的 <code class="docutils literal notranslate"><span class="pre">_PROMPT</span></code> 与 <code class="docutils literal notranslate"><span class="pre">build_prompt()</span></code>。</p>
+</section>
+<section id="id4">
+<h3>预注册协议<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">protocol.py::build_compile_prompt()</span></code> 将研究方案与可测指标目录组合起来，要求模型生成结构化协议。后续代码整理条件、假设、问卷、种子和预算，并进行执行前检查。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>协议部分</p></th>
+<th class="head"><p>提示词要求表达的内容</p></th>
+<th class="head"><p>执行时的用途</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">conditions</span></code></p></td>
+<td><p>基准、处理条件与事件表</p></td>
+<td><p>定义各世界接收的干预</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hypotheses</span></code></p></td>
+<td><p>指标、比较对象、方向与阈值</p></td>
+<td><p>指定如何判定研究假设</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">measures</span></code></p></td>
+<td><p>可测量指标 ID</p></td>
+<td><p>连接实际数据与估计程序</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">validity</span></code></p></td>
+<td><p>重复种子与安慰剂设置</p></td>
+<td><p>组织稳健性检查</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">survey</span></code></p></td>
+<td><p>复合研究的题目与背景</p></td>
+<td><p>在各世界运行后收集居民回答</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>事件的 <code class="docutils literal notranslate"><span class="pre">description</span></code> 是居民会看到的具体描述。编辑事件时写清楚发生了什么、谁受到影响、何时发生。协议中的研究假设则交代你预期比较出什么变化。</p>
+<p><strong>操作。</strong> 选择方案后检查协议的条件表、事件日期、指标和方向，再运行。要新增可测指标，先在指标注册与计算代码中实现，再让协议引用该 ID。详细流程见 <a class="reference internal" href="../parallel-worlds.html"><span class="std std-doc">平行世界</span></a>。</p>
+</section>
+<section id="id5">
+<h3>结果解释<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
+<p>研究结果先由 <code class="docutils literal notranslate"><span class="pre">research/evaluate.py</span></code> 计算和判定。<code class="docutils literal notranslate"><span class="pre">research/interpret.py::build_interpret_prompt()</span></code> 读取协议、逐假设结果与数据质量信息，要求模型返回：</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"findings"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"hypothesis"</span><span class="p">:</span><span class="w"> </span><span class="s2">"H1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"claim"</span><span class="p">:</span><span class="w"> </span><span class="s2">"结论"</span><span class="p">,</span><span class="w"> </span><span class="nt">"evidence"</span><span class="p">:</span><span class="w"> </span><span class="s2">"结果表中的依据"</span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"limitations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"影响结论的具体因素"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"next_studies"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"后续研究"</span><span class="p">,</span><span class="w"> </span><span class="nt">"rationale"</span><span class="p">:</span><span class="w"> </span><span class="s2">"研究理由"</span><span class="p">,</span><span class="w"> </span><span class="nt">"change"</span><span class="p">:</span><span class="w"> </span><span class="s2">"相对本次研究的修改"</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>上面展示字段结构，内容为说明性占位。每条发现通过假设 ID 对应到结果表。<code class="docutils literal notranslate"><span class="pre">check_claims()</span></code> 检查结论与已给出的判定是否相符；修改解释语气时，保留这些关联字段。</p>
+<p>平行世界页面的独立解读使用 <code class="docutils literal notranslate"><span class="pre">gaworld/parallel/interpret.py::build_prompt()</span></code>，读取的是平行世界估计报告。修改研究报告与修改平行世界解读时，分别找到各自的模板入口。</p>
+</section>
+</section>
+<section id="id6">
+<h2>政策反应与优化<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">policy_sim.py::reaction_prompt()</span></code> 将居民资料、政策全文和城市名组合起来，让居民从自身处境出发回答。模型返回支持度、生活影响、家庭财务影响、遵从意愿，以及具体应对、担忧和建议。</p>
+<details class="prompt-details"><summary>查看完整示例：公交末班车调整政策</summary><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>你是林悦，住在城西，每天乘公交去社区服务中心工作。
+
+你所在的示例城市准备出台下面这项政策：
+【政策】将公交末班车延后半小时，票价保持不变。
+
+先想清楚这项政策落到你头上具体意味着什么——你住哪、干什么、家里有谁、手里有多少钱。不要给面面俱到的中间答案，真实的人对一项政策是有倾向的；只有确实事不关己时才打 0。
+只输出一个 JSON 对象，不要任何解释：
+{"support": -2 到 2 的整数（-2 强烈反对，0 无所谓，2 强烈支持）, "wellbeing": -5 到 5 的整数（实施半年后你的日子过得更差还是更好）, "finance": -5 到 5 的整数（对你家钱包的影响）, "compliance": 0-100 的整数（你会多大程度照着做）, "behavior": "你实际会怎么应对，一句话", "concern": "你最担心的一点，一句话，第一人称", "suggestion": "如果只能改一处，你希望怎么改，一句话"}
+</pre></div>
+</div>
+</details><p>示例使用虚构城市与居民；文本由实际函数生成。<a class="reference download internal" download="" href="../_downloads/cda1c128a49525cbbd16938fe64b969a/policy-reaction.txt"><span class="xref download myst">下载政策反应提示词</span></a></p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>字段</p></th>
+<th class="head"><p>模板中的尺度</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">support</span></code></p></td>
+<td><p>−2 至 2 的整数</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">wellbeing</span></code>、<code class="docutils literal notranslate"><span class="pre">finance</span></code></p></td>
+<td><p>−5 至 5 的整数</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">compliance</span></code></p></td>
+<td><p>0 至 100 的整数</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">behavior</span></code>、<code class="docutils literal notranslate"><span class="pre">concern</span></code>、<code class="docutils literal notranslate"><span class="pre">suggestion</span></code></p></td>
+<td><p>各一句具体说明</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">parse_reaction()</span></code> 读取这些字段并限制取值范围。<code class="docutils literal notranslate"><span class="pre">metrics()</span></code> 和 <code class="docutils literal notranslate"><span class="pre">composite_score()</span></code> 计算汇总指标；<code class="docutils literal notranslate"><span class="pre">optimise_prompt()</span></code> 接收已得到的反应与统计，提出政策修改。比较原政策和候选政策时，查看同一批居民的反应与评分变化。</p>
+<p><strong>操作。</strong> 在 <a class="reference internal" href="../policy-games.html"><span class="std std-doc">政策推演</span></a> 输入政策与候选方案。改变评分尺度时，同时检查提示词、<code class="docutils literal notranslate"><span class="pre">parse_reaction()</span></code>、聚合和评分函数；改变政策文本时则直接修改政策输入。</p>
+</section>
+<section id="id7">
+<h2>严肃游戏中的角色与主持人<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">research/serious_game.py</span></code> 将情景设计、角色行动、回合裁定和复盘拆成不同的提示词。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>构建函数</p></th>
+<th class="head"><p>输入</p></th>
+<th class="head"><p>主要输出</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">design_prompt()</span></code></p></td>
+<td><p>场景描述、回合数与角色数</p></td>
+<td><p>情景、角色、回合与指标等游戏设计</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">agent_prompt()</span></code></p></td>
+<td><p>居民资料、角色目标、私有信息、历史与当前回合</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">choice</span></code>、<code class="docutils literal notranslate"><span class="pre">action</span></code>、<code class="docutils literal notranslate"><span class="pre">thought</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resolve_prompt()</span></code></p></td>
+<td><p>当前局面与本轮各角色行动</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">narration</span></code>、<code class="docutils literal notranslate"><span class="pre">indicator_changes</span></code>、<code class="docutils literal notranslate"><span class="pre">role_outcomes</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">debrief_prompt()</span></code></p></td>
+<td><p>已完成的会话与角色表现</p></td>
+<td><p>游戏复盘与角色评价</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>角色行动提示词提供该角色掌握的信息；同时行动阶段，各角色依据本轮开始时的局面作答。主持人随后读取各方行动并裁定结果。修改角色提示词时保留角色的信息范围，修改裁定模板时检查指标变化与 <code class="docutils literal notranslate"><span class="pre">apply_resolution()</span></code> 的处理方式。</p>
+</section>
+<section id="id8">
+<h2>提示词本身作为实验条件<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p><strong>需求估计。</strong> <code class="docutils literal notranslate"><span class="pre">experiments/arms.py::build_prompt()</span></code> 为每个条件构建 <code class="docutils literal notranslate"><span class="pre">PromptSpec(system,</span> <span class="pre">user)</span></code>。<code class="docutils literal notranslate"><span class="pre">arm_id</span></code> 决定提供哪类角色或情境信息；<code class="docutils literal notranslate"><span class="pre">question</span></code> 区分 <code class="docutils literal notranslate"><span class="pre">elicit</span></code> 与 <code class="docutils literal notranslate"><span class="pre">purchase</span></code>。代码在询问待测变量时控制信息披露，再在购买任务中按条件加入协变量或情境。具体条件、命令与输出见 <a class="reference internal" href="../cases/demand.html"><span class="std std-doc">需求估计实验</span></a>。</p>
+<p><strong>经典行为实验。</strong> <code class="docutils literal notranslate"><span class="pre">experiments/classics/paradigms.py::build_prompt()</span></code> 根据范式、题目、条件与受试者构建系统消息和用户正文。两种条件共享配对设计中的受试者与题目，比较的是题面或处理条件变化后的回答，见 <a class="reference internal" href="../cases/classics.html"><span class="std std-doc">经典行为实验</span></a>。</p>
+<p>修改这类提示词时，保存每个条件最终发送的文本，并核对条件之间实际改变了哪些信息。模板中透露了什么、隐去了什么，本身就是实验设计的一部分。</p>
+</section>
+<section id="id9">
+<h2>源码与修改检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码</p></th>
+<th class="head"><p>修改后重点检查</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/workbench.py">research/workbench.py</a></p></td>
+<td><p>材料、功能目录与研究方案是否对应</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/protocol.py">research/protocol.py</a></p></td>
+<td><p>条件 ID、指标 ID、假设和协议校验</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/interpret.py">research/interpret.py</a></p></td>
+<td><p>发现与假设 ID、判定和证据的对应关系</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/interpret.py">parallel/interpret.py</a></p></td>
+<td><p>解释与估计报告中的行、判定是否一致</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/policy_sim.py">research/policy_sim.py</a></p></td>
+<td><p>字段、尺度、解析和评分的一致性</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/serious_game.py">research/serious_game.py</a></p></td>
+<td><p>角色可见信息、回合输入与指标更新</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/experiments/arms.py">experiments/arms.py</a></p></td>
+<td><p>system/user 两段文本与实验条件的对应关系</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/experiments/classics/paradigms.py">experiments/classics/paradigms.py</a></p></td>
+<td><p>配对题目、条件与回答结构</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>需要在本地查看组装结果或检查解析逻辑，继续阅读 <a class="reference internal" href="editing.html"><span class="std std-doc">修改与验证</span></a>。</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="editing.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">修改与验证</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="interviews.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">访谈问答提示词</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">研究与实验提示词</a><ul>
+<li><a class="reference internal" href="#id2">研究工作台的四个阶段</a><ul>
+<li><a class="reference internal" href="#id3">论文解读与研究方案</a></li>
+<li><a class="reference internal" href="#id4">预注册协议</a></li>
+<li><a class="reference internal" href="#id5">结果解释</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id6">政策反应与优化</a></li>
+<li><a class="reference internal" href="#id7">严肃游戏中的角色与主持人</a></li>
+<li><a class="reference internal" href="#id8">提示词本身作为实验条件</a></li>
+<li><a class="reference internal" href="#id9">源码与修改检查</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="../index.html">当前版本 v0.2.1</a>
+    <a href="../read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../../index.html">项目主页</a>
+  </div>
+</details>
+<script src="../_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
+    <script src="../_static/navigation.js?v=258b3747"></script>
+    </body>
+</html>

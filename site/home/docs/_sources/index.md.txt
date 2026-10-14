@@ -78,6 +78,18 @@ cli
 ```{toctree}
 :hidden:
 :maxdepth: 1
+:caption: 提示词
+
+prompts/index
+prompts/simulation
+prompts/interviews
+prompts/research
+prompts/editing
+```
+
+```{toctree}
+:hidden:
+:maxdepth: 1
 :caption: 案例分析
 
 cases/index
