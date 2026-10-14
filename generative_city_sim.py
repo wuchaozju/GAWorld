@@ -305,6 +305,177 @@ def _persist_sim_day(day, agent_day_cursor, agent_ids):
     })
 
 
+# ----------------------------------------------------------------------
+# Durable day-boundary checkpoints (Phase 5).  SAVE / RESTORE / CONTINUE
+# only — no retry, no rollback, no branching.  Orchestration lives in
+# gaworld.checkpoints.CheckpointManager; this launcher builds the
+# component carrier, honors CONFIG["resume_from_checkpoint"] and saves
+# day_0000 plus one checkpoint after each successfully completed day.
+# ----------------------------------------------------------------------
+
+def _checkpoint_enabled():
+    ck = CONFIG.get("checkpoint")
+    if isinstance(ck, dict) and ck.get("enabled"):
+        return True
+    return bool(CONFIG.get("resume_from_checkpoint"))
+
+
+def _checkpoint_run_id():
+    ck = CONFIG.get("checkpoint")
+    if isinstance(ck, dict) and ck.get("run_id"):
+        return str(ck["run_id"])
+    if CONFIG.get("_checkpoint_run_id"):
+        return CONFIG["_checkpoint_run_id"]
+    import uuid
+    run_id = uuid.uuid4().hex[:12]
+    CONFIG["_checkpoint_run_id"] = run_id
+    return run_id
+
+
+def _checkpoint_manager():
+    from pathlib import Path
+    from gaworld.checkpoints import CheckpointManager, simulation_state_hooks
+    return CheckpointManager(
+        run_dir=Path(STATE_OUTPUT_DIR).parent,  # <run>/checkpoints/… (run-relative)
+        run_id=_checkpoint_run_id(),
+        hooks=simulation_state_hooks(),
+    )
+
+
+def _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state):
+    """The mutable runtime components for one checkpoint (no handles, no
+    sockets, no secrets — see gaworld/checkpoints.py)."""
+    env_state = None
+    if env_system is not None and hasattr(env_system, "export_runtime_state"):
+        try:
+            env_state = env_system.export_runtime_state()
+        except Exception:  # noqa: BLE001 — env payload is optional
+            env_state = None
+    return {
+        "agents": agents,
+        "plugin_state": _pickleable_plugin_state(getattr(sim_ctx, "_plugin_state", {})),
+        "extension_state": _pickleable_plugin_state(extension_state),
+        "clock": sim_ctx.clock.snapshot(),
+        "agent_day_cursor": dict(agent_day_cursor),
+        "env_runtime": env_state,
+    }
+
+
+def _pickleable_plugin_state(store):
+    """Split plugin_state into a picklable payload plus explicit REBUILD
+    markers.  Namespaces that hold live runtime resources (worker threads,
+    locks — never serialized per brief §10) are marked for reconstruction:
+    their plugins recreate them on ``on_simulation_start`` after a restore.
+    This is a loud, reasoned decision — never a silent fallback."""
+    import pickle as _pickle
+    payload = {}
+    for name, namespace in store.items():
+        try:
+            payload[str(name)] = _pickle.dumps(namespace, protocol=4)
+        except Exception as exc:  # unpicklable → explicit rebuild marker
+            payload[str(name)] = {
+                "__checkpoint_rebuild__": True,
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+    return payload
+
+
+def _restore_plugin_state(store, payload):
+    import pickle as _pickle
+    store.clear()
+    for name, blob in payload.items():
+        if isinstance(blob, dict) and blob.get("__checkpoint_rebuild__"):
+            print(
+                f"♻️ 插件状态 {name!r} 含运行期资源（{blob.get('reason', '')}），"
+                "恢复后由插件重建"
+            )
+            continue
+        try:
+            store[str(name)] = _pickle.loads(blob)
+        except Exception as exc:  # noqa: BLE001 — corrupted namespace
+            raise type(exc)(f"插件状态 {name!r} 反序列化失败: {exc}")
+
+
+def _save_day_checkpoint(manager, day, carrier):
+    """Persist a day-boundary checkpoint.  Checkpointing must never crash a
+    run, and a valid existing checkpoint is never silently overwritten."""
+    from gaworld.checkpoints import CheckpointError, CheckpointExists
+    try:
+        ref = manager.save_checkpoint(
+            carrier,
+            completed_day=day,
+            extra_manifest={
+                "memory_model_version": MEMORY_MODEL_VERSION,
+                "city": str(CONFIG.get("city", "") or ""),
+                "agent_ids": list(AGENT_IDS or []),
+                "llm_routing": CONFIG.get("llm", {}).get("routing", {}),
+                "sim_config_snapshot": {
+                    k: CONFIG.get(k)
+                    for k in (
+                        "random_seed", "sim_days", "city", "stateful",
+                        "human_realism_enabled",
+                    )
+                    if k in CONFIG
+                },
+            },
+        )
+        print(f"💾 检查点已保存: {ref}")
+        return ref
+    except CheckpointExists:
+        print(f"ℹ️ day_{day:04d} 检查点已存在，跳过（不覆盖有效检查点）")
+        return None
+    except CheckpointError as exc:
+        _LOG.warning("checkpoint save failed for day %s: %s", day, exc)
+        return None
+
+
+def _restore_from_checkpoint(agents, sim_ctx, agent_day_cursor, extension_state):
+    """Restore simulation state from CONFIG['resume_from_checkpoint'].
+    Returns (completed_day, env_runtime_state).  Validation happens fully
+    inside the manager — no partial continuation on any failure."""
+    import json as _json
+    from pathlib import Path as _Path
+    from gaworld.checkpoints import (
+        CheckpointError,
+        CheckpointManager,
+        simulation_state_hooks,
+    )
+    ref = CONFIG.get("resume_from_checkpoint")
+    if not ref:
+        raise CheckpointError("resume_from_checkpoint 为空，无法恢复")
+    manager = _checkpoint_manager()
+    if isinstance(ref, str) and ":" in ref and "/" not in ref and os.sep not in ref:
+        # ``<run_id>:day_NNNN`` — resume may cross process boundaries, so the
+        # reference's originating run id names the checkpoint namespace.
+        manager.run_id = ref.split(":", 1)[0]
+    carrier = {}
+    try:
+        target = manager.restore_checkpoint(carrier, ref=ref)
+    except CheckpointError as exc:
+        raise CheckpointError(f"无法从检查点 {ref!r} 恢复: {exc}") from exc
+
+    # memory-model compatibility (same gate the flat STATEFUL path applies)
+    manifest = _json.loads((_Path(target.path) / "manifest.json").read_text("utf-8"))
+    mmv = manifest.get("memory_model_version")
+    if mmv is not None and int(mmv) != int(MEMORY_MODEL_VERSION):
+        raise CheckpointError(
+            f"检查点 memory_model_version={mmv} 与当前运行 "
+            f"{MEMORY_MODEL_VERSION} 不兼容 — 拒绝恢复"
+        )
+
+    # distribute the validated carrier into the live runtime
+    agents[:] = carrier["agents"]
+    plugin_store = getattr(sim_ctx, "_plugin_state", None)
+    if isinstance(plugin_store, dict):
+        _restore_plugin_state(plugin_store, carrier["plugin_state"])
+    _restore_plugin_state(extension_state, carrier["extension_state"])
+    agent_day_cursor.clear()
+    agent_day_cursor.update(
+        {str(k): int(v) for k, v in carrier["agent_day_cursor"].items()}
+    )
+    return int(target.completed_day), carrier.get("env_runtime")
+
+
 def visualize_social_network(
     agents,
     step=None,
@@ -2877,7 +3048,25 @@ def run_simulation():
         print_agent_profiles([a["id"] for a in agents])
     start_day = 1
     agent_day_cursor = {}
-    if STATEFUL:
+    _resume_completed_day = None
+    _resume_env_state = None
+    _ckpt_mgr = None
+    if CONFIG.get("resume_from_checkpoint"):
+        # Phase 5: restore from a durable day-boundary checkpoint instead of
+        # the flat STATEFUL files.  completed_day=N → the next simulated day
+        # is N+1; day N is never rerun.  The RNG, agents, plugin state,
+        # clock and queues come from the checkpoint (runtime truth).
+        _ckpt_mgr = _checkpoint_manager()
+        _resume_completed_day, _resume_env_state = _restore_from_checkpoint(
+            agents, sim_ctx, agent_day_cursor, extension_state
+        )
+        start_day = _resume_completed_day + 1
+        sim_ctx.clock.start_day(_resume_completed_day)
+        print(
+            f"⏪ 已从检查点恢复 {CONFIG.get('resume_from_checkpoint')}："
+            f"第 {_resume_completed_day} 天已完成，从第 {start_day} 天继续"
+        )
+    elif STATEFUL:
         sim_state = load_sim_state()
         _enforce_memory_model_compat(sim_state)
         # Resume day count for persistent simulations, per agent: agents that
@@ -2885,7 +3074,7 @@ def run_simulation():
         # someone else's elapsed years.
         agent_day_cursor = _agent_last_day_map(sim_state)
         start_day = _resume_start_day(agent_day_cursor, AGENT_IDS)
-    if STATEFUL:
+    if STATEFUL and _resume_completed_day is None:
         for agent in agents:
             agent["memory"] = load_agent_memory(agent["id"])
             seed_vector_db_from_memory(agent)
@@ -2951,6 +3140,22 @@ def run_simulation():
     else:
         env_system = EnvironmentSystem(CONFIG, llm_fn=call_llm)
     sim_ctx.extras["env_system"] = env_system
+    if _resume_env_state is not None and hasattr(env_system, "import_runtime_state"):
+        try:
+            env_system.import_runtime_state(_resume_env_state)
+        except Exception as _env_exc:  # noqa: BLE001 — never crash a resume here
+            _LOG.warning("env runtime-state restore failed: %s", _env_exc)
+    if _checkpoint_enabled() and _ckpt_mgr is None:
+        _ckpt_mgr = _checkpoint_manager()
+    if _ckpt_mgr is not None and _resume_completed_day is None:
+        # day_0000: population loaded, config applied, BEFORE the first
+        # in-run day mutates anything.  A flat-state resume continues an
+        # older calendar, so the pre-loop day number is start_day - 1.
+        _save_day_checkpoint(
+            _ckpt_mgr,
+            max(0, int(start_day) - 1),
+            _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+        )
     os.makedirs(ENV_OUTPUT_DIR, exist_ok=True)
     env_timeline_path = os.path.join(ENV_OUTPUT_DIR, "timeline.jsonl")
     if os.path.exists(env_timeline_path):
@@ -4570,6 +4775,14 @@ def run_simulation():
             )
             if STATEFUL:
                 _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
+                if _ckpt_mgr is not None:
+                    # day N completed successfully → durable checkpoint before
+                    # day N+1 (a failed day never reaches this line)
+                    _save_day_checkpoint(
+                        _ckpt_mgr,
+                        day,
+                        _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+                    )
             continue
         llm_budget_by_agent = {}
         daily_schedules = {}
@@ -5025,6 +5238,13 @@ def run_simulation():
         )
         if STATEFUL:
             _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
+            if _ckpt_mgr is not None:
+                # day N completed successfully → durable checkpoint before day N+1
+                _save_day_checkpoint(
+                    _ckpt_mgr,
+                    day,
+                    _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+                )
 
     print("\n✅ 模拟完成")
     if visualizer is not None:
