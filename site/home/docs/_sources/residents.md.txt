@@ -11,9 +11,12 @@ GAWorld 中的居民包含身份、人格、状态、日程、记忆和社会关
 
 查看其他城市的居民时，先确认当前操作针对的城市与世界，再进行编辑。
 
-```{image} _static/screenshots/agent-studio.png
-:alt: GAWorld Agent Studio
-:width: 80%
+```{figure} _static/screenshots/agent-studio.png
+:alt: Agent Studio 身份、人格、技能、记忆、关系和目标编辑界面
+:figclass: guide-shot
+:target: _static/screenshots/agent-studio.png
+
+Agent Studio 示例。左侧选择城市和居民，上方按身份、状态、技能、记忆等步骤编辑。 点击图片查看完整尺寸。
 ```
 
 ## 人物数据

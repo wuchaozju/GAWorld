@@ -23,3 +23,13 @@ body[data-theme="dark"] .sidebar-logo {filter:invert(1) hue-rotate(180deg)}
 .doc-tools summary:focus-visible {outline:2px solid #9090db;outline-offset:3px}
 @media(max-width:40em){.doc-tools{right:12px;bottom:12px;width:200px}}
 @media print{.doc-tools{display:none}}
+
+/* Screenshots and technical diagrams in the reading flow. */
+figure.guide-shot,figure.guide-diagram {margin:1.5rem 0 2rem;width:100%}
+figure.guide-shot img,figure.guide-diagram img {display:block;width:100%;height:auto;border:1px solid var(--color-background-border);border-radius:6px;box-sizing:border-box}
+figure.guide-shot img {max-height:440px;object-fit:cover;object-position:top}
+figure.guide-tall img {max-height:none}
+figure.guide-shot a,figure.guide-diagram a {display:block;cursor:zoom-in}
+figure.guide-shot figcaption,figure.guide-diagram figcaption {text-align:left;font-size:.9rem;line-height:1.6;color:var(--color-foreground-secondary);margin-top:.65rem}
+@media(max-width:40em){figure.guide-shot img {max-height:300px}figure.guide-tall img {max-height:none}}
+@media print{figure.guide-shot img{max-height:none}figure.guide-shot,figure.guide-diagram{break-inside:avoid}}

@@ -22,6 +22,14 @@ gaworld interview --agent-id 31 --question "今天有哪些事情影响了你的
 
 群体采访从城市数据包读取名单，支持跨城市选人。需要采访仿真后的各条件居民时，可在 [研究工作台](research.md) 使用带跑后问卷的组合研究。
 
+```{figure} _static/screenshots/interview.png
+:alt: 群体采访的受访者选择界面，按城市显示个体和群体智能体
+:figclass: guide-shot
+:target: _static/screenshots/interview.png
+
+群体采访示例。左侧选择城市与受访者，右侧核对受访者数、代表人数和模型调用次数。 点击图片查看完整尺寸。
+```
+
 ## 选择题型与材料
 
 | 题型 | 结果 |

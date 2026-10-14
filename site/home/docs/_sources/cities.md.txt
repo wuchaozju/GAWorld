@@ -53,9 +53,12 @@ python -m gaworld.city use 绍兴柯桥
 
 居民编辑和导入步骤见 [居民与 Agent Studio](residents.md)。
 
-```{image} _static/screenshots/city.png
-:alt: GAWorld 城市管理
-:width: 80%
+```{figure} _static/screenshots/city.png
+:alt: GAWorld 城市创建与列表界面
+:figclass: guide-shot
+:target: _static/screenshots/city.png
+
+城市页面示例。上方输入地名或城市描述，设置规模与人口；下方选择已有城市。 点击图片查看完整尺寸。
 ```
 
 ## 城市数据与运行结果

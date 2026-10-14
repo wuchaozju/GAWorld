@@ -15,6 +15,14 @@
 | 步长单位 | 在快进中选择天、月或年 |
 | 随机性 | 调节快进模式中的突发事件频率与状态波动 |
 
+```{figure} _static/screenshots/simulation.png
+:alt: GAWorld 运行设置和长时段快进选项
+:figclass: guide-shot
+:target: _static/screenshots/simulation.png
+
+运行参数集中在控制台顶部；长时段快进与步长单位在同一区域设置。 点击图片查看完整尺寸。
+```
+
 ## 启动、观察与停止
 
 点击启动后，在日志中查看运行进度。轨迹回放展示居民位置与移动，居民详情展示状态、记忆和关系。

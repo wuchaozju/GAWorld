@@ -30,6 +30,8 @@ gaworld dashboard
 | 让居民完成工作并生成文件 | [技能与真实工作](skills-work.md) |
 | 共用服务器或扩展仿真机制 | [团队部署与世界管理](deployment.md) · [编写插件](plugins.md) |
 
+源码阅读入口见 [代码结构与阅读路径](code-structure.md)，其中包含仓库目录、模块关系与仿真执行流程。
+
 ## 城市、居民与世界
 
 **城市**保存地图、环境和初始人口。**居民**具有身份、人格、状态、记忆与社会关系。**世界**保存一组居民副本、运行配置和输出；一次**运行**按选定时间尺度推进居民行动。
@@ -80,6 +82,7 @@ policy-games
 :caption: 扩展与部署
 
 deployment
+code-structure
 architecture
 plugins
 development

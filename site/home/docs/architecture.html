@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：架构与可扩展性。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="编写插件" href="plugins.html"><link rel="prev" title="团队部署与世界管理" href="deployment.html">
+<meta name="description" content="GAWorld 文档：架构与可扩展性。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="编写插件" href="plugins.html"><link rel="prev" title="代码结构与阅读路径" href="code-structure.html">
         <link rel="prefetch" href="_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
     
     
 
@@ -231,6 +231,7 @@
 <p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">架构与可扩展性</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
@@ -298,17 +299,13 @@
 <section id="id2">
 <h2>执行模型<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">generative_city_sim.py</span></code> 提供运行入口；<code class="docutils literal notranslate"><span class="pre">gaworld/sim/</span></code> 实现认知管线；<code class="docutils literal notranslate"><span class="pre">gaworld/core/</span></code> 组织居民与执行。日常行动和长时段快进按所选时间尺度推进。</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CLI / Dashboard / Python client
-                 │
-          仿真入口与运行配置
-                 │
-      SimContext + 认知管线
-        │        │        │
-     居民状态   插件系统   环境与地图
-        └────────┼────────┘
-             记录与输出
-</pre></div>
-</div>
+<figure class="guide-diagram align-default" id="id8">
+<a class="reference external image-reference" href="_static/diagrams/module-map.svg"><img alt="GAWorld 控制台、命令行和客户端，经服务与编排层连接仿真内核、领域插件和数据记录" src="_images/module-map.svg" />
+</a>
+<figcaption>
+<p><span class="caption-text">模块关系概览。代码位置与阅读顺序见 <a class="reference internal" href="code-structure.html"><span class="std std-doc">代码结构与阅读路径</span></a>。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id8" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
 </section>
 <section id="simcontext">
 <h2>SimContext<a class="headerlink" href="#simcontext" title="链接到此标题。">¶</a></h2>
@@ -388,14 +385,14 @@
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="deployment.html">
+          <a class="prev-page" href="code-structure.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">团队部署与世界管理</div>
+                <div class="title">代码结构与阅读路径</div>
                 
               </div>
             </a>

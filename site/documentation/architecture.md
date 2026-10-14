@@ -6,16 +6,12 @@ GAWorld 使用微内核组织时间、事件、插件、动作校验和记录。
 
 `generative_city_sim.py` 提供运行入口；`gaworld/sim/` 实现认知管线；`gaworld/core/` 组织居民与执行。日常行动和长时段快进按所选时间尺度推进。
 
-```text
-CLI / Dashboard / Python client
-                 │
-          仿真入口与运行配置
-                 │
-      SimContext + 认知管线
-        │        │        │
-     居民状态   插件系统   环境与地图
-        └────────┼────────┘
-             记录与输出
+```{figure} _static/diagrams/module-map.svg
+:alt: GAWorld 控制台、命令行和客户端，经服务与编排层连接仿真内核、领域插件和数据记录
+:figclass: guide-diagram
+:target: _static/diagrams/module-map.svg
+
+模块关系概览。代码位置与阅读顺序见 [代码结构与阅读路径](code-structure.md)。 点击图片查看完整尺寸。
 ```
 
 ## SimContext

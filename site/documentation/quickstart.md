@@ -39,6 +39,14 @@ gaworld dashboard
 3. 在日志中查看进度与居民行动。
 4. 运行完成后进入轨迹回放和居民详情。
 
+```{figure} _static/screenshots/simulation.png
+:alt: GAWorld 仿真控制台，顶部是城市、居民、时长与模型设置，下方为运行操作和实时轨迹
+:figclass: guide-shot
+:target: _static/screenshots/simulation.png
+
+仿真控制台示例。先在顶部核对城市、居民、时长和模型，再保存配置并启动。 点击图片查看完整尺寸。
+```
+
 ## 查看结果
 
 | 查看内容 | 控制台入口 |

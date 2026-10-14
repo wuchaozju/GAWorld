@@ -1,0 +1,13 @@
+GAWorld interface screenshots
+Source repository: https://github.com/wuchaozju/GAWorld
+Source directory: ppt_assets/screenshots/
+
+simulation.png: 03_dashboard_home.png
+agent-studio.png: 04_dashboard_studio.png
+interview.png: 07_dashboard_survey.png
+research.png: 08_dashboard_research.png
+city.png: 09_dashboard_city.png
+analytics.png: 10_dashboard_analytics.png
+replay.png: 13_simviz.png
+
+Images are copied unchanged. Figure captions explain the illustrated controls.

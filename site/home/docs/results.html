@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
     
     
 
@@ -231,6 +231,7 @@
 <p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
@@ -295,6 +296,13 @@
           <section id="id1">
 <h1>回放、分析与导出<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>运行结束后，先确认当前世界与城市，再选择要查看的运行。轨迹用于追踪行动，状态历史用于比较变化，日志和记忆用于回查具体经历。</p>
+<figure class="guide-shot guide-tall align-default" id="id5">
+<a class="reference external image-reference" href="_static/screenshots/replay.png"><img alt="仿真回放界面，地图显示居民位置，右侧显示行动，下方是播放时间轴" src="_images/replay.png" />
+</a>
+<figcaption>
+<p><span class="caption-text">轨迹回放示例。上方选择运行，下方拖动时间轴，右侧查看对应居民的行动。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id5" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
 <section id="outputs">
 <span id="id2"></span><h2>查找结果文件<a class="headerlink" href="#outputs" title="链接到此标题。">¶</a></h2>
 <p>以下路径相对于当前运行的输出目录。默认工作区使用 <code class="docutils literal notranslate"><span class="pre">output/</span></code>；城市运行使用对应城市目录，多人部署按当前世界隔离保存。</p>
@@ -342,6 +350,13 @@
 <h2>在控制台分析<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>Analytics</strong>，选择要查看的运行。按研究问题查看状态历史、经济变化、社交结构与行为分布；需要追溯单个居民时，再打开其日志或记忆。</p>
 <p>导出运行日志可使用控制台的日志导出功能。CSV 文件可用表格软件或 Python 读取，JSON / JSONL 文件可用于后续分析。</p>
+<figure class="guide-shot guide-tall align-default" id="id6">
+<a class="reference external image-reference" href="_static/screenshots/analytics.png"><img alt="仿真结果分析界面，包含运行选择、总览和居民状态曲线" src="_images/analytics.png" />
+</a>
+<figcaption>
+<p><span class="caption-text">Analytics 示例。右上角选择运行，下面查看运行总览与状态变化。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id6" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
 </section>
 <section id="id4">
 <h2>保存实验配置<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>

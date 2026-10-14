@@ -12,9 +12,12 @@
 
 控制台入口为 **研究工作台**。分析方案所用模型与居民仿真所用模型可以分别设置。
 
-```{image} _static/screenshots/research.png
-:alt: GAWorld 研究工作台
-:width: 80%
+```{figure} _static/screenshots/research.png
+:alt: GAWorld 研究工作台的材料输入与研究列表
+:figclass: guide-shot
+:target: _static/screenshots/research.png
+
+研究工作台示例。在左侧输入想法或论文材料、选择分析模型；右侧查看方案与研究记录。 点击图片查看完整尺寸。
 ```
 
 ## 选择研究方式

@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
     
     
 
@@ -231,6 +231,7 @@
 <p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
@@ -295,6 +296,13 @@
           <section id="id1">
 <h1>平行世界与对照实验<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>平行世界从同一批居民出发，为不同条件设置事件或配置。你可以比较一个冲击发生前后的变化，也可以扫描一个参数的多组取值，观察差异何时出现、集中在哪些居民身上。</p>
+<figure class="guide-diagram align-default" id="id8">
+<a class="reference external image-reference" href="_static/diagrams/parallel-design.svg"><img alt="共同基线分别进入基准、处理与可选安慰剂世界，运行后进行配对比较" src="_images/parallel-design.svg" />
+</a>
+<figcaption>
+<p><span class="caption-text">平行世界的条件组织与结果比较。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id8" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
 <section id="id2">
 <h2>建立共同基线<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>研究工作台 → 平行世界 · 反事实推断</strong>。先设置所有世界共用的居民、模型、仿真天数、随机种子与快速模式，再定义各个世界的事件和配置补丁。</p>

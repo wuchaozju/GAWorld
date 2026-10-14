@@ -2,6 +2,14 @@
 
 运行结束后，先确认当前世界与城市，再选择要查看的运行。轨迹用于追踪行动，状态历史用于比较变化，日志和记忆用于回查具体经历。
 
+```{figure} _static/screenshots/replay.png
+:alt: 仿真回放界面，地图显示居民位置，右侧显示行动，下方是播放时间轴
+:figclass: guide-shot guide-tall
+:target: _static/screenshots/replay.png
+
+轨迹回放示例。上方选择运行，下方拖动时间轴，右侧查看对应居民的行动。 点击图片查看完整尺寸。
+```
+
 (outputs)=
 ## 查找结果文件
 
@@ -26,6 +34,14 @@
 打开 **Analytics**，选择要查看的运行。按研究问题查看状态历史、经济变化、社交结构与行为分布；需要追溯单个居民时，再打开其日志或记忆。
 
 导出运行日志可使用控制台的日志导出功能。CSV 文件可用表格软件或 Python 读取，JSON / JSONL 文件可用于后续分析。
+
+```{figure} _static/screenshots/analytics.png
+:alt: 仿真结果分析界面，包含运行选择、总览和居民状态曲线
+:figclass: guide-shot guide-tall
+:target: _static/screenshots/analytics.png
+
+Analytics 示例。右上角选择运行，下面查看运行总览与状态变化。 点击图片查看完整尺寸。
+```
 
 ## 保存实验配置
 

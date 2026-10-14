@@ -13,6 +13,8 @@ git switch -c feat/your-change
 
 ## 定位代码
 
+完整目录、模块关系图与源码阅读顺序见 [代码结构与阅读路径](code-structure.md)。
+
 | 目录 | 内容 |
 | --- | --- |
 | `gaworld/` | 正式运行实现 |
