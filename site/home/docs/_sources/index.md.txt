@@ -42,59 +42,41 @@ gaworld dashboard
 
 ```{toctree}
 :maxdepth: 1
-:caption: 开始使用
+:caption: 入门指南
 
 installation
 quickstart
 concepts
-models
 ```
 
 ```{toctree}
 :maxdepth: 1
-:caption: 城市与居民
+:caption: 用户指南
 
+models
 cities
 residents
 skills-work
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: 运行与观察
-
 simulation
 results
 interviews
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: 研究与实验
-
 research
 parallel-worlds
 policy-games
+deployment
+cli
 ```
 
 ```{toctree}
 :maxdepth: 1
-:caption: 扩展与部署
+:caption: 开发者指南
 
-deployment
 code-structure
 architecture
 plugins
-development
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: 接口参考
-
-cli
 integration
 api/index
+development
 ```
 
 ## 项目链接
