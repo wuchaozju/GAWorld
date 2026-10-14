@@ -2,6 +2,10 @@
 
 一次仿真使用选定的居民、城市与模型配置，推进居民行动，并记录状态、记忆、关系和环境变化。
 
+## 功能与准备
+
+本章用于启动和观察居民仿真，并按研究时长选择日内行动、按天快进或月年尺度。开始前完成模型配置，确认城市、当前世界和参与居民；先用少量居民验证流程。
+
 ## 设置运行范围
 
 在仿真页面选择居民，设置时长与模型，然后保存配置。先完成一次短运行，确认居民、环境和模型输出符合实验设置，再增加运行规模。
@@ -78,3 +82,39 @@ python -m gaworld.group --size 500 --days 7 --no-llm
 ## 运行结束后
 
 在 [回放、分析与导出](results.md) 中定位日志、轨迹与状态时间序列；在 [访谈与群体采访](interviews.md) 中查看居民的回答。
+
+## 完成后检查
+
+在日志中确认居民数量、时间尺度和进度。结束后查看本次运行的轨迹与状态文件；常规模式重点查看行动过程，快进模式重点查看阶段简报和状态变化。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/app.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/app.js) | 运行参数表单、启动与停止操作、状态轮询和日志显示。 |
+| [gaworld/apps/runs.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/runs.py) | 校验运行请求、管理排队与名额、启动和停止仿真子进程。 |
+| [generative\_city\_sim.py](https://github.com/wuchaozju/GAWorld/blob/main/generative_city_sim.py) | run_simulation() 装配运行环境并推进主循环。 |
+| [gaworld/sim/pipeline.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/pipeline.py) | StagePipeline 定义每个居民的认知阶段执行顺序。 |
+| [gaworld/sim/\_fastforward.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/_fastforward.py) | 规划日、月、年跨度，生成阶段简报并应用状态变化。 |
+| [gaworld/core/runner.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/core/runner.py) | 提供保持输入顺序的并发映射工具。 |
+| [gaworld/plugins/\_\_init\_\_.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/plugins/__init__.py) | 装配内置插件，将经济、技能等机制接入生命周期。 |
+
+```
+
+### 执行流程
+
+```text
+运行表单 → runs.start_simulation() → 仿真子进程
+  → run_simulation() → 常规认知管线 / 快进阶段
+  → 插件更新与记录 → 日志、状态、记忆和轨迹
+```
+
+网页运行由 runs 管理子进程，命令行则直接进入仿真入口。常规运行按日内时间点执行居民认知与行动；快进由 `_fastforward.py` 提供跨度规划和简报逻辑，主循环负责钩子调用与持久化。独立群体模拟使用 `gaworld/group/` 下的另一套入口。
+
+### 从哪里修改
+
+调整启动、排队或停止行为查看 `apps/runs.py`；调整认知阶段查看 `sim/pipeline.py` 及其阶段实现；调整长时段简报查看 `_fastforward.py`。新增机制通过插件接入，开发步骤见 [编写插件](plugins.md)。

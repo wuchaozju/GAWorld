@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -301,89 +301,40 @@ gaworld<span class="w"> </span>dashboard
 </section>
 <section id="id2">
 <h2>按照你选择你需要阅读的内容<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>你要完成的任务</p></th>
-<th class="head"><p>从这里开始</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>接入模型，完成第一次运行</p></td>
-<td><p><a class="reference internal" href="models.html"><span class="std std-doc">模型与运行配置</span></a> → <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>搭建研究对象与空间环境</p></td>
-<td><p><a class="reference internal" href="cities.html"><span class="std std-doc">城市与地图</span></a> → <a class="reference internal" href="residents.html"><span class="std std-doc">居民与 Agent Studio</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>观察日常行动或长期变化</p></td>
-<td><p><a class="reference internal" href="simulation.html"><span class="std std-doc">仿真运行与时间尺度</span></a> → <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>比较事件、政策或参数的影响</p></td>
-<td><p><a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界与对照实验</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>将研究问题整理为可执行协议</p></td>
-<td><p><a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>收集居民回答与群体差异</p></td>
-<td><p><a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>让居民完成工作并生成文件</p></td>
-<td><p><a class="reference internal" href="skills-work.html"><span class="std std-doc">技能与真实工作</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>共用服务器或扩展仿真机制</p></td>
-<td><p><a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署与世界管理</span></a> · <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>源码阅读入口见 <a class="reference internal" href="code-structure.html"><span class="std std-doc">代码结构与阅读路径</span></a>，其中包含仓库目录、模块关系与仿真执行流程。</p>
-</section>
 <section id="id3">
-<h2>城市、居民与世界<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<p><strong>城市</strong>保存地图、环境和初始人口。<strong>居民</strong>具有身份、人格、状态、记忆与社会关系。<strong>世界</strong>保存一组居民副本、运行配置和输出；一次<strong>运行</strong>按选定时间尺度推进居民行动。</p>
-<p>在同一套城市与居民基础上，你可以跟踪一次日常仿真，也可以建立多个实验条件，比较事件或配置改变后的轨迹。概念之间的关系见 <a class="reference internal" href="concepts.html"><span class="std std-doc">工作区、城市与世界</span></a>。</p>
+<h3>入门指南<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h3>
+<p>安装 GAWorld，理解工作区、城市与世界，完成第一次仿真。</p>
+<p><a class="reference internal" href="installation.html"><span class="std std-doc">安装</span></a> · <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a> · <a class="reference internal" href="concepts.html"><span class="std std-doc">核心概念</span></a></p>
 </section>
 <section id="id4">
-<h2>文档目录<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">入门指南</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">工作区、城市与世界</a></li>
+<h3>用户指南<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
+<p>按任务学习配置模型、创建城市与居民、运行仿真和分析结果，再开展访谈、对照实验与政策推演。各章说明用途、操作步骤和对应的代码结构。</p>
+<ul class="simple">
+<li><p><strong>准备仿真</strong>：<a class="reference internal" href="models.html"><span class="std std-doc">模型配置</span></a> · <a class="reference internal" href="cities.html"><span class="std std-doc">城市与地图</span></a> · <a class="reference internal" href="residents.html"><span class="std std-doc">居民与 Agent Studio</span></a> · <a class="reference internal" href="skills-work.html"><span class="std std-doc">技能与真实工作</span></a></p></li>
+<li><p><strong>运行与观察</strong>：<a class="reference internal" href="simulation.html"><span class="std std-doc">仿真运行</span></a> · <a class="reference internal" href="results.html"><span class="std std-doc">回放与分析</span></a> · <a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a></p></li>
+<li><p><strong>开展研究</strong>：<a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a> · <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> · <a class="reference internal" href="policy-games.html"><span class="std std-doc">政策推演与严肃游戏</span></a></p></li>
+<li><p><strong>管理与运行工具</strong>：<a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署</span></a> · <a class="reference internal" href="cli.html"><span class="std std-doc">命令行</span></a></p></li>
 </ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">用户指南</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
-<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
-<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
-<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真运行与时间尺度</a></li>
-<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
-<li class="toctree-l1"><a class="reference internal" href="research.html">研究工作台</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
-<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">开发者指南</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
-<li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
-<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/index.html">API 参考</a></li>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
-</ul>
-</div>
 </section>
 <section id="id5">
-<h2>项目链接<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<h3>开发者指南<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
+<p>了解代码组织与运行架构，编写插件，通过 Python 或 HTTP 接入 GAWorld，并参与项目开发。</p>
+<p><a class="reference internal" href="code-structure.html"><span class="std std-doc">代码结构</span></a> · <a class="reference internal" href="architecture.html"><span class="std std-doc">系统架构</span></a> · <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a> · <a class="reference internal" href="integration.html"><span class="std std-doc">接口集成</span></a> · <a class="reference internal" href="api/index.html"><span class="std std-doc">API 参考</span></a> · <a class="reference internal" href="development.html"><span class="std std-doc">开发与贡献</span></a></p>
+</section>
+</section>
+<section id="id6">
+<h2>城市、居民与世界<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p><strong>城市</strong>保存地图、环境和初始人口。<strong>居民</strong>具有身份、人格、状态、记忆与社会关系。<strong>世界</strong>保存一组居民副本、运行配置和输出；一次<strong>运行</strong>按选定时间尺度推进居民行动。</p>
+<p>在同一套城市与居民基础上，你可以跟踪一次日常仿真，也可以建立多个实验条件，比较事件或配置改变后的轨迹。概念之间的关系见 <a class="reference internal" href="concepts.html"><span class="std std-doc">工作区、城市与世界</span></a>。</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="id7">
+<h2>项目链接<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
 <li><p><a href="../index.html">GAWorld 项目主页</a></p></li>
 <li><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld">GitHub 仓库</a></p></li>
@@ -441,12 +392,16 @@ gaworld<span class="w"> </span>dashboard
             <ul>
 <li><a class="reference internal" href="#">GAWorld 文档</a><ul>
 <li><a class="reference internal" href="#id1">从一次仿真开始</a></li>
-<li><a class="reference internal" href="#id2">按照你选择你需要阅读的内容</a></li>
-<li><a class="reference internal" href="#id3">城市、居民与世界</a></li>
-<li><a class="reference internal" href="#id4">文档目录</a><ul>
+<li><a class="reference internal" href="#id2">按照你选择你需要阅读的内容</a><ul>
+<li><a class="reference internal" href="#id3">入门指南</a></li>
+<li><a class="reference internal" href="#id4">用户指南</a></li>
+<li><a class="reference internal" href="#id5">开发者指南</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5">项目链接</a></li>
+<li><a class="reference internal" href="#id6">城市、居民与世界</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">项目链接</a></li>
 </ul>
 </li>
 </ul>

@@ -19,18 +19,26 @@ gaworld dashboard
 
 ## 按照你选择你需要阅读的内容
 
-| 你要完成的任务 | 从这里开始 |
-| --- | --- |
-| 接入模型，完成第一次运行 | [模型与运行配置](models.md) → [第一次仿真](quickstart.md) |
-| 搭建研究对象与空间环境 | [城市与地图](cities.md) → [居民与 Agent Studio](residents.md) |
-| 观察日常行动或长期变化 | [仿真运行与时间尺度](simulation.md) → [回放、分析与导出](results.md) |
-| 比较事件、政策或参数的影响 | [平行世界与对照实验](parallel-worlds.md) |
-| 将研究问题整理为可执行协议 | [研究工作台](research.md) |
-| 收集居民回答与群体差异 | [访谈与群体采访](interviews.md) |
-| 让居民完成工作并生成文件 | [技能与真实工作](skills-work.md) |
-| 共用服务器或扩展仿真机制 | [团队部署与世界管理](deployment.md) · [编写插件](plugins.md) |
+### 入门指南
 
-源码阅读入口见 [代码结构与阅读路径](code-structure.md)，其中包含仓库目录、模块关系与仿真执行流程。
+安装 GAWorld，理解工作区、城市与世界，完成第一次仿真。
+
+[安装](installation.md) · [第一次仿真](quickstart.md) · [核心概念](concepts.md)
+
+### 用户指南
+
+按任务学习配置模型、创建城市与居民、运行仿真和分析结果，再开展访谈、对照实验与政策推演。各章说明用途、操作步骤和对应的代码结构。
+
+- **准备仿真**：[模型配置](models.md) · [城市与地图](cities.md) · [居民与 Agent Studio](residents.md) · [技能与真实工作](skills-work.md)
+- **运行与观察**：[仿真运行](simulation.md) · [回放与分析](results.md) · [访谈与群体采访](interviews.md)
+- **开展研究**：[研究工作台](research.md) · [平行世界](parallel-worlds.md) · [政策推演与严肃游戏](policy-games.md)
+- **管理与运行工具**：[团队部署](deployment.md) · [命令行](cli.md)
+
+### 开发者指南
+
+了解代码组织与运行架构，编写插件，通过 Python 或 HTTP 接入 GAWorld，并参与项目开发。
+
+[代码结构](code-structure.md) · [系统架构](architecture.md) · [编写插件](plugins.md) · [接口集成](integration.md) · [API 参考](api/index.md) · [开发与贡献](development.md)
 
 ## 城市、居民与世界
 
@@ -38,9 +46,8 @@ gaworld dashboard
 
 在同一套城市与居民基础上，你可以跟踪一次日常仿真，也可以建立多个实验条件，比较事件或配置改变后的轨迹。概念之间的关系见 [工作区、城市与世界](concepts.md)。
 
-## 文档目录
-
 ```{toctree}
+:hidden:
 :maxdepth: 1
 :caption: 入门指南
 
@@ -50,6 +57,7 @@ concepts
 ```
 
 ```{toctree}
+:hidden:
 :maxdepth: 1
 :caption: 用户指南
 
@@ -68,6 +76,7 @@ cli
 ```
 
 ```{toctree}
+:hidden:
 :maxdepth: 1
 :caption: 开发者指南
 

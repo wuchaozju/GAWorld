@@ -2,6 +2,10 @@
 
 研究工作台提供两种围绕情景的研究方式：政策推演比较居民对不同政策文本的反应，严肃游戏让居民与真人按角色和回合参与共同决策。
 
+## 功能与准备
+
+本章用于两类操作：比较政策文本引发的居民反应，以及组织按角色、按回合进行的严肃游戏。政策推演准备城市、政策文本和抽样设置；严肃游戏准备情景、角色目标与参与方式。
+
 ## 比较政策版本
 
 打开 **研究工作台 → 政策仿真与优化**，选择城市并输入政策文本。可以同时输入候选政策，比较两个版本。
@@ -37,3 +41,38 @@
 ## 与平行世界配合
 
 政策文本推演帮助比较居民的即时反应，严肃游戏记录回合中的互动决策。需要追踪干预后的持续行动、状态变化与跨种子差异时，在 [平行世界](parallel-worlds.md) 中设置事件或配置条件，并运行完整仿真。
+
+## 完成后检查
+
+政策推演完成后，核对各版本使用的居民样本、各项得分和原话，再导出报告。严肃游戏每轮核对角色提交状态与公共指标，结束后检查回合记录、角色评分和复盘内容。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/policy-sim.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/policy-sim.js) | 政策输入、版本比较、结果展示和导出。 |
+| [gaworld/apps/policy\_sim\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/policy_sim_api.py) | 创建政策任务，读取保存结果并导出报告。 |
+| [gaworld/research/policy\_sim.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/policy_sim.py) | 居民抽样、版本评估、代码计分、修改建议与修订验证。 |
+| [site/dashboard/serious-game.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/serious-game.js) | 游戏设计、角色安排、主持与座位页面交互。 |
+| [gaworld/apps/serious\_game\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/serious_game_api.py) | 管理游戏与对局，接收行动并推进回合。 |
+| [gaworld/research/serious\_game.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/serious_game.py) | 定义游戏结构、角色视图、行动、回合结算与复盘。 |
+| [gaworld/apps/game\_jobs.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/game_jobs.py) | 为耗时任务提供后台执行与进度查询。 |
+
+```
+
+### 执行流程
+
+```text
+政策文本 → 固定样本 → 各版本反应 → 代码汇总 → 修订 → 同样本验证
+游戏描述 → 结构化设计 → 角色就座 → 每轮提交与结算 → 评分与复盘
+```
+
+两项功能都通过 `research_api.py` 分发到各自接口。政策模块对各版本使用同一批居民，聚合反应后生成修订建议。游戏模块保存角色、座位和回合状态；API 层驱动居民行动与主持结算，真人通过座位提交行动。两条流程分别保存政策记录和游戏会话。
+
+### 从哪里修改
+
+调整政策评分查看 `policy_sim.py` 的 `composite_score()` 与 `metrics()`；调整游戏结构、角色信息或回合规则查看 `serious_game.py`。界面和 HTTP 操作分别对应上表中的前端与 API 文件。

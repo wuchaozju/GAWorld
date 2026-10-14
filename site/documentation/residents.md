@@ -2,6 +2,10 @@
 
 GAWorld 中的居民包含身份、人格、状态、日程、记忆和社会关系。你可以从城市数据创建居民，也可以导入已有数据，并在运行后回查个体经历。
 
+## 功能与准备
+
+本章用于建立、检查和修改参与仿真的居民。准备已有城市或当前世界，选择手动编辑、批量导入或从公开资料创建人物；修改完成后把居民加入一次短运行，查看其实际表现。
+
 ## 查看与编辑居民
 
 1. 在控制台确认当前世界和城市。
@@ -70,6 +74,42 @@ print(record["state"]["energy"])
 ## 访谈与群体比较
 
 在 [访谈与群体采访](interviews.md) 中对居民提问，或跨城市选择受访者比较回答。群体采访支持个体居民与 cohort 群体智能体，结果分别保留受访者数量与代表人数。
+
+## 完成后检查
+
+保存后重新打开同一居民，核对身份、状态和技能；批量导入后抽查几位居民的字段。运行后在居民详情查看新产生的记忆和行动，确认当前世界与所编辑的居民一致。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/studio.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/studio.js) | Agent Studio 的居民选择、详情展示与编辑交互。 |
+| [gaworld/apps/residents.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/residents.py) | 读取并保存人物档案、状态、人格、记忆、目标等数据。 |
+| [gaworld/apps/world\_paths.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/world_paths.py) | 按请求中的当前世界解析居民文件和运行目录。 |
+| [gaworld/apps/import\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/import_api.py) | 处理批量导入的预览、字段映射与导入任务。 |
+| [gaworld/persona/distill.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/persona/distill.py) | 根据检索资料生成身份、人格种子与思维框架。 |
+| [gaworld/sim/agents\_loader.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/agents_loader.py) | 在仿真初始化时加载居民输入。 |
+| [gaworld/core/agent.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/core/agent.py) | 提供 Agent 数据视图与属性访问。 |
+
+```
+
+### 执行流程
+
+```text
+Agent Studio → dashboard_server → residents → 当前世界的居民文件
+批量导入 → import_api → 字段处理与人口写入
+仿真启动 → agents_loader → 居民运行数据
+```
+
+Studio 的编辑请求由控制台服务分发给 residents；该模块通过 world_paths 定位当前世界的副本。人物蒸馏由 `persona_api.py` 调用 `gaworld/persona/`，先保存画像及来源，再由部署操作写入居民输入。仿真加载这些输入后，按运行过程更新记忆与状态。
+
+### 从哪里修改
+
+调整表单查看 `studio.js`，调整字段读写查看 `residents.py`，调整 CSV、XLSX 或 JSONL 导入查看 `import_api.py`。增加居民初始化字段时，同时检查 `agents_loader.py` 与 `Agent` 的访问方式。
 
 ## 参考
 

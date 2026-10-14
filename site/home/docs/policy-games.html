@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -288,7 +288,11 @@
 <h1>政策推演与严肃游戏<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>研究工作台提供两种围绕情景的研究方式：政策推演比较居民对不同政策文本的反应，严肃游戏让居民与真人按角色和回合参与共同决策。</p>
 <section id="id2">
-<h2>比较政策版本<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于两类操作：比较政策文本引发的居民反应，以及组织按角色、按回合进行的严肃游戏。政策推演准备城市、政策文本和抽样设置；严肃游戏准备情景、角色目标与参与方式。</p>
+</section>
+<section id="id3">
+<h2>比较政策版本<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>研究工作台 → 政策仿真与优化</strong>，选择城市并输入政策文本。可以同时输入候选政策，比较两个版本。</p>
 <ol class="arabic simple">
 <li><p>设置抽样人数、随机种子与分析模型。</p></li>
@@ -299,25 +303,81 @@
 </ol>
 <p>抽样范围为 6–30 位、年龄至少 16 岁的居民。各版本共用同一批受访者。居民反应由模型根据档案生成，适合比较文本版本、发现可能受影响的群体与修改方向。</p>
 </section>
-<section id="id3">
-<h2>检查推荐版本<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>检查推荐版本<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>结果包括各项均值、按属性的分组比较、逐人回答与综合分。综合分由支持度、生活变化、钱包影响与遵从度按设定权重计算，推荐版本按该分数选出。</p>
 <p>结合分组结果与原话判断推荐是否符合你的研究目标。点击下载 Markdown 保存报告，或将修订版作为下一轮输入继续比较。记录保存在 <code class="docutils literal notranslate"><span class="pre">output/research/policy/&lt;id&gt;.json</span></code>。</p>
 </section>
-<section id="id4">
-<h2>设计严肃游戏<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>设计严肃游戏<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>研究工作台 → 严肃游戏</strong>，描述情景中的参与者、各自目标与需要作出的决定，再设置回合数与角色数。</p>
 <p>生成后检查背景、角色、公开目标、私密信息、回合事件与评分维度。随后为每个角色安排一位城市居民或一位真人参与者。</p>
 </section>
-<section id="id5">
-<h2>组织回合与复盘<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>组织回合与复盘<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>每轮由各角色提交行动，主持流程在结算时更新公共指标与情景。真人通过自己的座位链接进入，查看公开信息与该角色的私密信息。主持界面可以检查提交状态，并结算当前回合。</p>
 <p>最后一轮结束后，查看角色评分、学习目标评估与复盘问题，再下载 Markdown。设计保存在 <code class="docutils literal notranslate"><span class="pre">output/research/serious_games/</span></code>，对局保存在其 <code class="docutils literal notranslate"><span class="pre">sessions/</span></code> 子目录中。</p>
 <p>严肃游戏的座位链接用于本地课堂或工作坊中的角色分配；团队账号与访问权限设置见 <a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署与世界管理</span></a>。</p>
 </section>
-<section id="id6">
-<h2>与平行世界配合<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>与平行世界配合<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>政策文本推演帮助比较居民的即时反应，严肃游戏记录回合中的互动决策。需要追踪干预后的持续行动、状态变化与跨种子差异时，在 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> 中设置事件或配置条件，并运行完整仿真。</p>
+</section>
+<section id="id8">
+<h2>完成后检查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p>政策推演完成后，核对各版本使用的居民样本、各项得分和原话，再导出报告。严肃游戏每轮核对角色提交状态与公共指标，结束后检查回合记录、角色评分和复盘内容。</p>
+</section>
+<section id="id9">
+<h2>代码结构与执行流程<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<section id="id10">
+<h3>模块分工<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/policy-sim.js">site/dashboard/policy-sim.js</a></p></td>
+<td><p>政策输入、版本比较、结果展示和导出。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/policy_sim_api.py">gaworld/apps/policy_sim_api.py</a></p></td>
+<td><p>创建政策任务，读取保存结果并导出报告。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/policy_sim.py">gaworld/research/policy_sim.py</a></p></td>
+<td><p>居民抽样、版本评估、代码计分、修改建议与修订验证。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/serious-game.js">site/dashboard/serious-game.js</a></p></td>
+<td><p>游戏设计、角色安排、主持与座位页面交互。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/serious_game_api.py">gaworld/apps/serious_game_api.py</a></p></td>
+<td><p>管理游戏与对局，接收行动并推进回合。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/serious_game.py">gaworld/research/serious_game.py</a></p></td>
+<td><p>定义游戏结构、角色视图、行动、回合结算与复盘。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/game_jobs.py">gaworld/apps/game_jobs.py</a></p></td>
+<td><p>为耗时任务提供后台执行与进度查询。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id11">
+<h3>执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>政策文本 → 固定样本 → 各版本反应 → 代码汇总 → 修订 → 同样本验证
+游戏描述 → 结构化设计 → 角色就座 → 每轮提交与结算 → 评分与复盘
+</pre></div>
+</div>
+<p>两项功能都通过 <code class="docutils literal notranslate"><span class="pre">research_api.py</span></code> 分发到各自接口。政策模块对各版本使用同一批居民，聚合反应后生成修订建议。游戏模块保存角色、座位和回合状态；API 层驱动居民行动与主持结算，真人通过座位提交行动。两条流程分别保存政策记录和游戏会话。</p>
+</section>
+<section id="id12">
+<h3>从哪里修改<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<p>调整政策评分查看 <code class="docutils literal notranslate"><span class="pre">policy_sim.py</span></code> 的 <code class="docutils literal notranslate"><span class="pre">composite_score()</span></code> 与 <code class="docutils literal notranslate"><span class="pre">metrics()</span></code>；调整游戏结构、角色信息或回合规则查看 <code class="docutils literal notranslate"><span class="pre">serious_game.py</span></code>。界面和 HTTP 操作分别对应上表中的前端与 API 文件。</p>
+</section>
 </section>
 </section>
 
@@ -377,11 +437,19 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">政策推演与严肃游戏</a><ul>
-<li><a class="reference internal" href="#id2">比较政策版本</a></li>
-<li><a class="reference internal" href="#id3">检查推荐版本</a></li>
-<li><a class="reference internal" href="#id4">设计严肃游戏</a></li>
-<li><a class="reference internal" href="#id5">组织回合与复盘</a></li>
-<li><a class="reference internal" href="#id6">与平行世界配合</a></li>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
+<li><a class="reference internal" href="#id3">比较政策版本</a></li>
+<li><a class="reference internal" href="#id4">检查推荐版本</a></li>
+<li><a class="reference internal" href="#id5">设计严肃游戏</a></li>
+<li><a class="reference internal" href="#id6">组织回合与复盘</a></li>
+<li><a class="reference internal" href="#id7">与平行世界配合</a></li>
+<li><a class="reference internal" href="#id8">完成后检查</a></li>
+<li><a class="reference internal" href="#id9">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id10">模块分工</a></li>
+<li><a class="reference internal" href="#id11">执行流程</a></li>
+<li><a class="reference internal" href="#id12">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

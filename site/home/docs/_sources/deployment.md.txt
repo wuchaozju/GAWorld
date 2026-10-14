@@ -2,6 +2,10 @@
 
 团队可以共用一套 GAWorld 控制台，每位成员在自己的世界中保存居民、配置与运行结果。管理员管理账号、建城权限、运行名额与模型后端。
 
+## 功能与准备
+
+本章用于把一套控制台提供给团队，并为成员管理独立世界、运行名额和模型密钥。准备可运行 GAWorld 的服务器与管理员账号；多人共玩和分布式运行在世界创建完成后配置。
+
 ## 启用团队账号
 
 在服务器的 GAWorld 工作区初始化账号库，并按提示设置管理员密码：
@@ -45,3 +49,55 @@ python -m gaworld.accounts invite --count 30 --label 周三班
 世界属主在 **管理世界 → 分布式节点** 中添加节点，指定它负责的居民编号。复制界面生成的加入命令，在已安装 GAWorld 并配置自身模型密钥的节点机器上执行。
 
 节点主动连接控制台，接收世界数据并运行分配的居民。节点上的状态 CSV、记忆和轨迹保留在节点本机；汇总分析时同时收集相关节点的结果。节点配置与同步设置见 [服务器部署说明](https://github.com/wuchaozju/GAWorld/blob/main/docs/SERVER_DEPLOYMENT.md)。
+
+## 完成后检查
+
+使用一个普通成员账号完成注册、保存模型密钥、创建世界和短运行，核对结果目录与权限。共玩时检查玩家动作是否进入后续 tick；分布式运行时检查节点在线状态和分配的居民编号。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [gaworld/accounts/store.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/accounts/store.py) | 保存账号、邀请、会话及管理设置。 |
+| [gaworld/accounts/policy.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/accounts/policy.py) | 判断账号可以访问和修改的操作。 |
+| [gaworld/apps/worlds\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/worlds_api.py) | 创建、切换、共享和管理世界。 |
+| [gaworld/worlds/\_\_init\_\_.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/worlds/__init__.py) | 创建世界目录、复制居民输入并构造运行路径覆盖。 |
+| [gaworld/apps/world\_paths.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/world_paths.py) | 按当前世界解析控制台读写路径。 |
+| [gaworld/apps/runs.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/runs.py) | 按世界和运行限额调度仿真进程。 |
+| [gaworld/apps/cluster\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/cluster_api.py) | 管理节点、居民分配、世界包与节点通信。 |
+| [gaworld/cluster/node.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/cluster/node.py) | 节点连接主机并运行分配给自己的居民。 |
+
+```
+
+### 执行流程
+
+```text
+登录会话 → 权限检查 → 选择世界 → world_paths 解析目录
+启动运行 → runs 排队与启动 → 世界路径覆盖 → 仿真输出
+分布式节点 → cluster_api 领取配置与干预 → node 启动本地进程
+```
+
+世界同时对应账号库中的记录与 `output/worlds/<id>/` 目录。控制台验证当前世界后，将请求上下文传给读写模块；后台任务通过 `accounts/ownership.py` 继承用户与世界。运行时把世界配置和路径作为覆盖项传给仿真。共玩动作由 `apps/play_api.py` 接收，经 `multiplayer/plugin.py` 在运行中处理。
+
+### 世界目录结构
+
+```text
+output/worlds/<id>/
+├── config.json       世界配置
+├── seed/             居民初始数据副本
+├── logs/             运行日志
+├── memory/           居民记忆与运行状态
+├── state/            状态历史
+├── visualization/    轨迹与运行归档
+└── records/          结构化事件
+```
+
+世界创建时准备配置与居民输入；各输出目录由相应运行过程写入。
+
+### 从哪里修改
+
+调整权限查看 `accounts/policy.py`，调整世界数据布局查看 `worlds/__init__.py` 与 `world_paths.py`，调整运行名额查看 `apps/runs.py`。节点调度与通信从 `cluster_api.py` 和 `cluster/` 开始。

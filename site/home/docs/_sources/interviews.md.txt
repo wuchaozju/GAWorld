@@ -2,6 +2,10 @@
 
 访谈用于查看居民如何回答问题。单人访谈便于追问某位居民的经历；群体采访使用同一套问题访问多位居民，并汇总选项与群体差异。
 
+## 功能与准备
+
+本章用于收集单个居民的回答，或用同一套问题比较多个居民与群体。准备受访城市、问题和可用模型；需要比较选项分布时，先明确题型和选项。
+
 ## 访问一位居民
 
 在 Agent Studio 中打开居民的采访入口，输入问题并查看回答。命令行也支持单人访谈：
@@ -57,3 +61,40 @@ cohort 按年龄段、户籍、性别或片区等属性组织居民，一次回�
 点击 **下载完整 Markdown**，获得采访信息、问题、材料、汇总统计、分组结果与逐人原话。会话记录保存在 `output/interviews/<session_id>/`。
 
 批量调用与会话文件说明见仓库的 [群体采访说明](https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_INTERVIEW_TUTORIAL.md)。
+
+## 完成后检查
+
+采访完成后核对受访者数、代表人数和有效回答数，再查看逐人原话与分组统计。追问时确认使用同一会话，导出 Markdown 后检查问题、材料与回答是否齐全。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/survey.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/survey.js) | 群体采访页面：选择受访者、编辑问题、查看与导出结果。 |
+| [gaworld/apps/interview\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/interview_api.py) | 提供名单、会话、运行任务与导出接口。 |
+| [gaworld/interview/roster.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/roster.py) | 构造个体与 cohort 受访名单。 |
+| [gaworld/interview/session.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/session.py) | 按城市分派采访进程，汇总回答、材料和会话记录。 |
+| [gaworld/interview/runner.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/runner.py) | 组织单座城市中的问答；同一受访者按题目顺序回答。 |
+| [gaworld/interview/aggregate.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/aggregate.py) | 计算选项计数、代表人数、分组结果和摘要。 |
+| [gaworld/interview/report.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/report.py) | 将采访结果渲染为 Markdown。 |
+| [gaworld/interview/store.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/store.py) | 保存和读取采访会话。 |
+
+```
+
+### 执行流程
+
+```text
+群体采访页面 → interview_api → session.run_round()
+  → 按城市分进程 → runner 问答 → 合并逐人回答
+  → aggregate 统计 → report 导出 → store 保存会话
+```
+
+会话层统一处理附件，保证各城市使用相同材料。每个城市的执行器先构造人物，再并发访问不同受访者；一位受访者内部按问题顺序保留上下文。统计同时记录回答人数和代表人数。单人访谈使用 `POST /api/interview` 或 CLI，群体采访接口位于 `/api/interview/` 的各子路径。
+
+### 从哪里修改
+
+修改题型时核对 `schema.py`、`prompt.py`、`runner.py` 与统计解析；修改分组统计查看 `aggregate.py`，修改导出文档查看 `report.py`。

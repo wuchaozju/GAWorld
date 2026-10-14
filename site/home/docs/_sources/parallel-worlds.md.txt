@@ -2,6 +2,10 @@
 
 平行世界从同一批居民出发，为不同条件设置事件或配置。你可以比较一个冲击发生前后的变化，也可以扫描一个参数的多组取值，观察差异何时出现、集中在哪些居民身上。
 
+## 功能与准备
+
+本章用于在共同居民和运行条件下比较不同事件、政策或参数。准备已配置模型的城市，明确基准条件、处理条件与要比较的指标，再设置重复种子和运行时长。
+
 ```{figure} _static/diagrams/parallel-design.svg
 :alt: 共同基线分别进入基准、处理与可选安慰剂世界，运行后进行配对比较
 :figclass: guide-diagram
@@ -80,3 +84,39 @@ gaworld parallel-worlds --spec worlds.json
 ```
 
 完整参数与报告字段见仓库的 [平行世界说明](https://github.com/wuchaozju/GAWorld/blob/main/docs/PARALLEL_WORLDS_TUTORIAL.md)。
+
+## 完成后检查
+
+先确认各世界状态均已结束，再查看相同居民与指标的比较结果。检查基准选择、事件时间、区间和跨种子结果，并保留 `experiment.json` 与报告供再次运行。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/worlds.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/worlds.js) | 平行世界页面：编辑条件、扫描参数、启动与读取结果。 |
+| [gaworld/apps/parallel\_worlds\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/parallel_worlds_api.py) | 预览设计，组织实验运行，返回报告与跨种子结果。 |
+| [gaworld/parallel/spec.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/spec.py) | 定义实验与世界配置，并规范化输入。 |
+| [gaworld/parallel/sweep.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/sweep.py) | 将数值参数的多个取值转换为实验世界。 |
+| [gaworld/parallel/runner.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/runner.py) | 准备各世界目录，调度独立仿真进程并写入报告。 |
+| [gaworld/parallel/analysis.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/analysis.py) | 读取状态历史，比较轨迹、分歧和个体变化。 |
+| [gaworld/parallel/causal.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/parallel/causal.py) | 计算配对效应、区间、检验、异质性及重复实验汇总。 |
+
+```
+
+### 执行流程
+
+```text
+世界条件 / 参数扫描 → ExperimentSpec → prepare_experiment()
+  → ExperimentRunner → 各世界独立运行
+  → analysis 轨迹比较 + causal 配对估计 → 保存报告
+```
+
+每个世界使用独立进程和输出目录，运行器控制同时执行的数量。analysis 从各世界的状态历史构造时间序列与个体变化；causal 按居民配对计算条件差异，并在实验内进行多重检验校正。API 层组织多个种子的运行与汇总。
+
+### 从哪里修改
+
+修改条件字段查看 `spec.py`，修改参数扫描查看 `sweep.py`，修改进程调度查看 `runner.py`。增加比较指标或统计量时，核对 `analysis.py`、`causal.py` 及前端对应展示。

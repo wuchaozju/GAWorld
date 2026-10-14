@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -288,15 +288,19 @@
 <h1>访谈与群体采访<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>访谈用于查看居民如何回答问题。单人访谈便于追问某位居民的经历；群体采访使用同一套问题访问多位居民，并汇总选项与群体差异。</p>
 <section id="id2">
-<h2>访问一位居民<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于收集单个居民的回答，或用同一套问题比较多个居民与群体。准备受访城市、问题和可用模型；需要比较选项分布时，先明确题型和选项。</p>
+</section>
+<section id="id3">
+<h2>访问一位居民<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>在 Agent Studio 中打开居民的采访入口，输入问题并查看回答。命令行也支持单人访谈：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>interview<span class="w"> </span>--agent-id<span class="w"> </span><span class="m">31</span><span class="w"> </span>--question<span class="w"> </span><span class="s2">"今天有哪些事情影响了你的心情？"</span>
 </pre></div>
 </div>
 <p>将 <code class="docutils literal notranslate"><span class="pre">31</span></code> 替换为当前运行中的居民 ID。保存问题原文、模型与回答，便于后续比较。</p>
 </section>
-<section id="id3">
-<h2>发起群体采访<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>发起群体采访<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <ol class="arabic simple">
 <li><p>打开控制台的 <strong>群体采访</strong>。</p></li>
 <li><p>选择城市，勾选个体居民或 cohort 群体智能体。</p></li>
@@ -305,16 +309,16 @@
 <li><p>点击 <strong>开始采访</strong>，完成后查看摘要、统计与逐人回答。</p></li>
 </ol>
 <p>群体采访从城市数据包读取名单，支持跨城市选人。需要采访仿真后的各条件居民时，可在 <a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a> 使用带跑后问卷的组合研究。</p>
-<figure class="guide-shot align-default" id="id8">
+<figure class="guide-shot align-default" id="id14">
 <a class="reference external image-reference" href="_static/screenshots/interview.png"><img alt="群体采访的受访者选择界面，按城市显示个体和群体智能体" src="_images/interview.png" />
 </a>
 <figcaption>
-<p><span class="caption-text">群体采访示例。左侧选择城市与受访者，右侧核对受访者数、代表人数和模型调用次数。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id8" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">群体采访示例。左侧选择城市与受访者，右侧核对受访者数、代表人数和模型调用次数。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id14" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
 </section>
-<section id="id4">
-<h2>选择题型与材料<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>选择题型与材料<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -337,20 +341,80 @@
 </div>
 <p>问题可附网址或图片。网址正文会统一提取后提供给受访者；图片由支持视觉输入的模型处理。结果中的材料降级标记说明实际使用了哪些输入。</p>
 </section>
-<section id="id5">
-<h2>使用群体智能体<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>使用群体智能体<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>cohort 按年龄段、户籍、性别或片区等属性组织居民，一次回答代表该群体。选择维度后检查分组与成员，再勾选受访对象。</p>
 <p>结果同时显示 <strong>受访者数</strong> 和 <strong>代表人数</strong>。例如一个代表 8 位居民的 cohort 产生一份回答，其代表人数为 8；分析时按界面给出的权重与有效回答口径读取统计。</p>
 </section>
-<section id="id6">
-<h2>继续追问<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>继续追问<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>在结果页点击 <strong>继续追问</strong>，添加下一轮问题。每位受访者会看到自己在该会话中的前序问答。会话上下文保存于采访记录，群体采访保持居民长期记忆原状。</p>
 </section>
-<section id="id7">
-<h2>阅读与导出<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>阅读与导出<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>先查看每题的有效回答与解析状态，再比较按城市、年龄段或户籍划分的分布。选择题中的未解析回答保留原文，并单独标记。</p>
 <p>点击 <strong>下载完整 Markdown</strong>，获得采访信息、问题、材料、汇总统计、分组结果与逐人原话。会话记录保存在 <code class="docutils literal notranslate"><span class="pre">output/interviews/&lt;session_id&gt;/</span></code>。</p>
 <p>批量调用与会话文件说明见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_INTERVIEW_TUTORIAL.md">群体采访说明</a>。</p>
+</section>
+<section id="id9">
+<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<p>采访完成后核对受访者数、代表人数和有效回答数，再查看逐人原话与分组统计。追问时确认使用同一会话，导出 Markdown 后检查问题、材料与回答是否齐全。</p>
+</section>
+<section id="id10">
+<h2>代码结构与执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<section id="id11">
+<h3>模块分工<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/survey.js">site/dashboard/survey.js</a></p></td>
+<td><p>群体采访页面：选择受访者、编辑问题、查看与导出结果。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/interview_api.py">gaworld/apps/interview_api.py</a></p></td>
+<td><p>提供名单、会话、运行任务与导出接口。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/roster.py">gaworld/interview/roster.py</a></p></td>
+<td><p>构造个体与 cohort 受访名单。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/session.py">gaworld/interview/session.py</a></p></td>
+<td><p>按城市分派采访进程，汇总回答、材料和会话记录。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/runner.py">gaworld/interview/runner.py</a></p></td>
+<td><p>组织单座城市中的问答；同一受访者按题目顺序回答。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/aggregate.py">gaworld/interview/aggregate.py</a></p></td>
+<td><p>计算选项计数、代表人数、分组结果和摘要。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/report.py">gaworld/interview/report.py</a></p></td>
+<td><p>将采访结果渲染为 Markdown。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/interview/store.py">gaworld/interview/store.py</a></p></td>
+<td><p>保存和读取采访会话。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id12">
+<h3>执行流程<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>群体采访页面 → interview_api → session.run_round()
+  → 按城市分进程 → runner 问答 → 合并逐人回答
+  → aggregate 统计 → report 导出 → store 保存会话
+</pre></div>
+</div>
+<p>会话层统一处理附件，保证各城市使用相同材料。每个城市的执行器先构造人物，再并发访问不同受访者；一位受访者内部按问题顺序保留上下文。统计同时记录回答人数和代表人数。单人访谈使用 <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/interview</span></code> 或 CLI，群体采访接口位于 <code class="docutils literal notranslate"><span class="pre">/api/interview/</span></code> 的各子路径。</p>
+</section>
+<section id="id13">
+<h3>从哪里修改<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
+<p>修改题型时核对 <code class="docutils literal notranslate"><span class="pre">schema.py</span></code>、<code class="docutils literal notranslate"><span class="pre">prompt.py</span></code>、<code class="docutils literal notranslate"><span class="pre">runner.py</span></code> 与统计解析；修改分组统计查看 <code class="docutils literal notranslate"><span class="pre">aggregate.py</span></code>，修改导出文档查看 <code class="docutils literal notranslate"><span class="pre">report.py</span></code>。</p>
+</section>
 </section>
 </section>
 
@@ -410,12 +474,20 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">访谈与群体采访</a><ul>
-<li><a class="reference internal" href="#id2">访问一位居民</a></li>
-<li><a class="reference internal" href="#id3">发起群体采访</a></li>
-<li><a class="reference internal" href="#id4">选择题型与材料</a></li>
-<li><a class="reference internal" href="#id5">使用群体智能体</a></li>
-<li><a class="reference internal" href="#id6">继续追问</a></li>
-<li><a class="reference internal" href="#id7">阅读与导出</a></li>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
+<li><a class="reference internal" href="#id3">访问一位居民</a></li>
+<li><a class="reference internal" href="#id4">发起群体采访</a></li>
+<li><a class="reference internal" href="#id5">选择题型与材料</a></li>
+<li><a class="reference internal" href="#id6">使用群体智能体</a></li>
+<li><a class="reference internal" href="#id7">继续追问</a></li>
+<li><a class="reference internal" href="#id8">阅读与导出</a></li>
+<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id10">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id11">模块分工</a></li>
+<li><a class="reference internal" href="#id12">执行流程</a></li>
+<li><a class="reference internal" href="#id13">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

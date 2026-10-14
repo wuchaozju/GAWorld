@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -287,15 +287,19 @@
           <section id="id1">
 <h1>回放、分析与导出<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>运行结束后，先确认当前世界与城市，再选择要查看的运行。轨迹用于追踪行动，状态历史用于比较变化，日志和记忆用于回查具体经历。</p>
-<figure class="guide-shot guide-tall align-default" id="id5">
+<section id="id2">
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于找到一次运行的轨迹、状态和日志，并把结果带入后续分析。准备一个已有输出的运行，先确认其城市、世界与运行编号，再选择回放、Analytics 或文件读取。</p>
+<figure class="guide-shot guide-tall align-default" id="id11">
 <a class="reference external image-reference" href="_static/screenshots/replay.png"><img alt="仿真回放界面，地图显示居民位置，右侧显示行动，下方是播放时间轴" src="_images/replay.png" />
 </a>
 <figcaption>
-<p><span class="caption-text">轨迹回放示例。上方选择运行，下方拖动时间轴，右侧查看对应居民的行动。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id5" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">轨迹回放示例。上方选择运行，下方拖动时间轴，右侧查看对应居民的行动。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id11" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
+</section>
 <section id="outputs">
-<span id="id2"></span><h2>查找结果文件<a class="headerlink" href="#outputs" title="链接到此标题。">¶</a></h2>
+<span id="id3"></span><h2>查找结果文件<a class="headerlink" href="#outputs" title="链接到此标题。">¶</a></h2>
 <p>以下路径相对于当前运行的输出目录。默认工作区使用 <code class="docutils literal notranslate"><span class="pre">output/</span></code>；城市运行使用对应城市目录，多人部署按当前世界隔离保存。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -337,20 +341,20 @@
 </div>
 <p>部分文件在相应功能启用并运行后生成。</p>
 </section>
-<section id="id3">
-<h2>在控制台分析<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>在控制台分析<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>Analytics</strong>，选择要查看的运行。按研究问题查看状态历史、经济变化、社交结构与行为分布；需要追溯单个居民时，再打开其日志或记忆。</p>
 <p>导出运行日志可使用控制台的日志导出功能。CSV 文件可用表格软件或 Python 读取，JSON / JSONL 文件可用于后续分析。</p>
-<figure class="guide-shot guide-tall align-default" id="id6">
+<figure class="guide-shot guide-tall align-default" id="id12">
 <a class="reference external image-reference" href="_static/screenshots/analytics.png"><img alt="仿真结果分析界面，包含运行选择、总览和居民状态曲线" src="_images/analytics.png" />
 </a>
 <figcaption>
-<p><span class="caption-text">Analytics 示例。右上角选择运行，下面查看运行总览与状态变化。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id6" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">Analytics 示例。右上角选择运行，下面查看运行总览与状态变化。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id12" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
 </section>
-<section id="id4">
-<h2>保存实验配置<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>保存实验配置<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>把城市、居民初始数据、模型、种子、运行时长、步长与干预设置一起保存。比较多个运行时，从相同基线出发，记录每组改变的条件，再查看配对结果。</p>
 <p>平行世界的结果位于工作区的 <code class="docutils literal notranslate"><span class="pre">output/parallel_worlds/</span></code> 下对应实验目录，其中包括 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code>、<code class="docutils literal notranslate"><span class="pre">report.json</span></code>、<code class="docutils literal notranslate"><span class="pre">divergence_summary.md</span></code> 与各世界的输出。</p>
 </section>
@@ -377,6 +381,60 @@
 </pre></div>
 </div>
 <p>按当前运行生成的文件选择路径。<code class="docutils literal notranslate"><span class="pre">Recorder</span></code> 和记忆访问接口见 <a class="reference internal" href="api/storage.html"><span class="std std-doc">记录与记忆</span></a>。</p>
+</section>
+<section id="id6">
+<h2>完成后检查<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p>在回放与 Analytics 中核对所选运行，比较居民编号与时间范围。下载或读取文件后，检查字段和记录数量；将结果文件与对应配置放在一起，供后续复查。</p>
+</section>
+<section id="id7">
+<h2>代码结构与执行流程<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h3>模块分工<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/visualizer.py">gaworld/apps/visualizer.py</a></p></td>
+<td><p>记录仿真帧，写入实时轨迹及按运行编号归档的轨迹。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/replay_runs.py">gaworld/apps/replay_runs.py</a></p></td>
+<td><p>发现实时、归档及情景实验中的可回放运行。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/analytics.py">gaworld/apps/analytics.py</a></p></td>
+<td><p>读取状态、经济、社交与行为文件，生成分析页的数据。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/world_paths.py">gaworld/apps/world_paths.py</a></p></td>
+<td><p>定位当前世界的记录、日志、记忆和运行根目录。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/recorder.py">gaworld/kernel/recorder.py</a></p></td>
+<td><p>把统一事件表写成 JSONL 文件。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/analytics.js">site/dashboard/analytics.js</a></p></td>
+<td><p>读取分析接口，展示所选运行的统计与图表。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id9">
+<h3>执行流程<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>仿真与插件 → 轨迹 / 状态 CSV / 事件 JSONL
+  → replay_runs 发现运行 → 回放页面
+  → analytics 按目录读取 → Analytics 图表
+</pre></div>
+</div>
+<p>visualizer 在写入实时 <code class="docutils literal notranslate"><span class="pre">simulation_trace.json</span></code> 的同时维护 <code class="docutils literal notranslate"><span class="pre">visualization/runs/&lt;run_id&gt;/</span></code> 下的轨迹归档。replay_runs 读取轨迹元信息建立运行列表；Analytics 按调用方选定的目录汇总文件。统一事件流由 Recorder 按表写入，经济和记忆等模块也保存各自的结果。</p>
+</section>
+<section id="id10">
+<h3>从哪里修改<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
+<p>新增分析图表时，同时检查 <code class="docutils literal notranslate"><span class="pre">apps/analytics.py</span></code> 的数据读取和 <code class="docutils literal notranslate"><span class="pre">analytics.js</span></code> 的展示。新增结构化事件时，查看 Recorder 及对应插件的记录调用。读取网页当前世界的数据时，通过 <code class="docutils literal notranslate"><span class="pre">world_paths.py</span></code> 解析路径。</p>
+</section>
 </section>
 </section>
 
@@ -436,10 +494,18 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">回放、分析与导出</a><ul>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
 <li><a class="reference internal" href="#outputs">查找结果文件</a></li>
-<li><a class="reference internal" href="#id3">在控制台分析</a></li>
-<li><a class="reference internal" href="#id4">保存实验配置</a></li>
+<li><a class="reference internal" href="#id4">在控制台分析</a></li>
+<li><a class="reference internal" href="#id5">保存实验配置</a></li>
 <li><a class="reference internal" href="#python">使用 Python 读取结果</a></li>
+<li><a class="reference internal" href="#id6">完成后检查</a></li>
+<li><a class="reference internal" href="#id7">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id8">模块分工</a></li>
+<li><a class="reference internal" href="#id9">执行流程</a></li>
+<li><a class="reference internal" href="#id10">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

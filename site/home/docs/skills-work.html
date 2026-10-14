@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -288,12 +288,16 @@
 <h1>技能与真实工作<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>Skill 文件说明一种能力的适用场景和操作步骤。GAWorld 根据技能描述与触发词选择相关内容，再加入居民的感知或工作说明。</p>
 <section id="id2">
-<h2>技能如何参与行动<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于给居民提供可复用的任务知识，并让工作活动生成可查看的文件。先创建或选择居民，准备一份 Skill；需要实际产物时，再启用真实工作并配置可用模型。</p>
+</section>
+<section id="id3">
+<h2>技能如何参与行动<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>全局技能放在 <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code>，挂载后供居民使用。私有技能保存在当前输出目录的 <code class="docutils literal notranslate"><span class="pre">memory/agent_&lt;id&gt;_skills/</span></code>，按居民读取；同 ID 时使用私有版本。</p>
 <p><code class="docutils literal notranslate"><span class="pre">skills.inject_into_cognition</span></code> 控制感知提示词中的技能内容，<code class="docutils literal notranslate"><span class="pre">skills.inject_into_work_brief</span></code> 控制工作任务说明中的技能内容。</p>
 </section>
-<section id="id3">
-<h2>创建第一个技能<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>创建第一个技能<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>在工作区的 <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code> 中创建 <code class="docutils literal notranslate"><span class="pre">meeting-notes.md</span></code>：</p>
 <div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span>---
 name: 会议记录
@@ -346,8 +350,8 @@ source: global
 </div>
 <p>解析器支持平铺字段和单层列表。正文使用普通 Markdown，按实际操作顺序写步骤。</p>
 </section>
-<section id="id4">
-<h2>挂载与检查<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>挂载与检查<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillRegistry</span>
 
 <span class="n">registry</span> <span class="o">=</span> <span class="n">SkillRegistry</span><span class="p">()</span>
@@ -364,8 +368,8 @@ source: global
 </div>
 <p>在实际运行中，对初始化后的居民数据执行挂载，并保留该居民的技能配置。</p>
 </section>
-<section id="id5">
-<h2>创建私有技能<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>创建私有技能<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">Skill</span><span class="p">,</span> <span class="n">SkillRegistry</span>
 
 <span class="n">SkillRegistry</span><span class="p">()</span><span class="o">.</span><span class="n">save_private</span><span class="p">(</span>
@@ -382,8 +386,8 @@ source: global
 </div>
 <p>私有技能由注册表按居民读取，无需另行挂载。</p>
 </section>
-<section id="id6">
-<h2>编写建议<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>编写建议<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
 <li><p>每个技能处理一个明确任务。</p></li>
 <li><p>在描述中写清适用场景，在正文中写清步骤。</p></li>
@@ -392,23 +396,23 @@ source: global
 <li><p>在短运行中查看日志和工作产物，再调整技能内容。</p></li>
 </ul>
 </section>
-<section id="id7">
-<h2>常见问题<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <section id="id8">
-<h3>找不到技能<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h3>
+<h2>常见问题<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h3>找不到技能<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h3>
 <p>检查文件目录、扩展名和技能 ID。修改文件后调用 <code class="docutils literal notranslate"><span class="pre">reload()</span></code> 或重启运行。</p>
 </section>
-<section id="id9">
-<h3>技能没有进入提示词<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h3>
+<section id="id10">
+<h3>技能没有进入提示词<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
 <p>检查居民是否挂载了全局技能，以及 <code class="docutils literal notranslate"><span class="pre">inject_into_cognition</span></code> 或 <code class="docutils literal notranslate"><span class="pre">inject_into_work_brief</span></code> 是否启用。</p>
 </section>
-<section id="id10">
-<h3>私有技能与全局技能同名<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
+<section id="id11">
+<h3>私有技能与全局技能同名<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
 <p>同 ID 时优先使用居民私有版本。</p>
 </section>
 </section>
-<section id="id11">
-<h2>从经历中提炼技能<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
+<section id="id12">
+<h2>从经历中提炼技能<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">memory.skill_consolidation</span></code> 控制经验提炼，默认关闭。开启后按 <code class="docutils literal notranslate"><span class="pre">every_days</span></code> 周期读取 <code class="docutils literal notranslate"><span class="pre">lookback_days</span></code> 范围内的经历，在满足 <code class="docutils literal notranslate"><span class="pre">min_episodes</span></code> 后调用模型生成私有技能。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">CONFIG</span>
 
@@ -416,8 +420,8 @@ source: global
 </pre></div>
 </div>
 </section>
-<section id="id12">
-<h2>启用真实工作<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
+<section id="id13">
+<h2>启用真实工作<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h2>
 <p>真实工作将居民的工作活动交给适配器执行，生成网页、代码、文章、教案或研究笔记。任务根据职业能力、兴趣与技能匹配，工作机会市场记录浏览、接单和完成状态。</p>
 <p>在运行配置中启用 <code class="docutils literal notranslate"><span class="pre">real_work.enabled</span></code>。命令行可以通过 JSON 覆盖设置后启动一次短运行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">GAWORLD_CONFIG_OVERRIDES</span><span class="o">=</span><span class="s1">'{"real_work":{"enabled":true}}'</span><span class="w"> </span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
@@ -425,8 +429,8 @@ source: global
 </div>
 <p>在日志中检查能力推导与 <code class="docutils literal notranslate"><span class="pre">WorkerPool</span> <span class="pre">started</span></code>，再查看任务队列。<code class="docutils literal notranslate"><span class="pre">real_work.max_concurrent_tasks</span></code> 控制并发任务数，<code class="docutils literal notranslate"><span class="pre">real_work.task_timeout_seconds</span></code> 控制单个任务超时，<code class="docutils literal notranslate"><span class="pre">real_work.market</span></code> 配置工作机会市场。</p>
 </section>
-<section id="id13">
-<h2>查看任务和产物<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h2>
+<section id="id14">
+<h2>查看任务和产物<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h2>
 <p>以下路径相对于当前运行的输出目录：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -453,6 +457,66 @@ source: global
 </div>
 <p>产物可能包括 <code class="docutils literal notranslate"><span class="pre">index.html</span></code>、<code class="docutils literal notranslate"><span class="pre">poster.svg</span></code>、<code class="docutils literal notranslate"><span class="pre">main.py</span></code>、<code class="docutils literal notranslate"><span class="pre">article.md</span></code>、<code class="docutils literal notranslate"><span class="pre">lesson_plan.md</span></code> 或 <code class="docutils literal notranslate"><span class="pre">research_note.md</span></code>，具体取决于任务类型。结合队列中的结果与产物文件检查任务是否完成。</p>
 <p>任务匹配、适配器扩展与排查方法见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/REAL_WORK_USAGE.md">真实工作执行说明</a>；技能类型与注册方法见 <a class="reference internal" href="api/skills.html"><span class="std std-doc">技能 API</span></a>。</p>
+</section>
+<section id="id15">
+<h2>完成后检查<a class="headerlink" href="#id15" title="链接到此标题。">¶</a></h2>
+<p>先确认注册表能找到技能、居民能读取挂载内容，再启动短运行。真实工作启用后，结合 <code class="docutils literal notranslate"><span class="pre">work/queue.jsonl</span></code> 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。</p>
+</section>
+<section id="id16">
+<h2>代码结构与执行流程<a class="headerlink" href="#id16" title="链接到此标题。">¶</a></h2>
+<section id="id17">
+<h3>模块分工<a class="headerlink" href="#id17" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py">gaworld/skills/registry.py</a></p></td>
+<td><p>SkillRegistry 读取全局和私有技能，管理挂载与保存。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/plugin.py">gaworld/skills/plugin.py</a></p></td>
+<td><p>SkillsPlugin 将技能加入感知，并在记忆整理阶段触发经验提炼。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/consolidation.py">gaworld/skills/consolidation.py</a></p></td>
+<td><p>从近期经历生成居民的私有技能。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/plugin.py">gaworld/work/plugin.py</a></p></td>
+<td><p>RealWorkPlugin 管理真实工作生命周期，并处理工作行动的结果。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/runtime.py">gaworld/work/runtime.py</a></p></td>
+<td><p>RealWorkRuntime 连接任务路由、市场、队列和工作线程。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/router.py">gaworld/work/router.py</a></p></td>
+<td><p>根据行动、能力和市场机会生成工作任务。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/worker.py">gaworld/work/worker.py</a></p></td>
+<td><p>WorkerPool 从队列领取任务，交给适配器执行。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/adapters/base.py">gaworld/work/adapters/base.py</a></p></td>
+<td><p>定义适配器接口；同目录的具体适配器生成各类产物。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id18">
+<h3>执行流程<a class="headerlink" href="#id18" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Skill 文件 → SkillRegistry → SkillsPlugin → 居民感知
+工作行动 → RealWorkPlugin → Router → Queue → WorkerPool → Adapter
+完成的产物 → Runtime 回收 → 居民的行动结果
+</pre></div>
+</div>
+<p>技能通过 <code class="docutils literal notranslate"><span class="pre">perception.sections</span></code> 加入居民感知，经验提炼通过 <code class="docutils literal notranslate"><span class="pre">memory.consolidate</span></code> 触发。真实工作在仿真开始时启动线程池，在 <code class="docutils literal notranslate"><span class="pre">action.outcome</span></code> 阶段分派任务并回收已完成的产物，结束时停止线程池。任务正文中的技能内容由工作路由结合当前行动选择。</p>
+</section>
+<section id="id19">
+<h3>从哪里修改<a class="headerlink" href="#id19" title="链接到此标题。">¶</a></h3>
+<p>调整技能读取与优先级查看 <code class="docutils literal notranslate"><span class="pre">registry.py</span></code>，调整经验提炼查看 <code class="docutils literal notranslate"><span class="pre">consolidation.py</span></code>。增加文件产出类型时，在 <code class="docutils literal notranslate"><span class="pre">work/adapters/</span></code> 实现适配器，并核对路由与能力匹配。</p>
+</section>
 </section>
 </section>
 
@@ -512,21 +576,29 @@ source: global
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">技能与真实工作</a><ul>
-<li><a class="reference internal" href="#id2">技能如何参与行动</a></li>
-<li><a class="reference internal" href="#id3">创建第一个技能</a></li>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
+<li><a class="reference internal" href="#id3">技能如何参与行动</a></li>
+<li><a class="reference internal" href="#id4">创建第一个技能</a></li>
 <li><a class="reference internal" href="#frontmatter">Frontmatter 字段</a></li>
-<li><a class="reference internal" href="#id4">挂载与检查</a></li>
-<li><a class="reference internal" href="#id5">创建私有技能</a></li>
-<li><a class="reference internal" href="#id6">编写建议</a></li>
-<li><a class="reference internal" href="#id7">常见问题</a><ul>
-<li><a class="reference internal" href="#id8">找不到技能</a></li>
-<li><a class="reference internal" href="#id9">技能没有进入提示词</a></li>
-<li><a class="reference internal" href="#id10">私有技能与全局技能同名</a></li>
+<li><a class="reference internal" href="#id5">挂载与检查</a></li>
+<li><a class="reference internal" href="#id6">创建私有技能</a></li>
+<li><a class="reference internal" href="#id7">编写建议</a></li>
+<li><a class="reference internal" href="#id8">常见问题</a><ul>
+<li><a class="reference internal" href="#id9">找不到技能</a></li>
+<li><a class="reference internal" href="#id10">技能没有进入提示词</a></li>
+<li><a class="reference internal" href="#id11">私有技能与全局技能同名</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id11">从经历中提炼技能</a></li>
-<li><a class="reference internal" href="#id12">启用真实工作</a></li>
-<li><a class="reference internal" href="#id13">查看任务和产物</a></li>
+<li><a class="reference internal" href="#id12">从经历中提炼技能</a></li>
+<li><a class="reference internal" href="#id13">启用真实工作</a></li>
+<li><a class="reference internal" href="#id14">查看任务和产物</a></li>
+<li><a class="reference internal" href="#id15">完成后检查</a></li>
+<li><a class="reference internal" href="#id16">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id17">模块分工</a></li>
+<li><a class="reference internal" href="#id18">执行流程</a></li>
+<li><a class="reference internal" href="#id19">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

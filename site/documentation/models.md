@@ -2,6 +2,10 @@
 
 GAWorld 通过模型后端调用语言模型。管理员登记服务商与模型，用户保存自己的 API Key，并为自己的世界选择默认模型和日程模型。
 
+## 功能与准备
+
+本章用于连接模型服务、选择居民行动与日程使用的模型，并保存运行参数。开始前准备好服务商的协议、Base URL、模型 ID 和 API Key；团队部署中的后端由管理员维护，成员填写个人密钥。
+
 ## 连接模型服务
 
 1. 使用自己的账号登录控制台。
@@ -80,3 +84,37 @@ export GAWORLD_CONFIG_OVERRIDES='{"skills":{"max_per_prompt":2}}'
 ## 查看接口配置
 
 `GET /api/config` 读取运行配置；接口结构与权限说明由 `GET /api/openapi.json` 提供。Python 配置入口见 [配置与模型](api/config.md)。
+
+## 完成后检查
+
+保存后重新打开配置页面，核对所选后端与运行参数，再执行连通性测试。启动一次短仿真，确认日志中使用的是预期模型，并保存本次配置。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/settings.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/settings.js) | 配置页面：读取配置、编辑模型后端、保存个人密钥与发起测试。 |
+| [gaworld/apps/settings\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/settings_api.py) | 配置接口：汇总配置来源，校验保存内容，处理模型测试和密钥保存。 |
+| [gaworld/settings/\_\_init\_\_.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/settings/__init__.py) | build_config() 从默认值和运行覆盖项组装 CONFIG。 |
+| [gaworld/settings/overrides.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/settings/overrides.py) | 合并控制台配置、环境文件、城市配置和最终运行覆盖项。 |
+| [gaworld/llm/credentials.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/llm/credentials.py) | 按账号、协议与服务地址保存和查找个人密钥。 |
+| [gaworld/llm/providers.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/llm/providers.py) | 构造模型后端，通过 call_llm() 路由实际调用。 |
+
+```
+
+### 执行流程
+
+```text
+配置页面 → settings_api → 配置文件 / 个人密钥文件
+运行启动 → build_config() → LLMRouter → 对应模型后端
+```
+
+界面保存的参数进入配置覆盖文件；个人密钥通过 credentials 单独读写。运行进程启动后重新组装 CONFIG，模型调用由 providers 选择后端。`GAWORLD_CONFIG_OVERRIDES` 在城市配置加载后再次合并，因此具有最终覆盖权。
+
+### 从哪里修改
+
+修改默认参数从 `gaworld/settings/` 开始；修改配置界面的字段与保存行为，查看 `settings.js` 和 `settings_api.py`；增加模型协议支持，查看 `providers.py`。

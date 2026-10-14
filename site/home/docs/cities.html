@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -288,7 +288,11 @@
 <h1>城市与地图<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>城市把地图、环境与居民放在同一个数据包中。你可以创建真实地点对应的城市，也可以用描述或草图构建虚构城市。</p>
 <section id="id2">
-<h2>创建城市<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于创建仿真的空间环境和初始人口，并把城市选为后续运行或新世界的基础。准备一个真实地名，或一段虚构城市描述；离线创建可用于先检查工作区和数据流程。</p>
+</section>
+<section id="id3">
+<h2>创建城市<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>在控制台打开 <strong>城市</strong>，进入新建城市界面，填写地名并设置居民规模。真实地点会查询地理位置和 OpenStreetMap 数据，同时生成程序化地图与环境配置。</p>
 <p>在工作区中也可以执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>create<span class="w"> </span><span class="s2">"绍兴柯桥"</span><span class="w"> </span>--size<span class="w"> </span><span class="m">200</span>
@@ -296,8 +300,8 @@
 </div>
 <p>创建完成后，城市包保存在 <code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code>。打开城市详情，检查地图范围、居民与环境信息。</p>
 </section>
-<section id="id3">
-<h2>选择地图来源<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>选择地图来源<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -333,38 +337,105 @@
 </div>
 <p>离线程序化城市按地名确定性生成；虚构城市则通过模型将描述或草图转成地图设计。</p>
 </section>
-<section id="id4">
-<h2>选择当前城市<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>选择当前城市<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>在城市面板中选择要使用的城市，或在工作区中执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>use<span class="w"> </span>绍兴柯桥
 </pre></div>
 </div>
 <p>随后回到仿真页面，确认当前城市与居民列表，再设置运行时长。</p>
 </section>
-<section id="id5">
-<h2>将城市用于世界<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>将城市用于世界<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>在控制台 <strong>管理世界</strong> 中选择一座已有居民的城市，新建自己的世界。世界保存居民副本；在该世界中修改居民与运行配置，可以围绕同一座城市组织不同实验。</p>
 <p>居民编辑和导入步骤见 <a class="reference internal" href="residents.html"><span class="std std-doc">居民与 Agent Studio</span></a>。</p>
-<figure class="guide-shot align-default" id="id9">
+<figure class="guide-shot align-default" id="id16">
 <a class="reference external image-reference" href="_static/screenshots/city.png"><img alt="GAWorld 城市创建与列表界面" src="_images/city.png" />
 </a>
 <figcaption>
-<p><span class="caption-text">城市页面示例。上方输入地名或城市描述，设置规模与人口；下方选择已有城市。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id9" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">城市页面示例。上方输入地名或城市描述，设置规模与人口；下方选择已有城市。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id16" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
 </section>
-<section id="id6">
-<h2>城市数据与运行结果<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>城市数据与运行结果<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code> 保存城市输入。选择城市后，运行结果使用对应城市的输出目录，例如 <code class="docutils literal notranslate"><span class="pre">output/cities/&lt;slug&gt;/</span></code>。多人部署中，控制台按当前世界管理运行数据。</p>
 <p>查找结果时，先确认当前世界与城市，再从运行日志或分析页面定位本次运行。</p>
 </section>
-<section id="id7">
-<h2>环境状态与事件<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>环境状态与事件<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>环境系统随仿真时间推进天气和环境事件，并生成居民感知所需的上下文。<code class="docutils literal notranslate"><span class="pre">EnvironmentSystem</span></code> 提供日开始、时间推进、事件查询和运行状态导入导出接口，详见 <a class="reference internal" href="api/env.html"><span class="std std-doc">环境系统 API</span></a>。</p>
 </section>
-<section id="id8">
-<h2>接入自定义环境机制<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h2>接入自定义环境机制<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
 <p>通过插件订阅 <code class="docutils literal notranslate"><span class="pre">perception.compose</span></code> 或 <code class="docutils literal notranslate"><span class="pre">env.events.compose</span></code>，为感知和事件流贡献内容。新增行为机制通过插件装配，操作见 <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a>。</p>
+</section>
+<section id="id10">
+<h2>完成后检查<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<p>创建后在城市列表打开详情，核对居民人数、地图和环境。切换城市后回到仿真页面确认居民列表；需要独立修改居民和配置时，再以该城市创建世界。</p>
+</section>
+<section id="id11">
+<h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
+<section id="id12">
+<h3>模块分工<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/city.js">site/dashboard/city.js</a></p></td>
+<td><p>城市页面：提交创建参数、展示列表和详情、切换城市。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/city_api.py">gaworld/apps/city_api.py</a></p></td>
+<td><p>城市接口：连接页面与创建、人口补充、查询和切换操作。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/create.py">gaworld/city/create.py</a></p></td>
+<td><p>create_city() 编排地理定位、地图、环境与城市包生成。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/imagine.py">gaworld/city/imagine.py</a></p></td>
+<td><p>将描述或草图转换为虚构城市设计。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/bundle.py">gaworld/city/bundle.py</a></p></td>
+<td><p>定义 CityBundle，管理城市目录、清单和查找。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/config.py">gaworld/city/config.py</a></p></td>
+<td><p>apply_city() 将城市地图、环境、居民和输出路径写入运行配置。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id13">
+<h3>执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>城市页面 / python -m gaworld.city
+  → create_city() → 地图与环境生成 → CityBundle
+选择城市 → apply_city() → 仿真读取该城市的数据
+</pre></div>
+</div>
+<p>真实地点的创建流程调用 <code class="docutils literal notranslate"><span class="pre">geocode.py</span></code> 和 <code class="docutils literal notranslate"><span class="pre">osm.py</span></code> 获取位置与地图，同时写入程序化地图；虚构城市通过 <code class="docutils literal notranslate"><span class="pre">imagine.py</span></code> 生成设计。<code class="docutils literal notranslate"><span class="pre">bundle.py</span></code> 管理城市包，<code class="docutils literal notranslate"><span class="pre">config.py</span></code> 在运行前将包内输入接入仿真。</p>
+</section>
+<section id="id14">
+<h3>城市包结构<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>data/cities/&lt;slug&gt;/
+├── city.json          城市清单
+├── citymap.md         程序化地图描述
+├── map.geojson        获取成功的真实地图
+├── environment.json   城市环境配置
+├── agents.csv         居民初始状态
+└── profiles.md        居民档案
+</pre></div>
+</div>
+<p>创建地图后生成或补充人口，居民文件供后续初始化使用。</p>
+</section>
+<section id="id15">
+<h3>从哪里修改<a class="headerlink" href="#id15" title="链接到此标题。">¶</a></h3>
+<p>修改创建流程查看 <code class="docutils literal notranslate"><span class="pre">create.py</span></code>，调整真实地图查询查看 <code class="docutils literal notranslate"><span class="pre">geocode.py</span></code>、<code class="docutils literal notranslate"><span class="pre">osm.py</span></code>，调整程序化地图查看 <code class="docutils literal notranslate"><span class="pre">procedural.py</span></code>。界面上的创建选项对应 <code class="docutils literal notranslate"><span class="pre">city.js</span></code> 与 <code class="docutils literal notranslate"><span class="pre">city_api.py</span></code>。</p>
+</section>
 </section>
 </section>
 
@@ -424,13 +495,22 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">城市与地图</a><ul>
-<li><a class="reference internal" href="#id2">创建城市</a></li>
-<li><a class="reference internal" href="#id3">选择地图来源</a></li>
-<li><a class="reference internal" href="#id4">选择当前城市</a></li>
-<li><a class="reference internal" href="#id5">将城市用于世界</a></li>
-<li><a class="reference internal" href="#id6">城市数据与运行结果</a></li>
-<li><a class="reference internal" href="#id7">环境状态与事件</a></li>
-<li><a class="reference internal" href="#id8">接入自定义环境机制</a></li>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
+<li><a class="reference internal" href="#id3">创建城市</a></li>
+<li><a class="reference internal" href="#id4">选择地图来源</a></li>
+<li><a class="reference internal" href="#id5">选择当前城市</a></li>
+<li><a class="reference internal" href="#id6">将城市用于世界</a></li>
+<li><a class="reference internal" href="#id7">城市数据与运行结果</a></li>
+<li><a class="reference internal" href="#id8">环境状态与事件</a></li>
+<li><a class="reference internal" href="#id9">接入自定义环境机制</a></li>
+<li><a class="reference internal" href="#id10">完成后检查</a></li>
+<li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id12">模块分工</a></li>
+<li><a class="reference internal" href="#id13">执行流程</a></li>
+<li><a class="reference internal" href="#id14">城市包结构</a></li>
+<li><a class="reference internal" href="#id15">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

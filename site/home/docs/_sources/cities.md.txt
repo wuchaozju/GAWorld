@@ -2,6 +2,10 @@
 
 城市把地图、环境与居民放在同一个数据包中。你可以创建真实地点对应的城市，也可以用描述或草图构建虚构城市。
 
+## 功能与准备
+
+本章用于创建仿真的空间环境和初始人口，并把城市选为后续运行或新世界的基础。准备一个真实地名，或一段虚构城市描述；离线创建可用于先检查工作区和数据流程。
+
 ## 创建城市
 
 在控制台打开 **城市**，进入新建城市界面，填写地名并设置居民规模。真实地点会查询地理位置和 OpenStreetMap 数据，同时生成程序化地图与环境配置。
@@ -74,3 +78,52 @@ python -m gaworld.city use 绍兴柯桥
 ## 接入自定义环境机制
 
 通过插件订阅 `perception.compose` 或 `env.events.compose`，为感知和事件流贡献内容。新增行为机制通过插件装配，操作见 [编写插件](plugins.md)。
+
+## 完成后检查
+
+创建后在城市列表打开详情，核对居民人数、地图和环境。切换城市后回到仿真页面确认居民列表；需要独立修改居民和配置时，再以该城市创建世界。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/city.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/city.js) | 城市页面：提交创建参数、展示列表和详情、切换城市。 |
+| [gaworld/apps/city\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/city_api.py) | 城市接口：连接页面与创建、人口补充、查询和切换操作。 |
+| [gaworld/city/create.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/create.py) | create_city() 编排地理定位、地图、环境与城市包生成。 |
+| [gaworld/city/imagine.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/imagine.py) | 将描述或草图转换为虚构城市设计。 |
+| [gaworld/city/bundle.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/bundle.py) | 定义 CityBundle，管理城市目录、清单和查找。 |
+| [gaworld/city/config.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/city/config.py) | apply_city() 将城市地图、环境、居民和输出路径写入运行配置。 |
+
+```
+
+### 执行流程
+
+```text
+城市页面 / python -m gaworld.city
+  → create_city() → 地图与环境生成 → CityBundle
+选择城市 → apply_city() → 仿真读取该城市的数据
+```
+
+真实地点的创建流程调用 `geocode.py` 和 `osm.py` 获取位置与地图，同时写入程序化地图；虚构城市通过 `imagine.py` 生成设计。`bundle.py` 管理城市包，`config.py` 在运行前将包内输入接入仿真。
+
+### 城市包结构
+
+```text
+data/cities/<slug>/
+├── city.json          城市清单
+├── citymap.md         程序化地图描述
+├── map.geojson        获取成功的真实地图
+├── environment.json   城市环境配置
+├── agents.csv         居民初始状态
+└── profiles.md        居民档案
+```
+
+创建地图后生成或补充人口，居民文件供后续初始化使用。
+
+### 从哪里修改
+
+修改创建流程查看 `create.py`，调整真实地图查询查看 `geocode.py`、`osm.py`，调整程序化地图查看 `procedural.py`。界面上的创建选项对应 `city.js` 与 `city_api.py`。

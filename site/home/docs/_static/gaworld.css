@@ -33,3 +33,9 @@ figure.guide-shot a,figure.guide-diagram a {display:block;cursor:zoom-in}
 figure.guide-shot figcaption,figure.guide-diagram figcaption {text-align:left;font-size:.9rem;line-height:1.6;color:var(--color-foreground-secondary);margin-top:.65rem}
 @media(max-width:40em){figure.guide-shot img {max-height:300px}figure.guide-tall img {max-height:none}}
 @media print{figure.guide-shot img{max-height:none}figure.guide-shot,figure.guide-diagram{break-inside:avoid}}
+
+/* Keep source paths readable beside their responsibilities on narrow screens. */
+.code-map table {width:100%;table-layout:fixed}
+.code-map th:first-child,.code-map td:first-child {width:44%}
+.code-map td {vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+.code-map a {overflow-wrap:anywhere}

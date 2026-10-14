@@ -2,6 +2,10 @@
 
 研究工作台把研究想法或论文转成实验方案，并进一步生成预注册协议、运行平行世界和汇总结果。
 
+## 功能与准备
+
+本章用于把研究问题或论文整理为可执行的设计，并保存假设、测量指标与判定规则。准备研究材料、城市和居民，并分别确认方案分析模型与仿真模型。
+
 ## 从问题到协议
 
 ```text
@@ -81,6 +85,43 @@
 | `output/research/serious_games/` | 严肃游戏设计与会话 |
 
 研究方案与协议保存在工作区的研究目录，账号部署按创建者管理访问。各次仿真的日志与状态文件见 [回放、分析与导出](results.md)。
+
+## 完成后检查
+
+运行前检查协议中的条件、指标、种子与预期方向；运行后对照报告中的判定、数值和对应平行世界。组合研究还需要查看跑后问卷的有效回答与计分结果。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [site/dashboard/research.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/research.js) | 研究工作台页面：材料、方案、研究阶段和报告交互。 |
+| [gaworld/apps/research\_api.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/research_api.py) | 处理分析、协议编译、批准、运行和报告请求。 |
+| [gaworld/research/workbench.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/workbench.py) | 读取功能目录，将想法或论文转为 ResearchPlan。 |
+| [gaworld/research/protocol.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/protocol.py) | 把方案编译成条件、指标和假设，执行跑前检查。 |
+| [gaworld/research/study.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/study.py) | 保存研究阶段、协议与运行关联信息。 |
+| [gaworld/research/backends.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/backends.py) | 按协议调用平行世界及组合研究中的跑后问卷。 |
+| [gaworld/research/evaluate.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/evaluate.py) | 按固定规则计算效应与假设判定。 |
+| [gaworld/research/report.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/report.py) | 将协议、结果和解释组织为研究报告。 |
+
+```
+
+### 执行流程
+
+```text
+材料 → workbench 方案 → protocol 协议与检查 → study 保存
+批准运行 → backends → 平行世界 / 跑后问卷
+结果 → evaluate 判定 → interpret 解释 → report 报告
+```
+
+方案生成读取 `docs/FEATURES.md` 中的能力目录；协议编译结合 `measures.py` 中的指标登记，把设计转为执行条件。backends 将每个种子的条件转换为平行世界实验。evaluate 读取数值计算判定，`interpret.py` 根据已有结果生成解释。
+
+### 从哪里修改
+
+修改设计生成查看 `workbench.py`，增加可测指标时同时核对 `measures.py`、数据来源与 `evaluate.py`。改变协议格式或检查条件查看 `protocol.py`，改变报告展示查看 `report.py` 与前端。
 
 ## 参考
 

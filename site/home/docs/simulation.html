@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
     
     
 
@@ -288,7 +288,11 @@
 <h1>仿真运行与时间尺度<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>一次仿真使用选定的居民、城市与模型配置，推进居民行动，并记录状态、记忆、关系和环境变化。</p>
 <section id="id2">
-<h2>设置运行范围<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>本章用于启动和观察居民仿真，并按研究时长选择日内行动、按天快进或月年尺度。开始前完成模型配置，确认城市、当前世界和参与居民；先用少量居民验证流程。</p>
+</section>
+<section id="id3">
+<h2>设置运行范围<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>在仿真页面选择居民，设置时长与模型，然后保存配置。先完成一次短运行，确认居民、环境和模型输出符合实验设置，再增加运行规模。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -319,21 +323,21 @@
 </tbody>
 </table>
 </div>
-<figure class="guide-shot align-default" id="id9">
+<figure class="guide-shot align-default" id="id15">
 <a class="reference external image-reference" href="_static/screenshots/simulation.png"><img alt="GAWorld 运行设置和长时段快进选项" src="_images/simulation.png" />
 </a>
 <figcaption>
-<p><span class="caption-text">运行参数集中在控制台顶部；长时段快进与步长单位在同一区域设置。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id9" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">运行参数集中在控制台顶部；长时段快进与步长单位在同一区域设置。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id15" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
 </section>
-<section id="id3">
-<h2>启动、观察与停止<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>启动、观察与停止<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>点击启动后，在日志中查看运行进度。轨迹回放展示居民位置与移动，居民详情展示状态、记忆和关系。</p>
 <p>需要结束当前运行时，使用控制台的停止操作。查看最后的日志与已保存结果，再决定下一次运行的参数。</p>
 </section>
-<section id="id4">
-<h2>长时段快进<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>长时段快进<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>研究长期变化时，在工具栏开启 <strong>长时段快进</strong>，选择步长单位和时长。快进以每位居民的阶段简报推进状态、目标和关系。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -360,8 +364,8 @@
 </div>
 <p>时间尺度决定输出的细节层次。对照实验中的各组使用相同的步长与快进设置。</p>
 </section>
-<section id="id5">
-<h2>命令行运行<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>命令行运行<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>完成模型配置并选定城市后，在工作区执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
 </pre></div>
@@ -373,8 +377,8 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </pre></div>
 </div>
 </section>
-<section id="id6">
-<h2>群体模式<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>群体模式<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>需要研究人口分布时，可以按属性将居民组织为 cohort（群体），再选择重点个体进行更细的模拟。群体模式保留群体均值与离散度；个体的完整行动轨迹使用个体模式查看。</p>
 <p>独立群体模拟可先用无模型模式检查流程：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.group<span class="w"> </span>--size<span class="w"> </span><span class="m">500</span><span class="w"> </span>--days<span class="w"> </span><span class="m">7</span><span class="w"> </span>--no-llm
@@ -382,13 +386,70 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </div>
 <p>群体划分、网络耦合和近似误差的验证方法见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_SIMULATION_TUTORIAL.md">群体模拟说明</a>。</p>
 </section>
-<section id="id7">
-<h2>运行中施加干预<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>运行中施加干预<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>通过 <a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a> 可以向当前运行提交干预。例如调整居民状态后，在日志与状态历史中检查其后续变化。做条件比较时，使用 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> 保存共同基线和各组设置。</p>
 </section>
-<section id="id8">
-<h2>运行结束后<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h2>运行结束后<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
 <p>在 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a> 中定位日志、轨迹与状态时间序列；在 <a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a> 中查看居民的回答。</p>
+</section>
+<section id="id10">
+<h2>完成后检查<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<p>在日志中确认居民数量、时间尺度和进度。结束后查看本次运行的轨迹与状态文件；常规模式重点查看行动过程，快进模式重点查看阶段简报和状态变化。</p>
+</section>
+<section id="id11">
+<h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
+<section id="id12">
+<h3>模块分工<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/app.js">site/dashboard/app.js</a></p></td>
+<td><p>运行参数表单、启动与停止操作、状态轮询和日志显示。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/runs.py">gaworld/apps/runs.py</a></p></td>
+<td><p>校验运行请求、管理排队与名额、启动和停止仿真子进程。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/generative_city_sim.py">generative_city_sim.py</a></p></td>
+<td><p>run_simulation() 装配运行环境并推进主循环。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/pipeline.py">gaworld/sim/pipeline.py</a></p></td>
+<td><p>StagePipeline 定义每个居民的认知阶段执行顺序。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/_fastforward.py">gaworld/sim/_fastforward.py</a></p></td>
+<td><p>规划日、月、年跨度，生成阶段简报并应用状态变化。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/core/runner.py">gaworld/core/runner.py</a></p></td>
+<td><p>提供保持输入顺序的并发映射工具。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/plugins/__init__.py">gaworld/plugins/__init__.py</a></p></td>
+<td><p>装配内置插件，将经济、技能等机制接入生命周期。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id13">
+<h3>执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>运行表单 → runs.start_simulation() → 仿真子进程
+  → run_simulation() → 常规认知管线 / 快进阶段
+  → 插件更新与记录 → 日志、状态、记忆和轨迹
+</pre></div>
+</div>
+<p>网页运行由 runs 管理子进程，命令行则直接进入仿真入口。常规运行按日内时间点执行居民认知与行动；快进由 <code class="docutils literal notranslate"><span class="pre">_fastforward.py</span></code> 提供跨度规划和简报逻辑，主循环负责钩子调用与持久化。独立群体模拟使用 <code class="docutils literal notranslate"><span class="pre">gaworld/group/</span></code> 下的另一套入口。</p>
+</section>
+<section id="id14">
+<h3>从哪里修改<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
+<p>调整启动、排队或停止行为查看 <code class="docutils literal notranslate"><span class="pre">apps/runs.py</span></code>；调整认知阶段查看 <code class="docutils literal notranslate"><span class="pre">sim/pipeline.py</span></code> 及其阶段实现；调整长时段简报查看 <code class="docutils literal notranslate"><span class="pre">_fastforward.py</span></code>。新增机制通过插件接入，开发步骤见 <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a>。</p>
+</section>
 </section>
 </section>
 
@@ -448,13 +509,21 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">仿真运行与时间尺度</a><ul>
-<li><a class="reference internal" href="#id2">设置运行范围</a></li>
-<li><a class="reference internal" href="#id3">启动、观察与停止</a></li>
-<li><a class="reference internal" href="#id4">长时段快进</a></li>
-<li><a class="reference internal" href="#id5">命令行运行</a></li>
-<li><a class="reference internal" href="#id6">群体模式</a></li>
-<li><a class="reference internal" href="#id7">运行中施加干预</a></li>
-<li><a class="reference internal" href="#id8">运行结束后</a></li>
+<li><a class="reference internal" href="#id2">功能与准备</a></li>
+<li><a class="reference internal" href="#id3">设置运行范围</a></li>
+<li><a class="reference internal" href="#id4">启动、观察与停止</a></li>
+<li><a class="reference internal" href="#id5">长时段快进</a></li>
+<li><a class="reference internal" href="#id6">命令行运行</a></li>
+<li><a class="reference internal" href="#id7">群体模式</a></li>
+<li><a class="reference internal" href="#id8">运行中施加干预</a></li>
+<li><a class="reference internal" href="#id9">运行结束后</a></li>
+<li><a class="reference internal" href="#id10">完成后检查</a></li>
+<li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id12">模块分工</a></li>
+<li><a class="reference internal" href="#id13">执行流程</a></li>
+<li><a class="reference internal" href="#id14">从哪里修改</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

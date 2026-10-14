@@ -2,6 +2,10 @@
 
 Skill 文件说明一种能力的适用场景和操作步骤。GAWorld 根据技能描述与触发词选择相关内容，再加入居民的感知或工作说明。
 
+## 功能与准备
+
+本章用于给居民提供可复用的任务知识，并让工作活动生成可查看的文件。先创建或选择居民，准备一份 Skill；需要实际产物时，再启用真实工作并配置可用模型。
+
 ## 技能如何参与行动
 
 全局技能放在 `data/skills/`，挂载后供居民使用。私有技能保存在当前输出目录的 `memory/agent_<id>_skills/`，按居民读取；同 ID 时使用私有版本。
@@ -139,3 +143,40 @@ GAWORLD_CONFIG_OVERRIDES='{"real_work":{"enabled":true}}' gaworld run --sim-days
 产物可能包括 `index.html`、`poster.svg`、`main.py`、`article.md`、`lesson_plan.md` 或 `research_note.md`，具体取决于任务类型。结合队列中的结果与产物文件检查任务是否完成。
 
 任务匹配、适配器扩展与排查方法见仓库的 [真实工作执行说明](https://github.com/wuchaozju/GAWorld/blob/main/docs/REAL_WORK_USAGE.md)；技能类型与注册方法见 [技能 API](api/skills.md)。
+
+## 完成后检查
+
+先确认注册表能找到技能、居民能读取挂载内容，再启动短运行。真实工作启用后，结合 `work/queue.jsonl` 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [gaworld/skills/registry.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py) | SkillRegistry 读取全局和私有技能，管理挂载与保存。 |
+| [gaworld/skills/plugin.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/plugin.py) | SkillsPlugin 将技能加入感知，并在记忆整理阶段触发经验提炼。 |
+| [gaworld/skills/consolidation.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/consolidation.py) | 从近期经历生成居民的私有技能。 |
+| [gaworld/work/plugin.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/plugin.py) | RealWorkPlugin 管理真实工作生命周期，并处理工作行动的结果。 |
+| [gaworld/work/runtime.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/runtime.py) | RealWorkRuntime 连接任务路由、市场、队列和工作线程。 |
+| [gaworld/work/router.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/router.py) | 根据行动、能力和市场机会生成工作任务。 |
+| [gaworld/work/worker.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/worker.py) | WorkerPool 从队列领取任务，交给适配器执行。 |
+| [gaworld/work/adapters/base.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/work/adapters/base.py) | 定义适配器接口；同目录的具体适配器生成各类产物。 |
+
+```
+
+### 执行流程
+
+```text
+Skill 文件 → SkillRegistry → SkillsPlugin → 居民感知
+工作行动 → RealWorkPlugin → Router → Queue → WorkerPool → Adapter
+完成的产物 → Runtime 回收 → 居民的行动结果
+```
+
+技能通过 `perception.sections` 加入居民感知，经验提炼通过 `memory.consolidate` 触发。真实工作在仿真开始时启动线程池，在 `action.outcome` 阶段分派任务并回收已完成的产物，结束时停止线程池。任务正文中的技能内容由工作路由结合当前行动选择。
+
+### 从哪里修改
+
+调整技能读取与优先级查看 `registry.py`，调整经验提炼查看 `consolidation.py`。增加文件产出类型时，在 `work/adapters/` 实现适配器，并核对路由与能力匹配。

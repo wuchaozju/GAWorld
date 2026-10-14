@@ -2,6 +2,10 @@
 
 运行结束后，先确认当前世界与城市，再选择要查看的运行。轨迹用于追踪行动，状态历史用于比较变化，日志和记忆用于回查具体经历。
 
+## 功能与准备
+
+本章用于找到一次运行的轨迹、状态和日志，并把结果带入后续分析。准备一个已有输出的运行，先确认其城市、世界与运行编号，再选择回放、Analytics 或文件读取。
+
 ```{figure} _static/screenshots/replay.png
 :alt: 仿真回放界面，地图显示居民位置，右侧显示行动，下方是播放时间轴
 :figclass: guide-shot guide-tall
@@ -76,3 +80,38 @@ with record_path.open(encoding="utf-8") as stream:
 ```
 
 按当前运行生成的文件选择路径。`Recorder` 和记忆访问接口见 [记录与记忆](api/storage.md)。
+
+## 完成后检查
+
+在回放与 Analytics 中核对所选运行，比较居民编号与时间范围。下载或读取文件后，检查字段和记录数量；将结果文件与对应配置放在一起，供后续复查。
+
+## 代码结构与执行流程
+
+### 模块分工
+
+```{container} code-map
+
+| 源码位置 | 职责 |
+| --- | --- |
+| [gaworld/apps/visualizer.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/visualizer.py) | 记录仿真帧，写入实时轨迹及按运行编号归档的轨迹。 |
+| [gaworld/apps/replay\_runs.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/replay_runs.py) | 发现实时、归档及情景实验中的可回放运行。 |
+| [gaworld/apps/analytics.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/analytics.py) | 读取状态、经济、社交与行为文件，生成分析页的数据。 |
+| [gaworld/apps/world\_paths.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/world_paths.py) | 定位当前世界的记录、日志、记忆和运行根目录。 |
+| [gaworld/kernel/recorder.py](https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/recorder.py) | 把统一事件表写成 JSONL 文件。 |
+| [site/dashboard/analytics.js](https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/analytics.js) | 读取分析接口，展示所选运行的统计与图表。 |
+
+```
+
+### 执行流程
+
+```text
+仿真与插件 → 轨迹 / 状态 CSV / 事件 JSONL
+  → replay_runs 发现运行 → 回放页面
+  → analytics 按目录读取 → Analytics 图表
+```
+
+visualizer 在写入实时 `simulation_trace.json` 的同时维护 `visualization/runs/<run_id>/` 下的轨迹归档。replay_runs 读取轨迹元信息建立运行列表；Analytics 按调用方选定的目录汇总文件。统一事件流由 Recorder 按表写入，经济和记忆等模块也保存各自的结果。
+
+### 从哪里修改
+
+新增分析图表时，同时检查 `apps/analytics.py` 的数据读取和 `analytics.js` 的展示。新增结构化事件时，查看 Recorder 及对应插件的记录调用。读取网页当前世界的数据时，通过 `world_paths.py` 解析路径。
