@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：存储与结果访问。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="自定义模块" href="custom_modules.html"><link rel="prev" title="环境模块" href="env_modules.html">
+<meta name="description" content="GAWorld 文档：GAWorld 文档。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html">
         <link rel="prefetch" href="_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>存储与结果访问 - GAWorld 文档</title>
+        <title>GAWorld 文档 - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
     
     
 
@@ -186,7 +186,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="agents.html">使用智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="skill_guide.html">Skill 编写指南</a></li>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="env_modules.html">环境模块</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/society.html">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/storage.html">存储模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/registry.html">Registry 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/backend.html">Backend API 模块</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -282,184 +287,23 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="id1">
-<h1>存储与结果访问<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>一次仿真使用选定的居民、城市与模型配置，推进居民行动，并记录状态、记忆、关系和环境变化。</p>
-<section id="id2">
-<h2>设置运行范围<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>在仿真页面选择居民，设置时长与模型，然后保存配置。先完成一次短运行，确认居民、环境和模型输出符合实验设置，再增加运行规模。</p>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>设置</p></th>
-<th class="head"><p>作用</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>居民选择</p></td>
-<td><p>决定参与本次运行的智能体</p></td>
-</tr>
-<tr class="row-odd"><td><p>仿真时长</p></td>
-<td><p>决定推进多少天、月或年</p></td>
-</tr>
-<tr class="row-even"><td><p>默认模型与日程模型</p></td>
-<td><p>决定行动和日程所使用的后端</p></td>
-</tr>
-<tr class="row-odd"><td><p>长时段快进</p></td>
-<td><p>将日内细节压缩为阶段简报</p></td>
-</tr>
-<tr class="row-even"><td><p>步长单位</p></td>
-<td><p>在快进中选择天、月或年</p></td>
-</tr>
-<tr class="row-odd"><td><p>随机性</p></td>
-<td><p>调节快进模式中的突发事件频率与状态波动</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="id3">
-<h2>启动、观察与停止<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<p>点击启动后，在日志中查看运行进度。轨迹回放展示居民位置与移动，居民详情展示状态、记忆和关系。</p>
-<p>需要结束当前运行时，使用控制台的停止操作。查看最后的日志与已保存结果，再决定下一次运行的参数。</p>
-</section>
-<section id="id4">
-<h2>长时段快进<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<p>研究长期变化时，在工具栏开启 <strong>长时段快进</strong>，选择步长单位和时长。快进以每位居民的阶段简报推进状态、目标和关系。</p>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>时间尺度</p></th>
-<th class="head"><p>运行方式</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>日内行动</p></td>
-<td><p>常规仿真，按日内时刻推进</p></td>
-</tr>
-<tr class="row-odd"><td><p>数十天到数百天</p></td>
-<td><p>按天快进，每天生成日简报</p></td>
-</tr>
-<tr class="row-even"><td><p>月度变化</p></td>
-<td><p>按月快进，每月生成阶段简报</p></td>
-</tr>
-<tr class="row-odd"><td><p>年度变化</p></td>
-<td><p>按年快进，每年生成阶段简报</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>时间尺度决定输出的细节层次。对照实验中的各组使用相同的步长与快进设置。</p>
-</section>
-<section id="outputs">
-<span id="id5"></span><h2>查找结果文件<a class="headerlink" href="#outputs" title="链接到此标题。">¶</a></h2>
-<p>以下路径相对于当前运行的输出目录。默认工作区使用 <code class="docutils literal notranslate"><span class="pre">output/</span></code>；城市运行使用对应城市目录，多人部署按当前世界隔离保存。</p>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>路径</p></th>
-<th class="head"><p>内容</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">logs/</span></code></p></td>
-<td><p>完整日志与各居民日志</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">memory/</span></code></p></td>
-<td><p>居民记忆、状态、技能成长与关系记录</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">state/agent_state_history.csv</span></code></p></td>
-<td><p>居民状态时间序列</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">visualization/simulation_trace.json</span></code></p></td>
-<td><p>仿真轨迹</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">economy/</span></code></p></td>
-<td><p>收支账本、财富快照与宏观经济状态</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">network/social_network.png</span></code></p></td>
-<td><p>社交网络图</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">records/</span></code></p></td>
-<td><p>家庭、出行等系统的统一事件流</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">intervention/intervention_metrics.csv</span></code></p></td>
-<td><p>干预评估时间序列</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">work/</span></code></p></td>
-<td><p>工作队列、任务与产物</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>部分文件在相应功能启用并运行后生成。</p>
-</section>
-<section id="id6">
-<h2>在控制台分析<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>打开 <strong>Analytics</strong>，选择要查看的运行。按研究问题查看状态历史、经济变化、社交结构与行为分布；需要追溯单个居民时，再打开其日志或记忆。</p>
-<p>导出运行日志可使用控制台的日志导出功能。CSV 文件可用表格软件或 Python 读取，JSON / JSONL 文件可用于后续分析。</p>
-</section>
-<section id="id7">
-<h2>保存实验配置<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
-<p>把城市、居民初始数据、模型、种子、运行时长、步长与干预设置一起保存。比较多个运行时，从相同基线出发，记录每组改变的条件，再查看配对结果。</p>
-<p>平行世界的结果位于 <code class="docutils literal notranslate"><span class="pre">parallel_worlds/</span></code> 下对应实验目录，其中包括 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code>、<code class="docutils literal notranslate"><span class="pre">report.json</span></code>、<code class="docutils literal notranslate"><span class="pre">divergence_summary.md</span></code> 与各世界的输出。</p>
-</section>
-<section id="python">
-<h2>使用 Python 读取结果<a class="headerlink" href="#python" title="链接到此标题。">¶</a></h2>
-<p>将 <code class="docutils literal notranslate"><span class="pre">output_dir</span></code> 设为本次运行的实际输出目录：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-
-<span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"output"</span><span class="p">)</span>
-<span class="n">state</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"state"</span> <span class="o">/</span> <span class="s2">"agent_state_history.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
-</pre></div>
-</div>
-<p>结构化事件使用 JSONL，每行是一条 JSON 记录：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-
-<span class="n">record_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"output/records/agent.step.jsonl"</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">record_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>按当前运行生成的文件选择路径。<code class="docutils literal notranslate"><span class="pre">Recorder</span></code> 和记忆访问接口见 <a class="reference internal" href="api/storage.html"><span class="std std-doc">存储模块</span></a>。</p>
-</section>
-</section>
+          <section id="gaworld">
+<h1>GAWorld 文档<a class="headerlink" href="#gaworld" title="链接到此标题。">¶</a></h1>
+<p><a class="reference internal" href="results.html"><span class="std std-doc">继续阅读</span></a></p>
+<meta http-equiv="refresh" content="0; url=results.html"></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="custom_modules.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">自定义模块</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="env_modules.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">环境模块</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -478,33 +322,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">存储与结果访问</a><ul>
-<li><a class="reference internal" href="#id2">设置运行范围</a></li>
-<li><a class="reference internal" href="#id3">启动、观察与停止</a></li>
-<li><a class="reference internal" href="#id4">长时段快进</a></li>
-<li><a class="reference internal" href="#outputs">查找结果文件</a></li>
-<li><a class="reference internal" href="#id6">在控制台分析</a></li>
-<li><a class="reference internal" href="#id7">保存实验配置</a></li>
-<li><a class="reference internal" href="#python">使用 Python 读取结果</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
@@ -527,6 +346,6 @@
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/translations.js?v=540d3cec"></script>
-    <script src="_static/navigation.js?v=75e826e7"></script>
+    <script src="_static/navigation.js?v=49dce014"></script>
     </body>
 </html>

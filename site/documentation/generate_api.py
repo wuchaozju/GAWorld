@@ -14,14 +14,14 @@ ROOT = Path(sys.argv[1]).resolve()
 OUT = Path(__file__).resolve().parent / 'api'
 OUT.mkdir(exist_ok=True)
 PAGES = {
- 'agent': ('Agent 模块', '居民数据视图、属性访问与字典转换。', [('gaworld.core.agent', None)]),
- 'skills': ('Skills 模块', '技能数据结构、注册、提示词选择与经验提炼。', [('gaworld.skills.schemas', None), ('gaworld.skills.registry', None), ('gaworld.skills.prompt_helpers', None), ('gaworld.skills.consolidation', None)]),
- 'env': ('环境模块', '环境状态、事件查询与远程环境访问。', [('gaworld.env.system', ['EnvironmentSystem', 'RemoteEnvironmentClient'])]),
- 'society': ('仿真内核模块', '运行上下文、仿真时钟、事件总线与动作控制器。', [('gaworld.kernel.context', None), ('gaworld.kernel.clock', None), ('gaworld.kernel.bus', None), ('gaworld.kernel.controller', None)]),
- 'storage': ('存储模块', '结构化事件记录、记忆与运行状态访问。', [('gaworld.kernel.recorder', None), ('gaworld.memory.store', ['load_agent_memory','save_agent_memory','load_agent_schedule','save_agent_schedule','load_agent_actions','save_agent_actions','load_sim_state','save_sim_state','known_agent_ids'])]),
- 'config': ('配置模块', '运行配置构建、覆盖合并、模型路由与提供商。', [('gaworld.settings', ['build_config']), ('gaworld.settings.defaults', ['build_default_config']), ('gaworld.settings.overrides', ['deep_update','load_env_override','apply_runtime_overrides']), ('gaworld.llm.providers', ['LLMRouter','build_provider','probe_provider','available_providers','resolve_provider','call_llm'])]),
- 'registry': ('Registry 模块', '插件定义、注册、依赖装配与生命周期。', [('gaworld.kernel.registry', None)]),
- 'backend': ('Backend API 模块', 'HTTP 客户端、操作调用、后台任务与错误类型。', [('gaworld.client', None)]),
+ 'agent': ('居民数据', '居民数据视图、属性访问与字典转换。', [('gaworld.core.agent', None)]),
+ 'skills': ('技能接口', '技能数据结构、注册、提示词选择与经验提炼。', [('gaworld.skills.schemas', None), ('gaworld.skills.registry', None), ('gaworld.skills.prompt_helpers', None), ('gaworld.skills.consolidation', None)]),
+ 'env': ('环境系统', '环境状态、事件查询与远程环境访问。', [('gaworld.env.system', ['EnvironmentSystem', 'RemoteEnvironmentClient'])]),
+ 'kernel': ('仿真内核', '运行上下文、仿真时钟、事件总线与动作控制器。', [('gaworld.kernel.context', None), ('gaworld.kernel.clock', None), ('gaworld.kernel.bus', None), ('gaworld.kernel.controller', None)]),
+ 'storage': ('记录与记忆', '结构化事件记录、记忆与运行状态访问。', [('gaworld.kernel.recorder', None), ('gaworld.memory.store', ['load_agent_memory','save_agent_memory','load_agent_schedule','save_agent_schedule','load_agent_actions','save_agent_actions','load_sim_state','save_sim_state','known_agent_ids'])]),
+ 'config': ('配置与模型', '运行配置构建、覆盖合并、模型路由与提供商。', [('gaworld.settings', ['build_config']), ('gaworld.settings.defaults', ['build_default_config']), ('gaworld.settings.overrides', ['deep_update','load_env_override','apply_runtime_overrides']), ('gaworld.llm.providers', ['LLMRouter','build_provider','probe_provider','available_providers','resolve_provider','call_llm'])]),
+ 'registry': ('插件注册', '插件定义、注册、依赖装配与生命周期。', [('gaworld.kernel.registry', None)]),
+ 'client': ('HTTP 客户端', 'HTTP 客户端、操作调用、后台任务与错误类型。', [('gaworld.client', None)]),
 }
 
 def signature(n, method=False):
@@ -67,7 +67,7 @@ for slug,(title,intro,modules) in PAGES.items():
      if prop and m.returns:directive+='\n:type: '+ast.unparse(m.returns)
      parts += [directive,prose(m),source(module,m,file),':::']
    else:parts += [':::{py:function} '+full+signature(n),'',prose(n),source(module,n,file),':::']
- if slug=='backend':
+ if slug=='client':
   parts += ['## HTTP 接口描述', '运行 Dashboard 后，可读取完整 OpenAPI 文档：','```bash\ncurl http://127.0.0.1:8766/api/openapi.json\n```','文档包含操作名、路径、参数、请求体、响应与访问要求。客户端的 `operations()` 列出操作，`call()` 通过 `operationId` 调用。', '独立的 Twin、Agent Relay 和 External Environment 服务接口见仓库的 [完整 API 参考](https://github.com/wuchaozju/GAWorld/blob/main/docs/API_REFERENCE.md)。']
  (OUT/(slug+'.md')).write_text('\n\n'.join(p for p in parts if p)+'\n')
 (OUT/'index.md').write_text('''# API 参考
@@ -80,15 +80,15 @@ for slug,(title,intro,modules) in PAGES.items():
 agent
 skills
 env
-society
+kernel
 storage
 config
 registry
-backend
+client
 ```
 
 ```{note}
-调用依赖运行状态的接口前，先初始化工作区并确认当前配置。HTTP 客户端的使用步骤见 [与 GAWorld 交互](../interaction.md)。
+调用依赖运行状态的接口前，先初始化工作区并确认当前配置。HTTP 客户端的使用步骤见 [Python 与 HTTP 接口](../integration.md)。
 ```
 ''')
 print('Generated',len(PAGES),'API modules')

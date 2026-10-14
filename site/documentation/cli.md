@@ -87,4 +87,4 @@ python -m gaworld.city create "柳溪村" --offline --scale tiny --size 100
 python -m gaworld.city list
 ```
 
-从列表确认城市名称，用 `python -m gaworld.city use <城市名称>` 选择城市。启动控制台完成模型设置，再按照上文的命令行配置方式运行仿真。结果读取见 [存储与结果访问](storage.md)。
+从列表确认城市名称，用 `python -m gaworld.city use <城市名称>` 选择城市。启动控制台完成模型设置，再按照上文的命令行配置方式运行仿真。结果读取见 [回放、分析与导出](results.md)。

@@ -1,4 +1,4 @@
-# 开发指南
+# 开发与贡献
 
 从 `main` 创建功能分支，完成修改与检查后提交到 `Dev` 审查。维护者将验证后的集成提升到 `main`。
 
@@ -68,4 +68,14 @@ python -m sphinx -W -b html site/documentation /tmp/gaworld-docs
 python site/documentation/publish.py /tmp/gaworld-docs site/home/docs
 ```
 
-构建后检查目录、页内链接、搜索与代码示例。贡献流程见 [为 GAWorld 贡献](contributing.md)。
+构建后检查目录、页内链接、搜索与代码示例。
+
+## 报告问题与提出建议
+
+在 [GitHub Issues](https://github.com/wuchaozju/GAWorld/issues) 提供版本、运行环境、复现步骤、预期结果与实际结果。日志中保留定位信息，并移除密钥与个人记录。
+
+功能建议说明使用场景、需要完成的操作以及现有功能遇到的问题。研究建议可以附上变量、条件和希望得到的结果形式。
+
+## 贡献者
+
+项目的代码与文档贡献记录见 [GitHub Contributors](https://github.com/wuchaozju/GAWorld/graphs/contributors)。

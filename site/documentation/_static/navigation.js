@@ -1,7 +1,7 @@
 'use strict';
 // Compatibility for existing chapter links from the project homepage.
 if (location.pathname.endsWith('/docs/') || location.pathname.endsWith('/docs/index.html')) {
-  const pages = {'quick-start':'quickstart.html','overview':'index.html','population':'agents.html','runtime':'storage.html','research':'skills.html','extension':'custom_modules.html','operations':'module_and_parameter_management.html','development':'development.html'};
+  const pages = {'quick-start':'quickstart.html','overview':'index.html','population':'residents.html','runtime':'simulation.html','research':'research.html','extension':'plugins.html','operations':'models.html','development':'development.html'};
   const target = pages[location.hash.slice(1)];
   if (target) location.replace(target);
 }

@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：核心概念。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="架构与可扩展性" href="architecture.html"><link rel="prev" title="命令行界面" href="cli.html">
+<meta name="description" content="GAWorld 文档：工作区、城市与世界。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="模型与运行配置" href="models.html"><link rel="prev" title="第一次仿真" href="quickstart.html">
         <link rel="prefetch" href="_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>核心概念 - GAWorld 文档</title>
+        <title>工作区、城市与世界 - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
     
     
 
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="agents.html">使用智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="skill_guide.html">Skill 编写指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="env_modules.html">环境模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="storage.html">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/society.html">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/storage.html">存储模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/registry.html">Registry 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/backend.html">Backend API 模块</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -288,10 +293,10 @@
         </div>
         <article role="main" id="furo-main-content">
           <section id="id1">
-<h1>核心概念<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
+<h1>工作区、城市与世界<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>GAWorld 通过居民、城市、世界和运行组织一次社会仿真。</p>
 <section id="id2">
-<h2>架构概述<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>数据与运行的组织<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -300,19 +305,22 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>居民（Agent）</p></td>
+<tr class="row-even"><td><p>工作区（Workspace）</p></td>
+<td><p>保存代码、输入数据、配置与产物的项目目录</p></td>
+</tr>
+<tr class="row-odd"><td><p>居民（Agent）</p></td>
 <td><p>具有身份、状态、记忆、人格与社会关系的行动主体</p></td>
 </tr>
-<tr class="row-odd"><td><p>城市（City）</p></td>
+<tr class="row-even"><td><p>城市（City）</p></td>
 <td><p>地图、环境配置与初始居民组成的数据包</p></td>
 </tr>
-<tr class="row-even"><td><p>世界（World）</p></td>
+<tr class="row-odd"><td><p>世界（World）</p></td>
 <td><p>一组居民、运行配置与输出的工作单元</p></td>
 </tr>
-<tr class="row-odd"><td><p>运行（Run）</p></td>
+<tr class="row-even"><td><p>运行（Run）</p></td>
 <td><p>在指定居民、模型和时间设置下推进的一次仿真</p></td>
 </tr>
-<tr class="row-even"><td><p>插件（Plugin）</p></td>
+<tr class="row-odd"><td><p>插件（Plugin）</p></td>
 <td><p>通过内核服务和生命周期钩子接入的子系统</p></td>
 </tr>
 </tbody>
@@ -336,7 +344,7 @@
 <section id="id4">
 <h2>城市与世界<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>城市包保存于 <code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code>。选择城市后，运行配置指向该城市的地图、居民与环境。多人部署中的世界保存居民副本，并将结果写入 <code class="docutils literal notranslate"><span class="pre">output/worlds/&lt;id&gt;/</span></code>。</p>
-<p>在界面中先确认当前世界，再选择居民和运行参数。城市和世界的输出位置见 <a class="reference internal" href="storage.html"><span class="std std-doc">存储与结果访问</span></a>。</p>
+<p>在界面中先确认当前世界，再选择居民和运行参数。城市和世界的输出位置见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
 </section>
 <section id="id5">
 <h2>时间尺度<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
@@ -354,7 +362,7 @@
 <h2>下一步<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="architecture.html"><span class="std std-doc">架构与可扩展性</span></a>：了解内核、认知管线和插件。</p></li>
-<li><p><a class="reference internal" href="interaction.html"><span class="std std-doc">与 GAWorld 交互</span></a>：通过控制台和 Python 访问仿真。</p></li>
+<li><p><a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a>：通过控制台和 Python 访问仿真。</p></li>
 </ul>
 </section>
 </section>
@@ -364,23 +372,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="architecture.html">
+          <a class="next-page" href="models.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">架构与可扩展性</div>
+                <div class="title">模型与运行配置</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="cli.html">
+          <a class="prev-page" href="quickstart.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">命令行界面</div>
+                <div class="title">第一次仿真</div>
                 
               </div>
             </a>
@@ -414,8 +422,8 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">核心概念</a><ul>
-<li><a class="reference internal" href="#id2">架构概述</a></li>
+<li><a class="reference internal" href="#">工作区、城市与世界</a><ul>
+<li><a class="reference internal" href="#id2">数据与运行的组织</a></li>
 <li><a class="reference internal" href="#id3">居民的行动过程</a></li>
 <li><a class="reference internal" href="#id4">城市与世界</a></li>
 <li><a class="reference internal" href="#id5">时间尺度</a></li>
@@ -451,6 +459,6 @@
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/translations.js?v=540d3cec"></script>
-    <script src="_static/navigation.js?v=75e826e7"></script>
+    <script src="_static/navigation.js?v=49dce014"></script>
     </body>
 </html>

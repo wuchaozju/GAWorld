@@ -8,13 +8,13 @@
 agent
 skills
 env
-society
+kernel
 storage
 config
 registry
-backend
+client
 ```
 
 ```{note}
-调用依赖运行状态的接口前，先初始化工作区并确认当前配置。HTTP 客户端的使用步骤见 [与 GAWorld 交互](../interaction.md)。
+调用依赖运行状态的接口前，先初始化工作区并确认当前配置。HTTP 客户端的使用步骤见 [Python 与 HTTP 接口](../integration.md)。
 ```

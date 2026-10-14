@@ -57,4 +57,4 @@ prepare → perceive → interrupts → plan → adjust_activity → move
 - 通过配置或 Python entry point 装配插件。
 - 通过 HTTP API 和 Python 客户端连接外部程序。
 
-完整插件示例见 [自定义模块](custom_modules.md)，类型与方法见 [API 参考](api/index.md)。
+完整插件示例见 [编写插件](plugins.md)，类型与方法见 [API 参考](api/index.md)。

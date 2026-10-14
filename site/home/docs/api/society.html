@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：仿真内核模块。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="存储模块" href="storage.html"><link rel="prev" title="环境模块" href="env.html">
+<meta name="description" content="GAWorld 文档：GAWorld API。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>仿真内核模块 - GAWorld 文档</title>
+        <title>GAWorld API - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=999c068d" />
     
     
 
@@ -186,7 +186,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../agents.html">使用智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../skill_guide.html">Skill 编写指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../env_modules.html">环境模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../storage.html">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
-<ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="env.html">环境模块</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="storage.html">存储模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config.html">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="registry.html">Registry 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html">Backend API 模块</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -282,318 +287,23 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="id1">
-<h1>仿真内核模块<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>运行上下文、仿真时钟、事件总线与动作控制器。</p>
-<p>接口签名与说明由当前仓库源代码生成。</p>
-<section id="gaworld-kernel-context">
-<h2>gaworld.kernel.context<a class="headerlink" href="#gaworld-kernel-context" title="链接到此标题。">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.context.</span></span><span class="sig-name descname"><span class="pre">SimContext</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/context.py#L23"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.context.SimContext" title="链接到此定义。">¶</a></dt>
-<dd><p>Everything a plugin may legitimately touch at runtime.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.config">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.config" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.clock">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">clock</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#gaworld.kernel.clock.Clock" title="gaworld.kernel.clock.Clock"><span class="pre">Clock</span></a></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.clock" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.bus">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">bus</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#gaworld.kernel.bus.EventBus" title="gaworld.kernel.bus.EventBus"><span class="pre">EventBus</span></a></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.bus" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.registry">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">registry</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="registry.html#gaworld.kernel.registry.PluginRegistry" title="gaworld.kernel.registry.PluginRegistry"><span class="pre">PluginRegistry</span></a></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.registry" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.controller">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">controller</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#gaworld.kernel.controller.Controller" title="gaworld.kernel.controller.Controller"><span class="pre">Controller</span></a></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.controller" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.recorder">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">recorder</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="storage.html#gaworld.kernel.recorder.Recorder" title="gaworld.kernel.recorder.Recorder"><span class="pre">Recorder</span></a></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.recorder" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.agents">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">agents</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.agents" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.agents_by_id">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">agents_by_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.agents_by_id" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.llm">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">llm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.llm" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.rng">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">rng</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">random.Random</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.rng" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.extras">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">extras</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#gaworld.kernel.context.SimContext.extras" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.plugin_state">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">plugin_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plugin_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/context.py#L40"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.context.SimContext.plugin_state" title="链接到此定义。">¶</a></dt>
-<dd><p>Shared (simulation-level) mutable state owned by one plugin.</p>
-<p>Other plugins may read it via the same call, but must not import the
-owning plugin's internals.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.agent_ext">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">agent_ext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plugin_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/context.py#L48"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.context.SimContext.agent_ext" title="链接到此定义。">¶</a></dt>
-<dd><p>Per-agent state namespace owned by one plugin.</p>
-<p>Replaces sprinkling bare keys on the agent dict: all plugin state
-lives under <code class="docutils literal notranslate"><span class="pre">agent[&quot;ext&quot;][plugin_id]</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.context.SimContext.set_agents">
-<span class="sig-prename descclassname"><span class="pre">SimContext.</span></span><span class="sig-name descname"><span class="pre">set_agents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/context.py#L56"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.context.SimContext.set_agents" title="链接到此定义。">¶</a></dt>
-<dd><p>Refresh the live agent list (supports runtime add/remove).</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="gaworld.kernel.context.build_kernel">
-<span class="sig-prename descclassname"><span class="pre">gaworld.kernel.context.</span></span><span class="sig-name descname"><span class="pre">build_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_entry_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.kernel.context.SimContext" title="gaworld.kernel.context.SimContext"><span class="pre">SimContext</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/context.py#L62"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.context.build_kernel" title="链接到此定义。">¶</a></dt>
-<dd><p>Assemble the six kernel services from CONFIG.</p>
-<p>Behavior-compatible with the legacy bootstrap: the EventBus loads the
-same <code class="docutils literal notranslate"><span class="pre">CONFIG[&quot;extensions&quot;]</span></code> hook declarations HookBus did, and plugin
-sources (<code class="docutils literal notranslate"><span class="pre">CONFIG[&quot;plugins&quot;]</span></code> + entry points) default to empty/no-op
-until plugins land in K3.</p>
-</dd></dl>
-
-</section>
-<section id="gaworld-kernel-clock">
-<h2>gaworld.kernel.clock<a class="headerlink" href="#gaworld-kernel-clock" title="链接到此标题。">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.clock.</span></span><span class="sig-name descname"><span class="pre">Clock</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/clock.py#L14"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.clock.Clock" title="链接到此定义。">¶</a></dt>
-<dd><p>Current simulation time. Advanced exclusively by the main loop.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.day">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">day</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gaworld.kernel.clock.Clock.day" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.time_str">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">time_str</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.kernel.clock.Clock.time_str" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.tick_index">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">tick_index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gaworld.kernel.clock.Clock.tick_index" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.minutes_per_tick">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">minutes_per_tick</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gaworld.kernel.clock.Clock.minutes_per_tick" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.start_day">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">start_day</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/clock.py#L22"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.clock.Clock.start_day" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.advance">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tick_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/clock.py#L27"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.clock.Clock.advance" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.clock.Clock.snapshot">
-<span class="sig-prename descclassname"><span class="pre">Clock.</span></span><span class="sig-name descname"><span class="pre">snapshot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/clock.py#L31"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.clock.Clock.snapshot" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-</section>
-<section id="gaworld-kernel-bus">
-<h2>gaworld.kernel.bus<a class="headerlink" href="#gaworld-kernel-bus" title="链接到此标题。">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.bus.EventBus">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.bus.</span></span><span class="sig-name descname"><span class="pre">EventBus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/bus.py#L30"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.bus.EventBus" title="链接到此定义。">¶</a></dt>
-<dd><p>Priority-ordered hook dispatcher with observe/collect/filter semantics.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.bus.EventBus.on">
-<span class="sig-prename descclassname"><span class="pre">EventBus.</span></span><span class="sig-name descname"><span class="pre">on</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">critical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/bus.py#L55"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.bus.EventBus.on" title="链接到此定义。">¶</a></dt>
-<dd><p>Register an observer, or a critical state-changing participant.</p>
-<p>Critical handlers propagate their original errors immediately. This
-is for participants whose failure makes continued execution invalid;
-ordinary third-party observers retain the warning-only boundary.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.bus.EventBus.emit">
-<span class="sig-prename descclassname"><span class="pre">EventBus.</span></span><span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/bus.py#L90"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.bus.EventBus.emit" title="链接到此定义。">¶</a></dt>
-<dd><p>Observe semantics: notify handlers, ignore return values.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.bus.EventBus.collect">
-<span class="sig-prename descclassname"><span class="pre">EventBus.</span></span><span class="sig-name descname"><span class="pre">collect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/bus.py#L104"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.bus.EventBus.collect" title="链接到此定义。">¶</a></dt>
-<dd><p>Contribute semantics: merge every handler's contribution(s).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.bus.EventBus.filter">
-<span class="sig-prename descclassname"><span class="pre">EventBus.</span></span><span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/bus.py#L126"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.bus.EventBus.filter" title="链接到此定义。">¶</a></dt>
-<dd><p>Pipeline semantics: value flows through handlers, each may rewrite.</p>
-<p>Handlers have signature <code class="docutils literal notranslate"><span class="pre">fn(value,</span> <span class="pre">context_dict)</span></code>. Returning <code class="docutils literal notranslate"><span class="pre">None</span></code>
-keeps the previous value.</p>
-</dd></dl>
-
-</section>
-<section id="gaworld-kernel-controller">
-<h2>gaworld.kernel.controller<a class="headerlink" href="#gaworld-kernel-controller" title="链接到此标题。">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.ActionRequest">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.controller.</span></span><span class="sig-name descname"><span class="pre">ActionRequest</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L31"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.ActionRequest" title="链接到此定义。">¶</a></dt>
-<dd><p>A structured action an agent wants to execute.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.ActionRequest.agent_id">
-<span class="sig-prename descclassname"><span class="pre">ActionRequest.</span></span><span class="sig-name descname"><span class="pre">agent_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></span><a class="headerlink" href="#gaworld.kernel.controller.ActionRequest.agent_id" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.ActionRequest.name">
-<span class="sig-prename descclassname"><span class="pre">ActionRequest.</span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.kernel.controller.ActionRequest.name" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.ActionRequest.params">
-<span class="sig-prename descclassname"><span class="pre">ActionRequest.</span></span><span class="sig-name descname"><span class="pre">params</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#gaworld.kernel.controller.ActionRequest.params" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.ActionRequest.raw_text">
-<span class="sig-prename descclassname"><span class="pre">ActionRequest.</span></span><span class="sig-name descname"><span class="pre">raw_text</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.kernel.controller.ActionRequest.raw_text" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.controller.</span></span><span class="sig-name descname"><span class="pre">Verdict</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L41"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Verdict" title="链接到此定义。">¶</a></dt>
-<dd><p>Outcome of validation: allow, deny(reason), or rewrite(request).</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.allowed">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">allowed</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#gaworld.kernel.controller.Verdict.allowed" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.reason">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">reason</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.kernel.controller.Verdict.reason" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.rewritten">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">rewritten</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest" title="gaworld.kernel.controller.ActionRequest"><span class="pre">ActionRequest</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gaworld.kernel.controller.Verdict.rewritten" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.allow">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">allow</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="s"><span class="pre">'Verdict'</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L49"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Verdict.allow" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.deny">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">deny</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="s"><span class="pre">'Verdict'</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L53"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Verdict.deny" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Verdict.rewrite">
-<span class="sig-prename descclassname"><span class="pre">Verdict.</span></span><span class="sig-name descname"><span class="pre">rewrite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest" title="gaworld.kernel.controller.ActionRequest"><span class="pre">ActionRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="s"><span class="pre">'Verdict'</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L57"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Verdict.rewrite" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.kernel.controller.</span></span><span class="sig-name descname"><span class="pre">Controller</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L61"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller" title="链接到此定义。">¶</a></dt>
-<dd><p>Stateless validation + intervention hub.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller.register_validator">
-<span class="sig-prename descclassname"><span class="pre">Controller.</span></span><span class="sig-name descname"><span class="pre">register_validator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L72"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller.register_validator" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller.validate">
-<span class="sig-prename descclassname"><span class="pre">Controller.</span></span><span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest" title="gaworld.kernel.controller.ActionRequest"><span class="pre">ActionRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'SimContext'</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.kernel.controller.Verdict" title="gaworld.kernel.controller.Verdict"><span class="pre">Verdict</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L78"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller.validate" title="链接到此定义。">¶</a></dt>
-<dd><p>Run the validator chain; first deny wins, rewrites flow through.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller.register_intervention">
-<span class="sig-prename descclassname"><span class="pre">Controller.</span></span><span class="sig-name descname"><span class="pre">register_intervention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L110"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller.register_intervention" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller.intervention_names">
-<span class="sig-prename descclassname"><span class="pre">Controller.</span></span><span class="sig-name descname"><span class="pre">intervention_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L114"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller.intervention_names" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.kernel.controller.Controller.intervene">
-<span class="sig-prename descclassname"><span class="pre">Controller.</span></span><span class="sig-name descname"><span class="pre">intervene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'SimContext'</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/kernel/controller.py#L117"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.kernel.controller.Controller.intervene" title="链接到此定义。">¶</a></dt>
-<dd><p>Execute a named intervention; every call is recorded for audit.</p>
-</dd></dl>
-
-</section>
-</section>
+          <section id="gaworld-api">
+<h1>GAWorld API<a class="headerlink" href="#gaworld-api" title="链接到此标题。">¶</a></h1>
+<p><a class="reference internal" href="kernel.html"><span class="std std-doc">继续阅读</span></a></p>
+<meta http-equiv="refresh" content="0; url=kernel.html"></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="storage.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">存储模块</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="env.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">环境模块</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -612,85 +322,8 @@ keeps the previous value.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">仿真内核模块</a><ul>
-<li><a class="reference internal" href="#gaworld-kernel-context">gaworld.kernel.context</a><ul>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext"><code class="docutils literal notranslate"><span class="pre">SimContext</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.config"><code class="docutils literal notranslate"><span class="pre">SimContext.config</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.clock"><code class="docutils literal notranslate"><span class="pre">SimContext.clock</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.bus"><code class="docutils literal notranslate"><span class="pre">SimContext.bus</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.registry"><code class="docutils literal notranslate"><span class="pre">SimContext.registry</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.controller"><code class="docutils literal notranslate"><span class="pre">SimContext.controller</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.recorder"><code class="docutils literal notranslate"><span class="pre">SimContext.recorder</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.agents"><code class="docutils literal notranslate"><span class="pre">SimContext.agents</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.agents_by_id"><code class="docutils literal notranslate"><span class="pre">SimContext.agents_by_id</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.llm"><code class="docutils literal notranslate"><span class="pre">SimContext.llm</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.rng"><code class="docutils literal notranslate"><span class="pre">SimContext.rng</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.extras"><code class="docutils literal notranslate"><span class="pre">SimContext.extras</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.plugin_state"><code class="docutils literal notranslate"><span class="pre">SimContext.plugin_state()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.agent_ext"><code class="docutils literal notranslate"><span class="pre">SimContext.agent_ext()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.SimContext.set_agents"><code class="docutils literal notranslate"><span class="pre">SimContext.set_agents()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.context.build_kernel"><code class="docutils literal notranslate"><span class="pre">build_kernel()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#gaworld-kernel-clock">gaworld.kernel.clock</a><ul>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock"><code class="docutils literal notranslate"><span class="pre">Clock</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.day"><code class="docutils literal notranslate"><span class="pre">Clock.day</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.time_str"><code class="docutils literal notranslate"><span class="pre">Clock.time_str</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.tick_index"><code class="docutils literal notranslate"><span class="pre">Clock.tick_index</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.minutes_per_tick"><code class="docutils literal notranslate"><span class="pre">Clock.minutes_per_tick</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.start_day"><code class="docutils literal notranslate"><span class="pre">Clock.start_day()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.advance"><code class="docutils literal notranslate"><span class="pre">Clock.advance()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.clock.Clock.snapshot"><code class="docutils literal notranslate"><span class="pre">Clock.snapshot()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#gaworld-kernel-bus">gaworld.kernel.bus</a><ul>
-<li><a class="reference internal" href="#gaworld.kernel.bus.EventBus"><code class="docutils literal notranslate"><span class="pre">EventBus</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.bus.EventBus.on"><code class="docutils literal notranslate"><span class="pre">EventBus.on()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.bus.EventBus.emit"><code class="docutils literal notranslate"><span class="pre">EventBus.emit()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.bus.EventBus.collect"><code class="docutils literal notranslate"><span class="pre">EventBus.collect()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.bus.EventBus.filter"><code class="docutils literal notranslate"><span class="pre">EventBus.filter()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#gaworld-kernel-controller">gaworld.kernel.controller</a><ul>
-<li><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest"><code class="docutils literal notranslate"><span class="pre">ActionRequest</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest.agent_id"><code class="docutils literal notranslate"><span class="pre">ActionRequest.agent_id</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest.name"><code class="docutils literal notranslate"><span class="pre">ActionRequest.name</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest.params"><code class="docutils literal notranslate"><span class="pre">ActionRequest.params</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.ActionRequest.raw_text"><code class="docutils literal notranslate"><span class="pre">ActionRequest.raw_text</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict"><code class="docutils literal notranslate"><span class="pre">Verdict</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.allowed"><code class="docutils literal notranslate"><span class="pre">Verdict.allowed</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.reason"><code class="docutils literal notranslate"><span class="pre">Verdict.reason</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.rewritten"><code class="docutils literal notranslate"><span class="pre">Verdict.rewritten</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.allow"><code class="docutils literal notranslate"><span class="pre">Verdict.allow()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.deny"><code class="docutils literal notranslate"><span class="pre">Verdict.deny()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Verdict.rewrite"><code class="docutils literal notranslate"><span class="pre">Verdict.rewrite()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller"><code class="docutils literal notranslate"><span class="pre">Controller</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller.register_validator"><code class="docutils literal notranslate"><span class="pre">Controller.register_validator()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller.validate"><code class="docutils literal notranslate"><span class="pre">Controller.validate()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller.register_intervention"><code class="docutils literal notranslate"><span class="pre">Controller.register_intervention()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller.intervention_names"><code class="docutils literal notranslate"><span class="pre">Controller.intervention_names()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.kernel.controller.Controller.intervene"><code class="docutils literal notranslate"><span class="pre">Controller.intervene()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
@@ -713,6 +346,6 @@ keeps the previous value.</p>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/translations.js?v=540d3cec"></script>
-    <script src="../_static/navigation.js?v=75e826e7"></script>
+    <script src="../_static/navigation.js?v=49dce014"></script>
     </body>
 </html>

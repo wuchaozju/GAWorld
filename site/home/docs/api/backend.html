@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：Backend API 模块。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="示例" href="../examples.html"><link rel="prev" title="Registry 模块" href="registry.html">
+<meta name="description" content="GAWorld 文档：GAWorld API。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Backend API 模块 - GAWorld 文档</title>
+        <title>GAWorld API - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=999c068d" />
     
     
 
@@ -186,7 +186,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../agents.html">使用智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../skill_guide.html">Skill 编写指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../env_modules.html">环境模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../storage.html">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
-<ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="env.html">环境模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="society.html">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="storage.html">存储模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config.html">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="registry.html">Registry 模块</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Backend API 模块</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -282,219 +287,23 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="backend-api">
-<h1>Backend API 模块<a class="headerlink" href="#backend-api" title="链接到此标题。">¶</a></h1>
-<p>HTTP 客户端、操作调用、后台任务与错误类型。</p>
-<p>接口签名与说明由当前仓库源代码生成。</p>
-<section id="gaworld-client">
-<h2>gaworld.client<a class="headerlink" href="#gaworld-client" title="链接到此标题。">¶</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.APIError">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">APIError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L40"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.APIError" title="链接到此定义。">¶</a></dt>
-<dd><p>A non-2xx answer: <code class="docutils literal notranslate"><span class="pre">status</span></code>, the server's <code class="docutils literal notranslate"><span class="pre">message</span></code> and the decoded <code class="docutils literal notranslate"><span class="pre">body</span></code>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.AuthError">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">AuthError</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L52"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.AuthError" title="链接到此定义。">¶</a></dt>
-<dd><p>401 (not signed in / bad token) or 403 (not allowed).</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.NotFoundError">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">NotFoundError</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L56"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.NotFoundError" title="链接到此定义。">¶</a></dt>
-<dd><p>404: unknown route, resident, job, …</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.ConflictError">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">ConflictError</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L60"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.ConflictError" title="链接到此定义。">¶</a></dt>
-<dd><p>409: busy, e.g. a simulation is already running or none is.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.QuotaError">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">QuotaError</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L64"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.QuotaError" title="链接到此定义。">¶</a></dt>
-<dd><p>429: the daily model-call quota is used up.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.JobFailed">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">JobFailed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L68"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.JobFailed" title="链接到此定义。">¶</a></dt>
-<dd><p>A background job ended in <code class="docutils literal notranslate"><span class="pre">failed</span></code> / <code class="docutils literal notranslate"><span class="pre">error</span></code> / <code class="docutils literal notranslate"><span class="pre">stopped</span></code>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.client.</span></span><span class="sig-name descname"><span class="pre">GAWorldClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">DEFAULT_URL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L80"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient" title="链接到此定义。">¶</a></dt>
-<dd><p>One connection's worth of state: base URL, operator token, cookies (session and world).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.request">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L117"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.request" title="链接到此定义。">¶</a></dt>
-<dd><p>Send one request; JSON answers come back decoded, anything else as <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.get">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L125"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.get" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.post">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L128"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.post" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.operations">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">operations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L133"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.operations" title="链接到此定义。">¶</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">operationId</span> <span class="pre">→</span> <span class="pre">(METHOD,</span> <span class="pre">path</span> <span class="pre">template)</span></code>, read once from the server's document.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.call">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L144"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.call" title="链接到此定义。">¶</a></dt>
-<dd><p>Call an operation of <code class="docutils literal notranslate"><span class="pre">/api/openapi.json</span></code>.</p>
-<p>Path parameters are taken from <code class="docutils literal notranslate"><span class="pre">params</span></code> by name; the rest go into the
-query string. <code class="docutils literal notranslate"><span class="pre">body</span></code> is the JSON body of a POST.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.me">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">me</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L166"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.me" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.login">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">login</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nickname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L169"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.login" title="链接到此定义。">¶</a></dt>
-<dd><p>Sign in (accounts mode); the session cookie is kept for later requests.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.logout">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">logout</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L173"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.logout" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.worlds">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">worlds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L176"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.worlds" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.use_world">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">use_world</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">world_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L179"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.use_world" title="链接到此定义。">¶</a></dt>
-<dd><p>Make <em>world_id</em> the active world of later requests (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>: the shared default).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.agents">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">agents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L185"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.agents" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.agent">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">agent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L188"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.agent" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.run_status">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">run_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L191"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.run_status" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.start_run">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">start_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L194"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.start_run" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.stop_run">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">stop_run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L200"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.stop_run" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.interventions">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">interventions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L203"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.interventions" title="链接到此定义。">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.intervene">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">intervene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L206"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.intervene" title="链接到此定义。">¶</a></dt>
-<dd><p>Queue an intervention for the running simulation; returns the request (<code class="docutils literal notranslate"><span class="pre">status:</span> <span class="pre">pending</span></code>).</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.wait_intervention">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">wait_intervention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">300</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L210"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.wait_intervention" title="链接到此定义。">¶</a></dt>
-<dd><p>Poll until the simulation applied (or failed) the request; raises TimeoutError.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.wait_job">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">wait_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">poll_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L217"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.wait_job" title="链接到此定义。">¶</a></dt>
-<dd><p>Poll a <code class="docutils literal notranslate"><span class="pre">…/jobs/{id}</span></code> route until the job is final; raises <a class="reference internal" href="#gaworld.client.JobFailed" title="gaworld.client.JobFailed"><code class="xref py py-class docutils literal notranslate"><span class="pre">JobFailed</span></code></a> if it failed.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.run_job">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">run_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L225"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.run_job" title="链接到此定义。">¶</a></dt>
-<dd><p>Start a job, wait for it, return its <code class="docutils literal notranslate"><span class="pre">result</span></code>.</p>
-<p>The job is polled at <code class="docutils literal notranslate"><span class="pre">&lt;parent</span> <span class="pre">of</span> <span class="pre">path&gt;/jobs/&lt;id&gt;</span></code> — the dashboard's
-layout for every job-starting route (<code class="docutils literal notranslate"><span class="pre">/api/games/rumor/run</span></code> →
-<code class="docutils literal notranslate"><span class="pre">/api/games/rumor/jobs/&lt;id&gt;</span></code>); pass <code class="docutils literal notranslate"><span class="pre">poll</span></code> for one that differs, with
-<code class="docutils literal notranslate"><span class="pre">{job_id}</span></code> where the id goes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="gaworld.client.GAWorldClient.events">
-<span class="sig-prename descclassname"><span class="pre">GAWorldClient.</span></span><span class="sig-name descname"><span class="pre">events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/client.py#L253"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.client.GAWorldClient.events" title="链接到此定义。">¶</a></dt>
-<dd><p>Follow <code class="docutils literal notranslate"><span class="pre">/api/events/stream</span></code>: yields <code class="docutils literal notranslate"><span class="pre">(table,</span> <span class="pre">row)</span></code> for every new Recorder row.</p>
-<p>Blocks between rows (the server sends a keep-alive every 15 s); stop by
-breaking out of the loop. <code class="docutils literal notranslate"><span class="pre">timeout</span></code> bounds the wait for one line.</p>
-</dd></dl>
-
-</section>
-<section id="http">
-<h2>HTTP 接口描述<a class="headerlink" href="#http" title="链接到此标题。">¶</a></h2>
-<p>运行 Dashboard 后，可读取完整 OpenAPI 文档：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://127.0.0.1:8766/api/openapi.json
-</pre></div>
-</div>
-<p>文档包含操作名、路径、参数、请求体、响应与访问要求。客户端的 <code class="docutils literal notranslate"><span class="pre">operations()</span></code> 列出操作，<code class="docutils literal notranslate"><span class="pre">call()</span></code> 通过 <code class="docutils literal notranslate"><span class="pre">operationId</span></code> 调用。</p>
-<p>独立的 Twin、Agent Relay 和 External Environment 服务接口见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/API_REFERENCE.md">完整 API 参考</a>。</p>
-</section>
-</section>
+          <section id="gaworld-api">
+<h1>GAWorld API<a class="headerlink" href="#gaworld-api" title="链接到此标题。">¶</a></h1>
+<p><a class="reference internal" href="client.html"><span class="std std-doc">继续阅读</span></a></p>
+<meta http-equiv="refresh" content="0; url=client.html"></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../examples.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">示例</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="registry.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Registry 模块</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -513,58 +322,8 @@ breaking out of the loop. <code class="docutils literal notranslate"><span class
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Backend API 模块</a><ul>
-<li><a class="reference internal" href="#gaworld-client">gaworld.client</a><ul>
-<li><a class="reference internal" href="#gaworld.client.APIError"><code class="docutils literal notranslate"><span class="pre">APIError</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.AuthError"><code class="docutils literal notranslate"><span class="pre">AuthError</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.NotFoundError"><code class="docutils literal notranslate"><span class="pre">NotFoundError</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.ConflictError"><code class="docutils literal notranslate"><span class="pre">ConflictError</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.QuotaError"><code class="docutils literal notranslate"><span class="pre">QuotaError</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.JobFailed"><code class="docutils literal notranslate"><span class="pre">JobFailed</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient"><code class="docutils literal notranslate"><span class="pre">GAWorldClient</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.request"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.request()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.get"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.get()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.post"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.post()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.operations"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.operations()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.call"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.call()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.me"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.me()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.login"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.login()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.logout"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.logout()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.worlds"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.worlds()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.use_world"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.use_world()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.agents"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.agents()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.agent"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.agent()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.run_status"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.run_status()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.start_run"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.start_run()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.stop_run"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.stop_run()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.interventions"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.interventions()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.intervene"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.intervene()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.wait_intervention"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.wait_intervention()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.wait_job"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.wait_job()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.run_job"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.run_job()</span></code></a></li>
-<li><a class="reference internal" href="#gaworld.client.GAWorldClient.events"><code class="docutils literal notranslate"><span class="pre">GAWorldClient.events()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#http">HTTP 接口描述</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
@@ -587,6 +346,6 @@ breaking out of the loop. <code class="docutils literal notranslate"><span class
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/translations.js?v=540d3cec"></script>
-    <script src="../_static/navigation.js?v=75e826e7"></script>
+    <script src="../_static/navigation.js?v=49dce014"></script>
     </body>
 </html>

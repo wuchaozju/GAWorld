@@ -13,4 +13,4 @@ python site/documentation/publish.py /tmp/gaworld-docs site/home/docs
 
 `generate_api.py` reads source signatures and docstrings through Python AST without importing runtime modules. Regenerate API pages after changing public signatures. The publication helper retains `read.doc` while replacing generated HTML and assets.
 
-Sources are organized as getting started, user guides, developer guides and module references. Existing repository documents remain in their original locations. Old documentation URLs redirect to their corresponding chapters.
+Chapters follow GAWorld tasks: setup, cities and residents, simulation and observation, research and experiments, deployment and extensions, and interface references. Existing repository documents remain in their original locations. Old documentation URLs redirect to their corresponding chapters.

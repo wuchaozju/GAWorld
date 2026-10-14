@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：Skill 编写指南。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="环境模块" href="env_modules.html"><link rel="prev" title="Agent Skills（智能体技能）" href="agent_skills.html">
+<meta name="description" content="GAWorld 文档：GAWorld 文档。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html">
         <link rel="prefetch" href="_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Skill 编写指南 - GAWorld 文档</title>
+        <title>GAWorld 文档 - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
     
     
 
@@ -186,7 +186,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="agents.html">使用智能体</a></li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Skill 编写指南</a></li>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="env_modules.html">环境模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="storage.html">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/society.html">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/storage.html">存储模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/registry.html">Registry 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/backend.html">Backend API 模块</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -282,150 +287,23 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="skill">
-<h1>Skill 编写指南<a class="headerlink" href="#skill" title="链接到此标题。">¶</a></h1>
-<p>Skill 文件说明一种能力的适用场景和操作步骤。GAWorld 根据技能描述与触发词选择相关内容，再加入居民的感知或工作说明。</p>
-<section id="id1">
-<h2>创建第一个技能<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h2>
-<p>在工作区的 <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code> 中创建 <code class="docutils literal notranslate"><span class="pre">meeting-notes.md</span></code>：</p>
-<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span>---
-name: 会议记录
-description: 将讨论整理为结论、行动项和待确认问题
-triggers: [会议, 讨论, 记录]
-source: global
-<span class="gu">origin: seed</span>
-<span class="gu">---</span>
-
-<span class="k">1.</span> 记录讨论主题和参加者。
-<span class="k">2.</span> 把已经达成一致的内容写成结论。
-<span class="k">3.</span> 列出行动项、负责人和完成时间。
-<span class="k">4.</span> 将尚未确定的问题单独列出。
-</pre></div>
-</div>
-</section>
-<section id="frontmatter">
-<h2>Frontmatter 字段<a class="headerlink" href="#frontmatter" title="链接到此标题。">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>字段</p></th>
-<th class="head"><p>含义</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
-<td><p>技能名称</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">description</span></code></p></td>
-<td><p>适用任务与能力描述</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">triggers</span></code></p></td>
-<td><p>用于匹配任务文本的触发词列表</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">source</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">global</span></code> 或 <code class="docutils literal notranslate"><span class="pre">private</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">origin</span></code></p></td>
-<td><p>例如 <code class="docutils literal notranslate"><span class="pre">seed</span></code> 或 <code class="docutils literal notranslate"><span class="pre">consolidation</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">owner_agent_id</span></code></p></td>
-<td><p>私有技能所属居民</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">created_day</span></code></p></td>
-<td><p>创建时的仿真日，可选</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>解析器支持平铺字段和单层列表。正文使用普通 Markdown，按实际操作顺序写步骤。</p>
-</section>
-<section id="id2">
-<h2>挂载与检查<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillRegistry</span>
-
-<span class="n">registry</span> <span class="o">=</span> <span class="n">SkillRegistry</span><span class="p">()</span>
-<span class="n">registry</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
-<span class="n">skill</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"meeting-notes"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">skill</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">skill</span> <span class="k">else</span> <span class="s2">"未找到技能"</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>确认文件被读取后，使用 <code class="docutils literal notranslate"><span class="pre">attach_to_agent()</span></code> 挂载到参与运行的居民。</p>
-</section>
-<section id="id3">
-<h2>创建私有技能<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">Skill</span><span class="p">,</span> <span class="n">SkillRegistry</span>
-
-<span class="n">SkillRegistry</span><span class="p">()</span><span class="o">.</span><span class="n">save_private</span><span class="p">(</span>
-    <span class="n">agent_id</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span>
-    <span class="n">skill</span><span class="o">=</span><span class="n">Skill</span><span class="p">(</span>
-        <span class="n">skill_id</span><span class="o">=</span><span class="s2">"meeting-notes"</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"会议记录"</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">"按结论与行动项整理讨论"</span><span class="p">,</span>
-        <span class="n">body</span><span class="o">=</span><span class="s2">"先写结论，再记录负责人、时间和待确认事项。"</span><span class="p">,</span>
-        <span class="n">triggers</span><span class="o">=</span><span class="p">[</span><span class="s2">"会议"</span><span class="p">,</span> <span class="s2">"讨论"</span><span class="p">],</span>
-    <span class="p">),</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>私有技能由注册表按居民读取，无需另行挂载。</p>
-</section>
-<section id="id4">
-<h2>编写建议<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<ul class="simple">
-<li><p>每个技能处理一个明确任务。</p></li>
-<li><p>在描述中写清适用场景，在正文中写清步骤。</p></li>
-<li><p>需要产物时说明格式和内容。</p></li>
-<li><p>用少量准确的触发词匹配任务。</p></li>
-<li><p>在短运行中查看日志和工作产物，再调整技能内容。</p></li>
-</ul>
-</section>
-<section id="id5">
-<h2>常见问题<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<section id="id6">
-<h3>找不到技能<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h3>
-<p>检查文件目录、扩展名和技能 ID。修改文件后调用 <code class="docutils literal notranslate"><span class="pre">reload()</span></code> 或重启运行。</p>
-</section>
-<section id="id7">
-<h3>技能没有进入提示词<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h3>
-<p>检查居民是否挂载了全局技能，以及 <code class="docutils literal notranslate"><span class="pre">inject_into_cognition</span></code> 或 <code class="docutils literal notranslate"><span class="pre">inject_into_work_brief</span></code> 是否启用。</p>
-</section>
-<section id="id8">
-<h3>私有技能与全局技能同名<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h3>
-<p>同 ID 时优先使用居民私有版本。</p>
-</section>
-</section>
-</section>
+          <section id="gaworld">
+<h1>GAWorld 文档<a class="headerlink" href="#gaworld" title="链接到此标题。">¶</a></h1>
+<p><a class="reference internal" href="skills-work.html"><span class="std std-doc">继续阅读</span></a></p>
+<meta http-equiv="refresh" content="0; url=skills-work.html"></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="env_modules.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">环境模块</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="agent_skills.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Agent Skills（智能体技能）</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -444,37 +322,8 @@ source: global
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Skill 编写指南</a><ul>
-<li><a class="reference internal" href="#id1">创建第一个技能</a></li>
-<li><a class="reference internal" href="#frontmatter">Frontmatter 字段</a></li>
-<li><a class="reference internal" href="#id2">挂载与检查</a></li>
-<li><a class="reference internal" href="#id3">创建私有技能</a></li>
-<li><a class="reference internal" href="#id4">编写建议</a></li>
-<li><a class="reference internal" href="#id5">常见问题</a><ul>
-<li><a class="reference internal" href="#id6">找不到技能</a></li>
-<li><a class="reference internal" href="#id7">技能没有进入提示词</a></li>
-<li><a class="reference internal" href="#id8">私有技能与全局技能同名</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
@@ -497,6 +346,6 @@ source: global
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/translations.js?v=540d3cec"></script>
-    <script src="_static/navigation.js?v=75e826e7"></script>
+    <script src="_static/navigation.js?v=49dce014"></script>
     </body>
 </html>

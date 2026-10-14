@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="GAWorld 文档：配置模块。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="Registry 模块" href="registry.html"><link rel="prev" title="存储模块" href="storage.html">
+<meta name="description" content="GAWorld 文档：配置与模型。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="插件注册" href="registry.html"><link rel="prev" title="记录与记忆" href="storage.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>配置模块 - GAWorld 文档</title>
+        <title>配置与模型 - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=26ff273b" />
+    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=999c068d" />
     
     
 
@@ -203,48 +203,53 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">开始使用</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">GAWorld 使用指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">安装</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">快速入门</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">工作区、城市与世界</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models.html">模型与运行配置</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">城市与居民</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills-work.html">技能与真实工作</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">运行与观察</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interviews.html">访谈与群体采访</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">研究与实验</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../policy-games.html">政策推演与严肃游戏</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">扩展与部署</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">团队部署与世界管理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../architecture.html">架构与可扩展性</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../interaction.html">与 GAWorld 交互</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">开发与贡献</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../agents.html">使用智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../skill_guide.html">Skill 编写指南</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../env_modules.html">环境模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../storage.html">存储与结果访问</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../custom_modules.html">自定义模块</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../skills.html">研究工作台</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../development.html">开发指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module_and_parameter_management.html">模块与参数管理</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../contributing.html">为 GAWorld 贡献</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">接口参考</span></p>
 <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="agent.html">Agent 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="skills.html">Skills 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="env.html">环境模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="society.html">仿真内核模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="storage.html">存储模块</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">配置模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="registry.html">Registry 模块</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backend.html">Backend API 模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="storage.html">记录与记忆</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html">HTTP 客户端</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">示例</a></li>
 </ul>
 
 </div>
@@ -288,7 +293,7 @@
         </div>
         <article role="main" id="furo-main-content">
           <section id="id1">
-<h1>配置模块<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
+<h1>配置与模型<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>运行配置构建、覆盖合并、模型路由与提供商。</p>
 <p>接口签名与说明由当前仓库源代码生成。</p>
 <section id="gaworld-settings">
@@ -422,7 +427,7 @@ parser downstream sees malformed input rather than a budget problem.</p>
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Registry 模块</div>
+                <div class="title">插件注册</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -433,7 +438,7 @@ parser downstream sees malformed input rather than a budget problem.</p>
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">存储模块</div>
+                <div class="title">记录与记忆</div>
                 
               </div>
             </a>
@@ -467,7 +472,7 @@ parser downstream sees malformed input rather than a budget problem.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">配置模块</a><ul>
+<li><a class="reference internal" href="#">配置与模型</a><ul>
 <li><a class="reference internal" href="#gaworld-settings">gaworld.settings</a><ul>
 <li><a class="reference internal" href="#gaworld.settings.build_config"><code class="docutils literal notranslate"><span class="pre">build_config()</span></code></a></li>
 </ul>
@@ -521,6 +526,6 @@ parser downstream sees malformed input rather than a budget problem.</p>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script src="../_static/translations.js?v=540d3cec"></script>
-    <script src="../_static/navigation.js?v=75e826e7"></script>
+    <script src="../_static/navigation.js?v=49dce014"></script>
     </body>
 </html>
