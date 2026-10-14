@@ -11,7 +11,7 @@ GAWorld 使用微内核组织时间、事件、插件、动作校验和记录。
 :figclass: guide-diagram
 :target: _static/diagrams/module-map.svg
 
-模块关系概览。代码位置与阅读顺序见 [代码结构与阅读路径](code-structure.md)。 点击图片查看完整尺寸。
+从操作入口到运行产物的四层结构；插件通过运行上下文与内核服务交互。代码位置与阅读顺序见 [代码结构与阅读路径](code-structure.md)。 点击图片放大，可通过“返回文档”或 Esc 回到正文。
 ```
 
 ## SimContext

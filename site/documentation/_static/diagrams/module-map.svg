@@ -1,1 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 664" role="img" aria-labelledby="title desc"><title id="title">GAWorld 代码模块关系</title><desc id="desc">控制台和客户端连接 HTTP 服务，命令行进入仿真编排。仿真使用内核服务，并通过插件接入居民、环境、模型与记录。</desc><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#667a9c"/></marker></defs><style>text{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;fill:#172f54}.label{font-size:21px;font-weight:600}.sub{font-size:17px;fill:#4d607d}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;fill:#214f83}.wire{stroke:#667a9c;stroke-width:2;fill:none;marker-end:url(#arrow)}</style><rect width="880" height="664" rx="12" fill="#f7f9fc"/><rect x="28" y="24" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="155.0" y="58" text-anchor="middle" class="label">网页控制台</text><text x="155.0" y="86" text-anchor="middle" class="mono">site/dashboard/</text><rect x="313" y="24" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="58" text-anchor="middle" class="label">命令行</text><text x="440.0" y="86" text-anchor="middle" class="mono">gaworld.launcher</text><rect x="598" y="24" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="725.0" y="58" text-anchor="middle" class="label">Python 客户端</text><text x="725.0" y="86" text-anchor="middle" class="mono">gaworld/client.py</text><path d="M155 108 V140" class="wire"/><path d="M725 108 V125 H278 V140" class="wire"/><path d="M440 108 V246" class="wire"/><rect x="28" y="150" width="330" height="78" rx="8" fill="white" stroke="#c8d4e5"/><text x="193.0" y="184" text-anchor="middle" class="label">HTTP 服务与运行管理</text><text x="193.0" y="212" text-anchor="middle" class="mono">gaworld/apps/</text><path d="M193 228 V256 H330" class="wire"/><rect x="330" y="246" width="522" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="591.0" y="280" text-anchor="middle" class="label">仿真编排与居民执行</text><text x="591.0" y="308" text-anchor="middle" class="mono">generative_city_sim.py · core/ · sim/</text><path d="M590 330 V366" class="wire"/><rect x="28" y="376" width="824" height="88" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="410" text-anchor="middle" class="label">运行上下文与内核服务</text><text x="440.0" y="438" text-anchor="middle" class="mono">SimContext · Clock · EventBus · Controller · Recorder</text><path d="M165 464 V502" class="wire"/><path d="M440 464 V502" class="wire"/><path d="M715 464 V502" class="wire"/><rect x="28" y="512" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="155.0" y="546" text-anchor="middle" class="label">居民与社会机制</text><text x="155.0" y="574" text-anchor="middle" class="sub">人格 · 家庭 · 经济 · 技能</text><rect x="313" y="512" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="546" text-anchor="middle" class="label">空间与外部环境</text><text x="440.0" y="574" text-anchor="middle" class="sub">城市 · 地图 · 天气 · 信息源</text><rect x="598" y="512" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="725.0" y="546" text-anchor="middle" class="label">模型与持久化</text><text x="725.0" y="574" text-anchor="middle" class="mono">llm/ · memory/ · output/</text><text x="440" y="636" text-anchor="middle" class="sub">领域插件经 gaworld/plugins/ 装配，通过内核事件与认知管线参与运行。</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1080" viewBox="0 0 1000 1080" role="img" aria-labelledby="title desc"><title id="title">GAWorld 运行架构</title><desc id="desc">网页和 Python 客户端通过 HTTP 服务启动仿真，命令行直接进入执行入口。仿真组装 SimContext 与内核服务，领域插件通过生命周期和事件参与运行，各模块保存对应产物。</desc><defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse"><path d="M1 1 L6 3.5 L1 6" fill="none" stroke="#426f9f" stroke-width="1.4"/></marker></defs><style>text{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;fill:#183653}.muted{fill:#516d87}.blue{fill:#24609e}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;fill:#395d7d}</style><rect width="1000" height="1080" fill="#f8fafc" rx="16"/>
+<text x="40" y="53" font-size="30" font-weight="650" class="" text-anchor="start">GAWorld 运行架构</text>
+<text x="40" y="90" font-size="22" font-weight="400" class="muted" text-anchor="start">从操作入口到居民行动，再到可复查的运行记录</text>
+<circle cx="48" cy="148" r="19" fill="#e5eef8"/>
+<text x="48" y="155" font-size="18" font-weight="600" class="blue" text-anchor="middle">01</text>
+<text x="100" y="155" font-size="23" font-weight="600" class="" text-anchor="start">操作入口</text>
+<rect x="100" y="176" width="270" height="88" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="120" y="211" font-size="23" font-weight="600" class="" text-anchor="start">网页控制台</text>
+<text x="120" y="243" font-size="19" font-weight="400" class="code" text-anchor="start">site/dashboard/</text>
+<rect x="395" y="176" width="270" height="88" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="415" y="211" font-size="23" font-weight="600" class="" text-anchor="start">Python 客户端</text>
+<text x="415" y="243" font-size="19" font-weight="400" class="code" text-anchor="start">gaworld/client.py</text>
+<rect x="690" y="176" width="270" height="88" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="710" y="211" font-size="23" font-weight="600" class="" text-anchor="start">命令行</text>
+<text x="710" y="243" font-size="19" font-weight="400" class="code" text-anchor="start">gaworld.launcher</text>
+<path d="M235 264 V287 H382 V307" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M530 264 V287 H382" fill="none" stroke="#426f9f" stroke-width="2"/>
+<rect x="100" y="310" width="565" height="83" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="122" y="344" font-size="23" font-weight="600" class="" text-anchor="start">HTTP 服务与运行管理</text>
+<text x="122" y="375" font-size="20" font-weight="400" class="muted" text-anchor="start">gaworld/apps/ · 请求、配置、排队与子进程</text>
+<path d="M382 393 V453" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="398" y="431" font-size="19" font-weight="400" class="blue" text-anchor="start">启动仿真</text>
+<path d="M825 264 V453" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="842" y="349" font-size="19" font-weight="400" class="blue" text-anchor="start">直接执行</text>
+<circle cx="48" cy="475" r="19" fill="#e5eef8"/>
+<text x="48" y="482" font-size="18" font-weight="600" class="blue" text-anchor="middle">02</text>
+<rect x="100" y="456" width="860" height="133" rx="10" fill="#edf4fc" stroke="#83a9d0" stroke-width="1.5"/>
+<text x="125" y="493" font-size="25" font-weight="600" class="" text-anchor="start">仿真编排与居民执行</text>
+<text x="125" y="527" font-size="21" font-weight="400" class="code" text-anchor="start">generative_city_sim.py  →  core/  +  sim/</text>
+<text x="125" y="563" font-size="21" font-weight="400" class="muted" text-anchor="start">加载居民与配置 · 日内认知管线 / 长时段快进 · 模型与记忆调用</text>
+<path d="M370 589 V655" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="387" y="629" font-size="19" font-weight="400" class="blue" text-anchor="start">组装运行服务</text>
+<path d="M800 589 V655" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="817" y="629" font-size="19" font-weight="400" class="blue" text-anchor="start">装配插件</text>
+<circle cx="48" cy="679" r="19" fill="#e5eef8"/>
+<text x="48" y="686" font-size="18" font-weight="600" class="blue" text-anchor="middle">03</text>
+<rect x="100" y="658" width="535" height="167" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="124" y="694" font-size="24" font-weight="600" class="" text-anchor="start">SimContext · 内核服务</text>
+<text x="124" y="730" font-size="20" font-weight="400" class="code" text-anchor="start">Clock / EventBus / PluginRegistry</text>
+<text x="124" y="761" font-size="20" font-weight="400" class="code" text-anchor="start">Controller / Recorder</text>
+<text x="124" y="800" font-size="21" font-weight="400" class="muted" text-anchor="start">配置 · 居民 · 模型接口 · 随机数</text>
+<rect x="690" y="658" width="270" height="167" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="712" y="694" font-size="24" font-weight="600" class="" text-anchor="start">领域插件</text>
+<text x="712" y="730" font-size="21" font-weight="400" class="muted" text-anchor="start">经济 · 家庭 · 人格</text>
+<text x="712" y="761" font-size="21" font-weight="400" class="muted" text-anchor="start">空间 · 技能 · 工作</text>
+<text x="712" y="800" font-size="18" font-weight="400" class="code" text-anchor="start">gaworld/plugins/</text>
+<path d="M641 741 H684" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M367 825 V889" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M825 825 V860 H645 V889" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="390" y="867" font-size="19" font-weight="400" class="blue" text-anchor="start">事件、状态与各模块产物</text>
+<circle cx="48" cy="912" r="19" fill="#e5eef8"/>
+<text x="48" y="919" font-size="18" font-weight="600" class="blue" text-anchor="middle">04</text>
+<rect x="100" y="892" width="860" height="112" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="125" y="931" font-size="24" font-weight="600" class="" text-anchor="start">记录与分析</text>
+<text x="125" y="969" font-size="22" font-weight="400" class="muted" text-anchor="start">状态 CSV · 事件 JSONL · 日志与记忆 · 轨迹回放 · 工作产物</text>
+<text x="100" y="1044" font-size="20" font-weight="400" class="muted" text-anchor="start">插件通过上下文、生命周期与事件接入；双向箭头表示插件与内核的交互。</text>
+</svg>

@@ -9,7 +9,7 @@
 :figclass: guide-diagram
 :target: _static/diagrams/parallel-design.svg
 
-各条件共享居民输入与基础配置，分别保存运行输出。
+本例的三个条件共享居民与公共设置，独立运行后按居民配对比较。点击图片放大，可通过“返回文档”或 Esc 回到正文。
 ```
 
 ## 1. 建立三个条件

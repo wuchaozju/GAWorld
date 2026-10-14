@@ -1,1 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" role="img" aria-labelledby="title desc"><title id="title">平行世界实验设计</title><desc id="desc">共同基线分为基准、处理和可选的安慰剂条件，分别运行后比较同一居民的差异，再检查跨种子重复。</desc><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#667a9c"/></marker></defs><style>text{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;fill:#172f54}.label{font-size:21px;font-weight:600}.sub{font-size:17px;fill:#4d607d}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;fill:#214f83}.wire{stroke:#667a9c;stroke-width:2;fill:none;marker-end:url(#arrow)}</style><rect width="880" height="440" rx="12" fill="#f7f9fc"/><rect x="235" y="24" width="410" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="58" text-anchor="middle" class="label">共同基线</text><text x="440.0" y="86" text-anchor="middle" class="sub">同一批居民 · 模型 · 种子 · 时间尺度</text><path d="M440 108 V133 H165 V158" class="wire"/><path d="M440 108 V158" class="wire"/><path d="M440 108 V133 H715 V158" class="wire"/><rect x="28" y="168" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="155.0" y="202" text-anchor="middle" class="label">基准世界</text><text x="155.0" y="230" text-anchor="middle" class="sub">保留基准事件与配置</text><rect x="313" y="168" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="202" text-anchor="middle" class="label">处理世界</text><text x="440.0" y="230" text-anchor="middle" class="sub">改变指定事件或参数</text><rect x="598" y="168" width="254" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="725.0" y="202" text-anchor="middle" class="label">安慰剂世界（可选）</text><text x="725.0" y="230" text-anchor="middle" class="sub">用于估计噪声底线</text><path d="M165 252 V292 H340 V318" class="wire"/><path d="M440 252 V318" class="wire"/><path d="M715 252 V292 H540 V318" class="wire"/><rect x="158" y="328" width="564" height="84" rx="8" fill="white" stroke="#c8d4e5"/><text x="440.0" y="362" text-anchor="middle" class="label">配对比较与重复运行</text><text x="440.0" y="390" text-anchor="middle" class="sub">轨迹 · 个体差异 · 效应区间 · 跨种子一致性</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="960" viewBox="0 0 1000 960" role="img" aria-labelledby="title desc"><title id="title">平行世界：从共同输入到配对比较</title><desc id="desc">同一组居民和公共配置进入基准、补贴通告与例行通告三个条件，各条件独立保存输出，再按居民配对比较，并用多个随机种子重复实验。</desc><defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse"><path d="M1 1 L6 3.5 L1 6" fill="none" stroke="#426f9f" stroke-width="1.4"/></marker></defs><style>text{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;fill:#183653}.muted{fill:#516d87}.blue{fill:#24609e}.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;fill:#395d7d}</style><rect width="1000" height="960" fill="#f8fafc" rx="16"/>
+<text x="40" y="53" font-size="30" font-weight="650" class="" text-anchor="start">平行世界实验</text>
+<text x="40" y="90" font-size="22" font-weight="400" class="muted" text-anchor="start">同一批居民，改变一个条件，比较相同居民的结果</text>
+<rect x="40" y="122" width="920" height="114" rx="10" fill="#edf4fc" stroke="#83a9d0" stroke-width="1.5"/>
+<text x="64" y="160" font-size="24" font-weight="600" class="" text-anchor="start">01  共同输入与公共设置</text>
+<text x="64" y="198" font-size="22" font-weight="400" class="muted" text-anchor="start">居民 1–8 · 同一城市与模型 · 3 天 · 种子 42 · 快速模式关闭</text>
+<path d="M500 236 V272 H185 V319" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M500 272 V319" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M500 272 H815 V319" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="322" width="290" height="254" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="62" y="356" font-size="18" font-weight="650" class="blue" text-anchor="start">A</text>
+<text x="62" y="392" font-size="25" font-weight="600" class="" text-anchor="start">基准世界</text>
+<text x="62" y="422" font-size="20" font-weight="400" class="code" text-anchor="start">baseline</text>
+<path d="M62 442 H308" stroke="#dde6ef"/>
+<text x="62" y="477" font-size="21" font-weight="400" class="muted" text-anchor="start">无新增通告</text>
+<text x="62" y="509" font-size="20" font-weight="400" class="muted" text-anchor="start">保留公共事件与配置</text>
+<text x="62" y="551" font-size="20" font-weight="400" class="blue" text-anchor="start">独立运行 → 独立输出</text>
+<rect x="355" y="322" width="290" height="254" rx="10" fill="#fff" stroke="#83a9d0" stroke-width="1.5"/>
+<text x="377" y="356" font-size="18" font-weight="650" class="blue" text-anchor="start">B</text>
+<text x="377" y="392" font-size="25" font-weight="600" class="" text-anchor="start">处理世界</text>
+<text x="377" y="422" font-size="20" font-weight="400" class="code" text-anchor="start">subsidy</text>
+<path d="M377 442 H623" stroke="#dde6ef"/>
+<text x="377" y="477" font-size="21" font-weight="400" class="muted" text-anchor="start">第 2 天 09:00</text>
+<text x="377" y="509" font-size="20" font-weight="400" class="muted" text-anchor="start">发布租金补贴通告</text>
+<text x="377" y="551" font-size="20" font-weight="400" class="blue" text-anchor="start">独立运行 → 独立输出</text>
+<rect x="670" y="322" width="290" height="254" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="692" y="356" font-size="18" font-weight="650" class="blue" text-anchor="start">C</text>
+<text x="692" y="392" font-size="25" font-weight="600" class="" text-anchor="start">安慰剂世界</text>
+<text x="692" y="422" font-size="20" font-weight="400" class="code" text-anchor="start">placebo</text>
+<path d="M692 442 H938" stroke="#dde6ef"/>
+<text x="692" y="477" font-size="21" font-weight="400" class="muted" text-anchor="start">第 2 天 09:00</text>
+<text x="692" y="509" font-size="20" font-weight="400" class="muted" text-anchor="start">发布办公时间未变通告</text>
+<text x="692" y="551" font-size="20" font-weight="400" class="blue" text-anchor="start">独立运行 → 独立输出</text>
+<path d="M185 576 V618 H500 V670" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M500 576 V618" fill="none" stroke="#426f9f" stroke-width="2"/>
+<path d="M815 576 V618 H500" fill="none" stroke="#426f9f" stroke-width="2"/>
+
+<rect x="40" y="674" width="920" height="135" rx="10" fill="#fff" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="64" y="714" font-size="24" font-weight="600" class="" text-anchor="start">02  按居民编号配对分析</text>
+<text x="64" y="750" font-size="22" font-weight="400" class="muted" text-anchor="start">B − A：处理效应；C − A：安慰剂差异</text>
+<text x="64" y="785" font-size="21" class="muted">检查事件前平衡、轨迹、区间与个体差异</text>
+<path d="M500 809 V853" fill="none" stroke="#426f9f" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="857" width="920" height="87" rx="10" fill="#edf4fc" stroke="#c7d7e8" stroke-width="1.5"/>
+<text x="64" y="893" font-size="23" font-weight="600" class="" text-anchor="start">03  更换种子，重复整组实验</text>
+<text x="64" y="924" font-size="21" font-weight="400" class="muted" text-anchor="start">例如 42、43：比较效应方向与跨种子不确定性</text>
+</svg>
