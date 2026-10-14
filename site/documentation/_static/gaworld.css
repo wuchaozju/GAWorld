@@ -1,3 +1,25 @@
-body{--font-stack:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;--font-stack--monospace:ui-monospace,SFMono-Regular,Menlo,monospace;--font-size--normal:100%;--sidebar-item-spacing-vertical:.55rem;--content-padding:3rem}article{font-size:16px;line-height:1.85}h1,h2,h3,h4{font-family:var(--font-stack);letter-spacing:-.02em}h1{font-size:2rem;line-height:1.35;margin-top:0}h2{font-size:1.5rem;line-height:1.5;margin-top:2.4rem}h3{font-size:1.125rem;line-height:1.6}p{margin-top:.8rem;margin-bottom:1rem}.sidebar-brand-text{font-size:1.7rem;font-weight:750;letter-spacing:-.04em}.sidebar-brand{align-items:flex-start;padding-top:2rem;padding-bottom:1.5rem}.sidebar-tree .caption{font-size:.8rem;letter-spacing:.02em;margin-top:1.5rem}.sidebar-tree .reference{font-size:.9rem}.sidebar-tree .current-page>a{background:var(--color-highlight-on-target);border-radius:4px}.toc-title{font-size:.8rem}.toc-tree{font-size:.8rem;line-height:1.6}.project-links{display:flex;flex-direction:column;gap:.7rem;padding:1.5rem var(--sidebar-item-spacing-horizontal);margin-top:1.25rem;border-top:1px solid var(--color-background-border);font-size:.85rem}.project-links a{color:var(--color-foreground-secondary);text-decoration:none}.project-links a:hover{color:var(--color-brand-content)}.highlight{border:1px solid var(--color-background-border);border-radius:5px}.highlight pre{font-size:.85rem;line-height:1.75;padding:1rem}code.literal{font-size:.88em;overflow-wrap:anywhere}table.docutils{width:100%;font-size:.9rem}table.docutils th,table.docutils td{padding:.7rem .85rem;line-height:1.75}table.docutils th{text-align:left}a.headerlink{font-size:.7em}.admonition{box-shadow:none;border-radius:4px}article ul,article ol{padding-left:1.5rem}article li{margin-bottom:.45rem}.related-pages{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--color-background-border)}.content-icon-container{margin-top:.2rem}html{scroll-padding-top:1.5rem}.gaworld-search-result{margin:1.5rem 0}.gaworld-search-result p{font-size:.9rem;margin:.35rem 0;color:var(--color-foreground-secondary)}.gaworld-search-result h2{font-size:1.15rem;margin:0}mark{background:#e0eaff;color:#17356b;padding:0 2px}body[data-theme=dark] mark{background:#263e6b;color:#edf3ff}@media(max-width:67em){body{--content-padding:1.5rem}h1{font-size:1.8rem}.content{padding-top:1.5rem}.sidebar-brand{padding-top:1.5rem}article{font-size:16px}}@media(max-width:40em){h1{font-size:1.65rem}h2{font-size:1.35rem}h3{font-size:1.1rem}.highlight pre{font-size:.8rem}table.docutils{font-size:.85rem}}
-
-@media(min-width:67em){.content{padding-top:1.5rem}}
+/* Reading geometry follows the reference site's Furo configuration. */
+.sidebar-brand-text {display:flex;flex-direction:column;align-items:center;text-align:center;gap:.12rem;margin-top:.15rem}
+.sidebar-brand-title {font-weight:600;font-size:.95rem;line-height:1.2;color:var(--color-sidebar-brand-text)}
+.sidebar-brand-meta {font-size:.7rem;font-weight:400;line-height:1.2;color:var(--color-sidebar-caption-text);letter-spacing:.02em}
+article[role="main"] {line-height:1.72;font-size:.98rem}
+article[role="main"] p+p {margin-top:.65em}
+.article-container {max-width:50rem}
+article[role="main"] ul,article[role="main"] ol {margin-top:.5em;margin-bottom:.75em}
+article[role="main"] li+li {margin-top:.28em}
+.content h1,.content h2 {letter-spacing:-.015em;margin-top:1.35em}
+.content h1 {margin-top:.15em}
+body[data-theme="dark"] .sidebar-logo {filter:invert(1) hue-rotate(180deg)}
+@media(prefers-color-scheme:dark){body:not([data-theme="light"]) .sidebar-logo{filter:invert(1) hue-rotate(180deg)}}
+/* Project version and downloads, in the reference's lower-right utility position. */
+.doc-tools {position:fixed;right:20px;bottom:50px;z-index:10000;font-size:14px;line-height:20px;width:220px;background:#272925;color:#ddd}
+.doc-tools summary {cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 12px;list-style:none}
+.doc-tools summary::-webkit-details-marker {display:none}
+.doc-tools summary:after {content:"▾";color:#999}
+.doc-tools .doc-language,.doc-tools .doc-version {color:#64c083}
+.doc-tools-panel {position:absolute;bottom:100%;left:0;right:0;background:#272925;padding:12px;border-bottom:1px solid #4b4c48}
+.doc-tools-panel a {display:block;color:#f0f0f0;margin:8px 0}
+.doc-tools-panel p {margin:4px 0;color:#bdbfba;font-size:12px}
+.doc-tools summary:focus-visible {outline:2px solid #9090db;outline-offset:3px}
+@media(max-width:40em){.doc-tools{right:12px;bottom:12px;width:200px}}
+@media print{.doc-tools{display:none}}

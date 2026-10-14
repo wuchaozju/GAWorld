@@ -1,14 +1,16 @@
-# Build the GAWorld documentation
+# GAWorld documentation
 
-This directory contains the public user guide. The existing repository documents and Word compilation remain separate source material.
+The documentation uses Sphinx 9.1.0 and Furo 2025.12.19. The reading layout follows the AgentSociety 2 documentation reference; the brand, examples, configuration and APIs describe GAWorld.
 
-Install the pinned packages from `requirements.txt`. From the directory containing `documentation/`, run:
+## Build
 
 ```bash
-python -m sphinx -W --keep-going -b html documentation /tmp/gaworld-docs-build
-python documentation/publish.py /tmp/gaworld-docs-build dist/docs
+python -m pip install -r site/documentation/requirements.txt
+python site/documentation/generate_api.py .
+python -m sphinx -W --keep-going -b html site/documentation /tmp/gaworld-docs
+python site/documentation/publish.py /tmp/gaworld-docs site/home/docs
 ```
 
-The site uses the official Furo theme, with GAWorld colors and type sizes. Sources for the guide are the current README, MODEL_PROVIDERS, TUTORIAL.v2, CITY_TUTORIAL, API_REFERENCE, CONTRIBUTING and the command-line implementation. Published content focuses on operation; historical proposals and internal design files stay in the repository.
+`generate_api.py` reads source signatures and docstrings through Python AST without importing runtime modules. Regenerate API pages after changing public signatures. The publication helper retains `read.doc` while replacing generated HTML and assets.
 
-In the GAWorld repository, these sources live at `site/documentation/` and the generated destination is `site/home/docs/`. Preserve `read.doc` in the destination when rebuilding.
+Sources are organized as getting started, user guides, developer guides and module references. Existing repository documents remain in their original locations. Old documentation URLs redirect to their corresponding chapters.

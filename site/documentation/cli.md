@@ -1,4 +1,4 @@
-# 命令行
+# 命令行界面
 
 安装后使用 `gaworld` 命令。它会在选定的工作区中调用仿真程序；在源码仓库中，等价入口为 `python generative_city_sim.py`。
 
@@ -77,3 +77,14 @@ gaworld run --sim-days 1
 ```
 
 日常观察与多人实验可直接使用控制台；命令行适合本地运行、批量任务和脚本流程。
+
+## 完整工作流
+
+```bash
+gaworld init ./my-world
+cd my-world
+python -m gaworld.city create "柳溪村" --offline --scale tiny --size 100
+python -m gaworld.city list
+```
+
+从列表确认城市名称，用 `python -m gaworld.city use <城市名称>` 选择城市。启动控制台完成模型设置，再按照上文的命令行配置方式运行仿真。结果读取见 [存储与结果访问](storage.md)。

@@ -1,34 +1,39 @@
-# GAWorld 使用指南
+# GAWorld
 
-GAWorld 是一个生成式多智能体社会仿真平台。你可以创建城市与居民，观察他们的行动、记忆和社会关系，并比较不同事件或政策下的仿真结果。
+**GAWorld** 是生成式多智能体社会仿真平台。研究者可以创建城市与居民，设置事件和政策，观察个体行动、社会关系与群体变化，并通过控制台、命令行和 Python API 组织实验。
 
-本页带你完成安装、模型配置和第一次仿真。后续章节介绍城市管理、运行设置、结果查看与开发接口。
+![版本 0.2.1](_static/badges/version.svg) ![Python 3.11 或更高版本](_static/badges/python.svg) [![GitHub 源码](_static/badges/source.svg)](https://github.com/wuchaozju/GAWorld)
 
-## 安装 GAWorld
+## 研究背景与平台定位
 
-准备 **Python 3.11 或更高版本**和 **Git**。在终端中执行：
+社会仿真把个体行为、社会关系与环境条件放进同一个可运行系统。GAWorld 使用语言模型生成居民的感知、计划、行动与反思，同时记录记忆、状态、位置和经济活动。研究者可以回到具体居民的经历，检查一次群体变化由哪些行动和事件构成。
+
+GAWorld 以**城市、居民和世界**组织仿真。城市保存地图、环境与初始人口；世界承载运行配置和结果。居民具有身份、人格、记忆、家庭与社会关系，按照日程在环境中行动。真实地图和自定义城市支持不同空间条件，按日、月、年的快进模式支持不同时间尺度。
+
+研究工作台将想法或论文整理为实验方案，再生成预注册协议、运行平行世界并汇总结果。平行世界从共同基线设置不同事件，按种子比较配对指标。研究者在运行前确定条件和预测，在运行后结合数据、轨迹与访谈解释结果。
+
+---
+
+## 核心特性
+
+- **居民与记忆**：组织人物档案、大五人格、目标、日程和经历，让历史状态参与后续决策。
+- **城市与环境**：从地名创建城市，使用真实道路或程序化地图，并配置天气、空间和环境事件。
+- **社会与经济**：观察家庭、社交网络、收支、财富与宏观状态之间的联系。
+- **技能与工作**：为居民挂载可复用技能，并通过任务队列与适配器执行工作。
+- **实验与干预**：设置事件和政策，运行平行世界，比较配对结果及跨种子重复。
+- **回放与分析**：查看运行日志、居民轨迹、状态历史、访谈和结构化结果。
+- **多种访问方式**：通过网页控制台、CLI、HTTP API 和 Python 客户端操作同一套功能。
+- **插件扩展**：通过事件总线、认知管线和插件注册机制扩展仿真。
+
+## 安装
 
 ```bash
 python -m pip install "git+https://github.com/wuchaozju/GAWorld.git@main"
 ```
 
-安装完成后，启动控制台：
+系统要求、源码安装和升级步骤见 [安装](installation.md)。
 
-```bash
-gaworld dashboard
-```
-
-在浏览器打开 <http://127.0.0.1:8766>。首次启动会创建默认工作区，保存运行所需的代码、网页、城市数据和仿真产物。
-
-:::{admonition} 工作区位置
-:class: note
-
-默认工作区位于 `~/.local/share/gaworld/workspaces/default`。如需自行选择位置，可按下面的步骤创建。
-:::
-
-## 创建工作区
-
-为项目选择一个空目录。在终端执行：
+## 快速开始
 
 ```bash
 gaworld init ./my-world
@@ -36,105 +41,60 @@ cd my-world
 gaworld dashboard
 ```
 
-后续在这个目录中启动 GAWorld，即可继续使用该工作区的数据与配置。
+打开 <http://127.0.0.1:8766>，配置模型后即可开始第一次仿真。完整步骤见 [快速入门](quickstart.md)。
 
-## 配置模型
-
-1. 在控制台打开 **配置 → 模型**。
-2. 选择模型服务商，填写对应的 **我的 API Key**，保存并测试连通性。
-3. 打开自己的世界，在仿真页面设置 **默认模型**和**日程模型**。
-4. 保存配置。
-
-密钥按账号、协议和完整 Base URL 绑定，每个服务商使用对应的密钥。模型调用通过所选服务商的 API 计费。配置字段与常见连接问题见 [模型配置](models.md)。
-
-## 运行第一次仿真
-
-1. 打开仿真页面，选择要运行的居民。首次运行可选少量居民，并把仿真时长设为 **1 天**。
-2. 确认默认模型与日程模型已选好，保存运行配置。
-3. 点击启动，查看日志中的运行进度与居民行动。
-4. 运行结束后，进入轨迹回放或居民详情，查看位置、状态与记忆。
-
-你也可以在工作区中使用命令行运行。命令行的模型接入与运行参数见 [命令行](cli.md)。
-
-## 查看结果
-
-在控制台中，可以从三个角度查看一次仿真：
-
-| 你想了解什么 | 查看位置 |
-| --- | --- |
-| 居民去了哪里、做了什么 | 轨迹回放与运行日志 |
-| 某位居民的状态与经历 | 居民详情、记忆与访谈 |
-| 群体随时间怎样变化 | Analytics 中的状态、经济与社交分析 |
-
-结果文件保存在当前世界或城市的输出目录。常用文件及其位置见 {ref}`仿真与结果 <outputs>`。
-
-## 接下来
-
-- [城市与居民](cities.md)：创建城市、选择地图、设置居民并切换城市。
-- [仿真与结果](simulation.md)：设置时长和步长，查看日志、轨迹与数据文件。
-- [功能总览](features.md)：了解记忆、社交、经济、技能和真实工作。
-- [API 参考](api.md)：从自己的程序读取状态、调用服务和接入实验流程。
-
-## 常见问题
-
-### 终端找不到 gaworld
-
-确认安装与运行使用同一个 Python 环境。激活安装时使用的虚拟环境后，检查包是否已安装：
-
-```bash
-python -m pip show gaworld
-```
-
-### 浏览器打不开控制台
-
-确认启动控制台的终端仍在运行，并检查终端显示的地址与端口。默认地址为 `http://127.0.0.1:8766`。如 8766 已被占用，可以指定其他端口：
-
-```bash
-gaworld dashboard --port 8767
-```
-
-随后打开 <http://127.0.0.1:8767>。
-
-### 运行时提示密钥或模型错误
-
-回到 **配置 → 模型**，检查所选服务商的 API Key、模型权限与账户余额，再测试连通性。仿真页面的默认模型和日程模型都需要指向可用后端。
-
-### 如何升级
-
-升级安装包：
-
-```bash
-python -m pip install --upgrade "git+https://github.com/wuchaozju/GAWorld.git@main"
-```
-
-已有工作区保留初始化时的版本。用新目录初始化新版工作区，再迁移需要的数据：
-
-```bash
-gaworld init ./my-world-new
-```
+## 文档
 
 ```{toctree}
-:hidden:
-:caption: 入门指南
+:maxdepth: 2
+:caption: 入门指南:
 
-self
-models
-```
-
-```{toctree}
-:hidden:
-:caption: 使用平台
-
-cities
-simulation
-features
-```
-
-```{toctree}
-:hidden:
-:caption: 开发参考
-
+user_guide
+installation
+quickstart
 cli
-api
-development
+concepts
+architecture
+interaction
 ```
+
+```{toctree}
+:maxdepth: 2
+:caption: 用户指南:
+
+agents
+agent_skills
+env_modules
+storage
+custom_modules
+skills
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: 开发者指南:
+
+development
+module_and_parameter_management
+contributing
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: 参考:
+
+api/index
+examples
+```
+
+## 链接
+
+- <a href="../index.html">项目主页</a>
+- [GitHub 仓库](https://github.com/wuchaozju/GAWorld)
+- [问题反馈](https://github.com/wuchaozju/GAWorld/issues)
+- [贡献者](https://github.com/wuchaozju/GAWorld/graphs/contributors)
+- <a href="read.doc" download>下载 Word 文档</a>
+
+## 搜索
+
+使用左侧搜索框，或进入 <a href="search.html">搜索页面</a>。

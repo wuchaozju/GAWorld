@@ -1,4 +1,4 @@
-# 开发与测试
+# 开发指南
 
 从 `main` 创建功能分支，完成修改与检查后提交到 `Dev` 审查。维护者将验证后的集成提升到 `main`。
 
@@ -57,3 +57,15 @@ python -m pytest --suite full
 - [仓库约定](https://github.com/wuchaozju/GAWorld/blob/main/AGENTS.md)：目录、命名、测试与提交要求。
 - [测试说明](https://github.com/wuchaozju/GAWorld/blob/main/docs/TEST_CASES.md)：套件划分与用例覆盖。
 - [更新日志](https://github.com/wuchaozju/GAWorld/blob/main/CHANGELOG.md)：版本变更记录。
+
+## 构建文档
+
+文档源文件位于 `site/documentation/`：
+
+```bash
+python -m pip install -r site/documentation/requirements.txt
+python -m sphinx -W -b html site/documentation /tmp/gaworld-docs
+python site/documentation/publish.py /tmp/gaworld-docs site/home/docs
+```
+
+构建后检查目录、页内链接、搜索与代码示例。贡献流程见 [为 GAWorld 贡献](contributing.md)。

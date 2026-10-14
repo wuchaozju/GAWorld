@@ -3,15 +3,16 @@
   <head>
 <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="color-scheme" content="light dark"><meta name="description" content="查阅 GAWorld 使用与开发文档。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="#">
+    <meta name="color-scheme" content="light dark"><meta name="description" content="GAWorld 文档：GAWorld。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="#">
+        <link rel="prefetch" href="_static/logo.svg" as="image">
 
-    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
 <meta name="robots" content="noindex" />
 <title>搜索 - GAWorld 文档</title><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=d8d38eed" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=999c068d" />
     
     
 
@@ -20,27 +21,28 @@
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-  --color-brand-primary: #245bdb;
-  --color-brand-content: #245bdb;
-  --color-sidebar-background: #f6f8fc;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
   
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  --color-brand-primary: #9bbcff;
-  --color-brand-content: #9bbcff;
-  --color-sidebar-background: #171b22;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
   
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  --color-brand-primary: #9bbcff;
-  --color-brand-content: #9bbcff;
-  --color-sidebar-background: #171b22;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
   
       }
     }
@@ -48,6 +50,7 @@
 </style></head>
   <body>
     
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
@@ -192,34 +195,61 @@
     <div class="sidebar-container">
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
-  
-  <span class="sidebar-brand-text">GAWorld 文档</span>
-  
+  <div class="sidebar-logo-container"><img class="sidebar-logo" src="_static/logo.svg" alt="GAWorld" width="480" height="281"></div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
 </a><form class="sidebar-search-container" method="get" action="#" role="search">
   <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="index.html">GAWorld 使用指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">模型配置</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">GAWorld 使用指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">快速入门</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html">与 GAWorld 交互</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">使用平台</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与居民</a></li>
-<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真与结果</a></li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">功能总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agents.html">使用智能体</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="skill_guide.html">Skill 编写指南</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发参考</span></p>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="env_modules.html">环境模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="storage.html">存储与结果访问</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_modules.html">自定义模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills.html">研究工作台</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API 参考</a></li>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发与测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_and_parameter_management.html">模块与参数管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">为 GAWorld 贡献</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">Agent 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">Skills 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/society.html">仿真内核模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">存储模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">Registry 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/backend.html">Backend API 模块</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">示例</a></li>
 </ul>
 
-</div><div class="project-links"><a href="../">项目主页</a><a href="https://github.com/wuchaozju/GAWorld">GitHub</a><a href="read.doc" download>下载 Word 文档</a></div></div>
+</div>
+</div>
+
       </div>
       
     </div>
@@ -269,7 +299,11 @@
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
-            Made with 
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             
           </div>
@@ -286,14 +320,25 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=1ff396e6"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="index.html">当前版本 v0.2.1</a>
+    <a href="read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../index.html">项目主页</a>
+  </div>
+</details>
+<script src="_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/translations.js?v=beaddf03"></script>
-    <script src="_static/navigation.js?v=2ce55171"></script>
+    <script src="_static/translations.js?v=540d3cec"></script>
+    <script src="_static/navigation.js?v=75e826e7"></script>
     
 <script src="_static/searchtools.js"></script>
 <script src="_static/language_data.js"></script>

@@ -1,0 +1,656 @@
+<!doctype html>
+<html class="no-js" lang="zh-CN" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="GAWorld 文档：Skills 模块。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="../genindex.html"><link rel="search" title="搜索" href="../search.html"><link rel="next" title="环境模块" href="env.html"><link rel="prev" title="Agent 模块" href="agent.html">
+        <link rel="prefetch" href="../_static/logo.svg" as="image">
+
+    <link rel="shortcut icon" href="../_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Skills 模块 - GAWorld 文档</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/gaworld.css?v=26ff273b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">GAWorld 文档</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container"><img class="sidebar-logo" src="../_static/logo.svg" alt="GAWorld" width="480" height="281"></div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">GAWorld 使用指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">快速入门</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interaction.html">与 GAWorld 交互</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../agents.html">使用智能体</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../skill_guide.html">Skill 编写指南</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../env_modules.html">环境模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../storage.html">存储与结果访问</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../custom_modules.html">自定义模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills.html">研究工作台</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">开发指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module_and_parameter_management.html">模块与参数管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">为 GAWorld 贡献</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="agent.html">Agent 模块</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Skills 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="env.html">环境模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="society.html">仿真内核模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="storage.html">存储模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">配置模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="registry.html">Registry 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html">Backend API 模块</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">示例</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/blob/main/site/documentation/api/skills.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/edit/main/site/documentation/api/skills.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="skills">
+<h1>Skills 模块<a class="headerlink" href="#skills" title="链接到此标题。">¶</a></h1>
+<p>技能数据结构、注册、提示词选择与经验提炼。</p>
+<p>接口签名与说明由当前仓库源代码生成。</p>
+<section id="gaworld-skills-schemas">
+<h2>gaworld.skills.schemas<a class="headerlink" href="#gaworld-skills-schemas" title="链接到此标题。">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.skills.schemas.</span></span><span class="sig-name descname"><span class="pre">Skill</span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L46"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.Skill" title="链接到此定义。">¶</a></dt>
+<dd><p>A reusable capability an agent can hold and apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">变量<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>skill_id</strong> -- Stable identifier; usually the filename basename.</p></li>
+<li><p><strong>name</strong> -- Short human-readable title shown in prompts.</p></li>
+<li><p><strong>description</strong> -- One-line summary used both for trigger matching and the agent's
+prompt-time skill list.</p></li>
+<li><p><strong>body</strong> -- Free-form Markdown body — the &quot;how to use this skill&quot; detail
+passed into work-adapter prompts.</p></li>
+<li><p><strong>triggers</strong> -- Keyword hints. The registry uses these (plus <code class="docutils literal notranslate"><span class="pre">description</span></code>
+and <code class="docutils literal notranslate"><span class="pre">name</span></code>) for cheap substring matching against
+action/activity text.</p></li>
+<li><p><strong>source</strong> -- <code class="docutils literal notranslate"><span class="pre">&quot;global&quot;</span></code> for hand-authored library skills,
+<code class="docutils literal notranslate"><span class="pre">&quot;private&quot;</span></code> for agent-summarised skills.</p></li>
+<li><p><strong>owner_agent_id</strong> -- The agent that owns a private skill (None for global skills).</p></li>
+<li><p><strong>origin</strong> -- Optional provenance string (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;consolidation&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;seed&quot;</span></code>) — kept for debugging and analysis.</p></li>
+<li><p><strong>created_day</strong> -- Simulation day the skill was created, when known.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.skill_id">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">skill_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.skill_id" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.name">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.name" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.description">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">description</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.description" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.body">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">body</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.body" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.triggers">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">triggers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.triggers" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.source">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">source</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SkillSource</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.source" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.owner_agent_id">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">owner_agent_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.owner_agent_id" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.origin">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">origin</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.origin" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.created_day">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">created_day</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gaworld.skills.schemas.Skill.created_day" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.to_dict">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L90"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.Skill.to_dict" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.from_dict">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L94"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.Skill.from_dict" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.Skill.matches">
+<span class="sig-prename descclassname"><span class="pre">Skill.</span></span><span class="sig-name descname"><span class="pre">matches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L109"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.Skill.matches" title="链接到此定义。">¶</a></dt>
+<dd><p>Cheap relevance check: does <code class="docutils literal notranslate"><span class="pre">text</span></code> mention any trigger/name?</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.slugify_skill_id">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.schemas.</span></span><span class="sig-name descname"><span class="pre">slugify_skill_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'skill'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L128"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.slugify_skill_id" title="链接到此定义。">¶</a></dt>
+<dd><p>Turn a human-readable name into a filesystem-safe skill_id.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.parse_skill_markdown">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.schemas.</span></span><span class="sig-name descname"><span class="pre">parse_skill_markdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skill_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L218"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.parse_skill_markdown" title="链接到此定义。">¶</a></dt>
+<dd><p>Parse a Skill markdown file (frontmatter + body).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.schemas.dump_skill_markdown">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.schemas.</span></span><span class="sig-name descname"><span class="pre">dump_skill_markdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skill</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/schemas.py#L267"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.schemas.dump_skill_markdown" title="链接到此定义。">¶</a></dt>
+<dd><p>Serialise a <a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><code class="xref py py-class docutils literal notranslate"><span class="pre">Skill</span></code></a> to <code class="docutils literal notranslate"><span class="pre">---</span></code>-framed markdown.</p>
+</dd></dl>
+
+</section>
+<section id="gaworld-skills-registry">
+<h2>gaworld.skills.registry<a class="headerlink" href="#gaworld-skills-registry" title="链接到此标题。">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gaworld.skills.registry.</span></span><span class="sig-name descname"><span class="pre">SkillRegistry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L43"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry" title="链接到此定义。">¶</a></dt>
+<dd><p>Read/write surface over the global library + per-agent skills.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.reload">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">reload</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L115"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.reload" title="链接到此定义。">¶</a></dt>
+<dd><p>Drop caches so the next access re-reads disk.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.list_global">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">list_global</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L122"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.list_global" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.list_private">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">list_private</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L126"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.list_private" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.list_for_agent">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">list_for_agent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L130"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.list_for_agent" title="链接到此定义。">¶</a></dt>
+<dd><p>All skills available to one agent: attached global + private.</p>
+<p><code class="docutils literal notranslate"><span class="pre">agent</span></code> may be either an Agent dict (we read <code class="docutils literal notranslate"><span class="pre">skill_ids</span></code>)
+or a bare agent_id (we return <em>all</em> private skills they own
+but no global skills, since attachment is unknown).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.get">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skill_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L162"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.get" title="链接到此定义。">¶</a></dt>
+<dd><p>Look up by id. If <code class="docutils literal notranslate"><span class="pre">agent_id</span></code> is given, private wins.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.save_private">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">save_private</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skill</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L175"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.save_private" title="链接到此定义。">¶</a></dt>
+<dd><p>Persist a private skill and return the stored copy.</p>
+<p>The id is normalised through <code class="xref py py-func docutils literal notranslate"><span class="pre">slugify_skill_id()</span></code>; if a
+skill with that id already exists for this agent, the body and
+metadata are overwritten in place.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.attach_to_agent">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">attach_to_agent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skill_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L198"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.attach_to_agent" title="链接到此定义。">¶</a></dt>
+<dd><p>Add a global skill to the agent's <code class="docutils literal notranslate"><span class="pre">skill_ids</span></code> list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gaworld.skills.registry.SkillRegistry.detach_from_agent">
+<span class="sig-prename descclassname"><span class="pre">SkillRegistry.</span></span><span class="sig-name descname"><span class="pre">detach_from_agent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skill_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L217"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.SkillRegistry.detach_from_agent" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.registry.get_default_registry">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.registry.</span></span><span class="sig-name descname"><span class="pre">get_default_registry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry" title="gaworld.skills.registry.SkillRegistry"><span class="pre">SkillRegistry</span></a></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L233"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.get_default_registry" title="链接到此定义。">¶</a></dt>
+<dd><p>Return a process-wide registry instance, creating it on first use.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.registry.reset_default_registry">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.registry.</span></span><span class="sig-name descname"><span class="pre">reset_default_registry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L241"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.reset_default_registry" title="链接到此定义。">¶</a></dt>
+<dd><p>Drop the module-level cache (mainly for tests).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.registry.iter_global_skill_ids">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.registry.</span></span><span class="sig-name descname"><span class="pre">iter_global_skill_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry" title="gaworld.skills.registry.SkillRegistry"><span class="pre">SkillRegistry</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/registry.py#L247"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.registry.iter_global_skill_ids" title="链接到此定义。">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="gaworld-skills-prompt-helpers">
+<h2>gaworld.skills.prompt_helpers<a class="headerlink" href="#gaworld-skills-prompt-helpers" title="链接到此标题。">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.prompt_helpers.render_agent_skills">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.prompt_helpers.</span></span><span class="sig-name descname"><span class="pre">render_agent_skills</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skills</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_skills</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/prompt_helpers.py#L19"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.prompt_helpers.render_agent_skills" title="链接到此定义。">¶</a></dt>
+<dd><p>Format a list of Skills for inclusion in an LLM prompt.</p>
+<p>Returns an empty string when no skills are available — callers
+should branch on the string rather than always concatenating it,
+so prompts stay clean when an agent has no skills.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.prompt_helpers.relevant_skills_for_text">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.prompt_helpers.</span></span><span class="sig-name descname"><span class="pre">relevant_skills_for_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skills</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/prompt_helpers.py#L48"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.prompt_helpers.relevant_skills_for_text" title="链接到此定义。">¶</a></dt>
+<dd><p>Pick at most <code class="docutils literal notranslate"><span class="pre">limit</span></code> skills whose triggers/name match <code class="docutils literal notranslate"><span class="pre">text</span></code>.</p>
+<p>Used by the work router and adapter helpers to focus the brief on
+the handful of skills that actually apply to the current action.</p>
+</dd></dl>
+
+</section>
+<section id="gaworld-skills-consolidation">
+<h2>gaworld.skills.consolidation<a class="headerlink" href="#gaworld-skills-consolidation" title="链接到此标题。">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.consolidation.summarize_experience_to_skill">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.consolidation.</span></span><span class="sig-name descname"><span class="pre">summarize_experience_to_skill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlmFn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry" title="gaworld.skills.registry.SkillRegistry"><span class="pre">SkillRegistry</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">today</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback_days</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_episodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/consolidation.py#L97"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.consolidation.summarize_experience_to_skill" title="链接到此定义。">¶</a></dt>
+<dd><p>Try to derive one new private Skill from the agent's recent episodes.</p>
+<p>Returns the saved <code class="xref py py-class docutils literal notranslate"><span class="pre">Skill</span></code> on success, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no
+pattern was extracted. Idempotent on the slug: a returned LLM
+payload whose name slugifies to an existing private skill id is
+silently overwritten (the LLM is allowed to refine the same skill
+over time).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gaworld.skills.consolidation.run_skill_consolidation">
+<span class="sig-prename descclassname"><span class="pre">gaworld.skills.consolidation.</span></span><span class="sig-name descname"><span class="pre">run_skill_consolidation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="仅关键字参数分隔符 (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlmFn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">today</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry" title="gaworld.skills.registry.SkillRegistry"><span class="pre">SkillRegistry</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gaworld.skills.schemas.Skill" title="gaworld.skills.schemas.Skill"><span class="pre">Skill</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="viewcode-link gaworld-source reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/skills/consolidation.py#L182"><span class="pre">[源代码]</span></a><a class="headerlink" href="#gaworld.skills.consolidation.run_skill_consolidation" title="链接到此定义。">¶</a></dt>
+<dd><p>Lifecycle entrypoint: gated by config, otherwise calls into
+<a class="reference internal" href="#gaworld.skills.consolidation.summarize_experience_to_skill" title="gaworld.skills.consolidation.summarize_experience_to_skill"><code class="xref py py-func docutils literal notranslate"><span class="pre">summarize_experience_to_skill()</span></code></a>.</p>
+<p>Kept as a thin shim so <code class="xref py py-mod docutils literal notranslate"><span class="pre">gaworld.memory.lifecycle</span></code> can call us
+without re-reading the config block itself.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="env.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">环境模块</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="agent.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Agent 模块</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Skills 模块</a><ul>
+<li><a class="reference internal" href="#gaworld-skills-schemas">gaworld.skills.schemas</a><ul>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.skill_id"><code class="docutils literal notranslate"><span class="pre">Skill.skill_id</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.name"><code class="docutils literal notranslate"><span class="pre">Skill.name</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.description"><code class="docutils literal notranslate"><span class="pre">Skill.description</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.body"><code class="docutils literal notranslate"><span class="pre">Skill.body</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.triggers"><code class="docutils literal notranslate"><span class="pre">Skill.triggers</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.source"><code class="docutils literal notranslate"><span class="pre">Skill.source</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.owner_agent_id"><code class="docutils literal notranslate"><span class="pre">Skill.owner_agent_id</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.origin"><code class="docutils literal notranslate"><span class="pre">Skill.origin</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.created_day"><code class="docutils literal notranslate"><span class="pre">Skill.created_day</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.to_dict"><code class="docutils literal notranslate"><span class="pre">Skill.to_dict()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.from_dict"><code class="docutils literal notranslate"><span class="pre">Skill.from_dict()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.Skill.matches"><code class="docutils literal notranslate"><span class="pre">Skill.matches()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.slugify_skill_id"><code class="docutils literal notranslate"><span class="pre">slugify_skill_id()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.parse_skill_markdown"><code class="docutils literal notranslate"><span class="pre">parse_skill_markdown()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.schemas.dump_skill_markdown"><code class="docutils literal notranslate"><span class="pre">dump_skill_markdown()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gaworld-skills-registry">gaworld.skills.registry</a><ul>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry"><code class="docutils literal notranslate"><span class="pre">SkillRegistry</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.reload"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.reload()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.list_global"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.list_global()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.list_private"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.list_private()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.list_for_agent"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.list_for_agent()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.get"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.get()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.save_private"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.save_private()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.attach_to_agent"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.attach_to_agent()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.SkillRegistry.detach_from_agent"><code class="docutils literal notranslate"><span class="pre">SkillRegistry.detach_from_agent()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.get_default_registry"><code class="docutils literal notranslate"><span class="pre">get_default_registry()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.reset_default_registry"><code class="docutils literal notranslate"><span class="pre">reset_default_registry()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.registry.iter_global_skill_ids"><code class="docutils literal notranslate"><span class="pre">iter_global_skill_ids()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gaworld-skills-prompt-helpers">gaworld.skills.prompt_helpers</a><ul>
+<li><a class="reference internal" href="#gaworld.skills.prompt_helpers.render_agent_skills"><code class="docutils literal notranslate"><span class="pre">render_agent_skills()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.prompt_helpers.relevant_skills_for_text"><code class="docutils literal notranslate"><span class="pre">relevant_skills_for_text()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gaworld-skills-consolidation">gaworld.skills.consolidation</a><ul>
+<li><a class="reference internal" href="#gaworld.skills.consolidation.summarize_experience_to_skill"><code class="docutils literal notranslate"><span class="pre">summarize_experience_to_skill()</span></code></a></li>
+<li><a class="reference internal" href="#gaworld.skills.consolidation.run_skill_consolidation"><code class="docutils literal notranslate"><span class="pre">run_skill_consolidation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="../index.html">当前版本 v0.2.1</a>
+    <a href="../read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../../index.html">项目主页</a>
+  </div>
+</details>
+<script src="../_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
+    <script src="../_static/navigation.js?v=75e826e7"></script>
+    </body>
+</html>

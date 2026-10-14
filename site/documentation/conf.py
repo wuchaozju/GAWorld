@@ -1,5 +1,7 @@
 project = 'GAWorld'
 author = 'GAWorld contributors'
+copyright = '2026, GAWorld contributors'
+release = '0.2.1'
 language = 'zh_CN'
 extensions = ['myst_parser', 'sphinx_copybutton']
 source_suffix = {'.md': 'markdown'}
@@ -12,17 +14,26 @@ templates_path = ['_templates']
 html_css_files = ['gaworld.css']
 html_js_files = ['navigation.js']
 html_favicon = '_static/favicon.svg'
-html_copy_source = False
-html_show_sourcelink = False
-html_show_copyright = False
-html_show_sphinx = False
+html_logo = '_static/logo.svg'
+html_copy_source = True
+html_show_sourcelink = True
 html_theme_options = {
- 'light_css_variables': {'color-brand-primary': '#245bdb', 'color-brand-content': '#245bdb', 'color-sidebar-background': '#f6f8fc'},
- 'dark_css_variables': {'color-brand-primary': '#9bbcff', 'color-brand-content': '#9bbcff', 'color-sidebar-background': '#171b22'},
- 'sidebar_hide_name': False,
- 'navigation_with_keys': True,
+    'light_css_variables': {
+        'font-stack': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        'color-brand-primary': 'rgb(0, 0, 136)',
+        'color-brand-content': 'rgb(0, 0, 136)',
+        'color-brand-visited': 'rgb(72, 38, 131)',
+    },
+    'dark_css_variables': {
+        'color-brand-primary': '#b0b0e8',
+        'color-brand-content': '#c4c4f0',
+        'color-brand-visited': '#d4a8ff',
+    },
+    'source_repository': 'https://github.com/wuchaozju/GAWorld/',
+    'source_branch': 'main',
+    'source_directory': 'site/documentation/',
+    'navigation_with_keys': True,
 }
-html_sidebars = {'**': ['sidebar/brand.html', 'sidebar/search.html', 'sidebar/scroll-start.html', 'sidebar/navigation.html', 'sidebar/links.html', 'sidebar/scroll-end.html']}
 myst_heading_anchors = 3
 myst_enable_extensions = ['colon_fence']
 copybutton_prompt_text = ''
@@ -31,18 +42,46 @@ html_search_language = 'zh'
 
 def page_metadata(app, pagename, templatename, context, doctree):
     from html import escape
-    descriptions = {
-        'index': '安装 GAWorld，配置模型，运行第一次城市仿真并查看结果。',
-        'models': '配置 GAWorld 模型服务、个人 API Key、默认模型和日程模型。',
-        'cities': '在 GAWorld 中创建城市、选择地图、编辑居民并切换城市。',
-        'simulation': '设置 GAWorld 仿真时长与步长，查看运行日志、轨迹和输出文件。',
-        'features': '了解 GAWorld 的居民、记忆、社交、经济、技能、工作与实验功能。',
-        'cli': '使用 GAWorld 命令行创建工作区、运行仿真、访谈居民和管理城市。',
-        'api': '使用 GAWorld HTTP API、OpenAPI 描述和 Python 客户端。',
-        'development': '准备 GAWorld 开发环境、定位代码、运行测试和提交修改。',
-    }
-    context['metatags'] = context.get('metatags', '') + '<meta name="description" content="' + escape(descriptions.get(pagename, '查阅 GAWorld 使用与开发文档。'), quote=True) + '">'
+    title = str(context.get('title', 'GAWorld'))
+    context['metatags'] = context.get('metatags', '') + '<meta name="description" content="' + escape('GAWorld 文档：' + title + '。使用步骤、配置示例与接口参考。', quote=True) + '">'
+
+
+def fix_chinese_stemmer(app, exception):
+    # Sphinx 9.1.0 embeds the English stemmer for Chinese but exports a
+    # nonexistent ChineseStemmer. Keep its Jieba index and correct the export.
+    from pathlib import Path
+    if exception is None and app.builder.format == 'html':
+        path = Path(app.outdir) / '_static' / 'language_data.js'
+        source = path.read_text()
+        path.write_text(source.replace('window.Stemmer = ChineseStemmer;', 'window.Stemmer = EnglishStemmer;'))
+
+
+def source_role(name, rawtext, text, lineno, inliner, options=None, content=None):
+    from docutils import nodes
+    return [nodes.reference(rawtext, '[源代码]', refuri=text, classes=['viewcode-link', 'gaworld-source'])], []
+
+
+def align_source_links(app, doctree, docname):
+    from docutils import nodes
+    from sphinx import addnodes
+    for link in list(doctree.findall(nodes.reference)):
+        if 'gaworld-source' not in link.get('classes', []):
+            continue
+        parent = link.parent
+        desc = parent
+        while desc is not None and not isinstance(desc, addnodes.desc):
+            desc = desc.parent
+        if desc is None:
+            continue
+        signature = next(desc.findall(addnodes.desc_signature))
+        parent.remove(link)
+        if not parent.children:
+            parent.parent.remove(parent)
+        signature += link
 
 
 def setup(app):
     app.connect('html-page-context', page_metadata)
+    app.connect('build-finished', fix_chinese_stemmer)
+    app.add_role('gaworld-source', source_role)
+    app.connect('doctree-resolved', align_source_links)

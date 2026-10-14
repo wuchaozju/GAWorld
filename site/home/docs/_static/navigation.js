@@ -1,12 +1,16 @@
 'use strict';
-// Preserve the previous landing-page chapter links after the guide became multi-page.
+// Compatibility for existing chapter links from the project homepage.
 if (location.pathname.endsWith('/docs/') || location.pathname.endsWith('/docs/index.html')) {
-  const pages = {'quick-start':'index.html','overview':'index.html','population':'cities.html','runtime':'simulation.html','research':'features.html#research','extension':'api.html','operations':'models.html','development':'development.html'};
+  const pages = {'quick-start':'quickstart.html','overview':'index.html','population':'agents.html','runtime':'storage.html','research':'skills.html','extension':'custom_modules.html','operations':'module_and_parameter_management.html','development':'development.html'};
   const target = pages[location.hash.slice(1)];
   if (target) location.replace(target);
 }
-document.addEventListener('DOMContentLoaded', () => {
-  for (const el of document.querySelectorAll('.toc-title')) el.textContent = '本页内容';
-  const back = document.querySelector('.back-to-top span');
-  if (back) back.textContent = '回到顶部';
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') document.querySelector('.doc-tools')?.removeAttribute('open');
 });
+
+// Segment Chinese phrases into words that match the Jieba search index.
+if (typeof Intl.Segmenter === 'function') {
+  const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' });
+  window.splitQuery = query => Array.from(segmenter.segment(query), item => item.isWordLike ? item.segment : '').filter(Boolean);
+}

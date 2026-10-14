@@ -3,15 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="配置 GAWorld 模型服务、个人 API Key、默认模型和日程模型。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="城市与居民" href="cities.html"><link rel="prev" title="GAWorld 使用指南" href="index.html">
+<meta name="description" content="GAWorld 文档：GAWorld 文档。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html">
+        <link rel="prefetch" href="_static/logo.svg" as="image">
 
-    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>模型配置 - GAWorld 文档</title>
+    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>GAWorld 文档 - GAWorld 文档</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=d8d38eed" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=26ff273b" />
     
     
 
@@ -20,27 +21,28 @@
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-  --color-brand-primary: #245bdb;
-  --color-brand-content: #245bdb;
-  --color-sidebar-background: #f6f8fc;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
   
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  --color-brand-primary: #9bbcff;
-  --color-brand-content: #9bbcff;
-  --color-sidebar-background: #171b22;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
   
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  --color-brand-primary: #9bbcff;
-  --color-brand-content: #9bbcff;
-  --color-sidebar-background: #171b22;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
   
       }
     }
@@ -48,6 +50,7 @@
 </style></head>
   <body>
     
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
@@ -183,7 +186,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -192,34 +195,61 @@
     <div class="sidebar-container">
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
-  
-  <span class="sidebar-brand-text">GAWorld 文档</span>
-  
+  <div class="sidebar-logo-container"><img class="sidebar-logo" src="_static/logo.svg" alt="GAWorld" width="480" height="281"></div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="index.html">GAWorld 使用指南</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">模型配置</a></li>
-</ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">使用平台</span></p>
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与居民</a></li>
-<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真与结果</a></li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">功能总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">GAWorld 使用指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">快速入门</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">核心概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interaction.html">与 GAWorld 交互</a></li>
 </ul>
-<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发参考</span></p>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API 参考</a></li>
-<li class="toctree-l1"><a class="reference internal" href="development.html">开发与测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agents.html">使用智能体</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="agent_skills.html">Agent Skills（智能体技能）</a><input aria-label="Toggle navigation of Agent Skills（智能体技能）" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="skill_guide.html">Skill 编写指南</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="env_modules.html">环境模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="storage.html">存储与结果访问</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_modules.html">自定义模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills.html">研究工作台</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_and_parameter_management.html">模块与参数管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">为 GAWorld 贡献</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">参考:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">Agent 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">Skills 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/society.html">仿真内核模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">存储模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">Registry 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/backend.html">Backend API 模块</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">示例</a></li>
 </ul>
 
-</div><div class="project-links"><a href="../">项目主页</a><a href="https://github.com/wuchaozju/GAWorld">GitHub</a><a href="read.doc" download>下载 Word 文档</a></div></div>
+</div>
+</div>
+
       </div>
       
     </div>
@@ -234,9 +264,17 @@
           <span>Back to top</span>
         </a>
         <div class="content-icon-container">
-          
-
-<div class="theme-toggle-container theme-toggle-content">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/blob/main/site/documentation/models.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/edit/main/site/documentation/models.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
@@ -244,132 +282,31 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="id1">
-<h1>模型配置<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p>GAWorld 通过模型后端调用语言模型。管理员登记服务商与模型，用户保存自己的 API Key，并为自己的世界选择默认模型和日程模型。</p>
-<section id="id2">
-<h2>连接模型服务<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
-<ol class="arabic simple">
-<li><p>使用自己的账号登录控制台。</p></li>
-<li><p>打开 <strong>配置 → 模型</strong>，找到要使用的后端。</p></li>
-<li><p>在 <strong>我的 API Key</strong> 中填写该服务商的密钥并保存。</p></li>
-<li><p>点击测试连通性，确认一次短调用能够完成。</p></li>
-<li><p>回到仿真页面，设置默认模型和日程模型，保存配置。</p></li>
-</ol>
-<p>首次配置完成后，运行少量居民、较短时长的仿真，检查日志和模型输出。</p>
-</section>
-<section id="id3">
-<h2>配置字段<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>字段</p></th>
-<th class="head"><p>填写内容</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>服务商 / 模型后端</p></td>
-<td><p>控制台中已登记的模型配置</p></td>
-</tr>
-<tr class="row-odd"><td><p>协议</p></td>
-<td><p>服务商提供的接口格式，例如 OpenAI 兼容或 Anthropic 兼容协议</p></td>
-</tr>
-<tr class="row-even"><td><p>Base URL</p></td>
-<td><p>服务商的完整 API 基础地址</p></td>
-</tr>
-<tr class="row-odd"><td><p>模型 ID</p></td>
-<td><p>服务商接受的模型名称</p></td>
-</tr>
-<tr class="row-even"><td><p>我的 API Key</p></td>
-<td><p>当前账号在该服务商的 API 密钥</p></td>
-</tr>
-<tr class="row-odd"><td><p>默认模型</p></td>
-<td><p>当前世界中默认使用的模型后端</p></td>
-</tr>
-<tr class="row-even"><td><p>日程模型</p></td>
-<td><p>当前世界中用于日程生成的模型后端</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>OpenAI 兼容协议描述的是接口格式；密钥由你选择的服务商提供。相同账号、协议与 Base URL 下的模型预设可以复用已保存的密钥。</p>
-</section>
-<section id="id4">
-<h2>添加模型后端<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
-<p>管理员在 <strong>配置 → 模型 → 新增后端</strong> 中填写服务商地址、协议和模型 ID。保存后，用户可以在列表中选择该后端，并填写个人密钥。</p>
-<p>本地 Ollama 也可以作为模型后端。管理员需要使用部署环境可访问的 Ollama 地址，并确认对应模型已加载。</p>
-</section>
-<section id="id5">
-<h2>选择运行参数<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
-<p>模型的并发、超时、输出长度和思考模式都会影响一次仿真的调用过程。较长上下文或本地模型首次加载时，可以适当增加超时。</p>
-<p>进行对照实验时，把模型 ID、服务商、思考模式和运行配置一起保存，便于比较与复现。</p>
-</section>
-<section id="id6">
-<h2>排查连接问题<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>现象</p></th>
-<th class="head"><p>检查步骤</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>提示缺少 API Key</p></td>
-<td><p>确认已登录正确账号，并为所选服务商保存密钥</p></td>
-</tr>
-<tr class="row-odd"><td><p>返回 401 或 403</p></td>
-<td><p>检查密钥是否有效、模型访问权限以及服务商 API 额度</p></td>
-</tr>
-<tr class="row-even"><td><p>返回模型不存在</p></td>
-<td><p>核对模型 ID 与服务商当前提供的名称</p></td>
-</tr>
-<tr class="row-odd"><td><p>请求超时</p></td>
-<td><p>检查网络、后端运行状态和超时设置</p></td>
-</tr>
-<tr class="row-even"><td><p>短调用成功，完整运行失败</p></td>
-<td><p>检查余额、并发限制、输出长度及仿真日志中的具体错误</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>模型预设及部署配置可查阅仓库中的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/MODEL_PROVIDERS.md">模型接入说明</a>。</p>
-</section>
-</section>
+          <section id="gaworld">
+<h1>GAWorld 文档<a class="headerlink" href="#gaworld" title="链接到此标题。">¶</a></h1>
+<p><a class="reference internal" href="module_and_parameter_management.html"><span class="std std-doc">继续阅读</span></a></p>
+<meta http-equiv="refresh" content="0; url=module_and_parameter_management.html"></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="cities.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">城市与居民</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="index.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Home</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
-            Made with 
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             
           </div>
@@ -380,42 +317,30 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">模型配置</a><ul>
-<li><a class="reference internal" href="#id2">连接模型服务</a></li>
-<li><a class="reference internal" href="#id3">配置字段</a></li>
-<li><a class="reference internal" href="#id4">添加模型后端</a></li>
-<li><a class="reference internal" href="#id5">选择运行参数</a></li>
-<li><a class="reference internal" href="#id6">排查连接问题</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=1ff396e6"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="index.html">当前版本 v0.2.1</a>
+    <a href="read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../index.html">项目主页</a>
+  </div>
+</details>
+<script src="_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/translations.js?v=beaddf03"></script>
-    <script src="_static/navigation.js?v=2ce55171"></script>
+    <script src="_static/translations.js?v=540d3cec"></script>
+    <script src="_static/navigation.js?v=75e826e7"></script>
     </body>
 </html>
