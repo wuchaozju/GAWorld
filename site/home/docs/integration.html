@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -336,6 +336,8 @@
 <span class="n">gw</span> <span class="o">=</span> <span class="n">GAWorldClient</span><span class="p">(</span><span class="s2">"http://127.0.0.1:8766"</span><span class="p">)</span>
 <span class="n">gw</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">"账号："</span><span class="p">),</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="s2">"密码："</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">gw</span><span class="o">.</span><span class="n">worlds</span><span class="p">())</span>
+<span class="c1"># 从返回列表选择自己有权限访问的世界 ID。</span>
+<span class="n">gw</span><span class="o">.</span><span class="n">use_world</span><span class="p">(</span><span class="s2">"替换为世界 ID"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>令牌部署可设置 <code class="docutils literal notranslate"><span class="pre">GAWORLD_DASHBOARD_TOKEN</span></code>，客户端会自动读取。</p>
@@ -355,7 +357,7 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>interview<span class="w"> </span>--agent-id<span class="w"> </span><span class="m">31</span><span class="w"> </span>--question<span class="w"> </span><span class="s2">"你今天为什么选择这个行动？"</span>
 </pre></div>
 </div>
-<p>将居民 ID 替换为当前世界中的对象，并保存问题、模型与回答以便比较。</p>
+<p>将居民 ID 替换为当前本地配置中的对象，并保存问题、模型与回答以便比较。</p>
 </section>
 <section id="id6">
 <h2>施加干预<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>

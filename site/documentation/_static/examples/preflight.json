@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "budget": {
+    "agents": 8,
+    "worlds": 3,
+    "seeds": 2,
+    "sim_days": 3,
+    "calls_per_agent_day": 198,
+    "estimated_calls": 28512,
+    "survey_calls": 0,
+    "limit": 50000
+  }
+}

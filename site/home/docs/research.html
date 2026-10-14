@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -286,129 +286,158 @@
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>研究工作台<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>研究工作台把研究想法或论文转成实验方案，并进一步生成预注册协议、运行平行世界和汇总结果。</p>
+<p>研究工作台把研究问题或论文转成实验设计，保存条件、测量指标与判定规则，再组织运行和报告。本章用“补贴通告是否改变居民压力”演示从想法到结果的过程。</p>
+<p>先完成 <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a>，准备教程小城的 8 位居民，并配置可用的分析模型与仿真模型。分析模型用于读材料、写方案和解释结果；仿真模型用于居民行动。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于把研究问题或论文整理为可执行的设计，并保存假设、测量指标与判定规则。准备研究材料、城市和居民，并分别确认方案分析模型与仿真模型。</p>
+<h2>1. 写清研究问题<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>打开 <strong>研究工作台</strong>，选择 <strong>研究想法</strong>，输入：</p>
+<blockquote>
+<div><p>在教程小城的同一批 8 位居民中，比较租金补贴通告、例行通告与无新增通告三种条件。运行 3 天，第 2 天 09:00 发布通告，以期末 stress 为结果指标。预期补贴通告组低于基准组，最小效应设为 0.02，使用随机种子 42 和 43 重复。</p>
+</div></blockquote>
+<p>本例改变居民接收到的事件文本。若研究问题是“实际发放补贴的作用”，还需配置或实现转账机制，并核对经济账本中的支付记录。</p>
+<figure class="annotated-shot">
+<a class="shot-crop research-crop" href="_static/screenshots/research.png" aria-label="打开完整研究工作台截图">
+<img src="_static/screenshots/research.png" alt="研究工作台的材料输入、模型设置与研究记录，编号对应下方说明">
+<span class="shot-pin" style="left:2%;top:25%">1</span><span class="shot-pin" style="left:2%;top:44%">2</span><span class="shot-pin" style="left:68%;top:90%">3</span><span class="shot-pin" style="left:79%;top:36%">4</span>
+</a><figcaption>① 选择研究材料；② 输入研究问题；③ 选择分析模型并生成方案；④ 查看方案与研究记录。点击查看完整截图。</figcaption>
+</figure><p>选择分析模型并生成方案，检查候选设计后点击 <strong>转成研究</strong>。模型生成的设计可能调整样本、条件或指标；进入协议阶段后按下一节逐项核对。</p>
+<p>从论文开始时，可上传 TXT、Markdown 或带文字层的 PDF，先审阅论文解读中的理论、变量、方法与假设，再生成方案。后续协议与运行流程相同。</p>
 </section>
 <section id="id3">
-<h2>从问题到协议<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>研究想法 / 论文 → 解读与审阅 → 实验设计 → 预注册协议
-                                            ↓
-研究报告 ← 结果解释 ← 代码判定 ← 仿真运行 ← 跑前检查
-</pre></div>
-</div>
-<p>控制台入口为 <strong>研究工作台</strong>。分析方案所用模型与居民仿真所用模型可以分别设置。</p>
-<figure class="guide-shot align-default" id="id18">
-<a class="reference external image-reference" href="_static/screenshots/research.png"><img alt="GAWorld 研究工作台的材料输入与研究列表" src="_images/research.png" />
-</a>
-<figcaption>
-<p><span class="caption-text">研究工作台示例。在左侧输入想法或论文材料、选择分析模型；右侧查看方案与研究记录。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id18" title="链接到此图片">¶</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="id4">
-<h2>选择研究方式<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<h2>2. 核对协议<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>任务</p></th>
-<th class="head"><p>使用方式</p></th>
+<tr class="row-odd"><th class="head"><p>协议项目</p></th>
+<th class="head"><p>本例设置</p></th>
+<th class="head"><p>核对重点</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>事先写明假设、条件、指标与判定规则</p></td>
-<td><p>本页的预注册研究流程</p></td>
+<tr class="row-even"><td><p>样本</p></td>
+<td><p>居民 <code class="docutils literal notranslate"><span class="pre">1–8</span></code></p></td>
+<td><p>编号存在于所选城市或世界</p></td>
 </tr>
-<tr class="row-odd"><td><p>手动改变事件或参数，探索效应与分叉轨迹</p></td>
-<td><p><a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界与对照实验</span></a></p></td>
+<tr class="row-odd"><td><p>条件</p></td>
+<td><p>baseline / subsidy / placebo</p></td>
+<td><p>三组使用同一批居民</p></td>
 </tr>
-<tr class="row-even"><td><p>收集不同城市或群体的回答</p></td>
-<td><p><a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a></p></td>
+<tr class="row-even"><td><p>干预</p></td>
+<td><p>第 2 天 09:00 的通告</p></td>
+<td><p>基准无新增通告，安慰剂为办公时间未变的例行通知</p></td>
 </tr>
-<tr class="row-odd"><td><p>比较政策文本，或组织角色回合互动</p></td>
-<td><p><a class="reference internal" href="policy-games.html"><span class="std std-doc">政策推演与严肃游戏</span></a></p></td>
+<tr class="row-odd"><td><p>指标</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">stress</span></code></p></td>
+<td><p>使用已登记的居民状态指标</p></td>
+</tr>
+<tr class="row-even"><td><p>汇总</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">final</span></code></p></td>
+<td><p>比较每位居民最后一条记录</p></td>
+</tr>
+<tr class="row-odd"><td><p>H1</p></td>
+<td><p>subsidy − baseline &lt; 0，最小效应 <code class="docutils literal notranslate"><span class="pre">0.02</span></code></p></td>
+<td><p>方向为 <code class="docutils literal notranslate"><span class="pre">decrease</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>运行</p></td>
+<td><p>3 天，种子 <code class="docutils literal notranslate"><span class="pre">42,43</span></code>，快速模式关闭</p></td>
+<td><p>事件发生后仍有观察时间</p></td>
+</tr>
+<tr class="row-odd"><td><p>并行数</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>每次执行一个世界</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>研究协议支持平行世界实验，以及运行后继续采访各世界居民的组合研究（<code class="docutils literal notranslate"><span class="pre">composite</span></code>）。组合研究在协议中保存题目与选项，并将跑后问卷纳入结果。</p>
+<p>协议编译结果中的 <code class="docutils literal notranslate"><span class="pre">dropped</span></code> 列出被移除的指标或假设及原因。修改设计后重新编译，直到条件、指标与假设对应完整，再进行跑前检查。</p>
+<p>可以下载本例的 <a class="reference download internal" download="" href="_downloads/53a5909bff141e80a31966914a49741f/protocol-input.json"><span class="xref download myst">协议输入</span></a> 和 <a class="reference download internal" download="" href="_downloads/50e8e23b32f09906fb5e4e41d4c62253/protocol.json"><span class="xref download myst">编译后的协议</span></a>。前者用于下面的 Python 验证；网页操作按工作台中的生成、审阅和批准流程进行。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.research.protocol</span><span class="w"> </span><span class="kn">import</span> <span class="n">protocol_from_answer</span><span class="p">,</span> <span class="n">preflight</span>
+
+<span class="n">answer</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"protocol-input.json"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
+<span class="n">protocol</span> <span class="o">=</span> <span class="n">protocol_from_answer</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"tutorial"</span><span class="p">,</span> <span class="s2">"language"</span><span class="p">:</span> <span class="s2">"zh-CN"</span><span class="p">})</span>
+<span class="n">check</span> <span class="o">=</span> <span class="n">preflight</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">default_agents</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">check</span><span class="p">[</span><span class="s2">"ok"</span><span class="p">],</span> <span class="n">check</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">check</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">][</span><span class="s2">"estimated_calls"</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>本例输出 <code class="docutils literal notranslate"><span class="pre">True</span> <span class="pre">[]</span></code> 和 <code class="docutils literal notranslate"><span class="pre">28512</span></code>。这一步只编译和检查协议，不调用模型。调用量是当前估算公式的结果；实际耗时和费用还取决于执行模式、模型及响应长度。完整检查结果见 <a class="reference download internal" download="" href="_downloads/fa4bb793d1f71256865d246bb9074c23/preflight.json"><span class="xref download myst">preflight.json</span></a>。</p>
+</section>
+<section id="id4">
+<h2>3. 批准并运行<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<p>在工作台完成跑前检查，处理错误项并阅读提示，再批准运行。运行器按协议为每个种子建立平行世界实验；本例共运行两组实验，每组包含三个条件。</p>
+<p>研究卡片记录阶段与运行关联。进入对应平行世界，检查各条件是否完成，以及状态历史是否覆盖事件前后。某个条件失败时先查看该条件日志，修正配置后重新运行该组比较。</p>
+<p>协议还支持 <code class="docutils literal notranslate"><span class="pre">composite</span></code> 组合研究：先运行平行世界，再采访各世界中的居民。使用组合研究时，另外核对问卷题目、选项、有效回答与计分方式。</p>
 </section>
 <section id="id5">
-<h2>从研究想法开始<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<ol class="arabic simple">
-<li><p>选择 <strong>研究想法</strong>，写清研究对象、干预、比较条件和结果变量。</p></li>
-<li><p>选择分析模型，生成实施方案。</p></li>
-<li><p>比较候选设计中的人口、时间跨度、事件与测量指标。</p></li>
-<li><p>选择需要执行的设计，点击 <strong>转成研究</strong>。</p></li>
-</ol>
-<p>例如可以提出：在同一座城市中，比较提供租金补贴与保持基线两种条件下，低收入居民的压力和经济安全感如何变化。</p>
-</section>
-<section id="id6">
-<h2>从论文开始<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>上传 TXT、Markdown 或带文字层的 PDF。先解读论文，再检查理论、方法、关键变量、主要发现、研究问题与假设。完成审阅后据此生成实验方案。</p>
-<div class="admonition note">
-<p class="admonition-title">备注</p>
-<p>把结果变量对应到 GAWorld 可以记录的指标，并在运行前明确预测方向和最小效应。保存审阅后的解读与预注册协议。</p>
-</div>
-</section>
-<section id="id7">
-<h2>检查测量指标<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
-<p>在协议中为每条假设指定指标、处理条件、对照条件、预测方向与最小效应。选择编译器支持的状态变量或可计分问卷题；编译结果中的 <code class="docutils literal notranslate"><span class="pre">dropped</span></code> 列出被移除的项目及原因。</p>
-<p>跑前检查会估算调用量并核对协议。调整居民数量、天数、种子和运行模式后，重新检查，再批准运行。</p>
-</section>
-<section id="id8">
-<h2>预注册与跑前检查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
-<p>协议列出条件、指标、条件之间的对比、预测方向与最小效应。检查运行天数、种子、参与居民和模型，再进行跑前检查。</p>
-<p>通过检查后批准并运行。协议中无法执行的部分会在编译结果中列出，应在开始前完成审阅。</p>
-</section>
-<section id="id9">
-<h2>执行协议与查看实验<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
-<p>平行世界从共同基线创建不同条件。研究按种子运行，记录各世界输出以及条件之间的差异。分析中包括配对估计、事件前平衡、安慰剂检查和跨种子重复等结果。</p>
-<p>从研究卡片进入对应的平行世界实验，可查看分歧曲线、轨迹与结果文件。</p>
-</section>
-<section id="id10">
-<h2>查看判定与报告<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
-<p>代码按协议中的指标和预测给出假设判定；模型根据已有结果补充解释。查看报告时，将预注册条件、结果数值与运行记录一起核对。</p>
-</section>
-<section id="id11">
-<h2>结果目录<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
+<h2>4. 阅读假设判定<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p>下面提供一组<strong>合成教学数据</strong>：输入 CSV 由脚本构造，报告由 GAWorld 的分析和判定代码计算。它用于练习结果阅读。实际仿真的数值以自己的运行报告为准。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>目录</p></th>
-<th class="head"><p>内容</p></th>
+<tr class="row-odd"><th class="head"><p>H1 的期末 stress</p></th>
+<th class="head"><p>种子 42</p></th>
+<th class="head"><p>种子 43</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>基准组均值</p></td>
+<td><p>0.495</p></td>
+<td><p>0.495</p></td>
+</tr>
+<tr class="row-odd"><td><p>补贴通告组均值</p></td>
+<td><p>0.395</p></td>
+<td><p>0.415</p></td>
+</tr>
+<tr class="row-even"><td><p>处理组 − 基准组</p></td>
+<td><p>−0.100</p></td>
+<td><p>−0.080</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>跨种子平均差值为 <code class="docutils literal notranslate"><span class="pre">−0.090</span></code>。它满足本例预注册的下降方向和 <code class="docutils literal notranslate"><span class="pre">0.02</span></code> 阈值，当前判定代码返回 <code class="docutils literal notranslate"><span class="pre">supported</span></code>。在 <a class="reference download internal" download="" href="_downloads/39610ebe007f61b3735c4fccdc07f885/evaluation.json"><span class="xref download myst">evaluation.json</span></a> 中同时查看每个种子的结果、有效性门槛和判定理由。</p>
+<p>两次重复的跨种子区间约为 <code class="docutils literal notranslate"><span class="pre">[-0.217,</span> <span class="pre">0.037]</span></code>，仍跨过零。这个区间描述种子间的不确定性；<a class="reference internal" href="parallel-worlds.html#read-paired-report"><span class="std std-ref">平行世界报告</span></a> 中的居民配对区间描述另一层不确定性。当前判定规则没有把跨种子区间排除零设为独立门槛，因此阅读 <code class="docutils literal notranslate"><span class="pre">supported</span></code> 时仍要结合区间与重复次数。</p>
+<p><code class="docutils literal notranslate"><span class="pre">stress</span></code> 在本例属于 C 级测量，<code class="docutils literal notranslate"><span class="pre">direction_only</span></code> 为真；它适合比较模型内的变化方向。报告中的数值差异应结合指标定义解释。工作台先由代码判定，再由模型对已有结果生成文字解释。</p>
+</section>
+<section id="id6">
+<h2>5. 保存与复现<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>文件或目录</p></th>
+<th class="head"><p>用于复查什么</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/&lt;id&gt;.json</span></code></p></td>
-<td><p>研究方案</p></td>
+<td><p>研究方案及材料解读</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/studies/&lt;id&gt;/</span></code></p></td>
-<td><p>研究协议、状态与报告</p></td>
+<td><p>协议、状态与报告</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output/parallel_worlds/</span></code></p></td>
-<td><p>平行世界实验及各条件输出</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/policy/</span></code></p></td>
-<td><p>政策仿真结果</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/serious_games/</span></code></p></td>
-<td><p>严肃游戏设计与会话</p></td>
+<td><p>各种子实验、各条件输出及配对报告</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>研究方案与协议保存在工作区的研究目录，账号部署按创建者管理访问。各次仿真的日志与状态文件见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
+<p>保留协议、居民输入、模型设置、种子和代码版本。团队部署中，研究记录按创建者管理访问；运行文件保存在服务器工作区。</p>
+<p>下载 <a class="reference download internal" download="" href="_downloads/5053a8e5a103df7139ef473e2a120bb3/build-reading-sample.py"><span class="xref download myst">教学数据生成脚本</span></a>，在已安装 GAWorld 的工作区执行：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>build-reading-sample.py
+</pre></div>
+</div>
+<p>脚本创建新的 <code class="docutils literal notranslate"><span class="pre">tutorial-reading-sample/</span></code> 目录，生成三组 CSV、两个种子的报告和假设判定，不启动仿真。目录中 <code class="docutils literal notranslate"><span class="pre">SOURCE.json</span></code> 记录数据来源。已有同名目录时，在另一个目录运行脚本，便于保留之前的结果。</p>
 </section>
-<section id="id12">
-<h2>完成后检查<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
-<p>运行前检查协议中的条件、指标、种子与预期方向；运行后对照报告中的判定、数值和对应平行世界。组合研究还需要查看跑后问卷的有效回答与计分结果。</p>
+<section id="id7">
+<h2>一次研究在代码中如何流转<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>以 H1 为例：<code class="docutils literal notranslate"><span class="pre">workbench.py</span></code> 接收文字材料生成方案；<code class="docutils literal notranslate"><span class="pre">protocol_from_answer()</span></code> 将条件和 <code class="docutils literal notranslate"><span class="pre">stress</span></code> 假设编译成协议；<code class="docutils literal notranslate"><span class="pre">preflight()</span></code> 检查天数、样本与预算。<code class="docutils literal notranslate"><span class="pre">study.py</span></code> 保存阶段，<code class="docutils literal notranslate"><span class="pre">backends.py</span></code> 为种子 42 和 43 分别建立实验；<code class="docutils literal notranslate"><span class="pre">evaluate()</span></code> 读取各组最后一条状态记录，计算期末差值并应用判定规则。最后 <code class="docutils literal notranslate"><span class="pre">report.py</span></code> 将协议、数值和解释组成报告。</p>
 </section>
-<section id="id13">
-<h2>代码结构与执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h2>
-<section id="id14">
-<h3>模块分工<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
+<section id="id8">
+<h2>代码结构与执行流程<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h3>模块分工<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h3>
 <div class="code-map docutils container">
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -447,8 +476,8 @@
 </div>
 </div>
 </section>
-<section id="id15">
-<h3>执行流程<a class="headerlink" href="#id15" title="链接到此标题。">¶</a></h3>
+<section id="id10">
+<h3>执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>材料 → workbench 方案 → protocol 协议与检查 → study 保存
 批准运行 → backends → 平行世界 / 跑后问卷
 结果 → evaluate 判定 → interpret 解释 → report 报告
@@ -456,13 +485,13 @@
 </div>
 <p>方案生成读取 <code class="docutils literal notranslate"><span class="pre">docs/FEATURES.md</span></code> 中的能力目录；协议编译结合 <code class="docutils literal notranslate"><span class="pre">measures.py</span></code> 中的指标登记，把设计转为执行条件。backends 将每个种子的条件转换为平行世界实验。evaluate 读取数值计算判定，<code class="docutils literal notranslate"><span class="pre">interpret.py</span></code> 根据已有结果生成解释。</p>
 </section>
-<section id="id16">
-<h3>从哪里修改<a class="headerlink" href="#id16" title="链接到此标题。">¶</a></h3>
+<section id="id11">
+<h3>从哪里修改<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
 <p>修改设计生成查看 <code class="docutils literal notranslate"><span class="pre">workbench.py</span></code>，增加可测指标时同时核对 <code class="docutils literal notranslate"><span class="pre">measures.py</span></code>、数据来源与 <code class="docutils literal notranslate"><span class="pre">evaluate.py</span></code>。改变协议格式或检查条件查看 <code class="docutils literal notranslate"><span class="pre">protocol.py</span></code>，改变报告展示查看 <code class="docutils literal notranslate"><span class="pre">report.py</span></code> 与前端。</p>
 </section>
 </section>
-<section id="id17">
-<h2>参考<a class="headerlink" href="#id17" title="链接到此标题。">¶</a></h2>
+<section id="id12">
+<h2>参考<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
 <p><a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a> · <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界与对照实验</span></a> · <a class="reference internal" href="api/client.html"><span class="std std-doc">客户端 API</span></a></p>
 </section>
 </section>
@@ -523,24 +552,19 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">研究工作台</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">从问题到协议</a></li>
-<li><a class="reference internal" href="#id4">选择研究方式</a></li>
-<li><a class="reference internal" href="#id5">从研究想法开始</a></li>
-<li><a class="reference internal" href="#id6">从论文开始</a></li>
-<li><a class="reference internal" href="#id7">检查测量指标</a></li>
-<li><a class="reference internal" href="#id8">预注册与跑前检查</a></li>
-<li><a class="reference internal" href="#id9">执行协议与查看实验</a></li>
-<li><a class="reference internal" href="#id10">查看判定与报告</a></li>
-<li><a class="reference internal" href="#id11">结果目录</a></li>
-<li><a class="reference internal" href="#id12">完成后检查</a></li>
-<li><a class="reference internal" href="#id13">代码结构与执行流程</a><ul>
-<li><a class="reference internal" href="#id14">模块分工</a></li>
-<li><a class="reference internal" href="#id15">执行流程</a></li>
-<li><a class="reference internal" href="#id16">从哪里修改</a></li>
+<li><a class="reference internal" href="#id2">1. 写清研究问题</a></li>
+<li><a class="reference internal" href="#id3">2. 核对协议</a></li>
+<li><a class="reference internal" href="#id4">3. 批准并运行</a></li>
+<li><a class="reference internal" href="#id5">4. 阅读假设判定</a></li>
+<li><a class="reference internal" href="#id6">5. 保存与复现</a></li>
+<li><a class="reference internal" href="#id7">一次研究在代码中如何流转</a></li>
+<li><a class="reference internal" href="#id8">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id9">模块分工</a></li>
+<li><a class="reference internal" href="#id10">执行流程</a></li>
+<li><a class="reference internal" href="#id11">从哪里修改</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id17">参考</a></li>
+<li><a class="reference internal" href="#id12">参考</a></li>
 </ul>
 </li>
 </ul>

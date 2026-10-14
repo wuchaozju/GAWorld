@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -286,106 +286,104 @@
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>第一次仿真<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>本节完成一次从配置到查看结果的仿真。</p>
+<p>本节梳理如何进行一次仿真运行。</p>
+<p>本例在本地工作区创建一座包含 8 位居民的离线城市，选择其中 3 位运行 1 天，最后读取一位居民的压力记录。需要联网的模型调用发生在配置测试和仿真阶段。</p>
 <section id="id2">
 <h2>前置条件<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>完成 <a class="reference internal" href="installation.html"><span class="std std-doc">安装</span></a>，进入工作区并启动控制台：</p>
+<p>完成 <a class="reference internal" href="installation.html"><span class="std std-doc">安装</span></a>，进入工作区之后同时启动控制台：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>my-world
 gaworld<span class="w"> </span>dashboard
 </pre></div>
 </div>
+<p>按 <a class="reference internal" href="models.html#local-model"><span class="std std-ref">本地模型配置</span></a> 接入可用后端。如果刚设置了密钥环境变量，使用该终端重新启动控制台。团队服务器用户按 <a class="reference internal" href="models.html#team-model"><span class="std std-ref">个人密钥配置</span></a> 登录并建立自己的世界，然后从“设置一次运行”继续。</p>
 </section>
 <section id="id3">
-<h2>确认当前世界<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<p>本地工作区可先使用默认世界。团队部署中，登录后在 <strong>管理世界</strong> 中选择城市、新建自己的世界，再切换到该世界进行配置与运行。</p>
+<h2>1. 创建教学城市<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<p>在同一工作区的另一个终端执行：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>create<span class="w"> </span><span class="s2">"教程小城"</span><span class="w"> </span>--offline<span class="w"> </span>--scale<span class="w"> </span>tiny<span class="w"> </span>--size<span class="w"> </span><span class="m">8</span>
+python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>list
+python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>use<span class="w"> </span><span class="s2">"教程小城"</span>
+</pre></div>
+</div>
+<p>刷新控制台，确认城市名称，再打开 <strong>Agent Studio</strong>。城市列表应能找到教程小城，居民列表应包含新生成的 8 位居民。核对编号后，本例选择 <code class="docutils literal notranslate"><span class="pre">1,2,3</span></code>。</p>
+<p>城市包保存在 <code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code>；<code class="docutils literal notranslate"><span class="pre">slug</span></code> 是城市目录标识，可通过列表或详情核对。已有同名城市时，换一个教学城市名称。</p>
 </section>
 <section id="id4">
-<h2>配置模型<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<ol class="arabic simple">
-<li><p>打开 <strong>配置 → 模型</strong>，选择模型服务商。</p></li>
-<li><p>填写 <strong>我的 API Key</strong>，保存后测试连通性。</p></li>
-<li><p>在当前世界的仿真页面设置 <strong>默认模型</strong>和<strong>日程模型</strong>。</p></li>
-<li><p>保存运行配置。</p></li>
-</ol>
-<p>模型字段和连接问题见 <a class="reference internal" href="models.html"><span class="std std-doc">模型与运行配置</span></a>。</p>
-</section>
-<section id="id5">
-<h2>选择城市与居民<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<p>打开 <strong>城市</strong>，选择已有城市，或输入地名创建城市。在 <strong>Agent Studio</strong> 查看居民的档案、状态和社会关系，再回到仿真页面选择参与本次运行的居民。</p>
-<div class="admonition note">
-<p class="admonition-title">备注</p>
-<p>首次运行可以选择少量居民、设置 1 天仿真，先检查模型输出、运行日志和结果目录。</p>
-</div>
-</section>
-<section id="id6">
-<h2>启动仿真<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<ol class="arabic simple">
-<li><p>将仿真时长设为 <strong>1 天</strong>。</p></li>
-<li><p>确认居民列表、城市和模型配置，保存后启动。</p></li>
-<li><p>在日志中查看进度与居民行动。</p></li>
-<li><p>运行完成后进入轨迹回放和居民详情。</p></li>
-</ol>
-<figure class="guide-shot align-default" id="id10">
-<a class="reference external image-reference" href="_static/screenshots/simulation.png"><img alt="GAWorld 仿真控制台，顶部是城市、居民、时长与模型设置，下方为运行操作和实时轨迹" src="_images/simulation.png" />
-</a>
-<figcaption>
-<p><span class="caption-text">仿真控制台示例。先在顶部核对城市、居民、时长和模型，再保存配置并启动。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id10" title="链接到此图片">¶</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="id7">
-<h2>查看结果<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<h2>2. 设置一次运行<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>查看内容</p></th>
-<th class="head"><p>控制台入口</p></th>
+<tr class="row-odd"><th class="head"><p>控件</p></th>
+<th class="head"><p>本例设置</p></th>
+<th class="head"><p>为什么这样设置</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>居民的位置与行动</p></td>
-<td><p>轨迹回放、运行日志</p></td>
+<tr class="row-even"><td><p>城市</p></td>
+<td><p>教程小城</p></td>
+<td><p>使用刚创建的输入数据</p></td>
 </tr>
-<tr class="row-odd"><td><p>居民的状态与记忆</p></td>
-<td><p>居民详情</p></td>
+<tr class="row-odd"><td><p>Agent IDs</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1,2,3</span></code></p></td>
+<td><p>从小样本检查行动与输出</p></td>
 </tr>
-<tr class="row-even"><td><p>群体状态、经济与社会关系</p></td>
-<td><p>Analytics</p></td>
+<tr class="row-even"><td><p>仿真天数</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>先完成一次日内运行</p></td>
 </tr>
-<tr class="row-odd"><td><p>居民对问题的回答</p></td>
-<td><p>访谈、群体采访</p></td>
+<tr class="row-odd"><td><p>默认 LLM / 日程 LLM</p></td>
+<td><p>刚测试成功的后端</p></td>
+<td><p>两类调用都使用可用模型</p></td>
+</tr>
+<tr class="row-even"><td><p>长时段快进</p></td>
+<td><p>关闭</p></td>
+<td><p>查看日内行动轨迹</p></td>
+</tr>
+<tr class="row-odd"><td><p>实时等待</p></td>
+<td><p>关闭</p></td>
+<td><p>按计算速度推进</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>结果文件的目录与读取方法见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
+<p>点击 <strong>保存配置</strong>，然后点击 <strong>运行仿真</strong>。</p>
+<figure class="annotated-shot">
+<a class="shot-crop simulation-crop" href="_static/screenshots/simulation.png" aria-label="打开完整仿真控制台截图">
+<img src="_static/screenshots/simulation.png" alt="仿真控制台的参数与运行按钮，编号对应下方操作说明">
+<span class="shot-pin" style="left:2%;top:12%">1</span><span class="shot-pin" style="left:22%;top:12%">2</span><span class="shot-pin" style="left:67%;top:12%">3</span><span class="shot-pin" style="left:29%;top:74%">4</span>
+</a><figcaption>① 城市；② 居民编号与时长；③ 两类模型；④ 保存配置并运行。截图用于定位控件，本例数值见上表。点击查看完整截图。</figcaption>
+</figure></section>
+<section id="id5">
+<h2>3. 确认运行正在推进<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p>运行日志会持续出现仿真日、居民行动等记录，轨迹随运行更新。若日志显示模型错误，先按 <a class="reference internal" href="models.html"><span class="std std-doc">连接问题</span></a> 修正模型配置。运行时长取决于模型响应、居民数量与日内时间点。</p>
+<p>完成后查看本次轨迹，再在居民详情中选择 1 号居民，核对其行动与记忆。Analytics 中选择同一次运行，查看状态变化。</p>
+</section>
+<section id="id6">
+<h2>4. 读取一个结果<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p>在工作区中运行下面的 Python 代码，打印当前本地配置指向的状态文件：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_config</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">build_config</span><span class="p">()</span>
+<span class="n">state_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"state_output_dir"</span><span class="p">])</span> <span class="o">/</span> <span class="s2">"agent_state_history.csv"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">state_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"状态文件已生成："</span><span class="p">,</span> <span class="n">state_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>将打印的路径作为 <a class="reference internal" href="results.html#read-one-result"><span class="std std-ref">结果分析脚本</span></a> 的输入。脚本会输出 1 号居民的压力记录并保存一张曲线图。模型生成的行动和数值每次可能不同；文件存在、字段正确并有对应居民的记录，是本例的完成标志。</p>
+<p>团队服务器的文件位于服务器上；先在 Analytics 选择当前世界的运行，再由有文件访问权限的成员读取相应世界目录。</p>
+</section>
+<section id="id7">
+<h2>再运行一次会怎样<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>启用 <code class="docutils literal notranslate"><span class="pre">stateful</span></code> 时，普通运行会读取已有记忆与状态，并接续居民的仿真日期。<strong>重置并运行</strong>会先清理当前输出，再从初始输入启动。需要保留独立实验时创建新世界，或使用 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界对照</span></a>。数据关系见 <a class="reference internal" href="concepts.html"><span class="std std-doc">城市、世界与运行</span></a>。</p>
 </section>
 <section id="id8">
-<h2>使用命令行<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
-<p>命令行使用工作区中的运行配置，模型密钥按配置中的环境变量读取。配置完成后：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
-</pre></div>
-</div>
-<p>更多参数见 <a class="reference internal" href="cli.html"><span class="std std-doc">命令行界面</span></a>。</p>
-</section>
-<section id="python">
-<h2>使用 Python 访问结果<a class="headerlink" href="#python" title="链接到此标题。">¶</a></h2>
-<p>保持控制台服务运行，在另一个终端执行 Python：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">GAWorldClient</span>
-
-<span class="n">gw</span> <span class="o">=</span> <span class="n">GAWorldClient</span><span class="p">(</span><span class="s2">"http://127.0.0.1:8766"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">gw</span><span class="o">.</span><span class="n">run_status</span><span class="p">())</span>
-</pre></div>
-</div>
-<p>启用账号的部署先登录，操作见 <a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a>。</p>
-</section>
-<section id="id9">
-<h2>下一步<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<h2>下一步<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="residents.html"><span class="std std-doc">居民与 Agent Studio</span></a>：查看与编辑居民、记忆和技能。</p></li>
-<li><p><a class="reference internal" href="cities.html"><span class="std std-doc">城市与地图</span></a>：创建城市、选择地图和设置环境。</p></li>
-<li><p><a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a>：从研究问题组织对照实验。</p></li>
-<li><p><a class="reference internal" href="api/index.html"><span class="std std-doc">API 参考</span></a>：在脚本中读取结果和调用服务。</p></li>
+<li><p><a class="reference internal" href="skills-work.html"><span class="std std-doc">技能与真实工作</span></a>：把一个技能保存给实际居民。</p></li>
+<li><p><a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>：解释状态字段并绘制曲线。</p></li>
+<li><p><a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a>：用同一座城市组织研究。</p></li>
+<li><p><a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界与对照实验</span></a>：定义多个条件并阅读差异。</p></li>
 </ul>
 </section>
 </section>
@@ -447,14 +445,12 @@ gaworld<span class="w"> </span>dashboard
             <ul>
 <li><a class="reference internal" href="#">第一次仿真</a><ul>
 <li><a class="reference internal" href="#id2">前置条件</a></li>
-<li><a class="reference internal" href="#id3">确认当前世界</a></li>
-<li><a class="reference internal" href="#id4">配置模型</a></li>
-<li><a class="reference internal" href="#id5">选择城市与居民</a></li>
-<li><a class="reference internal" href="#id6">启动仿真</a></li>
-<li><a class="reference internal" href="#id7">查看结果</a></li>
-<li><a class="reference internal" href="#id8">使用命令行</a></li>
-<li><a class="reference internal" href="#python">使用 Python 访问结果</a></li>
-<li><a class="reference internal" href="#id9">下一步</a></li>
+<li><a class="reference internal" href="#id3">1. 创建教学城市</a></li>
+<li><a class="reference internal" href="#id4">2. 设置一次运行</a></li>
+<li><a class="reference internal" href="#id5">3. 确认运行正在推进</a></li>
+<li><a class="reference internal" href="#id6">4. 读取一个结果</a></li>
+<li><a class="reference internal" href="#id7">再运行一次会怎样</a></li>
+<li><a class="reference internal" href="#id8">下一步</a></li>
 </ul>
 </li>
 </ul>

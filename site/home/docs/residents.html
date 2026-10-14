@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -287,12 +287,9 @@
           <section id="agent-studio">
 <h1>居民与 Agent Studio<a class="headerlink" href="#agent-studio" title="链接到此标题。">¶</a></h1>
 <p>GAWorld 中的居民包含身份、人格、状态、日程、记忆和社会关系。你可以从城市数据创建居民，也可以导入已有数据，并在运行后回查个体经历。</p>
+<p>准备已有城市或当前世界，选择手动编辑、批量导入或从公开资料创建人物；修改完成后把居民加入一次短运行，查看其实际表现。</p>
 <section id="id1">
-<h2>功能与准备<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h2>
-<p>本章用于建立、检查和修改参与仿真的居民。准备已有城市或当前世界，选择手动编辑、批量导入或从公开资料创建人物；修改完成后把居民加入一次短运行，查看其实际表现。</p>
-</section>
-<section id="id2">
-<h2>查看与编辑居民<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<h2>查看与编辑居民<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h2>
 <ol class="arabic simple">
 <li><p>在控制台确认当前世界和城市。</p></li>
 <li><p>打开 <strong>Agent Studio</strong>，选择一位居民。</p></li>
@@ -308,8 +305,8 @@
 </figcaption>
 </figure>
 </section>
-<section id="id3">
-<h2>人物数据<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id2">
+<h2>人物数据<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -343,13 +340,13 @@
 </table>
 </div>
 </section>
-<section id="id4">
-<h2>批量导入<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>批量导入<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>在 Agent Studio 选择 <strong>批量导入</strong>，上传 CSV、XLSX 或 JSONL 数据。检查字段映射、匿名化与扩容选项后导入，再抽查居民档案和初始状态。</p>
 <p>导入前保留原始数据与字段说明，便于核对居民构成。</p>
 </section>
-<section id="id5">
-<h2>从公开资料创建人物<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>从公开资料创建人物<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>在 Agent Studio 点击 <strong>＋ 从真人蒸馏</strong>，输入姓名或网址。系统检索资料并生成身份、状态、人格与思维框架。检查画像中的资料来源与证据强度，复核后选择 <strong>填入表单</strong> 继续编辑，或 <strong>直接部署为居民</strong>。</p>
 <p>画像及来源保存在 <code class="docutils literal notranslate"><span class="pre">output/personas/</span></code>。详细字段见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/PERSONA_DISTILL_TUTORIAL.md">真人蒸馏说明</a>。</p>
 </section>
@@ -367,21 +364,25 @@
 </div>
 <p>该示例展示数据访问。完整居民由城市输入与仿真初始化流程构建。</p>
 </section>
-<section id="id6">
-<h2>记忆与日程<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>记忆与日程<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>运行后进入居民详情，查看状态、记忆与行动。记忆、日程和位置等数据保存在当前输出目录中；路径见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
 </section>
-<section id="id7">
-<h2>挂载技能<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>挂载技能<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>全局技能需要挂载到居民，私有技能按居民目录读取。文件格式和操作见 <a class="reference internal" href="skills-work.html"><span class="std std-doc">技能与真实工作</span></a>。</p>
 </section>
-<section id="id8">
-<h2>访谈与群体比较<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>访谈与群体比较<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>在 <a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a> 中对居民提问，或跨城市选择受访者比较回答。群体采访支持个体居民与 cohort 群体智能体，结果分别保留受访者数量与代表人数。</p>
 </section>
-<section id="id9">
-<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>完成后检查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>保存后重新打开同一居民，核对身份、状态和技能；批量导入后抽查几位居民的字段。运行后在居民详情查看新产生的记忆和行动，确认当前世界与所编辑的居民一致。</p>
+</section>
+<section id="id9">
+<h2>以修改居民档案为例<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<p>在 Agent Studio 修改居民档案并保存后，<code class="docutils literal notranslate"><span class="pre">residents.py</span></code> 通过 <code class="docutils literal notranslate"><span class="pre">world_paths</span></code> 找到当前世界的输入文件并写回。重新打开该居民可检查保存结果；下一次启动时 <code class="docutils literal notranslate"><span class="pre">agents_loader.py</span></code> 读取输入形成运行对象。已经运行的居民对象、输入档案和持久记忆分别承担不同作用，修改初始档案后应在新运行中检查其效果。</p>
 </section>
 <section id="id10">
 <h2>代码结构与执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
@@ -502,16 +503,16 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">居民与 Agent Studio</a><ul>
-<li><a class="reference internal" href="#id1">功能与准备</a></li>
-<li><a class="reference internal" href="#id2">查看与编辑居民</a></li>
-<li><a class="reference internal" href="#id3">人物数据</a></li>
-<li><a class="reference internal" href="#id4">批量导入</a></li>
-<li><a class="reference internal" href="#id5">从公开资料创建人物</a></li>
+<li><a class="reference internal" href="#id1">查看与编辑居民</a></li>
+<li><a class="reference internal" href="#id2">人物数据</a></li>
+<li><a class="reference internal" href="#id3">批量导入</a></li>
+<li><a class="reference internal" href="#id4">从公开资料创建人物</a></li>
 <li><a class="reference internal" href="#python">Python 数据接口</a></li>
-<li><a class="reference internal" href="#id6">记忆与日程</a></li>
-<li><a class="reference internal" href="#id7">挂载技能</a></li>
-<li><a class="reference internal" href="#id8">访谈与群体比较</a></li>
-<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id5">记忆与日程</a></li>
+<li><a class="reference internal" href="#id6">挂载技能</a></li>
+<li><a class="reference internal" href="#id7">访谈与群体比较</a></li>
+<li><a class="reference internal" href="#id8">完成后检查</a></li>
+<li><a class="reference internal" href="#id9">以修改居民档案为例</a></li>
 <li><a class="reference internal" href="#id10">代码结构与执行流程</a><ul>
 <li><a class="reference internal" href="#id11">模块分工</a></li>
 <li><a class="reference internal" href="#id12">执行流程</a></li>

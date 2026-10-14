@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -286,18 +286,15 @@
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>技能与真实工作<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>Skill 文件说明一种能力的适用场景和操作步骤。GAWorld 根据技能描述与触发词选择相关内容，再加入居民的感知或工作说明。</p>
+<p>Skill 文件说明一种能力的适用场景和操作步骤。感知阶段读取居民已挂载或私有的技能；工作路由再根据任务文本、描述与触发词选择相关技能，加入工作说明。</p>
+<p>本例把会议记录技能保存给当前本地城市的 1 号居民。先完成 <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a>，并在同一工作区中操作。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于给居民提供可复用的任务知识，并让工作活动生成可查看的文件。先创建或选择居民，准备一份 Skill；需要实际产物时，再启用真实工作并配置可用模型。</p>
-</section>
-<section id="id3">
-<h2>技能如何参与行动<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<h2>技能如何参与行动<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p>全局技能放在 <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code>，挂载后供居民使用。私有技能保存在当前输出目录的 <code class="docutils literal notranslate"><span class="pre">memory/agent_&lt;id&gt;_skills/</span></code>，按居民读取；同 ID 时使用私有版本。</p>
 <p><code class="docutils literal notranslate"><span class="pre">skills.inject_into_cognition</span></code> 控制感知提示词中的技能内容，<code class="docutils literal notranslate"><span class="pre">skills.inject_into_work_brief</span></code> 控制工作任务说明中的技能内容。</p>
 </section>
-<section id="id4">
-<h2>创建第一个技能<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>创建第一个技能<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>在工作区的 <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code> 中创建 <code class="docutils literal notranslate"><span class="pre">meeting-notes.md</span></code>：</p>
 <div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span>---
 name: 会议记录
@@ -350,41 +347,41 @@ source: global
 </div>
 <p>解析器支持平铺字段和单层列表。正文使用普通 Markdown，按实际操作顺序写步骤。</p>
 </section>
-<section id="id5">
-<h2>挂载与检查<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillRegistry</span>
+<section id="id4">
+<h2>将技能保存给实际居民<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<p>本例把刚创建的全局技能保存为居民的私有副本。私有技能由注册表按居民编号自动读取，适合在工作区中直接配置。</p>
+<p>先在 Agent Studio 确认目标居民编号，再在工作区执行：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillRegistry</span>
 
-<span class="n">registry</span> <span class="o">=</span> <span class="n">SkillRegistry</span><span class="p">()</span>
-<span class="n">registry</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+<span class="n">agent_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">build_config</span><span class="p">()</span>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">SkillRegistry</span><span class="p">(</span><span class="n">memory_dir</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"memory_dir"</span><span class="p">])</span>
 <span class="n">skill</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"meeting-notes"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">skill</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">skill</span> <span class="k">else</span> <span class="s2">"未找到技能"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">skill</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"请先创建 data/skills/meeting-notes.md"</span><span class="p">)</span>
+<span class="n">registry</span><span class="o">.</span><span class="n">save_private</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">skill</span><span class="p">))</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">memory_dir</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"agent_</span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">_skills/meeting-notes.md"</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"已保存："</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+
+<span class="c1"># 用一个新注册表从文件重新读取，验证保存结果。</span>
+<span class="n">check</span> <span class="o">=</span> <span class="n">SkillRegistry</span><span class="p">(</span><span class="n">memory_dir</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"memory_dir"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">item</span><span class="o">.</span><span class="n">skill_id</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">check</span><span class="o">.</span><span class="n">list_for_agent</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)])</span>
 </pre></div>
 </div>
-<p>确认文件被读取后，挂载到参与运行的居民：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="mi">31</span><span class="p">,</span> <span class="s2">"skill_ids"</span><span class="p">:</span> <span class="p">[]}</span>
-<span class="n">registry</span><span class="o">.</span><span class="n">attach_to_agent</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="s2">"meeting-notes"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">list_for_agent</span><span class="p">(</span><span class="n">agent</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>在实际运行中，对初始化后的居民数据执行挂载，并保留该居民的技能配置。</p>
+<p>最后一行应包含 <code class="docutils literal notranslate"><span class="pre">meeting-notes</span></code>。重新打开 Agent Studio 的该居民技能页，可以查看私有技能。</p>
+<section id="id5">
+<h3>在下一次运行中使用<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
+<p>确认 <code class="docutils literal notranslate"><span class="pre">skills.inject_into_cognition</span></code> 已启用，使用同一城市、同一居民启动普通运行。<code class="docutils literal notranslate"><span class="pre">SkillsPlugin</span></code> 会在感知阶段读取其私有技能；<code class="docutils literal notranslate"><span class="pre">skills.max_per_prompt</span></code> 控制一次注入的数量。需要观察会议记录相关行为时，在居民的任务或日程中安排对应活动，再检查行动日志。</p>
+<p>文件保存和读取是技能接入的检查点；实际行动取决于居民当时的任务、日程与模型决策。真实工作产物按本页后面的工作队列流程检查。</p>
 </section>
 <section id="id6">
-<h2>创建私有技能<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">Skill</span><span class="p">,</span> <span class="n">SkillRegistry</span>
-
-<span class="n">SkillRegistry</span><span class="p">()</span><span class="o">.</span><span class="n">save_private</span><span class="p">(</span>
-    <span class="n">agent_id</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span>
-    <span class="n">skill</span><span class="o">=</span><span class="n">Skill</span><span class="p">(</span>
-        <span class="n">skill_id</span><span class="o">=</span><span class="s2">"meeting-notes"</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"会议记录"</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">"按结论与行动项整理讨论"</span><span class="p">,</span>
-        <span class="n">body</span><span class="o">=</span><span class="s2">"先写结论，再记录负责人、时间和待确认事项。"</span><span class="p">,</span>
-        <span class="n">triggers</span><span class="o">=</span><span class="p">[</span><span class="s2">"会议"</span><span class="p">,</span> <span class="s2">"讨论"</span><span class="p">],</span>
-    <span class="p">),</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>私有技能由注册表按居民读取，无需另行挂载。</p>
+<h3>团队世界与全局技能挂载<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h3>
+<p>团队世界的私有技能保存在服务器的 <code class="docutils literal notranslate"><span class="pre">output/worlds/&lt;世界编号&gt;/memory/agent_&lt;居民编号&gt;_skills/</span></code>。有服务器文件权限的维护者可将上例 <code class="docutils literal notranslate"><span class="pre">memory_dir</span></code> 显式设为该世界的 <code class="docutils literal notranslate"><span class="pre">output/worlds/&lt;世界编号&gt;/memory/</span></code> 目录，再保存技能；网页会话中的世界选择与本地 Python 配置分别管理。</p>
+<p><code class="docutils literal notranslate"><span class="pre">attach_to_agent(agent,</span> <span class="pre">skill_id)</span></code> 用于扩展运行代码：它修改已经初始化的居民对象的 <code class="docutils literal notranslate"><span class="pre">skill_ids</span></code>，作用于该次运行。需要每次启动都挂载全局技能时，可在插件的居民初始化钩子中对实际居民执行挂载，参见 <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a>。本页的私有副本流程通过文件保存配置。</p>
+</section>
 </section>
 <section id="id7">
 <h2>编写建议<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
@@ -404,7 +401,7 @@ source: global
 </section>
 <section id="id10">
 <h3>技能没有进入提示词<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
-<p>检查居民是否挂载了全局技能，以及 <code class="docutils literal notranslate"><span class="pre">inject_into_cognition</span></code> 或 <code class="docutils literal notranslate"><span class="pre">inject_into_work_brief</span></code> 是否启用。</p>
+<p>检查实际运行的记忆目录是否包含该居民的私有文件，或运行对象是否已挂载全局技能；再核对 <code class="docutils literal notranslate"><span class="pre">inject_into_cognition</span></code>、<code class="docutils literal notranslate"><span class="pre">inject_into_work_brief</span></code> 和 <code class="docutils literal notranslate"><span class="pre">max_per_prompt</span></code>。</p>
 </section>
 <section id="id11">
 <h3>私有技能与全局技能同名<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
@@ -460,7 +457,7 @@ source: global
 </section>
 <section id="id15">
 <h2>完成后检查<a class="headerlink" href="#id15" title="链接到此标题。">¶</a></h2>
-<p>先确认注册表能找到技能、居民能读取挂载内容，再启动短运行。真实工作启用后，结合 <code class="docutils literal notranslate"><span class="pre">work/queue.jsonl</span></code> 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。</p>
+<p>先用新注册表从实际记忆目录读回私有技能，再启动短运行。真实工作启用后，结合 <code class="docutils literal notranslate"><span class="pre">work/queue.jsonl</span></code> 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。</p>
 </section>
 <section id="id16">
 <h2>代码结构与执行流程<a class="headerlink" href="#id16" title="链接到此标题。">¶</a></h2>
@@ -576,12 +573,14 @@ source: global
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">技能与真实工作</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">技能如何参与行动</a></li>
-<li><a class="reference internal" href="#id4">创建第一个技能</a></li>
+<li><a class="reference internal" href="#id2">技能如何参与行动</a></li>
+<li><a class="reference internal" href="#id3">创建第一个技能</a></li>
 <li><a class="reference internal" href="#frontmatter">Frontmatter 字段</a></li>
-<li><a class="reference internal" href="#id5">挂载与检查</a></li>
-<li><a class="reference internal" href="#id6">创建私有技能</a></li>
+<li><a class="reference internal" href="#id4">将技能保存给实际居民</a><ul>
+<li><a class="reference internal" href="#id5">在下一次运行中使用</a></li>
+<li><a class="reference internal" href="#id6">团队世界与全局技能挂载</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#id7">编写建议</a></li>
 <li><a class="reference internal" href="#id8">常见问题</a><ul>
 <li><a class="reference internal" href="#id9">找不到技能</a></li>

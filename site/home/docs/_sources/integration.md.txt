@@ -31,6 +31,8 @@ from gaworld.client import GAWorldClient
 gw = GAWorldClient("http://127.0.0.1:8766")
 gw.login(input("账号："), getpass.getpass("密码："))
 print(gw.worlds())
+# 从返回列表选择自己有权限访问的世界 ID。
+gw.use_world("替换为世界 ID")
 ```
 
 令牌部署可设置 `GAWORLD_DASHBOARD_TOKEN`，客户端会自动读取。
@@ -54,7 +56,7 @@ print(residents)
 gaworld interview --agent-id 31 --question "你今天为什么选择这个行动？"
 ```
 
-将居民 ID 替换为当前世界中的对象，并保存问题、模型与回答以便比较。
+将居民 ID 替换为当前本地配置中的对象，并保存问题、模型与回答以便比较。
 
 ## 施加干预
 

@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -287,20 +287,17 @@
           <section id="id1">
 <h1>访谈与群体采访<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>访谈用于查看居民如何回答问题。单人访谈便于追问某位居民的经历；群体采访使用同一套问题访问多位居民，并汇总选项与群体差异。</p>
+<p>准备受访城市、问题和可用模型；需要比较选项分布时，先明确题型和选项。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于收集单个居民的回答，或用同一套问题比较多个居民与群体。准备受访城市、问题和可用模型；需要比较选项分布时，先明确题型和选项。</p>
-</section>
-<section id="id3">
-<h2>访问一位居民<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<h2>访问一位居民<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p>在 Agent Studio 中打开居民的采访入口，输入问题并查看回答。命令行也支持单人访谈：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>interview<span class="w"> </span>--agent-id<span class="w"> </span><span class="m">31</span><span class="w"> </span>--question<span class="w"> </span><span class="s2">"今天有哪些事情影响了你的心情？"</span>
 </pre></div>
 </div>
-<p>将 <code class="docutils literal notranslate"><span class="pre">31</span></code> 替换为当前运行中的居民 ID。保存问题原文、模型与回答，便于后续比较。</p>
+<p>将 <code class="docutils literal notranslate"><span class="pre">31</span></code> 替换为当前本地配置中的居民 ID；命令行使用本地数据，网页访谈使用当前会话的世界。保存问题原文、模型与回答，便于后续比较。</p>
 </section>
-<section id="id4">
-<h2>发起群体采访<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>发起群体采访<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <ol class="arabic simple">
 <li><p>打开控制台的 <strong>群体采访</strong>。</p></li>
 <li><p>选择城市，勾选个体居民或 cohort 群体智能体。</p></li>
@@ -317,8 +314,8 @@
 </figcaption>
 </figure>
 </section>
-<section id="id5">
-<h2>选择题型与材料<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>选择题型与材料<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -341,24 +338,28 @@
 </div>
 <p>问题可附网址或图片。网址正文会统一提取后提供给受访者；图片由支持视觉输入的模型处理。结果中的材料降级标记说明实际使用了哪些输入。</p>
 </section>
-<section id="id6">
-<h2>使用群体智能体<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>使用群体智能体<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>cohort 按年龄段、户籍、性别或片区等属性组织居民，一次回答代表该群体。选择维度后检查分组与成员，再勾选受访对象。</p>
 <p>结果同时显示 <strong>受访者数</strong> 和 <strong>代表人数</strong>。例如一个代表 8 位居民的 cohort 产生一份回答，其代表人数为 8；分析时按界面给出的权重与有效回答口径读取统计。</p>
 </section>
-<section id="id7">
-<h2>继续追问<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>继续追问<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>在结果页点击 <strong>继续追问</strong>，添加下一轮问题。每位受访者会看到自己在该会话中的前序问答。会话上下文保存于采访记录，群体采访保持居民长期记忆原状。</p>
 </section>
-<section id="id8">
-<h2>阅读与导出<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>阅读与导出<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>先查看每题的有效回答与解析状态，再比较按城市、年龄段或户籍划分的分布。选择题中的未解析回答保留原文，并单独标记。</p>
 <p>点击 <strong>下载完整 Markdown</strong>，获得采访信息、问题、材料、汇总统计、分组结果与逐人原话。会话记录保存在 <code class="docutils literal notranslate"><span class="pre">output/interviews/&lt;session_id&gt;/</span></code>。</p>
 <p>批量调用与会话文件说明见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_INTERVIEW_TUTORIAL.md">群体采访说明</a>。</p>
 </section>
-<section id="id9">
-<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>完成后检查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>采访完成后核对受访者数、代表人数和有效回答数，再查看逐人原话与分组统计。追问时确认使用同一会话，导出 Markdown 后检查问题、材料与回答是否齐全。</p>
+</section>
+<section id="id9">
+<h2>一份选择题如何成为统计结果<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<p>例如向教程小城居民询问“你更愿意步行还是乘公交？”，先在页面定义两个选项，再选择受访者。<code class="docutils literal notranslate"><span class="pre">roster.py</span></code> 构造名单，<code class="docutils literal notranslate"><span class="pre">session.py</span></code> 按城市分派，<code class="docutils literal notranslate"><span class="pre">runner.py</span></code> 保存逐人回答；<code class="docutils literal notranslate"><span class="pre">aggregate.py</span></code> 解析选项并统计有效回答，<code class="docutils literal notranslate"><span class="pre">report.py</span></code> 输出 Markdown。检查统计时从某一选项计数回到逐人原话，再核对 cohort 的代表人数。</p>
 </section>
 <section id="id10">
 <h2>代码结构与执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
@@ -474,14 +475,14 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">访谈与群体采访</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">访问一位居民</a></li>
-<li><a class="reference internal" href="#id4">发起群体采访</a></li>
-<li><a class="reference internal" href="#id5">选择题型与材料</a></li>
-<li><a class="reference internal" href="#id6">使用群体智能体</a></li>
-<li><a class="reference internal" href="#id7">继续追问</a></li>
-<li><a class="reference internal" href="#id8">阅读与导出</a></li>
-<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id2">访问一位居民</a></li>
+<li><a class="reference internal" href="#id3">发起群体采访</a></li>
+<li><a class="reference internal" href="#id4">选择题型与材料</a></li>
+<li><a class="reference internal" href="#id5">使用群体智能体</a></li>
+<li><a class="reference internal" href="#id6">继续追问</a></li>
+<li><a class="reference internal" href="#id7">阅读与导出</a></li>
+<li><a class="reference internal" href="#id8">完成后检查</a></li>
+<li><a class="reference internal" href="#id9">一份选择题如何成为统计结果</a></li>
 <li><a class="reference internal" href="#id10">代码结构与执行流程</a><ul>
 <li><a class="reference internal" href="#id11">模块分工</a></li>
 <li><a class="reference internal" href="#id12">执行流程</a></li>

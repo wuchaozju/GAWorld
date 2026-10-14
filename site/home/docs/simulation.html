@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -287,12 +287,9 @@
           <section id="id1">
 <h1>仿真运行与时间尺度<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>一次仿真使用选定的居民、城市与模型配置，推进居民行动，并记录状态、记忆、关系和环境变化。</p>
+<p>开始前完成模型配置，确认城市、当前世界和参与居民；先用少量居民验证流程。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于启动和观察居民仿真，并按研究时长选择日内行动、按天快进或月年尺度。开始前完成模型配置，确认城市、当前世界和参与居民；先用少量居民验证流程。</p>
-</section>
-<section id="id3">
-<h2>设置运行范围<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<h2>设置运行范围<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p>在仿真页面选择居民，设置时长与模型，然后保存配置。先完成一次短运行，确认居民、环境和模型输出符合实验设置，再增加运行规模。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -331,13 +328,13 @@
 </figcaption>
 </figure>
 </section>
-<section id="id4">
-<h2>启动、观察与停止<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>启动、观察与停止<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>点击启动后，在日志中查看运行进度。轨迹回放展示居民位置与移动，居民详情展示状态、记忆和关系。</p>
 <p>需要结束当前运行时，使用控制台的停止操作。查看最后的日志与已保存结果，再决定下一次运行的参数。</p>
 </section>
-<section id="id5">
-<h2>长时段快进<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>长时段快进<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>研究长期变化时，在工具栏开启 <strong>长时段快进</strong>，选择步长单位和时长。快进以每位居民的阶段简报推进状态、目标和关系。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -362,10 +359,10 @@
 </tbody>
 </table>
 </div>
-<p>时间尺度决定输出的细节层次。对照实验中的各组使用相同的步长与快进设置。</p>
+<p>时间尺度决定输出的细节层次。对照实验中的各组使用相同的步长与快进设置。平行世界的 <code class="docutils literal notranslate"><span class="pre">fast</span></code> 则控制确定性认知与每日总结，具体差异见 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">快速模式与长时段快进</span></a>。</p>
 </section>
-<section id="id6">
-<h2>命令行运行<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>命令行运行<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>完成模型配置并选定城市后，在工作区执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
 </pre></div>
@@ -377,8 +374,8 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </pre></div>
 </div>
 </section>
-<section id="id7">
-<h2>群体模式<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>群体模式<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>需要研究人口分布时，可以按属性将居民组织为 cohort（群体），再选择重点个体进行更细的模拟。群体模式保留群体均值与离散度；个体的完整行动轨迹使用个体模式查看。</p>
 <p>独立群体模拟可先用无模型模式检查流程：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.group<span class="w"> </span>--size<span class="w"> </span><span class="m">500</span><span class="w"> </span>--days<span class="w"> </span><span class="m">7</span><span class="w"> </span>--no-llm
@@ -386,17 +383,21 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </div>
 <p>群体划分、网络耦合和近似误差的验证方法见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_SIMULATION_TUTORIAL.md">群体模拟说明</a>。</p>
 </section>
-<section id="id8">
-<h2>运行中施加干预<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>运行中施加干预<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>通过 <a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a> 可以向当前运行提交干预。例如调整居民状态后，在日志与状态历史中检查其后续变化。做条件比较时，使用 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> 保存共同基线和各组设置。</p>
 </section>
-<section id="id9">
-<h2>运行结束后<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>运行结束后<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <p>在 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a> 中定位日志、轨迹与状态时间序列；在 <a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a> 中查看居民的回答。</p>
 </section>
-<section id="id10">
-<h2>完成后检查<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
 <p>在日志中确认居民数量、时间尺度和进度。结束后查看本次运行的轨迹与状态文件；常规模式重点查看行动过程，快进模式重点查看阶段简报和状态变化。</p>
+</section>
+<section id="id10">
+<h2>从点击运行到第一条记录<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<p>保存表单后，<code class="docutils literal notranslate"><span class="pre">runs.start_simulation()</span></code> 读取当前配置并启动子进程；<code class="docutils literal notranslate"><span class="pre">run_simulation()</span></code> 加载居民、装配插件，再进入日内管线。居民一次行动完成后，状态与记忆模块更新数据，visualizer 保存可回放的帧。排查时依次看启动日志、居民编号、模型调用和输出目录，可以判断问题发生在配置、执行还是记录阶段。</p>
 </section>
 <section id="id11">
 <h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
@@ -509,15 +510,15 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">仿真运行与时间尺度</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">设置运行范围</a></li>
-<li><a class="reference internal" href="#id4">启动、观察与停止</a></li>
-<li><a class="reference internal" href="#id5">长时段快进</a></li>
-<li><a class="reference internal" href="#id6">命令行运行</a></li>
-<li><a class="reference internal" href="#id7">群体模式</a></li>
-<li><a class="reference internal" href="#id8">运行中施加干预</a></li>
-<li><a class="reference internal" href="#id9">运行结束后</a></li>
-<li><a class="reference internal" href="#id10">完成后检查</a></li>
+<li><a class="reference internal" href="#id2">设置运行范围</a></li>
+<li><a class="reference internal" href="#id3">启动、观察与停止</a></li>
+<li><a class="reference internal" href="#id4">长时段快进</a></li>
+<li><a class="reference internal" href="#id5">命令行运行</a></li>
+<li><a class="reference internal" href="#id6">群体模式</a></li>
+<li><a class="reference internal" href="#id7">运行中施加干预</a></li>
+<li><a class="reference internal" href="#id8">运行结束后</a></li>
+<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id10">从点击运行到第一条记录</a></li>
 <li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
 <li><a class="reference internal" href="#id12">模块分工</a></li>
 <li><a class="reference internal" href="#id13">执行流程</a></li>

@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -286,133 +286,195 @@
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>模型与运行配置<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>GAWorld 通过模型后端调用语言模型。管理员登记服务商与模型，用户保存自己的 API Key，并为自己的世界选择默认模型和日程模型。</p>
+<p>模型配置决定居民使用哪个服务生成日程、行动和回答。先按自己的使用方式配置密钥，再选择默认模型与日程模型。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于连接模型服务、选择居民行动与日程使用的模型，并保存运行参数。开始前准备好服务商的协议、Base URL、模型 ID 和 API Key；团队部署中的后端由管理员维护，成员填写个人密钥。</p>
+<h2>选择配置方式<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>使用方式</p></th>
+<th class="head"><p>密钥放在哪里</p></th>
+<th class="head"><p>配置作用于哪里</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>本地单人控制台</p></td>
+<td><p>启动控制台的终端环境变量</p></td>
+<td><p>工作区的模型后端与运行配置</p></td>
+</tr>
+<tr class="row-odd"><td><p>团队服务器</p></td>
+<td><p>登录后在“我的 API Key”保存</p></td>
+<td><p>个人密钥；仿真参数保存在当前世界</p></td>
+</tr>
+<tr class="row-even"><td><p>本地命令行</p></td>
+<td><p>执行命令的终端环境变量</p></td>
+<td><p>当前工作区配置及命令行覆盖项</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>“我的 API Key”在服务器已配置 <code class="docutils literal notranslate"><span class="pre">GAWORLD_LLM_SECRETS_PATH</span></code>、且用户登录后显示。本地单人模式直接按下面的环境变量方式接入；命令行独立读取环境与配置。</p>
 </section>
-<section id="id3">
-<h2>连接模型服务<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<ol class="arabic simple">
-<li><p>使用自己的账号登录控制台。</p></li>
-<li><p>打开 <strong>配置 → 模型</strong>，找到要使用的后端。</p></li>
-<li><p>在 <strong>我的 API Key</strong> 中填写该服务商的密钥并保存。</p></li>
-<li><p>点击测试连通性，确认一次短调用能够完成。</p></li>
-<li><p>回到仿真页面，设置默认模型和日程模型，保存配置。</p></li>
-</ol>
-<p>首次配置完成后，运行少量居民、较短时长的仿真，检查日志和模型输出。</p>
-</section>
+<section id="local-model">
+<span id="id3"></span><h2>本地单人：接入一个模型<a class="headerlink" href="#local-model" title="链接到此标题。">¶</a></h2>
+<p>本例使用一个 OpenAI 兼容服务。准备服务商提供的 <strong>Base URL、模型 ID、API Key</strong>，给后端取名 <code class="docutils literal notranslate"><span class="pre">tutorial</span></code>。</p>
 <section id="id4">
-<h2>配置字段<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<h3>1. 在终端设置密钥并启动控制台<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
+<p>macOS / Linux：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">GAWORLD_TUTORIAL_KEY</span><span class="o">=</span><span class="s2">"替换为你的 API Key"</span>
+gaworld<span class="w"> </span>dashboard
+</pre></div>
+</div>
+<p>Windows PowerShell：</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nv">$env:GAWORLD_TUTORIAL_KEY</span><span class="p">=</span><span class="s2">"替换为你的 API Key"</span>
+<span class="n">gaworld</span> <span class="n">dashboard</span>
+</pre></div>
+</div>
+<p>环境变量属于当前终端及其启动的进程。已经运行的控制台需要重新启动，才能读取后来设置的变量。</p>
+</section>
+<section id="id5">
+<h3>2. 新增后端<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
+<p>打开控制台的 <strong>配置 → 模型 → 新增后端</strong>，填写：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>字段</p></th>
-<th class="head"><p>填写内容</p></th>
+<th class="head"><p>本例填写</p></th>
+<th class="head"><p>作用</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>服务商 / 模型后端</p></td>
-<td><p>控制台中已登记的模型配置</p></td>
+<tr class="row-even"><td><p>后端名称</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tutorial</span></code></p></td>
+<td><p>GAWorld 内部选择这个后端的名称</p></td>
 </tr>
 <tr class="row-odd"><td><p>协议</p></td>
-<td><p>服务商提供的接口格式，例如 OpenAI 兼容或 Anthropic 兼容协议</p></td>
+<td><p>OpenAI 兼容</p></td>
+<td><p>与服务商提供的协议一致</p></td>
 </tr>
 <tr class="row-even"><td><p>Base URL</p></td>
-<td><p>服务商的完整 API 基础地址</p></td>
+<td><p>服务商给出的完整 API 基础地址</p></td>
+<td><p>请求发送到此地址</p></td>
 </tr>
 <tr class="row-odd"><td><p>模型 ID</p></td>
-<td><p>服务商接受的模型名称</p></td>
+<td><p>服务商支持、且账号可调用的模型名称</p></td>
+<td><p>传给服务商的模型标识</p></td>
 </tr>
-<tr class="row-even"><td><p>我的 API Key</p></td>
-<td><p>当前账号在该服务商的 API 密钥</p></td>
-</tr>
-<tr class="row-odd"><td><p>默认模型</p></td>
-<td><p>当前世界中默认使用的模型后端</p></td>
-</tr>
-<tr class="row-even"><td><p>日程模型</p></td>
-<td><p>当前世界中用于日程生成的模型后端</p></td>
+<tr class="row-even"><td><p>密钥环境变量</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GAWORLD_TUTORIAL_KEY</span></code></p></td>
+<td><p>填变量名；变量的值已在终端设置</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>OpenAI 兼容协议描述的是接口格式；密钥由你选择的服务商提供。相同账号、协议与 Base URL 下的模型预设可以复用已保存的密钥。</p>
-</section>
-<section id="id5">
-<h2>添加模型后端<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<p>管理员在 <strong>配置 → 模型 → 新增后端</strong> 中填写服务商地址、协议和模型 ID。保存后，用户可以在列表中选择该后端，并填写个人密钥。</p>
-<p>本地 Ollama 也可以作为模型后端。管理员需要使用部署环境可访问的 Ollama 地址，并确认对应模型已加载。</p>
+<p>保存后点击测试。测试成功表示当前后端可以完成一次短调用。</p>
 </section>
 <section id="id6">
-<h2>选择运行参数<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>模型的并发、超时、输出长度和思考模式都会影响一次仿真的调用过程。较长上下文或本地模型首次加载时，可以适当增加超时。</p>
-<p>进行对照实验时，把模型 ID、服务商、思考模式和运行配置一起保存，便于比较与复现。</p>
+<h3>3. 选择默认模型与日程模型<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h3>
+<p>回到仿真页面，把 <strong>默认 LLM</strong> 与 <strong>日程 LLM</strong> 都设为 <code class="docutils literal notranslate"><span class="pre">tutorial</span></code>，点击 <strong>保存配置</strong>。重新打开配置，确认两个选择仍为 <code class="docutils literal notranslate"><span class="pre">tutorial</span></code>，然后进行 <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a>。</p>
+<p>Ollama 后端使用其服务地址与已加载的模型名称，可直接测试，无需填写云服务密钥。Anthropic 兼容服务选择对应协议，并使用该服务商自己的地址和密钥。</p>
 </section>
-<section id="id7">
-<h2>排查连接问题<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+</section>
+<section id="team-model">
+<span id="id7"></span><h2>团队服务器：保存个人密钥<a class="headerlink" href="#team-model" title="链接到此标题。">¶</a></h2>
+<ol class="arabic simple">
+<li><p>用自己的账号登录，打开 <strong>配置 → 模型</strong>。</p></li>
+<li><p>在管理员登记的后端中选择服务商。</p></li>
+<li><p>在 <strong>我的 API Key</strong> 保存个人密钥，再测试连接。</p></li>
+<li><p>切换到自己的世界，设置默认模型与日程模型，保存运行配置。</p></li>
+</ol>
+<p>同一账号、协议与完整 Base URL 下的预设可以复用个人密钥。管理员维护可选后端和密钥存储位置，部署步骤见 <a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署</span></a>。</p>
+</section>
+<section id="cli-model">
+<span id="id8"></span><h2>命令行：使用同一后端<a class="headerlink" href="#cli-model" title="链接到此标题。">¶</a></h2>
+<p>在刚才设置了 <code class="docutils literal notranslate"><span class="pre">GAWORLD_TUTORIAL_KEY</span></code> 的终端和工作区中运行：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+<p>命令行使用工作区的 <code class="docutils literal notranslate"><span class="pre">dashboard_config.json</span></code> 与运行覆盖项。网页选中的团队世界通过网页会话传递；终端运行应明确选择自己的工作区与数据配置。需要操作服务器上的已有世界时，使用 <a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a>。</p>
+<p>可在工作区中检查路由和密钥变量名：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_config</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">build_config</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"llm"</span><span class="p">][</span><span class="s2">"routing"</span><span class="p">][</span><span class="s2">"default"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"llm"</span><span class="p">][</span><span class="s2">"routing"</span><span class="p">][</span><span class="s2">"tasks"</span><span class="p">][</span><span class="s2">"schedule"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"llm"</span><span class="p">][</span><span class="s2">"providers"</span><span class="p">][</span><span class="s2">"tutorial"</span><span class="p">][</span><span class="s2">"api_key_env"</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>预期依次输出 <code class="docutils literal notranslate"><span class="pre">tutorial</span></code>、<code class="docutils literal notranslate"><span class="pre">tutorial</span></code>、<code class="docutils literal notranslate"><span class="pre">GAWORLD_TUTORIAL_KEY</span></code>。</p>
+</section>
+<section id="id9">
+<h2>参数保存与生效<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>设置</p></th>
+<th class="head"><p>保存或读取位置</p></th>
+<th class="head"><p>生效方式</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>模型后端、默认路由</p></td>
+<td><p>控制台配置覆盖文件</p></td>
+<td><p>保存后测试；新运行读取配置</p></td>
+</tr>
+<tr class="row-odd"><td><p>单人密钥</p></td>
+<td><p>启动进程的环境变量</p></td>
+<td><p>设置后启动控制台或 CLI</p></td>
+</tr>
+<tr class="row-even"><td><p>团队个人密钥</p></td>
+<td><p>服务器指定的个人密钥文件</p></td>
+<td><p>按账号和服务端点读取</p></td>
+</tr>
+<tr class="row-odd"><td><p>居民、时长、步长、种子</p></td>
+<td><p>当前世界或工作区的运行配置</p></td>
+<td><p>新运行按保存值启动</p></td>
+</tr>
+<tr class="row-even"><td><p>最终运行覆盖</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GAWORLD_CONFIG_OVERRIDES</span></code> JSON</p></td>
+<td><p>运行配置组装时最后合并</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>并发、超时与输出长度影响调用过程。对照实验中，各组采用相同的模型与调用设置。配置字段及来源可在配置页查看，完整配置通过 <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/config</span></code> 读取。</p>
+</section>
+<section id="id10">
+<h2>连接问题与处理<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>现象</p></th>
-<th class="head"><p>检查步骤</p></th>
+<th class="head"><p>检查位置与操作</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>提示缺少 API Key</p></td>
-<td><p>确认已登录正确账号，并为所选服务商保存密钥</p></td>
+<tr class="row-even"><td><p>本地没有“我的 API Key”</p></td>
+<td><p>按本页“本地单人”设置终端环境变量；该输入框属于账号密钥功能</p></td>
 </tr>
-<tr class="row-odd"><td><p>返回 401 或 403</p></td>
-<td><p>检查密钥是否有效、模型访问权限以及服务商 API 额度</p></td>
+<tr class="row-odd"><td><p>提示缺少密钥</p></td>
+<td><p>核对后端的 <code class="docutils literal notranslate"><span class="pre">api_key_env</span></code> 与终端变量名；重新启动读取该变量的进程</p></td>
 </tr>
-<tr class="row-even"><td><p>返回模型不存在</p></td>
-<td><p>核对模型 ID 与服务商当前提供的名称</p></td>
+<tr class="row-even"><td><p>返回 401 / 403</p></td>
+<td><p>核对服务商、密钥权限和额度</p></td>
 </tr>
-<tr class="row-odd"><td><p>请求超时</p></td>
-<td><p>检查网络、后端运行状态和超时设置</p></td>
+<tr class="row-odd"><td><p>返回模型不存在</p></td>
+<td><p>核对模型 ID；它与后端名称是两个字段</p></td>
 </tr>
-<tr class="row-even"><td><p>短调用成功，完整运行失败</p></td>
-<td><p>检查余额、并发限制、输出长度及仿真日志中的具体错误</p></td>
+<tr class="row-even"><td><p>请求超时</p></td>
+<td><p>查看服务端运行状态、网络和后端超时值</p></td>
+</tr>
+<tr class="row-odd"><td><p>网页测试成功，CLI 失败</p></td>
+<td><p>检查 CLI 所在终端的环境变量及工作区配置</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>模型预设及部署配置可查阅仓库中的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/MODEL_PROVIDERS.md">模型接入说明</a>。</p>
-</section>
-<section id="id8">
-<h2>参数来源与覆盖<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
-<p>基础配置由 <code class="docutils literal notranslate"><span class="pre">gaworld/settings/defaults.py</span></code> 汇集各配置模块。<code class="docutils literal notranslate"><span class="pre">dashboard_config.json</span></code> 保存控制台覆盖项；环境配置与城市包提供环境、地图和居民路径；<code class="docutils literal notranslate"><span class="pre">GAWORLD_CONFIG_OVERRIDES</span></code> 提供最终的运行覆盖。</p>
-<p>在 Python 中读取配置：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_config</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">build_config</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"city"</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>环境变量覆盖使用 JSON 对象：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">GAWORLD_CONFIG_OVERRIDES</span><span class="o">=</span><span class="s1">'{"skills":{"max_per_prompt":2}}'</span>
-</pre></div>
-</div>
-</section>
-<section id="id9">
-<h2>模块装配<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
-<p>内置插件由 <code class="docutils literal notranslate"><span class="pre">gaworld/plugins/</span></code> 装配。自定义插件可以通过 <code class="docutils literal notranslate"><span class="pre">CONFIG[&quot;plugins&quot;]</span></code>、<code class="docutils literal notranslate"><span class="pre">gaworld.plugins</span></code> entry point 或注册表接入。插件使用唯一 ID，并以 <code class="docutils literal notranslate"><span class="pre">requires</span></code> 声明依赖。</p>
-</section>
-<section id="id10">
-<h2>运行设置<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
-<p>居民选择、仿真时长、模型、时间步长和随机种子共同定义运行条件。控制台中的当前世界也决定输出位置。保存实验时，把这些设置与城市和居民初始数据一起保存。</p>
+<p>更多后端选项见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/MODEL_PROVIDERS.md">模型接入说明</a>。</p>
 </section>
 <section id="id11">
-<h2>查看接口配置<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/config</span></code> 读取运行配置；接口结构与权限说明由 <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/openapi.json</span></code> 提供。Python 配置入口见 <a class="reference internal" href="api/config.html"><span class="std std-doc">配置与模型</span></a>。</p>
-</section>
+<h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
 <section id="id12">
-<h2>完成后检查<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
-<p>保存后重新打开配置页面，核对所选后端与运行参数，再执行连通性测试。启动一次短仿真，确认日志中使用的是预期模型，并保存本次配置。</p>
-</section>
-<section id="id13">
-<h2>代码结构与执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h2>
-<section id="id14">
-<h3>模块分工<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
+<h3>模块分工<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
 <div class="code-map docutils container">
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -445,16 +507,16 @@
 </div>
 </div>
 </section>
-<section id="id15">
-<h3>执行流程<a class="headerlink" href="#id15" title="链接到此标题。">¶</a></h3>
+<section id="id13">
+<h3>执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>配置页面 → settings_api → 配置文件 / 个人密钥文件
 运行启动 → build_config() → LLMRouter → 对应模型后端
 </pre></div>
 </div>
 <p>界面保存的参数进入配置覆盖文件；个人密钥通过 credentials 单独读写。运行进程启动后重新组装 CONFIG，模型调用由 providers 选择后端。<code class="docutils literal notranslate"><span class="pre">GAWORLD_CONFIG_OVERRIDES</span></code> 在城市配置加载后再次合并，因此具有最终覆盖权。</p>
 </section>
-<section id="id16">
-<h3>从哪里修改<a class="headerlink" href="#id16" title="链接到此标题。">¶</a></h3>
+<section id="id14">
+<h3>从哪里修改<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
 <p>修改默认参数从 <code class="docutils literal notranslate"><span class="pre">gaworld/settings/</span></code> 开始；修改配置界面的字段与保存行为，查看 <code class="docutils literal notranslate"><span class="pre">settings.js</span></code> 和 <code class="docutils literal notranslate"><span class="pre">settings_api.py</span></code>；增加模型协议支持，查看 <code class="docutils literal notranslate"><span class="pre">providers.py</span></code>。</p>
 </section>
 </section>
@@ -516,21 +578,21 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">模型与运行配置</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">连接模型服务</a></li>
-<li><a class="reference internal" href="#id4">配置字段</a></li>
-<li><a class="reference internal" href="#id5">添加模型后端</a></li>
-<li><a class="reference internal" href="#id6">选择运行参数</a></li>
-<li><a class="reference internal" href="#id7">排查连接问题</a></li>
-<li><a class="reference internal" href="#id8">参数来源与覆盖</a></li>
-<li><a class="reference internal" href="#id9">模块装配</a></li>
-<li><a class="reference internal" href="#id10">运行设置</a></li>
-<li><a class="reference internal" href="#id11">查看接口配置</a></li>
-<li><a class="reference internal" href="#id12">完成后检查</a></li>
-<li><a class="reference internal" href="#id13">代码结构与执行流程</a><ul>
-<li><a class="reference internal" href="#id14">模块分工</a></li>
-<li><a class="reference internal" href="#id15">执行流程</a></li>
-<li><a class="reference internal" href="#id16">从哪里修改</a></li>
+<li><a class="reference internal" href="#id2">选择配置方式</a></li>
+<li><a class="reference internal" href="#local-model">本地单人：接入一个模型</a><ul>
+<li><a class="reference internal" href="#id4">1. 在终端设置密钥并启动控制台</a></li>
+<li><a class="reference internal" href="#id5">2. 新增后端</a></li>
+<li><a class="reference internal" href="#id6">3. 选择默认模型与日程模型</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#team-model">团队服务器：保存个人密钥</a></li>
+<li><a class="reference internal" href="#cli-model">命令行：使用同一后端</a></li>
+<li><a class="reference internal" href="#id9">参数保存与生效</a></li>
+<li><a class="reference internal" href="#id10">连接问题与处理</a></li>
+<li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id12">模块分工</a></li>
+<li><a class="reference internal" href="#id13">执行流程</a></li>
+<li><a class="reference internal" href="#id14">从哪里修改</a></li>
 </ul>
 </li>
 </ul>

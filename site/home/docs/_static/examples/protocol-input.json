@@ -1,0 +1,74 @@
+{
+  "title": "补贴通告与压力：教学协议",
+  "sample": {
+    "agent_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
+  },
+  "sim_days": 3,
+  "fast": false,
+  "max_parallel": 1,
+  "conditions": [
+    {
+      "id": "baseline",
+      "label": "基准",
+      "role": "baseline",
+      "events": []
+    },
+    {
+      "id": "subsidy",
+      "label": "补贴通告",
+      "role": "treatment",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "租金补贴通告",
+          "description": "市政部门宣布为低收入家庭提供租金补贴。"
+        }
+      ]
+    },
+    {
+      "id": "placebo",
+      "label": "例行通告",
+      "role": "placebo",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "例行通告",
+          "description": "市政部门发布办公时间未发生变化的例行通告。"
+        }
+      ]
+    }
+  ],
+  "measures": [
+    "stress"
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "补贴通告条件下的期末压力低于基准条件",
+      "measure": "stress",
+      "treatment": "subsidy",
+      "control": "baseline",
+      "direction": "decrease",
+      "min_effect": 0.02,
+      "aggregation": "final"
+    }
+  ],
+  "validity": {
+    "seeds": [
+      42,
+      43
+    ],
+    "placebo": true
+  }
+}

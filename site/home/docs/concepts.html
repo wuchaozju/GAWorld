@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=99098e58" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -334,24 +334,67 @@
 <p>身份、状态和历史经历参与决策；空间与环境影响可执行行动；行动结果继续进入状态和记忆。</p>
 </section>
 <section id="id4">
-<h2>城市与世界<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<p>城市包保存于 <code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code>。选择城市后，运行配置指向该城市的地图、居民与环境。多人部署中的世界保存居民副本，并将结果写入 <code class="docutils literal notranslate"><span class="pre">output/worlds/&lt;id&gt;/</span></code>。</p>
-<p>在界面中先确认当前世界，再选择居民和运行参数。城市和世界的输出位置见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
+<h2>城市、团队世界与实验世界<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<figure class="guide-diagram align-default" id="id11">
+<a class="reference external image-reference" href="_static/diagrams/data-relationships.svg"><img alt="城市居民输入复制到团队世界，世界运行保存结果，平行实验从共同输入派生独立输出" src="_images/data-relationships.svg" />
+</a>
+<figcaption>
+<p><span class="caption-text">输入、配置和产物的关系。箭头标明复制、读取或写入，便于判断一次修改影响哪里。</span><a class="headerlink" href="#id11" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>对象</p></th>
+<th class="head"><p>保存什么</p></th>
+<th class="head"><p>修改后的影响</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>城市包 <code class="docutils literal notranslate"><span class="pre">data/cities/&lt;slug&gt;/</span></code></p></td>
+<td><p>地图、环境、居民初始状态与档案</p></td>
+<td><p>后续选择此城市的运行读取对应配置</p></td>
+</tr>
+<tr class="row-odd"><td><p>团队世界 <code class="docutils literal notranslate"><span class="pre">output/worlds/&lt;id&gt;/</span></code></p></td>
+<td><p>城市选择、居民输入副本、世界配置与输出</p></td>
+<td><p>世界内编辑居民更新自己的副本；城市后来编辑居民不会同步到已有副本</p></td>
+</tr>
+<tr class="row-even"><td><p>平行实验中的条件世界</p></td>
+<td><p>共同输入、各组事件或参数，以及各组独立输出目录</p></td>
+<td><p>用于一次实验内的条件比较，位置在 <code class="docutils literal notranslate"><span class="pre">output/parallel_worlds/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>运行</p></td>
+<td><p>一次启动产生的日志、状态和轨迹</p></td>
+<td><p>普通运行是否接续记忆取决于 <code class="docutils literal notranslate"><span class="pre">stateful</span></code>；轨迹有运行归档</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>团队世界复制居民输入，并通过城市配置读取地图与环境。它的隔离重点是居民副本、配置覆盖与运行结果。平行实验为每个条件重定向输出目录并从初始输入运行；实验条件世界由实验运行器管理。</p>
 </section>
 <section id="id5">
-<h2>时间尺度<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<p>普通运行保留日内行动。长时段快进按天、月或年生成阶段简报，用于研究较长时间的变化。时间尺度会改变输出细节，实验各组应保持一致。</p>
+<h2>再次运行与保存结果<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">stateful</span></code> 开启时，仿真加载居民已有的记忆、关系及持续状态，并接续其仿真日期。普通运行会更新当前输出文件；轨迹另外保存在 <code class="docutils literal notranslate"><span class="pre">visualization/runs/&lt;run_id&gt;/</span></code>。</p>
+<p><strong>重置并运行</strong>先清理当前输出，再使用居民初始输入。需要完整保留状态 CSV、日志和记忆时，先复制相关运行目录，或将条件组织为平行实验。轨迹归档保存的是回放数据。</p>
 </section>
 <section id="id6">
-<h2>事件与干预<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>环境事件进入居民感知，控制器处理动作校验与运行时干预。平行世界把不同事件施加到共同基线上，记录条件之间的配对差异。</p>
+<h2>访谈访问哪一份居民<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p>群体采访从选定城市包构造受访名单，适合比较城市人口与群体。研究工作台的组合研究（<code class="docutils literal notranslate"><span class="pre">composite</span></code>）在各条件运行后，带着该世界的运行记忆进行问卷。比较“干预后的回答”时选择后者，操作见 <a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a>。</p>
 </section>
 <section id="id7">
-<h2>配置与复现<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
-<p>保存居民初始数据、城市、模型、随机种子、时长、时间步长和干预设置。结果应与所用代码版本对应，便于复查和重复运行。</p>
+<h2>时间尺度<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>普通运行保留日内行动。长时段快进按天、月或年生成阶段简报，用于研究较长时间的变化。时间尺度会改变输出细节，实验各组应保持一致。</p>
 </section>
 <section id="id8">
-<h2>下一步<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<h2>事件与干预<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p>环境事件进入居民感知，控制器处理动作校验与运行时干预。平行世界把不同事件施加到共同基线上，记录条件之间的配对差异。</p>
+</section>
+<section id="id9">
+<h2>配置与复现<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<p>保存居民初始数据、城市、模型、随机种子、时长、时间步长和干预设置。结果应与所用代码版本对应，便于复查和重复运行。</p>
+</section>
+<section id="id10">
+<h2>下一步<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="architecture.html"><span class="std std-doc">架构与可扩展性</span></a>：了解内核、认知管线和插件。</p></li>
 <li><p><a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a>：通过控制台和 Python 访问仿真。</p></li>
@@ -417,11 +460,13 @@
 <li><a class="reference internal" href="#">工作区、城市与世界</a><ul>
 <li><a class="reference internal" href="#id2">数据与运行的组织</a></li>
 <li><a class="reference internal" href="#id3">居民的行动过程</a></li>
-<li><a class="reference internal" href="#id4">城市与世界</a></li>
-<li><a class="reference internal" href="#id5">时间尺度</a></li>
-<li><a class="reference internal" href="#id6">事件与干预</a></li>
-<li><a class="reference internal" href="#id7">配置与复现</a></li>
-<li><a class="reference internal" href="#id8">下一步</a></li>
+<li><a class="reference internal" href="#id4">城市、团队世界与实验世界</a></li>
+<li><a class="reference internal" href="#id5">再次运行与保存结果</a></li>
+<li><a class="reference internal" href="#id6">访谈访问哪一份居民</a></li>
+<li><a class="reference internal" href="#id7">时间尺度</a></li>
+<li><a class="reference internal" href="#id8">事件与干预</a></li>
+<li><a class="reference internal" href="#id9">配置与复现</a></li>
+<li><a class="reference internal" href="#id10">下一步</a></li>
 </ul>
 </li>
 </ul>

@@ -39,3 +39,20 @@ figure.guide-shot figcaption,figure.guide-diagram figcaption {text-align:left;fo
 .code-map th:first-child,.code-map td:first-child {width:44%}
 .code-map td {vertical-align:top;white-space:normal;overflow-wrap:anywhere}
 .code-map a {overflow-wrap:anywhere}
+
+/* Numbered controls remain aligned as the document column scales. */
+.annotated-shot {margin:1.5rem 0 2rem}
+.shot-crop {position:relative;display:block;overflow:hidden;border:1px solid var(--color-background-border);border-radius:6px;background:#f5f7fb;cursor:zoom-in}
+.shot-crop img {position:absolute;left:0;width:100%;height:auto;max-height:none}
+.simulation-crop {aspect-ratio:1536/340}
+.simulation-crop img {top:-55%}
+.research-crop {aspect-ratio:1536/840}
+.research-crop img {top:0}
+.shot-pin {position:absolute;display:grid;place-items:center;width:1.45rem;height:1.45rem;border-radius:50%;background:#185cad;color:white;border:2px solid white;font:600 .8rem/1 sans-serif;box-shadow:0 1px 4px #0004}
+.annotated-shot figcaption {margin-top:.65rem;font-size:.9rem;line-height:1.6;color:var(--color-foreground-secondary)}
+@media(max-width:40em){.shot-pin{width:1.15rem;height:1.15rem;font-size:.7rem;border-width:1px}}
+/* Scroll wide reference tables instead of reducing columns to single characters. */
+@media(max-width:40em){
+ article .table-wrapper:not(.code-map .table-wrapper) table {min-width:34rem}
+ article .table-wrapper {overscroll-behavior-x:contain}
+}

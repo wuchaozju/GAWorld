@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -287,12 +287,9 @@
           <section id="id1">
 <h1>政策推演与严肃游戏<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>研究工作台提供两种围绕情景的研究方式：政策推演比较居民对不同政策文本的反应，严肃游戏让居民与真人按角色和回合参与共同决策。</p>
+<p>政策推演准备城市、政策文本和抽样设置；严肃游戏准备情景、角色目标与参与方式。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于两类操作：比较政策文本引发的居民反应，以及组织按角色、按回合进行的严肃游戏。政策推演准备城市、政策文本和抽样设置；严肃游戏准备情景、角色目标与参与方式。</p>
-</section>
-<section id="id3">
-<h2>比较政策版本<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<h2>比较政策版本<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>研究工作台 → 政策仿真与优化</strong>，选择城市并输入政策文本。可以同时输入候选政策，比较两个版本。</p>
 <ol class="arabic simple">
 <li><p>设置抽样人数、随机种子与分析模型。</p></li>
@@ -303,29 +300,33 @@
 </ol>
 <p>抽样范围为 6–30 位、年龄至少 16 岁的居民。各版本共用同一批受访者。居民反应由模型根据档案生成，适合比较文本版本、发现可能受影响的群体与修改方向。</p>
 </section>
-<section id="id4">
-<h2>检查推荐版本<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>检查推荐版本<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <p>结果包括各项均值、按属性的分组比较、逐人回答与综合分。综合分由支持度、生活变化、钱包影响与遵从度按设定权重计算，推荐版本按该分数选出。</p>
 <p>结合分组结果与原话判断推荐是否符合你的研究目标。点击下载 Markdown 保存报告，或将修订版作为下一轮输入继续比较。记录保存在 <code class="docutils literal notranslate"><span class="pre">output/research/policy/&lt;id&gt;.json</span></code>。</p>
 </section>
-<section id="id5">
-<h2>设计严肃游戏<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>设计严肃游戏<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>打开 <strong>研究工作台 → 严肃游戏</strong>，描述情景中的参与者、各自目标与需要作出的决定，再设置回合数与角色数。</p>
 <p>生成后检查背景、角色、公开目标、私密信息、回合事件与评分维度。随后为每个角色安排一位城市居民或一位真人参与者。</p>
 </section>
-<section id="id6">
-<h2>组织回合与复盘<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id5">
+<h2>组织回合与复盘<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
 <p>每轮由各角色提交行动，主持流程在结算时更新公共指标与情景。真人通过自己的座位链接进入，查看公开信息与该角色的私密信息。主持界面可以检查提交状态，并结算当前回合。</p>
 <p>最后一轮结束后，查看角色评分、学习目标评估与复盘问题，再下载 Markdown。设计保存在 <code class="docutils literal notranslate"><span class="pre">output/research/serious_games/</span></code>，对局保存在其 <code class="docutils literal notranslate"><span class="pre">sessions/</span></code> 子目录中。</p>
 <p>严肃游戏的座位链接用于本地课堂或工作坊中的角色分配；团队账号与访问权限设置见 <a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署与世界管理</span></a>。</p>
 </section>
-<section id="id7">
-<h2>与平行世界配合<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>与平行世界配合<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>政策文本推演帮助比较居民的即时反应，严肃游戏记录回合中的互动决策。需要追踪干预后的持续行动、状态变化与跨种子差异时，在 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> 中设置事件或配置条件，并运行完整仿真。</p>
 </section>
-<section id="id8">
-<h2>完成后检查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>完成后检查<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p>政策推演完成后，核对各版本使用的居民样本、各项得分和原话，再导出报告。严肃游戏每轮核对角色提交状态与公共指标，结束后检查回合记录、角色评分和复盘内容。</p>
+</section>
+<section id="id8">
+<h2>从版本差异回到居民回答<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p>比较两版政策时，<code class="docutils literal notranslate"><span class="pre">policy_sim.py</span></code> 固定抽样居民，对同一居民收集两个版本的反应，再由 <code class="docutils literal notranslate"><span class="pre">metrics()</span></code> 和 <code class="docutils literal notranslate"><span class="pre">composite_score()</span></code> 汇总。报告中选择一个分数变化明显的群体，回查该组居民的两版回答，便能对应“文本修改 → 个体反应 → 分组得分”。严肃游戏则按座位保存行动并在回合结算时更新公共指标，复盘应按回合顺序阅读。</p>
 </section>
 <section id="id9">
 <h2>代码结构与执行流程<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
@@ -437,13 +438,13 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">政策推演与严肃游戏</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">比较政策版本</a></li>
-<li><a class="reference internal" href="#id4">检查推荐版本</a></li>
-<li><a class="reference internal" href="#id5">设计严肃游戏</a></li>
-<li><a class="reference internal" href="#id6">组织回合与复盘</a></li>
-<li><a class="reference internal" href="#id7">与平行世界配合</a></li>
-<li><a class="reference internal" href="#id8">完成后检查</a></li>
+<li><a class="reference internal" href="#id2">比较政策版本</a></li>
+<li><a class="reference internal" href="#id3">检查推荐版本</a></li>
+<li><a class="reference internal" href="#id4">设计严肃游戏</a></li>
+<li><a class="reference internal" href="#id5">组织回合与复盘</a></li>
+<li><a class="reference internal" href="#id6">与平行世界配合</a></li>
+<li><a class="reference internal" href="#id7">完成后检查</a></li>
+<li><a class="reference internal" href="#id8">从版本差异回到居民回答</a></li>
 <li><a class="reference internal" href="#id9">代码结构与执行流程</a><ul>
 <li><a class="reference internal" href="#id10">模块分工</a></li>
 <li><a class="reference internal" href="#id11">执行流程</a></li>

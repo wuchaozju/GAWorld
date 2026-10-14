@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -286,129 +286,186 @@
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>平行世界与对照实验<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
-<p>平行世界从同一批居民出发，为不同条件设置事件或配置。你可以比较一个冲击发生前后的变化，也可以扫描一个参数的多组取值，观察差异何时出现、集中在哪些居民身上。</p>
-<section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于在共同居民和运行条件下比较不同事件、政策或参数。准备已配置模型的城市，明确基准条件、处理条件与要比较的指标，再设置重复种子和运行时长。</p>
-<figure class="guide-diagram align-default" id="id14">
-<a class="reference external image-reference" href="_static/diagrams/parallel-design.svg"><img alt="共同基线分别进入基准、处理与可选安慰剂世界，运行后进行配对比较" src="_images/parallel-design.svg" />
+<p>平行世界让同一批居民在不同事件或配置下运行，再按居民配对比较结果。本章沿用 <a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a> 的补贴通告例子，手动建立三个条件，说明实验文件和报告字段。</p>
+<p>先准备教程小城的 8 位居民和可用的仿真模型。手动平行世界适合探索条件差异；需要事先保存假设、阈值和跨种子判定时，使用研究协议。</p>
+<figure class="guide-diagram align-default" id="id13">
+<a class="reference external image-reference" href="_static/diagrams/parallel-design.svg"><img alt="共同输入分别进入基准、处理与安慰剂世界，运行后按居民配对比较" src="_images/parallel-design.svg" />
 </a>
 <figcaption>
-<p><span class="caption-text">平行世界的条件组织与结果比较。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id14" title="链接到此图片">¶</a></p>
+<p><span class="caption-text">各条件共享居民输入与基础配置，分别保存运行输出。</span><a class="headerlink" href="#id13" title="链接到此图片">¶</a></p>
 </figcaption>
 </figure>
+<section id="id2">
+<h2>1. 建立三个条件<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>打开 <strong>研究工作台 → 平行世界 · 反事实推断</strong>，设置居民 <code class="docutils literal notranslate"><span class="pre">1–8</span></code>、3 天、种子 <code class="docutils literal notranslate"><span class="pre">42</span></code>、快速模式关闭、并行数 <code class="docutils literal notranslate"><span class="pre">1</span></code>，再建立以下世界：</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>世界 ID / 角色</p></th>
+<th class="head"><p>第 2 天 09:00 的事件</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">baseline</span></code> / 基准</p></td>
+<td><p>无新增事件</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subsidy</span></code> / 处理</p></td>
+<td><p>租金补贴通告：市政部门宣布为低收入家庭提供租金补贴。</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">placebo</span></code> / 安慰剂</p></td>
+<td><p>例行通告：市政部门发布办公时间未发生变化的例行通告。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>本例的处理是通告文本。要研究补贴到账，还需配置相应支付机制并检查账本。</p>
+<p>一次实验支持 2–8 个世界；“并行数”控制同时执行的进程数。运行器为各条件建立独立输出目录，从共同的居民输入启动。实验世界与团队账号中的个人世界分别管理，见 <a class="reference internal" href="concepts.html"><span class="std std-doc">核心概念</span></a>。</p>
 </section>
 <section id="id3">
-<h2>建立共同基线<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
-<p>打开 <strong>研究工作台 → 平行世界 · 反事实推断</strong>。先设置所有世界共用的居民、模型、仿真天数、随机种子与快速模式，再定义各个世界的事件和配置补丁。</p>
-<p>一次实验支持 2–8 个世界。并行世界数控制同时执行的进程数，与实验中的世界总数分别设置。</p>
-</section>
-<section id="id4">
-<h2>完成一次对照运行<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
-<ol class="arabic simple">
-<li><p>选择 <strong>裁员冲击</strong>、<strong>交通限行强度</strong>、<strong>安慰剂对照</strong> 或 <strong>严谨对照</strong> 模板。</p></li>
-<li><p>检查基准世界、处理世界以及各自的事件时间和描述。</p></li>
-<li><p>首次运行将天数设为 2 天，开启快速模式，确认流程与输出。</p></li>
-<li><p>点击 <strong>运行平行世界</strong>，查看各世界的排队、运行与完成状态。</p></li>
-<li><p>完成后选择指标，查看轨迹、相对基准差异与报告。</p></li>
-</ol>
-<p>正式比较时，按研究问题确定时长、重复种子和安慰剂条件。<a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a> 可以把这些设置连同假设整理成预注册协议。</p>
-</section>
-<section id="id5">
-<h2>定义各组的差异<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>设置</p></th>
-<th class="head"><p>用途</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>事件</p></td>
-<td><p>指定发生时间、名称与居民感知到的描述</p></td>
-</tr>
-<tr class="row-odd"><td><p>配置补丁</p></td>
-<td><p>改变该世界的一项机制或参数</p></td>
-</tr>
-<tr class="row-even"><td><p>角色</p></td>
-<td><p>指定处理条件或安慰剂条件</p></td>
-</tr>
-<tr class="row-odd"><td><p>剂量</p></td>
-<td><p>表示不同处理强度，用于剂量反应分析</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>配置补丁按层合并，例如只改变个税起征点：</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"低起征点世界"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"events"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">  </span><span class="nt">"config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"economy"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"tax"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"monthly_exemption"</span><span class="p">:</span><span class="w"> </span><span class="mi">3000</span><span class="p">}}</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>居民、种子、天数和输出目录由实验统一管理。配置补丁用于各组需要改变的机制参数。</p>
-</section>
-<section id="id6">
-<h2>扫描一个参数<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>在 <strong>参数扫描</strong> 中选择数值配置项，输入多组取值，生成“基准世界 + 每个取值一个世界”。检查生成的世界卡片与剂量，再启动实验。已有基准事件会复制到各组，便于比较同一情境下的参数影响。</p>
-<p>生成扫描世界会替换当前的世界列表；先保存需要保留的设计。</p>
-</section>
-<section id="id7">
-<h2>阅读结果<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>结果</p></th>
-<th class="head"><p>阅读方式</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>分叉图</p></td>
-<td><p>查看各世界何时稳定偏离基准</p></td>
-</tr>
-<tr class="row-odd"><td><p>指标走向</p></td>
-<td><p>比较同一指标的时间序列与相对基准差值</p></td>
-</tr>
-<tr class="row-even"><td><p>谁被改变了</p></td>
-<td><p>回查同一居民在不同条件下的结果</p></td>
-</tr>
-<tr class="row-odd"><td><p>反事实推断</p></td>
-<td><p>查看配对效应、区间、检验与判定</p></td>
-</tr>
-<tr class="row-even"><td><p>异质性</p></td>
-<td><p>按居民属性比较条件效应</p></td>
-</tr>
-<tr class="row-odd"><td><p>跨种子重复</p></td>
-<td><p>检查相同设计在不同随机种子下的结果</p></td>
-</tr>
-<tr class="row-even"><td><p>剂量反应</p></td>
-<td><p>查看结果随处理强度或参数取值的变化</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>这些估计描述所设仿真条件下的差异。解释结果时，结合事件前差异、安慰剂噪声、跨种子一致性与具体居民轨迹。</p>
-</section>
-<section id="id8">
-<h2>保存与复查<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
-<p>实验保存在 <code class="docutils literal notranslate"><span class="pre">output/parallel_worlds/&lt;实验目录&gt;/</span></code>，包括 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code>、<code class="docutils literal notranslate"><span class="pre">report.json</span></code>、<code class="docutils literal notranslate"><span class="pre">divergence_summary.md</span></code> 和各世界输出。保留实验定义、初始居民、模型设置与代码版本，便于重复运行。</p>
-<p>命令行读取已保存的实验定义：</p>
+<h2>2. 保存配置并启动<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<p>本例的完整配置可下载为 <a class="reference download internal" download="" href="_downloads/b96591722304c9cbff7a0a8deda7ff8b/worlds.json"><span class="xref download myst">worlds.json</span></a>。在完成模型配置的本地工作区执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>parallel-worlds<span class="w"> </span>--spec<span class="w"> </span>worlds.json
 </pre></div>
 </div>
-<p>完整参数与报告字段见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/PARALLEL_WORLDS_TUTORIAL.md">平行世界说明</a>。</p>
+<p>命令会启动实际仿真并调用模型。CLI 读取当前本地配置；运行前确认当前城市包含文件中的居民编号。网页中的账号世界通过会话选择，详见 <a class="reference internal" href="models.html"><span class="std std-doc">模型与配置</span></a>。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>字段</p></th>
+<th class="head"><p>本例值及含义</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">agent_ids</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[1,2,3,4,5,6,7,8]</span></code>，所有条件使用同一组编号</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sim_days</span></code> / <code class="docutils literal notranslate"><span class="pre">seed</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3</span></code> / <code class="docutils literal notranslate"><span class="pre">42</span></code>，公共时长与种子</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">baseline_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">baseline</span></code>，报告中的比较基准</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fast</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code>，保留完整认知执行方式</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_parallel</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code>，同时执行一个世界</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">worlds</span></code></p></td>
+<td><p>各条件的 ID、角色、事件及可选配置补丁</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>网页运行时点击 <strong>运行平行世界</strong>，等待所有条件完成。命令行运行时查看进程输出和实验目录中的 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code>。要用种子 43 重复，另存一份配置并修改 <code class="docutils literal notranslate"><span class="pre">seed</span></code>，保持其他输入相同。</p>
+<section id="id4">
+<h3>快速模式与长时段快进<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>模式</p></th>
+<th class="head"><p>改变什么</p></th>
+<th class="head"><p>适用场景</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>平行世界 <code class="docutils literal notranslate"><span class="pre">fast</span></code></p></td>
+<td><p>启用确定性认知，跳过每日总结和日记</p></td>
+<td><p>检查实验调度与输出格式</p></td>
+</tr>
+<tr class="row-odd"><td><p>仿真 <code class="docutils literal notranslate"><span class="pre">--fast-forward</span></code></p></td>
+<td><p>以每日简报推进，跳过日内 tick 循环</p></td>
+<td><p>长时间跨度仿真</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>比较不同条件时保持执行模式一致。本例关闭快速模式，教学报告的读取练习则可以直接使用下文的下载文件。</p>
+</section>
+</section>
+<section id="id5">
+<h2>3. 找到各世界输出<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>output/parallel_worlds/&lt;实验目录&gt;/
+├── experiment.json          # 输入、条件、各世界状态和输出路径
+├── report.json              # 轨迹比较与配对估计
+├── divergence_summary.md    # 差异摘要
+└── …                        # 各世界的独立运行输出
+</pre></div>
+</div>
+<p>在 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code> 的 <code class="docutils literal notranslate"><span class="pre">worlds</span></code> 中查找每个条件的 <code class="docutils literal notranslate"><span class="pre">state_csv</span></code>，再读取对应状态历史。这样可以直接定位输出，不依赖对目录名称的猜测。</p>
+</section>
+<section id="read-paired-report">
+<span id="id6"></span><h2>4. 读懂一份配对报告<a class="headerlink" href="#read-paired-report" title="链接到此标题。">¶</a></h2>
+<p>下载 <a class="reference download internal" download="" href="_downloads/73aa14ea26076a3a488ce4d005d9faa3/report-seed-42.json"><span class="xref download myst">种子 42 的教学报告</span></a>。它由 GAWorld 对合成 CSV 计算生成，输入和生成脚本见 <a class="reference internal" href="research.html"><span class="std std-doc">研究工作台</span></a>。本例每个居民有 6 条 stress 记录，事件后的比较从 <code class="docutils literal notranslate"><span class="pre">event_step=2</span></code> 开始。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>字段</p></th>
+<th class="head"><p>教学报告数值</p></th>
+<th class="head"><p>如何理解</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n</span></code></p></td>
+<td><p>8</p></td>
+<td><p>参与配对的居民数</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ate</span></code></p></td>
+<td><p>−0.100</p></td>
+<td><p>事件后，处理组相对基准组的平均差值</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ci_low</span></code> / <code class="docutils literal notranslate"><span class="pre">ci_high</span></code></p></td>
+<td><p>−0.1065 / −0.0935</p></td>
+<td><p>按居民重采样得到的区间</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p_value</span></code> / <code class="docutils literal notranslate"><span class="pre">q_value</span></code></p></td>
+<td><p>0.0078125 / 0.0078125</p></td>
+<td><p>配对检验值与多重比较校正值</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pre_gap</span></code></p></td>
+<td><p>0</p></td>
+<td><p>事件前两组没有差异</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">did</span></code></p></td>
+<td><p>−0.100</p></td>
+<td><p>处理前后变化的组间差异</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">noise</span></code></p></td>
+<td><p>0.005</p></td>
+<td><p>安慰剂条件提供的差异参照</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">verdict</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">robust</span></code></p></td>
+<td><p>当前配对规则对这组教学输入的判定</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>先看事件前是否可比，再看事件后效应的方向、区间与安慰剂差异；最后检查不同种子的结果。<code class="docutils literal notranslate"><span class="pre">ate</span></code> 使用事件后的记录，而研究协议中的 <code class="docutils literal notranslate"><span class="pre">aggregation:</span> <span class="pre">final</span></code> 使用最后一条记录，两种汇总在真实运行中可能不同。</p>
+<p>CSV 的 <code class="docutils literal notranslate"><span class="pre">step</span></code> 是状态记录序号。分析器根据运行天数和记录长度估算每天的记录数，再定位事件，<code class="docutils literal notranslate"><span class="pre">event_step</span></code> 应与本次报告及轨迹一起核对。记录序号与仿真日的对应见 <a class="reference internal" href="results.html#read-one-result"><span class="std std-ref">结果字段</span></a>。</p>
+<p>网页中的分叉图显示各世界何时偏离基准；“谁被改变了”用于追溯个体差异；异质性分析用于比较不同居民属性。图中的明显分叉需要结合相同居民、事件时间与数值报告阅读。</p>
+</section>
+<section id="id7">
+<h2>5. 改成自己的实验<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>事件字段用于改变居民接收到的情境；配置补丁用于改变执行机制。例如调整个税起征点：</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"低起征点世界"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"events"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">"config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"economy"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"tax"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"monthly_exemption"</span><span class="p">:</span><span class="w"> </span><span class="mi">3000</span><span class="p">}}}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>参数扫描可把数值配置项的多个取值转成“基准世界 + 各剂量世界”。生成扫描世界会替换当前列表，先保存需要保留的设计。正式比较时保存居民输入、公共设置、各条件补丁和代码版本。</p>
+</section>
+<section id="id8">
+<h2>配置如何变成报告<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">normalize_experiment()</span></code> 把 <code class="docutils literal notranslate"><span class="pre">worlds.json</span></code> 转为 <code class="docutils literal notranslate"><span class="pre">ExperimentSpec</span></code>；<code class="docutils literal notranslate"><span class="pre">prepare_experiment()</span></code> 写出 manifest 和各条件路径。运行器合并基础配置与各世界的补丁，限制并行数并启动独立进程。<code class="docutils literal notranslate"><span class="pre">analysis.py</span></code> 按 manifest 读取 CSV，<code class="docutils literal notranslate"><span class="pre">causal.py</span></code> 按居民对齐基准与处理记录，最后将轨迹和配对结果写入 <code class="docutils literal notranslate"><span class="pre">report.json</span></code>。</p>
+<p>完整字段见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/PARALLEL_WORLDS_TUTORIAL.md">平行世界说明</a>。</p>
 </section>
 <section id="id9">
-<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
-<p>先确认各世界状态均已结束，再查看相同居民与指标的比较结果。检查基准选择、事件时间、区间和跨种子结果，并保留 <code class="docutils literal notranslate"><span class="pre">experiment.json</span></code> 与报告供再次运行。</p>
-</section>
+<h2>代码结构与执行流程<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
 <section id="id10">
-<h2>代码结构与执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
-<section id="id11">
-<h3>模块分工<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
+<h3>模块分工<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
 <div class="code-map docutils container">
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -444,8 +501,8 @@
 </div>
 </div>
 </section>
-<section id="id12">
-<h3>执行流程<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<section id="id11">
+<h3>执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>世界条件 / 参数扫描 → ExperimentSpec → prepare_experiment()
   → ExperimentRunner → 各世界独立运行
   → analysis 轨迹比较 + causal 配对估计 → 保存报告
@@ -453,8 +510,8 @@
 </div>
 <p>每个世界使用独立进程和输出目录，运行器控制同时执行的数量。analysis 从各世界的状态历史构造时间序列与个体变化；causal 按居民配对计算条件差异，并在实验内进行多重检验校正。API 层组织多个种子的运行与汇总。</p>
 </section>
-<section id="id13">
-<h3>从哪里修改<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
+<section id="id12">
+<h3>从哪里修改<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
 <p>修改条件字段查看 <code class="docutils literal notranslate"><span class="pre">spec.py</span></code>，修改参数扫描查看 <code class="docutils literal notranslate"><span class="pre">sweep.py</span></code>，修改进程调度查看 <code class="docutils literal notranslate"><span class="pre">runner.py</span></code>。增加比较指标或统计量时，核对 <code class="docutils literal notranslate"><span class="pre">analysis.py</span></code>、<code class="docutils literal notranslate"><span class="pre">causal.py</span></code> 及前端对应展示。</p>
 </section>
 </section>
@@ -516,18 +573,19 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">平行世界与对照实验</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">建立共同基线</a></li>
-<li><a class="reference internal" href="#id4">完成一次对照运行</a></li>
-<li><a class="reference internal" href="#id5">定义各组的差异</a></li>
-<li><a class="reference internal" href="#id6">扫描一个参数</a></li>
-<li><a class="reference internal" href="#id7">阅读结果</a></li>
-<li><a class="reference internal" href="#id8">保存与复查</a></li>
-<li><a class="reference internal" href="#id9">完成后检查</a></li>
-<li><a class="reference internal" href="#id10">代码结构与执行流程</a><ul>
-<li><a class="reference internal" href="#id11">模块分工</a></li>
-<li><a class="reference internal" href="#id12">执行流程</a></li>
-<li><a class="reference internal" href="#id13">从哪里修改</a></li>
+<li><a class="reference internal" href="#id2">1. 建立三个条件</a></li>
+<li><a class="reference internal" href="#id3">2. 保存配置并启动</a><ul>
+<li><a class="reference internal" href="#id4">快速模式与长时段快进</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">3. 找到各世界输出</a></li>
+<li><a class="reference internal" href="#read-paired-report">4. 读懂一份配对报告</a></li>
+<li><a class="reference internal" href="#id7">5. 改成自己的实验</a></li>
+<li><a class="reference internal" href="#id8">配置如何变成报告</a></li>
+<li><a class="reference internal" href="#id9">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id10">模块分工</a></li>
+<li><a class="reference internal" href="#id11">执行流程</a></li>
+<li><a class="reference internal" href="#id12">从哪里修改</a></li>
 </ul>
 </li>
 </ul>

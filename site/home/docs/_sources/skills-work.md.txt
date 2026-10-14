@@ -1,10 +1,8 @@
 # 技能与真实工作
 
-Skill 文件说明一种能力的适用场景和操作步骤。GAWorld 根据技能描述与触发词选择相关内容，再加入居民的感知或工作说明。
+Skill 文件说明一种能力的适用场景和操作步骤。感知阶段读取居民已挂载或私有的技能；工作路由再根据任务文本、描述与触发词选择相关技能，加入工作说明。
 
-## 功能与准备
-
-本章用于给居民提供可复用的任务知识，并让工作活动生成可查看的文件。先创建或选择居民，准备一份 Skill；需要实际产物时，再启用真实工作并配置可用模型。
+本例把会议记录技能保存给当前本地城市的 1 号居民。先完成 [第一次仿真](quickstart.md)，并在同一工作区中操作。
 
 ## 技能如何参与行动
 
@@ -45,45 +43,46 @@ origin: seed
 
 解析器支持平铺字段和单层列表。正文使用普通 Markdown，按实际操作顺序写步骤。
 
-## 挂载与检查
+## 将技能保存给实际居民
+
+本例把刚创建的全局技能保存为居民的私有副本。私有技能由注册表按居民编号自动读取，适合在工作区中直接配置。
+
+先在 Agent Studio 确认目标居民编号，再在工作区执行：
 
 ```python
+from copy import deepcopy
+from pathlib import Path
+from gaworld.settings import build_config
 from gaworld.skills import SkillRegistry
 
-registry = SkillRegistry()
-registry.reload()
+agent_id = 1
+config = build_config()
+registry = SkillRegistry(memory_dir=config["memory_dir"])
 skill = registry.get("meeting-notes")
-print(skill.name if skill else "未找到技能")
+if skill is None:
+    raise ValueError("请先创建 data/skills/meeting-notes.md")
+registry.save_private(agent_id, deepcopy(skill))
+path = Path(registry.memory_dir) / f"agent_{agent_id}_skills/meeting-notes.md"
+print("已保存：", path.resolve())
+
+# 用一个新注册表从文件重新读取，验证保存结果。
+check = SkillRegistry(memory_dir=config["memory_dir"])
+print([item.skill_id for item in check.list_for_agent(agent_id)])
 ```
 
-确认文件被读取后，挂载到参与运行的居民：
+最后一行应包含 `meeting-notes`。重新打开 Agent Studio 的该居民技能页，可以查看私有技能。
 
-```python
-agent = {"id": 31, "skill_ids": []}
-registry.attach_to_agent(agent, "meeting-notes")
-print(registry.list_for_agent(agent))
-```
+### 在下一次运行中使用
 
-在实际运行中，对初始化后的居民数据执行挂载，并保留该居民的技能配置。
+确认 `skills.inject_into_cognition` 已启用，使用同一城市、同一居民启动普通运行。`SkillsPlugin` 会在感知阶段读取其私有技能；`skills.max_per_prompt` 控制一次注入的数量。需要观察会议记录相关行为时，在居民的任务或日程中安排对应活动，再检查行动日志。
 
-## 创建私有技能
+文件保存和读取是技能接入的检查点；实际行动取决于居民当时的任务、日程与模型决策。真实工作产物按本页后面的工作队列流程检查。
 
-```python
-from gaworld.skills import Skill, SkillRegistry
+### 团队世界与全局技能挂载
 
-SkillRegistry().save_private(
-    agent_id=31,
-    skill=Skill(
-        skill_id="meeting-notes",
-        name="会议记录",
-        description="按结论与行动项整理讨论",
-        body="先写结论，再记录负责人、时间和待确认事项。",
-        triggers=["会议", "讨论"],
-    ),
-)
-```
+团队世界的私有技能保存在服务器的 `output/worlds/<世界编号>/memory/agent_<居民编号>_skills/`。有服务器文件权限的维护者可将上例 `memory_dir` 显式设为该世界的 `output/worlds/<世界编号>/memory/` 目录，再保存技能；网页会话中的世界选择与本地 Python 配置分别管理。
 
-私有技能由注册表按居民读取，无需另行挂载。
+`attach_to_agent(agent, skill_id)` 用于扩展运行代码：它修改已经初始化的居民对象的 `skill_ids`，作用于该次运行。需要每次启动都挂载全局技能时，可在插件的居民初始化钩子中对实际居民执行挂载，参见 [编写插件](plugins.md)。本页的私有副本流程通过文件保存配置。
 
 ## 编写建议
 
@@ -101,7 +100,7 @@ SkillRegistry().save_private(
 
 ### 技能没有进入提示词
 
-检查居民是否挂载了全局技能，以及 `inject_into_cognition` 或 `inject_into_work_brief` 是否启用。
+检查实际运行的记忆目录是否包含该居民的私有文件，或运行对象是否已挂载全局技能；再核对 `inject_into_cognition`、`inject_into_work_brief` 和 `max_per_prompt`。
 
 ### 私有技能与全局技能同名
 
@@ -146,7 +145,7 @@ GAWORLD_CONFIG_OVERRIDES='{"real_work":{"enabled":true}}' gaworld run --sim-days
 
 ## 完成后检查
 
-先确认注册表能找到技能、居民能读取挂载内容，再启动短运行。真实工作启用后，结合 `work/queue.jsonl` 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。
+先用新注册表从实际记忆目录读回私有技能，再启动短运行。真实工作启用后，结合 `work/queue.jsonl` 中的任务状态与居民任务目录中的文件检查结果；技能挂载和任务产物分别核对。
 
 ## 代码结构与执行流程
 

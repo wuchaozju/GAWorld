@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=1ce8f676" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=eabc9cc9" />
     
     
 
@@ -287,19 +287,16 @@
           <section id="id1">
 <h1>命令行界面<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
 <p>安装后使用 <code class="docutils literal notranslate"><span class="pre">gaworld</span></code> 命令。它会在选定的工作区中调用仿真程序；在源码仓库中，等价入口为 <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">generative_city_sim.py</span></code>。</p>
+<p>先安装 GAWorld，确认终端使用正确的 Python 环境，并准备工作区与模型配置。</p>
 <section id="id2">
-<h2>功能与准备<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
-<p>本章用于从终端创建工作区、启动控制台、运行仿真和访谈，适合本地重复操作与脚本流程。先安装 GAWorld，确认终端使用正确的 Python 环境，并准备工作区与模型配置。</p>
-</section>
-<section id="id3">
-<h2>查看帮助<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<h2>查看帮助<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>--help
 gaworld<span class="w"> </span>run<span class="w"> </span>--help
 </pre></div>
 </div>
 </section>
-<section id="id4">
-<h2>工作区与控制台<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<section id="id3">
+<h2>工作区与控制台<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>init<span class="w"> </span>./my-world
 <span class="nb">cd</span><span class="w"> </span>my-world
 gaworld<span class="w"> </span>dashboard<span class="w"> </span>--port<span class="w"> </span><span class="m">8766</span>
@@ -307,8 +304,8 @@ gaworld<span class="w"> </span>dashboard<span class="w"> </span>--port<span clas
 </div>
 <p>可以通过环境变量 <code class="docutils literal notranslate"><span class="pre">GAWORLD_WORKSPACE</span></code> 指定已经初始化的工作区。运行产物保存在该工作区内。</p>
 </section>
-<section id="id5">
-<h2>运行仿真<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h2>运行仿真<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
 <p>命令行运行使用工作区的模型配置。基础配置位于 <code class="docutils literal notranslate"><span class="pre">gaworld/settings/</span></code>，<code class="docutils literal notranslate"><span class="pre">dashboard_config.json</span></code> 提供运行覆盖项。云端密钥按配置中的环境变量名读取；控制台保存的个人密钥由已登录的网页会话使用。</p>
 <p>配置完成后，运行一天：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
@@ -325,9 +322,9 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--sim-months</span></code> 和 <code class="docutils literal notranslate"><span class="pre">--sim-years</span></code> 会选择对应的快进步长。使用 <code class="docutils literal notranslate"><span class="pre">gaworld</span> <span class="pre">run</span> <span class="pre">--help</span></code> 查看运行参数。</p>
 </section>
-<section id="id6">
-<h2>访谈居民<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
-<p>将 <code class="docutils literal notranslate"><span class="pre">31</span></code> 替换为当前世界中要访谈的居民 ID：</p>
+<section id="id5">
+<h2>访谈居民<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p>将 <code class="docutils literal notranslate"><span class="pre">31</span></code> 替换为当前本地配置中要访谈的居民 ID：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>interview<span class="w"> </span>--agent-id<span class="w"> </span><span class="m">31</span><span class="w"> </span>--question<span class="w"> </span><span class="s2">"你今天为什么选择这个行动？"</span>
 </pre></div>
 </div>
@@ -336,16 +333,16 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class
 </pre></div>
 </div>
 </section>
-<section id="id7">
-<h2>创建与切换城市<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id6">
+<h2>创建与切换城市<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
 <p>在工作区目录中执行城市子模块：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>create<span class="w"> </span><span class="s2">"绍兴柯桥"</span><span class="w"> </span>--size<span class="w"> </span><span class="m">200</span>
 python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>use<span class="w"> </span>绍兴柯桥
 </pre></div>
 </div>
 </section>
-<section id="id8">
-<h2>从初始状态重新运行<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>从初始状态重新运行<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">reset</span></code> 会重置当前运行产物。先保存需要保留的日志、记忆与结果，再执行：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>reset
 gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
@@ -353,8 +350,8 @@ gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class=
 </div>
 <p>日常观察与多人实验可直接使用控制台；命令行适合本地运行、批量任务和脚本流程。</p>
 </section>
-<section id="id9">
-<h2>完整工作流<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>完整工作流<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>init<span class="w"> </span>./my-world
 <span class="nb">cd</span><span class="w"> </span>my-world
 python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class="w"> </span>create<span class="w"> </span><span class="s2">"柳溪村"</span><span class="w"> </span>--offline<span class="w"> </span>--scale<span class="w"> </span>tiny<span class="w"> </span>--size<span class="w"> </span><span class="m">100</span>
@@ -363,9 +360,13 @@ python<span class="w"> </span>-m<span class="w"> </span>gaworld.city<span class=
 </div>
 <p>从列表确认城市名称，用 <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">gaworld.city</span> <span class="pre">use</span> <span class="pre">&lt;城市名称&gt;</span></code> 选择城市。启动控制台完成模型设置，再按照上文的命令行配置方式运行仿真。结果读取见 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a>。</p>
 </section>
-<section id="id10">
-<h2>完成后检查<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
 <p>先运行 <code class="docutils literal notranslate"><span class="pre">gaworld</span> <span class="pre">--help</span></code> 和 <code class="docutils literal notranslate"><span class="pre">gaworld</span> <span class="pre">run</span> <span class="pre">--help</span></code> 确认入口可用，再在选定工作区执行短运行。核对日志和输出目录；在脚本中根据进程退出码判断命令是否成功。</p>
+</section>
+<section id="id10">
+<h2>命令行参数如何进入运行<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">gaworld</span> <span class="pre">run</span> <span class="pre">--sim-days</span> <span class="pre">1</span></code> 先由 <code class="docutils literal notranslate"><span class="pre">launcher.main()</span></code> 选择工作区，再把 <code class="docutils literal notranslate"><span class="pre">run</span></code> 与参数交给该工作区的仿真入口。入口组装基础配置、工作区覆盖与命令行参数，随后加载居民并执行运行。终端密钥由子进程继承；网页的世界 Cookie 属于 HTTP 会话，需要操作服务器世界时使用已登录并调用 <code class="docutils literal notranslate"><span class="pre">use_world()</span></code> 的客户端。</p>
 </section>
 <section id="id11">
 <h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
@@ -475,15 +476,15 @@ python -m gaworld.city → city/__main__.py → 城市管理
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">命令行界面</a><ul>
-<li><a class="reference internal" href="#id2">功能与准备</a></li>
-<li><a class="reference internal" href="#id3">查看帮助</a></li>
-<li><a class="reference internal" href="#id4">工作区与控制台</a></li>
-<li><a class="reference internal" href="#id5">运行仿真</a></li>
-<li><a class="reference internal" href="#id6">访谈居民</a></li>
-<li><a class="reference internal" href="#id7">创建与切换城市</a></li>
-<li><a class="reference internal" href="#id8">从初始状态重新运行</a></li>
-<li><a class="reference internal" href="#id9">完整工作流</a></li>
-<li><a class="reference internal" href="#id10">完成后检查</a></li>
+<li><a class="reference internal" href="#id2">查看帮助</a></li>
+<li><a class="reference internal" href="#id3">工作区与控制台</a></li>
+<li><a class="reference internal" href="#id4">运行仿真</a></li>
+<li><a class="reference internal" href="#id5">访谈居民</a></li>
+<li><a class="reference internal" href="#id6">创建与切换城市</a></li>
+<li><a class="reference internal" href="#id7">从初始状态重新运行</a></li>
+<li><a class="reference internal" href="#id8">完整工作流</a></li>
+<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id10">命令行参数如何进入运行</a></li>
 <li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
 <li><a class="reference internal" href="#id12">模块分工</a></li>
 <li><a class="reference internal" href="#id13">执行流程</a></li>
