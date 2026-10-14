@@ -78,6 +78,17 @@ cli
 ```{toctree}
 :hidden:
 :maxdepth: 1
+:caption: 案例分析
+
+cases/index
+cases/simulation-records
+cases/classics
+cases/demand
+```
+
+```{toctree}
+:hidden:
+:maxdepth: 1
 :caption: 开发者指南
 
 code-structure
