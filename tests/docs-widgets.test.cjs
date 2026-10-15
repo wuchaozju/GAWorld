@@ -51,9 +51,28 @@ root.appendChild(link);`;
     if (width < 1072) await page.locator('.nav-overlay-icon').click();
     await page.waitForFunction(()=>document.querySelector('[data-brand-reveal]')?.dataset.started === 'true');
     const boxBefore = await page.locator('[data-brand-reveal]').boundingBox();
+    if (width===1440 && theme==='light') {
+      const motion = await page.evaluate(()=>{
+        const scene = document.querySelector('.brand-reveal-scene');
+        const animations = scene.getAnimations({subtree:true});
+        const sample = time => {
+          animations.forEach(a=>{a.pause();a.currentTime=time;});
+          return {path:getComputedStyle(scene.querySelector('[data-brand-spine]')).d,
+            ink:parseFloat(getComputedStyle(scene.querySelector('mask path')).strokeWidth)};
+        };
+        const early = sample(600), forming = sample(1700), settled = sample(2900);
+        animations.forEach(a=>{a.currentTime=0;a.play();});
+        return {early,forming,settled,nodes:scene.querySelectorAll('[data-brand-node]').length};
+      });
+      assert.equal(motion.nodes,8,'the opening must remain legible at sidebar size');
+      assert.notEqual(motion.early.path,motion.forming.path,'connections must morph continuously');
+      assert.notEqual(motion.forming.path,motion.settled.path);
+      assert.equal(motion.early.ink,0);
+      assert.equal(motion.settled.ink,45,'the final mask must reveal the complete original glyph');
+    }
     if (output && width===1440 && theme==='light') {
       fs.mkdirSync(output,{recursive:true});
-      for (const time of [650,1900,2500]) {
+      for (const time of [650,1500,2100,2750]) {
         await page.evaluate(time=>document.querySelector('.brand-reveal-scene').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=time;}),time);
         await page.locator('[data-brand-reveal]').screenshot({path:path.join(output,`logo-${time}.png`)});
       }
@@ -96,6 +115,23 @@ root.appendChild(link);`;
   assert.equal(await page.locator('.brand-reveal-scene').count(),0);
   assert(await page.locator('.sidebar-logo').isVisible());
   await ctx.close();
+  for (const scenario of ['unsupported','reduce-during-play']) {
+    const {ctx,page,errors} = await context();
+    if (scenario==='unsupported') await page.addInitScript(()=>{
+      const supports=CSS.supports.bind(CSS);
+      CSS.supports=(property,...args)=>property==='d'?false:supports(property,...args);
+    });
+    await page.goto(origin+prefix+'index.html');
+    if (scenario==='reduce-during-play') {
+      await page.waitForFunction(()=>document.querySelector('[data-brand-reveal]')?.dataset.started === 'true');
+      await page.emulateMedia({reducedMotion:'reduce'});
+      await page.waitForFunction(()=>document.querySelector('[data-brand-reveal]')?.dataset.finished === 'true');
+    }
+    assert.equal(await page.locator('.brand-reveal-scene').count(),0);
+    assert(await page.locator('.sidebar-logo').isVisible());
+    assert.deepEqual(errors,[]);
+    await ctx.close(); checks++;
+  }
   await browser.close();
   console.log(`PASS ${checks+1} widget cases: host restriction, counter loading/failure, repeat prevention, stable geometry, mobile, dark theme, and reduced motion.`);
 })().catch(error=>{console.error(error);process.exit(1);});
