@@ -774,6 +774,12 @@ def _parallel() -> dict[str, Any]:
     root_q = _q("root", "Experiment root from /experiments", required=True)
     baseline_q = _q("baseline", "Baseline world (default: the spec's)")
     return {
+        "/api/analysis/compare": {"post": _op(
+            "analysis", "Run the Parallel-Worlds analysis over a supplied manifest (no simulation)",
+            body=_obj(("manifest",), manifest=OBJ),
+            ok=_obj(("report", "artifacts_dir"), report=OBJ,
+                    artifacts_dir=_d(STR, "output/comparisons/<comparison-id>")),
+            errors={"400": "Invalid manifest, path outside the repository, or missing state history"})},
         "/api/parallel-worlds/overview": {"get": _op("parallel-worlds", "Current experiment and its worlds")},
         "/api/parallel-worlds/experiments": {"get": _op("parallel-worlds", "Finished experiments")},
         "/api/parallel-worlds/experiment": {"get": _op(
@@ -925,7 +931,7 @@ TAGS = (
     "meta", "auth", "worlds", "cluster", "cluster-node", "play", "config", "agents", "run", "analytics", "trace",
     "life-events", "todos", "collaboration", "kernel", "infosources", "bench", "economy", "family", "home",
     "moltbook", "settings", "external-systems", "city", "population", "import", "interview", "research",
-    "serious-games", "policy-sim", "persona", "parallel-worlds", "games", "arena",
+    "serious-games", "policy-sim", "persona", "parallel-worlds", "games", "arena", "analysis",
 )
 
 _PARAM = re.compile(r"\{([^}]+)\}")

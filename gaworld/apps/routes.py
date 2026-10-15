@@ -61,6 +61,7 @@ GET_ROUTES = (
 POST_ROUTES = (
     Route("kernel_api", "/api/interventions/"),
     Route("organizations_api", "/api/organizations/", bare=True),
+    Route("analysis_api", "/api/analysis/"),
     Route("bench_api", "/api/bench/"),
     Route("population_api", "/api/population"),
     Route("import_api", "/api/import"),
