@@ -43,7 +43,10 @@ from fos.core.experiment.scenes.gaworld.runtime_modes import (
     merge_nested_overrides,
 )
 from fos.core.experiment.scenes.gaworld.subprocess_manager import (
+    GAWorldCancelledError,
     GAWorldSubprocessManager,
+    GAWorldTimeoutError,
+    gaworld_process_registry,
     gaworld_subprocess_semaphore,
 )
 from fos.core.experiment.scenes.gaworld.translator import GAWorldOutputTranslator
@@ -60,6 +63,57 @@ FOS_GAWORLD_PROVIDER_NAME = "fos_provider"
 GAWORLD_API_KEY_ENV = "GAWORLD_LLM_API_KEY"
 GAWORLD_WAIT_TIMEOUT_S = 1800
 FAST_MODE_TIME_STEP_MINUTES = 120
+
+
+def resolve_day_timeout_s() -> float:
+    """Per-day wait timeout, configurable for tests via FOS_GAWORLD_DAY_TIMEOUT_S.
+
+    Defaults to the historical GAWORLD_WAIT_TIMEOUT_S (1800s).
+    """
+    raw = os.environ.get("FOS_GAWORLD_DAY_TIMEOUT_S")
+    if raw is not None:
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return GAWORLD_WAIT_TIMEOUT_S
+        if value > 0:
+            return value
+    return GAWORLD_WAIT_TIMEOUT_S
+
+
+def record_queue_diagnostics(scene: "GAWorldScene") -> dict[str, Any]:
+    """Queue diagnostics for a scene: queued/started timestamps and wait."""
+    queued_at = getattr(scene, "queued_at", None)
+    started_at = getattr(scene, "started_at", None)
+    queue_wait_seconds = None
+    if queued_at is not None and started_at is not None:
+        queue_wait_seconds = round(max(0.0, started_at - queued_at), 3)
+    return {
+        "queued_at": queued_at,
+        "started_at": started_at,
+        "queue_wait_seconds": queue_wait_seconds,
+        "runtime_status": getattr(scene, "runtime_status", None),
+    }
+
+
+def handle_day_timeout(manager: GAWorldSubprocessManager | None) -> None:
+    """Handle a per-day wait timeout: terminate the child, release its slot.
+
+    The node ends ``timed_out`` with a reason; the incomplete day never yields
+    a checkpoint (the run output is preserved so the last completed checkpoint
+    survives); there is no auto-retry.
+    """
+    if manager is None:
+        return
+    manager.runtime_status = "timed_out"
+    manager.cancel(reason="timed_out")
+
+
+def handle_cancelled(manager: GAWorldSubprocessManager | None) -> None:
+    """Record a cancelled terminal outcome and make sure the slot is freed."""
+    if manager is None:
+        return
+    manager.cancel(reason="cancelled")
 DEFAULT_EXECUTION_PROFILE = "fast"
 
 # Map FOS LLM dialect to GAWorld provider type.
@@ -411,6 +465,9 @@ class GAWorldScene(ExperimentScene):
         self._agent_name_map: dict[int, str] = {}
         self._gaworld_slots: list = []
         self.runtime_status: str = "idle"
+        # Phase 8 queue diagnostics (seconds since epoch).
+        self.queued_at: float | None = None
+        self.started_at: float | None = None
 
     def initialize(self, llm_client, provider_clients: dict | None = None) -> None:
         self.llm_client = llm_client
@@ -576,12 +633,15 @@ class GAWorldScene(ExperimentScene):
             # default 2): one slot per process, acquired at this scene layer
             # only so non-GAWorld scenes are never throttled.
             self.runtime_status = "queued"
+            self.queued_at = time.time()
             slots = []
             for _ in range(2):
                 slot = gaworld_subprocess_semaphore()
                 slot.acquire()
                 slots.append(slot)
             self._gaworld_slots = slots
+            self.started_at = time.time()
+            record_queue_diagnostics(self)
             self._comparative_managers = GAWorldSubprocessManager.launch_comparative(
                 gaworld_path=gaworld_path,
                 event_config=event_config,
@@ -609,8 +669,14 @@ class GAWorldScene(ExperimentScene):
         # signal while a launch waits for a slot.
         slot = gaworld_subprocess_semaphore()
         self.runtime_status = "queued"
+        self.queued_at = time.time()
         slot.acquire()
         self._gaworld_slots = [slot]
+        self.started_at = time.time()
+        record_queue_diagnostics(self)
+        # Bind the slot to the manager so cancel/timeout release it exactly
+        # once; a cancelled queued node refuses to launch in launch().
+        manager.owned_slots = [slot]
         manager.launch()
         self.runtime_status = "running"
         self._subprocess_manager = manager
@@ -641,9 +707,21 @@ class GAWorldScene(ExperimentScene):
 
         try:
             sim_state = self._subprocess_manager.wait_for_day(
-                day_num, timeout=GAWORLD_WAIT_TIMEOUT_S
+                day_num, timeout=resolve_day_timeout_s()
             )
             day_data = self._read_day_data(day_num)
+        except GAWorldTimeoutError:
+            # Terminal outcome: timed_out. Terminate the child, release the
+            # slot; the incomplete day yields no checkpoint (run_round raises
+            # before translating/reading), the last checkpoint is preserved,
+            # and there is no auto-retry.
+            self.runtime_status = "timed_out"
+            handle_day_timeout(self._subprocess_manager)
+            raise
+        except GAWorldCancelledError:
+            self.runtime_status = "cancelled"
+            handle_cancelled(self._subprocess_manager)
+            raise
         finally:
             self.cleanup_runtime_resources()
 
@@ -754,7 +832,10 @@ class GAWorldScene(ExperimentScene):
                 self._gaworld_slots.pop().release()
             except ValueError:
                 pass
-        self.runtime_status = "idle"
+        # Keep a terminal outcome (cancelled/timed_out/failed) visible; only
+        # a normally finished run returns to idle.
+        if self.runtime_status not in ("cancelled", "timed_out"):
+            self.runtime_status = "idle"
 
     def is_complete(self) -> bool:
         return False

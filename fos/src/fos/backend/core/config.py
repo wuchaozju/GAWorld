@@ -70,6 +70,13 @@ class Settings(BaseSettings):
 
     # Simulation cost controls
     max_advance_multi_count: int = 20
+    # GAWorld-only: bound on live GAWorld subprocesses (queueing width).
+    # Validated >= 1; applied only to GAWorld scenes, never other scenes.
+    fos_gaworld_max_subprocesses: int = Field(default=2, ge=1)
+    # GAWorld-only: maximum summed additional days per advance_multi request.
+    fos_branch_day_budget: int = Field(default=200, ge=1)
+    # GAWorld-only: maximum GAWorld branches per advance_multi request.
+    fos_max_gaworld_branches_per_request: int = Field(default=8, ge=1)
     max_advance_turns_per_request: int = 50
     max_frontier_nodes_per_request: int = 50
 

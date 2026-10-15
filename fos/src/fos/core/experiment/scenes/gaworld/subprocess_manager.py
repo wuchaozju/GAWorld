@@ -43,6 +43,85 @@ class GAWorldTimeoutError(RuntimeError):
     """Raised when waiting for GAWorld output reaches timeout."""
 
 
+class GAWorldCancelledError(RuntimeError):
+    """Raised when a GAWorld run was cancelled before/during execution."""
+
+
+TERMINAL_RUNTIME_STATUSES: tuple[str, ...] = (
+    "completed",
+    "cancelled",
+    "failed",
+    "timed_out",
+)
+
+
+class _GaworldProcessRegistry:
+    """Tracks live GAWorld subprocess managers so callers can inspect them.
+
+    A manager stops counting as live as soon as its process has exited (the
+    registry prunes dead entries on every read), so it never reports a dead
+    process as live, whatever the ending (success / failure / timeout / kill).
+    """
+
+    def __init__(self) -> None:
+        self._entries: dict[int, "GAWorldSubprocessManager"] = {}
+        self._lock = threading.Lock()
+
+    def register(self, manager: "GAWorldSubprocessManager") -> None:
+        process = getattr(manager, "process", None)
+        if process is None or process.poll() is not None:
+            return
+        with self._lock:
+            self._entries[process.pid] = manager
+
+    def unregister(self, manager: "GAWorldSubprocessManager") -> None:
+        process = getattr(manager, "process", None)
+        if process is None:
+            return
+        with self._lock:
+            self._entries.pop(process.pid, None)
+
+    def _prune(self) -> None:
+        with self._lock:
+            for pid, manager in list(self._entries.items()):
+                process = getattr(manager, "process", None)
+                if process is None or process.poll() is not None:
+                    self._entries.pop(pid, None)
+
+    def live_managers(self) -> list["GAWorldSubprocessManager"]:
+        self._prune()
+        with self._lock:
+            return list(self._entries.values())
+
+    def live_count(self) -> int:
+        self._prune()
+        with self._lock:
+            return len(self._entries)
+
+    def __len__(self) -> int:
+        return self.live_count()
+
+
+gaworld_process_registry = _GaworldProcessRegistry()
+
+
+def request_cancel(manager: "GAWorldSubprocessManager", reason: str = "cancelled") -> None:
+    """Cancel a GAWorld run.
+
+    If the run has not launched yet the flag makes any later ``launch()``
+    refuse (a cancelled queued node never launches and never consumes a
+    slot). If the process is already live, the manager terminates it.
+    """
+    if manager is None:
+        return
+    manager.cancel_requested = True
+    manager.cancel_reason = reason
+    if manager.is_alive():
+        manager.cancel(reason=reason)
+    else:
+        manager.runtime_status = reason
+
+
 class _GaworldSubprocessSlots:
     """Loop-agnostic counting semaphore bounding LIVE GAWorld subprocesses.
 
@@ -78,6 +157,14 @@ _SLOTS_LOCK = threading.Lock()
 def _gaworld_max_subprocesses() -> int:
     """Configured bound on live GAWorld subprocesses (default 2)."""
     raw = os.environ.get("FOS_GAWORLD_MAX_SUBPROCESSES")
+    if raw is None:
+        # Fall back to the first-class settings field (GAWorld-only, ge=1).
+        try:
+            from fos.backend.core.config import get_settings
+
+            return max(1, int(get_settings().fos_gaworld_max_subprocesses))
+        except Exception:
+            return 2
     try:
         value = int(raw)
     except (TypeError, ValueError):
@@ -456,9 +543,21 @@ class GAWorldSubprocessManager:
     process: subprocess.Popen[str] | Any | None = field(default=None, init=False)
     launch_started_at: float | None = field(default=None, init=False)
     _last_wait_signature: str | None = field(default=None, init=False)
+    # Phase 8 lifecycle: cancellation flag, runtime status, owned semaphore
+    # slots (set by the scene layer), and single-release bookkeeping.
+    cancel_requested: bool = field(default=False, init=False)
+    cancel_reason: str | None = field(default=None, init=False)
+    runtime_status: str = field(default="idle", init=False)
+    owned_slots: list[Any] = field(default_factory=list, init=False)
+    _slots_released: bool = field(default=False, init=False)
 
     def launch(self) -> None:
         """Starts the simulator process with config overrides in environment."""
+        if self.cancel_requested:
+            # A cancelled queued node must never launch (and never consume a
+            # slot: acquisition happens at the scene layer after this check).
+            self.runtime_status = self.cancel_reason or "cancelled"
+            raise GAWorldCancelledError("gaworld.error.cancelled_before_launch")
         script_path = self.gaworld_path / "generative_city_sim.py"
         if not script_path.exists():
             raise FileNotFoundError("gaworld.error.script_not_found")
@@ -521,6 +620,8 @@ class GAWorldSubprocessManager:
             if os.name != "nt":
                 popen_kwargs["preexec_fn"] = os.setsid
             self.process = subprocess.Popen(command, **popen_kwargs)
+        self.runtime_status = "running"
+        gaworld_process_registry.register(self)
 
     def wait_for_day(
         self,
@@ -537,9 +638,15 @@ class GAWorldSubprocessManager:
         saw_change_during_wait = False
 
         while True:
+            if self.cancel_requested:
+                self.cancel(reason=self.cancel_reason or "cancelled")
+                raise GAWorldCancelledError("gaworld.error.cancelled_during_wait")
             if self.process is not None:
                 exit_code = self.process.poll()
-                if exit_code is not None and exit_code != 0:
+                if exit_code is not None:
+                    # The child exited before reaching the target day — that
+                    # is a process failure whatever the exit code (a healthy
+                    # GAWorld run stays alive until FOS asks it to stop).
                     log_tail = _read_log_tail(self.output_dir / "gaworld.log")
                     detail = f"gaworld.error.exited_unexpectedly: exited unexpectedly with code {exit_code}"
                     if log_tail:
@@ -626,6 +733,63 @@ class GAWorldSubprocessManager:
         """Returns True only when a process exists and is still running."""
         return self.process is not None and self.process.poll() is None
 
+    def _release_slots(self) -> None:
+        """Release the semaphore slots bound to this manager, exactly once."""
+        if self._slots_released:
+            return
+        self._slots_released = True
+        slots, self.owned_slots = self.owned_slots, []
+        released = False
+        for slot in slots:
+            try:
+                slot.release()
+                released = True
+            except ValueError:
+                pass
+        if not released and not slots:
+            # Managers launched without scene-bound slots still hold one
+            # shared-semaphore unit per live process; release it. A surplus
+            # release on a BoundedSemaphore raises ValueError, which is
+            # swallowed so cancellation never propagates a bookkeeping error.
+            try:
+                gaworld_subprocess_semaphore().release()
+            except ValueError:
+                pass
+
+    def cancel(self, reason: str = "cancelled", grace_s: float = 5.0) -> None:
+        """Terminate this GAWorld run and release its slot, idempotently.
+
+        Safe to call after the process already exited; survives a raising
+        ``os.killpg``; the slot is ALWAYS released (even when termination or
+        cleanup raises) and never released twice.
+        """
+        try:
+            if self.is_alive():
+                try:
+                    if os.name == "nt":
+                        self.process.terminate()
+                    else:
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                except (ProcessLookupError, PermissionError, OSError):
+                    logger.info("GAWorld cancel: process group already gone")
+                # Bounded grace, then escalate to SIGKILL.
+                deadline = time.time() + max(0.0, grace_s)
+                while self.is_alive() and time.time() < deadline:
+                    time.sleep(0.05)
+                if self.is_alive() and os.name != "nt":
+                    try:
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                    except (ProcessLookupError, PermissionError, OSError):
+                        pass
+            self.cancel_requested = True
+            self.cancel_reason = self.cancel_reason or reason
+            self.runtime_status = reason if reason in TERMINAL_RUNTIME_STATUSES else "cancelled"
+        finally:
+            # Slot release must happen on every path, error or not, and only
+            # once (cancel-after-exit / repeated cancel must not double-free).
+            self._release_slots()
+            gaworld_process_registry.unregister(self)
+
     def kill(self) -> None:
         """Stops the process and removes output unless output preservation is enabled."""
         if self.process is not None and self.process.poll() is None:
@@ -636,6 +800,9 @@ class GAWorldSubprocessManager:
 
         if not self.preserve_output and self.output_dir.exists():
             shutil.rmtree(self.output_dir)
+        gaworld_process_registry.unregister(self)
+        if self.runtime_status not in TERMINAL_RUNTIME_STATUSES:
+            self.runtime_status = "idle"
 
     @classmethod
     def launch_comparative(
