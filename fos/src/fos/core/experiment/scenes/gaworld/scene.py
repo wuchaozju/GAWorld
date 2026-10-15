@@ -44,6 +44,7 @@ from fos.core.experiment.scenes.gaworld.runtime_modes import (
 )
 from fos.core.experiment.scenes.gaworld.subprocess_manager import (
     GAWorldSubprocessManager,
+    gaworld_subprocess_semaphore,
 )
 from fos.core.experiment.scenes.gaworld.translator import GAWorldOutputTranslator
 
@@ -408,6 +409,8 @@ class GAWorldScene(ExperimentScene):
         ) = None
         self._provider_clients: dict = {}
         self._agent_name_map: dict[int, str] = {}
+        self._gaworld_slots: list = []
+        self.runtime_status: str = "idle"
 
     def initialize(self, llm_client, provider_clients: dict | None = None) -> None:
         self.llm_client = llm_client
@@ -569,6 +572,16 @@ class GAWorldScene(ExperimentScene):
 
         if bool(self.config.parameters.get("intervention_enabled", False)):
             event_config = dict(self.config.parameters.get("event_config", {}))
+            # Bound live GAWorld subprocesses (FOS_GAWORLD_MAX_SUBPROCESSES,
+            # default 2): one slot per process, acquired at this scene layer
+            # only so non-GAWorld scenes are never throttled.
+            self.runtime_status = "queued"
+            slots = []
+            for _ in range(2):
+                slot = gaworld_subprocess_semaphore()
+                slot.acquire()
+                slots.append(slot)
+            self._gaworld_slots = slots
             self._comparative_managers = GAWorldSubprocessManager.launch_comparative(
                 gaworld_path=gaworld_path,
                 event_config=event_config,
@@ -590,7 +603,16 @@ class GAWorldScene(ExperimentScene):
             env_overrides=env_overrides,
             env_removals=env_removals,
         )
+        # Bound live GAWorld subprocesses (FOS_GAWORLD_MAX_SUBPROCESSES,
+        # default 2): acquire at this scene layer only so non-GAWorld scenes
+        # are never throttled. runtime_status gives callers a queued→running
+        # signal while a launch waits for a slot.
+        slot = gaworld_subprocess_semaphore()
+        self.runtime_status = "queued"
+        slot.acquire()
+        self._gaworld_slots = [slot]
         manager.launch()
+        self.runtime_status = "running"
         self._subprocess_manager = manager
         logger.info(
             "GAWorld subprocess launch prepared in %.3fs for output_dir=%s",
@@ -727,6 +749,12 @@ class GAWorldScene(ExperimentScene):
             manager.kill()
         self._subprocess_manager = None
         self._comparative_managers = None
+        while self._gaworld_slots:
+            try:
+                self._gaworld_slots.pop().release()
+            except ValueError:
+                pass
+        self.runtime_status = "idle"
 
     def is_complete(self) -> bool:
         return False
