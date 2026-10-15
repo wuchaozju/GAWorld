@@ -24,26 +24,11 @@ from typing import Any
 
 from gaworld.city.config import run_root_overrides
 from gaworld.settings.overrides import deep_update
+from gaworld.worldrun.config import RESERVED_CONFIG_KEYS
 
-#: Config keys a world patch may never set. These are the knobs that make the
-#: comparison valid (seed, horizon, cohort) or that isolate worlds on disk;
-#: letting a per-world patch touch them would produce a diff nobody can read.
-RESERVED_CONFIG_KEYS: frozenset[str] = frozenset({
-    "random_seed",
-    "sim_days",
-    "agent_ids",
-    "memory_dir",
-    "log_dir",
-    "vector_db_path",
-    "state_output_dir",
-    "network_output_dir",
-    "environment_output_dir",
-    "diary_output_dir",
-    "policy_events",
-    "visualization",
-    "distributed",
-    "stateful",
-})
+#: Authoritative definition lives in ``gaworld.worldrun`` (Phase 9): this
+#: module re-exports it so PW call sites keep their import path.
+_RESERVED_CONFIG_KEYS_SOURCE = "gaworld.worldrun"
 
 _SLUG_RE = re.compile(r"[^0-9A-Za-z一-鿿]+")
 _ID_RE = re.compile(r"[^0-9A-Za-z_-]+")
@@ -77,6 +62,9 @@ class WorldSpec:
     role: str = ""
     #: Optional intensity, so worlds can be read as a dose–response series.
     dose: float | None = None
+    #: Optional checkpoint directory to seed this world from (§23, additive).
+    #: ``None`` keeps the historical fresh-start semantics.
+    seed_from_checkpoint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -87,6 +75,7 @@ class WorldSpec:
             "note": self.note,
             "role": self.role,
             "dose": self.dose,
+            "seed_from_checkpoint": self.seed_from_checkpoint,
         }
 
 
@@ -231,6 +220,11 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
                 note=str(raw.get("note", "")).strip(),
                 role=role,
                 dose=dose,
+                seed_from_checkpoint=(
+                    str(raw["seed_from_checkpoint"]).strip()
+                    if raw.get("seed_from_checkpoint") not in (None, "")
+                    else None
+                ),
             )
         )
 
@@ -335,9 +329,13 @@ def world_overrides(
             if isinstance(task_map, dict)
             else {}
         )
-        overrides["llm"] = {
-            "routing": {"default": str(spec.llm_provider), "tasks": forced}
-        }
+        new_routing = {"default": str(spec.llm_provider), "tasks": forced}
+        # §24: forcing a provider must NOT erase the ambient per-agent
+        # routing table — per-agent assignments are an operator decision
+        # orthogonal to "which provider runs the default tasks".
+        if isinstance(routing.get("agents"), dict):
+            new_routing["agents"] = dict(routing["agents"])
+        overrides["llm"] = {"routing": new_routing}
 
     # World-level patch last: it is the thing the experiment is varying, so it
     # wins over the shared defaults above (minus the reserved keys, which

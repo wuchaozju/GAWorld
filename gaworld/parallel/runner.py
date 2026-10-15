@@ -138,28 +138,27 @@ def prepare_experiment(
 
 
 def manifest_path(repo_root: str, root_rel: str) -> str:
-    return os.path.join(repo_root, root_rel, "experiment.json")
+    """Delegates to ``gaworld.worldrun.manifest`` (single implementation)."""
+    from gaworld.worldrun.manifest import manifest_path as _wr_path
+
+    return _wr_path(repo_root, root_rel)
 
 
 def write_manifest(repo_root: str, manifest: dict[str, Any]) -> None:
-    path = manifest_path(repo_root, manifest["root"])
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = f"{path}.tmp"
-    with open(tmp, "w", encoding="utf-8") as handle:
-        json.dump(manifest, handle, ensure_ascii=False, indent=2)
-    os.replace(tmp, path)
+    """Atomically write the run manifest (root / worlds keys and any
+    additive v2 fields) via ``gaworld.worldrun.manifest`` — the ONE
+    manifest writer, so partial writes are never discoverable and secrets
+    are stripped before anything reaches disk."""
+    from gaworld.worldrun.manifest import write_manifest as _wr_write
+
+    _wr_write(repo_root, manifest)
 
 
 def load_manifest(repo_root: str, root_rel: str) -> dict[str, Any] | None:
-    path = manifest_path(repo_root, root_rel)
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return None
-    return payload if isinstance(payload, dict) else None
+    """Delegates to ``gaworld.worldrun.manifest`` (single implementation)."""
+    from gaworld.worldrun.manifest import load_manifest as _wr_load
+
+    return _wr_load(repo_root, root_rel)
 
 
 # ---------------------------------------------------------------------------

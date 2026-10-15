@@ -5,6 +5,10 @@ from __future__ import annotations
 import os
 import re
 
+#: Phase 9 single-implementation audit marker: branch_runtime_overrides
+#: takes its run-path key set from the authoritative worldrun definition.
+_RUN_ROOT_OVERRIDES_SOURCE = "gaworld.worldrun"
+
 
 def resolve_gaworld_path(startup_path: str | None) -> str | None:
     """Resolve GAWorld path from the startup snapshot, then the live env."""
@@ -119,8 +123,11 @@ def branch_runtime_overrides(
     Provenance (checkpoint references, recovery history) deliberately lives in
     ``node.meta``, never here — this patch is runtime config only.
     """
-    from gaworld.city.config import run_root_overrides
+    from gaworld.worldrun.config import run_root_overrides
 
+    # Phase 9 single-implementation audit: the path-key set comes from the
+    # authoritative gaworld.worldrun definition (same table cities, user
+    # worlds and the parallel-worlds runner use).
     base = str(branch_dir).rstrip("/")
     patch: dict = run_root_overrides(base)
 
