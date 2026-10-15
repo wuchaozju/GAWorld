@@ -1,0 +1,26 @@
+================================================================================
+SCENARIO: public_goods
+MODEL: phi4-mini
+TEST: pool
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: group
+  payoff_type: pool
+  agents: ['Player1', 'Player2', 'Player3']
+  actions: ['contribute']
+  initial_tokens: 20
+  multiplier: 1.5
+
+================================================================================
+ROUND 1
+================================================================================
+  Player1: 
+  Player2: 
+  Player3: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'Player1': 0, 'Player2': 0, 'Player3': 0}
+Errors: ['Round 1 - Player1: [Errno 111] Connection refused', 'Round 1 - Player2: [Errno 111] Connection refused', 'Round 1 - Player3: [Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:57:02.487109

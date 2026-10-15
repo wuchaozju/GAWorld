@@ -1,0 +1,26 @@
+================================================================================
+SCENARIO: echo_chamber
+MODEL: phi4-mini
+TEST: neighbor
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: neighbor
+  payoff_type: none
+  agents: ['ProAgent1', 'ProAgent2', 'AntiAgent1', 'AntiAgent2']
+  actions: ['express_opinion', 'reinforce_ingroup', 'share_content', 'disengage']
+  graph: polarized with bridge
+
+================================================================================
+ROUND 1
+================================================================================
+  ProAgent1: 
+  ProAgent2: 
+  AntiAgent1: 
+  AntiAgent2: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'ProAgent1': 0, 'ProAgent2': 0, 'AntiAgent1': 0, 'AntiAgent2': 0}
+Errors: ['[Errno 111] Connection refused', '[Errno 111] Connection refused', '[Errno 111] Connection refused', '[Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:57:29.771387

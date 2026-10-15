@@ -1,0 +1,25 @@
+================================================================================
+SCENARIO: prisoners_dilemma
+MODEL: phi4-mini
+TEST: four_agents
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: pairwise
+  payoff_type: matrix
+  agents: ['Alice', 'Bob', 'Carol', 'Dave']
+  actions: ['cooperate', 'defect']
+
+================================================================================
+ROUND 1
+================================================================================
+  Alice: 
+  Bob: 
+  Carol: 
+  Dave: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'Alice': 0, 'Bob': 0, 'Carol': 0, 'Dave': 0}
+Errors: ['Round 1 - Alice: [Errno 111] Connection refused', 'Round 1 - Bob: [Errno 111] Connection refused', 'Round 1 - Carol: [Errno 111] Connection refused', 'Round 1 - Dave: [Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:56:53.309009

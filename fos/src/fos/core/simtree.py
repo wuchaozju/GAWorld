@@ -612,12 +612,18 @@ class SimTree:
                 for k, v in updates.items():
                     sim.scene.state[k] = v
             elif name == "config_params_patch":
-                # Merge patch: only update specified keys; preserve all others.
+                # Deep merge: only update specified keys; never wipe sibling
+                # keys at the same level (a nested patch such as
+                # gaworld.checkpoint.restore_dir must keep population/llm).
                 updates = op["updates"]
                 if hasattr(sim.scene, 'config') and hasattr(sim.scene.config, 'parameters'):
-                    merged = dict(sim.scene.config.parameters)  # copy base
-                    merged.update(updates)                        # apply patch
-                    sim.scene.config.parameters = merged
+                    from fos.core.experiment.scenes.gaworld.runtime_modes import (
+                        merge_nested_overrides,
+                    )
+
+                    sim.scene.config.parameters = merge_nested_overrides(
+                        dict(sim.scene.config.parameters), updates
+                    )
             elif name == "config_description_patch":
                 # Update scenario description
                 if hasattr(sim.scene, 'config'):
@@ -703,6 +709,46 @@ class SimTree:
         sim.emit_remaining_events()
         # Attach to actual_parent_id instead of parent_id to create a sibling relationship
         return self.attach(actual_parent_id, ops, cid)
+
+    def fork_from_checkpoint(
+        self, parent_id: int, checkpoint_ref: dict, count: int = 2
+    ) -> List[int]:
+        """Create ``count`` sibling branches all referencing one checkpoint.
+
+        Records the checkpoint REFERENCE (never payloads or credentials) in
+        each child's ``meta["checkpoint"]``. The restored runtime state of the
+        children is identical: every child is cloned from the same source
+        node. Launch-time validation of the reference is separate (see
+        ``fos.backend.services.simtree_gaworld.validate_checkpoint_reference``)
+        so forking stays a pure tree operation.
+        """
+        if parent_id not in self.nodes:
+            raise KeyError(T("Node {parent_id} not found in tree", parent_id=parent_id))
+        children: List[int] = []
+        for _ in range(max(1, int(count))):
+            cid = self.branch(parent_id, [])
+            # Copy the ref so later mutation of one node's meta cannot leak
+            # into a sibling or the source reference.
+            self.nodes[cid]["meta"]["checkpoint"] = json.loads(json.dumps(checkpoint_ref))
+            children.append(cid)
+        return children
+
+    @staticmethod
+    def mark_checkpoint(tree: "SimTree", node_id: int, checkpoint_ref: dict) -> None:
+        """Point one branch's ``meta["checkpoint"]`` at a NEW checkpoint
+
+        (recorded after that branch advanced and a later checkpoint
+        completed). Sibling and source references stay untouched; the
+        previous reference is kept as ``parent_checkpoint`` provenance when
+        the new ref does not already carry one.
+        """
+        if node_id not in tree.nodes:
+            raise KeyError(T("Node {node_id} not found in tree", node_id=node_id))
+        ref = json.loads(json.dumps(checkpoint_ref))
+        previous = tree.nodes[node_id]["meta"].get("checkpoint")
+        if previous and not ref.get("parent_checkpoint"):
+            ref["parent_checkpoint"] = previous.get("checkpoint_id")
+        tree.nodes[node_id]["meta"]["checkpoint"] = ref
 
     def apply_agent_overrides(self, node_id: int, overrides: List[dict]) -> None:
         if node_id not in self.nodes:

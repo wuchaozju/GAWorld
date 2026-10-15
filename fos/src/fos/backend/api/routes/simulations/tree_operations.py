@@ -37,6 +37,8 @@ from fos.backend.schemas.simtree import (
     SimulationTreeAdvanceFrontierPayload,
     SimulationTreeAdvanceMultiPayload,
     SimulationTreeBranchPayload,
+    SimulationTreeForkPayload,
+    SimulationTreeRecoverPayload,
     SimulationTreeAgentOverridePayload,
 )
 
@@ -55,6 +57,11 @@ from fos.backend.services.simtree_advance import (
     run_simulator_for_advance,
 )
 from fos.backend.services.runtime_tasks import RUNTIME_TASKS
+from fos.backend.services.simtree_gaworld import (
+    prepare_recovery,
+    record_recovery,
+    validate_checkpoint_reference,
+)
 from fos.backend.services.documents import composite_rag_retrieval, format_rag_context
 from fos.backend.dependencies import extract_bearer_token, resolve_current_user
 from fos.i18n import T
@@ -644,6 +651,144 @@ async def simulation_tree_branch(
         sim.latest_state = tree.serialize()
         await session.commit()
 
+        return {"child": int(cid)}
+
+
+@post("/{simulation_id:str}/tree/fork-from-checkpoint")
+async def simulation_tree_fork_from_checkpoint(
+    request: Request,
+    simulation_id: str,
+    data: SimulationTreeForkPayload,
+) -> dict:
+    """Fork sibling branches that share one completed checkpoint reference.
+
+    Records the reference in each child's meta; launch-time validation
+    happens separately and fails loudly (no fallback).
+    """
+    async with get_session() as session:
+        token = extract_bearer_token(request)
+        current_user = await resolve_current_user(session, token)
+        sim, record = await get_simulation_and_tree_for_owner(session, current_user.id, simulation_id)
+        tree = record.tree
+        try:
+            children = tree.fork_from_checkpoint(
+                int(data.parent), dict(data.checkpoint), count=int(data.count)
+            )
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found")) from e
+        for cid in children:
+            node = tree.nodes[cid]
+            meta = node.setdefault("meta", {})
+            if data.interventions_text:
+                # Branch intervention: enqueued for THIS branch only; the
+                # branch's kernel interventions_path keeps the audit local.
+                meta["pending_interventions"] = str(data.interventions_text)
+            if data.agent_llm_map:
+                # Per-branch LLM reassignment through the Phase 4 per-agent
+                # override contract (exact int GAWorld IDs).
+                meta["agent_llm_map"] = {
+                    str(int(agent_id)): dict(entry) for agent_id, entry in data.agent_llm_map.items()
+                }
+                tree.apply_agent_overrides(
+                    int(cid),
+                    [
+                        {
+                            "name": str(agent_id),
+                            "llm_config": {"provider": entry.get("provider"), "model": entry.get("model")},
+                        }
+                        for agent_id, entry in data.agent_llm_map.items()
+                    ],
+                )
+            broadcast_tree_event(
+                record,
+                {
+                    "type": "attached",
+                    "data": {
+                        "node": int(cid),
+                        "parent": int(node["parent"]),
+                        "depth": int(node["depth"]),
+                        "edge_type": node["edge_type"],
+                        "checkpoint": node["meta"].get("checkpoint"),
+                    },
+                },
+            )
+        sim.latest_state = tree.serialize()
+        await session.commit()
+        return {"children": [int(cid) for cid in children]}
+
+
+@post("/{simulation_id:str}/tree/recover/{node_id:int}")
+async def simulation_tree_recover(
+    request: Request,
+    simulation_id: str,
+    node_id: int,
+    data: SimulationTreeRecoverPayload,
+) -> dict:
+    """Recover a failed node: Retry / Fix-and-retry / Substitute.
+
+    Restores the last completed checkpoint (validated loudly, no fallback)
+    into a fresh attempt branch; failed evidence and provenance stay on the
+    failed node.
+    """
+    async with get_session() as session:
+        token = extract_bearer_token(request)
+        current_user = await resolve_current_user(session, token)
+        sim, record = await get_simulation_and_tree_for_owner(session, current_user.id, simulation_id)
+        tree = record.tree
+        if node_id not in tree.nodes:
+            raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found"))
+        node = tree.nodes[node_id]
+        try:
+            plan = prepare_recovery(
+                {"id": int(node_id), "meta": dict(node.get("meta") or {})},
+                action=data.action,
+                runtime_config=dict(data.runtime_config) if data.runtime_config else None,
+                agent_id=data.agent_id,
+                provider=data.provider,
+                model=data.model,
+            )
+            # Launch-time validation: missing/corrupt/foreign checkpoints
+            # FAIL loudly - never silently continue from anything else.
+            validate_checkpoint_reference(plan["checkpoint"])
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+        except TypeError as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+
+        ops: list[dict] = []
+        if plan.get("runtime_config"):
+            ops.append({"op": "config_params_patch", "updates": plan["runtime_config"]})
+        try:
+            cid = tree.branch(int(node_id), ops)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found")) from e
+        attempt_node = tree.nodes[cid]
+        attempt_node["meta"]["recovery_of"] = int(node_id)
+        attempt_node["meta"]["recovery_plan"] = plan
+        if data.action == "substitute" and data.agent_id is not None:
+            # Substitute the affected agent only, through the Phase 4
+            # per-agent override contract (exact int GAWorld IDs).
+            tree.apply_agent_overrides(
+                int(cid),
+                [{"name": str(data.agent_id), "llm_config": {"provider": data.provider, "model": data.model}}],
+            )
+        record_recovery(node, data.action, plan["attempt_dir"])
+
+        broadcast_tree_event(
+            record,
+            {
+                "type": "attached",
+                "data": {
+                    "node": int(cid),
+                    "parent": int(node_id),
+                    "depth": int(attempt_node["depth"]),
+                    "edge_type": attempt_node["edge_type"],
+                    "recovery": {"action": data.action, "attempt_dir": plan["attempt_dir"]},
+                },
+            },
+        )
+        sim.latest_state = tree.serialize()
+        await session.commit()
         return {"child": int(cid)}
 
 

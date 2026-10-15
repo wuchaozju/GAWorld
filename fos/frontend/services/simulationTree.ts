@@ -13,6 +13,22 @@ import { httpGet, httpPost, httpDelete } from "./client";
 import { useAuthStore } from "../store/auth";
 
 export type GraphNode = { id: number; depth: number; meta?: Record<string, unknown> | null };
+
+/** Checkpoint reference carried in node meta (reference only, never payloads). */
+export type CheckpointRef = {
+  checkpoint_id: string;
+  checkpoint_path: string;
+  day: number;
+  manifest_sha: string;
+  parent_checkpoint: string | null;
+};
+
+/** Recovery provenance recorded on a failed node after Retry/Fix/Substitute. */
+export type RecoveryMeta = {
+  action: "retry" | "fix_and_retry" | "substitute";
+  attempt_dir?: string;
+  [key: string]: unknown;
+};
 export type GraphEdge = { from: number; to: number; type: string; ops?: unknown[] };
 
 export type Graph = {
@@ -163,4 +179,56 @@ export async function injectHostMessage(
   token?: string,
 ): Promise<{ status: string; message: string }> {
   return await httpPost<{ status: string; message: string }>(base, `/simulations/${id}/tree/sim/${node}/inject-message`, { message }, token);
+}
+
+/** Fork sibling branches from one completed checkpoint (each child references it in meta). */
+export async function forkFromCheckpoint(
+  base: string,
+  id: string,
+  parent: number,
+  checkpoint: Record<string, unknown>,
+  token?: string,
+  interventionsText?: string,
+  agentLlmMap?: Record<string, { provider: string; model?: string }>,
+): Promise<{ children: number[] }> {
+  return await httpPost<{ children: number[] }>(
+    base,
+    `/simulations/${id}/tree/fork-from-checkpoint`,
+    {
+      parent,
+      checkpoint,
+      ...(interventionsText ? { interventions_text: interventionsText } : {}),
+      ...(agentLlmMap ? { agent_llm_map: agentLlmMap } : {}),
+    },
+    token,
+  );
+}
+
+/** Retry a failed node: same config, same last-completed checkpoint, fresh attempt dir. */
+export async function retryNode(base: string, id: string, node: number, token?: string): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "retry" }, token);
+}
+
+/** Fix-and-retry: reload a repaired runtime config, restore the same checkpoint. */
+export async function fixAndRetryNode(
+  base: string,
+  id: string,
+  node: number,
+  runtimeConfig: Record<string, unknown>,
+  token?: string,
+): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "fix_and_retry", runtime_config: runtimeConfig }, token);
+}
+
+/** Substitute an explicit provider/model for ONE affected agent, then restore the checkpoint. */
+export async function substituteProvider(
+  base: string,
+  id: string,
+  node: number,
+  agentId: number,
+  provider: string,
+  model: string,
+  token?: string,
+): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "substitute", agent_id: agentId, provider, model }, token);
 }

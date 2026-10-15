@@ -3579,6 +3579,37 @@
       "completed": "已完成",
       "failed": "失败",
       "pending": "等待中"
+    },
+    "forkDialog": {
+      "button": "从第 N 天分叉",
+      "title": "从第 {{day}} 天分叉",
+      "hint": "两个分支都从该已完成检查点重启，恢复状态完全一致。",
+      "day": "检查点天数",
+      "interventions": "干预（可选，仅作用于各分支）",
+      "interventionsPlaceholder": "例如：城里新开了一个科技园区",
+      "agentId": "居民 ID",
+      "provider": "提供商",
+      "model": "模型",
+      "confirm": "分叉",
+      "done": "已从检查点分叉出 {{count}} 个分支"
+    },
+    "recoveryDialog": {
+      "button": "恢复失败的运行",
+      "title": "恢复失败的运行",
+      "checkpointHint": "失败的那一天会从最后一个已完成检查点在全新的尝试目录中重跑；失败现场保留。",
+      "retry": "重试",
+      "retryHint": "配置不变、同一检查点、全新尝试目录。",
+      "fixAndRetry": "修复后重试",
+      "fixAndRetryHint": "载入修复后的运行配置，恢复同一检查点。",
+      "substitute": "替换提供商",
+      "substituteHint": "仅把受影响的一名居民显式路由到指定提供商/模型——绝不自动替换。",
+      "runtimeConfig": "修复后的运行配置（JSON）",
+      "badJson": "运行配置不是合法 JSON",
+      "agentId": "受影响的居民 ID",
+      "provider": "替换后的提供商",
+      "model": "替换后的模型",
+      "confirm": "恢复",
+      "done": "已创建恢复尝试分支 #{{child}}"
     }
   },
   "scenario_templates": {

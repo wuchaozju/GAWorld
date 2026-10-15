@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib.util
 import json
 import logging
@@ -24,6 +25,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta
@@ -39,6 +41,59 @@ class GAWorldProcessError(RuntimeError):
 
 class GAWorldTimeoutError(RuntimeError):
     """Raised when waiting for GAWorld output reaches timeout."""
+
+
+class _GaworldSubprocessSlots:
+    """Loop-agnostic counting semaphore bounding LIVE GAWorld subprocesses.
+
+    Module-level (not per-scene) because each advance constructs a fresh
+    scene/manager; the bound must hold across concurrent advances. Works from
+    both async (``async with sem``) and sync scene code (``acquire``/``release``).
+    """
+
+    def __init__(self, value: int):
+        self._value = value
+        self._sem = threading.BoundedSemaphore(value)
+
+    async def __aenter__(self) -> "_GaworldSubprocessSlots":
+        while not self._sem.acquire(blocking=False):
+            await asyncio.sleep(0.05)
+        return self
+
+    async def __aexit__(self, *exc) -> bool:
+        self._sem.release()
+        return False
+
+    def acquire(self, blocking: bool = True) -> bool:
+        return self._sem.acquire(blocking=blocking)
+
+    def release(self) -> None:
+        self._sem.release()
+
+
+_SLOTS_CACHE: dict[int, _GaworldSubprocessSlots] = {}
+_SLOTS_LOCK = threading.Lock()
+
+
+def _gaworld_max_subprocesses() -> int:
+    """Configured bound on live GAWorld subprocesses (default 2)."""
+    raw = os.environ.get("FOS_GAWORLD_MAX_SUBPROCESSES")
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return 2
+    return max(1, value)
+
+
+def gaworld_subprocess_semaphore() -> _GaworldSubprocessSlots:
+    """The shared GAWorld subprocess bound, built lazily from the env."""
+    value = _gaworld_max_subprocesses()
+    with _SLOTS_LOCK:
+        sem = _SLOTS_CACHE.get(value)
+        if sem is None:
+            sem = _GaworldSubprocessSlots(value)
+            _SLOTS_CACHE[value] = sem
+        return sem
 
 
 @dataclass(frozen=True)

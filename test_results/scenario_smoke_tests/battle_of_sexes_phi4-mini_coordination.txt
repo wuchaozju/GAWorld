@@ -1,0 +1,23 @@
+================================================================================
+SCENARIO: battle_of_sexes
+MODEL: phi4-mini
+TEST: coordination
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: pairwise
+  payoff_type: matrix
+  agents: ['Partner1', 'Partner2']
+  actions: ['opera', 'football']
+
+================================================================================
+ROUND 1
+================================================================================
+  Partner1: 
+  Partner2: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'Partner1': 0, 'Partner2': 0}
+Errors: ['Round 1 - Partner1: [Errno 111] Connection refused', 'Round 1 - Partner2: [Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:56:56.342570

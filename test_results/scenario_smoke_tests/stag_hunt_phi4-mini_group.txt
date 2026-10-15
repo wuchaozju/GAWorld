@@ -1,0 +1,24 @@
+================================================================================
+SCENARIO: stag_hunt
+MODEL: phi4-mini
+TEST: group
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: group
+  payoff_type: matrix
+  agents: ['Hunter1', 'Hunter2', 'Hunter3']
+  actions: ['stag', 'hare']
+
+================================================================================
+ROUND 1
+================================================================================
+  Hunter1: 
+  Hunter2: 
+  Hunter3: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'Hunter1': 0, 'Hunter2': 0, 'Hunter3': 0}
+Errors: ['Round 1 - Hunter1: [Errno 111] Connection refused', 'Round 1 - Hunter2: [Errno 111] Connection refused', 'Round 1 - Hunter3: [Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:56:59.416641
