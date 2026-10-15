@@ -579,13 +579,33 @@ class ExperimentRunner:
 # ---------------------------------------------------------------------------
 
 
-def analyze_experiment(repo_root: str, manifest: dict[str, Any]) -> dict[str, Any]:
+def analyze_experiment(
+    repo_root: str,
+    manifest: dict[str, Any],
+    path_resolver: Callable[[dict[str, Any], str], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Build the divergence report and the counterfactual estimates for a
-    manifest from artifacts on disk."""
-    series = {
-        world_id: read_state_series(os.path.join(repo_root, entry["state_csv"]), panel=True)
-        for world_id, entry in manifest.get("worlds", {}).items()
-    }
+    manifest from artifacts on disk.
+
+    ``path_resolver`` (optional) receives each world entry and the canonical
+    repo root (``world_paths.REPO_ROOT``) and returns the entry with resolved
+    ``state_csv`` / ``dir`` paths. The default keeps the historical
+    repo-root-relative join EXACTLY (regression locked); callers holding
+    absolute run dirs (e.g. branch comparison) can resolve paths themselves
+    without copying runs into the repo.
+    """
+    resolved: dict[str, dict[str, Any]] = {}
+    series: dict[str, Any] = {}
+    for world_id, entry in manifest.get("worlds", {}).items():
+        if path_resolver is not None:
+            from gaworld.apps import world_paths  # late-bound, see module use
+
+            resolved[world_id] = path_resolver(entry, world_paths.REPO_ROOT)
+            csv_path = resolved[world_id]["state_csv"]
+        else:
+            resolved[world_id] = entry
+            csv_path = os.path.join(repo_root, entry["state_csv"])
+        series[world_id] = read_state_series(csv_path, panel=True)
     report = build_report(manifest, series)
     # A placebo world measures how far histories drift with nothing real
     # happening; the fixed default threshold is only a guess at that number.
@@ -614,7 +634,7 @@ def analyze_experiment(repo_root: str, manifest: dict[str, Any]) -> dict[str, An
     report["comparability_epoch"] = manifest.get("comparability_epoch")
     report["summary"] = summarize_report(report)
     for world in report.get("worlds", []):
-        entry = manifest.get("worlds", {}).get(world["id"], {})
+        entry = resolved.get(world["id"], manifest.get("worlds", {}).get(world["id"], {}))
         world["trace"] = entry.get("trace")
         world["dir"] = entry.get("dir")
     return report
