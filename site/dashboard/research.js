@@ -537,6 +537,13 @@
     el.classList.toggle("is-error", mode === "error");
   }
 
+  function progressLabel(progress) {
+    var percent = Math.max(0, Math.min(1, Number(progress) || 0)) * 100;
+    if (percent > 0 && percent < 0.01) return "<0.01%";
+    if (percent >= 99.995 && percent < 100) return ">99.99%";
+    return percent.toFixed(2).replace(/\.?0+$/, "") + "%";
+  }
+
   function createStudy() {
     if (!state.plan) return;
     var autopilot = !!($("rwAutopilot") && $("rwAutopilot").checked);
@@ -590,7 +597,7 @@
           var paused = !!(state.study && state.study.paused);
           setStudyProgress(
             (paused ? t("paused_progress", "已暂停：") : t("run_progress", "运行中：")) +
-              (job.message || "") + " " + Math.round((job.progress || 0) * 100) + "%",
+              (job.message || "") + " " + progressLabel(job.progress),
             paused ? "" : "live"
           );
           state.studyPollTimer = setTimeout(function () {
