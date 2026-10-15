@@ -29,6 +29,34 @@ export type RecoveryMeta = {
   attempt_dir?: string;
   [key: string]: unknown;
 };
+
+/** All runtime statuses a branch can report (Phase 8 lifecycle). */
+export const RUNTIME_STATUSES: readonly string[] = [
+  "queued",
+  "running",
+  "completed",
+  "cancelled",
+  "failed",
+  "timed_out",
+  "attention_required",
+];
+
+/** Cancel a queued or running branch (terminal outcome, never launches afterwards). */
+export async function treeCancelNode(base: string, id: string, node: number, token?: string): Promise<{ ok: boolean }> {
+  return await httpPost<{ ok: boolean }>(base, `/simulations/${id}/tree/node/${node}/cancel`, {}, token);
+}
+
+/**
+ * Format a structured LLM-budget refusal for display: estimated vs budget,
+ * built only from safe fields so credentials can never leak into the UI.
+ */
+export function formatBudgetError(error: Record<string, unknown>): string {
+  const provider = typeof error.provider === "string" ? error.provider : "unknown";
+  const estimated = Number(error.estimated);
+  const budget = Number(error.budget);
+  const unit = typeof error.unit === "string" ? error.unit : "calls";
+  return `LLM budget exceeded for ${provider}: estimated ${estimated} ${unit}, budget ${budget} ${unit}`;
+}
 export type GraphEdge = { from: number; to: number; type: string; ops?: unknown[] };
 
 export type Graph = {

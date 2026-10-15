@@ -72,7 +72,15 @@ vi.mock('../services/simulationTree', () => ({
   forkFromCheckpoint: vi.fn(() => Promise.resolve({ children: [3, 4] })),
   retryNode: vi.fn(() => Promise.resolve({ child: 5 })),
   fixAndRetryNode: vi.fn(() => Promise.resolve({ child: 6 })),
-  substituteProvider: vi.fn(() => Promise.resolve({ child: 7 }))
+  substituteProvider: vi.fn(() => Promise.resolve({ child: 7 })),
+  treeCancelNode: vi.fn(() => Promise.resolve({ ok: true })),
+  RUNTIME_STATUSES: ['queued', 'running', 'completed', 'cancelled', 'failed', 'timed_out', 'attention_required'],
+  formatBudgetError: vi.fn((error: Record<string, unknown>) => {
+    const estimated = Number(error.estimated);
+    const budget = Number(error.budget);
+    const unit = typeof error.unit === 'string' ? error.unit : 'calls';
+    return `LLM budget exceeded for ${String(error.provider)}: estimated ${estimated} ${unit}, budget ${budget} ${unit}`;
+  })
 }));
 
 vi.mock('../services/experiments', () => ({

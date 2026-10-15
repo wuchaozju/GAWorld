@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
+  Ban,
   Filter,
   GitFork,
   LogOut,
@@ -20,13 +21,23 @@ import { ForkFromCheckpointModal, RecoveryModal } from "../components/TopologyFo
 import { ToastContainer } from "../components/Toast";
 import { useSimulationStore } from "../store";
 import { compareBranches } from "../services/experiments";
+import { formatBudgetError, treeCancelNode } from "../services/simulationTree";
 import "../styles/routes/topology.css";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
 import type { SimNode } from "../types";
 import { buildBranchContextHref, readBranchContext } from "../utils/branchContext";
 
-const STATUS_FILTERS: Array<SimNode["status"]> = ["running", "completed", "failed", "pending"];
+const STATUS_FILTERS: Array<SimNode["status"]> = [
+  "queued",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+  "timed_out",
+];
+
+const CANCELLABLE_STATUSES: Array<SimNode["status"]> = ["queued", "running"];
 
 const sortNodes = (left: SimNode, right: SimNode) =>
   String(left.display_id || left.id).localeCompare(String(right.display_id || right.id), undefined, {
@@ -305,6 +316,38 @@ const TopologyExplorerPage: React.FC = () => {
     (selectedNode?.meta as Record<string, unknown> | null | undefined)?.checkpoint,
   );
   const selectedNodeFailed = selectedNode?.status === "failed";
+  const selectedNodeCancellable =
+    selectedNode != null && CANCELLABLE_STATUSES.includes(selectedNode.status);
+  const [lifecycleError, setLifecycleError] = React.useState<string | null>(null);
+
+  const handleCancelNode = async () => {
+    if (!simIdParam || !selectedNodeId || !selectedNodeCancellable) return;
+    setLifecycleError(null);
+    try {
+      await treeCancelNode(
+        engineConfig?.endpoint || "/api",
+        simIdParam,
+        Number(selectedNodeId),
+        engineConfig?.token,
+      );
+      useSimulationStore.setState((state: any) => ({
+        nodes: (state.nodes || []).map((n: any) =>
+          n.id === selectedNodeId ? { ...n, status: "cancelled" } : n,
+        ),
+      }));
+    } catch (err: any) {
+      const detail = err?.body ?? err?.detail ?? err?.message ?? err;
+      if (detail && typeof detail === "object") {
+        setLifecycleError(formatBudgetError(detail as Record<string, unknown>));
+      } else {
+        setLifecycleError(
+          typeof detail === "string" && detail.trim()
+            ? detail
+            : t("topologyExplorer.lifecycle.cancelFailed"),
+        );
+      }
+    }
+  };
 
   const handleOpenControlRoom = () => {
     if (!simIdParam) return;
@@ -544,6 +587,16 @@ const TopologyExplorerPage: React.FC = () => {
                     <span>{t("common.status")}</span>
                     <strong className="capitalize">{selectedNode?.status ? t(`topologyExplorer.status.${selectedNode.status}`) : t("topologyExplorer.valueUnavailable")}</strong>
                   </div>
+                  {selectedNode?.status === "queued" ? (
+                    <div className="ss-topology__detail-copy">
+                      {t("topologyExplorer.lifecycle.queuedHint")}
+                    </div>
+                  ) : null}
+                  {lifecycleError ? (
+                    <div className="ss-topology__detail-copy ss-topology__detail-copy--error" role="alert">
+                      {lifecycleError}
+                    </div>
+                  ) : null}
                   <div className="ss-topology__detail-line">
                     <span>{t("simulationWorkspace.metrics.worldTime")}</span>
                     <strong>{selectedNode?.worldTime || t("topologyExplorer.valueUnavailable")}</strong>
@@ -576,6 +629,14 @@ const TopologyExplorerPage: React.FC = () => {
                     <button onClick={handleOpenControlRoom} className="ss-button-secondary">
                       <MapIcon size={15} />
                       {t("topologyExplorer.openInControlRoom")}
+                    </button>
+                    <button
+                      onClick={() => void handleCancelNode()}
+                      disabled={!selectedNodeCancellable || isGenerating}
+                      className="ss-button-secondary ss-button-secondary--danger"
+                    >
+                      <Ban size={15} />
+                      {t("topologyExplorer.lifecycle.cancelNode")}
                     </button>
                     <button
                       onClick={() => setRecoveryDialogOpen(true)}

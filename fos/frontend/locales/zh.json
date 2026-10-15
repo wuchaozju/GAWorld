@@ -3578,7 +3578,11 @@
       "running": "运行中",
       "completed": "已完成",
       "failed": "失败",
-      "pending": "等待中"
+      "pending": "等待中",
+      "queued": "排队中",
+      "cancelled": "已取消",
+      "timed_out": "已超时",
+      "attention_required": "需要关注"
     },
     "forkDialog": {
       "button": "从第 N 天分叉",
@@ -3627,6 +3631,11 @@
       "metric": "指标",
       "delta": "终值差",
       "noData": "没有可比较的数据。"
+    },
+    "lifecycle": {
+      "cancelNode": "取消分支",
+      "cancelFailed": "取消分支失败",
+      "queuedHint": "排队中 — 等待仿真槽位"
     }
   },
   "scenario_templates": {

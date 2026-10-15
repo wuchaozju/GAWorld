@@ -7,7 +7,7 @@ export interface SimNode {
   name: string;
   depth: number;
   isLeaf: boolean;
-  status: 'completed' | 'running' | 'failed' | 'pending';
+  status: 'completed' | 'running' | 'failed' | 'pending' | 'queued' | 'cancelled' | 'timed_out' | 'attention_required';
   timestamp: string; // System timestamp of creation
   worldTime: string; // #9 Simulated world time (ISO string)
   meta?: Record<string, any> | null;

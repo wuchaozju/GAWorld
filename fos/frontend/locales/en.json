@@ -3842,7 +3842,11 @@
       "completed": "Completed",
       "failed": "Failed",
       "pending": "Pending",
-      "running": "Running"
+      "running": "Running",
+      "queued": "Queued",
+      "cancelled": "Cancelled",
+      "timed_out": "Timed out",
+      "attention_required": "Needs attention"
     },
     "subtitle": "Simulation Topology Explorer",
     "topologyExplorer": "Topology Explorer",
@@ -3895,6 +3899,11 @@
       "metric": "Metric",
       "delta": "Δ final",
       "noData": "No comparable data."
+    },
+    "lifecycle": {
+      "cancelNode": "Cancel branch",
+      "cancelFailed": "Failed to cancel the branch",
+      "queuedHint": "Queued — waiting for a simulation slot"
     }
   }
 }
