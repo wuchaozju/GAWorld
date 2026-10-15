@@ -35,6 +35,7 @@ import uuid
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.accounts.context import USER
 from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
 
@@ -154,8 +155,7 @@ def context() -> dict[str, Any]:
         "catalogue": {"path": workbench.CATALOGUE_PATH, "chars": len(catalogue), "available": bool(catalogue)},
         "limits": {"material_chars": workbench.MAX_MATERIAL_CHARS, "call_budget": DEFAULT_CALL_BUDGET},
         "plans": ownership.owned(workbench.list_plans()),
-        # Only admins start studies, so only they see them.
-        "studies": study_mod.list_studies() if ownership.sees_unowned() else [],
+        "studies": ownership.owned(study_mod.list_studies()),
         "measures": len(measures.registry()),
     }
 
@@ -386,9 +386,56 @@ def _load_study(study_id: str) -> Any:
     from gaworld.research import study as study_mod
 
     found = study_mod.load_study(study_id)
-    if found is None:
+    if found is None or not ownership.visible(found.to_dict()):
         raise StudyNotFound(study_id)
     return found
+
+
+def _member() -> bool:
+    user = USER.get()
+    return user is not None and user.get("role") != "admin"
+
+
+def _preflight(protocol: Any) -> dict[str, Any]:
+    import copy
+
+    from gaworld.accounts import policy
+    from gaworld.llm import credentials
+    from gaworld.research import protocol as protocol_mod
+
+    check = protocol_mod.preflight(protocol, default_agents=_default_agents(_base_config()))
+    if _member():
+        # Model-generated patches are untrusted input, just like HTTP patches.
+        def inspect(value: Any, path: str) -> None:
+            if isinstance(value, dict) and value:
+                for key, item in value.items():
+                    inspect(item, f"{path}.{key}" if path else str(key))
+            else:
+                reason = policy.config_update_refusal(path, value)
+                if reason:
+                    check["errors"].append(reason)
+
+        for condition in protocol.conditions:
+            for key, value in (condition.get("config") or {}).items():
+                inspect(value, str(key))
+    config = copy.deepcopy(_base_config())
+    if protocol.sim_provider:
+        routing = config.setdefault("llm", {}).setdefault("routing", {})
+        routing["default"] = protocol.sim_provider
+        routing["tasks"] = dict.fromkeys(routing.get("tasks") or {}, protocol.sim_provider)
+    try:
+        credentials.validate_launch(config)
+    except ValueError as exc:
+        check["errors"].append(str(exc))
+    check["ok"] = not check["errors"]
+    return check
+
+
+def _check_scope(study: Any) -> None:
+    # Persisted protocols must not silently run against another world's seed.
+    world_id = (world_paths.current_world() or {}).get("id")
+    if study.owner_id is not None and study.world_id != world_id:
+        raise ValueError("请切回创建此研究时的世界后再运行或修改协议。")
 
 
 def _seed_runner(study: Any) -> Any:
@@ -402,6 +449,7 @@ def _seed_runner(study: Any) -> Any:
         base_config=_base_config(),
         experiment_prefix=prefix,
         active=_ACTIVE_STUDY,
+        owner={"owner_id": study.owner_id, "owner": study.owner},
     )
 
 
@@ -452,7 +500,7 @@ def _heal_all() -> None:
     """Same, for every study on disk — the panel lists before it opens."""
     from gaworld.research import study as study_mod
 
-    for item in study_mod.list_studies():
+    for item in ownership.owned(study_mod.list_studies()):
         study_id = str(item.get("id") or "")
         if item.get("stage") != "running" or _is_live(study_id):
             continue
@@ -474,7 +522,7 @@ def studies() -> dict[str, Any]:
     from gaworld.research import study as study_mod
 
     _heal_all()
-    return {"studies": study_mod.list_studies()}
+    return {"studies": ownership.owned(study_mod.list_studies())}
 
 
 def study_detail(study_id: str) -> dict[str, Any]:
@@ -503,7 +551,7 @@ def start_study(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.research import workbench
 
     plan_id = str(payload.get("plan_id") or "").strip()
-    plan = workbench.load_plan(plan_id)  # a malformed id raises ResearchError → 400
+    plan = plan_detail(plan_id)  # ownership is checked before any model call
     if plan is None:
         raise ValueError(f"找不到方案 {plan_id}")
     designs = plan.get("designs") or []
@@ -542,8 +590,12 @@ def start_study(payload: dict[str, Any]) -> dict[str, Any]:
             raise workbench.ResearchError("模型没有返回可解析的 JSON 协议")
         protocol = protocol_mod.apply_overrides(protocol_mod.protocol_from_answer(answer, plan), overrides)
         report(0.7, "正在做跑前检查…")
-        check = protocol_mod.preflight(protocol, default_agents=_default_agents(_base_config()))
+        check = _preflight(protocol)
         study = study_mod.new_study(plan, protocol.to_dict(), check, provider=routed or provider, autopilot=autopilot)
+        identity = ownership.stamp()
+        study.owner_id = identity.get("owner_id")
+        study.owner = identity.get("owner", "")
+        study.world_id = (world_paths.current_world() or {}).get("id")
         study_mod.save_study(study)
         result: dict[str, Any] = {"study_id": study.id, "title": study.title, "stage": study.stage, "preflight": check}
         # Autopilot skips the wait for a click, never the gate.
@@ -567,10 +619,11 @@ def update_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.research import study as study_mod
 
     study = _load_study(study_id)
+    _check_scope(study)
     if study.stage not in ("protocol", "error"):
         raise ValueError(f"研究已进入 {study.stage} 阶段，协议不能再改")
     protocol = protocol_mod.apply_overrides(protocol_mod.Protocol.from_dict(study.protocol), payload)
-    study.preflight = protocol_mod.preflight(protocol, default_agents=_default_agents(_base_config()))
+    study.preflight = _preflight(protocol)
     study.protocol = protocol.to_dict()
     study.set_stage("protocol")
     study_mod.save_study(study)
@@ -581,8 +634,15 @@ def approve_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.research import study as study_mod
 
     study = _load_study(study_id)
+    _check_scope(study)
     if study.stage not in ("protocol", "error"):
         raise ValueError(f"研究处于 {study.stage} 阶段，不需要批准")
+    if _member():
+        from gaworld.research.protocol import Protocol
+
+        study.preflight = _preflight(Protocol.from_dict(study.protocol))
+        if payload.get("force"):
+            raise PermissionError("只有管理员可以强行批准；请先修正跑前检查中的问题。")
     if not (study.preflight or {}).get("ok") and not payload.get("force"):
         raise ValueError("跑前检查没有通过，先修正协议（或带 force 强行批准）")
     study.set_stage("approved")
@@ -595,14 +655,21 @@ def approve_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 def _launch_run(study_id: str) -> str:
     study = _load_study(study_id)
+    _check_scope(study)
     if study.stage != "approved":
         raise ValueError(f"研究处于 {study.stage} 阶段，只有 approved 的研究能运行")
+    if _member():
+        from gaworld.research.protocol import Protocol
+
+        check = _preflight(Protocol.from_dict(study.protocol))
+        if not check["ok"]:
+            raise ValueError("跑前检查没有通过：" + "；".join(check["errors"]))
     with _ACTIVE_LOCK:
         active = _ACTIVE_STUDY.get("job_id")
         with _JOBS_LOCK:
             busy = bool(active and (_JOBS.get(active) or {}).get("status") == "running")
         if busy:
-            raise StudyBusy(f"研究 {_ACTIVE_STUDY.get('study_id')} 正在运行，一次只能跑一项")
+            raise StudyBusy("另一个研究正在运行，一次只能跑一项，请稍后再试。")
         job_id = _new_job("run")
         _ACTIVE_STUDY.update(
             study_id=study_id,
@@ -684,6 +751,8 @@ def stop_study(study_id: str) -> dict[str, Any]:
     if not _is_live(study_id):
         return {"study_id": study_id, "stopping": False, "stage": study.stage}
     with _ACTIVE_LOCK:
+        if _ACTIVE_STUDY.get("study_id") != study_id:
+            return {"study_id": study_id, "stopping": False, "stage": study.stage}
         stop = _ACTIVE_STUDY.get("stop")
         pause = _ACTIVE_STUDY.get("pause")
         runner = _ACTIVE_STUDY.get("runner")
@@ -702,6 +771,8 @@ def pause_study(study_id: str) -> dict[str, Any]:
     if not _is_live(study_id):
         raise ValueError("研究没有在运行，无法暂停")
     with _ACTIVE_LOCK:
+        if _ACTIVE_STUDY.get("study_id") != study_id:
+            raise ValueError("研究没有在运行，无法暂停")
         pause = _ACTIVE_STUDY.get("pause")
         runner = _ACTIVE_STUDY.get("runner")
     if pause is None:
@@ -719,6 +790,8 @@ def resume_study(study_id: str) -> dict[str, Any]:
     if not _is_live(study_id):
         raise ValueError("研究没有在运行，无法继续")
     with _ACTIVE_LOCK:
+        if _ACTIVE_STUDY.get("study_id") != study_id:
+            raise ValueError("研究没有在运行，无法继续")
         pause = _ACTIVE_STUDY.get("pause")
         runner = _ACTIVE_STUDY.get("runner")
     if pause is not None:
@@ -738,9 +811,11 @@ def reset_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     """
     from gaworld.research import study as study_mod
 
+    study = _load_study(study_id)
+    _check_scope(study)
     if _is_live(study_id):
         raise ValueError("研究正在运行，先停止再重置")
-    study = _heal_interrupted(_load_study(study_id))
+    study = _heal_interrupted(study)
     if study.runs or study.evaluation:
         study.attempt = int(study.attempt or 1) + 1
     study.runs = []
@@ -762,6 +837,7 @@ def reset_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
 def delete_study(study_id: str) -> dict[str, Any]:
     from gaworld.research import study as study_mod
 
+    _load_study(study_id)
     if _is_live(study_id):
         raise ValueError("研究正在运行，先停止再删除")
     return {"deleted": study_mod.delete_study(study_id), "study_id": study_id}
@@ -815,11 +891,9 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
                 return {"error": "Unknown plan"}, 404
             return detail, 200
         if path == "/api/research/studies":
-            return (studies() if ownership.sees_unowned() else {"studies": []}), 200
+            return studies(), 200
         if path.startswith("/api/research/studies/"):
             study_id, action = _study_route(path)
-            if not ownership.sees_unowned():
-                raise StudyNotFound(study_id)  # only admins start studies, so only they read them
             if action == "report":
                 return export_study_report(study_id), 200
             if not action:
@@ -876,6 +950,8 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         return {"error": "Unknown study"}, 404
     except StudyBusy as exc:
         return {"error": str(exc)}, 409
+    except PermissionError as exc:
+        return {"error": str(exc)}, 403
     except ValueError as exc:
         return {"error": str(exc)}, 400
     return {"error": "Unknown endpoint"}, 404

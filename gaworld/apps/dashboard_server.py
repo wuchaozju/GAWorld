@@ -1404,6 +1404,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # Readiness exposes no user data and works with either authentication mode.
         if path == "/api/health" and self.command in ("GET", "HEAD"):
             return False
+        if not path.startswith("/api/"):
+            # Classify static permissions by the served file, so an auth-page
+            # prefix cannot hide ../ or a symlink into private output.
+            root = os.path.realpath(paths.REPO_ROOT)
+            target = os.path.realpath(self.translate_path(path))
+            if os.path.commonpath([root, target]) != root:
+                self._deny(404, "Not found")
+                return True
+            relative = os.path.relpath(target, root)
+            path = "/" if relative == "." else "/" + relative.replace(os.sep, "/")
         try:
             self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         except accounts.AccountConfigurationError:
@@ -1466,12 +1476,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.accounts is None:
             return False
         _USER.set(self.user)
-        # Judge the path by its non-empty segments, the way translate_path
-        # resolves the file: `/output//worlds/…` serves the same file.
+        # Static paths have already been resolved and normalized by _guard.
         parts = [part for part in path.split("/") if part]
         if parts[:2] == ["output", "worlds"]:
             target = self.accounts.get_world(parts[2]) if len(parts) > 2 else None
             if target is None or not world_readable(target, self.user):
+                self._deny(404, "Not found")
+                return True
+        if len(parts) >= 3 and parts[:2] in (["output", "parallel_worlds"], ["output", "comparisons"]):
+            from gaworld.apps import parallel_worlds_api
+
+            if parallel_worlds_api._load_any_manifest(os.path.join(*parts[:3])) is None:
                 self._deny(404, "Not found")
                 return True
         morsel = SimpleCookie(self.headers.get("Cookie", "")).get(WORLD_COOKIE)

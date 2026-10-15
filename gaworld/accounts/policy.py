@@ -60,9 +60,24 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
+STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete"})
+
+
+def study_action(path: str) -> str | None:
+    parts = path.strip("/").split("/")
+    if parts == ["api", "research", "studies"]:
+        return "create"
+    if len(parts) == 5 and parts[:3] == ["api", "research", "studies"] and parts[4] in STUDY_ACTIONS:
+        return parts[4]
+    return None
+
+
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
-    return path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+    return (
+        path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+        or study_action(path) in {"create", "approve", "run", "resume", "reset"}
+    )
 
 
 MEMBER_WRITES_EXACT = {
@@ -133,6 +148,8 @@ def required(method: str, path: str) -> Level:
         return "member"  # creating, selecting; owning the world is checked by the handler
     if path.startswith("/api/cluster/"):
         return "member"  # a world's nodes; owning the world is checked by the handler
+    if study_action(path) is not None:
+        return "member"  # every study handler checks ownership before reading or writing
     # Deleting is owner business: these handlers check the record's owner
     # (gaworld.accounts.ownership); every other delete stays admin-only.
     if "delete" in path.split("/"):

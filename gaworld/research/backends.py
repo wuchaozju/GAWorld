@@ -170,6 +170,7 @@ def default_seed_runner(
     base_config: dict[str, Any] | None,
     experiment_prefix: str,
     active: dict[str, Any],
+    owner: dict[str, Any] | None = None,
 ) -> SeedRunner:
     """The real thing: fork the worlds as subprocesses and wait for them.
 
@@ -184,6 +185,7 @@ def default_seed_runner(
             base_config=base_config,
             experiment_id=f"{experiment_prefix}_s{seed}",
             group=experiment_prefix,
+            owner=owner,
         )
         runner = prunner.ExperimentRunner(manifest, repo_root, max_parallel=spec.max_parallel)
         active["runner"] = runner

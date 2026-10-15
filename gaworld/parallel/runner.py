@@ -28,6 +28,7 @@ import threading
 import time
 from typing import Any, Callable
 
+from gaworld.accounts import ownership
 from gaworld.core.comparability import CURRENT_EPOCH
 from gaworld.logging_setup import get_logger
 from gaworld.parallel.analysis import (
@@ -94,6 +95,7 @@ def prepare_experiment(
     base_config: dict[str, Any] | None = None,
     experiment_id: str | None = None,
     group: str | None = None,
+    owner: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create the on-disk tree for an experiment and write its manifest.
 
@@ -130,6 +132,7 @@ def prepare_experiment(
         "spec": spec.to_dict(),
         "worlds": worlds,
         "status": "prepared",
+        **(ownership.stamp() if owner is None else {"owner_id": owner.get("owner_id"), "owner": owner.get("owner", "")}),
     }
     if group:
         manifest["group"] = group

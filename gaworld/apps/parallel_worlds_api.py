@@ -198,6 +198,7 @@ def _new_job(manifest: dict[str, Any]) -> str:
             "started_at": time.time(),
             "finished_at": None,
             "error": None,
+            **ownership.stamp(),
         }
         finished = sorted(
             (record["started_at"], key)
@@ -223,7 +224,7 @@ def job_status(job_id: str | None = None) -> dict[str, Any] | None:
         target = job_id or _ACTIVE.get("job_id")
         record = dict(_JOBS[target]) if target in _JOBS else None
         runner = _ACTIVE.get("runner") if target == _ACTIVE.get("job_id") else None
-    if record is None:
+    if record is None or not ownership.visible(record):
         return None
     if runner is not None:
         record["snapshot"] = runner.snapshot()
@@ -314,12 +315,16 @@ def _load_any_manifest(root_rel: str) -> dict[str, Any] | None:
     """Manifest for a native experiment, or an adapter for a legacy tree."""
     repo_root = _repo_root()
     directory = os.path.join(repo_root, root_rel)
+    resolved = os.path.realpath(directory)
+    if os.path.commonpath([os.path.realpath(repo_root), resolved]) != os.path.realpath(repo_root):
+        return None
     if not os.path.isdir(directory):
         return None
     manifest = prunner.load_manifest(repo_root, root_rel)
     if manifest:
-        return manifest
-    return _legacy_manifest(directory)
+        return manifest if ownership.visible(manifest) else None
+    manifest = _legacy_manifest(directory)
+    return manifest if ownership.visible(manifest) else None
 
 
 def _list_dir(path: str) -> list[str]:
@@ -363,7 +368,7 @@ def _siblings(group: str) -> list[dict[str, Any]]:
         if not os.path.isdir(directory):
             continue
         manifest = prunner.load_manifest(repo_root, os.path.relpath(directory, repo_root))
-        if manifest and group_of(manifest) == group:
+        if manifest and ownership.visible(manifest) and group_of(manifest) == group:
             found.append(manifest)
     found.sort(key=lambda item: int(item.get("spec", {}).get("seed") or 0))
     return found
@@ -378,7 +383,7 @@ def list_experiments() -> list[dict[str, Any]]:
         if not os.path.isdir(directory):
             continue
         manifest = prunner.load_manifest(repo_root, os.path.relpath(directory, repo_root))
-        if not manifest:
+        if not manifest or not ownership.visible(manifest):
             continue
         spec = manifest.get("spec", {})
         items.append({
@@ -397,7 +402,7 @@ def list_experiments() -> list[dict[str, Any]]:
 
     for directory in _list_dir(_comparisons_root()):
         manifest = _legacy_manifest(directory) if os.path.isdir(directory) else None
-        if not manifest:
+        if not manifest or not ownership.visible(manifest):
             continue
         items.append({
             "id": manifest["id"],
