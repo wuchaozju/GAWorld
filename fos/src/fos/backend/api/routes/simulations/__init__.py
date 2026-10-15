@@ -59,6 +59,7 @@ def create_router() -> Router:
             tree_operations.simulation_tree_advance_chain,
             tree_operations.simulation_tree_branch,
             tree_operations.simulation_tree_delete_subtree,
+            tree_operations.simulation_tree_cancel_node,
             tree_operations.simulation_tree_events,
             tree_operations.simulation_tree_state,
             tree_operations.test_agent_knowledge,

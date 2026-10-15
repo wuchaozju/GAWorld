@@ -62,6 +62,13 @@ from fos.backend.services.simtree_gaworld import (
     record_recovery,
     validate_checkpoint_reference,
 )
+from fos.backend.services.simtree_lifecycle import (
+    MAX_GAWORLD_BRANCHES_PER_REQUEST,
+    BranchRequestError,
+    mark_node_cancelled,
+    validate_branch_day_budget,
+    validate_branch_request,
+)
 from fos.backend.services.documents import composite_rag_retrieval, format_rag_context
 from fos.backend.dependencies import extract_bearer_token, resolve_current_user
 from fos.i18n import T
@@ -371,6 +378,27 @@ async def simulation_tree_advance_multi(
                 status_code=400,
                 detail=T("api.errors.too_many_turns", turns=turns, max=settings.max_advance_turns_per_request),
             )
+
+        # GAWorld branch cap: reject BEFORE creating or launching anything
+        # (no silent truncation), with requested vs max in the error.
+        max_branches = min(
+            MAX_GAWORLD_BRANCHES_PER_REQUEST,
+            int(getattr(settings, "fos_max_gaworld_branches_per_request", MAX_GAWORLD_BRANCHES_PER_REQUEST)),
+        )
+        try:
+            validate_branch_request(count=count, max_branches=max_branches)
+        except BranchRequestError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        # GAWorld branch-day budget: summed additional days, also rejected
+        # before launch so a refusal launches zero subprocesses.
+        try:
+            validate_branch_day_budget(
+                requested_days=count * max(1, turns),
+                allowed=int(getattr(settings, "fos_branch_day_budget", 0) or 0) or count * max(1, turns),
+            )
+        except BranchRequestError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         children = [tree.copy_sim(parent) for _ in range(count)]
 
@@ -820,6 +848,54 @@ async def simulation_tree_delete_subtree(
         sim.latest_state = record.tree.serialize()
         await session.commit()
         broadcast_tree_event(record, {"type": "deleted", "data": {"node": int(node_id)}})
+        return {"ok": True}
+
+
+@post("/{simulation_id:str}/tree/node/{node_id:int}/cancel", status_code=200)
+async def simulation_tree_cancel_node(
+    request: Request,
+    simulation_id: str,
+    node_id: int,
+) -> dict:
+    """
+    Cancel a queued or running GAWorld branch.
+
+    A queued node never launches; a running node's subprocess group is
+    terminated (bounded grace, then kill) and its semaphore slot is always
+    released. The node ends terminal-cancelled; sibling branches are never
+    affected. Cancel is a terminal outcome, not a recovery action.
+    """
+    async with get_session() as session:
+        token = extract_bearer_token(request)
+        current_user = await resolve_current_user(session, token)
+        sim, record = await get_simulation_and_tree_for_owner(session, current_user.id, simulation_id)
+        tree = record.tree
+        node = tree.nodes.get(int(node_id))
+        if node is None:
+            raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found"))
+
+        mark_node_cancelled(node)
+
+        # Terminate the live subprocess, if any, and free its slot.
+        node_sim = node.get("sim")
+        manager = getattr(node_sim, "_subprocess_manager", None)
+        if manager is not None:
+            try:
+                manager.cancel(reason="cancelled")
+            except Exception:
+                logger.exception("failed to cancel GAWorld subprocess for node %s", node_id)
+
+        if int(node_id) in record.running:
+            record.running.remove(int(node_id))
+        RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, int(node_id)), "cancelled")
+        broadcast_tree_event(
+            record,
+            {"type": "run_cancelled", "data": {"node": int(node_id)}},
+        )
+        broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(node_id)}})
+
+        sim.latest_state = tree.serialize()
+        await session.commit()
         return {"ok": True}
 
 

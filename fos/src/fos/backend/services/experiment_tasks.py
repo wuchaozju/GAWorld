@@ -21,6 +21,28 @@ from fos.core.search_config import SearchConfig
 from fos.backend.services.runtime_tasks import RUNTIME_TASKS
 
 
+class LLMBudgetRefusal(RuntimeError):
+    """Structured refusal raised BEFORE a run when LLM budget is short.
+
+    Carries {provider, estimated, budget, unit} — never credentials — so the
+    run refuses explicitly instead of silently disabling the LLM.
+    """
+
+    def __init__(self, *, provider: str, estimated, budget, unit: str, detail: str | None = None):
+        self.provider = provider
+        self.estimated = estimated
+        self.budget = budget
+        self.unit = unit
+        self.detail = detail
+        message = (
+            f"llm budget refusal: provider={provider} estimated={estimated} "
+            f"budget={budget} unit={unit}"
+        )
+        if detail:
+            message = f"{message} ({detail})"
+        super().__init__(message)
+
+
 @celery_app.task(bind=True)
 def run_experiment_task(self, simulation_id: str, exp_id: str, run_id: int, turns: int, tree_state: dict, variants: List[dict]) -> dict:
     """Celery task: runs experiment variants on a deserialized SimTree copy and updates DB.
@@ -135,14 +157,30 @@ def run_experiment_task(self, simulation_id: str, exp_id: str, run_id: int, turn
                         total_needed = per_run_budget * len(node_ids)
                         available = int((active_provider.config or {}).get("quota", 100000)) - ((usage.tokens_used or 0) + (usage.tokens_reserved or 0))
                         if available < total_needed:
-                            # Not enough quota for full reservation; disable LLM for this run
-                            clients = {}
-                        else:
-                            usage.tokens_reserved = (usage.tokens_reserved or 0) + total_needed
-                            await s2.flush()
-                except Exception:
-                    # on error, be conservative and disable LLM usage during run
-                    clients = {}
+                            # Structured budget refusal (Phase 8): never
+                            # silently disable LLM — refuse the run with
+                            # provider/estimated/budget/unit so the caller
+                            # sees exactly why. No credentials in the message.
+                            raise LLMBudgetRefusal(
+                                provider=active_provider.name,
+                                estimated=total_needed,
+                                budget=available,
+                                unit="tokens",
+                            )
+                        usage.tokens_reserved = (usage.tokens_reserved or 0) + total_needed
+                        await s2.flush()
+                except LLMBudgetRefusal:
+                    raise
+                except Exception as exc:
+                    # Preflight could not run: refuse explicitly instead of
+                    # silently running without LLM (Phase 8).
+                    raise LLMBudgetRefusal(
+                        provider=(active_provider.name if active_provider is not None else "unknown"),
+                        estimated=None,
+                        budget=None,
+                        unit="unknown",
+                        detail=f"budget preflight failed: {type(exc).__name__}",
+                    ) from exc
 
             # Branch variants if needed. Materialize variant data into plain dicts
             node_ids = []
