@@ -1,0 +1,25 @@
+================================================================================
+SCENARIO: open_discussion
+MODEL: phi4-mini
+TEST: basic
+================================================================================
+
+CONFIGURATION:
+  grouping_mode: individual
+  payoff_type: none
+  agents: ['Alice', 'Bob', 'Carol']
+  actions: ['speak']
+  topic: What is the most important quality in a friend?
+
+================================================================================
+ROUND 1
+================================================================================
+  Alice: 
+  Bob: 
+  Carol: 
+================================================================================
+SUMMARY
+================================================================================
+Final scores: {'Alice': 0, 'Bob': 0, 'Carol': 0}
+Errors: ['[Errno 111] Connection refused', '[Errno 111] Connection refused', '[Errno 111] Connection refused']
+Timestamp: 2026-10-15T12:56:41.161440
