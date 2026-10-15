@@ -1,4 +1,22 @@
 /* Reading geometry follows the reference site's Furo configuration. */
+/* Visitor counter: enabled only after a site-specific embed is configured. */
+.visitor-widget {margin:1.5rem 1rem 1rem;padding:1rem 0 0;border-top:1px solid var(--color-background-border)}
+.visitor-widget h2 {margin:0 0 .8rem;font-size:.9rem;font-weight:600;line-height:1.5;color:var(--color-sidebar-link-text)}
+.visitor-widget-map {width:100%;min-width:0;min-height:9rem;overflow:hidden;border:1px solid var(--color-background-border);border-radius:6px;background:var(--color-background-secondary)}
+.visitor-widget-map img,.visitor-widget-map iframe,.visitor-widget-map canvas {display:block;max-width:100%;margin-inline:auto;border:0}
+.visitor-widget-map img {height:auto}
+.visitor-widget p {margin:.65rem 0 0;font-size:.8rem;line-height:1.6;color:var(--color-sidebar-caption-text)}
+.visitor-widget .visitor-widget-status {margin:0 0 .75rem}
+.visitor-widget[hidden],.visitor-widget [hidden] {display:none!important}
+.visitor-widget a:focus-visible {outline:2px solid var(--color-brand-primary);outline-offset:3px}
+@media print{.visitor-widget{display:none}}
+/* The logo keeps its normal geometry throughout the one-shot introduction. */
+.brand-reveal {position:relative;display:block;line-height:0}
+.brand-reveal-scene {position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+body[data-theme="dark"] .brand-reveal-scene {filter:invert(1) hue-rotate(180deg)}
+@media(prefers-color-scheme:dark){body:not([data-theme="light"]) .brand-reveal-scene{filter:invert(1) hue-rotate(180deg)}}
+@media(prefers-reduced-motion:reduce){.brand-reveal-scene{display:none}}
+@media print{.brand-reveal-scene{display:none}}
 .sidebar-brand-text {display:flex;flex-direction:column;align-items:center;text-align:center;gap:.12rem;margin-top:.15rem}
 .sidebar-brand-title {font-weight:600;font-size:.95rem;line-height:1.2;color:var(--color-sidebar-brand-text)}
 .sidebar-brand-meta {font-size:.7rem;font-weight:400;line-height:1.2;color:var(--color-sidebar-caption-text);letter-spacing:.02em}

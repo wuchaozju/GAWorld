@@ -12,7 +12,7 @@ html_title = 'GAWorld 文档'
 html_static_path = ['_static']
 templates_path = ['_templates']
 html_css_files = ['gaworld.css', 'prompts.css']
-html_js_files = ['navigation.js']
+html_js_files = ['navigation.js', 'visitors.js', 'brand-reveal.js']
 html_favicon = '_static/favicon.svg'
 html_logo = '_static/logo.svg'
 html_copy_source = True
@@ -38,6 +38,8 @@ myst_heading_anchors = 3
 myst_enable_extensions = ['colon_fence']
 copybutton_prompt_text = ''
 html_search_language = 'zh'
+# The loader restricts tracking to the registered public documentation site.
+html_context = {'visitor_widget_enabled': True}
 
 
 def page_metadata(app, pagename, templatename, context, doctree):
