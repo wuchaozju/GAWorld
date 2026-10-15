@@ -170,18 +170,19 @@ def prepare_recovery(
     ``provider`` AND ``model`` for the one affected agent — no auto-substitution.
     ``resume_partial_day`` (or any other action) raises ValueError.
     """
+    from fos.i18n import T
+
     if action not in RECOVERY_ACTIONS:
-        raise ValueError(f"unknown recovery action: {action!r} (allowed: {RECOVERY_ACTIONS})")
+        raise ValueError(
+            T("simtree_gaworld.unknown_action", action=repr(action), allowed=str(RECOVERY_ACTIONS))
+        )
     meta = node.get("meta") or {}
     ref = meta.get("checkpoint")
     if not ref:
-        raise ValueError("failed node has no checkpoint reference to restore")
+        raise ValueError(T("simtree_gaworld.no_checkpoint_ref"))
     ref = _jsonclone(ref)
     if action == "substitute" and (provider is None or model is None):
-        raise TypeError(
-            "substitute requires an explicit provider and model "
-            "(no silent provider substitution)"
-        )
+        raise TypeError(T("simtree_gaworld.substitute_required"))
 
     branch = str(meta.get("branch") or f"node-{node.get('id')}")
     failed_day = meta.get("failed_day")
@@ -250,37 +251,44 @@ def validate_checkpoint_reference(ref: dict, expected_run_id: str | None = None)
     import json
     from pathlib import Path
 
+    from fos.i18n import T
+
     if not isinstance(ref, dict):
-        raise ValueError("checkpoint reference must be a dict")
+        raise ValueError(T("simtree_gaworld.ref_not_dict"))
     path = Path(str(ref.get("checkpoint_path") or ""))
     if not path.is_dir():
-        raise ValueError(f"checkpoint directory does not exist: {path} (no fallback)")
+        raise ValueError(T("simtree_gaworld.dir_missing", path=str(path)))
     manifest_path = path / "manifest.json"
     if not manifest_path.is_file():
-        raise ValueError(f"checkpoint manifest missing: {manifest_path} (no fallback)")
+        raise ValueError(T("simtree_gaworld.manifest_missing", path=str(manifest_path)))
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(
-            f"checkpoint manifest corrupt at {manifest_path}: {exc} (no fallback)"
+            T("simtree_gaworld.manifest_corrupt", path=str(manifest_path), detail=exc)
         ) from exc
     if expected_run_id is not None and str(manifest.get("run_id")) != str(expected_run_id):
         raise ValueError(
-            f"checkpoint lineage mismatch: manifest run_id "
-            f"{manifest.get('run_id')!r} != expected {expected_run_id!r} (no fallback)"
+            T(
+                "simtree_gaworld.lineage_mismatch",
+                found=manifest.get("run_id"),
+                expected=expected_run_id,
+            )
         )
     day = ref.get("day")
     if day is not None and int(manifest.get("completed_day", -1)) != int(day):
         raise ValueError(
-            f"checkpoint day mismatch at {path}: manifest completed_day "
-            f"{manifest.get('completed_day')!r} != reference day {day!r} (no fallback)"
+            T(
+                "simtree_gaworld.day_mismatch",
+                path=str(path),
+                found=manifest.get("completed_day"),
+                day=day,
+            )
         )
     expected_sha = ref.get("manifest_sha")
     manifest_sha = manifest.get("manifest_sha")
     if expected_sha and manifest_sha and str(expected_sha) != str(manifest_sha):
-        raise ValueError(
-            f"checkpoint manifest SHA mismatch at {path} (no fallback)"
-        )
+        raise ValueError(T("simtree_gaworld.sha_mismatch", path=str(path)))
     return True
 
 

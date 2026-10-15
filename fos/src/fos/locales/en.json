@@ -1627,5 +1627,17 @@
   "Unsupported file format: {suffix}": "Unsupported file format: {suffix}",
   "Invalid template data: {e}": "Invalid template data: {e}",
   "Parameter name '{v}' must be snake_case": "Parameter name '{v}' must be snake_case",
-  "Parameter name {v} must be snake_case": "Parameter name {v} must be snake_case"
+  "Parameter name {v} must be snake_case": "Parameter name {v} must be snake_case",
+  "simtree_gaworld": {
+    "ref_not_dict": "checkpoint reference must be a dict",
+    "dir_missing": "checkpoint directory does not exist: {path} (no fallback)",
+    "manifest_missing": "checkpoint manifest missing: {path} (no fallback)",
+    "manifest_corrupt": "checkpoint manifest corrupt at {path}: {detail} (no fallback)",
+    "lineage_mismatch": "checkpoint lineage mismatch: manifest run_id {found} != expected {expected} (no fallback)",
+    "day_mismatch": "checkpoint day mismatch at {path}: manifest completed_day {found} != reference day {day} (no fallback)",
+    "sha_mismatch": "checkpoint manifest SHA mismatch at {path} (no fallback)",
+    "no_checkpoint_ref": "failed node has no checkpoint reference to restore",
+    "unknown_action": "unknown recovery action: {action} (allowed: {allowed})",
+    "substitute_required": "substitute requires an explicit provider and model (no silent provider substitution)"
+  }
 }

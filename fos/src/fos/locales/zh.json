@@ -1627,5 +1627,17 @@
   "Unsupported file format: {suffix}": "不支持的文件格式：{suffix}",
   "Invalid template data: {e}": "无效的模板数据：{e}",
   "Parameter name '{v}' must be snake_case": "参数名 '{v}' 必须使用 snake_case 格式",
-  "Parameter name {v} must be snake_case": "参数名 {v} 必须使用 snake_case 格式"
+  "Parameter name {v} must be snake_case": "参数名 {v} 必须使用 snake_case 格式",
+  "simtree_gaworld": {
+    "ref_not_dict": "检查点引用必须是字典",
+    "dir_missing": "检查点目录不存在：{path}（不回退）",
+    "manifest_missing": "检查点清单缺失：{path}（不回退）",
+    "manifest_corrupt": "检查点清单损坏：{path}：{detail}（不回退）",
+    "lineage_mismatch": "检查点谱系不匹配：清单 run_id {found} != 期望 {expected}（不回退）",
+    "day_mismatch": "检查点天数不匹配 {path}：清单 completed_day {found} != 引用 {day}（不回退）",
+    "sha_mismatch": "检查点清单 SHA 不匹配：{path}（不回退）",
+    "no_checkpoint_ref": "失败节点没有可恢复的检查点引用",
+    "unknown_action": "未知恢复操作：{action}（允许：{allowed}）",
+    "substitute_required": "替换必须显式指定提供商和模型（绝不静默替换）"
+  }
 }
