@@ -60,10 +60,12 @@ root.appendChild(link);`;
           return {path:getComputedStyle(scene.querySelector('[data-brand-spine]')).d,
             ink:parseFloat(getComputedStyle(scene.querySelector('mask path')).strokeWidth)};
         };
-        const early = sample(600), forming = sample(1700), settled = sample(2900);
+        const duration = Math.max(...animations.map(a=>a.effect.getComputedTiming().endTime));
+        const early = sample(800), forming = sample(3300), settled = sample(6000);
         animations.forEach(a=>{a.currentTime=0;a.play();});
-        return {early,forming,settled,nodes:scene.querySelectorAll('[data-brand-node]').length};
+        return {early,forming,settled,duration,nodes:scene.querySelectorAll('[data-brand-node]').length};
       });
+      assert(motion.duration>=6000 && motion.duration<=8000,'allow time to read the network and the completed mark');
       assert.equal(motion.nodes,8,'the opening must remain legible at sidebar size');
       assert.notEqual(motion.early.path,motion.forming.path,'connections must morph continuously');
       assert.notEqual(motion.forming.path,motion.settled.path);
@@ -72,7 +74,7 @@ root.appendChild(link);`;
     }
     if (output && width===1440 && theme==='light') {
       fs.mkdirSync(output,{recursive:true});
-      for (const time of [650,1500,2100,2750]) {
+      for (const time of [1000,3000,4500,6000]) {
         await page.evaluate(time=>document.querySelector('.brand-reveal-scene').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=time;}),time);
         await page.locator('[data-brand-reveal]').screenshot({path:path.join(output,`logo-${time}.png`)});
       }
