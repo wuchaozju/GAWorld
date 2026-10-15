@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
+import pathlib
+import sys
+import time
+import uuid
 
 from typing import List, Optional
 from pydantic import BaseModel
@@ -51,6 +56,7 @@ from fos.backend.services.experiment_runner import (
     create_experiment_db,
     start_experiment_run_background,
 )
+from fos.backend.services import simtree_runtime as _simtree_runtime
 from fos.backend.models.experiment import Experiment
 
 logger = logging.getLogger(__name__)
@@ -456,4 +462,195 @@ async def compare_nodes(request: Request, simulation_id: str, data: dict) -> dic
     }
 
 
-router = Router(path="/simulations", route_handlers=[create_experiment, run_experiment, list_experiments, get_experiment, compare_nodes])
+_SECRET_KEYS = {"api_key", "api-key", "apikey", "authorization", "token", "secret", "password", "headers"}
+
+
+def resolve_gaworld_path() -> str | None:
+    """GAWorld availability seam (no-arg, patchable in tests).
+
+    Startup snapshot / env first; when unset, fos often lives inside the
+    GAWorld checkout (``<repo>/fos``), so that root is a valid fallback.
+    """
+    resolved = _simtree_runtime._resolve_gaworld_path()
+    if resolved:
+        return resolved
+    here = pathlib.Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "gaworld").is_dir():
+            return str(parent)
+    return None
+
+
+def _clean(value):
+    """Recursively drop credential-shaped keys (defence in depth)."""
+    if isinstance(value, dict):
+        return {
+            k: _clean(v)
+            for k, v in value.items()
+            if str(k).lower() not in _SECRET_KEYS
+        }
+    if isinstance(value, (list, tuple)):
+        return [_clean(v) for v in value]
+    return value
+
+
+def _branch_world_entry(node_id: int, node: dict) -> dict:
+    """One PW manifest world entry from curated node metadata (never raw meta)."""
+    gw = _clean(node.get("meta", {}).get("gaworld") or {})
+    run_dir = str(gw.get("run_dir") or "")
+    fork_day = gw.get("fork_day")
+    provenance = {
+        "node_id": int(node_id),
+        "status": gw.get("status"),
+        "fork_day": fork_day,
+        "interventions": gw.get("interventions") or [],
+        "llm_changes": gw.get("llm_changes") or [],
+    }
+    return {
+        "id": str(int(node_id)),
+        "label": gw.get("label") or f"Node {node_id}",
+        "events": ([{"day": fork_day, "name": "fork"}] if fork_day else []),
+        "config": provenance,
+        "dir": os.path.join(run_dir),
+        "state_csv": os.path.join(run_dir, "state", "agent_state_history.csv"),
+    }
+
+
+def _completed_branch_nodes(tree, node_ids: list[int]) -> dict[int, dict]:
+    """Validate every node is a known, GAWorld, completed branch with a state CSV."""
+    nodes = getattr(tree, "nodes", {}) or {}
+    resolved: dict[int, dict] = {}
+    for raw_id in node_ids:
+        node = nodes.get(int(raw_id))
+        if node is None:
+            raise HTTPException(status_code=400, detail=f"node not found in this simulation: {raw_id}")
+        meta = node.get("meta") or {}
+        gw = meta.get("gaworld")
+        if not isinstance(gw, dict) or not gw.get("run_dir"):
+            raise HTTPException(status_code=400, detail=f"node {raw_id} is not a GAWorld branch node")
+        if str(gw.get("status") or "") != "completed":
+            raise HTTPException(status_code=400, detail=f"node {raw_id} has not completed its run")
+        state_csv = os.path.join(str(gw["run_dir"]), "state", "agent_state_history.csv")
+        if not os.path.isfile(state_csv):
+            raise HTTPException(status_code=400, detail=f"node {raw_id}: state history not found at {state_csv}")
+        resolved[int(raw_id)] = node
+    return resolved
+
+
+def _analyze_manifest_with_gaworld(gaworld_path: str, manifest: dict) -> tuple[dict | None, str | None, str | None]:
+    """Run the existing PW analysis in-process over absolute branch paths.
+
+    Returns ``(report, artifacts_dir)`` or ``(None, clean_error)``. The
+    manifest's state CSVs live outside the GAWorld repo, so the reusable
+    ``path_resolver`` seam supplies resolved paths without copying runs.
+    """
+    try:
+        if gaworld_path not in sys.path:
+            sys.path.insert(0, gaworld_path)
+        from gaworld.apps import world_paths
+        from gaworld.parallel import runner as pw_runner
+    except Exception as exc:  # GAWorld not importable — clean, no traceback
+        return None, None, f"GAWorld analysis unavailable: {exc.__class__.__name__}"
+
+    def _resolver(entry: dict, repo_root: str) -> dict:
+        return dict(entry)
+
+    try:
+        report = pw_runner.analyze_experiment(gaworld_path, manifest, path_resolver=_resolver)
+        comparison_id = f"simtree-{manifest.get('id', 'cmp')}"
+        artifacts_rel = os.path.join("output", "comparisons", comparison_id)
+        pw_runner.write_report(
+            world_paths.REPO_ROOT, {**manifest, "root": artifacts_rel}, report
+        )
+        return report, artifacts_rel, None
+    except Exception as exc:
+        return None, None, f"GAWorld analysis failed: {exc.__class__.__name__}: {exc}"
+
+
+async def compare_branches(simulation_id: str, data: dict, run_record=None) -> dict:
+    """Compare completed GAWorld branches with the existing PW analysis.
+
+    ``run_record`` is the owned SimTree record; the HTTP wrapper resolves it
+    (with authentication + ownership) and passes it in.
+    """
+    baseline_raw = data.get("baseline_node")
+    branches_raw = data.get("branch_nodes")
+    if baseline_raw is None or branches_raw is None or not isinstance(branches_raw, list) or not branches_raw:
+        raise HTTPException(status_code=400, detail="baseline_node and a non-empty branch_nodes list are required")
+    try:
+        baseline_id = int(baseline_raw)
+        branch_ids = [int(raw) for raw in branches_raw]
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="node ids must be integers")
+
+    if run_record is None:
+        raise HTTPException(status_code=401, detail="authentication required")
+    tree = run_record.tree
+
+    resolved = _completed_branch_nodes(tree, [baseline_id, *branch_ids])
+
+    manifest = {
+        "id": f"simtree-{simulation_id}-{uuid.uuid4().hex[:8]}",
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "root": f"simtree/{simulation_id}",
+        "spec": {
+            "name": f"SimTree branch comparison {simulation_id}",
+            "seed": None,
+            "baseline_id": str(baseline_id),
+            "worlds": [_branch_world_entry(nid, resolved[nid]) for nid in [baseline_id, *branch_ids]],
+        },
+        "worlds": {
+            str(nid): {
+                "dir": _branch_world_entry(nid, resolved[nid])["dir"],
+                "state_csv": _branch_world_entry(nid, resolved[nid])["state_csv"],
+            }
+            for nid in [baseline_id, *branch_ids]
+        },
+    }
+
+    gaworld_path = resolve_gaworld_path()
+    if not gaworld_path:
+        raise HTTPException(status_code=503, detail="GAWorld is not configured on this server; set GAWORLD_PATH")
+
+    report, artifacts_dir, error = _analyze_manifest_with_gaworld(gaworld_path, manifest)
+
+    # Lightweight comparison reference in the run's result_meta — paths and
+    # headline numbers only, never report bodies or CSV content.
+    result_meta = getattr(run_record, "result_meta", None)
+    if not isinstance(result_meta, dict):
+        result_meta = {}
+        try:
+            run_record.result_meta = result_meta
+        except Exception:
+            pass
+    result_meta["comparison"] = {
+        "kind": "pw_branch_analysis",
+        "created_at": manifest["created_at"],
+        "baseline_node": baseline_id,
+        "branch_nodes": branch_ids,
+        "artifacts_dir": artifacts_dir,
+    }
+
+    body: dict = {
+        "baseline_node": baseline_id,
+        "branch_nodes": branch_ids,
+        "manifest": manifest,
+        "report": report,
+    }
+    if error:
+        body["error"] = error
+    return body
+
+
+@post("/{simulation_id:str}/compare-branches")
+async def compare_branches_route(request: Request, simulation_id: str, data: dict) -> dict:
+    """HTTP wrapper: authenticate, verify ownership, then compare branches."""
+    token = extract_bearer_token(request)
+    async with get_session() as session:
+        current_user = await resolve_current_user(session, token)
+        _sim, record = await get_simulation_and_tree_for_owner(session, current_user.id, simulation_id)
+    return await compare_branches(simulation_id, dict(data or {}), run_record=record)
+
+
+router = Router(path="/simulations", route_handlers=[create_experiment, run_experiment, list_experiments, get_experiment, compare_nodes, compare_branches_route])
+

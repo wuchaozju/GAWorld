@@ -41,3 +41,11 @@ export async function getExperiment(simulationId: string, expId: string) {
 export async function compareNodes(simulationId: string, nodeA: number, nodeB: number, use_llm = false, locale?: string) {
   return apiPost<any>(`/simulations/${simulationId}/compare`, { node_a: nodeA, node_b: nodeB, use_llm, locale });
 }
+
+// Phase 7: quantitative comparison of completed GAWorld branches (PW analysis reuse).
+export async function compareBranches(simulationId: string, baselineNode: number, branchNodes: number[]) {
+  return apiPost<any>(`/simulations/${simulationId}/compare-branches`, {
+    baseline_node: baselineNode,
+    branch_nodes: branchNodes,
+  });
+}

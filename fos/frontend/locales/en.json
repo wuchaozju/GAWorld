@@ -3878,6 +3878,23 @@
       "model": "Replacement model",
       "confirm": "Recover",
       "done": "Recovery attempt branch #{{child}} created"
+    },
+    "quant": {
+      "title": "Quantitative comparison",
+      "hint": "Run the Parallel-Worlds divergence analysis over the completed branches.",
+      "run": "Compare branches",
+      "running": "Analyzing…",
+      "errorUnfinished": "The comparison branch has not completed its run yet.",
+      "errorFailed": "Branch comparison failed.",
+      "splitPoint": "Detected divergence point",
+      "step": "step",
+      "baseline": "Baseline",
+      "divergence": "Final divergence",
+      "movers": "Movers",
+      "agent": "Resident",
+      "metric": "Metric",
+      "delta": "Δ final",
+      "noData": "No comparable data."
     }
   }
 }

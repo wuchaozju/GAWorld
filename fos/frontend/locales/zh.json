@@ -3610,6 +3610,23 @@
       "model": "替换后的模型",
       "confirm": "恢复",
       "done": "已创建恢复尝试分支 #{{child}}"
+    },
+    "quant": {
+      "title": "定量对比",
+      "hint": "对已完成的分支运行平行世界差异分析。",
+      "run": "对比分支",
+      "running": "分析中…",
+      "errorUnfinished": "对比分支尚未完成运行。",
+      "errorFailed": "分支对比失败。",
+      "splitPoint": "检测到的分歧点",
+      "step": "步",
+      "baseline": "基准",
+      "divergence": "终值分歧",
+      "movers": "变动居民",
+      "agent": "居民",
+      "metric": "指标",
+      "delta": "终值差",
+      "noData": "没有可比较的数据。"
     }
   },
   "scenario_templates": {

@@ -380,3 +380,23 @@
     }
   }
 }
+
+/* Phase 7 — quantitative branch comparison (PW analysis reuse) */
+.ss-topology__quant-table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.ss-topology__quant-table th,
+.ss-topology__quant-table td {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--ss-workspace-border, rgba(128, 128, 128, 0.25));
+}
+
+.ss-topology__quant-table th {
+  font-weight: 600;
+  color: var(--ss-workspace-muted, inherit);
+}

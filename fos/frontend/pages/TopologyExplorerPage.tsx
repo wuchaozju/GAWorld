@@ -19,6 +19,7 @@ import { SimTree } from "../components/SimTree";
 import { ForkFromCheckpointModal, RecoveryModal } from "../components/TopologyForkRecoveryModals";
 import { ToastContainer } from "../components/Toast";
 import { useSimulationStore } from "../store";
+import { compareBranches } from "../services/experiments";
 import "../styles/routes/topology.css";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
@@ -66,6 +67,77 @@ const BranchSummaryCard: React.FC<{
   </div>
 );
 
+type QuantState =
+  | { status: "idle" }
+  | { status: "running" }
+  | { status: "done"; report: any }
+  | { status: "error"; error: string };
+
+const quantReportView = (t: (key: string) => string, report: any, branchId: string) => {
+  if (!report) return <div className="ss-path__empty">{t("topologyExplorer.quant.noData")}</div>;
+  const worlds: any[] = report.worlds || [];
+  const branch = worlds.find((w) => String(w.id) === branchId);
+  const movers: any[] = (report.movers || {})[branchId] || [];
+  const deltas: any[] = report.deltas || [];
+  return (
+    <div className="ss-topology__detail-card">
+      <div className="ss-topology__detail-line">
+        <span>{t("topologyExplorer.quant.splitPoint")}</span>
+        <strong>
+          {branch && branch.split_step != null
+            ? `${t("topologyExplorer.quant.step")} ${branch.split_step}`
+            : "—"}
+        </strong>
+      </div>
+      {worlds.map((world) => (
+        <div key={world.id} className="ss-topology__detail-line">
+          <span>{world.label || world.id}</span>
+          <strong>
+            {world.has_data && world.divergence_final != null
+              ? Number(world.divergence_final).toFixed(4)
+              : "—"}
+          </strong>
+        </div>
+      ))}
+      {movers.length > 0 ? (
+        <div className="ss-topology__detail-card">
+          <div className="ss-topology__detail-card-title">{t("topologyExplorer.quant.movers")}</div>
+          {movers.slice(0, 10).map((mover, index) => (
+            <div key={`${mover.agent_id}-${index}`} className="ss-topology__detail-line">
+              <span>
+                {t("topologyExplorer.quant.agent")} {mover.agent_id}
+              </span>
+              <strong>
+                {mover.top_metric} {mover.distance != null ? `(${Number(mover.distance).toFixed(4)})` : ""}
+              </strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {deltas.length > 0 ? (
+        <table className="ss-topology__quant-table">
+          <thead>
+            <tr>
+              <th>{t("topologyExplorer.quant.metric")}</th>
+              <th>{t("topologyExplorer.quant.baseline")}</th>
+              <th>{t("topologyExplorer.quant.delta")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deltas.map((row, index) => (
+              <tr key={`${row.world_id}-${row.metric}-${index}`}>
+                <td>{row.metric}</td>
+                <td>{Number(row.baseline_final).toFixed(4)}</td>
+                <td>{Number(row.delta_final).toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </div>
+  );
+};
+
 const TopologyExplorerPage: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -98,6 +170,11 @@ const TopologyExplorerPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = React.useState<SimNode["status"] | "all">("all");
   const [forkDialogOpen, setForkDialogOpen] = React.useState(false);
   const [recoveryDialogOpen, setRecoveryDialogOpen] = React.useState(false);
+  const [quantState, setQuantState] = React.useState<QuantState>({ status: "idle" });
+
+  React.useEffect(() => {
+    setQuantState({ status: "idle" });
+  }, [selectedNodeId, compareTargetNodeId]);
 
   React.useEffect(() => {
     if (!simIdParam) return;
@@ -254,6 +331,26 @@ const TopologyExplorerPage: React.FC = () => {
     if (window.confirm(t("components.simTree.confirmDelete"))) {
       void deleteNode();
     }
+  };
+
+  const handleQuantCompare = () => {
+    if (!simIdParam || !selectedNode || !compareTargetNode) return;
+    if (compareTargetNode.status !== "completed") {
+      setQuantState({ status: "error", error: t("topologyExplorer.quant.errorUnfinished") });
+      return;
+    }
+    setQuantState({ status: "running" });
+    compareBranches(String(simIdParam), Number(selectedNode.id), [Number(compareTargetNode.id)])
+      .then((res) => {
+        if (res && res.report) {
+          setQuantState({ status: "done", report: res.report });
+        } else {
+          setQuantState({ status: "error", error: res?.error || t("topologyExplorer.quant.errorFailed") });
+        }
+      })
+      .catch((err) => {
+        setQuantState({ status: "error", error: err?.message || t("topologyExplorer.quant.errorFailed") });
+      });
   };
 
   const showLoadingState =
@@ -516,6 +613,28 @@ const TopologyExplorerPage: React.FC = () => {
                         highlight="compare"
                       />
                     </div>
+                  </div>
+                ) : null}
+
+                {compareTargetNode ? (
+                  <div className="ss-topology__detail-card">
+                    <div className="ss-topology__detail-card-title">{t("topologyExplorer.quant.title")}</div>
+                    <p className="ss-topology__detail-copy">{t("topologyExplorer.quant.hint")}</p>
+                    <div className="ss-topology__detail-actions">
+                      <button
+                        onClick={handleQuantCompare}
+                        disabled={quantState.status === "running" || selectedNode?.status !== "completed" || compareTargetNode.status !== "completed"}
+                        className="ss-button-secondary"
+                      >
+                        {quantState.status === "running" ? t("topologyExplorer.quant.running") : t("topologyExplorer.quant.run")}
+                      </button>
+                    </div>
+                    {quantState.status === "error" ? (
+                      <div className="ss-path__empty" role="alert">{quantState.error}</div>
+                    ) : null}
+                    {quantState.status === "done"
+                      ? quantReportView(t, quantState.report, String(compareTargetNode.id))
+                      : null}
                   </div>
                 ) : null}
 
