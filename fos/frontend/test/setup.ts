@@ -68,7 +68,11 @@ vi.mock('../services/simulationTree', () => ({
   treeBranch: vi.fn(() => Promise.resolve({ child: 2 })),
   treeBranchPublic: vi.fn(() => Promise.resolve({ child: 2 })),
   getSimEvents: vi.fn(() => Promise.resolve([])),
-  treeDeleteSubtree: vi.fn(() => Promise.resolve())
+  treeDeleteSubtree: vi.fn(() => Promise.resolve()),
+  forkFromCheckpoint: vi.fn(() => Promise.resolve({ children: [3, 4] })),
+  retryNode: vi.fn(() => Promise.resolve({ child: 5 })),
+  fixAndRetryNode: vi.fn(() => Promise.resolve({ child: 6 })),
+  substituteProvider: vi.fn(() => Promise.resolve({ child: 7 }))
 }));
 
 vi.mock('../services/experiments', () => ({
