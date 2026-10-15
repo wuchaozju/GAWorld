@@ -188,8 +188,20 @@ export async function forkFromCheckpoint(
   parent: number,
   checkpoint: Record<string, unknown>,
   token?: string,
+  interventionsText?: string,
+  agentLlmMap?: Record<string, { provider: string; model?: string }>,
 ): Promise<{ children: number[] }> {
-  return await httpPost<{ children: number[] }>(base, `/simulations/${id}/tree/fork-from-checkpoint`, { parent, checkpoint }, token);
+  return await httpPost<{ children: number[] }>(
+    base,
+    `/simulations/${id}/tree/fork-from-checkpoint`,
+    {
+      parent,
+      checkpoint,
+      ...(interventionsText ? { interventions_text: interventionsText } : {}),
+      ...(agentLlmMap ? { agent_llm_map: agentLlmMap } : {}),
+    },
+    token,
+  );
 }
 
 /** Retry a failed node: same config, same last-completed checkpoint, fresh attempt dir. */

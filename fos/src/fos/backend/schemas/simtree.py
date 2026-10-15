@@ -40,6 +40,26 @@ class SimulationTreeBranchPayload(BaseModel):
     ops: list[dict]
 
 
+class SimulationTreeForkPayload(BaseModel):
+    """Fork N sibling branches from one completed checkpoint reference."""
+
+    parent: int
+    checkpoint: dict
+    count: int = 2
+    interventions_text: str | None = None
+    agent_llm_map: dict[str, dict] | None = None
+
+
+class SimulationTreeRecoverPayload(BaseModel):
+    """Retry / Fix-and-retry / Substitute on a failed node."""
+
+    action: str
+    runtime_config: dict | None = None
+    agent_id: int | None = None
+    provider: str | None = None
+    model: str | None = None
+
+
 class UpdateAgentLLMConfigRequest(BaseModel):
     """Request payload for updating an agent's LLM configuration."""
     agent_id: str

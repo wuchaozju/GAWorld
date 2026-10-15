@@ -3847,6 +3847,37 @@
     "subtitle": "Simulation Topology Explorer",
     "topologyExplorer": "Topology Explorer",
     "valueUnavailable": "N/A",
-    "visibleNodes": "Visible Nodes"
+    "visibleNodes": "Visible Nodes",
+    "forkDialog": {
+      "button": "Fork from Day N",
+      "title": "Fork from Day {{day}}",
+      "hint": "Both branches restart from this completed checkpoint with identical restored state.",
+      "day": "Checkpoint day",
+      "interventions": "Intervention (optional, applied to each branch only)",
+      "interventionsPlaceholder": "e.g. A new tech park opens in town",
+      "agentId": "Agent ID",
+      "provider": "Provider",
+      "model": "Model",
+      "confirm": "Fork",
+      "done": "Forked {{count}} branch(es) from the checkpoint"
+    },
+    "recoveryDialog": {
+      "button": "Recover failed run",
+      "title": "Recover failed run",
+      "checkpointHint": "The failed day reruns from the LAST COMPLETED checkpoint in a fresh attempt directory; the failed evidence is kept.",
+      "retry": "Retry",
+      "retryHint": "Same configuration, same checkpoint, fresh attempt directory.",
+      "fixAndRetry": "Fix and retry",
+      "fixAndRetryHint": "Reload a repaired runtime config, restore the same checkpoint.",
+      "substitute": "Substitute provider",
+      "substituteHint": "Route one affected agent to an explicit provider/model — never automatic.",
+      "runtimeConfig": "Repaired runtime config (JSON)",
+      "badJson": "Runtime config is not valid JSON",
+      "agentId": "Affected agent ID",
+      "provider": "Replacement provider",
+      "model": "Replacement model",
+      "confirm": "Recover",
+      "done": "Recovery attempt branch #{{child}} created"
+    }
   }
 }

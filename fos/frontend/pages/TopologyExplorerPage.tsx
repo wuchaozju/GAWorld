@@ -16,6 +16,7 @@ import {
 import { BrandLogo } from "../components/BrandLogo";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { SimTree } from "../components/SimTree";
+import { ForkFromCheckpointModal, RecoveryModal } from "../components/TopologyForkRecoveryModals";
 import { ToastContainer } from "../components/Toast";
 import { useSimulationStore } from "../store";
 import "../styles/routes/topology.css";
@@ -95,6 +96,8 @@ const TopologyExplorerPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<SimNode["status"] | "all">("all");
+  const [forkDialogOpen, setForkDialogOpen] = React.useState(false);
+  const [recoveryDialogOpen, setRecoveryDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!simIdParam) return;
@@ -220,6 +223,11 @@ const TopologyExplorerPage: React.FC = () => {
     });
     return counts;
   }, [nodes]);
+
+  const selectedNodeHasCheckpoint = Boolean(
+    (selectedNode?.meta as Record<string, unknown> | null | undefined)?.checkpoint,
+  );
+  const selectedNodeFailed = selectedNode?.status === "failed";
 
   const handleOpenControlRoom = () => {
     if (!simIdParam) return;
@@ -460,9 +468,24 @@ const TopologyExplorerPage: React.FC = () => {
                       <GitFork size={15} />
                       {t("simulationWorkspace.branch")}
                     </button>
+                    <button
+                      onClick={() => setForkDialogOpen(true)}
+                      disabled={!selectedNodeHasCheckpoint || isGenerating || isCompareMode}
+                      className="ss-button-secondary"
+                    >
+                      <GitFork size={15} />
+                      {t("topologyExplorer.forkDialog.button")}
+                    </button>
                     <button onClick={handleOpenControlRoom} className="ss-button-secondary">
                       <MapIcon size={15} />
                       {t("topologyExplorer.openInControlRoom")}
+                    </button>
+                    <button
+                      onClick={() => setRecoveryDialogOpen(true)}
+                      disabled={!selectedNodeFailed || isGenerating}
+                      className="ss-button-secondary ss-button-secondary--danger"
+                    >
+                      {t("topologyExplorer.recoveryDialog.button")}
                     </button>
                     <button
                       onClick={handleDelete}
@@ -521,6 +544,44 @@ const TopologyExplorerPage: React.FC = () => {
       </div>
 
       <ToastContainer />
+      {forkDialogOpen && simIdParam && (
+        <ForkFromCheckpointModal
+          node={selectedNode}
+          base={{ endpoint: engineConfig?.endpoint || "/api", token: engineConfig?.token }}
+          simulationId={String(simIdParam)}
+          onClose={() => setForkDialogOpen(false)}
+          onForked={(children) => {
+            setForkDialogOpen(false);
+            (useSimulationStore.getState() as any).addNotification?.(
+              "success",
+              t("topologyExplorer.forkDialog.done", { count: children.length }),
+            );
+            void loadSimulationById(String(simIdParam));
+          }}
+          onError={(message) => {
+            (useSimulationStore.getState() as any).addNotification?.("error", message);
+          }}
+        />
+      )}
+      {recoveryDialogOpen && simIdParam && (
+        <RecoveryModal
+          node={selectedNode}
+          base={{ endpoint: engineConfig?.endpoint || "/api", token: engineConfig?.token }}
+          simulationId={String(simIdParam)}
+          onClose={() => setRecoveryDialogOpen(false)}
+          onRecovered={(child) => {
+            setRecoveryDialogOpen(false);
+            (useSimulationStore.getState() as any).addNotification?.(
+              "success",
+              t("topologyExplorer.recoveryDialog.done", { child }),
+            );
+            void loadSimulationById(String(simIdParam));
+          }}
+          onError={(message) => {
+            (useSimulationStore.getState() as any).addNotification?.("error", message);
+          }}
+        />
+      )}
     </div>
   );
 };
