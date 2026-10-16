@@ -160,9 +160,19 @@ def launch_subprocess(
     env: dict[str, str] | None = None,
     output_dir: str | None = None,
     new_process_group: bool = True,
+    stdout: Any = None,
+    stderr: Any = None,
 ) -> SubprocessHandle:
     """Spawn one world run as a separate process (the process boundary PW and
-    SimTree both preserve). Returns a :class:`SubprocessHandle`."""
+    SimTree both preserve). Returns a :class:`SubprocessHandle`.
+
+    ``stdout`` / ``stderr`` are additive: by default output is discarded
+    (DEVNULL) exactly as before, but a caller that owns a log destination —
+    e.g. the parallel-worlds runner teeing each world into its ``run.log`` —
+    can pass an open file object. ``new_process_group=False`` keeps the child
+    in the caller's process group (the historical PW semantics its
+    pause/resume signalling relies on) instead of a fresh session.
+    """
     kwargs: dict[str, Any] = {}
     if new_process_group and hasattr(os, "setsid"):
         kwargs["start_new_session"] = True
@@ -170,8 +180,8 @@ def launch_subprocess(
         [str(part) for part in command],
         cwd=cwd,
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL if stdout is None else stdout,
+        stderr=subprocess.DEVNULL if stderr is None else stderr,
         **kwargs,
     )
     return SubprocessHandle(
@@ -333,13 +343,13 @@ def _execute(handle: RunHandle) -> None:
             completed_day=max(first_day, last_day) - 1 if last_day > 0 else None,
             status="completed",
         )
-    except Exception as exc:  # noqa: BLE001 — the handle owns its failure
+    except Exception as exc:
         handle.status = "failed"
         handle.error = str(exc)
         handle.returncode = 1
         try:
             _patch_manifest(handle, status="failed", error=str(exc))
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
 
@@ -378,11 +388,11 @@ def launch(
 
 __all__ = [
     "RESERVED_CONFIG_KEYS",
+    "STATUSES",
+    "WORLDRUN_VERSION",
     "RunError",
     "RunHandle",
-    "STATUSES",
     "SubprocessHandle",
-    "WORLDRUN_VERSION",
     "launch",
     "launch_subprocess",
     "seed_from_dir",
