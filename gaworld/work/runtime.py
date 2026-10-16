@@ -19,6 +19,7 @@ import os
 from typing import Any, Callable, Iterable, Optional
 
 from gaworld.logging_setup import get_logger
+from gaworld.skills.market import SkillMarket
 from gaworld.work.adapters import build_default_adapters
 from gaworld.work.adapters.base import AdapterContext
 from gaworld.work.capabilities import bootstrap_all_agents
@@ -27,6 +28,7 @@ from gaworld.work.market import JobMarket
 from gaworld.work.queue import WorkQueue
 from gaworld.work.router import RealWorkRouter
 from gaworld.work.schemas import AgentCapabilities, WorkResult
+from gaworld.work.skill_lookup import make_market_hook
 from gaworld.work.worker import WorkerPool
 
 _LOG = get_logger("gaworld.work.runtime")
@@ -107,19 +109,39 @@ class RealWorkRuntime:
                 config=adapter_cfg.get(adapter_name, {}),
             )
 
+        router = RealWorkRouter(
+            queue=queue,
+            market=market,
+            capabilities=capabilities,
+            config=rw,
+        )
+
+        # Online skill market (opt-in): fills a brief's free skill slots
+        # on the worker thread.
+        skills_cfg = full_config.get("skills")
+        skills_cfg = skills_cfg if isinstance(skills_cfg, dict) else {}
+        online = skills_cfg.get("online")
+        brief_hook = None
+        if (
+            isinstance(online, dict)
+            and online.get("enabled")
+            and skills_cfg.get("inject_into_work_brief", True)
+        ):
+            skill_market = SkillMarket(
+                str(online.get("cache_dir") or "output/skills_market"),
+                api_base=str(online.get("api_base") or "https://skills.sh"),
+                min_installs=int(online.get("min_installs", 100)),
+                timeout=float(online.get("timeout_seconds", 10)),
+            )
+            brief_hook = make_market_hook(skill_market, router.skill_registry)
+
         worker = WorkerPool(
             queue=queue,
             adapters=enabled_adapters,
             ctx_factory=_ctx_factory,
             max_workers=int(rw.get("max_concurrent_tasks", 2)),
             task_timeout_seconds=int(rw.get("task_timeout_seconds", 600)),
-        )
-
-        router = RealWorkRouter(
-            queue=queue,
-            market=market,
-            capabilities=capabilities,
-            config=rw,
+            brief_hook=brief_hook,
         )
         return cls(
             config=rw,
@@ -157,6 +179,7 @@ class RealWorkRuntime:
             sim_day=sim_day,
             sim_time=sim_time,
             limit=int(self.config.get("tick_ingest_limit", 5)),
+            skill_registry=self.router.skill_registry,
         )
 
     def tick_day(self, sim_day: int) -> None:

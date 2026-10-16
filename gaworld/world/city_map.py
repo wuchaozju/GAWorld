@@ -1394,7 +1394,7 @@ def estimate_travel_minutes(mode, distance_km, road_factor=1.0):
 
 
 def travel_plan(agent, city_map, origin, target, activity=None,
-                 time_str=None, weather=None):
+                 time_str=None, weather=None, deviation=0.0, rng=None):
     """Build a complete travel plan with cost, time, and route.
 
     Parameters
@@ -1403,9 +1403,20 @@ def travel_plan(agent, city_map, origin, target, activity=None,
         Current time as "HH:MM" — used for rush-hour detection.
     weather : str or None
         Current weather condition key (rain/snow/hot/cold/clear).
+    deviation, rng :
+        For a resident with a ``default_transport`` habit (see
+        ``world/mobility.py``): the chance this trip uses some other mode,
+        and the random source deciding it. No *rng*, no deviation.
     """
     mode, straight_km = choose_transport_mode(
         agent, city_map, origin, target, activity=activity, weather=weather)
+    mode_reason = "model"
+    if agent.get("default_transport"):
+        from gaworld.world.mobility import trip_mode
+
+        mode, mode_reason = trip_mode(
+            agent, mode, straight_km, metro_is_usable(city_map, origin, target),
+            weather=weather, deviation=deviation, rng=rng)
     route, network_km = shortest_path_with_distance(city_map, origin, target)
     # Prefer the real road-network distance; fall back to straight-line only if
     # the graph yields nothing usable.
@@ -1427,6 +1438,7 @@ def travel_plan(agent, city_map, origin, target, activity=None,
         "straight_distance_km": round(straight_km, 3),
         "network_distance_km": round(network_km, 3),
         "mode": mode,
+        "mode_reason": mode_reason,
         "travel_minutes": minutes,
         "travel_cost": round(cost, 2),
         "rush_hour": is_rush,

@@ -38,6 +38,11 @@
     styles: [],
     style: null,             // resolved style dict (or null until catalogue loaded)
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
+    regenRelease: null,
     jobTimer: null,
     novel: null,             // finished novel result
     maxAgents: 6,
@@ -51,7 +56,7 @@
 
   async function init() {
     $("#nRunBtn").addEventListener("click", startRun);
-    $("#nPickNone").addEventListener("click", () => { state.picked.clear(); renderAgents(); });
+    $("#nPickNone").addEventListener("click", () => { state.picked.clear(); renderAgents(); refreshRunEnabled(); });
     $("#nCity").addEventListener("change", () => {
       state.city = $("#nCity").value;
       state.picked.clear();
@@ -60,9 +65,13 @@
     $("#nStyle").addEventListener("change", renderStyleText);
     $("#nTabReader").addEventListener("click", () => showPane("reader"));
     $("#nTabViz").addEventListener("click", () => showPane("viz"));
-    $("#nCustomStyleText").addEventListener("input", () => {/* just enable/disable Run */});
+    $("#nCustomStyleText").addEventListener("input", refreshRunEnabled);
+    $("#nOutline").addEventListener("input", refreshRunEnabled);
+    $("#nTargetWords").addEventListener("input", refreshRunEnabled);
+    $("#nRegenBtn").addEventListener("click", startRegenerate);
     await Promise.all([loadCities().then(loadAgents), loadCatalogue()]);
     loadHistory();
+    refreshRunEnabled();
   }
 
   // -- catalogue ----------------------------------------------------------
@@ -152,20 +161,34 @@
           const id = parseInt(cb.getAttribute("data-id"), 10);
           if (cb.checked) state.picked.add(id); else state.picked.delete(id);
           renderAgents();
+          refreshRunEnabled();
         });
       });
     }
     $("#nPicked").textContent = String(state.picked.size);
   }
 
+  // Reflect whether the current form is ready to submit: button is disabled
+  // (greyed out and ignored on click) until both the cast and the target are
+  // legal. Outline can be empty — the model designs its own story then.
+  function refreshRunEnabled() {
+    const btn = $("#nRunBtn");
+    if (!btn) return;
+    const reasons = [];
+    if (state.picked.size < 2) reasons.push("agents");
+    if (state.picked.size > state.maxAgents) reasons.push("agents");
+    if (state.style == null && $("#nStyle").value === CUSTOM_STYLE && !$("#nCustomStyleText").value.trim()) reasons.push("custom-style");
+    const target = parseInt($("#nTargetWords").value, 10);
+    if (!(target >= 1000 && target <= 80000)) reasons.push("target");
+    btn.disabled = reasons.length > 0;
+    btn.setAttribute("aria-disabled", btn.disabled ? "true" : "false");
+    btn.title = reasons.length ? t("novel.disabled_hint", "把右侧填完整才能开始写") : "";
+  }
+
   // -- run ----------------------------------------------------------------
   async function startRun() {
+    if ($("#nRunBtn").disabled) return; // button is greyed; ignore accidental clicks
     const outline = $("#nOutline").value.trim();
-    if (!outline) {
-      alert(t("novel.outline_required", "先填一段故事大纲"));
-      $("#nOutline").focus();
-      return;
-    }
     if (state.picked.size < 2) {
       alert(t("novel.agents_required", "至少挑 2 个居民当主角"));
       return;
@@ -228,6 +251,52 @@
     }
   }
 
+  // Regenerate the chapters of an already-finished novel with a new premise.
+  // Cast / style / word target / city all carry over from the source run —
+  // we only send a fresh ``premise`` (and an optional outline tweak).
+  async function startRegenerate() {
+    if (!state.novel || !state.novel.job_id) return;
+    const newPremise = $("#nPremiseEdit").value.trim();
+    if (!newPremise) {
+      alert(t("novel.premise_required", "梗概不能为空"));
+      return;
+    }
+    const regenBtn = $("#nRegenBtn");
+    if (regenBtn) regenBtn.disabled = true;
+    if (regenBtn._release) clearTimeout(regenBtn._release); regenBtn._release = null;
+    state.regenRelease = setButtonBusy(regenBtn, "novel.regenerating", "正在按新梗概重写…");
+    $("#nStatus").textContent = t("novel.regenerating", "正在按新梗概重写…");
+    try {
+      const resp = await fetch("/api/games/novel/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_job_id: state.novel.job_id,
+          premise: newPremise,
+          outline: $("#nOutline").value.trim(),
+          title_hint: $("#nTitleHint").value.trim(),
+        }),
+      });
+      const body = await resp.json();
+      if (!resp.ok || !body.job_id) {
+        alert(body.error || t("novel.failed", "提交失败"));
+        if (regenBtn && state.regenRelease) { state.regenRelease(); state.regenRelease = null; }
+        return;
+      }
+      // Re-use the same polling loop so the progress bar / done-state works.
+      state.jobId = body.job_id;
+      $("#nResult").hidden = true;
+      $("#nIdle").hidden = false;
+      $("#nBar").style.width = "0%";
+      $("#nPct").textContent = "0%";
+      $("#nStatus").textContent = t("novel.regenerating", "正在按新梗概重写…");
+      poll();
+    } catch (e) {
+      $("#nStatus").textContent = t("novel.failed", "提交失败");
+      if (regenBtn && state.regenRelease) { state.regenRelease(); state.regenRelease = null; }
+    }
+  }
+
   function poll() {
     if (state.jobTimer) clearInterval(state.jobTimer);
     let tries = 0;
@@ -246,11 +315,14 @@
           state.jobTimer = null;
           state.novel = data.result;
           renderNovel();
+          exporter.sync(); // flip the "下载 Markdown" button on now that we have a result
           loadHistory();
         } else if (data.status === "failed" || tries > maxTries) {
           clearInterval(state.jobTimer);
           state.jobTimer = null;
           $("#nStatus").textContent = t("novel.failed", "生成失败") + "：" + (data.error || "");
+          const regenBtn = $("#nRegenBtn");
+          if (regenBtn && state.regenRelease) { state.regenRelease(); state.regenRelease = null; }
         }
       } catch (e) {
         // network blip — keep polling
@@ -270,6 +342,12 @@
     $("#nBookTitle").textContent = novel.title || "未命名";
     $("#nPremise").textContent = novel.premise || "";
     $("#nBackCover").textContent = novel.back_cover || "";
+    // Editable premise: clicking "按新梗概重新生成" sends this back to the
+    // server, so default to whatever the model just wrote.
+    const premiseEdit = $("#nPremiseEdit");
+    if (premiseEdit) premiseEdit.value = novel.premise || "";
+    const regenBtn = $("#nRegenBtn");
+    if (regenBtn && state.regenRelease) { state.regenRelease(); state.regenRelease = null; }
     $("#nCast").innerHTML = (novel.cast || [])
       .map((c) => `<span class="novel-cast-tag"><b>${esc(c.name)}</b><i>${esc(c.role || "")}</i></span>`)
       .join("");
@@ -433,7 +511,11 @@
         return [xFor(i), yFor(score)];
       });
       const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-      const dots = pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${color}"><title>${esc(member.name)} · 第${chapters[i].chapter}章 ${(c.presence[String(member.agent_id)] || 0)}</title></circle>`).join("");
+      const dots = pts.map((p, i) => {
+        const ch = chapters[i];
+        const score = (ch.presence && ch.presence[String(member.agent_id)] != null) ? ch.presence[String(member.agent_id)] : 0;
+        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="${color}"><title>${esc(member.name)} · 第${ch.chapter}章 ${score}</title></circle>`;
+      }).join("");
       return `<g class="novel-arc-line">
         <path d="${d}" fill="none" stroke="${color}" stroke-width="1.8"></path>
         ${dots}

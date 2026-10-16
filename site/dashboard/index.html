@@ -307,8 +307,17 @@
             </div>
             <div class="head-actions">
               <span class="help-tip" data-i18n-help="life_event.title_hint" data-help="向一个或多个居民注入人生事件（如失业、搬家、亲人离世），观察其状态与行为在后续仿真中的变化。"></span>
+              <span id="holidayStatusBadge" class="status-badge" data-i18n="holiday.idle" hidden></span>
               <button id="reloadLifeEventsBtn" class="button small" data-i18n="btn.reload_life_events">刷新</button>
             </div>
+          </div>
+          <div class="holiday-run button-row" data-i18n-title="btn.holiday_hint" title="放假：智能体放弃原有 routine，在 K 天内做全新的、自由的安排。睡眠和用餐时段不受影响。中途可结束或取消。">
+            <label class="holiday-days">
+              <span data-i18n="holiday.days_label">放假天数 K</span>
+              <input id="holidayDaysInput" type="number" min="1" max="365" value="7" />
+            </label>
+            <button id="startHolidayBtn" class="button primary" data-i18n="btn.start_holiday">🎉 放假 K 天</button>
+            <button id="endHolidayBtn" class="button danger" data-i18n="btn.end_holiday" hidden>提前收假</button>
           </div>
           <div class="candidate-head">
             <span data-i18n="life_event.candidates">状态候选事件</span>
@@ -469,7 +478,8 @@
     </div>
   </div>
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/help.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/collaboration-core.js"></script>
   <script src="/site/dashboard/agent-thought.js"></script>
   <script src="/site/dashboard/citymap-view.js"></script>

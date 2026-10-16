@@ -220,6 +220,19 @@
 
   /* -------------------------------------------------------------------- api */
 
+  /** Wrap an async click handler with the standard button-busy treatment. */
+  function withBusy(btn, fn, busyKey, busyFallback) {
+    return function () {
+      if (!btn || btn.disabled) return;
+      var release = (typeof setButtonBusy === "function")
+        ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+        : (function () { btn.disabled = true; return function () { btn.disabled = false; }; })();
+      var p;
+      try { p = fn(); } catch (err) { release(); throw err; }
+      Promise.resolve(p).then(release, function (err) { release(); throw err; });
+    };
+  }
+
   /** 失败一定看得见，busy 一定清掉：卡住的 busy 看起来就是「按钮没反应」。 */
   function api(method, path, body) {
     state.busy = true;
@@ -1054,14 +1067,14 @@
     render();
   });
 
-  $("setSave").addEventListener("click", save);
-  $("setReload").addEventListener("click", load);
-  $("setDiscard").addEventListener("click", function () {
+  $("setSave").addEventListener("click", withBusy($("setSave"), save, "settings.save", "保存中…"));
+  $("setReload").addEventListener("click", withBusy($("setReload"), load, "settings.reload", "重新加载中…"));
+  $("setDiscard").addEventListener("click", withBusy($("setDiscard"), function () {
     state.dirty = {};
     state.invalid = {};
     render();
     status(__("set.discarded"));
-  });
+  }, "settings.discard", "放弃中…"));
 
   /* Redraw on a language switch. render() rebuilds the tab strip, the main
      column and the sidebar, and syncFooter() relabels the save button; the

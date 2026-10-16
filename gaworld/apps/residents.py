@@ -818,9 +818,34 @@ def _big5_consistency(current, authored, paragraph):
     return flags
 
 
+def _prior_big5_row(agent_id, rows):
+    """The row a run would draw for a resident missing from the Big Five seed.
+
+    City bundles ship no ``agents_big5.csv``, so the plugin samples every
+    resident from the population prior; reading only the file answered
+    "Agent not found" for all of them. Drawn over the whole roster, as a run
+    of every resident would; ``None`` when the id is not a resident.
+    """
+    from gaworld.personality.plugin import prior_traits
+
+    if agent_profile(agent_id) is None:
+        return None
+    seeded = {row_id(r) for r in rows}
+    missing = [item["id"] for item in agents_summary() if item["id"] not in seeded]
+    sampling = (paths.effective_config().get("personality") or {}).get("sampling") or {}
+    drawn = prior_traits(missing, sampling).get(int(agent_id))
+    if drawn is None:
+        return None
+    row = {dim: round(drawn[dim], 4) for dim in BIG5_DIMENSIONS}
+    row.update({"id": int(agent_id), "name": agent_profile(agent_id)["name"], "source": "prior_sampled"})
+    return row
+
+
 def agent_big5(agent_id):
     _, rows = read_big5_rows()
     target = next((r for r in rows if row_id(r) == int(agent_id)), None)
+    if target is None:
+        target = _prior_big5_row(agent_id, rows)
     if target is None:
         return None
     values = {}
@@ -866,14 +891,20 @@ def save_agent_big5(agent_id, payload):
     """
     fieldnames, rows = read_big5_rows()
     if not fieldnames:
-        raise ValueError("Big Five CSV is missing or empty")
+        fieldnames = ["id", "name", *BIG5_DIMENSIONS, "source", "unstated", "redundant"]
     target = next((r for r in rows if row_id(r) == int(agent_id)), None)
-    if target is None:
-        raise ValueError(f"Agent {agent_id} not found in {os.path.basename(paths.big5_csv_path())}")
+    sampled = target is None
+    if sampled:
+        # Pin the prior draw shown in the panel; no paragraph was authored
+        # from it, so it is not snapshotted as the authored baseline.
+        target = _prior_big5_row(agent_id, rows)
+        if target is None:
+            raise ValueError(f"Agent {agent_id} not found in {os.path.basename(paths.big5_csv_path())}")
+        rows.append(target)
 
     if BIG5_AUTHORED_COLUMN not in fieldnames:
         fieldnames = list(fieldnames) + [BIG5_AUTHORED_COLUMN]
-    if not str(target.get(BIG5_AUTHORED_COLUMN, "")).strip():
+    if not sampled and not str(target.get(BIG5_AUTHORED_COLUMN, "")).strip():
         baseline = {}
         for dim in BIG5_DIMENSIONS:
             try:

@@ -23,7 +23,12 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
-  const t = (key, fallback) => (typeof __ === "function" ? __(key) : fallback);
+  // Falls back to the second arg when the locale is missing the key, so the
+  // page reads as intended Chinese even before every i18n string has shipped.
+  const t = (key, fallback) => {
+    const value = typeof __ === "function" ? __(key) : "";
+    return !value || value === key ? (fallback || "") : value;
+  };
 
   const CUSTOM = "__custom__";
 
@@ -39,6 +44,10 @@
     maxRounds: 5,
     run: null,
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
     jobTimer: null,
   };
 
@@ -253,6 +262,7 @@
     }
 
     $("#jRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#jRunBtn"), "jury.running", "开庭…");
     setProgress(0);
     setStatus(t("jury.running", "开庭…"));
     try {
@@ -267,7 +277,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#jRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -303,7 +313,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#jRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------
@@ -436,7 +446,7 @@
       </div>
       <div class="jury-tally-rows">
         <div class="jury-row is-support">
-          <span class="label">${esc(t("jury.supporting", verdict)}</span>
+          <span class="label">${esc(t("jury.supporting", verdict))}</span>
           <ul>${supporting.map((s) => `<li><b>${esc(s.name)}</b>: ${esc(s.quote || "")}</li>`).join("")}</ul>
         </div>
         ${dissenting.length ? `

@@ -1,0 +1,172 @@
+\section{K1--K8 migration audit}
+\label{supp:migration}
+
+This supplementary section documents the K1--K8 migration audit for the v2
+platform.  Each migration has a defined scope, a delivered surface, and a
+boundary.  The ``delivered'' column lists the modules and interfaces that
+the migration produced; the ``boundary'' column lists what the migration
+does \emph{not} change.
+
+\subsection{K1: microkernel}
+
+\paragraph{Scope.}  Replace the legacy \texttt{run\_simulation} entry point
+with a kernel that exposes \texttt{SimContext}, \texttt{Clock},
+\texttt{EventBus}, \texttt{PluginRegistry}, \texttt{Controller}, and
+\texttt{Recorder} as the only first-class runtime objects.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{gaworld/kernel/context.py}, \texttt{clock.py}, \texttt{bus.py},
+  \texttt{registry.py}, \texttt{controller.py}, \texttt{recorder.py};
+  \item the configured 12-stage cognition pipeline;
+  \item the dependency-ordered plugin setup with isolation on failure.
+\end{itemize}
+
+\paragraph{Boundary.}
+The 12-stage pipeline still exchanges a shared step dictionary; downstream
+code may read fields defensively, but a step may be missing or stale.
+Stage order and omissions must be reported in the artifact.
+
+\subsection{K2: built-in plugins}
+
+\paragraph{Scope.}  Move the nine v1 built-ins (intervention, skills,
+interests, life events, economy, local physical, real work, dynamic
+behavior, spatial preferences) behind a common plugin surface.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{gaworld/plugins/\_\_init\_\_.py::builtin\_plugins()};
+  \item the per-plugin lifecycle registration;
+  \item a uniform \texttt{setup(ctx) / teardown(ctx)} contract.
+\end{itemize}
+
+\paragraph{Boundary.}
+Adapters delegate calculations to established modules; the scientific
+validity of the underlying mechanisms is unchanged.
+
+\subsection{K3: capability breadth (v2)}
+
+\paragraph{Scope.}  Add the five v2 built-ins (personality, indoor rooms
+and venue capacity, organizations, governance, offline citizens) plus the
+\texttt{info-sources} surface, behind the same plugin contract.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item the personality plugin (\texttt{personality/plugin.py});
+  \item the indoor rooms plugin and the venue-capacity companion
+  (\texttt{world/plugin.py});
+  \item the organizations and governance modules
+  (\texttt{organizations/plugin.py} and the governance engine in
+  \texttt{organizations/governance.py});
+  \item the offline-citizens taxonomy (\texttt{world/away.py},
+  \texttt{travel/}, and the family-plugin hooks).
+\end{itemize}
+
+\paragraph{Boundary.}
+The \emph{offline} subsystem still exchanges per-agent \texttt{ext} fields
+directly with the social-network module; an \texttt{offline} call into the
+social network is not yet on the event bus.
+
+\subsection{K4: Controller and Recorder integration}
+
+\paragraph{Scope.}  Define a typed \texttt{ActionRequest} validator chain
+and a named \texttt{Intervention} API; pair each with a Recorder event
+that captures the request, the validator verdict, and the resulting
+state delta.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item the \texttt{Controller} priority-ordered validator chain;
+  \item the standard interventions for state mutation, configuration
+  update, agent removal, and (v2) player intervention;
+  \item the \texttt{Recorder} clock-stamped JSONL stream.
+\end{itemize}
+
+\paragraph{Boundary.}
+The Controller does not mediate every action.  An \texttt{ActionRequest}
+that bypasses the Controller is not invalid; it is simply not audited.
+The Recorder is not the sole provenance stream: established
+specialized writers remain.
+
+\subsection{K5: legacy migration}
+
+\paragraph{Scope.}  Migrate the legacy flat-module paths under \texttt{legacy/}
+to the new package layout under \texttt{gaworld/} while preserving the
+public API of every consumed module.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item the package \texttt{gaworld/} as the only build target;
+  \item shim modules under \texttt{legacy/} that are excluded from the
+  build but retained for compatibility;
+  \item a line-budget ratchet (\texttt{tests/test\_line\_budget.py}) that
+  prevents \texttt{generative\_city\_sim.py} and \texttt{run\_simulation}
+  from accumulating logic.
+\end{itemize}
+
+\paragraph{Boundary.}
+Some legacy module-level constants and shared dictionaries remain as
+adapter surfaces for the v1 dashboards and tests.
+
+\subsection{K6: per-tenant world resolution (v2)}
+
+\paragraph{Scope.}  Make a \emph{World} a first-class object with its own
+configuration, output root, run state, and visibility; route dashboard
+and simulation path resolution through a \texttt{WorldContext}.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{gaworld/accounts/} (store, policy, ownership, usage);
+  \item \texttt{gaworld/worlds/} (the per-world directory layout);
+  \item \texttt{gaworld/apps/world\_paths.py::effective\_config},
+  \texttt{state\_csv\_path}, \texttt{records\_dir}, \ldots;
+  \item the \texttt{gaworld\_world} cookie and the per-request
+  \texttt{\_guard} check.
+\end{itemize}
+
+\paragraph{Boundary.}
+When the account store is absent, the system reverts to a single
+\texttt{default} world and the v1 path constants are honored exactly.
+Multi-tenant deployments must run a migration step before adopting
+the v2 path layer.
+
+\subsection{K7: hub-and-node distribution (v2)}
+
+\paragraph{Scope.}  Partition a single world across a hub (the dashboard
+server) and many nodes (worker machines) by resident identity; route
+interventions to the owning node within one tick.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{gaworld/cluster/} (hub, node, bundle, plugin);
+  \item \texttt{gaworld/distributed/comm.py::DistributedRelayBackend};
+  \item the per-world in-process relay and the per-node outbox;
+  \item the \texttt{/api/cluster/*} dashboard routes.
+\end{itemize}
+
+\paragraph{Boundary.}
+No clock synchronization beyond the published median; no
+transactional consistency; no consensus or rollback.  A node that
+disconnects keeps simulating locally; records are back-filled on
+reconnection.
+
+\subsection{K8: parallel-worlds execution (v2)}
+
+\paragraph{Scope.}  Run up to eight matched worlds under a shared seed
+and a per-world config patch; aggregate per-arm artifact trees for
+post-hoc counterfactual inference.
+
+\paragraph{Delivered.}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{gaworld/parallel/} (spec, runner, sweep, causal,
+  interpret, analysis);
+  \item the per-arm \texttt{run\_meta.json} and \texttt{warnings.json};
+  \item the deterministic counterfactual summary (paired ATE, sign-flip
+  $p$, BH $q$, pre-event balance / DiD, placebo noise floor,
+  heterogeneity, dose--response, replication).
+\end{itemize}
+
+\paragraph{Boundary.}
+The parallel-worlds engine is sequential at the world level; it does
+not run worlds in parallel.  The engine does not change the simulation
+code path; the same code runs in each world.

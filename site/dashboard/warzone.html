@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="warzone.page_title">GAWorld · 这是我的战争</title>
+  <meta name="description" data-i18n-content="warzone.meta_description" content="GAWorld 这是我的战争 — 选一批居民、一段围困，每天按他们的处境分配仓库，看 7 天里道德如何崩溃。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/dashboard/warzone.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="warzone.kicker">GAWorld Playground · This War of Mine</p>
+          <h1 data-i18n="warzone.headline">这是我的战争：围起来，仓库在一天天变空</h1>
+          <p class="sub" data-i18n="warzone.sub">
+            选一批居民 → 选一个围困剧本 → 每天他们按自己的处境投票决定怎么分仓库，
+            7 天看完道德如何崩盘。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="warzone.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="warzone-grid">
+      <!-- 左：设置 -->
+      <aside class="warzone-side panel">
+        <h3 data-i18n="warzone.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="warzone.city_label">城市</span>
+          <select id="wCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="warzone.scenario_label">围困剧本</span>
+          <select id="wScenario"></select>
+        </label>
+        <p id="wScenarioHint" class="warzone-hint"></p>
+
+        <div id="wCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="warzone.custom_name_label">剧本名</span>
+            <input id="wCustomName" type="text" data-i18n-placeholder="warzone.custom_name_placeholder" placeholder="比如：化工厂泄漏" />
+          </label>
+          <label class="field">
+            <span data-i18n="warzone.custom_days_label">情境（每行一天）</span>
+            <textarea id="wCustomDays" data-i18n-placeholder="warzone.custom_days_placeholder" placeholder="第 1 天：…&#10;第 2 天：…"></textarea>
+          </label>
+          <div class="warzone-stock-inputs">
+            <label class="field">
+              <span data-i18n="warzone.stock_food">食物</span>
+              <input id="wCustomStockFood" type="number" min="0" value="24" />
+            </label>
+            <label class="field">
+              <span data-i18n="warzone.stock_medicine">药品</span>
+              <input id="wCustomStockMedicine" type="number" min="0" value="3" />
+            </label>
+            <label class="field">
+              <span data-i18n="warzone.stock_fuel">燃料</span>
+              <input id="wCustomStockFuel" type="number" min="0" value="6" />
+            </label>
+            <label class="field">
+              <span data-i18n="warzone.stock_guard">守卫时间</span>
+              <input id="wCustomStockGuard" type="number" min="0" value="8" />
+            </label>
+          </div>
+        </div>
+
+        <label class="field">
+          <span data-i18n="warzone.days_label">推演天数</span>
+          <input id="wDays" type="number" min="1" max="7" value="7" />
+        </label>
+        <p class="warzone-hint" data-i18n="warzone.days_hint">
+          一天 = 每人一次提议 + 一次投票 + 仓库结算 + 饥饱衰减。
+          总开销 ≈ 8 人 × 7 天 × 2 + 1。
+        </p>
+
+        <div class="warzone-block">
+          <h4><span data-i18n="warzone.agents_title">围困居民</span> <b id="wPicked">0</b></h4>
+          <p class="warzone-hint" data-i18n="warzone.agents_hint">最多 8 人。人越少，每人每天的份额越大。</p>
+          <div class="warzone-toolbar">
+            <button class="button" id="wPickRandom" data-i18n="warzone.pick_random">🎲 随机 5 人</button>
+            <button class="button" id="wPickNone" data-i18n="warzone.pick_none">清空</button>
+          </div>
+          <ul id="wAgents" class="warzone-list"></ul>
+        </div>
+
+        <div class="warzone-actions">
+          <button id="wRunBtn" class="button primary" data-i18n="warzone.run">开始围困</button>
+        </div>
+
+        <section class="warzone-history">
+          <h4 data-i18n="warzone.history">最近围困</h4>
+          <ul id="wHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- 右：结算板 -->
+      <section class="warzone-main panel">
+        <header class="warzone-main-head">
+          <div>
+            <h3 id="wTitle" data-i18n="warzone.section_board">围困推演</h3>
+            <p id="wStatus" class="warzone-status" data-i18n="warzone.idle">尚未开始</p>
+          </div>
+          <div class="warzone-progress">
+            <div class="bar"><span id="wBar" style="width:0%"></span></div>
+            <span id="wPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="wResult" hidden>
+          <section id="wEssayBox" class="warzone-summary" hidden>
+            <h4 data-i18n="warzone.essay_title">战后总结</h4>
+            <p id="wEssay"></p>
+          </section>
+
+          <div id="wOverall" class="warzone-overall"></div>
+          <div id="wStock" class="warzone-stock-trail"></div>
+          <div id="wLog" class="warzone-log"></div>
+        </div>
+
+        <p id="wIdle" class="warzone-idle" data-i18n="warzone.idle_hint">左侧选城市、剧本、几位居民，点「开始围困」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/warzone.js"></script>
+</body>
+</html>

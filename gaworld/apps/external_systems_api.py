@@ -36,6 +36,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -59,6 +60,7 @@ CONFIG_SECTIONS: dict[str, tuple[str, ...]] = {
         "news",
         "distributed",
     ),
+    "public": ("public_sector",),
 }
 
 #: Every editable subtree, flattened.
@@ -443,6 +445,100 @@ def _services_runtime(cfg: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Public sector — observe
+# ---------------------------------------------------------------------------
+
+
+_PUBLIC_DAYS = 120
+
+
+def _read_records(table: str) -> list[dict[str, Any]]:
+    path = os.path.join(str(world_paths.records_dir()), f"{table}.jsonl")
+    rows: list[dict[str, Any]] = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(record, dict):
+                    rows.append(record)
+    except OSError:
+        return []
+    return rows
+
+
+def _live_run() -> dict[str, Any]:
+    from gaworld.apps import kernel_api
+    from gaworld.kernel import remote
+
+    data = remote.read(kernel_api._queue_path())
+    running = remote.is_running(data)
+    return {
+        "running": running,
+        # Only a run started with the public sector on registers the switch.
+        "can_switch": running and SWITCH_INTERVENTION in data.get("registered", []),
+    }
+
+
+def public_runtime(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The configured governments side by side, and what the last run recorded."""
+    from gaworld.public_sector import policy
+
+    cfg = cfg if cfg is not None else _effective_config()
+    section = cfg.get("public_sector") if isinstance(cfg.get("public_sector"), dict) else {}
+    defaults = _default_governments()
+    governments = [
+        {
+            "id": gid,
+            "name": str(gov.get("name") or gid),
+            "description": str(gov.get("description") or ""),
+            "policies": policy.policies_of(gov),
+            "summary": policy.policy_lines(policy.policies_of(gov)),
+            "brief": policy.brief(gov),
+            "builtin": gid in defaults,
+        }
+        for gid, gov in policy.governments(cfg).items()
+    ]
+    # Both tables are appended across runs; keep the latest run's rows.
+    daily = _read_records("public_sector.daily")
+    changes = _read_records("public_sector.change")
+    latest = (changes or daily or [{}])[-1].get("run")
+    if latest is not None:
+        daily = [row for row in daily if row.get("run") == latest]
+        changes = [row for row in changes if row.get("run") == latest]
+    daily = daily[-_PUBLIC_DAYS:]
+    totals: dict[str, float] = {}
+    for row in daily:
+        for key, value in (row.get("transfers") or {}).items():
+            totals[key] = round(totals.get(key, 0.0) + _num(value), 2)
+    return {
+        "enabled": bool(section.get("enabled", False)),
+        "government": str(section.get("government") or "baseline"),
+        "schedule": section.get("schedule") or [],
+        "governments": governments,
+        "daily": daily,
+        "changes": changes,
+        "transfer_totals": totals,
+        "latest_balance": daily[-1].get("government_balance") if daily else None,
+        "live": _live_run(),
+        "records_path": os.path.relpath(
+            os.path.join(str(world_paths.records_dir()), "public_sector.daily.jsonl"), world_paths.REPO_ROOT
+        ),
+    }
+
+
+def _default_governments() -> dict[str, Any]:
+    from gaworld.settings.public_sector import public_sector_settings
+
+    return public_sector_settings()["public_sector"]["governments"]
+
+
+# ---------------------------------------------------------------------------
 # Overview
 # ---------------------------------------------------------------------------
 
@@ -465,21 +561,26 @@ def _field_labels(*trees: Any) -> dict[str, dict[str, str]]:
 
     labels: dict[str, dict[str, str]] = {}
 
-    def visit(node: Any) -> None:
+    def visit(node: Any, prefix: str) -> None:
         if not isinstance(node, dict):
             return
         for key, value in node.items():
             name = str(key)
+            path = f"{prefix}.{name}" if prefix else name
+            # A full-path label wins in the browser too: `schedule` is a model
+            # task under llm.routing but a list of elections under public_sector.
+            if path != name and path in config_docs.LABELS:
+                labels[path] = {"zh": config_docs.label_for(path), "en": config_docs.label_en_for(path)}
             if name not in labels:
                 zh = config_docs.label_for(name)
                 en = config_docs.label_en_for(name)
                 # label_for falls back to the raw key; nothing to send then.
                 if zh != name or en:
                     labels[name] = {"zh": zh, "en": en or zh}
-            visit(value)
+            visit(value, path)
 
     for tree in trees:
-        visit(tree)
+        visit(tree, "")
     return labels
 
 
@@ -492,9 +593,10 @@ def overview() -> dict[str, Any]:
         services_config["llm"] = {"routing": llm["routing"]}
     currency_config = _section_config(cfg, "currency")
     environment_config = _section_config(cfg, "environment")
+    public_config = _section_config(cfg, "public")
     return {
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "labels": _field_labels(currency_config, environment_config, services_config),
+        "labels": _field_labels(currency_config, environment_config, services_config, public_config),
         "currency": {
             "config": currency_config,
             "runtime": currency_runtime(),
@@ -507,6 +609,10 @@ def overview() -> dict[str, Any]:
         "services": {
             "config": services_config,
             "runtime": _services_runtime(cfg),
+        },
+        "public": {
+            "config": public_config,
+            "runtime": public_runtime(cfg),
         },
     }
 
@@ -622,6 +728,7 @@ def sanitize_config_patch(payload: dict[str, Any]) -> tuple[dict[str, Any], list
 def save_config(payload: dict[str, Any]) -> dict[str, Any]:
     """Merge a sanitized patch into ``dashboard_config.json``."""
     patch, dropped = sanitize_config_patch(payload)
+    _check_public_patch(patch)
     if not patch:
         return {"saved": False, "dropped": dropped, "config": _panel_configs()}
     current = world_paths.dashboard_config()
@@ -629,6 +736,99 @@ def save_config(payload: dict[str, Any]) -> dict[str, Any]:
     world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
     _LOG.info("external-systems config patch applied: %s", sorted(patch))
     return {"saved": True, "dropped": dropped, "applied": sorted(patch), "config": _panel_configs()}
+
+
+def _check_public_patch(patch: dict[str, Any]) -> None:
+    """A government the config does not define would stop the next run."""
+    from gaworld.public_sector import policy
+
+    section = patch.get("public_sector")
+    if not isinstance(section, dict):
+        return
+    merged = _effective_config()
+    world_paths.deep_update(merged, {"public_sector": section})
+    known = policy.governments(merged)
+    wanted = [section["government"]] if "government" in section else []
+    wanted += [e.get("government") for e in section.get("schedule") or [] if isinstance(e, dict)]
+    unknown = sorted({str(gid) for gid in wanted if str(gid) not in known})
+    if unknown:
+        raise ValueError(f"没有这个政府：{'、'.join(unknown)}")
+
+
+# ---------------------------------------------------------------------------
+# Public sector — governments and the live switch
+# ---------------------------------------------------------------------------
+
+SWITCH_INTERVENTION = "public_sector.set_government"
+_GOVERNMENT_ID = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
+
+
+def create_government(payload: dict[str, Any]) -> dict[str, Any]:
+    """Add a government, starting from a copy of an existing one's policies."""
+    from gaworld.public_sector import policy
+
+    gid = str(payload.get("id") or "").strip().lower()
+    name = str(payload.get("name") or "").strip()[:40]
+    if not _GOVERNMENT_ID.match(gid):
+        raise ValueError("政府的键名用小写字母开头，只含小写字母、数字和下划线（2–40 个字符）")
+    if not name:
+        raise ValueError("政府需要一个名称")
+    cfg = _effective_config()
+    known = policy.governments(cfg)
+    if gid in known:
+        raise ValueError(f"已经有键名为 {gid} 的政府")
+    base_id = str(payload.get("base") or "baseline")
+    if base_id not in known:
+        raise ValueError(f"没有这个政府：{base_id}")
+    government = {
+        "name": name,
+        "description": str(payload.get("description") or known[base_id].get("description") or "")[:300],
+        "policies": dict(policy.policies_of(known[base_id])),
+    }
+    current = world_paths.dashboard_config()
+    world_paths.deep_update(current, {"public_sector": {"governments": {gid: government}}})
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
+    _LOG.info("public sector: government %s created from %s", gid, base_id)
+    return {"created": gid, "public": public_runtime()}
+
+
+def delete_government(payload: dict[str, Any]) -> dict[str, Any]:
+    """Remove a government added in the panel. Built-in ones stay."""
+    gid = str(payload.get("id") or "")
+    if gid in _default_governments():
+        raise ValueError("内置政府不能删除，可以直接改它的政策")
+    cfg = _effective_config()
+    section = cfg.get("public_sector") if isinstance(cfg.get("public_sector"), dict) else {}
+    in_use = [str(section.get("government") or "baseline")]
+    in_use += [str(e.get("government")) for e in section.get("schedule") or [] if isinstance(e, dict)]
+    if gid in in_use:
+        raise ValueError(f"{gid} 正在被选用或排在换届安排里，先换掉再删")
+    current = world_paths.dashboard_config()
+    stored = ((current.get("public_sector") or {}).get("governments") or {})
+    if gid not in stored:
+        raise ValueError(f"没有这个政府：{gid}")
+    del stored[gid]
+    world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
+    return {"deleted": gid, "public": public_runtime()}
+
+
+def switch_government(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Change the government of the running simulation at its next tick."""
+    from gaworld.apps import kernel_api
+    from gaworld.kernel import remote
+    from gaworld.public_sector import policy
+
+    gid = str(payload.get("government") or "")
+    if gid not in policy.governments(_effective_config()):
+        return {"error": f"没有这个政府：{gid}"}, 400
+    kwargs = {"government": gid, "note": str(payload.get("note") or "")[:200]}
+    try:
+        item = remote.enqueue(kernel_api._queue_path(), SWITCH_INTERVENTION, kwargs)
+    except KeyError:
+        return {"error": "正在运行的仿真没有打开公共部门，无法换届；打开后重新开始一轮"}, 409
+    except LookupError:
+        return {"error": "现在没有正在运行的仿真；要改下一次运行的政府，用「设为执政政府」"}, 409
+    return {"queued": item}, 202
 
 
 def _panel_configs() -> dict[str, Any]:
@@ -768,6 +968,13 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return _wire_safe(queue_intervention(payload)), 200
         if path == "/api/external-systems/interventions/cancel":
             return _wire_safe(cancel_intervention(payload)), 200
+        if path == "/api/external-systems/public/governments":
+            return _wire_safe(create_government(payload)), 200
+        if path == "/api/external-systems/public/governments/delete":
+            return _wire_safe(delete_government(payload)), 200
+        if path == "/api/external-systems/public/switch":
+            body, status = switch_government(payload)
+            return _wire_safe(body), status
     except ValueError as exc:
         return {"error": str(exc)}, 400
     return {"error": "Unknown endpoint"}, 404
@@ -776,14 +983,18 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
 __all__ = [
     "CONFIG_SECTIONS",
     "cancel_intervention",
+    "create_government",
     "currency_runtime",
+    "delete_government",
     "environment_runtime",
     "handle_get",
     "handle_post",
     "interventions",
     "overview",
+    "public_runtime",
     "queue_intervention",
     "sanitize_config_patch",
     "save_config",
     "service_health",
+    "switch_government",
 ]

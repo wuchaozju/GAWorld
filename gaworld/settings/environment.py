@@ -47,6 +47,13 @@ def environment_settings() -> dict[str, Any]:
             "spread": 0.55,
             "driving_age": 18,
         },
+        # Everyone has a usual way of getting around, decided from their own
+        # situation (commute, ownership, age, job, lifestyle); a trip uses it
+        # when it fits, and breaks the habit with this probability.
+        "transport_habit": {
+            "enabled": True,
+            "deviation_probability": 0.12,
+        },
         "traffic": {
             "enabled": False,
             # BPR link performance function: t = t0 * (1 + alpha*(v/c)^beta).

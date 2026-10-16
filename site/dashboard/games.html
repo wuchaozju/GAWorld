@@ -58,13 +58,22 @@
         <span class="game-meta" data-i18n="games.disaster_meta">1 场 · 最多 12 人 · 需要 LLM</span>
       </a>
 
+      <a class="game-card panel" href="/site/dashboard/warzone.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🛡️</span>
+        <h3 data-i18n="games.warzone_title">这是我的战争</h3>
+        <p class="game-tagline" data-i18n="games.warzone_tagline">
+          选一群居民，扔进 7 天的围困——他们共享一个会一天天见底的仓库，每天投票决定怎么分食物、药品、燃料、守卫时间。会牺牲谁、谁最早让步、道德在哪一天越过拐点，都画在结算板上。
+        </p>
+        <span class="game-meta" data-i18n="games.warzone_meta">1 局 · 最多 8 人 · 7 天 · 需要 LLM</span>
+      </a>
+
       <a class="game-card panel" href="/site/dashboard/rumor.html" target="_top">
         <span class="game-emoji" aria-hidden="true">📣</span>
         <h3 data-i18n="games.rumor_title">谣言扩散局</h3>
         <p class="game-tagline" data-i18n="games.rumor_tagline">
           写一条传闻，交给两个居民，看它沿着熟人关系往外走——谁转发、谁私下求证、谁站出来辟谣。关系网按档案推导（同小区、同行、同龄），传播树、信任度和"防火墙"都画在图上。
         </p>
-        <span class="game-meta" data-i18n="games.rumor_meta">1 场 · 最多 14 人 · 需要 LLM</span>
+        <span class="game-meta" data-i18n="games.rumor_meta">1 场 · 人数看当日 LLM 额度 · 需要 LLM</span>
       </a>
 
       <a class="game-card panel" href="/site/dashboard/duel.html" target="_top">
@@ -138,6 +147,24 @@
         </p>
         <span class="game-meta" data-i18n="games.whois_meta">1 局 · 3–8 个座位 · 需要 LLM · 多人</span>
       </a>
+
+      <a class="game-card panel" href="/site/dashboard/timeslip.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🏺</span>
+        <h3 data-i18n="games.timeslip_title">穿越历史</h3>
+        <p class="game-tagline" data-i18n="games.timeslip_tagline">
+          选一个朝代、几个居民，让他们回到一个真实时刻。古人用那个朝代的口吻应对，现代的内心独白同时浮上来。谁最像古人、谁最撕裂、谁格格不入，一场戏演完一看就明白。
+        </p>
+        <span class="game-meta" data-i18n="games.timeslip_meta">1 场 · 2–8 人 · 2–6 幕 · 需要 LLM</span>
+      </a>
+
+      <a class="game-card panel" href="/site/dashboard/serial.html" target="_top">
+        <span class="game-emoji" aria-hidden="true">🎬</span>
+        <h3 data-i18n="games.serial_title">连续剧</h3>
+        <p class="game-tagline" data-i18n="games.serial_tagline">
+          挑几个居民当主演，选一个题材(内置 9 种或一句话自定义)。模型按他们的档案写一季连续剧——不是小说，是镜头脚本:每个镜头都有场景、时间、镜头类型、画面提示(可直接喂给可灵 / Sora / Veo)、台词、时长、转场，复制粘贴就能去生成。
+        </p>
+        <span class="game-meta" data-i18n="games.serial_meta">1 季 · 2–6 人主演 · 2–8 集 · 需要 LLM</span>
+      </a>
     </section>
 
     <p class="games-foot" data-i18n="games.foot">
@@ -146,5 +173,6 @@
   </main>
 
   <script src="/site/dashboard/i18n.js"></script>
-</body>
+
+  <script src="/site/dashboard/_button-busy.js"></script></body>
 </html>

@@ -38,6 +38,10 @@
     disasters: [],
     run: null,
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
     jobTimer: null,
   };
 
@@ -58,6 +62,7 @@
     });
     $("#dDisaster").addEventListener("change", renderDisasterHint);
     await Promise.all([loadCities().then(loadAgents), loadCatalogue()]);
+    setStatus(t("disaster.idle", "还没开始"));
     loadHistory();
   }
 
@@ -184,6 +189,19 @@
     }
 
     $("#dRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#dRunBtn"), "disaster.running", "推演中…");
+    // Drop the previous round's board so the right column never carries
+    // stale results into a freshly-started run (only the new run should
+    // repaint it).
+    state.run = null;
+    $("#dResult").hidden = true;
+    $("#dIdle").hidden = false;
+    $("#dSummaryBox").hidden = true;
+    $("#dSummary").textContent = "";
+    $("#dOverall").innerHTML = "";
+    $("#dTimeline").innerHTML = "";
+    $("#dTitle").textContent = t("disaster.section_board", "推演");
+    exporter.sync();
     setProgress(0);
     setStatus(t("disaster.running", "推演中…"));
     try {
@@ -198,7 +216,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#dRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -234,7 +252,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#dRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------

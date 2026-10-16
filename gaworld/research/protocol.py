@@ -59,7 +59,8 @@ PROTOCOL_MAX_TOKENS = 6_000
 #: Rough model calls per agent-day. The full tick-loop figure is the one
 #: ``gaworld.group.driver.cost_summary`` assumes (48 ticks × ~4 calls); the
 #: fast-forward figure is by construction one brief per agent per step.
-CALLS_PER_AGENT_DAY = {"full": 198, "fast": 1}
+CALLS_PER_AGENT_DAY = {"full": 198, "fast": 100, "daily_brief": 1}
+EXECUTION_MODES = ("tick", "lean_tick", "daily_brief")
 DEFAULT_CALL_BUDGET = 50_000
 
 _PLACEBO = {
@@ -85,6 +86,8 @@ class Protocol:
     sample: dict[str, Any] = field(default_factory=dict)
     sim_days: int = DEFAULT_SIM_DAYS
     fast: bool = False
+    execution_mode: str = ""
+    purpose: str = "confirmatory"
     max_parallel: int = 2
     #: Model the *simulation* runs on; blank = routed by config. Distinct from
     #: the model that compiled the protocol.
@@ -110,6 +113,10 @@ class Protocol:
     @property
     def seeds(self) -> list[int]:
         return [int(seed) for seed in self.validity.get("seeds") or []]
+
+    @property
+    def mode(self) -> str:
+        return self.execution_mode or ("lean_tick" if self.fast else "tick")
 
     def condition(self, cid: str) -> dict[str, Any] | None:
         for cond in self.conditions:
@@ -548,6 +555,16 @@ def apply_overrides(protocol: Protocol, payload: dict[str, Any]) -> Protocol:
         protocol.sim_days = _int(payload.get("sim_days"), protocol.sim_days, low=1, high=MAX_SIM_DAYS)
     if "fast" in payload:
         protocol.fast = _bool(payload.get("fast"))
+        if protocol.execution_mode != "daily_brief":
+            protocol.execution_mode = "lean_tick" if protocol.fast else "tick"
+    if "execution_mode" in payload:
+        mode = str(payload["execution_mode"] or "")
+        if mode not in EXECUTION_MODES:
+            raise ValueError("execution_mode 必须是 tick、lean_tick 或 daily_brief")
+        protocol.execution_mode = mode
+        protocol.fast = mode == "lean_tick"
+        if mode == "daily_brief":
+            protocol.purpose = "exploratory"
     if "agent_ids" in payload:
         protocol.sample["agent_ids"] = _agent_ids(payload.get("agent_ids"))
     if payload.get("max_parallel") not in (None, ""):
@@ -563,8 +580,16 @@ def apply_overrides(protocol: Protocol, payload: dict[str, Any]) -> Protocol:
 
 
 def estimate_calls(protocol: Protocol, agents: int) -> int:
-    per_day = CALLS_PER_AGENT_DAY["fast" if protocol.fast else "full"]
-    return int(max(1, agents) * protocol.sim_days * per_day * len(protocol.conditions) * max(1, len(protocol.seeds)))
+    per_day = calls_per_agent_day(protocol)
+    return int(
+        max(1, agents) * protocol.sim_days * per_day * len(protocol.conditions) * max(1, len(protocol.seeds))
+    )
+
+
+def calls_per_agent_day(protocol: Protocol) -> int:
+    return CALLS_PER_AGENT_DAY[
+        {"tick": "full", "lean_tick": "fast", "daily_brief": "daily_brief"}[protocol.mode]
+    ]
 
 
 def estimate_survey_calls(protocol: Protocol, agents: int) -> int:
@@ -586,6 +611,16 @@ def preflight(
     """
     errors: list[str] = []
     warnings: list[str] = []
+
+    if protocol.mode not in EXECUTION_MODES:
+        return {"ok": False, "errors": ["未知运行模式"], "warnings": [], "budget": {}}
+    if protocol.mode == "daily_brief":
+        from gaworld.research.quick import compatibility_errors
+
+        errors.extend(compatibility_errors(protocol))
+        warnings.append("按天简报是近似探索：跳过日内交互，结果不作正式假设验证。")
+    if protocol.mode == "lean_tick":
+        warnings.append("精简认知仍运行日内循环；100 次/居民/天是粗略预算假设，不是调用上限。")
 
     if protocol.kind not in KINDS:
         errors.append(f"目前只支持 {' / '.join(KINDS)}，协议的 kind 是 {protocol.kind!r}")
@@ -614,13 +649,24 @@ def preflight(
 
     agents = len(protocol.sample.get("agent_ids") or []) or max(1, int(default_agents))
     survey_calls = estimate_survey_calls(protocol, agents) if protocol.kind == "composite" else 0
-    calls = estimate_calls(protocol, agents) + survey_calls
+    worlds_seeds = len(protocol.conditions) * max(1, len(protocol.seeds))
+    components = {
+        "simulation": estimate_calls(protocol, agents),
+        "startup": agents * 6 * worlds_seeds,
+        "environment": protocol.sim_days * worlds_seeds,
+        "survey": survey_calls,
+        "interpretation": 1,
+    }
+    calls = sum(components.values())
     protocol.budget = {
         "agents": agents,
         "worlds": len(protocol.conditions),
         "seeds": len(protocol.seeds),
         "sim_days": protocol.sim_days,
-        "calls_per_agent_day": CALLS_PER_AGENT_DAY["fast" if protocol.fast else "full"],
+        "calls_per_agent_day": calls_per_agent_day(protocol),
+        "execution_mode": protocol.mode,
+        "components": components,
+        "estimate_note": "粗估，不包含失败重试及插件额外调用；精简认知预算依据每人每天 100 次的保守假设。",
         "estimated_calls": calls,
         "survey_calls": survey_calls,
         "limit": int(call_budget),

@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
 
@@ -205,6 +206,75 @@ class TestRunAndJudge:
 
 
 class TestWorldInterview:
+    def test_missing_state_does_not_interview_initial_personas_even_with_explicit_sample(self, tmp_path, monkeypatch):
+        protocol = protocol_from_answer(_answer(), PLAN)
+        worlds = {cond["id"]: {"dir": f"worlds/{cond['id']}", "overrides": {}}
+                  for cond in protocol.conditions}
+        monkeypatch.setattr(backends.prunner, "load_manifest", lambda *args: {
+            "worlds": worlds, "spec": {"agent_ids": [1]}})
+        def never_call(*args, **kwargs):
+            raise AssertionError("must not interview a world without state data")
+        monkeypatch.setattr(backends.subprocess, "run", never_call)
+        result = backends.default_survey_runner(repo_root=str(tmp_path))(protocol, {"root": "x"}, lambda p, m: None)
+        assert len(result) == len(worlds)
+        assert all(block.get("error") for block in result.values())
+
+    def test_scores_from_failed_worlds_cannot_supply_study_evidence(self):
+        from gaworld.research.evaluate import has_comparable_data
+
+        protocol = protocol_from_answer(_answer(), PLAN)
+        run = _fake_seed(backends.experiment_spec(protocol, 42), 42, lambda p, m: None)
+        run["survey"] = _fake_survey(protocol, run, lambda p, m: None)
+        run["world_status"] = {cond["id"]: "error" for cond in protocol.conditions}
+        run["report"] = {"worlds": [{"id": cond["id"], "has_data": False, "status": "error"}
+                                   for cond in protocol.conditions]}
+        result = evaluate(protocol, [run])
+        assert not has_comparable_data(result)
+        assert all(item["verdict"] == "unmeasured" for item in result["hypotheses"])
+
+    @pytest.mark.parametrize("finish_action", ["resume", "stop"])
+    def test_pause_between_survey_worlds_can_resume_or_stop(self, tmp_path, monkeypatch, finish_action):
+        protocol = protocol_from_answer(_answer(), PLAN)
+        worlds = {}
+        for cond in protocol.conditions:
+            directory = f"worlds/{cond['id']}"
+            (tmp_path / directory).mkdir(parents=True)
+            worlds[cond["id"]] = {"dir": directory, "overrides": {}}
+        monkeypatch.setattr(backends.prunner, "load_manifest", lambda *args: {"worlds": worlds})
+        monkeypatch.setattr(backends, "_respondent_ids", lambda *args: [1])
+        pause, stop, first = threading.Event(), threading.Event(), threading.Event()
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            out_path = cmd[cmd.index("--out") + 1]
+            calls.append(out_path)
+            with open(out_path, "w", encoding="utf-8") as handle:
+                json.dump({"transcripts": []}, handle)
+            if len(calls) == 1:
+                pause.set()
+                first.set()
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(backends.subprocess, "run", fake_run)
+        run = backends.default_survey_runner(repo_root=str(tmp_path), pause=pause, stop=stop)
+        result = {}
+        worker = threading.Thread(target=lambda: result.update(run(protocol, {"root": "x"}, lambda p, m: None)))
+        worker.start()
+        try:
+            assert first.wait(5)
+            time.sleep(0.15)
+            assert len(calls) == 1 and worker.is_alive()
+            if finish_action == "stop":
+                stop.set()
+            pause.clear()
+            worker.join(5)
+            assert not worker.is_alive()
+            assert len(result) == (1 if finish_action == "stop" else len(worlds))
+        finally:
+            stop.set()
+            pause.clear()
+            worker.join(5)
+
     def test_each_world_is_asked_with_its_own_overrides_and_final_state(self, tmp_path, monkeypatch):
         protocol = protocol_from_answer(_answer(), PLAN)
         root = "output/parallel_worlds/s42"
@@ -222,7 +292,9 @@ class TestWorldInterview:
             json.dump({"id": "s42", "root": root, "spec": {"agent_ids": []}, "worlds": worlds}, fh)
         seen = []
 
-        def fake_run(cmd, cwd, env, capture_output, text, timeout):
+        def fake_run(cmd, cwd, env, stdout, stderr, text, timeout):
+            assert stdout.name.endswith("survey.log")
+            assert stderr == subprocess.STDOUT
             spec_path, out_path = cmd[cmd.index("--spec") + 1], cmd[cmd.index("--out") + 1]
             with open(spec_path, encoding="utf-8") as fh:
                 spec = json.load(fh)

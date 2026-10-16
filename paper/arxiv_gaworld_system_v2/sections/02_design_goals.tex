@@ -1,0 +1,153 @@
+\section{Design Goals}
+\label{sec:design-goals}
+
+GAWorld v2 is intended as a configurable research instrument rather than as a
+claim that a language model is, by itself, a valid population model.  Its
+design goals therefore concern properties that a researcher can inspect in the
+running system, and each property has a concrete mechanism in the present
+implementation and a boundary that prevents the mechanism from being read as an
+empirical guarantee.  Where v1 listed six properties, v2 lists eight, adding
+two that the v1 platform could not satisfy: \emph{per-tenant world isolation}
+and \emph{human participation under the same first-class intervention surface
+as scheduled events}.
+
+\subsection{Persistence across simulated time}
+\label{sec:dgo:persistence}
+
+An agent must carry consequences from one decision context into later ones,
+rather than being reconstructed from a stateless prompt at every tick.  v2
+combines a mutable state record with file-backed episodic memory, daily logs
+and diaries, schedules, and longer-lived relationship and growth records.  A
+stateful run restores the day counter and per-agent memories; the memory
+lifecycle can retrieve, consolidate, summarize, and decay stored episodes.
+Persistence is therefore testable: a researcher can inspect both the state
+before and after a tick and the files used in later recall.  Persistence does
+not establish psychological fidelity.  Many memories and summaries are
+language-model outputs, configuration can disable lifecycle operations, and
+several archived cross-phase evaluations are incomplete.
+
+\subsection{Situatedness in a shared world}
+\label{sec:dgo:situatedness}
+
+Actions should be conditioned on where and when an agent acts and on what is
+locally observable.  The simulation clock exposes day, time, and tick index;
+the city map represents named locations, connections, and indoor rooms; and
+environment, local-physical, social, policy, and information mechanisms
+contribute context to the cognition loop.  Movement updates location before
+later stages use the new setting, social influence is computed over the
+current network rather than over an unconstrained cast of characters, and
+indoor rooms are resolved against the same activity the agent is performing.
+v2's addition of an \emph{away} state \citep{gaworldtravel} lets inhabitants
+temporarily leave the city and return to a specific home node.  This is
+situated computation, not a calibrated digital twin: map detail, physical
+dynamics, agent access to information, and the indoor-room tree are
+abstractions selected by configuration.
+
+\subsection{Composability without concealing control flow}
+\label{sec:dgo:composability}
+
+Researchers should be able to change an experimental mechanism without
+rewriting the complete agent loop.  v2 provides three bounded extension
+surfaces: a configurable stage sequence for cognition, an event bus with
+observe/contribute/filter semantics, and a registry for lifecycle-managed
+plugins.  The audited built-in set now contains fourteen plugins: intervention,
+skills, interests, life events, economy, local physical perception, real
+work, dynamic behavior, spatial preferences, personality, indoor rooms and
+venue capacity, organizations, governance, and offline citizens.  These join
+existing memory, environment, and social-network subsystems that retain direct
+compatibility paths.  Each plugin declares its dependencies, owns
+configuration namespaces and per-agent state, and contributes through the bus
+or through lifecycle hooks.  Composability is not unrestricted hot swapping:
+the stage pipeline exchanges a shared step dictionary, and three legacy
+subsystems (memory, environment, social network) retain direct paths.  The
+audit table in \cref{sec:microkernel} lists the boundary state of each
+subsystem.
+
+\subsection{Controllability for counterfactual experiments}
+\label{sec:dgo:controllability}
+
+A research run should expose explicit points at which a scenario or
+intervention is introduced.  Configuration fixes profiles, city assets,
+random seed, mechanism flags, schedules, and policy events.  The
+intervention plugin contributes a recommendation feed through the event bus
+and records its domain-specific metrics.  The Controller API validates
+structured movement requests through a priority-ordered validator chain and
+exposes audited runtime interventions for state mutation, configuration
+update, and agent removal.  v2 adds three new controllability surfaces: a
+parallel-worlds engine that runs up to eight matched worlds with a shared
+seed; a Research Workbench that compiles a research idea or a paper into a
+pre-registered protocol with pre-specified outcomes and minimum-effect
+thresholds; and a policy-simulation loop that proposes a candidate policy,
+simulates, scores, and iterates.  None of these are guaranteed to identify a
+real-world effect; they are designed to make the construct, the contrast, and
+the completion status of every arm visible to the analyst.
+
+\subsection{Inspectability from decision to artifact}
+\label{sec:dgo:inspectability}
+
+A claim about an artificial society should be traceable to artifacts below
+the level of a prose summary.  v2 writes per-agent logs and memories,
+environment timelines, state histories, plugin-owned outputs, and
+experiment comparisons; its interfaces expose portions of those records for
+inspection and replay.  The kernel Recorder additionally implements a
+clock-stamped JSONL stream and records Controller interventions and denials.
+v2 adds two new inspectability surfaces: a parallel-worlds results file that
+records per-arm completion status, per-resident ATE, bootstrap confidence
+intervals, and sign-flip $p$-values; and a per-tenant evidence ledger that
+binds every reported number to a hash and an evidence class.  The unified
+Recorder is not yet the main action/trace path: the established simulator
+continues to write several specialized formats directly, and the
+harness-built benchmark is a software-path diagnostic, not a replayable
+trace.
+
+\subsection{Backward-compatible modularization}
+\label{sec:dgo:backcompat}
+
+The system must remain usable while a monolithic research prototype is
+decomposed.  A typed \texttt{Agent} view shares, rather than copies, the
+legacy dictionary; \texttt{EventBus} preserves the legacy hook signature; and
+the 12-stage pipeline was carved from the existing per-agent step while
+retaining the shared step dictionary.  v2 adds two new compatibilities: the
+\texttt{AccountStore} is optional (its absence reverts the system to single
+mode), and the \texttt{DistributedRelayBackend} is optional (its absence
+falls back to the in-process relay).  These adapters allow migrated and
+legacy modules to coexist and make migration state observable.  They also
+retain weakly typed surfaces and shared mutable state.  Backward
+compatibility is a transition strategy, not evidence that modularization is
+complete or that every old configuration produces an identical trajectory.
+
+\subsection{Per-tenant world isolation}
+\label{sec:dgo:multitenant}
+
+A single deployment should host many independent societies, each with its
+own city bundle, its own configuration overlay, its own run, its own output
+tree, and its own visibility.  v2 implements this by treating a
+\emph{World} as a first-class object: a city bundle plus a per-world
+configuration overlay plus a per-world output root.  The active world is
+resolved from a cookie, validated against the caller's role, and propagated
+through a context variable.  All path-resolving functions
+(\texttt{effective\_config}, \texttt{state\_csv\_path}, \texttt{records\_dir},
+\ldots) consult the active world.  When the account store is absent, the
+single \texttt{default} world is the only world and the system behaves as it
+did before multi-tenancy was added.  A change in a world's output path is
+therefore visible at the request level rather than at a process-restart
+level.  Per-tenant isolation does not establish that two tenants running
+identical configurations will produce identical trajectories; the underlying
+model, the random seed, and the cross-process timing of distributed runs
+remain sources of variation.
+
+\subsection{Human participation as a first-class intervention}
+\label{sec:dgo:participation}
+
+Researchers and the public should be able to enter a society, claim a
+resident, and act under the same first-class intervention surface that
+scheduled events use.  v2 implements this through a \emph{player lease}:
+browsers request a two-minute lease, see current perception, send a bounded
+action, and release the resident.  In a multi-tenant deployment, the lease
+is routed to the node that owns the resident; in a single-process
+deployment, the lease is local.  The intervention type is the same, the
+audit trail is the same, and the next-tick perception includes the player's
+action.  This makes human participation inspectable in the same ledger as
+scheduled events, but it does not validate that the human's action faithfully
+represents the claimed resident.  The same evidence-class rules apply: a
+player's claim is a real, inspectable intervention, not a ground truth.

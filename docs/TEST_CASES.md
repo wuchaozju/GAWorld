@@ -97,7 +97,7 @@
 | A4-14 | 异常作为一等信号（P2） | 高严重度事件、日内冲击、人流激增 | 标成 anomaly 并提高优先级；高分异常不可恢复；日常天气不算异常；关闭后什么都不标 | `test_anomaly_modeling.py`、`test_env_structured_signals.py` | P1 |
 | A4-15 | 当日反应式重规划（P3） | 持续性异常 | 只重排受影响区间（顺延或就地改址）；日程保持有序且不重复；没有受影响的活动时不做任何事 | `test_replan_interval.py` | P1 |
 | A4-16 | 结构化空间学习（P4） | 反复遇到某地异常 | 规避分数累积并衰减；超过阈值后改去同类别中更不讨厌的地点；偏好文件往返不丢 | `test_spatial_preferences.py`、`test_env_preferences_persistence.py` | P2 |
-| A4-17 | 居家环境 | 按收入生成住宅；在家的活动 | 同一种子结果确定；房间与活动对应；做饭会污染空气，打扫后恢复；不在家时不向 prompt 贡献内容 | `test_home_environment.py`、`test_home_environment_plugin.py`、`test_home_api.py` | P2 |
+| A4-17 | 居家环境 | 按收入生成住宅；在家的活动 | 同一种子结果确定；房间与活动对应；做饭会污染空气，打扫后恢复；不在家时不向 prompt 贡献内容；到家当拍即进入居家模式（记录到家这一拍、按家里的房间落座），出门当拍即退出 | `test_home_environment.py`、`test_home_environment_plugin.py`、`test_home_api.py` | P2 |
 | A4-18 | 日程网格对齐 | 开启 `time_grid_snap` | 所有时段落在网格上；tick 数不随人口规模增长；幂等；默认关闭 | `test_time_grid_snap.py` | P2 |
 | A4-19 | 目标系统 | 三层目标；周回顾；事件回顾 | 持久化往返；每日进度有上限且不倒退；周回顾不能改人生目标；目标内容进入意图、日程、采访、日记的 prompt | `test_goals_module.py`、`test_goals_plugin.py`、`test_goals_prompt_injection.py`、`test_goals_dashboard.py` | P1 |
 

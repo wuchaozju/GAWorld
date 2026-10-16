@@ -285,6 +285,7 @@ SHARED_PATHS = {
     "real_map_path": "population",
     "environment_config_path": "a city's environment.json layers over it",
     "skills.global_dir": "the skill library every resident draws on",
+    "skills.online.cache_dir": "downloads from the online skill market, like the news cache",
     # Standalone services with their own deployment, not part of a run.
     "distributed.server.state_path": "relay service",
     "environment_server.state_path": "environment service",

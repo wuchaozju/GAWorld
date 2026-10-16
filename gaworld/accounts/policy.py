@@ -44,6 +44,8 @@ QUOTA_GATED_EXACT = {
     "/api/research/digest",
     "/api/persona/distill",
     "/api/research/policy/run",
+    "/api/research/replication/extract",
+    "/api/research/replication/run",
     "/api/research/games/design",
     "/api/research/games/sessions",
     "/api/arena/run",
@@ -59,6 +61,13 @@ QUOTA_GATED_PREFIX = ("/api/games/",)
 
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
+    if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
+        return True
+    if path == "/api/research/studies" or (
+        path.startswith("/api/research/studies/")
+        and path.rsplit("/", 1)[-1] in {"run", "approve", "check-provider"}
+    ):
+        return True
     return path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
 
 
@@ -71,9 +80,18 @@ MEMBER_WRITES_EXACT = {
     "/api/research/analyze",
     "/api/research/digest",
     "/api/research/extract",
+    "/api/research/studies",
     "/api/persona/distill",
 }
-MEMBER_WRITES_PREFIX = ("/api/games/", "/api/arena/", "/api/research/games", "/api/research/policy")
+MEMBER_WRITES_PREFIX = (
+    "/api/games/",
+    "/api/arena/",
+    "/api/research/games",
+    "/api/research/policy",
+    "/api/research/replication",
+    "/api/research/studies/",
+    "/api/research/plans/",
+)
 
 #: Deletes whose handler only removes the caller's own record.
 OWNER_DELETES = {"/api/interview/delete", "/api/research/delete", "/api/persona/delete"}
@@ -132,7 +150,15 @@ def required(method: str, path: str) -> Level:
     # (gaworld.accounts.ownership); every other delete stays admin-only.
     if "delete" in path.split("/"):
         owner_checked = path in OWNER_DELETES or (
-            path.startswith(("/api/research/games/", "/api/research/policy/")) and path.endswith("/delete")
+            path.startswith(
+                (
+                    "/api/research/games/",
+                    "/api/research/policy/",
+                    "/api/research/replication/",
+                    "/api/research/studies/",
+                )
+            )
+            and path.endswith("/delete")
         )
         return "member" if owner_checked else "admin"
     if path in MEMBER_WRITES_EXACT or path.startswith(MEMBER_WRITES_PREFIX):
@@ -166,7 +192,7 @@ CONFIG_PARAM_SECTIONS = frozenset({
     "action_space", "anomaly", "car_ownership", "daily_planning", "dynamic_behavior", "economy",
     "family", "goals", "home", "human_realism", "interests", "intervention", "life_events",
     "local_physical", "location_assignment", "memory", "mode_choice", "multiplayer", "personality",
-    "replan", "routine_change", "spatial_preferences", "spontaneity", "traffic", "travel",
+    "replan", "routine_change", "spatial_preferences", "spontaneity", "traffic", "transport_habit", "travel",
     "two_wheeler_ownership", "organizations",
 })  # fmt: skip
 #: Single keys outside those sections the console itself sends to a running world.

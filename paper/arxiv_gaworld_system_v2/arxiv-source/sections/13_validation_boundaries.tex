@@ -1,0 +1,160 @@
+\section{Validation Boundaries}
+\label{sec:validation-boundaries}
+
+An artificial society is not validated by the realism of a transcript, by one
+aggregate match, or by successful execution.  GAWorld v2 separates five claim
+levels: individual consistency, macro correspondence, emergent dynamics,
+counterfactual response, and reproducibility.  Evidence at one level does not
+compensate for absence at another.  This layered view follows established
+agent-based-modeling practice in distinguishing implementation verification,
+empirical validation, and the intended domain of use
+\citep{grimm2006odd,windrum2007empirical,fagiolo2007critical}, and it now
+extends the v1 system paper's framework with a sixth column for the
+participant-evaluation claim level and an explicit evidence-class column
+for the per-claim ledger.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Claim--evidence matrix for the audited v2 snapshot.  ``Current
+support'' states the strongest defensible claim, not an aspirational goal.
+The ``Evidence class'' column is the class of the strongest available
+artifact, not a statement that the strongest artifact is also a population
+claim.}
+\label{tab:claim-evidence}
+\begin{tabular}{@{}p{0.16\linewidth}p{0.25\linewidth}p{0.21\linewidth}p{0.21\linewidth}p{0.13\linewidth}@{}}
+\toprule
+Claim level & Evidence required & Current support & Not established & Class \\
+\midrule
+Individual consistency & Repeated independent elicitations; longitudinal and perturbation tests; external or held-out criteria & Persistent profiles, memories, diaries, interviews, and one completed two-phase arm are inspectable & Human fidelity, stable identity across models/seeds, or a memory-treatment effect & \textsf{REAL} / \textsf{INCOMPLETE} \\
+Macro correspondence & Pre-specified external targets; calibrated population; uncertainty and out-of-sample tests & State/economy pipelines can produce aggregates; benchmark fixtures test analysis code & Population representativeness, calibrated macro fit, forecasting, or real-city prediction & \textsf{REAL} / \textsf{FIXTURE} \\
+Emergent dynamics & Multiple seeds and scales; mechanism ablations; network/temporal diagnostics; robust qualitative patterns & Social and network mechanisms emit inspectable state; failures are archived & Polarization, contagion, homophily, or other stable emergent laws & \textsf{REAL} / \textsf{INCOMPLETE} \\
+Counterfactual response & Replicated randomized arms; verified intervention path; placebo and negative controls; uncertainty & Four paired event/baseline trees (v1) and the parallel-worlds engine (v2) demonstrate comparison mechanics & Causal policy effects, sign stability, transportability, or welfare recommendations & \textsf{REAL} / \textsf{DIAGNOSTIC} \\
+Reproducibility & Immutable code/config/data/model snapshots; deterministic components; repeated reruns and failure accounting & Hashed result files, seeds/configs, per-arm completion, world and node identifiers, the diagnostic harness, and the Track A scorecard & Bitwise replay of hosted LLM calls or complete end-to-end reproduction of every archive & \textsf{REAL} / \textsf{FIXTURE} \\
+Participant evaluation & Fixed scenarios; deterministic scoring; pre-registered sample size; per-game archive & Fourteen games in the Playground, the Track B scorecard, the Arena & That a playground game approximates a real social outcome or that a benchmark score is portable across cities & \textsf{REAL} / \textsf{INCOMPLETE} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Individual consistency}
+
+v2 implements the prerequisites for a consistency study: named persistent
+agents, structured state, episodic files, recall, reflection, longitudinal
+logs, and a personality plugin that supplies Big-Five proxies for the
+interruption probability.  These mechanisms allow within-agent questions
+such as whether a stated preference survives intervening events or whether
+an interview answer is traceable to stored experience.  The current memory
+case does not answer those questions comparatively because three of four
+arms lack phase 2 and the only complete arm contains one agent.  Generated
+behavioral coherence is also not equivalent to correspondence with a real
+person.  A stronger evaluation would repeat standardized probes before and
+after controlled memory perturbations, separate temporal persistence from
+prompt sensitivity, and compare against held-out observations where consent
+and provenance permit.
+
+\subsection{Macro correspondence}
+
+Aggregating simulated variables is an implemented capability; calling the
+aggregate realistic requires a separate calibration argument.  The audited
+economy trace has five agents and one seed, while the benchmark scorecard
+is a synthetic diagnostic fixture.  Neither represents a target population
+or supports out-of-sample prediction.  v2 closes a v1 gap: the price level
+now actually multiplies real expenditure, and the endogenous inflation rule
+is a documented driver of the price level.  Future macro validation should
+document the sampling frame, map each simulated construct to an external
+measurement, reserve targets for testing rather than calibration, and
+report uncertainty across seeds and plausible parameterizations.  Agreement
+on a few marginal means would remain insufficient if joint distributions,
+temporal patterns, or subgroup errors failed.
+
+\subsection{Emergence and mechanism}
+
+An emergent claim requires a pattern that is not merely written into a
+prompt or initial condition and that recurs under controlled variation.
+The present archive does not meet that standard: the network study records
+no interactions, the emotion study has no state files, and the
+polarization arms have unequal record counts.  The existence of
+social-network, exposure, affect, indoor-room, organization, and
+governance fields therefore establishes instrumentation, not a social law.
+Appropriate tests would vary population size and topology, ablate candidate
+mechanisms, quantify between-seed variability, and trace a macro pattern
+back to micro-level events.  Where a field remains identically zero, the
+first question is whether the mechanism and detector were active, not why
+society produced no effect.
+
+\subsection{Counterfactual validity}
+
+The matched-run interface and the parallel-worlds engine are useful
+scaffolds for counterfactual experiments, but the archived policy
+differences are still single contrasts produced by an LLM-mediated
+dynamical system.  A common seed does not guarantee common latent
+randomness after prompts diverge, and a policy description does not
+guarantee that an economic or mobility mechanism changed.  v2's
+deterministic counterfactual layer (paired ATE, sign-flip $p$, BH $q$,
+pre-event balance, placebo noise floor, heterogeneity, dose--response,
+replication, and a non-overturning model interpretation) is an
+improvement over v1's matched-run reducer, but it does not by itself
+turn a single LLM-mediated trajectory into a real-world effect.  Before
+interpreting a difference, researchers should verify the intervention's
+path from event to structural state, replicate both arms over seeds,
+pre-register target metrics, and include placebo events or
+negative-control outcomes \citep{lipsitch2010negative}.  External policy
+conclusions additionally require a defensible mapping to the population
+and institutions of interest.  GAWorld v2 currently supports constructing
+and auditing such a study, not replacing it.
+
+\subsection{Reproducibility as a non-compensatory gate}
+
+The artifact hashes used in this paper bind each numerical statement to
+an audited byte sequence.  v2 extends the v1 ledger with three fields:
+\texttt{world\_id}, \texttt{node\_id}, and \texttt{per\_arm\_status}.
+These are the minimum additional information needed to reconstruct a
+run under the v2 deployment model.  They do not bind the archive to a
+clean released runtime: the audit began from a dirty working tree, and
+hosted providers may change behavior independently of code, seed, or
+sampling parameters.  Missing state files and interrupted arms further
+show that successful completion must be recorded per treatment.
+Consequently, a result that cannot be reconstructed from code,
+configuration, inputs, model identity, world identifier, node
+identifier, per-arm completion status, and complete outputs should not
+be promoted because it looks plausible or matches an external statistic.
+
+For future releases, the minimum reproducibility unit should contain the
+exact code revision plus a patch or clean tag, environment lockfile,
+initial profiles and maps, provider/model identifiers, prompt and
+sampling settings, random seeds, per-arm status, logs, raw and derived
+artifacts, the world identifier, the node identifier (if any), the
+player intervention trail (if any), and a hash manifest.  Hosted-model
+studies should estimate replay variability rather than promise bitwise
+determinism.  The diagnostic benchmark can then serve as a regression
+gate: fixtures test parsers and scoring logic, while separately labeled
+simulation runs test whether scientific evidence has actually been
+produced.
+
+\subsection{Participant evaluation}
+
+The Agent Playground and the Agent Arena produce a third class of
+evidence: per-game or per-question response archives from named
+residents.  The Track B scorecard combines several games under
+pre-registered laws.  Participant evaluation is a distinct claim level
+because it concerns whether the residents' responses under a fixed
+scenario follow a rule, not whether the residents approximate a real
+population.  v2 therefore requires that a Track B law gate on a
+pre-registered minimum sample size; laws that fail the gate are
+reported as \emph{withheld}, not as \emph{reversed} or
+\emph{supported}.  The Arena is a per-resident benchmark and does not
+produce a population claim; its archives are reusable but the
+researcher is responsible for the population inference.
+
+\subsection{Intended use}
+
+At its present evidence level, GAWorld is best used for mechanism
+prototyping, trace inspection, hypothesis generation, controlled software
+experiments, the design of more rigorous artificial-society studies, and
+the teaching of agent-based social simulation.  The archive does not
+support deploying GAWorld as a substitute population, forecasting real
+social outcomes, ranking policies, or making decisions about
+identifiable people.  Those are not merely stronger wordings of the
+same result; they are different claims requiring external data,
+identification, uncertainty quantification, and governance that the
+current artifacts do not provide.

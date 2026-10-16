@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Optional
 
 from gaworld.logging_setup import get_logger
+from gaworld.skills.registry import SkillRegistry
 from gaworld.work.market import JobMarket
 from gaworld.work.queue import WorkQueue
 from gaworld.work.schemas import WorkBrief, WorkResult
@@ -50,8 +51,12 @@ def absorb_completed_for(
     sim_day: int,
     sim_time: str,
     limit: int = 5,
+    skill_registry: SkillRegistry | None = None,
 ) -> list[WorkResult]:
     """Drain finished results for ``agent`` and apply their effects.
+
+    With ``skill_registry``, a library skill used in successful work is
+    attached to the agent: having applied it once, they now hold it.
 
     Returns the list of consumed :class:`WorkResult` so the caller can
     log / hand them to ``reflection``.
@@ -70,8 +75,27 @@ def absorb_completed_for(
         market_job = None
         if market is not None:
             market_job = market.find_by_task(result.task_id)
-        _apply_effects(agent, result, brief, market_job, market, sim_day=sim_day, sim_time=sim_time)
+        _apply_effects(
+            agent, result, brief, market_job, market,
+            sim_day=sim_day, sim_time=sim_time, skill_registry=skill_registry,
+        )
     return results
+
+
+def _use_skills(
+    agent: dict[str, Any],
+    result: WorkResult,
+    registry: SkillRegistry | None,
+) -> list[str]:
+    """Names of the skills ``result`` used; attach them on success."""
+    names: list[str] = []
+    agent_id = int(agent.get("id", 0) or 0)
+    for skill_id in result.skill_ids:
+        skill = registry.get(skill_id, agent_id=agent_id) if registry is not None else None
+        names.append(skill.name if skill is not None else skill_id)
+        if registry is not None and result.status == "ok":
+            registry.attach_to_agent(agent, skill_id)  # no-op for private / held skills
+    return names
 
 
 def _apply_effects(
@@ -83,6 +107,7 @@ def _apply_effects(
     *,
     sim_day: int,
     sim_time: str,
+    skill_registry: SkillRegistry | None = None,
 ) -> None:
     success = result.status == "ok"
     title = brief.chosen_action if brief is not None else result.task_id
@@ -110,6 +135,9 @@ def _apply_effects(
         text = f"完成{title}{settlement_text}（产物：{artifact}）"
     else:
         text = f"未能交付{title}{settlement_text}（{result.error or '未知原因'}）"
+    skill_names = _use_skills(agent, result, skill_registry)
+    if skill_names:
+        text += f"，运用了技能：{'、'.join(skill_names)}"
 
     _append_memory(agent, {
         "day": sim_day,
@@ -120,6 +148,7 @@ def _apply_effects(
         "status": result.status,
         "artifact": artifact,
         "market_job_id": getattr(market_job, "job_id", None) if market_job else None,
+        "skill_ids": list(result.skill_ids),
     })
 
 

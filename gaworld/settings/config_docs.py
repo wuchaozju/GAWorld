@@ -40,6 +40,7 @@ from .integrations import integration_settings
 from .llm import llm_settings
 from .organizations import organizations_settings
 from .personality import personality_settings
+from .public_sector import public_sector_settings
 from .runtime import simulation_settings
 
 _SETTINGS_DIR = Path(__file__).resolve().parent
@@ -114,6 +115,15 @@ SECTIONS: tuple[tuple[str, str, Any, str, str], ...] = (
         "经济系统",
         "钱的规则：个税、社保、消费结构、投资收益、信贷、宏观周期。改的是下一次运行的"
         "规则；要动正在跑的那一轮，去「外部系统 → 货币系统」排干预。",
+    ),
+    (
+        "public_sector",
+        "public_sector",
+        public_sector_settings,
+        "公共部门",
+        "哪个政府在执政、推行什么政策：个税、社保、医保报销、最低时薪，以及失业救济 / 养老金 / "
+        "基本收入三种按天发放的转移支付。默认关闭；打开后改写经济系统里对应的规则，居民每天"
+        "也会知道现任政府和它的政策。选政府、排换届、给跑着的仿真立即换届，去「外部系统 → 公共部门」。",
     ),
     (
         "organizations",
@@ -213,6 +223,15 @@ SECTION_EN: dict[str, tuple[str, str]] = {
         "investment returns, credit, macro cycles. This changes the rules for the next "
         "run; to act on the one already going, queue an intervention under "
         "“External → Money system”.",
+    ),
+    "public_sector": (
+        "Public sector",
+        "Which government is in office and the policies it runs: income tax, social "
+        "insurance, medical reimbursement, the minimum wage, and three daily transfers "
+        "(unemployment benefit, pension, basic income). Off by default; when on it "
+        "rewrites the matching economy rules and residents learn each day who governs "
+        "and how. Pick a government, schedule a change, or switch a running simulation "
+        "under “External → Public sector”.",
     ),
     "family": (
         "Households",
@@ -368,6 +387,12 @@ LABELS_EN: dict[str, str] = {
     "inject_into_cognition": "Inject into thinking prompt",
     "inject_into_work_brief": "Inject into work briefing",
     "max_per_prompt": "Max injected per prompt",
+    "auto_search": "Search the library for work",
+    "search_dirs": "Extra skill directories",
+    "skills.online": "Online skill market",
+    "skills.online.api_base": "Market address",
+    "skills.online.cache_dir": "Download cache",
+    "skills.online.min_installs": "Minimum installs",
     "policy_events": "Preset policy events",
     "life_events": "Life-event queue",
     "event_dir": "Event directory",
@@ -664,6 +689,22 @@ LABELS_EN: dict[str, str] = {
     "authorization_retry_schemes": "Auth retry schemes",
     "include_x_api_key": "Send x-api-key",
     "economy": "Economy / money system",
+    "public_sector": "Public sector",
+    "government": "Government in office",
+    "announce": "Tell residents daily",
+    "public_sector.schedule": "Changes of government",
+    "governments": "Governments",
+    "policies": "Policies",
+    "name": "Name",
+    "income_tax_exemption": "Income-tax threshold (CNY/month)",
+    "income_tax_rate_scale": "Income-tax burden (× baseline)",
+    "social_insurance_rate_scale": "Social-insurance contributions (× baseline)",
+    "medical_reimbursement": "Medical reimbursement [min, max]",
+    "min_hourly_wage": "Minimum hourly wage",
+    "unemployment_benefit_daily": "Unemployment benefit (CNY/day)",
+    "pension_daily": "Pension (CNY/day)",
+    "basic_income_daily": "Basic income (CNY/day)",
+    "medical_reimbursement_range": "Medical reimbursement range",
     "currency": "Currency",
     "tax": "Income tax",
     "monthly_exemption": "Monthly exemption",
@@ -1098,6 +1139,15 @@ MANUAL_HELP_EN: dict[str, str] = {
     "skills": (
         "The skill library: where shared skills are read from, whether to inject them into "
         "the thinking and work prompts, and how many at a time."
+    ),
+    "skills.auto_search": (
+        "When a resident takes on work, search the whole skill library for the skills that fit "
+        "the task (off = only the skills they already hold). A skill used in work that was "
+        "delivered is attached to the resident."
+    ),
+    "skills.online": (
+        "When local skills leave free slots, search skills.sh. Only the SKILL.md text is "
+        "downloaded, never executed, and cached in cache_dir. Needs the network; off by default."
     ),
     "policy_events": (
         "Policy events scheduled in advance. They fire on time, for “with policy / without "
@@ -1570,6 +1620,37 @@ MANUAL_HELP_EN: dict[str, str] = {
         "The full rule set for money. What you change here is the starting condition of the "
         "next run; to act on the run already going, queue an intervention under “External → "
         "Money system”."
+    ),
+    "public_sector": (
+        "Which government is in office and what it does. When on, it rewrites the economy's income "
+        "tax, social insurance, medical reimbursement and minimum wage, and pays residents daily out "
+        "of the government pool."
+    ),
+    "public_sector.enabled": (
+        "Off leaves this layer out entirely: the economy runs on its own settings and residents hear "
+        "nothing about a government."
+    ),
+    "public_sector.government": (
+        "The government in office at the start — a key from “Governments” below (e.g. welfare). A "
+        "typo stops the run from starting rather than quietly running a different government."
+    ),
+    "public_sector.announce": (
+        "On: each resident's first perception of the day carries a one-line brief of the government "
+        "and its policies (and what they were last paid); a change of government is announced to "
+        "everyone. Off: the policies still apply, residents just aren't told."
+    ),
+    "public_sector.schedule": (
+        "Changes of government during the run, e.g. [{\"day\": 30, \"government\": \"welfare\", "
+        "\"note\": \"election\"}]. Takes effect at the start of that day — use it to compare before "
+        "and after."
+    ),
+    "public_sector.governments": (
+        "Each government's name, platform and policies. A policy left null, or a scale of 1, keeps "
+        "the economy's own setting; a transfer of 0 is not paid."
+    ),
+    "economy.social_insurance.medical_reimbursement_range": (
+        "The share of a medical emergency the insurance pays, drawn from this range per event. With "
+        "the public sector on, the government's policy sets it."
     ),
     "economy.enabled": (
         "Off means residents have no accounts, draw no wages and spend nothing — the economic "
@@ -2152,6 +2233,8 @@ MANUAL_HELP: dict[str, str] = {
     "memory.decay": "定期把很久没想起、又不重要的记忆删掉，防止记忆库无限膨胀。",
     "memory.skill_consolidation": "定期把反复做成的事沉淀成一条私人技能。",
     "skills": "技能库：公共技能从哪读，要不要塞进思考和工作提示词，一次最多塞几条。",
+    "skills.auto_search": "接到工作时在整个技能库里按任务搜索合适的技能（关掉 = 只看自己已有的）。交付成功后，用上的技能会挂到居民身上。",
+    "skills.online": "本地技能不够时去 skills.sh 搜索。只下载 SKILL.md 文本、从不执行，缓存在 cache_dir。需要联网，默认关。",
     "policy_events": "预先排好的政策事件。到点自动触发，用来做「有政策 / 无政策」对照实验。",
     "life_events": "针对个人的生活事件队列。仿真跑着的时候也能从面板往里加，下一个 tick 就会被消费。",
     "life_events.severity_state_amplify": "事件严重度对状态冲击的放大系数。0 = 不论多严重，状态影响都一样。",
@@ -2288,6 +2371,14 @@ MANUAL_HELP: dict[str, str] = {
     "moltbook.min_post_interval_seconds": "同一居民两次发帖之间的真实时间间隔。Moltbook 限制 30 分钟一帖；落在间隔里的仿真日会并进下一篇帖子，不会丢。",
     "moltbook.compose_with_llm": "开着时由模型用居民自己的口吻把这一天写成帖子（每帖一次调用）；关掉则发一份当天行动的原样摘要。",
     "moltbook.read_feed": "发完帖顺手读一遍信息流前几篇并记下来——记录里因此既有他说了什么，也有他看到了什么。",
+    # ---- 公共部门 ----
+    "public_sector": "哪个政府在执政、推行什么政策。打开后它改写经济系统里的个税、社保、医保报销和最低时薪，并从政府池按天给居民发钱。",
+    "public_sector.enabled": "关掉时这一块完全不参与：经济按自己的配置跑，居民也不会听到任何关于政府的消息。",
+    "public_sector.government": "开局执政的政府，填下面「政府档案」里的键名（如 welfare）。写错了仿真不会启动，免得悄悄换成别的政府跑完一整轮。",
+    "public_sector.announce": "开着时每位居民每天第一次感知会读到一句现任政府和政策的简报（以及上次领到的补贴）；换届当刻会通知所有人。关掉则政策照样生效，只是居民不知道。",
+    "public_sector.schedule": "仿真中途的换届，如 [{\"day\": 30, \"government\": \"welfare\", \"note\": \"换届选举\"}]。到那天的日开始生效；比较「换届前 / 换届后」用这里。",
+    "public_sector.governments": "每个政府的名称、施政说明和政策。政策里留空（null）或倍数为 1 的项沿用经济系统的设置；三种转移支付填 0 就是不发。",
+    "economy.social_insurance.medical_reimbursement_range": "每次突发医疗时医保报销的比例，在这个区间里随机取。公共部门打开时由现任政府的政策决定。",
     # ---- 经济 ----
     "economy": "钱的全套规则。这里改的是下一次运行的初始条件；要动正在跑的那一轮，去「外部系统 → 货币系统」排一次干预。",
     "economy.enabled": "关掉后居民没有账户、不发工资也不花钱，经济这一层完全不参与。",
@@ -2455,6 +2546,9 @@ LABELS: dict[str, str] = {
     "consolidation": "记忆整理", "decay": "遗忘", "skill_consolidation": "技能沉淀",
     "skills": "技能库", "global_dir": "公共技能目录", "inject_into_cognition": "注入思考提示词",
     "inject_into_work_brief": "注入工作简报", "max_per_prompt": "每次提示词最多注入",
+    "auto_search": "工作时自动搜技能", "search_dirs": "额外技能目录", "skills.online": "联网技能市场",
+    "skills.online.api_base": "市场地址", "skills.online.cache_dir": "下载缓存目录",
+    "skills.online.min_installs": "最低安装数",
     "policy_events": "预设政策事件", "life_events": "生活事件队列", "event_dir": "事件目录",
     "events_file": "事件文件", "severity_state_amplify": "严重度放大系数",
     "reshape": "当天日程改写", "severity_threshold": "严重度阈值", "window_minutes": "影响窗口(分钟)",
@@ -2598,6 +2692,14 @@ LABELS: dict[str, str] = {
     "include_x_api_key": "附带 x-api-key",
     # 经济（与 site/dashboard/external.js 的标签表保持一致）
     "economy": "经济 / 货币系统", "currency": "币种",
+    "public_sector": "公共部门", "government": "现任政府", "announce": "每天告知居民",
+    "public_sector.schedule": "换届安排", "governments": "政府档案", "policies": "政策",
+    "name": "名称", "income_tax_exemption": "个税起征点（元/月）",
+    "income_tax_rate_scale": "个税税负（基准的倍数）",
+    "social_insurance_rate_scale": "社保个人缴费（基准的倍数）",
+    "medical_reimbursement": "医保报销比例 [下限, 上限]", "min_hourly_wage": "最低时薪",
+    "unemployment_benefit_daily": "失业救济（元/天）", "pension_daily": "养老金（元/天）",
+    "basic_income_daily": "基本收入（元/天）", "medical_reimbursement_range": "医保报销比例区间",
     "tax": "个人所得税", "monthly_exemption": "月起征点",
     "default_special_deduction": "专项附加扣除", "brackets": "税率表 [上限, 税率, 速算扣除]",
     "social_insurance": "社会保险（个人缴纳比例）", "pension_rate": "养老", "medical_rate": "医疗",

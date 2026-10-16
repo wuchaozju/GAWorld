@@ -166,7 +166,7 @@
 
 <h1>GAWorld 功能地图</h1>
 <p class="meta">
-  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 100 个具体功能点。
+  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 102 个具体功能点。
   每个功能点都在 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 中有详细的作用与访问方法。
   本页由 <code>docs/features.toml</code> 生成（<code>python scripts/build_feature_map.py</code>），不要手改。
 </p>
@@ -221,6 +221,7 @@ mindmap
       研究工作台
       论文解读
       多设计与推荐
+      社会调查_实验拟合度
       代码判定与报告
       经典实验库_居民当被试
     副作用_仿真加速器
@@ -295,6 +296,7 @@ mindmap
       PolicySim_干预评估
     经济与外部环境
       经济仿真
+      公共部门
       多后端_LLM_路由
       位置系统与交通
       外部信息源与信息食谱
@@ -366,7 +368,7 @@ mindmap
 </div>
 
 <!-- 研究者 -->
-<div class="axis research"><span>研究者</span><span class="cnt">6 子轴 · 26 功能</span></div>
+<div class="axis research"><span>研究者</span><span class="cnt">6 子轴 · 27 功能</span></div>
 
 <details class="group"><summary><span>调研与提问</span><span class="count">4 项</span></summary>
 <ul>
@@ -397,11 +399,12 @@ mindmap
 </ul>
 </details>
 
-<details class="group"><summary><span>研究设计</span><span class="count">5 项</span></summary>
+<details class="group"><summary><span>研究设计</span><span class="count">6 项</span></summary>
 <ul>
   <li><strong>研究工作台</strong> — 想法/论文 → 多种实验设计 → 预注册 <code>/site/dashboard/research.html</code></li>
   <li><strong>论文解读</strong> — 从 .txt/.md/.pdf 解读出理论/方法/变量/发现/假设 <code>POST /api/research/digest</code></li>
   <li><strong>多设计与推荐</strong> — 2–3 种不同思路的设计，城市/人口/时间/条件/事件/指标全标</li>
+  <li><strong>社会调查/实验拟合度</strong> — 文献里的真人调查/实验 → 居民重做 → 代码比对拟合度 <code>/site/dashboard/research.html?tab=replication</code></li>
   <li><strong>代码判定与报告</strong> — supported/contradicted/inconclusive/unmeasured，附判定依据 <code>GET /api/research/studies/&lt;id&gt;/report</code></li>
   <li><strong>经典实验库（居民当被试）</strong> — 六个教科书范式按人配对，只读方向 <code>python -m gaworld.experiments.classics run</code></li>
 </ul>
@@ -448,7 +451,7 @@ mindmap
 <details class="group"><summary><span>仿真环境与配置</span><span class="count">5 项</span></summary>
 <ul>
   <li><strong>本地 Dashboard</strong> — 配置编辑/运行控制/记忆查看 <code>dashboard --port 8766</code></li>
-  <li><strong>外部系统观测台</strong> — 观察/编辑货币/环境/对外服务 <code>/site/dashboard/external.html</code></li>
+  <li><strong>外部系统观测台</strong> — 观察/编辑货币/环境/对外服务/公共部门 <code>/site/dashboard/external.html</code></li>
   <li><strong>配置覆盖</strong> — 不改源码即可覆盖基础配置 <code>dashboard_config.json</code> / <code>GAWORLD_CONFIG_OVERRIDES</code></li>
   <li><strong>可复现性</strong> — 固定随机种子复现实验 <code>--seed</code> / <code>CONFIG[&quot;random_seed&quot;]</code></li>
   <li><strong>重置</strong> — 清除有状态产物，从 Day 1 重新开始 <code>python generative_city_sim.py reset</code></li>
@@ -465,7 +468,7 @@ mindmap
 </details>
 
 <!-- 居民设计者 -->
-<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 26 功能</span></div>
+<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 27 功能</span></div>
 
 <details class="group"><summary><span>画像与状态</span><span class="count">5 项</span></summary>
 <ul>
@@ -507,9 +510,10 @@ mindmap
 </ul>
 </details>
 
-<details class="group"><summary><span>经济与外部环境</span><span class="count">6 项</span></summary>
+<details class="group"><summary><span>经济与外部环境</span><span class="count">7 项</span></summary>
 <ul>
   <li><strong>经济仿真</strong> — 货币守恒、部门池、个税五险一金、恩格尔消费 <code>CONFIG[&quot;economy&quot;]</code></li>
+  <li><strong>公共部门</strong> — 不同政府与政策：税、社保、最低时薪、转移支付 <code>CONFIG[&quot;public_sector&quot;]</code></li>
   <li><strong>多后端 LLM 路由</strong> — Ollama / OpenAI / Anthropic，按任务路由模型 <code>CONFIG[&quot;llm&quot;][&quot;routing&quot;]</code></li>
   <li><strong>位置系统与交通</strong> — 类别空间匹配、真实出行成本、通勤记忆</li>
   <li><strong>外部信息源与信息食谱</strong> — 新闻/社交/专业源 37 站，每人一份食谱 <code>CONFIG[&quot;news&quot;][&quot;sources&quot;]</code></li>
@@ -591,7 +595,7 @@ mindmap
 </details>
 
 <footer>
-  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（100 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
+  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（102 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
   <p>跨主轴共用的能力（如<em>本地 Dashboard</em>同时服务世界构建者与研究者）按其主要服务对象归位，详细仍见 FEATURES.md。</p>
   <p>维护约定：新增 / 移除 / 重组功能时改 <code>docs/features.toml</code>，再运行 <code>python scripts/build_feature_map.py</code>；<code>tests/test_feature_registry.py</code> 检查两边对得上。</p>
   <p>图形：<a href="https://mermaid.js.org/">Mermaid</a> 思维导图（CDN 加载 <code>mermaid@10</code>）。</p>

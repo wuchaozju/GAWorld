@@ -84,8 +84,15 @@ def world_values(report: dict[str, Any], aggregation: str) -> dict[str, dict[str
     world gets its own entry and a world with no data simply has none.
     """
     values: dict[str, dict[str, float]] = {}
+    excluded = {
+        str(w.get("id"))
+        for w in report.get("worlds", [])
+        if w.get("status") in {"error", "stopped"} or w.get("has_data") is False
+    }
     for metric, by_world in (report.get("trajectories") or {}).items():
         for world_id, series in (by_world or {}).items():
+            if str(world_id) in excluded:
+                continue
             present = [number for number in (_finite(item) for item in series or []) if number is not None]
             if not present:
                 continue
@@ -95,10 +102,21 @@ def world_values(report: dict[str, Any], aggregation: str) -> dict[str, dict[str
     return values
 
 
+def _survey_world_valid(run: dict[str, Any], world_id: str) -> bool:
+    if (run.get("world_status") or {}).get(world_id) in {"error", "stopped"}:
+        return False
+    for world in (run.get("report") or {}).get("worlds") or []:
+        if str(world.get("id")) == str(world_id):
+            return bool(world.get("has_data")) and world.get("status") not in {"error", "stopped"}
+    return True
+
+
 def survey_values(run: dict[str, Any]) -> dict[str, dict[str, float]]:
     """``world_id -> measure -> score`` from one seed's survey, scored ones only."""
     out: dict[str, dict[str, float]] = {}
     for world_id, block in (run.get("survey") or {}).items():
+        if not _survey_world_valid(run, world_id):
+            continue
         if not isinstance(block, dict):
             continue
         for metric, score in (block.get("scores") or {}).items():
@@ -211,6 +229,10 @@ def survey_paired(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[tuple[
             key = (seed, hypothesis["treatment"], hypothesis["control"], metric)
             if not metric.startswith(survey_mod.PREFIX) or key in tests:
                 continue
+            if not all(
+                _survey_world_valid(run, world) for world in (hypothesis["treatment"], hypothesis["control"])
+            ):
+                continue
             answers = [
                 (((block.get(world) or {}).get("scores") or {}).get(metric) or {}).get("by_resident") or {}
                 for world in (hypothesis["treatment"], hypothesis["control"])
@@ -291,6 +313,15 @@ def _quality(protocol: Protocol, runs: list[dict[str, Any]], table: dict[str, di
     return {"ok": not issues, "issues": issues}
 
 
+def has_comparable_data(evaluation: dict[str, Any]) -> bool:
+    """At least one pre-registered contrast has both observed values."""
+    return any(
+        row.get("treatment_value") is not None and row.get("control_value") is not None
+        for hypothesis in evaluation.get("hypotheses") or []
+        for row in hypothesis.get("effects") or []
+    )
+
+
 def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
     """Verdict per hypothesis, the value table behind it, and quality issues.
 
@@ -317,6 +348,17 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
     # not replicates of one design: the gap between them is the code change.
     epochs = {seed: report.get("comparability_epoch") for seed, report in reports.items()}
     mixed_epochs = not same_epoch(epochs.values())
+    identities = {
+        (
+            str(
+                run.get("execution_mode") or (run.get("report") or {}).get("execution_mode") or protocol.mode
+            ),
+            str(run.get("actual_provider") or (run.get("report") or {}).get("actual_provider") or "unknown"),
+            str(run.get("actual_model") or (run.get("report") or {}).get("actual_model") or "unknown"),
+        )
+        for run in runs
+    }
+    mixed_runtime = len(identities) > 1
     epoch_reason = (
         "各种子来自不同的可比性版本（"
         + "；".join(f"种子 {seed}：{describe_epoch(epoch)}" for seed, epoch in sorted(epochs.items()))
@@ -351,26 +393,43 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
             effect = None if treatment is None or control is None else treatment - control
             if effect is not None:
                 effects.append(effect)
-            rows.append({
-                "seed": seed,
-                "treatment_value": treatment,
-                "control_value": control,
-                "effect": effect,
-                "placebo_gap": gap,
-                "paired": (
-                    surveyed.get((seed, hypothesis["treatment"], hypothesis["control"], metric))
-                    if metric.startswith(survey_mod.PREFIX)
-                    else paired_estimate(reports.get(seed) or {}, hypothesis["treatment"], hypothesis["control"], metric)
-                ),
-            })
+            rows.append(
+                {
+                    "seed": seed,
+                    "treatment_value": treatment,
+                    "control_value": control,
+                    "effect": effect,
+                    "placebo_gap": gap,
+                    "paired": (
+                        surveyed.get((seed, hypothesis["treatment"], hypothesis["control"], metric))
+                        if metric.startswith(survey_mod.PREFIX)
+                        else paired_estimate(
+                            reports.get(seed) or {}, hypothesis["treatment"], hypothesis["control"], metric
+                        )
+                    ),
+                }
+            )
         noise = max(placebo_gaps) if placebo_gaps else None
         verdict, reasons = _judge(
-            hypothesis["direction"], effects, float(hypothesis.get("min_effect") or 0.0), noise, placebo is not None
+            hypothesis["direction"],
+            effects,
+            float(hypothesis.get("min_effect") or 0.0),
+            noise,
+            placebo is not None,
         )
         verdict, gate_reasons = _paired_gate(verdict, hypothesis["direction"], rows)
         if mixed_epochs and verdict in ("supported", "contradicted"):
             verdict = "inconclusive"
             gate_reasons.append(epoch_reason)
+        if mixed_runtime and verdict in ("supported", "contradicted"):
+            verdict = "inconclusive"
+            gate_reasons.append("种子的运行模式或实际模型不同，不合并作正式判定。")
+        if (protocol.purpose == "exploratory" or protocol.mode == "daily_brief") and verdict in (
+            "supported",
+            "contradicted",
+        ):
+            verdict = "inconclusive"
+            gate_reasons.append("近似探索版本只检查流程和方向，不作正式假设验证。")
         seed_ci = t_interval(effects)
         if seed_ci is not None:
             reasons.append(f"种子层面 95% t 区间 {seed_ci[0]:+.4f} ~ {seed_ci[1]:+.4f}")
@@ -380,23 +439,27 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
         sized = not direction_only(grade)
         if not sized and effects:
             reasons.append(f"指标来源 ({grade}) 级：只读方向，效应大小不作数")
-        hypotheses.append({
-            **hypothesis,
-            "measure_label": labels.get(metric) or metric_label(metric),
-            "measure_grade": grade,
-            "measure_basis": source.get("basis") or "",
-            "direction_only": not sized,
-            "effects": rows,
-            "mean_effect": _mean(effects) if effects else None,
-            "seed_ci": list(seed_ci) if seed_ci is not None else None,
-            "noise": noise,
-            "seeds_with_data": len(effects),
-            "verdict": verdict,
-            "reasons": reasons,
-        })
+        hypotheses.append(
+            {
+                **hypothesis,
+                "measure_label": labels.get(metric) or metric_label(metric),
+                "measure_grade": grade,
+                "measure_basis": source.get("basis") or "",
+                "direction_only": not sized,
+                "effects": rows,
+                "mean_effect": _mean(effects) if effects else None,
+                "seed_ci": list(seed_ci) if seed_ci is not None else None,
+                "noise": noise,
+                "seeds_with_data": len(effects),
+                "verdict": verdict,
+                "reasons": reasons,
+            }
+        )
 
     summary = {verdict: sum(1 for item in hypotheses if item["verdict"] == verdict) for verdict in VERDICTS}
     return {
+        "execution_mode": protocol.mode,
+        "purpose": "exploratory" if protocol.mode == "daily_brief" else protocol.purpose,
         "seeds": sorted(per_run),
         "baseline_id": baseline,
         "placebo_id": placebo,
@@ -404,8 +467,21 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
         "values": table,
         "quality": _quality(protocol, runs, table),
         "summary": summary,
-        "comparability": {"epochs": epochs, "mixed": mixed_epochs},
+        "comparability": {
+            "epochs": epochs,
+            "mixed": mixed_epochs,
+            "mixed_runtime": mixed_runtime,
+            "runtime_identities": sorted(identities),
+        },
     }
 
 
-__all__ = ["VERDICTS", "evaluate", "measure_provenance", "survey_paired", "survey_values", "world_values"]
+__all__ = [
+    "VERDICTS",
+    "evaluate",
+    "has_comparable_data",
+    "measure_provenance",
+    "survey_paired",
+    "survey_values",
+    "world_values",
+]

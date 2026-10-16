@@ -57,11 +57,35 @@ from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.rumor_api")
 
-#: Residents in one run. Cost is ``2 × residents + 1`` model calls worst case.
-MAX_AGENTS = 14
+#: Residents in one run. ``0`` means "no hard cap" — the dashboard's per-user
+#: daily LLM quota (``gaworld.accounts.usage``) is the only ceiling. A non-zero
+#: value here is a legacy escape hatch (single-player / test fixtures). The
+#: front end is told the cap via :data:`/api/games/rumor/catalogue`, so a cap
+#: change here also needs ``CONFIG["games"]["rumor"]["max_agents"]`` (or the
+#: per-deployment ``dashboard_config.json``).
+RUMOR_HARD_CAP = 0
 #: Rounds played when the caller says nothing, and the ceiling.
 DEFAULT_ROUNDS = 3
 MAX_ROUNDS = 5
+
+
+def _max_agents() -> int:
+    """Effective agent ceiling for this deployment.
+
+    Order: ``CONFIG["games"]["rumor"]["max_agents"]`` > ``RUMOR_HARD_CAP`` > 0
+    (no cap). Returns ``0`` when nothing is configured, meaning "let the
+    account quota decide".
+    """
+    from gaworld.settings import CONFIG
+
+    cfg_cap = int(((CONFIG.get("games") or {}).get("rumor") or {}).get("max_agents") or 0)
+    return cfg_cap or int(RUMOR_HARD_CAP or 0)
+
+
+#: Backwards-compatible alias for the legacy module-level constant. New code
+#: should use :func:`_max_agents` (per-deployment effective cap) or
+#: :data:`RUMOR_HARD_CAP` (the module default of 0).
+MAX_AGENTS = RUMOR_HARD_CAP
 #: Ties kept per resident, by weight. Loosely Dunbar's inner circle: without a
 #: cap, "everyone in the same 小区" plus "everyone with the same job" makes a
 #: hairball in which every rumor reaches everybody on round one.
@@ -588,7 +612,11 @@ def run_rumor(
     round_count = max(1, min(int(rounds or DEFAULT_ROUNDS), MAX_ROUNDS))
 
     if nodes is None:
-        people = load_people(city, [int(i) for i in (agent_ids or [])][:MAX_AGENTS])
+        cap = _max_agents()
+        ids = [int(i) for i in (agent_ids or [])]
+        if cap:
+            ids = ids[:cap]
+        people = load_people(city, ids)
         if not people:
             raise ValueError("先选几个居民")
         nodes = _nodes_from_people(city, people)
@@ -829,13 +857,17 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         if path == "/api/games/rumor/catalogue":
             return {
                 "rumors": list_rumors(),
-                "max_agents": MAX_AGENTS,
+                "max_agents": _max_agents(),
                 "max_rounds": MAX_ROUNDS,
                 "default_rounds": DEFAULT_ROUNDS,
                 "actions": list(ACTIONS),
             }, 200
         if path == "/api/games/rumor/graph":
-            return graph_preview(_one(query, "city"), _ids(query, "agent_ids")[:MAX_AGENTS]), 200
+            cap = _max_agents()
+            ids = _ids(query, "agent_ids")
+            if cap:
+                ids = ids[:cap]
+            return graph_preview(_one(query, "city"), ids), 200
         if path == "/api/games/rumor/runs":
             return {"runs": list_runs()}, 200
         if path.startswith("/api/games/rumor/jobs/"):
@@ -869,7 +901,7 @@ __all__ = [
     "BELIEVE_AT",
     "DEFAULT_ROUNDS",
     "FANOUT",
-    "MAX_AGENTS",
+    "MAX_AGENTS",  # legacy alias; new code should read RUMOR_HARD_CAP / _max_agents()
     "MAX_ROUNDS",
     "MAX_TIES",
     "OTHER_ACTION",

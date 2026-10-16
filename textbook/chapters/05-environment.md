@@ -355,7 +355,7 @@ for h, m, place, action in schedule:
 > 5.6 节的代码故意很短——目的是让读者看到"环境 + 智能体"的最小组合。把它扩展到 100 个智能体,加上 LLM 决策,就是 GAWorld 的核心架构。第 13 章会用一个完整案例演示这个组合。下一章我们进入"社会网络":智能体和谁说话?关系如何影响行为?
 ---
 
-### 5.8 扩展:城市基础设施建模
+## 5.8 扩展:城市基础设施建模
 
 城市不只是地图和建筑,还包括**城市基础设施**——交通、能源、水务、通讯。这些是社会仿真的"骨架"。
 
@@ -409,7 +409,7 @@ def compute_travel_time(origin: tuple, destination: tuple,
 
 ---
 
-### 5.9 扩展:环境事件的影响层次
+## 5.9 扩展:环境事件的影响层次
 
 环境事件对居民的影响不是瞬时的,而是分层的。本节深入展开。
 
@@ -470,7 +470,7 @@ def awareness_probability(agent: dict, event: dict, day: int) -> float:
 
 ---
 
-### 5.10 扩展:环境的工程化实现
+## 5.10 扩展:环境的工程化实现
 
 GAWorld 的环境模块有几个关键工程实现。
 
@@ -538,7 +538,7 @@ def event_priority(event: dict, current_time: datetime) -> int:
 
 ---
 
-### 5.11 扩展:环境研究的学术前沿
+## 5.11 扩展:环境研究的学术前沿
 
 环境建模在学术上的最新进展。
 
@@ -576,194 +576,7 @@ GAWorld 可以在这些研究中发挥作用——通过仿真模拟灾害下的
 - 绿色基础设施建模
 - 居民低碳行为建模
 
-这是 2026 年后的研究热点。
-
----
-
-## 5.12　本章小结(扩展版)
-
-- 城市基础设施建模(交通、能源、通讯)是社会仿真的"骨架"。
-- 环境事件的影响分四层:知晓、理解、行动、反馈,每层有不同仿真策略。
-- 工程实现的关键:地图缓存、节律叠加、事件优先级。
-- 学术前沿:数字孪生城市、气候—社会耦合、基础设施脆弱性、可持续城市。
-- GAWorld 的环境模块提供了完整的基础设施支持,5000+ 行代码。
- 国道
-  primary: 省道
-  secondary: 县道
-  tertiary: 乡道
-  residential: 居住区道路
-  footway: 人行道
-  cycleway: 自行车道
-
-# 兴趣点
-amenity:
-  restaurant: 餐厅
-  hospital: 医院
-  school: 学校
-  bank: 银行
-  park: 公园
-```
-
-### 5.13.3　数据清洗
-
-OSM 数据常有噪声:
-
-```python
-# examples/osm_cleaning.py
-def clean_osm_data(osm_data: dict) -> dict:
-    """清洗 OSM 数据"""
-    cleaned = {
-        "nodes": [],
-        "ways": []
-    }
-    # 1. 移除孤立节点
-    used_nodes = set()
-    for way in osm_data["ways"]:
-        used_nodes.update(way["nodes"])
-    cleaned["nodes"] = [n for n in osm_data["nodes"]
-                       if n["id"] in used_nodes]
-    # 2. 移除过短的 way(< 2 个节点)
-    cleaned["ways"] = [w for w in osm_data["ways"]
-                      if len(w["nodes"]) >= 2]
-    # 3. 合并相邻 way
-    # (略,需要图算法)
-    return cleaned
-```
-
-### 5.13.4　投影转换
-
-OSM 数据是 WGS84 经纬度,需要转成平面坐标:
-
-```python
-import pyproj
-
-def wgs84_to_utm(lon: float, lat: float) -> tuple:
-    """WGS84 转 UTM"""
-    # 自动选择 UTM 区
-    utm_zone = int((lon + 180) / 6) + 1
-    proj_string = f"+proj=utm +zone={utm_zone} +datum=WGS84"
-    transformer = pyproj.Transformer.from_crs(
-        "EPSG:4326", proj_string, always_xy=True
-    )
-    return transformer.transform(lon, lat)
-```
-
----
-
-### 5.14 扩展:节律系统的工程实现
-
-### 5.14.1　多层级节律
-
-仿真里的节律是多层级的:
-
-```python
-class RhythmSystem:
-    def __init__(self):
-        self.daily = DailyRhythm()  # 昼夜
-        self.weekly = WeeklyRhythm()  # 周
-        self.seasonal = SeasonalRhythm()  # 季节
-        self.life = LifeRhythm()  # 生命阶段
-
-    def get_active_rhythms(self, time: datetime, agent: dict) -> list:
-        """获取所有活跃节律"""
-        rhythms = []
-        rhythms.append(self.daily.get_phase(time))
-        rhythms.append(self.weekly.get_phase(time))
-        rhythms.append(self.seasonal.get_phase(time))
-        rhythms.append(self.life.get_phase(agent["age"]))
-        return rhythms
-```
-
-### 5.14.2　节律冲突的处理
-
-不同节律可能冲突(工作日 + 节假日):
-
-```python
-def resolve_rhythm_conflict(rhythms: list) -> dict:
-    """处理节律冲突"""
-    priority = {"holiday": 1, "weekend": 2, "weekday": 3,
-                "summer_peak": 1, "normal": 2}
-    # 取优先级最高的
-    highest = min(rhythms, key=lambda r: priority.get(r["name"], 5))
-    return highest
-```
-
-### 5.14.3　节律的学习
-
-仿真里的节律可以"学习"——居民根据经验调整自己的时间表:
-
-```python
-def learn_rhythm(agent: dict, experience: dict):
-    """根据经验调整节律"""
-    if experience["last_week_traffic"] == "heavy":
-        agent["preferred_commute_time"] += 30  # 推迟 30 分钟
-```
-
----
-
-### 5.15 扩展:事件系统的工程实现
-
-### 5.15.1　事件生命周期
-
-事件的生命周期:
-
-```
-公告 → 缓冲 → 实施 → 持续 → 结束
-```
-
-每个阶段有不同的事件参数:
-
-```python
-@dataclass
-class PolicyEvent:
-    name: str
-    category: str
-    announce_at: datetime
-    effective_at: datetime
-    buffer_end: datetime  # 缓冲期结束
-    end_at: Optional[datetime]  # 事件结束
-    parameters: dict
-```
-
-### 5.15.2　事件的级联
-
-事件触发其他事件:
-
-```python
-def cascade_event(event: dict, sim: Simulation) -> list:
-    """事件级联"""
-    new_events = []
-    if event["category"] == "natural_disaster":
-        # 自然灾害触发经济事件
-        new_events.append({
-            "name": "economic_shock",
-            "trigger_at": event["end_at"],
-            "magnitude": event["parameters"]["damage"] * 0.5
-        })
-    return new_events
-```
-
-### 5.15.3　事件的优先级
-
-多个事件同时发生时的优先级:
-
-```python
-def event_priority(event: dict) -> int:
-    """事件优先级"""
-    if event["category"] == "natural":
-        return 10
-    elif event["category"] == "policy":
-        return 7
-    elif event["category"] == "economic":
-        return 5
-    elif event["category"] == "technology":
-        return 3
-    return 1
-```
-
----
-
-## 5.16　本章小结(最终扩展版)
+这是 2026 年后的研究热点。## 5.16　本章小结(最终扩展版)
 
 - OSM 数据的实战处理:格式、关键标签、数据清洗、投影转换。
 - 节律系统的工程实现:多层级节律、冲突处理、节律学习。
@@ -929,7 +742,7 @@ def load_events(events_file: str) -> list:
 
 ---
 
-### 5.24 扩展:环境的可视化
+## 5.24 扩展:环境的可视化
 
 ### 5.24.1　地图可视化
 

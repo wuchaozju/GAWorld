@@ -1,0 +1,207 @@
+\section{Situated Urban and Societal Substrate}
+\label{sec:substrate}
+
+GAWorld v2 places persistent agents in a shared substrate whose components
+read and write overlapping state.  The city constrains movement, the indoor
+spatial tree constrains co-location, local occupancy changes perception,
+relationships affect encounters, financial or life events alter later
+choices, organizations impose rules, governance proposes and votes on rule
+changes, and information exposure shapes what residents believe.  This
+coupling supports questions that cross individual and aggregate levels, but
+it also means that mechanism provenance and configuration are part of every
+experimental treatment.
+
+\subsection{City graph and indoor spatial tree}
+
+The city map parses places, roads, transit lines, interiors, and land-use
+attributes into a graph.  Nodes carry categories, coordinates, capacity,
+opening hours, popularity, density, and display metadata.  Destination
+resolution can match activity terms to place categories, while graph routing
+and transport-mode rules estimate distance, time, and fare.  Mode speeds,
+fixed delays, road-class multipliers, rush-hour penalties, area price levels,
+and weather preferences are explicit parameters.  They make travel costs
+inspectable; their presence does not imply transport-model calibration.
+
+v2 extends the city graph with an \emph{indoor spatial tree} that resolves
+every indoor activity to a specific room in a building.  The tree shares its
+layout vocabulary with the front-end visualizer, so that back-end simulation
+and front-end display agree on which room an agent is in.  Eighteen layouts
+(residential, apartment, hotel, hospital, clinic, pharmacy, school, library,
+shop, cafe, restaurant, office, government, factory, station, gym, park, and
+public space) map activity terms to furniture slots (sleep, cook, exercise,
+\ldots).  When the spatial-tree plugin is enabled, indoor co-location
+restricts a meeting to the same household and the same room; venue capacity
+is per-room, computed as a fraction of the venue's capacity that the room
+occupies in its layout.  When the plugin is disabled, the v1 behavior is
+preserved.
+
+At each tick, the local-physical layer recomputes occupancy from stationary
+agents, clears stale counts, and exposes the current location's crowding,
+opening status, and weather.  A crowd anomaly is flagged when occupancy is
+both high and sharply above the previous tick.  These snapshots can enter
+perception and interruption generation, linking collective movement to
+individual behavior.  The mechanism is deterministic given agent locations
+and parameters, although the locations themselves may follow stochastic or
+LLM-mediated decisions.
+
+\subsection{Environment, weather, and crowd anomalies}
+
+The broader environment system supports configured natural, economic,
+political, technological, and intraday events.  In rule mode it samples from
+configured event distributions using a local random generator.  In LLM mode
+a model proposes a daily summary, events, and intraday rules that are
+parsed into the same bounded event schema; configured fallback generation
+remains available if that call fails.  Severity and anomaly tagging are
+rule-based.  v2 separates \emph{natural} events (weather, accident,
+epidemic) from \emph{social} events (rumor, market shock, policy reform) and
+exposes a \emph{crowd anomaly} channel that the local-physical layer writes
+into a single perception field.  Reports must therefore identify the
+generator mode rather than treating all environmental histories as
+equivalent.
+
+\subsection{Social ties, life events, and offline citizens}
+
+Relationships are typed records rather than undifferentiated neighbor edges.
+Role templates specify channels, obligation, protection, and daily decay;
+interaction signals update closeness and contact time.  The implementation
+can bootstrap off-screen contacts from an LLM-generated backstory, with a
+deterministic heuristic fallback.  v2 adds an \emph{offline citizen}
+subsystem that classifies each ghost contact by relationship role and
+admission channel (call, message, visit, none), produces stateful obligations
+when a contact is long-neglected, and exposes a visit channel that the
+\emph{travel} plugin \citep{gaworldtravel} actually exercises.  The combined
+offline + travel stack turns a previously read-only field (the obligation
+counter) into a behaviorally consequential signal.
+
+Maintenance is rule-based.  Uncontacted ties decay at role-specific rates,
+long-neglected obligations can rise, and an enforcement pass assigns nested
+Dunbar-style tiers while pruning beyond a configured outer cap and protecting
+selected kin roles.  These tiers are an operational capacity constraint, not
+evidence that the simulated network reproduces measured human networks.
+
+Life events are normalized, persisted, scheduled by simulated day and time,
+and drained once when due.  Events can target agents and carry bounded state
+effects and tags.  v2 makes life-event state effects typed and reversible:
+each effect has an effect-id, a magnitude, a half-life, and a reversal hook,
+so a cancelled event can be undone at the day boundary without leaving
+free-floating state.  This is a controlled exogenous-event surface whose
+timing and direct updates are inspectable; the realism of event frequencies,
+dependencies, and consequences must be established by a separate study.
+
+\subsection{Economy, credit, and endogenous inflation}
+
+The finance module maintains checking, savings, investment, and housing-fund
+accounts; monthly budgets; income and expense records; liabilities and
+credit; sector pools; government flows; and macro state.  Configured rules
+calculate social-insurance deductions and progressive income tax, route wages
+and consumption, enforce available-cash and credit constraints, transfer
+savings, and settle payments.  A dedicated seeded random generator drives
+expenditure variation, market returns, shocks, and other probabilistic
+transitions so that unrelated random draws need not perturb the economy
+sequence.
+
+v2 closes a long-standing gap: the v1 code reported an inflation rate and a
+price index that no other component read.  In v2 the price level multiplies
+real expenditure so that wages that do not follow it produce a measurable
+erosion of real consumption.  Inflation itself is endogenized through a
+\emph{demand-pull} rule: $\pi = \pi^{*} + \kappa \cdot (C/C_0 - 1)$, where
+$C$ is a 30-day moving average of real per-capita consumption, $C_0$ is the
+first 30 days as a baseline, and $\pi$ is clamped to a configured interval
+\citep{gaworldinflation}.  The wage index, when enabled, ties a fraction of
+new wages to the price level.  This is the first run at making
+``cost-of-living erosion'' actually measurable in a GAWorld run, and the
+artifact ledger records whether the wage index was active so that the
+directional claim is not silently over-interpreted.
+
+Shared sector and government pools make counterparties visible instead of
+creating every monetary flow without an account.  Agent-to-agent payments
+and some rent or labor flows can be routed to modeled recipients;
+investment returns combine a common market component with idiosyncratic
+variation.  Ledger and conservation checks can reveal implementation defects
+such as unbalanced internal transfers.  They cannot establish that the tax
+schedule, consumption response, labor process, credit behavior, or macro
+dynamics is an empirically valid representation of a real economy.
+Accounting consistency is therefore a software invariant, not a
+behavioral-validation result.
+
+\subsection{Organizations, governance, and rule changes}
+
+v2 adds a persistent-organization subsystem.  Each organization is a
+typed object (community, business, club) with members, role templates, a
+chosen governance mode (\emph{off}, \emph{leader}, \emph{member-vote}), and
+a ruleset that the plugin applies on member decisions.  Two rule-change
+pipelines exist: a \emph{leader} pipeline in which a designated member
+decides, and a \emph{member-vote} pipeline in which a proposal is opened,
+voted on, and (if it passes) enqueued for application at the next day
+boundary \citep{gaworldgovernance}.  Generations are isolated: a proposal
+opened under a given member snapshot, governance version, and ruleset cannot
+be re-opened after the world is rebuilt with a different member snapshot.
+This isolation is enforced in a single SQLite transaction.
+
+The governance subsystem is opt-in (\texttt{governance.enabled}); when it is
+off, the v1 organization behavior is preserved.  Vote tallies and rule
+versions are recorded in a separate \texttt{governance.json} per generation,
+not interleaved with the per-step metrics CSVs, so that governance results
+do not contaminate aggregate economic measurements.
+
+\subsection{Information sources and Moltbook}
+
+v2 unifies information exposure under an \emph{info-sources} surface
+\citep{gaworldrag}.  Each resident has a configured diet (a list of
+channels and a sampling rate) and a per-tick search budget.  Channels cover
+local news, social posts, professional feeds, and (when enabled) web
+search.  The Moltbook integration gives residents a social network identity
+(\texttt{gaworld/moltbook}) where they post, reply, and react; the agent's
+actions in Moltbook are recorded as separate \texttt{log.jsonl} entries,
+distinct from simulation traces, and are summarized back into the perception
+field at the next tick.  This separation lets a researcher inspect the
+social-network behavior of a resident without conflating it with the
+simulation's per-step state history.
+
+\subsection{Coupling and ownership boundaries}
+
+\Cref{tab:component-coupling} makes the principal shared-state paths
+explicit.  ``Implemented'' refers to an inspectable current mechanism;
+``partial boundary'' indicates that the mechanism is connected but retains
+direct calls, shared dictionaries, or specialized writers rather than a
+fully isolated plugin interface.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\caption{Coupling among agent and societal components.  Evidence status
+describes implementation visibility, not empirical validity.}
+\label{tab:component-coupling}
+\begin{tabular}{@{}p{0.13\linewidth}p{0.16\linewidth}p{0.16\linewidth}p{0.27\linewidth}p{0.16\linewidth}@{}}
+\toprule
+Subsystem & Reads & Writes & Agent-visible consequence & Evidence status \\
+\midrule
+Memory and cognition & Episodes, state, context, retrieved entries & Memories, intentions, habits, relationships & Recalled context, priorities, reflection, later action bias & Implemented; human realism unvalidated \\
+Interests and skills & Profile, episodes, social growth context & Growth profile, private skills & Practice focus and procedural prompt context & Implemented; partial plugin boundary \\
+World and local physics & City graph, time, weather, locations, rooms & Routes, travel state, occupancy snapshots, room occupancy & Feasible destinations, travel costs, crowding, closure cues, room-level co-location & Implemented; direct integration \\
+Environment & Configuration, history, optional LLM output & Events, weather and macro context & Interruptions and perceived exogenous conditions & Implemented; generator-mode dependent \\
+Social network & Profiles, contact history, interactions & Typed ties, closeness, obligation, tiers & Encounter probability and relationship context & Implemented; mechanism validity unassessed \\
+Life events & Persisted event queue, clock & Consumption flag and configured state effects (typed, reversible) & Scheduled exogenous changes to targeted agents & Implemented; committed plugin-integrated event producer \\
+Economy & Activity, balances, calendar, sectors, macro state, price level & Accounts, ledger, budgets, pools, agent state, end-of-month price index & Income, spending constraints, taxes, credit, returns, payments, real-consumption erosion & Implemented; primarily hook-based \\
+Work & Capability cache, activity, growth, market jobs & Queue results, artifacts, settlement and state effects & Produced files, earnings, experience records & Implemented; artifact quality unvalidated \\
+Indoor rooms and capacity & City map, location, activity & Per-room occupancy, capacity enforcement, room-intent binding & Room-resolved perception, capacity-based rejection & Implemented; opt-in \\
+Personality & Profile, optional LLM overlay & Personality proxies & Conditional interruption probability, growth-phase weighting & Implemented; anchor + overlay \\
+Organizations and governance & Membership, role, ruleset, proposal & Updated ruleset, accepted proposal, vote tallies & Rule-conformant behavior, post-vote transitions & Implemented; opt-in \\
+Offline citizens and travel & Off-screen contact roles, duty obligations & Visit channel, trip itinerary, location rewrite & Mobile-agent perception, family duty fulfillment & Implemented; opt-in \\
+Information sources & Channel list, search budget, agent-derived query & Retrieved entries, Moltbook posts, perception field & Exposure heterogeneity, search-induced awareness & Implemented; channel-dependent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The table exposes the current modularity limit.  The 14 built-in plugins
+have plugin entry points; economy, local physical perception, spatial
+preferences, work, dynamic behavior, indoor rooms, organizations,
+governance, personality, offline citizens, and information sources have
+built-in adapters.  Memory, environment evolution, and social-network
+operations still exchange mutable agent dictionaries or runtime objects
+directly.  This arrangement is usable and inspectable, yet replacing one
+mechanism can change prompts, state schemas, random draws, and specialized
+artifacts elsewhere.  Controlled comparisons should therefore freeze the
+complete coupled configuration rather than naming only the focal
+intervention.

@@ -8,11 +8,34 @@ from typing import Any
 
 import requests
 
-from gaworld.settings import CONFIG
-from gaworld.logging_setup import get_logger
+from gaworld.llm.run_state import (
+    before_attempt,
+    current_ledger,
+    provider_context,
+    research_retry,
+    retry_delay,
+    terminal_error,
+)
 from gaworld.llm.stats import GLOBAL_STATS
+from gaworld.logging_setup import get_logger
+from gaworld.settings import CONFIG
 
 _LOG = get_logger("gaworld.llm")
+
+
+def _post(*args: Any, **kwargs: Any) -> Any:
+    """Count actual HTTP submissions, independently from router chains."""
+    ledger = current_ledger()
+    try:
+        response = requests.post(*args, **kwargs)
+    except requests.RequestException:
+        if ledger is not None:
+            ledger.http_attempt(ok=False)
+        raise
+    if ledger is not None:
+        ledger.http_attempt(ok=response.status_code < 400)
+    return response
+
 
 
 # ---------------------------------------------------------------------
@@ -167,11 +190,19 @@ def _retrying(
     last_exc: BaseException | None = None
     for attempt in range(1, max(1, attempts) + 1):
         try:
+            before_attempt(provider)
             return call()
         except Exception as exc:
             last_exc = exc
             if attempt >= attempts or not _is_retryable(exc):
+                terminal_error(exc, provider)
                 raise
+            response = getattr(exc, "response", None)
+            wait_delay = (
+                retry_delay(exc)
+                if current_ledger() is not None and response is not None and response.status_code == 429
+                else delay
+            )
             _LOG.warning(
                 "LLM call failed (attempt %d/%d, provider=%s, task=%s): %s — retrying in %.1fs",
                 attempt,
@@ -179,9 +210,10 @@ def _retrying(
                 provider,
                 task,
                 exc,
-                delay,
+                wait_delay,
             )
-            time.sleep(delay)
+            if not research_retry(exc, provider, delay):
+                time.sleep(delay)
             delay *= backoff
     # Unreachable, but keep mypy happy.
     if last_exc is not None:  # pragma: no cover
@@ -227,7 +259,7 @@ class OllamaProvider:
 
         def _do() -> str:
             try:
-                with requests.post(
+                with _post(
                     self.url,
                     json=payload,
                     timeout=(10, self.timeout),
@@ -311,10 +343,7 @@ class OpenAIProvider:
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        *(
-                            {"type": "image_url", "image_url": {"url": _data_url(item)}}
-                            for item in cleaned
-                        ),
+                        *({"type": "image_url", "image_url": {"url": _data_url(item)}} for item in cleaned),
                     ],
                 }
             )
@@ -336,7 +365,7 @@ class OpenAIProvider:
 
         def _do_streaming() -> str:
             stream_payload = dict(payload, stream=True)
-            with requests.post(
+            with _post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=stream_payload,
@@ -395,7 +424,7 @@ class OpenAIProvider:
                 return "".join(parts)
 
         def _do_blocking() -> str:
-            r = requests.post(
+            r = _post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
@@ -404,18 +433,12 @@ class OpenAIProvider:
             r.raise_for_status()
             data = r.json()
             choice = (data.get("choices") or [{}])[0]
-            _note_truncated(
-                f"openai:{self.model}", choice.get("finish_reason"), effective_max_tokens
-            )
+            _note_truncated(f"openai:{self.model}", choice.get("finish_reason"), effective_max_tokens)
             return data["choices"][0]["message"]["content"]
 
         if self.stream:
-            return _retrying(
-                _do_streaming, attempts=self.attempts, provider=f"openai:{self.model}", task=""
-            )
-        return _retrying(
-            _do_blocking, attempts=self.attempts, provider=f"openai:{self.model}", task=""
-        )
+            return _retrying(_do_streaming, attempts=self.attempts, provider=f"openai:{self.model}", task="")
+        return _retrying(_do_blocking, attempts=self.attempts, provider=f"openai:{self.model}", task="")
 
     def embed(self, texts: list[str], model: str | None = None) -> list[list[float]]:
         """Call OpenAI-compatible /embeddings endpoint.
@@ -437,7 +460,7 @@ class OpenAIProvider:
         }
 
         def _do() -> list[list[float]]:
-            r = requests.post(
+            r = _post(
                 f"{self.base_url}/embeddings",
                 headers=headers,
                 json=payload,
@@ -577,7 +600,7 @@ class AnthropicProvider:
                 headers["Authorization"] = self.api_key
             if self.beta:
                 headers["anthropic-beta"] = self.beta
-            r = requests.post(
+            r = _post(
                 f"{self.base_url}/v1/messages",
                 headers=headers,
                 json=payload,
@@ -600,9 +623,7 @@ class AnthropicProvider:
                         ],
                         max_tokens=payload["max_tokens"],
                     )
-                _note_truncated(
-                    f"anthropic:{self.model}", data.get("stop_reason"), payload["max_tokens"]
-                )
+                _note_truncated(f"anthropic:{self.model}", data.get("stop_reason"), payload["max_tokens"])
                 return text
             except requests.exceptions.HTTPError as exc:
                 last_response = r
@@ -629,7 +650,8 @@ class AnthropicProvider:
             f"base_url={self.base_url!r}, model={self.model!r}, "
             f"api_key_present={bool(self.api_key)}, api_key_envs=[{env_names}], "
             f"api_key_source={self.api_key_source!r}, attempts={attempts!r}, "
-            f"response={body!r}"
+            f"response={body!r}",
+            response=last_response,
         ) from last_exc
 
 
@@ -824,6 +846,9 @@ class LLMRouter:
         max_tokens=None,
     ):
         chain = self._resolve_chain(task=task, agent_id=agent_id, provider=provider)
+        ledger = current_ledger()
+        if ledger is not None:
+            ledger.check()
         if not allow_fallback:
             # Falling back to a different model is the right default for a
             # simulation — a finished run beats a crashed one. It is the
@@ -852,10 +877,13 @@ class LLMRouter:
         prompt_chars = len(prompt or "")
         log = _LOG
         last_exc: BaseException | None = None
+        failures: list[str] = []
         for index, provider_name in enumerate(chain):
             started = time.perf_counter()
             try:
-                result = self.providers[provider_name].call(prompt, **overrides)
+                with provider_context(provider_name):
+                    before_attempt(provider_name)
+                    result = self.providers[provider_name].call(prompt, **overrides)
                 if not str(result or "").strip():
                     raise _empty_completion(provider_name)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
@@ -866,6 +894,9 @@ class LLMRouter:
                     ok=True,
                 )
                 GLOBAL_STATS.record_request(ok=True, fell_back=index > 0)
+                if ledger is not None:
+                    ledger.provider(provider_name, ok=True, latency_ms=elapsed_ms)
+                    ledger.request(ok=True, fell_back=index > 0)
                 log.debug(
                     "llm.call ok id=%s provider=%s fallback_index=%d task=%s agent=%s "
                     "prompt_chars=%d completion_chars=%d latency_ms=%d",
@@ -904,6 +935,9 @@ class LLMRouter:
                     exc,
                 )
                 last_exc = exc
+                failures.append(f"{provider_name}: {exc}")
+                if ledger is not None:
+                    ledger.provider(provider_name, ok=False, latency_ms=elapsed_ms)
                 # Only fall through to the next provider if there is one
                 # AND the failure looks transient (or auth/config).
                 # Auth errors on the primary may indicate misconfig;
@@ -921,7 +955,13 @@ class LLMRouter:
             agent_id if agent_id is not None else "",
         )
         GLOBAL_STATS.record_request(ok=False)
+        if ledger is not None:
+            ledger.request(ok=False)
         assert last_exc is not None
+        if len(failures) > 1:
+            # Keep the final exception's type and response, but retain the
+            # primary failure in str(exc), which reports and job APIs store.
+            last_exc.args = ("All LLM providers failed: " + " ; ".join(failures), *last_exc.args[1:])
         raise last_exc
 
 

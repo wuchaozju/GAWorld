@@ -34,6 +34,10 @@
     motions: [],
     run: null,
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
     jobTimer: null,
     maxAgents: 14,
   };
@@ -176,6 +180,7 @@
     }
 
     $("#vRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#vRunBtn"), "vote.running", "表决中…");
     setProgress(0);
     setStatus(t("vote.running", "表决中…"));
     try {
@@ -190,7 +195,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#vRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -226,7 +231,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#vRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------

@@ -10,6 +10,11 @@ so tests can point at a tmp_path. Defaults:
 
 * global  → ``data/skills``
 * private → ``{memory_dir}/agent_{id}_skills``
+
+The global library can be widened with ``skills.search_dirs`` (and, when
+``skills.online.enabled``, the download cache of the skill market). Those
+directories may hold flat ``*.md`` files or ``<name>/SKILL.md`` folders;
+a skill in ``global_dir`` wins over one with the same id found there.
 """
 
 from __future__ import annotations
@@ -40,6 +45,16 @@ def _memory_dir() -> str:
     return str(CONFIG.get("memory_dir", "output/memory"))
 
 
+def _extra_dirs() -> list[tuple[str, str]]:
+    """``(directory, origin)`` pairs that widen the global library."""
+    cfg = _skills_config()
+    out = [(str(d), "external") for d in (cfg.get("search_dirs") or []) if str(d).strip()]
+    online = cfg.get("online")
+    if isinstance(online, dict) and online.get("enabled"):
+        out.append((str(online.get("cache_dir") or "output/skills_market"), "market"))
+    return out
+
+
 class SkillRegistry:
     """Read/write surface over the global library + per-agent skills."""
 
@@ -48,10 +63,12 @@ class SkillRegistry:
         *,
         global_dir: str | None = None,
         memory_dir: str | None = None,
+        extra_dirs: list[tuple[str, str]] | None = None,
     ) -> None:
         cfg = _skills_config()
         self.global_dir: str = global_dir or str(cfg.get("global_dir") or _DEFAULT_GLOBAL_DIR)
         self.memory_dir: str = memory_dir or _memory_dir()
+        self.extra_dirs: list[tuple[str, str]] = _extra_dirs() if extra_dirs is None else list(extra_dirs)
         self._global: dict[str, Skill] = {}
         self._private: dict[int, dict[str, Skill]] = {}
         self._loaded_global = False
@@ -70,16 +87,22 @@ class SkillRegistry:
             _LOG.warning("skill dir unreadable %s: %s", directory, exc)
             return out
         for name in entries:
-            if not name.endswith(".md") or name.startswith("."):
+            if name.startswith("."):
                 continue
             path = os.path.join(directory, name)
+            if name.endswith(".md"):
+                skill_id = name[:-3]
+            elif os.path.isfile(os.path.join(path, "SKILL.md")):
+                # Agent-skills layout: <name>/SKILL.md
+                skill_id, path = name, os.path.join(path, "SKILL.md")
+            else:
+                continue
             try:
                 with open(path, encoding="utf-8") as f:
                     raw = f.read()
             except OSError as exc:
                 _LOG.warning("skill unreadable %s: %s", path, exc)
                 continue
-            skill_id = name[:-3]
             try:
                 skill = parse_skill_markdown(skill_id, raw)
             except Exception as exc:
@@ -96,7 +119,14 @@ class SkillRegistry:
     def _ensure_global(self) -> None:
         if self._loaded_global:
             return
-        self._global = self._load_dir(self.global_dir, source="global", owner=None)
+        loaded = self._load_dir(self.global_dir, source="global", owner=None)
+        for directory, origin in self.extra_dirs:
+            for skill_id, skill in self._load_dir(directory, source="global", owner=None).items():
+                if skill_id in loaded:
+                    continue
+                skill.origin = skill.origin or origin
+                loaded[skill_id] = skill
+        self._global = loaded
         self._loaded_global = True
 
     def _ensure_private(self, agent_id: int) -> None:
@@ -159,6 +189,18 @@ class SkillRegistry:
                     seen.add(skill_id)
         return out
 
+    def list_searchable(self, agent: dict[str, Any]) -> list[Skill]:
+        """Everything a work search may pick for ``agent``.
+
+        The agent's own skills (private + attached) come first, then the
+        rest of the global library — so an equally good match the agent
+        already holds is preferred over one it would pick up new.
+        """
+        out = self.list_for_agent(agent)
+        seen = {s.skill_id for s in out}
+        out.extend(s for s in self.list_global() if s.skill_id not in seen)
+        return out
+
     def get(self, skill_id: str, *, agent_id: int | None = None) -> Skill | None:
         """Look up by id. If ``agent_id`` is given, private wins."""
         if agent_id is not None:
@@ -194,6 +236,15 @@ class SkillRegistry:
         self._ensure_private(agent_id)
         self._private.setdefault(agent_id, {})[skill.skill_id] = skill
         return skill
+
+    def register_global(self, skill: Skill) -> None:
+        """Add a skill found at runtime (e.g. downloaded) to the global set.
+
+        Memory only; the caller is responsible for having written it to a
+        directory the registry scans, so a :meth:`reload` keeps it.
+        """
+        self._ensure_global()
+        self._global.setdefault(skill.skill_id, skill)
 
     def attach_to_agent(self, agent: dict[str, Any], skill_id: str) -> bool:
         """Add a global skill to the agent's ``skill_ids`` list."""

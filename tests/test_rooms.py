@@ -323,6 +323,19 @@ class PlacementTest(unittest.TestCase):
         world = _World(self, [a])
         self.assertEqual(world.moved(a, "发呆")["arena"], "Study")
 
+    def test_arriving_home_is_seated_by_the_home_plugin_in_the_same_tick(self):
+        from gaworld.world.home_plugin import HomeEnvironmentPlugin
+
+        a = _resident(1, "H1", at="Cafe")
+        a["monthly_income"] = 20000  # a flat with a study
+        world = _World(self, [a])
+        world.ctx.config["output_root"] = world.records  # keep the home design out of output/
+        HomeEnvironmentPlugin().setup(world.ctx)
+        world.ctx.bus.emit("agents.built", agents=[a])
+        a["_home_observation"] = {"is_at_home": False}  # perceived at the cafe
+        a["locations"]["current"] = "Tower"
+        self.assertEqual(world.moved(a, "加班")["arena"], "Study")
+
     def test_on_the_road_there_is_no_room(self):
         a = _resident(1, "H1")
         world = _World(self, [a])

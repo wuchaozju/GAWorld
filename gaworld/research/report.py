@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from gaworld.research.evaluate import has_comparable_data
+
 _L = {
     "zh-CN": {
         "stage": "阶段", "plan": "来源方案", "model": "编译模型", "created": "创建时间", "sim_model": "仿真模型",
@@ -36,6 +38,9 @@ _L = {
         "grade_legend": "等级取它依赖的机制里最弱的一级（定义见 benchmark/MECHANISM_PROVENANCE.md）。(c) = 自定的合理猜测或按目标标定的旋钮：不得单独立论，只读方向，效应大小不作数。",
         "direction_only": "（{grade} 级：只读方向，大小不作数）",
         "cites_size": "（对只读方向的指标写了效应大小，大小不作数）",
+        "failed_run": "运行失败",
+        "no_evidence": "没有可用于判定假设的数据。以下内容是失败记录，不能据此判断政策有效或无效。",
+        "partial_run": "执行不完整：部分世界运行失败，请结合数据质量和每个假设的判定依据阅读结果。",
     },
     "en": {
         "stage": "Stage", "plan": "Source plan", "model": "Compiled by", "created": "Created", "sim_model": "Simulation model",
@@ -61,6 +66,9 @@ _L = {
         "grade_legend": "A measure's grade is the weakest among the mechanisms behind it (defined in benchmark/MECHANISM_PROVENANCE.md). (c) = a reasonable guess of ours or a knob tuned to a target: it cannot carry a conclusion alone — read the direction, not the size.",
         "direction_only": " (grade {grade}: direction only, the size does not count)",
         "cites_size": " (states a size on a direction-only measure; the size does not count)",
+        "failed_run": "Execution failed",
+        "no_evidence": "No data are available to judge the hypotheses. This is a failure record; it cannot establish whether the policy works.",
+        "partial_run": "Execution is incomplete: some worlds failed. Read results alongside data quality and each verdict's reasons.",
     },
 }
 
@@ -73,6 +81,14 @@ def _num(value: Any, signed: bool = True) -> str:
     if value is None:
         return "—"
     return f"{float(value):+.4f}" if signed else f"{float(value):.4f}"
+
+
+def _failure_detail(detail: Any) -> str:
+    """Reports keep the cause; the original traceback remains in run.log."""
+    text = str(detail or "").strip()
+    if "Traceback (most recent call last):" in text:
+        text = next((line.strip() for line in reversed(text.splitlines()) if line.strip()), "")
+    return _cell(text)
 
 
 def _paired(test: dict[str, Any] | None) -> str:
@@ -100,6 +116,44 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         f"{L['created']}: {study.get('created_at', '')}",
     ]
     lines += [" · ".join(meta), ""]
+    mode = protocol.get("execution_mode") or ("lean_tick" if protocol.get("fast") else "tick")
+    lines += [f"- execution_mode: {mode}", ""]
+    if protocol.get("purpose") == "exploratory" or mode == "daily_brief":
+        lines += ["> 近似探索 / Exploratory pilot：仅用于流程检查与方向探索，不作正式假设验证。", ""]
+    if study.get("parent_study_id"):
+        lines += [
+            f"- parent_study_id: {study['parent_study_id']}",
+            f"- protocol_changes: {study.get('protocol_changes') or {}}",
+            "",
+        ]
+    runtime = study.get("runtime") or {}
+    telemetry = runtime.get("telemetry") or {}
+    if telemetry:
+        lines += [
+            "## 运行实测 / Runtime measurements",
+            "",
+            f"- requests: {telemetry.get('requests', 0)}",
+            f"- failed_requests: {telemetry.get('requests_failed', 0)}",
+            f"- provider_failures: {telemetry.get('failure_count', 0)}",
+            f"- fallbacks: {telemetry.get('requests_fell_back', 0)}",
+            f"- invalid_briefs: {telemetry.get('invalid_briefs', 0)}",
+            f"- wall_seconds: {runtime.get('wall_seconds', 0)}",
+            f"- elapsed_seconds: {runtime.get('elapsed_seconds', 0)}",
+            f"- paused_seconds: {runtime.get('paused_seconds', 0)}",
+            f"- provider_cooldown_seconds (summed): {telemetry.get('cooldown_seconds', 0)}",
+            "",
+        ]
+        if telemetry.get("brief_tracking_version"):
+            lines += [
+                f"- valid_briefs: {telemetry.get('valid_briefs', 0)}",
+                f"- brief_parse_failures: {telemetry.get('brief_parse_failures', 0)}",
+                f"- recovered_briefs: {telemetry.get('recovered_briefs', 0)}",
+            ]
+    evaluation = study.get("evaluation") or {}
+    if evaluation and not has_comparable_data(evaluation):
+        lines += [f"## {L['failed_run']}", "", L["no_evidence"], ""]
+    elif any(run.get("status") == "error" for run in study.get("runs") or []):
+        lines += [f"> {L['partial_run']}", ""]
 
     # -- pre-registration ----------------------------------------------------
     sample = protocol.get("sample") or {}
@@ -108,25 +162,40 @@ def render_study_markdown(study: dict[str, Any]) -> str:
     agents = sample.get("agent_ids") or []
     lines.append(f"- **{L['agents']}**: {', '.join(str(a) for a in agents) if agents else L['all_agents']}")
     if sample.get("city"):
-        lines.append(f"- **{L['sample']}**: {sample['city']}" + (f" — {sample['note']}" if sample.get("note") else ""))
-    lines.append(f"- **{L['days']}**: {protocol.get('sim_days', '')} · {L['fast']}: {L['yes'] if protocol.get('fast') else L['no']}")
+        lines.append(
+            f"- **{L['sample']}**: {sample['city']}" + (f" — {sample['note']}" if sample.get("note") else "")
+        )
+    lines.append(
+        f"- **{L['days']}**: {protocol.get('sim_days', '')} · {L['fast']}: {L['yes'] if protocol.get('fast') else L['no']}"
+    )
     seeds = validity.get("seeds") or []
     has_placebo = any(cond.get("role") == "placebo" for cond in protocol.get("conditions") or [])
-    lines.append(f"- **{L['seeds']}**: {', '.join(str(s) for s in seeds)} · {L['placebo']}: {L['yes'] if has_placebo else L['no']}")
-    lines.append("")
-
-    lines += [f"### {L['conditions']}", "", f"| {L['cid']} | {L['label']} | {L['role']} | {L['events']} |", "|---|---|---|---|"]
-    for cond in protocol.get("conditions") or []:
-        events = "; ".join(
-            f"Day {e.get('day')} {e.get('time')} {e.get('name')}" for e in cond.get("events") or []
-        ) or L["none"]
-        if cond.get("config"):
-            events += f" · config: {_cell(cond['config'])}"
-        lines.append(f"| {cond.get('id')} | {_cell(cond.get('label'))} | {role_label.get(cond.get('role'), cond.get('role'))} | {_cell(events)} |")
+    lines.append(
+        f"- **{L['seeds']}**: {', '.join(str(s) for s in seeds)} · {L['placebo']}: {L['yes'] if has_placebo else L['no']}"
+    )
     lines.append("")
 
     lines += [
-        f"### {L['hypotheses']}", "",
+        f"### {L['conditions']}",
+        "",
+        f"| {L['cid']} | {L['label']} | {L['role']} | {L['events']} |",
+        "|---|---|---|---|",
+    ]
+    for cond in protocol.get("conditions") or []:
+        events = (
+            "; ".join(f"Day {e.get('day')} {e.get('time')} {e.get('name')}" for e in cond.get("events") or [])
+            or L["none"]
+        )
+        if cond.get("config"):
+            events += f" · config: {_cell(cond['config'])}"
+        lines.append(
+            f"| {cond.get('id')} | {_cell(cond.get('label'))} | {role_label.get(cond.get('role'), cond.get('role'))} | {_cell(events)} |"
+        )
+    lines.append("")
+
+    lines += [
+        f"### {L['hypotheses']}",
+        "",
         f"| {L['hid']} | {L['statement']} | {L['measure']} | {L['contrast']} | {L['direction']} | {L['min_effect']} | {L['aggregation']} |",
         "|---|---|---|---|---|---|---|",
     ]
@@ -141,8 +210,14 @@ def render_study_markdown(study: dict[str, Any]) -> str:
     lines.append("")
     graded = [m for m in grades.values() if m.get("grade")]
     if graded:
-        lines += [f"### {L['provenance']}", "", L["grade_legend"], "",
-                  f"| {L['measure']} | {L['grade']} | {L['basis']} |", "|---|---|---|"]
+        lines += [
+            f"### {L['provenance']}",
+            "",
+            L["grade_legend"],
+            "",
+            f"| {L['measure']} | {L['grade']} | {L['basis']} |",
+            "|---|---|---|",
+        ]
         lines += [f"| {m.get('id')} | ({m.get('grade')}) | {_cell(m.get('basis'))} |" for m in graded]
         lines.append("")
     survey = protocol.get("survey") or {}
@@ -153,11 +228,16 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         for question in survey["questions"]:
             kind = L.get(question.get("kind", ""), question.get("kind", ""))
             options = " / ".join(question.get("options") or [])
-            lines.append(f"- **{question.get('id')}**（{kind}{'：' + options if options else ''}）{question.get('text')}")
+            lines.append(
+                f"- **{question.get('id')}**（{kind}{'：' + options if options else ''}）{question.get('text')}"
+            )
         lines.append("")
     if protocol.get("dropped"):
         lines += [f"**{L['dropped']}**", ""]
-        lines += [f"- {item.get('what')} · {_cell(item.get('where'))}: {_cell(item.get('reason'))}" for item in protocol["dropped"]]
+        lines += [
+            f"- {item.get('what')} · {_cell(item.get('where'))}: {_cell(item.get('reason'))}"
+            for item in protocol["dropped"]
+        ]
         lines.append("")
 
     preflight = study.get("preflight") or {}
@@ -178,10 +258,17 @@ def render_study_markdown(study: dict[str, Any]) -> str:
     # -- execution -----------------------------------------------------------
     runs = study.get("runs") or []
     if runs:
-        lines += [f"## {L['runs']}", "", f"| {L['seed']} | {L['dir']} | {L['status']} | {L['worlds']} |", "|---|---|---|---|"]
+        lines += [
+            f"## {L['runs']}",
+            "",
+            f"| {L['seed']} | {L['dir']} | {L['status']} | {L['worlds']} |",
+            "|---|---|---|---|",
+        ]
         for run in runs:
             worlds = ", ".join(f"{wid}: {status}" for wid, status in (run.get("world_status") or {}).items())
-            lines.append(f"| {run.get('seed')} | `{run.get('root', '')}` | {run.get('status', '')} | {_cell(worlds)} |")
+            lines.append(
+                f"| {run.get('seed')} | `{run.get('root', '')}` | {run.get('status', '')} | {_cell(worlds)} |"
+            )
         lines.append("")
 
     # -- results -------------------------------------------------------------
@@ -206,8 +293,14 @@ def render_study_markdown(study: dict[str, Any]) -> str:
                     f"| {_num(row.get('effect'))} | {_num(row.get('placebo_gap'), signed=False)} | {_paired(row.get('paired'))} |"
                 )
             lines.append("")
-            caveat = L["direction_only"].format(grade=item.get("measure_grade") or "?") if item.get("direction_only") else ""
-            lines.append(f"- **{L['mean']}**: {_num(item.get('mean_effect'))}{caveat} · **{L['noise']}**: {_num(item.get('noise'), signed=False)}")
+            caveat = (
+                L["direction_only"].format(grade=item.get("measure_grade") or "?")
+                if item.get("direction_only")
+                else ""
+            )
+            lines.append(
+                f"- **{L['mean']}**: {_num(item.get('mean_effect'))}{caveat} · **{L['noise']}**: {_num(item.get('noise'), signed=False)}"
+            )
             lines.append(f"- **{L['reasons']}**: " + "；".join(item.get("reasons") or []))
             lines.append("")
 
@@ -215,8 +308,14 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         lines += [f"### {L['quality']}", ""]
         if quality.get("issues"):
             for issue in quality["issues"]:
-                where = " · ".join(str(part) for part in (issue.get("seed"), issue.get("condition")) if part is not None)
-                lines.append(f"- {issue.get('issue')}" + (f"（{where}）" if where else "") + (f"：{issue.get('detail')}" if issue.get("detail") else ""))
+                where = " · ".join(
+                    str(part) for part in (issue.get("seed"), issue.get("condition")) if part is not None
+                )
+                lines.append(
+                    f"- {issue.get('issue')}"
+                    + (f"（{where}）" if where else "")
+                    + (f"：{_failure_detail(issue['detail'])}" if issue.get("detail") else "")
+                )
         else:
             lines.append(L["quality_ok"])
         lines.append("")
@@ -224,22 +323,28 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         values = evaluation.get("values") or {}
         if values:
             seeds = evaluation.get("seeds") or []
-            lines += [f"### {L['values']}", "", f"| {L['measure']} | {L['world']} | " + " | ".join(f"s{s}" for s in seeds) + " |", "|---" * (2 + len(seeds)) + "|"]
+            lines += [
+                f"### {L['values']}",
+                "",
+                f"| {L['measure']} | {L['world']} | " + " | ".join(f"s{s}" for s in seeds) + " |",
+                "|---" * (2 + len(seeds)) + "|",
+            ]
             for metric, by_world in values.items():
                 for world_id, by_seed in by_world.items():
                     # Seed keys are ints in memory and strings once the study
                     # has been through JSON; the table must read both.
-                    cells = " | ".join(
-                        _num(by_seed.get(s, by_seed.get(str(s))), signed=False) for s in seeds
-                    )
+                    cells = " | ".join(_num(by_seed.get(s, by_seed.get(str(s))), signed=False) for s in seeds)
                     lines.append(f"| {metric} | {world_id} | {cells} |")
             lines.append("")
 
         surveyed = [run for run in runs if isinstance(run.get("survey"), dict)]
         if surveyed:
-            lines += [f"### {L['survey_answers']}", "",
-                      f"| {L['seed']} | {L['world']} | {L['measure']} | {L['answered']} | {L['unparsed']} |",
-                      "|---|---|---|---|---|"]
+            lines += [
+                f"### {L['survey_answers']}",
+                "",
+                f"| {L['seed']} | {L['world']} | {L['measure']} | {L['answered']} | {L['unparsed']} |",
+                "|---|---|---|---|---|",
+            ]
             for run in surveyed:
                 for world_id, block in run["survey"].items():
                     if not isinstance(block, dict):
@@ -248,30 +353,46 @@ def render_study_markdown(study: dict[str, Any]) -> str:
                         lines.append(f"| {run.get('seed')} | {world_id} | — | — | {_cell(block['error'])} |")
                         continue
                     for metric, score in (block.get("scores") or {}).items():
-                        lines.append(f"| {run.get('seed')} | {world_id} | {metric} | {score.get('n', 0)} | {score.get('unparsed', 0)} |")
+                        lines.append(
+                            f"| {run.get('seed')} | {world_id} | {metric} | {score.get('n', 0)} | {score.get('unparsed', 0)} |"
+                        )
             lines.append("")
 
     # -- interpretation ------------------------------------------------------
     interpretation = study.get("interpretation") or {}
-    if evaluation:
+    if evaluation and has_comparable_data(evaluation):
         lines += [f"## {L['interpretation']}", ""]
         if interpretation.get("error") or not interpretation:
-            lines += [f"_{L['interpretation_missing']}_" + (f": {interpretation.get('error')}" if interpretation.get("error") else ""), ""]
+            lines += [
+                f"_{L['interpretation_missing']}_"
+                + (f": {interpretation.get('error')}" if interpretation.get("error") else ""),
+                "",
+            ]
         else:
             if interpretation.get("findings"):
                 lines += [f"### {L['findings']}", ""]
                 for finding in interpretation["findings"]:
-                    tag = ("" if finding.get("grounded") else f" {L['ungrounded']}") + (L["cites_size"] if finding.get("cites_size") else "")
-                    lines.append(f"- **{finding.get('hypothesis') or '?'}**{tag}: {finding.get('claim')}"
-                                 + (f" — {finding['evidence']}" if finding.get("evidence") else ""))
+                    tag = ("" if finding.get("grounded") else f" {L['ungrounded']}") + (
+                        L["cites_size"] if finding.get("cites_size") else ""
+                    )
+                    lines.append(
+                        f"- **{finding.get('hypothesis') or '?'}**{tag}: {finding.get('claim')}"
+                        + (f" — {finding['evidence']}" if finding.get("evidence") else "")
+                    )
                 lines.append("")
             if interpretation.get("limitations"):
-                lines += [f"### {L['limitations']}", ""] + [f"- {item}" for item in interpretation["limitations"]] + [""]
+                lines += (
+                    [f"### {L['limitations']}", ""]
+                    + [f"- {item}" for item in interpretation["limitations"]]
+                    + [""]
+                )
             if interpretation.get("next_studies"):
                 lines += [f"### {L['next']}", ""]
                 for item in interpretation["next_studies"]:
-                    lines.append(f"- **{item.get('title')}**: {item.get('rationale', '')}"
-                                 + (f"  \n  {L['change']}: {item['change']}" if item.get("change") else ""))
+                    lines.append(
+                        f"- **{item.get('title')}**: {item.get('rationale', '')}"
+                        + (f"  \n  {L['change']}: {item['change']}" if item.get("change") else "")
+                    )
                 lines.append("")
 
     if protocol.get("notes"):

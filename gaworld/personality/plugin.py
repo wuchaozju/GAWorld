@@ -156,6 +156,27 @@ def rescale(records: list[dict[str, float]]) -> None:
             rec[dim] = _clip((rec[dim] - mean) / sd, -Z_CLIP, Z_CLIP)
 
 
+def prior_traits(agent_ids: list[int], sampling: dict[str, Any]) -> dict[int, dict[str, float]]:
+    """Population-prior traits for the agents that have no calibrated row.
+
+    Shared with the dashboard, so Agent Studio shows the draw a run would make
+    for a city without ``agents_big5.csv`` instead of "Agent not found".
+    """
+    factor = cholesky(correlation_matrix(sampling.get("correlations", {}) or {}))
+    seed = int(sampling.get("seed", 20260820) or 20260820)
+    # Per-agent RNG stream, so the *draw* does not depend on where the agent
+    # sits in the roster. The population rescale below does depend on who else
+    # is in the run, which is the price of not letting a small sample tilt the
+    # whole town.
+    drawn = {
+        agent_id: sample_traits(random.Random(seed * 1000003 + agent_id), factor)
+        for agent_id in agent_ids
+    }
+    if drawn and sampling.get("rescale", True):
+        rescale(list(drawn.values()))
+    return drawn
+
+
 class BigFivePlugin(Plugin):
     id = "big_five"
 
@@ -210,16 +231,17 @@ class BigFivePlugin(Plugin):
         cfg = self._cfg
         sampling = cfg.get("sampling", {}) or {}
         profiles = load_profiles(str(cfg.get("profile_path", "") or ""))
-        factor = cholesky(correlation_matrix(sampling.get("correlations", {}) or {}))
-        seed = int(sampling.get("seed", 20260820) or 20260820)
 
-        drawn: list[dict[str, float]] = []
-        assigned: list[tuple[Any, dict[str, float], dict[str, str]]] = []
+        roster: list[tuple[Any, int]] = []
         for agent in agents:
             try:
-                agent_id = int(agent["id"])
+                roster.append((agent, int(agent["id"])))
             except (KeyError, TypeError, ValueError):
                 continue
+        drawn = prior_traits([aid for _, aid in roster if aid not in profiles], sampling)
+
+        assigned: list[tuple[Any, dict[str, float], dict[str, str]]] = []
+        for agent, agent_id in roster:
             profile = profiles.get(agent_id)
             if profile:
                 values = {dim: float(profile["values"][dim]) for dim in DIMENSIONS}
@@ -229,17 +251,9 @@ class BigFivePlugin(Plugin):
                     "redundant": str(profile.get("redundant", "")),
                 }
             else:
-                # Per-agent RNG stream, so the *draw* does not depend on where
-                # the agent sits in the roster. The population rescale below
-                # does depend on who else is in the run, which is the price of
-                # not letting a small sample tilt the whole town.
-                values = sample_traits(random.Random(seed * 1000003 + agent_id), factor)
-                drawn.append(values)
+                values = drawn[agent_id]
                 meta = {"source": "prior_sampled", "unstated": "", "redundant": ""}
             assigned.append((agent, values, meta))
-
-        if drawn and sampling.get("rescale", True):
-            rescale(drawn)
 
         channels = self._channels()
         tuning = self._tuning()

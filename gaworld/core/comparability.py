@@ -82,6 +82,15 @@ EPOCHS: tuple[Epoch, ...] = (
           "家庭插件（默认开）的周末判断改按仿真日历（此前一律当第 1 天是周一）",
           ("family", "perception"),
           "docs/proposals/2026-10-03-travel-leave-and-cost.md §2.1"),
+    Epoch(10, "2026-10-10",
+          "出行习惯（默认开）：每人按自身情况有默认交通工具，每次出行有一定概率换用其他方式",
+          ("transport", "economy", "traffic"),
+          "gaworld/world/mobility.py; tests/test_transport_habit.py"),
+    Epoch(11, "2026-10-10",
+          "真实工作（默认开）接单时在整个技能库里按任务搜索技能写进简报（此前只看已挂载的），"
+          "交付成功后把用上的技能挂到居民身上，工作记忆里记下运用了哪些技能",
+          ("work", "skills", "memory", "cognition"),
+          "gaworld/work/skill_lookup.py; tests/test_skill_search.py"),
 )
 
 #: The epoch of the code that is running now.

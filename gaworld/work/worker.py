@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
 from typing import Optional
 
@@ -38,8 +39,12 @@ class WorkerPool:
         max_workers: int = 2,
         task_timeout_seconds: int = 600,
         poll_interval: float = 1.0,
+        brief_hook: Callable[[WorkBrief], WorkBrief] | None = None,
     ) -> None:
         self.queue = queue
+        # Runs on the adapter thread right before ``adapter.run`` (e.g. the
+        # online skill lookup), so slow preparation never blocks a tick.
+        self.brief_hook = brief_hook
         self.adapters = adapters
         self.ctx_factory = ctx_factory
         self.max_workers = max(1, int(max_workers))
@@ -112,9 +117,18 @@ class WorkerPool:
         with self._inflight_lock:
             self._inflight[brief.task_id] = fut
 
+    def _prepare(self, brief: WorkBrief) -> WorkBrief:
+        if self.brief_hook is None:
+            return brief
+        try:
+            return self.brief_hook(brief)
+        except Exception:  # a failed hook must not cost the work
+            _LOG.exception("brief hook failed for task %s", brief.task_id)
+            return brief
+
     def _run_adapter(self, adapter: WorkAdapter, brief: WorkBrief, ctx: AdapterContext) -> WorkResult:
         try:
-            return adapter.run(brief, ctx)
+            return adapter.run(self._prepare(brief), ctx)
         except Exception as exc:  # noqa: BLE001
             _LOG.exception("adapter %s crashed for task %s", adapter.name, brief.task_id)
             return make_failed(brief, f"adapter exception: {exc}", time.time())
@@ -205,7 +219,7 @@ class WorkerPool:
                 continue
             ctx = self.ctx_factory(brief.adapter)
             try:
-                result = adapter.run(brief, ctx)
+                result = adapter.run(self._prepare(brief), ctx)
             except Exception as exc:  # noqa: BLE001
                 result = make_failed(brief, f"adapter exception: {exc}", time.time())
             self.queue.record_result(result)

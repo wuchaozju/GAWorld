@@ -126,6 +126,15 @@ API：
     "inject_into_cognition": True,    # perception 提示词是否附 skill 列表
     "inject_into_work_brief": True,   # work brief 是否附【可用技能】块
     "max_per_prompt": 4,              # cognition 注入上限
+    "auto_search": True,              # 接工作时搜整个技能库（关 = 只看已挂载/私有的）
+    "search_dirs": [],                # 额外技能目录：*.md 或 <名字>/SKILL.md
+    "online": {                       # 联网技能市场，默认关，见 §6.3
+        "enabled": False,
+        "api_base": "https://skills.sh",
+        "cache_dir": "output/skills_market",
+        "min_installs": 100,
+        "timeout_seconds": 10,
+    },
 },
 ```
 
@@ -155,11 +164,25 @@ CONFIG["memory"]["skill_consolidation"]["enabled"] = True
 
 若没有 skill 或开关 OFF，返回空串，提示词无变化。这是**唯一保证向后兼容**的关键：所有注入都先走开关 + 优雅降级。
 
-### 6.2 Work Router
+### 6.2 Work Router：接到工作自动搜技能
 
 `RealWorkRouter.__init__` 多了一个 `skill_registry: Optional[SkillRegistry]` 参数（不传则从 `get_default_registry()` 兜底）。
 
-dispatch 时用 `relevant_skills_for_text(all_skills, action_text, limit=3)` 选 ≤3 个相关 skill，传给 `_build_brief_text`，brief 末尾追加：
+居民接单（市场订单）或自驱开工时，`gaworld/work/skill_lookup.py:find_local_skills` 在
+**整个技能库**里找最合适的 ≤3 个（`skills.auto_search`，默认开；可比性版本 11）：
+
+- 候选 = `registry.list_searchable(agent)`：先是自己的（私有 + 已挂载），再是全局库其余的——
+  **不需要事先挂载**。全局库 = `global_dir` + `search_dirs` +（联网开着时）市场下载缓存。
+- 打分（`gaworld/skills/search.py`）：任务文本（标题 + 简报 + 动作）里提到技能名 +3，每个 trigger +2；
+  任务关键词（产物类型的中英文词，如 `poster_svg` → 海报/排版/设计/poster/svg，加上订单的 `required_skills`）
+  出现在技能的名称/描述/trigger 里，每个 +1。只要得分 > 0 的，按分数排序，同分时自己的优先。
+- 选中的 id 记在 `WorkBrief.skill_ids`，适配器经 `make_ok` / `make_failed` 原样带到 `WorkResult.skill_ids`。
+- **用过即习得**：结果回收时（`ingest.absorb_completed_for`），交付成功就把用上的全局技能挂到居民
+  `skill_ids`（之后 perception 里会列出它）；工作记忆写成「完成… ，运用了技能：海报网格」，并带 `skill_ids` 字段。
+
+`auto_search: false` 回到旧行为：只在自己已有的技能里按 trigger 子串取前 3 个。
+
+brief 末尾追加：
 
 ```
 【可用技能】
@@ -168,6 +191,28 @@ dispatch 时用 `relevant_skills_for_text(all_skills, action_text, limit=3)` 选
 ```
 
 adapter（如 `CodeAdapter`）原本就把 `brief.brief_text` 整段拼进 LLM prompt——所以**不需要改任何 adapter 代码**，skill 内容会自动出现在工作的指导上下文里。
+
+### 6.3 联网技能市场（默认关）
+
+`skills.online.enabled: true` 后，本地搜索没填满 3 个槽位时，worker **在自己的线程上**、紧挨着
+adapter 运行之前（`WorkerPool(brief_hook=…)`，tick 不会等网络）去 [skills.sh](https://skills.sh/) 补齐
+（`gaworld/skills/market.py:SkillMarket` + `skill_lookup.make_market_hook`）：
+
+1. 查询词按产物类型取英文（市场是英文语义搜索，中文标题搜回来的多是噪声）：
+   `poster_svg` → `poster design`，`py_script` → `python best practices`，`lesson_plan` → `lesson plan`……
+   见 `DELIVERABLE_MARKET_QUERIES`。每个查询的结果缓存在 `cache_dir/_search_cache.json`，以后不再联网
+   （删掉这个文件即刷新）。
+2. 安装数低于 `min_installs` 的跳过；名称/描述里与查询词重合不到 2 个（查询词更少时须全中）的跳过；
+   同名的 fork 只取第一个。
+3. 只下载 `SKILL.md` 文本：先试常见布局（`skills/<名>/SKILL.md`、`<名>/SKILL.md`），不中再查一次仓库文件树
+   （GitHub API，未登录每小时 60 次）。文本截到 64 KB，存为 `cache_dir/<owner>__<repo>__<名>/SKILL.md`
+   + `source.json`（来源 URL、安装数、时间）。**技能里提到的脚本、文件一概不下载，也不执行**——
+   它只是贴进工作简报的文字指导。
+4. 找到的技能并入全局库（`origin: market`），追加到 brief 的【可用技能】块并记进 `skill_ids`；
+   交付成功后同样挂到居民身上。缓存目录被注册表扫描，所以下次本地搜索就能直接搜到。
+
+联网失败、市场挂掉、下载 404 都只是"没找到技能"，工作照常进行。开着它的运行依赖网络与当天市场的内容，
+不可严格复现——做对照实验时建议先跑一遍把缓存填好，或保持关闭。
 
 ---
 
@@ -239,7 +284,11 @@ CONFIG["memory"]["skill_consolidation"]["enabled"] = True
 - 提示词渲染：截断、空列表、按 trigger 选相关 skill
 - 与 RealWorkRouter 集成：调度后 `brief_text` 含 `【可用技能】`
 
+`tests/test_skill_search.py` 覆盖工作自动搜技能：打分排序、额外目录（`<名>/SKILL.md`）、未挂载的库技能被
+router 选中并记录、`auto_search` 关掉回到旧行为、市场客户端（假 HTTP：缓存、安装数/安全/相关性过滤、
+文件树兜底、fork 去重、离线复用）、worker 的 brief hook、交付成功后挂载技能并写进记忆。不联网。
+
 跑法：
 ```bash
-PYTHONPATH=. pytest tests/test_skill_system.py -v
+PYTHONPATH=. pytest tests/test_skill_system.py tests/test_skill_search.py -v
 ```

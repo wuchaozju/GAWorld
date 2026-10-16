@@ -68,7 +68,7 @@ const store = {
   autobioLoading: false, // guards the lazy fetch against retry loops
   /* Cross-city browsing. `cities` is the catalogue, `runningCity` the slug the
    * simulator is pointed at, `cityRef` the one being looked at. They differ
-   * only in browse mode, which is read-only — see browseBody() for why. */
+   * only in browse mode (the 城市 page's hand-off), which is read-only. */
   cities: [],
   runningCity: "",
   cityRef: "",
@@ -239,14 +239,12 @@ async function selectAgent(id) {
 
 /* ---------- cross-city browsing ----------
  *
- * Agent Studio edits the city the simulator is pointed at: `dashboard_server`
- * resolves its CSV and profile paths once, at import. So another city's
- * residents can be *read* here — straight from that city's bundle, via
- * /api/city/agents — but not edited, and the panels keyed by agent id
- * (memory, Big Five, social, finance) are hidden while browsing: every city
- * numbers its residents from 1, those files are one flat per-id namespace, and
- * showing them for a city that is not running would be showing somebody else's
- * data under this resident's name.
+ * Agent Studio edits the city the simulator is pointed at: every per-agent
+ * endpoint (memory, Big Five, social, finance) resolves against it, and every
+ * city numbers its residents from 1. So picking a city in the picker makes it
+ * the current city first, then edits it. The 城市 page's `?city=` hand-off
+ * only *reads* another city's residents — straight from its bundle, via
+ * /api/city/agents — until 设为当前城市 is pressed.
  */
 const cityView = () => window.GAWorldCityAgents;
 
@@ -268,23 +266,41 @@ function cityEntry(slug) {
   return store.cities.find((c) => String(c.slug) === String(slug)) || { slug, name: slug };
 }
 
-/** Switch the panel to `slug`, in edit mode when it is the running city. */
-async function pickCity(slug) {
-  store.cityRef = String(slug || "");
-  store.browsing = store.cityRef !== store.runningCity;
+/** Edit `slug`, making it the running city first when it is not. A failed
+ * switch puts the picker back on the city still being shown. */
+async function pickCity(slug, wantedId = null) {
+  const ref = String(slug || "");
+  if (ref !== store.runningCity) {
+    try {
+      await makeRunningCity(ref);
+    } catch (err) {
+      $("#citySelect").value = store.cityRef;
+      throw err;
+    }
+  }
+  store.cityRef = store.runningCity;
+  $("#citySelect").value = store.cityRef;
+  store.browsing = false;
   store.creating = false;
   store.personaSlug = null;
-  if (!store.browsing) {
-    store.browsed = null;
-    store.currentId = null;
-    await loadAgents();
-    setEditingChrome(true);
-    if (store.currentId != null) await selectAgent(store.currentId);
-    else renderStep();
-    return;
+  store.browsed = null;
+  store.currentId = wantedId;
+  await loadAgents();
+  setEditingChrome(true);
+  if (store.currentId != null) await selectAgent(store.currentId);
+  else renderStep();
+}
+
+/** Point the simulator (and every per-agent endpoint) at `slug`. */
+async function makeRunningCity(slug) {
+  foot(__("sd.city_switching"));
+  try {
+    const res = await api("/api/city/select", { method: "POST", body: JSON.stringify({ city: slug }) });
+    store.runningCity = res.selected || "";
+  } catch (err) {
+    throw new Error(__("sd.city_switch_failed") + err.message);
   }
-  setEditingChrome(false);
-  await browseCity(store.cityRef);
+  foot(__f("sd.city_switched", { name: cityEntry(store.runningCity).name }), "ok");
 }
 
 async function browseCity(slug, wantedId) {
@@ -300,6 +316,23 @@ async function browseCity(slug, wantedId) {
     return;
   }
   await browseAgent(pick);
+}
+
+/** Wrap an async handler with the standard button-busy treatment so the user
+ *  sees "保存中…" / "蒸馏中…" instead of greying out silently. The button is
+ *  restored even when the handler throws. */
+function withBusy(btn, fn, busyKey, busyFallback) {
+  return async (event) => {
+    if (!btn || btn.disabled) return;
+    const release = (typeof setButtonBusy === "function")
+      ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+      : (() => { btn.disabled = true; return () => { btn.disabled = false; }; })();
+    try {
+      await fn(event);
+    } finally {
+      release();
+    }
+  };
 }
 
 async function browseAgent(id) {
@@ -365,15 +398,10 @@ function bindBrowseStep() {
   if (use) use.addEventListener("click", useBrowsedCity);
 }
 
-/** Point the simulator at the city being browsed. Takes effect on restart. */
-async function useBrowsedCity() {
-  try {
-    foot(__("sd.city_switching"));
-    await api("/api/city/select", { method: "POST", body: JSON.stringify({ city: store.cityRef }) });
-    foot(__f("sd.city_switched", { name: cityEntry(store.cityRef).name }), "ok");
-  } catch (err) {
-    foot(__("sd.city_switch_failed") + err.message, "err");
-  }
+/** Make the city being browsed the running one, and edit it. */
+function useBrowsedCity() {
+  const agent = store.browsed && store.browsed.agent;
+  pickCity(store.cityRef, agent ? agent.id : null).catch((err) => foot(err.message, "err"));
 }
 
 function startCreate() {
@@ -1427,9 +1455,9 @@ function bindFamilyCard() {
   });
 
   const save = $("#saveFamilyBtn");
-  if (save) save.addEventListener("click", () => saveFamilyOverride(false));
+  if (save) save.addEventListener("click", withBusy(save, () => saveFamilyOverride(false), "sd.family_saving", "保存家庭设定…"));
   const reset = $("#resetFamilyBtn");
-  if (reset) reset.addEventListener("click", () => saveFamilyOverride(true));
+  if (reset) reset.addEventListener("click", withBusy(reset, () => saveFamilyOverride(true), "sd.family_saving", "保存家庭设定…"));
 }
 
 function stepSocial() {
@@ -1902,7 +1930,7 @@ function bindStep() {
     store.profileEditing = false;
     renderStep();
   });
-  const pOk = $("#confirmProfileBtn"); if (pOk) pOk.addEventListener("click", confirmProfile);
+  const pOk = $("#confirmProfileBtn"); if (pOk) pOk.addEventListener("click", withBusy(pOk, confirmProfile, "sd.saving_profile", "保存 Profile…"));
   $("#stepBody").querySelectorAll("[data-nar]").forEach((el) => {
     el.addEventListener("input", () => { store.draft.narrative[el.dataset.nar] = el.value; });
   });
@@ -1923,7 +1951,7 @@ function bindStep() {
     });
   });
   const b5Ok = $("#confirmBig5Btn");
-  if (b5Ok) b5Ok.addEventListener("click", confirmBig5);
+  if (b5Ok) b5Ok.addEventListener("click", withBusy(b5Ok, confirmBig5, "sd.saving_big5", "写入人格分数…"));
   const b5Goto = $("#gotoProfileBtn");
   if (b5Goto) b5Goto.addEventListener("click", () => {
     store.step = 1;
@@ -1942,7 +1970,7 @@ function bindStep() {
       markStateDirty();
     });
   });
-  const cs = $("#confirmStateBtn"); if (cs) cs.addEventListener("click", confirmState);
+  const cs = $("#confirmStateBtn"); if (cs) cs.addEventListener("click", withBusy(cs, confirmState, "sd.saving", "保存中…"));
   $("#stepBody").querySelectorAll("[data-goal-title]").forEach((el) => {
     el.addEventListener("input", () => { const g = goalRef(el); if (g) g.title = el.value; });
   });
@@ -1969,20 +1997,20 @@ function bindStep() {
   $("#stepBody").querySelectorAll("[data-goal-add]").forEach((el) => {
     el.addEventListener("click", () => { addGoal(el.dataset.tier); renderStep(); });
   });
-  const sg = $("#saveGoalsBtn"); if (sg) sg.addEventListener("click", saveGoals);
+  const sg = $("#saveGoalsBtn"); if (sg) sg.addEventListener("click", withBusy(sg, saveGoals, "sd.goals_saving", "保存目标…"));
   bindMemoryStep();
   bindSocialStep();
   bindFinanceStep();
   bindMoltbookStep();
-  const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", runInterview);
-  const aBtn = $("#autobioBtn"); if (aBtn) aBtn.addEventListener("click", runAutobiography);
-  const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", save);
-  const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", runSim);
+  const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", withBusy(iBtn, runInterview, "sd.interview_running", "采访中…"));
+  const aBtn = $("#autobioBtn"); if (aBtn) aBtn.addEventListener("click", withBusy(aBtn, runAutobiography, "sd.autobio_running", "自传生成中…"));
+  const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", withBusy(s2, save, "sd.saving", "保存中…"));
+  const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", withBusy(r2, runSim, "studio.run", "运行中…"));
 }
 
 function bindMemoryStep() {
   const zoom = $("#memZoomBtn"); if (zoom) zoom.addEventListener("click", openMemoryModal);
-  const add = $("#addMemBtn"); if (add) add.addEventListener("click", addMemory);
+  const add = $("#addMemBtn"); if (add) add.addEventListener("click", withBusy(add, addMemory, "sd.saving_memory", "写入记忆…"));
   const box = $("#memGraphBox");
   if (box) box.addEventListener("click", (ev) => {
     const dot = ev.target.closest("[data-node]");
@@ -2041,7 +2069,7 @@ function bindSocialStep() {
     });
     renderStep();
   });
-  const saveRel = $("#saveRelBtn"); if (saveRel) saveRel.addEventListener("click", saveRelations);
+  const saveRel = $("#saveRelBtn"); if (saveRel) saveRel.addEventListener("click", withBusy(saveRel, saveRelations, "sd.rel_saving", "保存关系…"));
 }
 
 function bindFinanceStep() {
@@ -2066,7 +2094,7 @@ function bindFinanceStep() {
       if (val) val.textContent = store.financeDraft[key].toFixed(2);
     });
   });
-  const saveFin = $("#saveFinBtn"); if (saveFin) saveFin.addEventListener("click", saveFinance);
+  const saveFin = $("#saveFinBtn"); if (saveFin) saveFin.addEventListener("click", withBusy(saveFin, saveFinance, "sd.fin_saving", "保存财务…"));
 }
 
 /* ---------- 真人蒸馏 ---------- */
@@ -2276,9 +2304,9 @@ function init() {
     const pick = store.browsing ? browseAgent(e.target.value) : selectAgent(e.target.value);
     pick.catch((err) => foot(err.message, "err"));
   });
-  $("#newAgentBtn").addEventListener("click", startCreate);
-  $("#saveBtn").addEventListener("click", save);
-  $("#runBtn").addEventListener("click", runSim);
+  withBusy($("#newAgentBtn"), startCreate, "studio.new", "新建中…");
+  withBusy($("#saveBtn"), save, "sd.saving", "保存中…");
+  withBusy($("#runBtn"), runSim, "studio.run", "运行中…");
   document.addEventListener("persona:fill", (ev) => applyPersona(ev.detail));
   // Deploying straight from the panel skips the form, so the list it was
   // opened over is now one resident short of the truth.

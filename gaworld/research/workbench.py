@@ -782,6 +782,7 @@ def list_plans() -> list[dict[str, Any]]:
                 "steps": len(data.get("steps") or []),
                 "designs": len(data.get("designs") or []) or (1 if data.get("design") else 0),
                 "owner_id": data.get("owner_id"),
+                "world_id": data.get("world_id"),
             }
         )
     out.sort(key=lambda item: item["created_at"], reverse=True)

@@ -223,7 +223,9 @@
 
   async function build() {
     showError("");
-    $("cBuild").disabled = true;
+    var release = (typeof setButtonBusy === "function")
+      ? setButtonBusy($("cBuild"), "calib.build", "生成中…")
+      : (function () { $("cBuild").disabled = true; return function () { $("cBuild").disabled = false; }; })();
     try {
       const made = await api("/api/bench/calibration/build", { method: "POST", body: JSON.stringify({}) });
       state.setId = made.set_id;
@@ -232,7 +234,7 @@
     } catch (error) {
       showError(error.message);
     } finally {
-      $("cBuild").disabled = false;
+      release();
     }
   }
 

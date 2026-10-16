@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="serial.page_title">GAWorld · 连续剧</title>
+  <meta name="description" data-i18n-content="serial.meta_description" content="GAWorld 连续剧 — 选几个居民当主演,选一个主题,模型按他们的档案生成多集连续剧脚本,每个镜头包含场景、镜头类型、画面提示、台词、时长,可直接喂给视频生成模型。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="serial.kicker">GAWorld Playground · Serial</p>
+          <h1 data-i18n="serial.headline">连续剧:把城里人拍成剧</h1>
+          <p class="sub" data-i18n="serial.sub">
+            挑几个居民当主演,选一个题材,模型按他们的档案写一季连续剧——不是小说,是镜头脚本。每个镜头包含场景、时间、镜头类型、画面提示(可直接喂给可灵 / Sora / Veo)、台词、时长与转场。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="serialExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载剧本</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="novel.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <aside class="disaster-side panel">
+        <h3 data-i18n="serial.section_setup">本场设置</h3>
+
+        <label class="field">
+          <span data-i18n="novel.city_label">城市</span>
+          <select id="sCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="serial.theme_label">题材</span>
+          <select id="sTheme"></select>
+        </label>
+        <p id="sThemeText" class="disaster-hint"></p>
+
+        <div id="sCustomThemeBlock" hidden>
+          <label class="field">
+            <span data-i18n="serial.custom_theme_label">自定义题材</span>
+            <textarea id="sCustomThemeTone" data-i18n-placeholder="serial.custom_theme_placeholder" placeholder="一句话讲清核心情境(例:一个 30 年没回过老家的女人,回到镇上却发现自己的坟)。"></textarea>
+          </label>
+          <label class="field">
+            <span data-i18n="serial.custom_theme_seed">主题提示(可选)</span>
+            <input id="sCustomThemeSeed" type="text" data-i18n-placeholder="serial.custom_theme_seed_placeholder" placeholder="给编剧的两句话提示,可以留空" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="serial.style_label">视觉风格</span>
+          <select id="sStyle"></select>
+        </label>
+        <p id="sStyleText" class="disaster-hint"></p>
+
+        <div id="sCustomStyleBlock" hidden>
+          <label class="field">
+            <span data-i18n="serial.custom_style_label">自定义视觉风格</span>
+            <textarea id="sCustomStyleText" data-i18n-placeholder="serial.custom_style_placeholder" placeholder="例如:90 年代港片质感,胶片颗粒,霓虹灯下,人物命运感强。"></textarea>
+          </label>
+          <label class="field">
+            <span data-i18n="serial.custom_style_shot">镜头语言</span>
+            <input id="sCustomStyleShot" type="text" data-i18n-placeholder="serial.custom_style_shot_placeholder" placeholder="例如:固定机位 + 长焦特写,胶片色调" />
+          </label>
+        </div>
+
+        <div class="disaster-row">
+          <label class="field">
+            <span data-i18n="serial.episodes_label">集数</span>
+            <input id="sEpisodes" type="number" min="2" max="8" step="1" value="4" />
+          </label>
+          <label class="field">
+            <span data-i18n="serial.shots_per_episode_label">单集镜头</span>
+            <input id="sShotsPerEpisode" type="number" min="3" max="12" step="1" value="6" />
+          </label>
+          <label class="field">
+            <span data-i18n="serial.seconds_label">单集秒数</span>
+            <input id="sSeconds" type="number" min="30" max="600" step="10" value="120" />
+          </label>
+        </div>
+        <p class="disaster-hint" data-i18n="serial.episodes_hint">
+          单集秒数会按镜头数均分;每个镜头 2–30 秒。竖屏短剧建议 4 集 × 6 镜头 × 60 秒。
+        </p>
+
+        <label class="field">
+          <span data-i18n="serial.title_label">剧名(可选)</span>
+          <input id="sTitleHint" type="text" data-i18n-placeholder="serial.title_placeholder" placeholder="留空则从情境里取" />
+        </label>
+
+        <label class="field">
+          <span data-i18n="serial.brief_label">补充设定(可选)</span>
+          <textarea id="sBrief" data-i18n-placeholder="serial.brief_placeholder" placeholder="一两句话讲你想看到的具体设定(背景年代、地点、关键道具、想要的结尾氛围),留空让模型自由发挥。"></textarea>
+        </label>
+
+        <div class="disaster-block">
+          <h4><span data-i18n="serial.agents_title">主演</span> <b id="sPicked">0</b><span class="muted" data-i18n="novel.agents_count_suffix">/6</span></h4>
+          <p class="disaster-hint" data-i18n="serial.agents_hint">
+            至少 2 人,最多 6 人。人物在镜头里怎么说话、怎么反应,都按档案来。
+          </p>
+          <div class="disaster-toolbar">
+            <button class="button" id="sPickNone" data-i18n="novel.pick_none">清空</button>
+          </div>
+          <ul id="sAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="sRunBtn" class="button primary" data-i18n="serial.run">开拍</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="serial.history">最近几季</h4>
+          <ul id="sHistory"></ul>
+        </section>
+      </aside>
+
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="sTitle" data-i18n="serial.section_board">剧本</h3>
+            <p id="sStatus" class="disaster-status" data-i18n="serial.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="sBar" style="width:0%"></span></div>
+            <span id="sPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="sResult" hidden>
+            <section class="novel-cover">
+              <h2 id="sShowTitle"></h2>
+              <p id="sPremise" class="novel-premise"></p>
+              <p id="sLogline" class="novel-back-cover"></p>
+              <div id="sMeta" class="serial-meta"></div>
+              <div id="sCast" class="novel-cast"></div>
+              <div class="novel-stats" id="sStats"></div>
+            </section>
+
+            <nav class="novel-tabs" role="tablist">
+              <button id="sTabScript" class="novel-tab is-active" role="tab" aria-selected="true" data-i18n="serial.tab_script">🎬 镜头脚本</button>
+              <button id="sTabShots" class="novel-tab" role="tab" aria-selected="false" data-i18n="serial.tab_shots">🧾 镜头清单(JSON)</button>
+              <button id="sTabPrompts" class="novel-tab" role="tab" aria-selected="false" data-i18n="serial.tab_prompts">📋 视频提示词</button>
+            </nav>
+
+            <section id="sScriptPane" class="novel-pane">
+              <section class="novel-toc">
+                <h4 data-i18n="serial.episode_toc">分集</h4>
+                <ol id="sEpToc"></ol>
+              </section>
+              <section class="novel-reader">
+                <div id="sEpisodes"></div>
+              </section>
+            </section>
+
+            <section id="sShotsPane" class="novel-pane" hidden>
+              <p class="muted" data-i18n="serial.shots_pane_hint">
+                整季的镜头清单(可直接喂给支持 JSON 输入的视频生成模型,或自行映射到 CSV / Notion)。
+              </p>
+              <textarea id="sShotsJson" class="serial-shots-json" readonly></textarea>
+              <div class="disaster-actions">
+                <button class="button" id="sCopyShots" data-i18n="serial.copy_shots">复制 JSON</button>
+                <button class="button" id="sDownloadShots" data-i18n="serial.download_shots">下载 .json</button>
+              </div>
+            </section>
+
+            <section id="sPromptsPane" class="novel-pane" hidden>
+              <p class="muted" data-i18n="serial.prompts_pane_hint">
+                按镜头顺序展开的画面提示(visual_prompt),复制粘贴到可灵 / Sora / Veo / Hailuo 即可。需要更具体的提示时,可在每条后面附加风格与镜头类型。
+              </p>
+              <ol id="sPromptsList" class="serial-prompts"></ol>
+            </section>
+          </div>
+
+        <p id="sIdle" class="disaster-idle" data-i18n="serial.idle_hint">
+          左边选几个居民当主演,挑一个题材(也可自定),填一个补充设定,点「开拍」。
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/serial.js"></script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{park2023generative,park2024grounded,argyle2023outofone}
+\citation{gawoerldv1}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
+\newlabel{sec:introduction@cref}{{[section][1][]1}{[1][1][]1}{}{}{}}
+\citation{gaworldtravel}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The GAWorld Console. The left navigation exposes every v2 surface: \emph  {Cities} and \emph  {Population} build the city bundle; \emph  {Organizations} edits rules and members; \emph  {Agent Studio} shapes individual residents; the \emph  {Dashboard} (shown) configures and starts a run; the \emph  {Playground}, \emph  {Play Together}, and \emph  {Group Interview} tabs run game-based probes, an open-world player lease, and one-shot elicitation; \emph  {External} drives the relay and external-environment services; and \emph  {Analytics} / \emph  {Research} surface the result inspection and the counterfactual / paper-to-protocol workflows. The screenshot was captured against the bundled Keqiao (Shaoxing) city bundle in single-tenant, single-process mode; the dashboard UI was switched to English via \texttt  {window.setLocale('en')}, while the resident content reflects the language of the bundled data.}}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:console}{{1}{3}{The GAWorld Console. The left navigation exposes every v2 surface: \emph {Cities} and \emph {Population} build the city bundle; \emph {Organizations} edits rules and members; \emph {Agent Studio} shapes individual residents; the \emph {Dashboard} (shown) configures and starts a run; the \emph {Playground}, \emph {Play Together}, and \emph {Group Interview} tabs run game-based probes, an open-world player lease, and one-shot elicitation; \emph {External} drives the relay and external-environment services; and \emph {Analytics} / \emph {Research} surface the result inspection and the counterfactual / paper-to-protocol workflows. The screenshot was captured against the bundled Keqiao (Shaoxing) city bundle in single-tenant, single-process mode; the dashboard UI was switched to English via \texttt {window.setLocale('en')}, while the resident content reflects the language of the bundled data}{figure.1}{}}
+\newlabel{fig:console@cref}{{[figure][1][]1}{[1][2][]3}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Design Goals}{3}{section.2}\protected@file@percent }
+\newlabel{sec:design-goals}{{2}{3}{Design Goals}{section.2}{}}
+\newlabel{sec:design-goals@cref}{{[section][2][]2}{[1][2][]3}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Persistence across simulated time}{3}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:dgo:persistence}{{2.1}{3}{Persistence across simulated time}{subsection.2.1}{}}
+\newlabel{sec:dgo:persistence@cref}{{[subsection][1][2]2.1}{[1][3][]3}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Situatedness in a shared world}{4}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:dgo:situatedness}{{2.2}{4}{Situatedness in a shared world}{subsection.2.2}{}}
+\newlabel{sec:dgo:situatedness@cref}{{[subsection][2][2]2.2}{[1][3][]4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Composability without concealing control flow}{4}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:dgo:composability}{{2.3}{4}{Composability without concealing control flow}{subsection.2.3}{}}
+\newlabel{sec:dgo:composability@cref}{{[subsection][3][2]2.3}{[1][4][]4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Controllability for counterfactual experiments}{4}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:dgo:controllability}{{2.4}{4}{Controllability for counterfactual experiments}{subsection.2.4}{}}
+\newlabel{sec:dgo:controllability@cref}{{[subsection][4][2]2.4}{[1][4][]4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Inspectability from decision to artifact}{4}{subsection.2.5}\protected@file@percent }
+\newlabel{sec:dgo:inspectability}{{2.5}{4}{Inspectability from decision to artifact}{subsection.2.5}{}}
+\newlabel{sec:dgo:inspectability@cref}{{[subsection][5][2]2.5}{[1][4][]4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Backward-compatible modularization}{4}{subsection.2.6}\protected@file@percent }
+\newlabel{sec:dgo:backcompat}{{2.6}{4}{Backward-compatible modularization}{subsection.2.6}{}}
+\newlabel{sec:dgo:backcompat@cref}{{[subsection][6][2]2.6}{[1][4][]4}{}{}{}}
+\citation{park2023generative}
+\citation{park2024grounded}
+\citation{argyle2023outofone}
+\citation{gawoerldv1}
+\citation{yao2023react}
+\citation{shinn2023reflexion}
+\citation{wang2023voyager}
+\citation{zhong2024memorybank}
+\citation{sumers2024coala}
+\citation{li2023camel}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}Per-tenant world isolation}{5}{subsection.2.7}\protected@file@percent }
+\newlabel{sec:dgo:multitenant}{{2.7}{5}{Per-tenant world isolation}{subsection.2.7}{}}
+\newlabel{sec:dgo:multitenant@cref}{{[subsection][7][2]2.7}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.8}Human participation as a first-class intervention}{5}{subsection.2.8}\protected@file@percent }
+\newlabel{sec:dgo:participation}{{2.8}{5}{Human participation as a first-class intervention}{subsection.2.8}{}}
+\newlabel{sec:dgo:participation@cref}{{[subsection][8][2]2.8}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Related Work}{5}{section.3}\protected@file@percent }
+\newlabel{sec:related-work}{{3}{5}{Related Work}{section.3}{}}
+\newlabel{sec:related-work@cref}{{[section][3][]3}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Generative agents and simulated individuals}{5}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Language-agent cognition and architecture}{5}{subsection.3.2}\protected@file@percent }
+\citation{liu2024agentbench}
+\citation{ma2024agentboard}
+\citation{zhou2024sotopia}
+\citation{hashimoto2022generate}
+\citation{leng2024llm}
+\citation{epstein2006generative}
+\citation{grimm2006odd}
+\citation{windrum2007empirical,fagiolo2007critical}
+\citation{kapania2025between}
+\citation{dillion2023replace}
+\citation{wang2025flatten}
+\citation{vezhnevets2023generative}
+\citation{yang2024oasis}
+\citation{gao2025agentsociety}
+\citation{ie2019recsim}
+\citation{fujimoto2016parallel}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Social-agent tasks and evaluation}{6}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Agent-based social simulation and validation}{6}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Platforms, parallel execution, and counterfactual tooling}{6}{subsection.3.5}\protected@file@percent }
+\citation{pearl2018book,hernan2020causal,rubin2005causal}
+\citation{benjamini1995fdr}
+\citation{wang2025flatten}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The configured default agent-step pipeline. The first and last stages are structural boundaries; intermediate stages may be omitted or replaced through configuration. Domain inputs also arrive through direct calls, event-bus contribution points, plugin lifecycle hooks, and a player intervention queue; the diagram is a control-flow account rather than a claim that every subsystem is a plugin.}}{7}{figure.2}\protected@file@percent }
+\newlabel{fig:agent-lifecycle}{{2}{7}{The configured default agent-step pipeline. The first and last stages are structural boundaries; intermediate stages may be omitted or replaced through configuration. Domain inputs also arrive through direct calls, event-bus contribution points, plugin lifecycle hooks, and a player intervention queue; the diagram is a control-flow account rather than a claim that every subsystem is a plugin}{figure.2}{}}
+\newlabel{fig:agent-lifecycle@cref}{{[figure][2][]2}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Persistent and Situated Agent Lifecycle}{7}{section.4}\protected@file@percent }
+\newlabel{sec:agent-lifecycle}{{4}{7}{Persistent and Situated Agent Lifecycle}{section.4}{}}
+\newlabel{sec:agent-lifecycle@cref}{{[section][4][]4}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Profile seeds, mutable state, and personality}{7}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Per-agent directory and persistence}{8}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}The default per-tick path}{8}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:lifecycle:pipeline}{{4.3}{8}{The default per-tick path}{subsection.4.3}{}}
+\newlabel{sec:lifecycle:pipeline@cref}{{[subsection][3][4]4.3}{[1][8][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Contribution points and compatibility calls}{8}{subsection.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Player interventions and the away state}{9}{subsection.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Configuration and ablation semantics}{9}{subsection.4.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Microkernel and Plugin System}{9}{section.5}\protected@file@percent }
+\newlabel{sec:microkernel}{{5}{9}{Microkernel and Plugin System}{section.5}{}}
+\newlabel{sec:microkernel@cref}{{[section][5][]5}{[1][9][]9}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Kernel services}{9}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Simulation context and clock.}{9}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Event bus and plugin registry.}{9}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Controller.}{9}{section*.3}\protected@file@percent }
+\citation{gaworldplugin}
+\@writefile{toc}{\contentsline {paragraph}{Recorder.}{10}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{World resolver (K6).}{10}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Distributed hub (K7).}{10}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Parallel-worlds engine (K8).}{10}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Built-in plugin assembly}{10}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Plugin authoring}{10}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:plugin-authoring}{{5.3}{10}{Plugin authoring}{subsection.5.3}{}}
+\newlabel{sec:plugin-authoring@cref}{{[subsection][3][5]5.3}{[1][10][]10}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Migration-state audit}{10}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Failure and reproducibility boundaries}{10}{subsection.5.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The audited v2 plugin set. Per-agent state column lists the declarative fragment a researcher can read on a hashed run; the deployment column lists the post-v1 changes each plugin enables.}}{11}{table.1}\protected@file@percent }
+\newlabel{tab:plugins}{{1}{11}{The audited v2 plugin set. Per-agent state column lists the declarative fragment a researcher can read on a hashed run; the deployment column lists the post-v1 changes each plugin enables}{table.1}{}}
+\newlabel{tab:plugins@cref}{{[table][1][]1}{[1][10][]11}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Memory, Cognition, and Behavioral Realism}{11}{section.6}\protected@file@percent }
+\newlabel{sec:memory-cognition-realism}{{6}{11}{Memory, Cognition, and Behavioral Realism}{section.6}{}}
+\newlabel{sec:memory-cognition-realism@cref}{{[section][6][]6}{[1][10][]11}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Episodic persistence and retrieval}{11}{subsection.6.1}\protected@file@percent }
+\citation{gaworldrag}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Implementation state in the audited v2 repository. ``Wired'' denotes a subsystem whose boundary is now the plugin surface; ``partial'' denotes an adapter that contributes but retains direct calls; ``retained compatibility'' denotes a subsystem whose boundary is still the legacy direct call. K1--K5 cover the v1 migration; K6--K8 cover v2.}}{12}{table.2}\protected@file@percent }
+\newlabel{tab:migration-state}{{2}{12}{Implementation state in the audited v2 repository. ``Wired'' denotes a subsystem whose boundary is now the plugin surface; ``partial'' denotes an adapter that contributes but retains direct calls; ``retained compatibility'' denotes a subsystem whose boundary is still the legacy direct call. K1--K5 cover the v1 migration; K6--K8 cover v2}{table.2}{}}
+\newlabel{tab:migration-state@cref}{{[table][2][]2}{[1][10][]12}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Intentions, habits, and reactive behavior}{12}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Interests, skills, and productive activity}{13}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Realism module and personality anchoring}{13}{subsection.6.4}\protected@file@percent }
+\newlabel{sec:memory:realism}{{6.4}{13}{Realism module and personality anchoring}{subsection.6.4}{}}
+\newlabel{sec:memory:realism@cref}{{[subsection][4][6]6.4}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Situated Urban and Societal Substrate}{13}{section.7}\protected@file@percent }
+\newlabel{sec:substrate}{{7}{13}{Situated Urban and Societal Substrate}{section.7}{}}
+\newlabel{sec:substrate@cref}{{[section][7][]7}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}City graph and indoor spatial tree}{13}{subsection.7.1}\protected@file@percent }
+\citation{gaworldtravel}
+\citation{gaworldinflation}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Environment, weather, and crowd anomalies}{14}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Social ties, life events, and offline citizens}{14}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Economy, credit, and endogenous inflation}{14}{subsection.7.4}\protected@file@percent }
+\citation{gaworldgovernance}
+\citation{gaworldrag}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Organizations, governance, and rule changes}{15}{subsection.7.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6}Information sources and Moltbook}{15}{subsection.7.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7}Coupling and ownership boundaries}{15}{subsection.7.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Multi-User, Multi-World, and Per-Tenant Isolation}{15}{section.8}\protected@file@percent }
+\newlabel{sec:multi-user-worlds}{{8}{15}{Multi-User, Multi-World, and Per-Tenant Isolation}{section.8}{}}
+\newlabel{sec:multi-user-worlds@cref}{{[section][8][]8}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Data model}{16}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Request resolution}{16}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Path resolution and output isolation}{16}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Visibility and roles}{16}{subsection.8.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.5}Run management and quotas}{17}{subsection.8.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.6}Static-file guard}{17}{subsection.8.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.7}Per-tenant ledger and audit}{17}{subsection.8.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.8}Backwards compatibility and migration}{17}{subsection.8.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Distributed Worlds and Playable Cities}{17}{section.9}\protected@file@percent }
+\newlabel{sec:distributed-playable}{{9}{17}{Distributed Worlds and Playable Cities}{section.9}{}}
+\newlabel{sec:distributed-playable@cref}{{[section][9][]9}{[1][17][]17}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Topology and threat model}{17}{subsection.9.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Node lifecycle}{18}{subsection.9.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Player action routing}{18}{subsection.9.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.4}Clock synchronization}{18}{subsection.9.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.5}Security and access control}{19}{subsection.9.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.6}Deployment profiles}{19}{subsection.9.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Research and Counterfactual Workflow}{19}{section.10}\protected@file@percent }
+\newlabel{sec:research-workflow}{{10}{19}{Research and Counterfactual Workflow}{section.10}{}}
+\newlabel{sec:research-workflow@cref}{{[section][10][]10}{[1][19][]19}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Matched event and baseline runs}{19}{subsection.10.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}Parallel worlds and counterfactual inference}{19}{subsection.10.2}\protected@file@percent }
+\citation{gaworldbench}
+\citation{gaworldpolicy}
+\citation{gaworldseriousgame}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Research Workbench: from a paper or idea to a protocol}{20}{subsection.10.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Policy simulation and optimization}{20}{subsection.10.4}\protected@file@percent }
+\citation{gaworldinterview}
+\citation{gaworldpersona}
+\citation{lipsitch2010negative}
+\citation{gaworldplayground}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.5}Serious games and workshop studies}{21}{subsection.10.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.6}Group interviews and persona distillation}{21}{subsection.10.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.7}What the workflow identifies}{21}{subsection.10.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Agent Playground and Arena}{21}{section.11}\protected@file@percent }
+\newlabel{sec:playground-arena}{{11}{21}{Agent Playground and Arena}{section.11}{}}
+\newlabel{sec:playground-arena@cref}{{[section][11][]11}{[1][21][]21}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}The fourteen game families}{21}{subsection.11.1}\protected@file@percent }
+\citation{gaworldarena}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Archives and the Track B scorecard}{22}{subsection.11.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}Agent Arena}{22}{subsection.11.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.4}State and ownership}{22}{subsection.11.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.5}What the games evaluate}{22}{subsection.11.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Existing Capability Cases}{23}{section.12}\protected@file@percent }
+\newlabel{sec:capability-cases}{{12}{23}{Existing Capability Cases}{section.12}{}}
+\newlabel{sec:capability-cases@cref}{{[section][12][]12}{[1][23][]23}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Case 1: Persistence is observable, but the memory contrast is not}{23}{subsection.12.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.2}Case 2: Policy artifacts exercise a counterfactual workflow}{23}{subsection.12.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3}Case 3: Information metrics make inactivity visible}{23}{subsection.12.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.4}Case 4: Economy--wellbeing traces provide dense state, not external validity}{24}{subsection.12.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.5}Case 5: Multi-tenant isolation mechanics}{24}{subsection.12.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.6}Case 6: Distributed playable city mechanics}{24}{subsection.12.6}\protected@file@percent }
+\citation{grimm2006odd,windrum2007empirical,fagiolo2007critical}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.7}Case 7: Track B game archives}{25}{subsection.12.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.8}Failures are part of the capability record}{25}{subsection.12.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {13}Validation Boundaries}{25}{section.13}\protected@file@percent }
+\newlabel{sec:validation-boundaries}{{13}{25}{Validation Boundaries}{section.13}{}}
+\newlabel{sec:validation-boundaries@cref}{{[section][13][]13}{[1][25][]25}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.1}Individual consistency}{25}{subsection.13.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.2}Macro correspondence}{25}{subsection.13.2}\protected@file@percent }
+\citation{lipsitch2010negative}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.3}Emergence and mechanism}{26}{subsection.13.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.4}Counterfactual validity}{26}{subsection.13.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.5}Reproducibility as a non-compensatory gate}{26}{subsection.13.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.6}Participant evaluation}{26}{subsection.13.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.7}Intended use}{26}{subsection.13.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14}Limitations, Ethics, and Roadmap}{27}{section.14}\protected@file@percent }
+\newlabel{sec:limitations-ethics-roadmap}{{14}{27}{Limitations, Ethics, and Roadmap}{section.14}{}}
+\newlabel{sec:limitations-ethics-roadmap@cref}{{[section][14][]14}{[1][27][]27}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.1}Evidence and reproducibility limitations}{27}{subsection.14.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.2}Architecture and data limitations}{27}{subsection.14.2}\protected@file@percent }
+\citation{wang2025flatten}
+\citation{dillion2023replace}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.3}Ethical boundaries and affected communities}{28}{subsection.14.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.4}Engineering roadmap}{28}{subsection.14.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.5}Research roadmap}{28}{subsection.14.5}\protected@file@percent }
+\bibstyle{plainnat}
+\bibdata{references}
+\bibcite{argyle2023outofone}{{1}{2023}{{Argyle et~al.}}{{Argyle, Busby, Fulda, Gubler, Rytting, and Wingate}}}
+\bibcite{benjamini1995fdr}{{2}{1995}{{Benjamini and Hochberg}}{{}}}
+\bibcite{dillion2023replace}{{3}{2023}{{Dillion et~al.}}{{Dillion, Tandon, Gu, and Gray}}}
+\bibcite{epstein2006generative}{{4}{2006}{{Epstein}}{{}}}
+\bibcite{fagiolo2007critical}{{5}{2007}{{Fagiolo et~al.}}{{Fagiolo, Moneta, and Windrum}}}
+\@writefile{toc}{\contentsline {section}{\numberline {15}Conclusion}{29}{section.15}\protected@file@percent }
+\newlabel{sec:conclusion}{{15}{29}{Conclusion}{section.15}{}}
+\newlabel{sec:conclusion@cref}{{[section][15][]15}{[1][29][]29}{}{}{}}
+\bibcite{fujimoto2016parallel}{{6}{2016}{{Fujimoto}}{{}}}
+\bibcite{gao2025agentsociety}{{7}{2025}{{Gao et~al.}}{{Gao, Lei, Liu, Chen, Lan, Liu, Wang, et~al.}}}
+\bibcite{grimm2006odd}{{8}{2006}{{Grimm et~al.}}{{Grimm, Berger, Bastiansen, Eliassen, Ginot, Giske, Goss-Custard, Grand, Heinz, Huse, Huth, Jepsen, J{\o }rgensen, Mooij, M{\"u}ller, Pe'er, Piou, Railsback, Robbins, Robbins, Rossmanith, R{\"u}ger, Strand, Souissi, Stillman, Vab{\o }, Visser, and DeAngelis}}}
+\bibcite{hashimoto2022generate}{{9}{2022}{{Hashimoto et~al.}}{{Hashimoto, Zhang, and Liang}}}
+\bibcite{hernan2020causal}{{10}{2020}{{Hern{\'a}n and Robins}}{{}}}
+\bibcite{ie2019recsim}{{11}{2019}{{Ie et~al.}}{{Ie, Hsu, Mladenov, Joglekar, Chandak, He, et~al.}}}
+\bibcite{kapania2025between}{{12}{2025}{{Kapania et~al.}}{{Kapania, Wang, Li, and Zhu}}}
+\bibcite{leng2024llm}{{13}{2024}{{Leng and Yuan}}{{}}}
+\bibcite{li2023camel}{{14}{2023}{{Li et~al.}}{{Li, Hammoud, Itani, Khizbullin, and Ghanem}}}
+\bibcite{lipsitch2010negative}{{15}{2010}{{Lipsitch et~al.}}{{Lipsitch, Tchetgen~Tchetgen, and Cohen}}}
+\bibcite{liu2024agentbench}{{16}{2024}{{Liu et~al.}}{{Liu, Yu, Zhang, Xu, Lei, Lai, Gu, Ding, Men, Yang, Zhang, Deng, Zeng, Du, Zhang, Shen, Zhang, Su, Sun, Huang, Dong, and Tang}}}
+\bibcite{ma2024agentboard}{{17}{2024}{{Ma et~al.}}{{Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and He}}}
+\bibcite{park2023generative}{{18}{2023}{{Park et~al.}}{{Park, O'Brien, Cai, Morris, Liang, and Bernstein}}}
+\bibcite{park2024grounded}{{19}{2024}{{Park et~al.}}{{Park, Zou, Kamphorst, Egan, Shaw, Hill, Cai, Morris, Liang, Willer, and Bernstein}}}
+\bibcite{pearl2018book}{{20}{2016}{{Pearl et~al.}}{{Pearl, Glymour, and Jewell}}}
+\bibcite{gawoerldv1}{{21}{2026{a}}{{Project}}{{}}}
+\bibcite{gaworldarena}{{22}{2026{b}}{{Project}}{{}}}
+\bibcite{gaworldbench}{{23}{2026{c}}{{Project}}{{}}}
+\bibcite{gaworldgovernance}{{24}{2026{d}}{{Project}}{{}}}
+\bibcite{gaworldinflation}{{25}{2026{e}}{{Project}}{{}}}
+\bibcite{gaworldinterview}{{26}{2026{f}}{{Project}}{{}}}
+\bibcite{gaworldpersona}{{27}{2026{g}}{{Project}}{{}}}
+\bibcite{gaworldplayground}{{28}{2026{h}}{{Project}}{{}}}
+\bibcite{gaworldplugin}{{29}{2026{i}}{{Project}}{{}}}
+\bibcite{gaworldpolicy}{{30}{2026{j}}{{Project}}{{}}}
+\bibcite{gaworldrag}{{31}{2026{k}}{{Project}}{{}}}
+\bibcite{gaworldseriousgame}{{32}{2026{l}}{{Project}}{{}}}
+\bibcite{gaworldtravel}{{33}{2026{m}}{{Project}}{{}}}
+\bibcite{rubin2005causal}{{34}{2005}{{Rubin}}{{}}}
+\bibcite{shinn2023reflexion}{{35}{2023}{{Shinn et~al.}}{{Shinn, Cassano, Gopinath, Narasimhan, and Yao}}}
+\bibcite{sumers2024coala}{{36}{2024}{{Sumers et~al.}}{{Sumers, Yao, Narasimhan, and Griffiths}}}
+\bibcite{vezhnevets2023generative}{{37}{2023}{{Vezhnevets et~al.}}{{Vezhnevets, Agapiou, Aharon, Ziv, Matyas, Du{\'e}{\~n}as, Mao, Liu, Feng, Zinkov, et~al.}}}
+\bibcite{wang2025flatten}{{38}{2025}{{Wang et~al.}}{{Wang, Morgenstern, and Dickerson}}}
+\bibcite{wang2023voyager}{{39}{2023}{{Wang et~al.}}{{Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, and Anandkumar}}}
+\bibcite{windrum2007empirical}{{40}{2007}{{Windrum et~al.}}{{Windrum, Fagiolo, and Moneta}}}
+\bibcite{yang2024oasis}{{41}{2024}{{Yang et~al.}}{{Yang, Zhang, Zheng, Jiang, Gan, Wang, Feng, et~al.}}}
+\bibcite{yao2023react}{{42}{2023}{{Yao et~al.}}{{Yao, Zhao, Yu, Du, Shafran, Narasimhan, and Cao}}}
+\bibcite{zhong2024memorybank}{{43}{2024}{{Zhong et~al.}}{{Zhong, Guo, Chen, and Xu}}}
+\bibcite{zhou2024sotopia}{{44}{2024}{{Zhou et~al.}}{{Zhou, Zhu, Mathur, Zhang, Yu, Qi, Morency, Bisk, Fried, Neubig, and Sap}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The Agent Studio. The seven-step tab at the top (\emph  {Identity, State \& Personality, Abilities \& Skills, Memory, Social \& Relationships, Behavior \& Goals, Review \& Deploy}) maps one to one onto the seven sections of an Agent Studio session. The left column selects the city and the resident; the right radar plots the normalized state across nine axes (activity, public-expression, pressure, economic sense, city recognition, policy sensitivity, risk preference, platform dependence, mobility intent). The \emph  {Profile} pane is the sourced-portrait view; the persona distillation module can write a similar portrait from a name or a URL through the \emph  {Distill a real person} button on the top right.}}{33}{figure.3}\protected@file@percent }
+\newlabel{fig:agent-studio}{{3}{33}{The Agent Studio. The seven-step tab at the top (\emph {Identity, State \& Personality, Abilities \& Skills, Memory, Social \& Relationships, Behavior \& Goals, Review \& Deploy}) maps one to one onto the seven sections of an Agent Studio session. The left column selects the city and the resident; the right radar plots the normalized state across nine axes (activity, public-expression, pressure, economic sense, city recognition, policy sensitivity, risk preference, platform dependence, mobility intent). The \emph {Profile} pane is the sourced-portrait view; the persona distillation module can write a similar portrait from a name or a URL through the \emph {Distill a real person} button on the top right}{figure.3}{}}
+\newlabel{fig:agent-studio@cref}{{[figure][3][]3}{[1][7][]33}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Audited v2 execution architecture. The kernel (Clock, EventBus, PluginRegistry, Controller, Recorder, SimContext) serves the cognition pipeline and the per-tenant world resolver. Fourteen built-ins contribute through the registry, bus, pipeline filters, or lifecycle events. Movement uses the Controller validation gate; Recorder events coexist with established domain-specific outputs. In a multi-tenant deployment, the world resolver is the request-time entry point; in a multi-node deployment, the hub routes player interventions to the owning node.}}{34}{figure.4}\protected@file@percent }
+\newlabel{fig:system-architecture}{{4}{34}{Audited v2 execution architecture. The kernel (Clock, EventBus, PluginRegistry, Controller, Recorder, SimContext) serves the cognition pipeline and the per-tenant world resolver. Fourteen built-ins contribute through the registry, bus, pipeline filters, or lifecycle events. Movement uses the Controller validation gate; Recorder events coexist with established domain-specific outputs. In a multi-tenant deployment, the world resolver is the request-time entry point; in a multi-node deployment, the hub routes player interventions to the owning node}{figure.4}{}}
+\newlabel{fig:system-architecture@cref}{{[figure][4][]4}{[1][9][]34}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces The fourteen v2 built-in plugins and their relationship to the kernel. Plugins may subscribe to lifecycle events, contribute to perception, filter a value, or own namespaced state. The v1 plugin set (nine) is shown above the v2 additions (five) for comparison.}}{34}{figure.5}\protected@file@percent }
+\newlabel{fig:plugin-assembly}{{5}{34}{The fourteen v2 built-in plugins and their relationship to the kernel. Plugins may subscribe to lifecycle events, contribute to perception, filter a value, or own namespaced state. The v1 plugin set (nine) is shown above the v2 additions (five) for comparison}{figure.5}{}}
+\newlabel{fig:plugin-assembly@cref}{{[figure][5][]5}{[1][9][]34}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Persistent experience and growth paths. Tick-level episodes feed retrieval and rule-based updates; configured day-boundary processes may consolidate episodes into semantic memories or private skills, classify growth into a phase, drain the life-event queue, and tally governance ballots. Solid storage paths denote implemented persistence, not validated models of human remembering or learning. Dashed paths indicate optional LLM calls that may be disabled in a controlled experiment.}}{35}{figure.6}\protected@file@percent }
+\newlabel{fig:memory-growth}{{6}{35}{Persistent experience and growth paths. Tick-level episodes feed retrieval and rule-based updates; configured day-boundary processes may consolidate episodes into semantic memories or private skills, classify growth into a phase, drain the life-event queue, and tally governance ballots. Solid storage paths denote implemented persistence, not validated models of human remembering or learning. Dashed paths indicate optional LLM calls that may be disabled in a controlled experiment}{figure.6}{}}
+\newlabel{fig:memory-growth@cref}{{[figure][6][]6}{[1][11][]35}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Coupling among agent and societal components. Evidence status describes implementation visibility, not empirical validity.}}{36}{table.3}\protected@file@percent }
+\newlabel{tab:component-coupling}{{3}{36}{Coupling among agent and societal components. Evidence status describes implementation visibility, not empirical validity}{table.3}{}}
+\newlabel{tab:component-coupling@cref}{{[table][3][]3}{[1][15][]36}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Request resolution in a multi-tenant deployment. A request enters the dashboard server with a session cookie and a \texttt  {gaworld\_world} cookie; \texttt  {\_guard} authenticates the caller, the \texttt  {WorldResolver} validates the cookie against the caller's role and visibility, and the resulting \texttt  {WorldContext} drives per-tenant path resolution.}}{37}{figure.7}\protected@file@percent }
+\newlabel{fig:multi-tenant}{{7}{37}{Request resolution in a multi-tenant deployment. A request enters the dashboard server with a session cookie and a \texttt {gaworld\_world} cookie; \texttt {\_guard} authenticates the caller, the \texttt {WorldResolver} validates the cookie against the caller's role and visibility, and the resulting \texttt {WorldContext} drives per-tenant path resolution}{figure.7}{}}
+\newlabel{fig:multi-tenant@cref}{{[figure][7][]7}{[1][15][]37}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces The Cities panel. A v2 deployment lists every city bundle it has access to; the panel creates a new city from a real place name (geocoded via Nominatim with OpenStreetMap data) or from an imagined description (procedurally generated). Each entry shows the source (\emph  {Real map} or \emph  {Procedural}), the scale (\emph  {tiny / small / medium / large}), and the agent count. Selecting a city loads its bundle into the running world; the \emph  {In use} tag indicates the bundle currently driving the active simulation. This panel is the entry point for per-tenant world isolation: when accounts are enabled, each user has a personal \emph  {In use} pointer and a list of worlds they own or can join.}}{38}{figure.8}\protected@file@percent }
+\newlabel{fig:cities}{{8}{38}{The Cities panel. A v2 deployment lists every city bundle it has access to; the panel creates a new city from a real place name (geocoded via Nominatim with OpenStreetMap data) or from an imagined description (procedurally generated). Each entry shows the source (\emph {Real map} or \emph {Procedural}), the scale (\emph {tiny / small / medium / large}), and the agent count. Selecting a city loads its bundle into the running world; the \emph {In use} tag indicates the bundle currently driving the active simulation. This panel is the entry point for per-tenant world isolation: when accounts are enabled, each user has a personal \emph {In use} pointer and a list of worlds they own or can join}{figure.8}{}}
+\newlabel{fig:cities@cref}{{[figure][8][]8}{[1][15][]38}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Distributed playable topology. The hub is the dashboard server; it owns accounts, the world metadata, the per-node outbox, the per-world relay, and the per-tenant Recorder merge. Each node runs the simulation for its assigned residents, polls interventions, and uploads Recorder rows. All cross-machine traffic is node-to-hub; the hub never opens inbound ports to a node.}}{39}{figure.9}\protected@file@percent }
+\newlabel{fig:hub-node}{{9}{39}{Distributed playable topology. The hub is the dashboard server; it owns accounts, the world metadata, the per-node outbox, the per-world relay, and the per-tenant Recorder merge. Each node runs the simulation for its assigned residents, polls interventions, and uploads Recorder rows. All cross-machine traffic is node-to-hub; the hub never opens inbound ports to a node}{figure.9}{}}
+\newlabel{fig:hub-node@cref}{{[figure][9][]9}{[1][17][]39}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Parallel-worlds engine. Up to eight matched worlds share the same seed, the same resident sample, and the same model. Each world receives a per-world \texttt  {config} patch and a per-world event list; the counterfactual layer then computes paired ATE, sign-flip $p$, pre-event balance, placebo noise floor, heterogeneity, dose--response, and replication. An optional one-call model interpretation binds every claim to a specific evidence row.}}{40}{figure.10}\protected@file@percent }
+\newlabel{fig:parallel-worlds}{{10}{40}{Parallel-worlds engine. Up to eight matched worlds share the same seed, the same resident sample, and the same model. Each world receives a per-world \texttt {config} patch and a per-world event list; the counterfactual layer then computes paired ATE, sign-flip $p$, pre-event balance, placebo noise floor, heterogeneity, dose--response, and replication. An optional one-call model interpretation binds every claim to a specific evidence row}{figure.10}{}}
+\newlabel{fig:parallel-worlds@cref}{{[figure][10][]10}{[1][19][]40}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces The Parallel Worlds tab. A researcher fills in the experiment name, the simulation days, the random seed, the number of seed replicates (for the per-seed ATE and meta-analytic mean), the number of worlds to run in parallel (up to eight), the resident subset, and the model. The \emph  {Fast mode} toggle switches the engine to deterministic cognition with a smaller resident set so that the workflow can be rehearsed cheaply before a real run.}}{41}{figure.11}\protected@file@percent }
+\newlabel{fig:parallel-tab}{{11}{41}{The Parallel Worlds tab. A researcher fills in the experiment name, the simulation days, the random seed, the number of seed replicates (for the per-seed ATE and meta-analytic mean), the number of worlds to run in parallel (up to eight), the resident subset, and the model. The \emph {Fast mode} toggle switches the engine to deterministic cognition with a smaller resident set so that the workflow can be rehearsed cheaply before a real run}{figure.11}{}}
+\newlabel{fig:parallel-tab@cref}{{[figure][11][]11}{[1][19][]41}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces The Research Workbench. A researcher pastes a research idea or uploads a paper, picks a model, and the system returns a plan: a theory, a methods paragraph, key variables, hypotheses, a feature map to the GAWorld surface, two or three experimental designs, and a list of limits. The plan is editable; the model cannot write to a feature that is not in \texttt  {FEATURES.md}, and the protocol compiler cannot use a metric that is not in the \emph  {measurable catalog}. The \emph  {Study plans}, \emph  {Serious games}, \emph  {Policy simulation}, \emph  {Survey / experiment fidelity}, and \emph  {Parallel Worlds Counterfactuals} tabs reuse the same pane to compile plans, run serious-game sessions, and run paper-fidelity studies.}}{42}{figure.12}\protected@file@percent }
+\newlabel{fig:research-workbench}{{12}{42}{The Research Workbench. A researcher pastes a research idea or uploads a paper, picks a model, and the system returns a plan: a theory, a methods paragraph, key variables, hypotheses, a feature map to the GAWorld surface, two or three experimental designs, and a list of limits. The plan is editable; the model cannot write to a feature that is not in \texttt {FEATURES.md}, and the protocol compiler cannot use a metric that is not in the \emph {measurable catalog}. The \emph {Study plans}, \emph {Serious games}, \emph {Policy simulation}, \emph {Survey / experiment fidelity}, and \emph {Parallel Worlds Counterfactuals} tabs reuse the same pane to compile plans, run serious-game sessions, and run paper-fidelity studies}{figure.12}{}}
+\newlabel{fig:research-workbench@cref}{{[figure][12][]12}{[1][19][]42}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces The Analytics pane. After a run, the analytics pane exposes per-run counts (agents, state samples, replay frames, environment events, diary entries, relationships), a per-day event timeline broken down by source (\emph  {social / natural / economic / political / life\_event / technology}), an event-type distribution, and an impact-tag distribution. When a run is incomplete or a metric is missing, the pane displays \emph  {No data yet} in the corresponding block rather than fabricating a value, in line with the evidence-class policy.}}{43}{figure.13}\protected@file@percent }
+\newlabel{fig:analytics}{{13}{43}{The Analytics pane. After a run, the analytics pane exposes per-run counts (agents, state samples, replay frames, environment events, diary entries, relationships), a per-day event timeline broken down by source (\emph {social / natural / economic / political / life\_event / technology}), an event-type distribution, and an impact-tag distribution. When a run is incomplete or a metric is missing, the pane displays \emph {No data yet} in the corresponding block rather than fabricating a value, in line with the evidence-class policy}{figure.13}{}}
+\newlabel{fig:analytics@cref}{{[figure][13][]13}{[1][19][]43}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The Agent Playground. Each card is a game-based probe; the fourteen cards in the v2 set cover the four families (one-on-one, one-group-one-event, mission / creative, and long-form / human-in-the-loop). Every card is a deterministic harness over a real resident's response; per-game archives are written to \texttt  {output/games/<game>/} on completion and feed the Track B scorecard.}}{44}{figure.14}\protected@file@percent }
+\newlabel{fig:playground}{{14}{44}{The Agent Playground. Each card is a game-based probe; the fourteen cards in the v2 set cover the four families (one-on-one, one-group-one-event, mission / creative, and long-form / human-in-the-loop). Every card is a deterministic harness over a real resident's response; per-game archives are written to \texttt {output/games/<game>/} on completion and feed the Track B scorecard}{figure.14}{}}
+\newlabel{fig:playground@cref}{{[figure][14][]14}{[1][21][]44}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces The Agent Arena. A researcher picks a target city, a panel of up to twelve residents, and a question set (a built-in bank of ten questions or an LLM-generated set). After the round, the leaderboard ranks the residents by correctness and median latency. A \emph  {Keep Top-K} policy retires the bottom of the panel; the \emph  {Refill the panel} controls pull new residents from another city or from a bulk-import file.}}{45}{figure.15}\protected@file@percent }
+\newlabel{fig:arena}{{15}{45}{The Agent Arena. A researcher picks a target city, a panel of up to twelve residents, and a question set (a built-in bank of ten questions or an LLM-generated set). After the round, the leaderboard ranks the residents by correctness and median latency. A \emph {Keep Top-K} policy retires the bottom of the panel; the \emph {Refill the panel} controls pull new residents from another city or from a bulk-import file}{figure.15}{}}
+\newlabel{fig:arena@cref}{{[figure][15][]15}{[1][21][]45}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Coverage of the audited v2 result archive. The matrix distinguishes inspectable capability evidence from incomplete evaluations and diagnostic fixtures; it is not a leaderboard or a validation score.}}{46}{figure.16}\protected@file@percent }
+\newlabel{fig:capability-matrix}{{16}{46}{Coverage of the audited v2 result archive. The matrix distinguishes inspectable capability evidence from incomplete evaluations and diagnostic fixtures; it is not a leaderboard or a validation score}{figure.16}{}}
+\newlabel{fig:capability-matrix@cref}{{[figure][16][]16}{[1][23][]46}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Status of all experiment families represented in the v2 artifact ledger. Counts and horizons describe the archived files, not a common evaluation protocol.}}{47}{table.4}\protected@file@percent }
+\newlabel{tab:archive-status}{{4}{47}{Status of all experiment families represented in the v2 artifact ledger. Counts and horizons describe the archived files, not a common evaluation protocol}{table.4}{}}
+\newlabel{tab:archive-status@cref}{{[table][4][]4}{[1][23][]47}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Claim--evidence matrix for the audited v2 snapshot. ``Current support'' states the strongest defensible claim, not an aspirational goal. The ``Evidence class'' column is the class of the strongest available artifact, not a statement that the strongest artifact is also a population claim.}}{48}{table.5}\protected@file@percent }
+\newlabel{tab:claim-evidence}{{5}{48}{Claim--evidence matrix for the audited v2 snapshot. ``Current support'' states the strongest defensible claim, not an aspirational goal. The ``Evidence class'' column is the class of the strongest available artifact, not a statement that the strongest artifact is also a population claim}{table.5}{}}
+\newlabel{tab:claim-evidence@cref}{{[table][5][]5}{[1][25][]48}{}{}{}}
+\gdef \@abspage@last{48}

@@ -102,6 +102,7 @@ class ExperimentSpec:
     seed: int = 42
     llm_provider: str | None = None
     fast: bool = False
+    execution_mode: str = ""
     max_parallel: int = 2
     note: str = ""
 
@@ -124,6 +125,7 @@ class ExperimentSpec:
             "seed": self.seed,
             "llm_provider": self.llm_provider,
             "fast": self.fast,
+            "execution_mode": self.execution_mode,
             "max_parallel": self.max_parallel,
             "baseline_id": self.baseline_id,
             "worlds": [item.to_dict() for item in self.worlds],
@@ -204,10 +206,7 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
             world_id = f"{world_id}-{index + 1}"
         seen.add(world_id)
         where = f"世界「{label}」"
-        events = [
-            normalize_event(item, where=where)
-            for item in (raw.get("events") or [])
-        ]
+        events = [normalize_event(item, where=where) for item in (raw.get("events") or [])]
         events.sort(key=lambda item: (item["day"], item["time"]))
         role = str(raw.get("role") or "").strip().lower()
         if role not in WORLD_ROLES:
@@ -254,6 +253,9 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
         if number is not None:
             agent_ids.append(number)
 
+    execution_mode = str(payload.get("execution_mode") or "")
+    if execution_mode not in ("", "tick", "lean_tick", "daily_brief"):
+        raise ValueError("未知 execution_mode")
     return ExperimentSpec(
         name=str(payload.get("name", "")).strip() or "平行世界实验",
         note=str(payload.get("note", "")).strip(),
@@ -266,6 +268,7 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
         if payload.get("llm_provider")
         else None,
         fast=bool(payload.get("fast")),
+        execution_mode=execution_mode,
         max_parallel=max(1, min(4, _int_or_none(payload.get("max_parallel"), "max_parallel") or 2)),
     )
 
@@ -285,11 +288,7 @@ def world_overrides(
     build overrides without importing the simulator.
     """
     base_config = base_config or {}
-    ambient = [
-        dict(item)
-        for item in base_config.get("policy_events", [])
-        if isinstance(item, dict)
-    ]
+    ambient = [dict(item) for item in base_config.get("policy_events", []) if isinstance(item, dict)]
     # Every runtime path moves under the world, from the one table cities and
     # user worlds use too. `reset` clears several of them (records, diaries,
     # life events, …): one left at its default would point at the shared tree,
@@ -301,9 +300,7 @@ def world_overrides(
         {
             "visualization": {
                 "enabled": True,
-                "site_path": base_config.get("visualization", {}).get(
-                    "site_path", "site/simviz/index.html"
-                ),
+                "site_path": base_config.get("visualization", {}).get("site_path", "site/simviz/index.html"),
             },
             "policy_events": ambient + [dict(item) for item in world.events],
             "stateful": True,
@@ -317,7 +314,8 @@ def world_overrides(
     if spec.agent_ids:
         overrides["agent_ids"] = list(spec.agent_ids)
 
-    if spec.fast:
+    mode = spec.execution_mode or ("lean_tick" if spec.fast else "tick")
+    if mode == "lean_tick":
         # Same trade as ``compare-event --fast``: fewer LLM calls per agent-day
         # so a local model can cover a longer horizon, at the cost of fidelity.
         overrides["fos_fast_mode"] = {
@@ -325,18 +323,26 @@ def world_overrides(
             "skip_daily_summary": True,
             "skip_daily_diary": True,
         }
-        overrides.setdefault("agent_ids", [1, 2, 3])
+        if "agent_ids" not in overrides:
+            from gaworld.sim._utils import _coerce_positive_int_list
+
+            overrides["agent_ids"] = _coerce_positive_int_list(base_config.get("agent_ids", [1, 2, 3]))
+
+    if mode == "daily_brief":
+        overrides["long_run"] = {"enabled": True, "unit": "day", "brief_llm": True}
+        overrides["simulate_realtime"] = False
 
     if spec.llm_provider:
         routing = base_config.get("llm", {}).get("routing", {})
         task_map = routing.get("tasks", {})
-        forced = (
-            {str(key): str(spec.llm_provider) for key in task_map}
-            if isinstance(task_map, dict)
-            else {}
-        )
+        forced = {str(key): str(spec.llm_provider) for key in task_map} if isinstance(task_map, dict) else {}
         overrides["llm"] = {
-            "routing": {"default": str(spec.llm_provider), "tasks": forced}
+            "routing": {
+                "default": str(spec.llm_provider),
+                "tasks": forced,
+                "agents": {str(key): str(spec.llm_provider) for key in routing.get("agents", {})},
+                "fallback": [],
+            }
         }
 
     # World-level patch last: it is the thing the experiment is varying, so it
@@ -352,6 +358,13 @@ def world_overrides(
     # Nested path keys (``economy.output_dir`` …) are not reserved one by one;
     # pin them again so no patch can move a world's output back into the shared tree.
     deep_update(overrides, run_root_overrides(world_dir))
+    if mode == "daily_brief":
+        deep_update(
+            overrides,
+            {"long_run": {"enabled": True, "unit": "day", "brief_llm": True}, "simulate_realtime": False},
+        )
+    if spec.execution_mode in ("tick", "lean_tick"):
+        deep_update(overrides, {"long_run": {"enabled": False, "unit": "day"}})
     # Forks are counterfactuals: none of them may post to the real Moltbook
     # under the base population's accounts (N worlds would post N times).
     deep_update(overrides, {"moltbook": {"enabled": False}})

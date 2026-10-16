@@ -142,7 +142,7 @@ class PolicyTest(unittest.TestCase):
             ("POST", "/api/research/games/abc/act"): "member",
             ("POST", "/api/research/games/abc/delete"): "member",  # the handler checks the owner
             ("POST", "/api/interview/delete"): "member",
-            ("POST", "/api/research/studies/abc/delete"): "admin",
+            ("POST", "/api/research/studies/abc/delete"): "member",
             ("POST", "/api/todos/delete"): "admin",
             ("POST", "/api/persona/distill"): "member",
             ("POST", "/api/persona/deploy"): "admin",
@@ -298,7 +298,6 @@ class HttpTest(unittest.TestCase):
             "/api/settings/save",
             "/api/run/start",
             "/api/city/select",
-            "/api/research/studies",
             "/api/auth/invites",
         ):
             resp, body = self._req("POST", path, {}, cookie=student)

@@ -79,6 +79,7 @@
           <span data-i18n="novel.outline_label">故事大纲</span>
           <textarea id="nOutline" data-i18n-placeholder="novel.outline_placeholder" placeholder="一两段话讲清核心情境、关键转折、想要的结尾氛围。可以留空让模型自由发挥。"></textarea>
         </label>
+        <p class="disaster-hint" data-i18n="novel.outline_optional">留空也可以：模型会按你选的主角团自己设计一条完整故事线。</p>
 
         <div class="disaster-block">
           <h4><span data-i18n="novel.agents_title">主角团</span> <b id="nPicked">0</b><span class="muted" data-i18n="novel.agents_count_suffix">/6</span></h4>
@@ -121,6 +122,15 @@
             <p id="nBackCover" class="novel-back-cover"></p>
             <div id="nCast" class="novel-cast"></div>
             <div class="novel-stats" id="nStats"></div>
+          </section>
+
+          <section class="novel-premise-edit">
+            <h4 data-i18n="novel.premise_edit_title">故事梗概</h4>
+            <p class="muted" data-i18n="novel.premise_edit_hint">改这段话就能重写所有正文——主角团、风格、字数都不变。</p>
+            <textarea id="nPremiseEdit" rows="3"></textarea>
+            <div class="disaster-actions">
+              <button id="nRegenBtn" class="button primary" type="button" data-i18n="novel.regenerate_btn">按新梗概重新生成</button>
+            </div>
           </section>
 
           <nav class="novel-tabs" role="tablist">
@@ -169,7 +179,8 @@
   </main>
 
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/game-export.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/game-export.js"></script>
   <script src="/site/dashboard/novel.js"></script>
 </body>
 </html>

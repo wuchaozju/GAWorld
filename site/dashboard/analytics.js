@@ -69,6 +69,7 @@
   var state = {
     overview: null, history: null, economy: null,
     social: null, behavior: null, events: null,
+    system: null,      // whole-system cross-world summary
     metrics: [],        // selected state metrics
     agents: [],         // selected agent ids (strings)
     econSeries: ["balance", "income", "expense"],
@@ -798,6 +799,161 @@
     }
   }
 
+  /* ------------------------------------------------------- system panel */
+
+  /* Whole-system summary: KPI strip + health flags + drill-down cards.
+
+     Each card is a collapsible <details>; the user expands the ones they
+     care about, and the page stays a glance even when the system panel
+     counts in the dozens. Numbers come from the cross-world ``/api/analytics/system``
+     payload, which degrades to zeros for any subtree that does not exist.
+  */
+  function renderSystemPanel() {
+    var data = state.system;
+    var kpisEl = $("anSystemKpis");
+    var healthEl = $("anSystemHealth");
+    var gridEl = $("anSystemGrid");
+    if (!kpisEl || !healthEl || !gridEl) return;
+    if (!data) { kpisEl.innerHTML = ""; healthEl.innerHTML = ""; gridEl.innerHTML = ""; return; }
+
+    var kpis = data.kpis || {};
+    var cards = [
+      { label: __("an.sys_cities"), value: kpis.cities_count || 0,
+        hint: __f("an.sys_cities_hint", {
+          agents: kpis.cities_total_agents || 0,
+          diaries: kpis.cities_total_diaries || 0,
+        }) },
+      { label: __("an.sys_pw"), value: kpis.parallel_worlds_studies || 0,
+        hint: __f("an.sys_pw_hint", {
+          worlds: kpis.parallel_worlds_total_worlds || 0,
+          robust: kpis.parallel_worlds_causal_robust || 0,
+        }) },
+      { label: __("an.sys_personas"), value: kpis.personas_count || 0, hint: __("an.sys_personas_hint") },
+      { label: __("an.sys_experiments"), value: kpis.experiments_count || 0,
+        hint: __f("an.sys_experiments_hint", {
+          cells: kpis.experiments_total_cells || 0,
+          rows: kpis.experiments_total_rows || 0,
+        }) },
+      { label: __("an.sys_interviews"), value: kpis.interview_sessions || 0,
+        hint: __f("an.sys_interviews_hint", { respondents: kpis.interview_total_respondents || 0 }) },
+      { label: __("an.sys_research"), value: (kpis.research_plans || 0) + (kpis.research_studies || 0) + (kpis.serious_games_count || 0) + (kpis.replication_studies || 0),
+        hint: __f("an.sys_research_hint", {
+          plans: kpis.research_plans || 0,
+          studies: kpis.research_studies || 0,
+          games: kpis.serious_games_count || 0,
+          replications: kpis.replication_studies || 0,
+        }) },
+      { label: __("an.sys_legco"), value: kpis.legco_members || 0, hint: __("an.sys_legco_hint") },
+      { label: __("an.sys_data"), value: (kpis.run_manifests_total || 0) + (kpis.quarantine_snapshots || 0),
+        hint: __f("an.sys_data_hint", {
+          manifests: kpis.run_manifests_total || 0,
+          quarantine: kpis.quarantine_snapshots || 0,
+        }) },
+    ];
+    kpisEl.innerHTML = cards.map(function (card) {
+      return '<article class="an-kpi"><span class="an-kpi-label">' + esc(card.label) +
+        '</span><strong class="an-kpi-value">' + esc(card.value) +
+        '</strong><span class="an-kpi-hint">' + esc(card.hint) + "</span></article>";
+    }).join("");
+
+    var warnings = (data.health && data.health.warnings) || [];
+    healthEl.innerHTML = warnings.length
+      ? '<div class="an-system-warnings">' + warnings.map(function (w) {
+          return '<span class="an-badge is-down">' + esc(w) + '</span>';
+        }).join(" ") + "</div>"
+      : '<span class="an-badge">' + esc(__("an.sys_health_ok")) + "</span>";
+
+    gridEl.innerHTML = [
+      systemCard("an.sys_card_cities", data.cities, function (city) {
+        var lines = [
+          __f("an.sys_city_agents", { count: city.agent_count || 0 }),
+          __f("an.sys_city_diaries", { count: city.diary_count || 0 }),
+          __f("an.sys_city_life", { count: city.life_events_count || 0 }),
+          __f("an.sys_city_intervention", { count: city.intervention_rows || 0 }),
+        ];
+        var manifest = city.last_run_manifest;
+        if (manifest) {
+          lines.push(__f("an.sys_city_manifest", {
+            name: manifest.filename || "—",
+            outcome: manifest.outcome || "—",
+            calls: manifest.llm_call_count == null ? "—" : manifest.llm_call_count,
+          }));
+        } else {
+          lines.push(__("an.sys_city_no_manifest"));
+        }
+        return lines.join(" · ");
+      }),
+      systemCard("an.sys_card_pw", data.parallel_worlds, function (study) {
+        var worlds = (study.worlds || []).length;
+        var causal = study.causal_summary || {};
+        return __f("an.sys_pw_line", {
+          name: study.name || study.study_id,
+          worlds: worlds,
+          robust: causal.robust || 0,
+          suggestive: causal.suggestive || 0,
+        });
+      }),
+      systemCard("an.sys_card_interviews", data.interviews, function (it) {
+        return __f("an.sys_interview_line", {
+          title: it.title || it.id,
+          rounds: (it.rounds || []).length,
+          respondents: it.respondent_count || 0,
+          cities: (it.cities || []).join(", "),
+        });
+      }),
+      systemCard("an.sys_card_research", [
+        { label: __("an.sys_research_plans"), items: (data.research && data.research.plans) || [] },
+        { label: __("an.sys_research_studies"), items: (data.research && data.research.studies) || [] },
+        { label: __("an.sys_research_games"), items: (data.research && data.research.serious_games) || [] },
+        { label: __("an.sys_research_replications"), items: (data.research && data.research.replications) || [] },
+      ], function (group) {
+        return group.items.length + " " + esc(__("an.sys_items"));
+      }, true),
+      systemCard("an.sys_card_personas", data.personas, function (p) {
+        return [
+          p.subject || p.slug,
+          __f("an.sys_persona_confidence", { value: p.confidence || "—" }),
+          __f("an.sys_persona_evidence", { pages: p.evidence_pages || 0, items: p.evidence_items || 0 }),
+        ].join(" · ");
+      }),
+      systemCard("an.sys_card_experiments", data.experiments, function (e) {
+        return __f("an.sys_experiment_line", {
+          arms: (e.arms || []).length,
+          cells: e.total_cells || 0,
+          rows: e.n_rows || 0,
+          provider: e.provider || "—",
+        });
+      }),
+      systemCard("an.sys_card_legco", data.legco ? [data.legco] : [], function (legco) {
+        return __f("an.sys_legco_line", {
+          members: legco.members_count || 0,
+          parties: Object.keys(legco.by_party || {}).length,
+          constituencies: Object.keys(legco.by_constituency_type || {}).length,
+        });
+      }),
+      systemCard("an.sys_card_info", data.info_sources ? [data.info_sources] : [], function (info) {
+        return __f("an.sys_info_line", {
+          total: info.total_sources || 0,
+          latest: info.latest_fetch || "—",
+        });
+      }),
+      systemCard("an.sys_card_debug", data.stale_debug_runs || [], function (t) {
+        return t.path + " (" + t.files + " files)";
+      }),
+    ].join("");
+  }
+
+  function systemCard(labelKey, items, render, multi) {
+    if (!items || !items.length) return "";
+    var items_html = items.map(function (item) {
+      return '<li>' + esc(render(item)) + "</li>";
+    }).join("");
+    var badge = '<span class="an-badge">' + esc(items.length) + "</span>";
+    var heading = multi ? items[0].label : labelKey;
+    return '<details class="an-system-card"><summary>' + esc(__(heading)) +
+      badge + "</summary><ul>" + items_html + "</ul></details>";
+  }
+
   function bindExport() {
     var menu = $("anExport");
     var panel = menu.querySelector(".an-export-menu");
@@ -969,7 +1125,13 @@
       toggle(state.econSeries, button.dataset.econ);
       renderEconomy();
     });
-    $("anRefreshBtn").addEventListener("click", function () { load(); });
+    $("anRefreshBtn").addEventListener("click", function () {
+      if (typeof setButtonBusy === "function") {
+        var release = setButtonBusy($("anRefreshBtn"), "analytics.refresh", "刷新中…");
+        return Promise.resolve(load()).then(release, release);
+      }
+      return load();
+    });
     $("anRunSelect").addEventListener("change", function (event) {
       selectRun(event.target.value);
       load();
@@ -989,6 +1151,9 @@
         section("social"),
         section("behavior"),
         section("events"),
+        // ``system`` is independent of the run picker — it always describes the
+        // current world plus the cross-world tree.
+        api("/api/analytics/system"),
       ]);
       state.overview = results[0];
       state.history = results[1];
@@ -996,6 +1161,7 @@
       state.social = results[3];
       state.behavior = results[4];
       state.events = results[5];
+      state.system = results[6];
       // Drop selections that no longer exist in the new payload.
       state.metrics = state.metrics.filter(function (m) { return state.history.metrics.indexOf(m) >= 0; });
       var ids = state.history.agents.map(function (a) { return String(a.id); });
@@ -1009,6 +1175,7 @@
       renderSocial();
       renderBehavior();
       renderEvents();
+      renderSystemPanel();
 
       showRunStatus();
     } catch (error) {
@@ -1031,6 +1198,7 @@
     renderSocial();
     renderBehavior();
     renderEvents();
+    renderSystemPanel();
     showRunStatus();
     renderRunNote();
   });

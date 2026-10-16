@@ -1,0 +1,82 @@
+\documentclass[10pt]{article}
+
+\usepackage[margin=0.85in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[round,authoryear]{natbib}
+\usepackage[colorlinks=true,allcolors=MidnightBlue]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{url}
+
+\setlist{nosep}
+\graphicspath{{figures/}}
+\hypersetup{
+  pdftitle={GAWorld v2: A Configurable Research Stack for LLM-Based Artificial Societies},
+  pdfauthor={Author Name(s)},
+  pdfsubject={LLM-based artificial societies, multi-agent social simulation, research infrastructure},
+  pdfkeywords={LLM agents, multi-agent systems, artificial societies, social simulation, research infrastructure, parallel worlds, agent-based modeling}
+}
+
+\title{GAWorld v2: A Configurable Research Stack for LLM-Based Artificial Societies}
+
+\author{Author Name(s)\\Affiliation(s)\\\texttt{email@example.org}}
+
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+LLM agents make it possible to study social interaction through profiles, plans,
+and language, yet most demonstrations stop at a single transcript or a small
+isolated scenario.  Research on society-level questions needs persistent
+inhabitants whose state, memory, relationships, and exposure change across
+simulated time; a shared urban and institutional substrate; explicit
+intervention points; configurable deployments for one researcher, a classroom,
+or a distributed cluster; and an evidence layer that records what was run, what
+completed, and what did not.  We present GAWorld v2, a research stack that
+integrates these concerns.  v2 adds a 14-plugin microkernel, per-tenant world
+isolation, distributed execution over many machines, a parallel-worlds
+counterfactual engine, an Agent Playground of fourteen game-based probes, a
+Research Workbench for paper-to-protocol compilation, an Agent Arena for
+LLM-resident benchmarking, persona distillation from real people, and
+endogenous economics, indoor spatial reasoning, organizational governance, and
+audited hooks for offline citizens.  The system is engineered as a configurable
+instrument rather than a calibrated population model: every capability is
+traceable to a built-in plugin, an event-bus contribution, or a documented
+compatibility path, and every reported number in the present paper is bound to
+a hashed artifact whose evidence class is explicit.  We describe the
+architecture, audit representative capabilities against their evidence class,
+and state the validation, reproducibility, and ethical boundaries that govern
+intended use.  GAWorld v2 does not validate an artificial city; it makes the
+construction, audit, and revision of artificial-society experiments tractable.
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_design_goals}
+\input{sections/03_related_work}
+\input{sections/04_agent_lifecycle}
+\input{sections/05_microkernel}
+\input{sections/06_memory_cognition_realism}
+\input{sections/07_substrate}
+\input{sections/08_multi_user_worlds}
+\input{sections/09_distributed_playable}
+\input{sections/10_research_workflow}
+\input{sections/11_playground_arena}
+\input{sections/12_capability_cases}
+\input{sections/13_validation_boundaries}
+\input{sections/14_limitations_ethics_roadmap}
+\input{sections/15_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

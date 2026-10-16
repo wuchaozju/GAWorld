@@ -148,6 +148,11 @@
       social: state.social,
       behavior: state.behavior,
       events: state.events,
+      // The cross-world summary is independent of the picked run: a reader
+      // who opens the exported file on a different machine should still see
+      // what cities / studies / personas were available when the report was
+      // generated. The payload is small, so we ship the whole thing.
+      system: state.system || null,
     };
   }
 
@@ -333,6 +338,115 @@
       });
     }
 
+    /* The system panel's payload is mostly aggregates + per-subtree lists;
+       a single ``system.csv`` row per item keeps it readable in a spreadsheet
+       without an extra file per subsystem. */
+    if (state.system) {
+      var sys = state.system;
+      var rows = [];
+      (sys.cities || []).forEach(function (city) {
+        var manifest = city.last_run_manifest || {};
+        rows.push([
+          "city", city.slug, city.agent_count, city.diary_count,
+          city.life_events_count, city.intervention_rows,
+          manifest.filename || "", manifest.outcome || "",
+          manifest.llm_call_count == null ? "" : manifest.llm_call_count,
+          manifest.git_commit || "",
+        ]);
+      });
+      (sys.parallel_worlds || []).forEach(function (study) {
+        rows.push([
+          "parallel_worlds", study.study_id, study.name || "",
+          study.worlds.length,
+          (study.causal_summary || {}).robust || 0,
+          (study.causal_summary || {}).suggestive || 0,
+          "", "", "", "",
+        ]);
+      });
+      (sys.interviews || []).forEach(function (it) {
+        rows.push([
+          "interview", it.id, it.title || "",
+          it.respondent_count, it.rounds.length,
+          (it.cities || []).join("|"), "", "", "", "",
+        ]);
+      });
+      ((sys.research && sys.research.plans) || []).forEach(function (plan) {
+        rows.push([
+          "research_plan", plan.id, plan.title || "",
+          plan.research_questions_count || 0, plan.hypotheses_count || 0,
+          plan.feasibility_score == null ? "" : plan.feasibility_score,
+          "", "", "", "",
+        ]);
+      });
+      ((sys.research && sys.research.studies) || []).forEach(function (study) {
+        rows.push([
+          "research_study", study.id, study.title || "",
+          study.conditions_count || 0, study.hypotheses_count || 0,
+          study.stage || "",
+          (study.seeds || []).join("|"), "", "", "",
+        ]);
+      });
+      ((sys.research && sys.research.serious_games) || []).forEach(function (game) {
+        rows.push([
+          "serious_game", game.id, game.description || "",
+          game.roles_count || 0, game.indicators_count || 0,
+          "", "", "", "", "",
+        ]);
+      });
+      ((sys.research && sys.research.replications) || []).forEach(function (rep) {
+        rows.push([
+          "replication", rep.id, rep.title || "",
+          rep.conditions_count || 0, rep.items_count || 0,
+          rep.design || "", rep.city || "", rep.human_n == null ? "" : rep.human_n,
+          "", "",
+        ]);
+      });
+      (sys.personas || []).forEach(function (p) {
+        rows.push([
+          "persona", p.slug, p.subject || "",
+          p.confidence || "", p.evidence_pages || 0,
+          p.evidence_items || 0, p.state_keys_count || 0,
+          p.big5_filled ? "yes" : "no", "", "",
+        ]);
+      });
+      (sys.experiments || []).forEach(function (e) {
+        rows.push([
+          "experiment", e.name, (e.arms || []).join("|"),
+          e.total_cells || 0, e.n_rows || 0,
+          e.provider || "", e.has_report ? "yes" : "no", "", "", "",
+        ]);
+      });
+      if (sys.legco && sys.legco.members_count) {
+        rows.push([
+          "legco", "members", sys.legco.members_count,
+          Object.keys(sys.legco.by_party || {}).length,
+          Object.keys(sys.legco.by_constituency_type || {}).length,
+          "", "", "", "", "",
+        ]);
+      }
+      if (sys.info_sources) {
+        rows.push([
+          "info_sources", "feed", sys.info_sources.total_sources || 0,
+          sys.info_sources.latest_fetch || "", "", "", "", "", "", "",
+        ]);
+      }
+      (sys.quarantine || []).forEach(function (q) {
+        rows.push([
+          "quarantine", q.ts, q.records_before_files || 0,
+          q.fixture_records_files || 0, "", "", "", "", "", "",
+        ]);
+      });
+      (sys.stale_debug_runs || []).forEach(function (t) {
+        rows.push(["stale_debug", t.path, t.files, "", "", "", "", "", "", ""]);
+      });
+      files.push({
+        name: "system.csv",
+        text: csv(
+          ["kind", "id", "name", "n1", "n2", "n3", "extra1", "extra2", "extra3", "extra4"],
+          rows),
+      });
+    }
+
     return files;
   }
 
@@ -477,6 +591,62 @@
         t(labels, "ax.col_day"), t(labels, "ax.col_type"), t(labels, "ax.col_event"),
         t(labels, "ax.col_scope"), t(labels, "ax.col_strength"),
       ], recent, labels));
+    }
+
+    if (state.system) {
+      var sys = state.system;
+      var kpis = sys.kpis || {};
+      out.push("", "## " + t(labels, "ax.h_system"), "");
+      out.push(mdTable(
+        [t(labels, "ax.col_metric"), t(labels, "ax.col_value")],
+        [
+          [t(labels, "an.sys_cities"), kpis.cities_count || 0],
+          [t(labels, "an.sys_pw"), kpis.parallel_worlds_studies || 0],
+          [t(labels, "an.sys_personas"), kpis.personas_count || 0],
+          [t(labels, "an.sys_experiments"), kpis.experiments_count || 0],
+          [t(labels, "an.sys_interviews"), kpis.interview_sessions || 0],
+          [t(labels, "an.sys_research"),
+            (kpis.research_plans || 0) + (kpis.research_studies || 0)
+              + (kpis.serious_games_count || 0) + (kpis.replication_studies || 0)],
+          [t(labels, "an.sys_legco"), kpis.legco_members || 0],
+          [t(labels, "an.sys_data"), (kpis.run_manifests_total || 0) + (kpis.quarantine_snapshots || 0)],
+        ],
+        labels,
+      ));
+      if ((sys.cities || []).length) {
+        out.push("", "### " + t(labels, "ax.h_cities"), "");
+        out.push(mdTable(
+          [t(labels, "ax.col_slug"), t(labels, "ax.col_agents"),
+           t(labels, "ax.col_diaries"), t(labels, "ax.col_last_run")],
+          (sys.cities || []).map(function (c) {
+            var m = c.last_run_manifest || {};
+            return [
+              c.slug, c.agent_count || 0, c.diary_count || 0,
+              (m.filename || "—") + " · " + (m.outcome || "—"),
+            ];
+          }),
+          labels,
+        ));
+      }
+      if ((sys.parallel_worlds || []).length) {
+        out.push("", "### " + t(labels, "ax.h_parallel_worlds"), "");
+        out.push(mdTable(
+          [t(labels, "ax.col_study"), t(labels, "ax.col_worlds"),
+           t(labels, "ax.col_robust"), t(labels, "ax.col_suggestive")],
+          (sys.parallel_worlds || []).map(function (s) {
+            return [
+              s.name || s.study_id, s.worlds.length,
+              (s.causal_summary || {}).robust || 0,
+              (s.causal_summary || {}).suggestive || 0,
+            ];
+          }),
+          labels,
+        ));
+      }
+      if ((sys.health || {}).warnings && sys.health.warnings.length) {
+        out.push("", "### " + t(labels, "ax.h_warnings"), "");
+        sys.health.warnings.forEach(function (w) { out.push("- " + w); });
+      }
     }
 
     return out.join("\n").replace(/\n{3,}/g, "\n\n") + "\n";

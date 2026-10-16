@@ -229,8 +229,9 @@ def test_preflight_passes_and_prices_the_study():
     check = preflight(protocol, default_agents=50)
     assert check["ok"] is True
     assert check["errors"] == []
-    # agent_ids win over the config's population; fast mode is one call per agent-day.
-    assert check["budget"]["estimated_calls"] == 3 * 5 * 1 * 3 * 2
+    # Lean tick keeps intra-day calls; startup/environment/survey are separate.
+    assert check["budget"]["components"]["simulation"] == 3 * 5 * 100 * 3 * 2
+    assert check["budget"]["estimated_calls"] == sum(check["budget"]["components"].values())
     assert protocol.budget == check["budget"]
     assert sum("已丢弃" in item for item in check["warnings"]) == 2
 
@@ -341,7 +342,8 @@ def test_seeds_from_different_code_epochs_are_not_judged_together():
     runs[0]["report"]["comparability_epoch"] = 4
     runs[1]["report"]["comparability_epoch"] = 5
     result = evaluate(protocol, runs)
-    assert result["comparability"] == {"epochs": {42: 4, 43: 5}, "mixed": True}
+    assert result["comparability"]["epochs"] == {42: 4, 43: 5}
+    assert result["comparability"]["mixed"] is True
     for item in result["hypotheses"]:
         assert item["verdict"] == "inconclusive"
         assert any("可比性版本" in reason for reason in item["reasons"])
@@ -580,9 +582,16 @@ def stubbed_api(isolated_root, monkeypatch):
     import gaworld.llm.providers as providers
 
     plan = workbench.ResearchPlan(
-        id=PLAN["id"], kind="idea", title=PLAN["title"], language="zh-CN", provider="m1",
-        created_at="2026-09-19T00:00:00+00:00", summary=PLAN["summary"], design=PLAN["design"],
-        hypotheses=PLAN["hypotheses"], material="想法",
+        id=PLAN["id"],
+        kind="idea",
+        title=PLAN["title"],
+        language="zh-CN",
+        provider="m1",
+        created_at="2026-09-19T00:00:00+00:00",
+        summary=PLAN["summary"],
+        design=PLAN["design"],
+        hypotheses=PLAN["hypotheses"],
+        material="想法",
     )
     workbench.save_plan(plan)
 
@@ -598,18 +607,39 @@ def stubbed_api(isolated_root, monkeypatch):
 
     monkeypatch.setattr(providers, "call_llm", fake_call)
     monkeypatch.setattr(providers, "resolve_provider", lambda **kwargs: kwargs.get("provider") or "routed")
-    monkeypatch.setattr(research_api, "_base_config", lambda: {"agent_ids": [1, 2, 3, 4, 5, 6]})
+    monkeypatch.setattr(
+        research_api,
+        "_base_config",
+        lambda: {
+            "agent_ids": [1, 2, 3, 4, 5, 6],
+            "llm": {
+                "routing": {"default": "m1"},
+                "providers": {
+                    "m1": {"type": "openai", "model": "stub", "api_key": "stub"},
+                    "m2": {"type": "openai", "model": "stub", "api_key": "stub"},
+                },
+            },
+        },
+    )
 
     def fake_seed_runner(study):
         def run(spec, seed, report):
             report(1.0, "done")
             values = {**series(0.5, 0.4, 0.51), **series(0.5, 0.53, 0.5, metric="emotion")}
-            return {"root": f"output/parallel_worlds/study_{study.id}_s{seed}", "id": f"study_{study.id}_s{seed}",
-                    "status": "done", "world_status": {w.id: "done" for w in spec.worlds}, "report": fake_report(values)}
+            return {
+                "root": f"output/parallel_worlds/study_{study.id}_s{seed}",
+                "id": f"study_{study.id}_s{seed}",
+                "status": "done",
+                "world_status": {w.id: "done" for w in spec.worlds},
+                "report": fake_report(values),
+            }
+
         return run
 
     monkeypatch.setattr(research_api, "_seed_runner", fake_seed_runner)
-    monkeypatch.setattr(research_api, "_ACTIVE_STUDY", {"study_id": None, "job_id": None, "runner": None, "stop": None})
+    monkeypatch.setattr(
+        research_api, "_ACTIVE_STUDIES", {}
+    )
     return seen
 
 
@@ -619,6 +649,26 @@ def test_unknown_study_endpoints():
     assert research_api.handle_post("/api/research/studies/S0000-0000/nope", {})[1] == 404
     assert research_api.handle_post("/api/research/studies", {"plan_id": "nope-0000"})[1] == 400
     assert research_api.handle_post("/api/research/studies", {"plan_id": "../x"})[1] == 400
+
+
+def test_interpretation_provider_abort_preserves_already_scored_results(stubbed_api, monkeypatch):
+    import gaworld.llm.providers as providers
+    from gaworld.llm.run_state import current_ledger
+
+    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"]})
+    study_id = _await_job(body["job_id"])["result"]["study_id"]
+
+    def fail_interpretation(prompt, **kwargs):
+        current_ledger().abort("interpretation provider exhausted")
+        raise RuntimeError("interpretation unavailable")
+
+    monkeypatch.setattr(providers, "call_llm", fail_interpretation)
+    result, status = research_api.handle_post(f"/api/research/studies/{study_id}/approve", {"run": True})
+    assert status == 202
+    assert _await_job(result["run_job_id"])["status"] == "done"
+    detail = _await_stage(study_id, {"reported"})
+    assert detail["evaluation"]["hypotheses"]
+    assert detail["interpretation"]["error"]
 
 
 def test_study_compiles_the_chosen_design(stubbed_api, monkeypatch):
@@ -687,6 +737,7 @@ def test_copilot_flow_compile_approve_run_report(stubbed_api):
     assert "report" not in detail["runs"][0]
     assert detail["interpretation"]["findings"][0]["grounded"] is True
     assert detail["report_markdown"].startswith("# 租金补贴的压力效应")
+    assert "阶段: reported" in detail["report_markdown"]
     assert stubbed_api["prompts"][-1]["provider"] == "m1"
 
     export, status = research_api.handle_get(f"/api/research/studies/{study_id}/report")
@@ -709,6 +760,41 @@ def test_autopilot_runs_without_a_click(stubbed_api):
     assert detail["evaluation"]["summary"]["supported"] == 2
 
 
+def test_all_worlds_failed_is_an_error_without_model_interpretation(stubbed_api, monkeypatch):
+    def failed_seed_runner(study):
+        def run(spec, seed, report):
+            return {"status": "error", "world_status": {w.id: "error" for w in spec.worlds},
+                    "report": {"worlds": [{"id": w.id, "has_data": False, "status": "error",
+                                           "error": "MiniMax HTTP 429; Ollama connection refused"}
+                                          for w in spec.worlds]}}
+        return run
+
+    monkeypatch.setattr(research_api, "_seed_runner", failed_seed_runner)
+    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True})
+    compiled = _await_job(body["job_id"])["result"]
+    job = _await_job(compiled["run_job_id"])
+    assert job["status"] == "error"
+    study = study_mod.load_study(compiled["study_id"])
+    assert study.stage == "error"
+    assert "没有可用于判定假设的数据" in study.error
+    assert study.evaluation["summary"]["unmeasured"] == 2
+    assert study.interpretation == {}
+    assert len(stubbed_api["prompts"]) == 1
+    assert "运行失败" in study.report_markdown
+    assert "不能据此判断政策有效或无效" in study.report_markdown
+
+
+def test_failed_report_does_not_repeat_raw_tracebacks():
+    _, study = _evaluated_study()
+    study.set_stage("error", error="没有数据")
+    issue = {"seed": 42, "condition": "baseline", "issue": "没有状态数据",
+             "detail": 'Traceback (most recent call last):\n  File "run.py", line 1\nConnectionError: refused'}
+    study.evaluation["quality"] = {"ok": False, "issues": [issue]}
+    doc = render_study_markdown(study.to_dict())
+    assert "ConnectionError: refused" in doc
+    assert 'File "run.py"' not in doc
+
+
 def test_autopilot_stops_at_a_failed_preflight(stubbed_api):
     body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True, "sim_days": 1})
     record = _await_job(body["job_id"])
@@ -724,7 +810,7 @@ def test_one_study_runs_at_a_time(stubbed_api):
     research_api.handle_post(f"/api/research/studies/{study_id}/approve", {})
     with research_api._JOBS_LOCK:
         research_api._JOBS["run-busy"] = {"id": "run-busy", "status": "running", "started_at": time.time()}
-    research_api._ACTIVE_STUDY.update(study_id="other", job_id="run-busy")
+    research_api._ACTIVE_STUDIES.update({str(i): {"study_id": str(i), "job_id": "run-busy"} for i in range(4)})
     assert research_api.handle_post(f"/api/research/studies/{study_id}/run", {})[1] == 409
     assert research_api.handle_post(f"/api/research/studies/{study_id}/stop", {})[0]["stopping"] is False
 
@@ -802,6 +888,75 @@ def test_pause_and_resume_need_a_live_run(stubbed_api):
     study_id = _await_job(body["job_id"])["result"]["study_id"]
     assert research_api.handle_post(f"/api/research/studies/{study_id}/pause", {})[1] == 400
     assert research_api.handle_post(f"/api/research/studies/{study_id}/resume", {})[1] == 400
+
+
+def test_stop_during_interpretation_preserves_scores_without_finishing_report(stubbed_api, monkeypatch):
+    import gaworld.research.interpret as interpret_mod
+
+    started = threading.Event()
+    release = threading.Event()
+
+    def slow_interpret(*args, **kwargs):
+        started.set()
+        assert release.wait(5)
+        return INTERPRETATION
+
+    monkeypatch.setattr(interpret_mod, "interpret", slow_interpret)
+    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True})
+    compiled = _await_job(body["job_id"])["result"]
+    study_id, job_id = compiled["study_id"], compiled["run_job_id"]
+    try:
+        assert started.wait(5)
+        detail = research_api.study_detail(study_id)
+        assert detail["live"] and detail["stage"] == "evaluated"
+        assert detail["run_status"]["progress"] >= 0.9
+        assert research_api.stop_study(study_id)["stopping"]
+        assert research_api.job_status(job_id)["stopping"]
+        assert research_api.handle_post(f"/api/research/studies/{study_id}/resume", {})[1] == 400
+    finally:
+        release.set()
+    job = _await_job(job_id)
+    assert job["status"] == "stopped"
+    assert job["progress"] < 1
+    assert job["remaining_seconds"] is None
+    saved = study_mod.load_study(study_id)
+    assert saved.error == "已停止" and saved.evaluation
+    assert not saved.report_markdown
+
+
+@pytest.mark.parametrize("finish_action", ["resume", "stop"])
+def test_pause_during_interpretation_holds_report_until_resume(stubbed_api, monkeypatch, finish_action):
+    import gaworld.research.interpret as interpret_mod
+
+    started = threading.Event()
+    returned = threading.Event()
+    release = threading.Event()
+
+    def slow_interpret(*args, **kwargs):
+        started.set()
+        assert release.wait(5)
+        returned.set()
+        return INTERPRETATION
+
+    monkeypatch.setattr(interpret_mod, "interpret", slow_interpret)
+    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True})
+    compiled = _await_job(body["job_id"])["result"]
+    study_id, job_id = compiled["study_id"], compiled["run_job_id"]
+    try:
+        assert started.wait(5)
+        research_api.pause_study(study_id)
+        release.set()
+        assert returned.wait(5)
+        time.sleep(0.15)
+        assert research_api.job_status(job_id)["status"] == "running"
+        assert research_api.job_status(job_id)["paused"]
+        assert study_mod.load_study(study_id).stage == "evaluated"
+    finally:
+        release.set()
+        getattr(research_api, f"{finish_action}_study")(study_id)
+    expected = "done" if finish_action == "resume" else "stopped"
+    assert _await_job(job_id)["status"] == expected
+    assert research_api.study_detail(study_id)["run_status"]["status"] == expected
 
 
 def test_pause_holds_the_next_seed_until_resume(stubbed_api, monkeypatch):

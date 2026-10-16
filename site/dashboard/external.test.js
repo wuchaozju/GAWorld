@@ -34,6 +34,8 @@ var OVERVIEW = {
     tax: { zh: "个人所得税", en: "Income tax" },
     macro: { zh: "宏观周期", en: "Macro cycle" },
     initial_inflation_rate: { zh: "初始通胀率", en: "Initial inflation rate" },
+    income_tax_exemption: { zh: "个税起征点（元/月）", en: "Income-tax threshold (CNY/month)" },
+    "public_sector.schedule": { zh: "换届安排", en: "Changes of government" },
     brackets: { zh: "税率表 [上限, 税率, 速算扣除]", en: "Bracket table [cap, rate, quick deduction]" },
   },
   currency: {
@@ -124,6 +126,48 @@ var OVERVIEW = {
         { id: "external_environment_service", label: "外部环境服务", url: "http://127.0.0.1:8765/health", enabled: false },
         { id: "distributed_relay", label: "分布式中继", url: "http://127.0.0.1:8877/health", enabled: true },
       ],
+    },
+  },
+  public: {
+    config: {
+      public_sector: {
+        enabled: true,
+        government: "welfare",
+        announce: true,
+        schedule: [{ day: 30, government: "baseline", note: "换届" }],
+        governments: {
+          baseline: { name: "现行体制", description: "沿用经济系统。", policies: { income_tax_exemption: null, income_tax_rate_scale: 1.0, pension_daily: 0.0 } },
+          welfare: { name: "福利型政府", description: "高税收、高福利。", policies: { income_tax_exemption: 6000.0, income_tax_rate_scale: 1.3, pension_daily: 120.0 } },
+        },
+      },
+    },
+    runtime: {
+      enabled: true,
+      government: "welfare",
+      schedule: [{ day: 30, government: "baseline", note: "换届" }],
+      governments: [
+        { id: "baseline", name: "现行体制", description: "沿用经济系统。", builtin: true,
+          policies: { income_tax_exemption: null, income_tax_rate_scale: 1.0, medical_reimbursement: null, pension_daily: 0.0 },
+          summary: [], brief: "本市现任政府：现行体制——沿用经济系统。" },
+        { id: "welfare", name: "福利型政府", description: "高税收、高福利。", builtin: true,
+          policies: { income_tax_exemption: 6000.0, income_tax_rate_scale: 1.3, medical_reimbursement: [0.7, 0.95], pension_daily: 120.0 },
+          summary: ["个税起征点 6000 元/月", "养老金 120 元/天"],
+          brief: "本市现任政府：福利型政府——高税收、高福利。现行政策：个税起征点 6000 元/月；养老金 120 元/天。" },
+        { id: "green_city", name: "<b>绿色</b>政府", description: "", builtin: false,
+          policies: { basic_income_daily: 30.0 }, summary: ["基本收入 30 元/天"], brief: "" },
+      ],
+      daily: [
+        { run: "r1", day: 1, government: "welfare", transfers: { pension_daily: 240.0 }, transfers_total: 240.0, government_balance: -240.0 },
+        { run: "r1", day: 2, government: "welfare", transfers: { pension_daily: 240.0 }, transfers_total: 240.0, government_balance: -480.0 },
+      ],
+      changes: [
+        { run: "r1", day: 0, government: "welfare", name: "福利型政府", source: "config", note: "" },
+        { run: "r1", day: 2, government: "baseline", name: "现行体制", source: "intervention", note: "<script>x</script>" },
+      ],
+      transfer_totals: { pension_daily: 480.0 },
+      latest_balance: -480.0,
+      live: { running: true, can_switch: true },
+      records_path: "output/records/public_sector.daily.jsonl",
     },
   },
 };
@@ -276,6 +320,33 @@ setTimeout(function () {
     ["provider credentials are not rendered", svcEdit.indexOf("providers") < 0],
     ["health statuses are decoded on hover", svcObserve.indexOf("连不上") >= 0],
     ["llm routing help suggests a real use", svcObserve.indexOf("便宜的本地模型") >= 0],
+  ]);
+
+  switchTo("public");
+  var pubObserve = els.extObserve.innerHTML;
+  var pubEdit = els.extEdit.innerHTML;
+  checks = checks.concat([
+    ["current government is named", pubObserve.indexOf("福利型政府") >= 0 && pubObserve.indexOf("个税起征点 6000 元/月") >= 0],
+    ["the resident brief is shown", pubObserve.indexOf("ext-brief") >= 0],
+    ["governments are compared side by side", pubObserve.indexOf("ext-compare") >= 0 && pubObserve.indexOf("现行体制") >= 0],
+    ["a null policy reads as inherited", pubObserve.indexOf("沿用经济设置") >= 0],
+    ["rate scales read as percentages", pubObserve.indexOf("130%") >= 0],
+    ["reimbursement reads as a range", pubObserve.indexOf("70%–95%") >= 0],
+    ["a deficit is flagged", pubObserve.indexOf("ext-tile is-warn") >= 0],
+    ["fiscal charts render", pubObserve.indexOf("<svg") >= 0],
+    ["changes of government are listed", pubObserve.indexOf("手动换届") >= 0],
+    ["user-written text is escaped", (pubObserve + pubEdit).indexOf("<script>") < 0 && (pubObserve + pubEdit).indexOf("<b>绿色") < 0],
+    ["next-run picker is present", pubEdit.indexOf('id="pubGovernment"') >= 0 && pubEdit.indexOf('id="pubApply"') >= 0],
+    ["live switch is enabled while a run can take it", pubEdit.indexOf('id="pubSwitch">') >= 0],
+    ["custom governments can be deleted", pubEdit.indexOf('data-del="green_city"') >= 0],
+    ["built-in governments cannot", pubEdit.indexOf('data-del="welfare"') < 0],
+    ["the config tree edits government policies",
+      pubEdit.indexOf('data-path="public_sector.governments.welfare.policies.income_tax_rate_scale"') >= 0],
+    ["a government subtree is labelled by its name", pubEdit.indexOf("福利型政府 · welfare") >= 0],
+    ["full-path labels win over the bare key", pubEdit.indexOf("换届安排") >= 0],
+    ["levers explain themselves on hover", pubObserve.indexOf("人人多交 30% 的税") >= 0],
+    ["no locale key is missing after the public tab",
+      missingKeys.length === 0 || !process.stdout.write("    missing: " + missingKeys.join(", ") + "\n")],
   ]);
 
   var failed = 0;

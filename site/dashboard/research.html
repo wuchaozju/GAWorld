@@ -34,6 +34,7 @@
       <button type="button" class="rw-tab is-active" role="tab" id="rwTabPlan" data-tab="plan" aria-selected="true" aria-controls="rwPanePlan" data-i18n="research.tab_plan">实施方案</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabGame" data-tab="game" aria-selected="false" aria-controls="rwPaneGame" data-i18n="research.tab_game">严肃游戏</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabPolicy" data-tab="policy" aria-selected="false" aria-controls="rwPanePolicy" data-i18n="research.tab_policy">政策仿真与优化</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabReplication" data-tab="replication" aria-selected="false" aria-controls="rwPaneReplication" data-i18n="research.tab_replication">社会调查/实验拟合度</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabWorlds" data-tab="worlds" aria-selected="false" aria-controls="rwPaneWorlds" data-i18n="research.tab_worlds">平行世界 · 反事实推断</button>
     </nav>
 
@@ -80,7 +81,9 @@
 
         <div class="rw-card rw-digest" id="rwDigest" hidden></div>
         <div class="rw-card rw-result" id="rwResult" hidden></div>
+        <div class="rw-card" id="rwPlanEditor" hidden></div>
         <div class="rw-card rw-study" id="rwStudy" hidden></div>
+        <div class="rw-card" id="rwProtocolEditor" hidden></div>
       </div>
 
       <aside class="rw-side">
@@ -192,6 +195,90 @@
         <div class="rw-side-card">
           <h3 data-i18n="research.how_title">它是怎么工作的</h3>
           <p class="rw-hint" data-i18n="research.ps_how_body">每个版本对每位居民各一次模型调用，回答是固定格式的 JSON，指标全部由代码计算；综合分 = 支持度 35% + 生活 30% + 钱包 15% + 遵从 20%（各自归一到 0–1）。推荐版本按综合分选出，不由模型决定。记录存放在 output/research/policy/，不会写回任何城市。</p>
+        </div>
+      </aside>
+    </section>
+    <!-- 社会调查/实验拟合度. Driven by replication.js against /api/research/replication/*. -->
+    <section class="studio-main rw-main" id="rwPaneReplication" role="tabpanel" aria-labelledby="rwTabReplication" hidden>
+      <div class="rw-panel">
+        <div class="rw-card" id="rpForm">
+          <h3 data-i18n="research.rp_paper_title">1 · 上传文献</h3>
+          <p class="rw-hint" data-i18n="research.rp_paper_hint">一篇报告了真人社会调查或实验及其结果的文献。模型先把它抽取成研究设计（实验条件、材料、题目）和真人结果（每个数字都注明出处），你核对修改后，再让一批居民按同样的设计作答，由代码比较居民与真人的结果。</p>
+          <label class="rw-field">
+            <span data-i18n="research.title_label">标题（可选）</span>
+            <input id="rpTitle" type="text" />
+          </label>
+          <label class="rw-field">
+            <span data-i18n="research.rp_text_label">文献内容（方法与结果部分最重要）</span>
+            <textarea id="rpText" rows="10" data-i18n-placeholder="research.rp_text_ph" placeholder="粘贴论文正文，或从文件读入。需要包含：受访者是谁、问了什么（或实验材料是什么）、各组的结果数字。"></textarea>
+          </label>
+          <div class="rw-upload">
+            <label class="rw-upload-btn">
+              <input type="file" id="rpFile" accept=".txt,.md,.markdown,.pdf" />
+              <span data-i18n="research.upload_label">从文件读入（.txt / .md / .pdf）</span>
+            </label>
+            <span class="rw-upload-hint" id="rpFileHint"></span>
+          </div>
+          <div class="rw-row">
+            <label class="rw-field rw-field-model">
+              <span data-i18n="research.rp_model_label">抽取与扮演居民用的模型</span>
+              <select id="rpProvider"></select>
+            </label>
+            <button class="btn" id="rpExtract" data-i18n="research.rp_extract">抽取研究设计</button>
+          </div>
+          <p class="rw-progress" id="rpExtractProgress" aria-live="polite"></p>
+        </div>
+
+        <div class="rw-card" id="rpSpecCard" hidden>
+          <h3 data-i18n="research.rp_spec_title">2 · 核对研究设计与真人结果</h3>
+          <p class="rw-hint" data-i18n="research.rp_spec_hint">请对照原文核对，特别是真人结果的数字——比较的基准就是它们。空着的单元格表示文献没报告，不参与比较。增删题目或条件请用下面的 JSON 编辑。</p>
+          <div id="rpSpec"></div>
+          <details class="rw-material">
+            <summary data-i18n="research.rp_json">高级：直接编辑 JSON（增删题目、条件）</summary>
+            <label class="rw-field"><textarea id="rpJson" rows="14" spellcheck="false"></textarea></label>
+            <button class="btn ghost tiny" id="rpJsonApply" type="button" data-i18n="research.rp_json_apply">应用 JSON</button>
+          </details>
+        </div>
+
+        <div class="rw-card" id="rpRunCard" hidden>
+          <h3 data-i18n="research.rp_run_title">3 · 用智能体重做</h3>
+          <div class="rw-row">
+            <label class="rw-field ps-field-city">
+              <span data-i18n="research.ps_city_label">城市</span>
+              <select id="rpCity"></select>
+            </label>
+            <label class="rw-field sg-field-num">
+              <span data-i18n="research.rp_sample_label">智能体规模</span>
+              <select id="rpSample"></select>
+            </label>
+            <label class="rw-field sg-field-num">
+              <span data-i18n="research.rp_seed_label">随机种子</span>
+              <input id="rpSeed" type="number" min="1" data-i18n-placeholder="research.sg_auto" placeholder="自动" />
+            </label>
+          </div>
+          <div class="rw-kind" role="radiogroup" data-i18n-aria="research.rp_design_label" aria-label="分配方式">
+            <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="between" checked /><span data-i18n="research.rp_design_between">组间：每人随机分到一个条件（同文献）</span></label>
+            <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="paired" /><span data-i18n="research.rp_design_paired">配对：每人分别作答每个条件（更省样本）</span></label>
+          </div>
+          <label class="ps-check"><input type="checkbox" id="rpInterpret" checked /><span data-i18n="research.rp_interpret_opt">跑完让模型解读偏差（多一次模型调用；数字仍以代码算出的表为准）</span></label>
+          <div class="rw-row">
+            <p class="rw-hint" id="rpCost"></p>
+            <button class="btn" id="rpRun" data-i18n="research.rp_run">开始重做并比较</button>
+          </div>
+          <p class="rw-progress" id="rpProgress" aria-live="polite"></p>
+        </div>
+
+        <div class="rw-card" id="rpResult" hidden></div>
+      </div>
+
+      <aside class="rw-side">
+        <div class="rw-side-card">
+          <h3 data-i18n="research.rp_runs">拟合记录</h3>
+          <div id="rpRuns" class="rw-history"></div>
+        </div>
+        <div class="rw-side-card">
+          <h3 data-i18n="research.how_title">它是怎么工作的</h3>
+          <p class="rw-hint" data-i18n="research.rp_how_body">每位居民每个条件一次模型调用，按题目的量表或选项作答，超出范围的回答记为无效、不会被截断。比较全部由代码完成：每题每条件的误差按题目自身量程归一到 0–1（单选题用分布的总变差距离），并看真人数值是否落在居民的 95% 区间内；实验还比较每个处理相对对照组的效应方向与显著性。拟合度分 = 50% 水平准确度 + 50% 效应方向一致率（只有调查时就是水平准确度）。记录存放在 output/research/replication/。</p>
         </div>
       </aside>
     </section>
@@ -350,10 +437,14 @@
     </section>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/help.js"></script>
+
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/help.js"></script>
+  <script src="/site/dashboard/research-runtime.js"></script>
+  <script src="/site/dashboard/research-editors.js"></script>
   <script src="/site/dashboard/research.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
+  <script src="/site/dashboard/replication.js"></script>
   <script src="/site/dashboard/worlds.js"></script>
 </body>
 </html>

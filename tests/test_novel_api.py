@@ -418,13 +418,27 @@ class HttpTest(unittest.TestCase):
         self.assertEqual(body["max_agents"], novel_api.MAX_AGENTS)
         self.assertEqual(body["min_target_words"], novel_api.MIN_TARGET_WORDS)
 
-    def test_run_needs_a_non_empty_outline(self) -> None:
-        body, status = novel_api.handle_post(
-            "/api/games/novel/run",
-            {"city": "wuzhen", "agent_ids": [1, 2], "outline": "", "target_words": 5000},
-        )
-        self.assertEqual(status, 400)
-        self.assertIn("error", body)
+    def test_run_accepts_an_empty_outline(self) -> None:
+        """An empty outline is now allowed; the model fills in the gaps.
+
+        Users often skip the outline box and just want a story from a picked
+        cast — the structure prompt already tells the model to design its own
+        story line in that case.
+        """
+        with mock.patch("gaworld.apps.novel_api.run_novel", return_value={
+            "run_id": "x", "city": "wuzhen", "title": "未命名", "chapters": [], "cast": [],
+            "target_word": 5000, "stats": {"total_words": 0, "target_word": 5000, "chapters": 0},
+            "premise": "（核心情境待补）", "outline_text": "", "created_at": 1.0,
+        }) as fake:
+            body, status = novel_api.handle_post(
+                "/api/games/novel/run",
+                {"city": "wuzhen", "agent_ids": [1, 2], "outline": "", "target_words": 5000},
+            )
+            self.assertEqual(status, 202)
+            self.assertIn("job_id", body)
+            fake.assert_called_once()
+            kwargs = fake.call_args.kwargs
+            self.assertEqual(kwargs["outline"], "")
 
     def test_run_rejects_target_words_outside_the_range(self) -> None:
         body, status = novel_api.handle_post(
@@ -499,6 +513,123 @@ class HttpTest(unittest.TestCase):
         body, status = games_api.handle_post("/api/games/novel/run", {})
         self.assertEqual(status, 400)
         self.assertIn("error", body)
+
+    def test_regenerate_needs_a_source_job_id(self) -> None:
+        body, status = novel_api.handle_post(
+            "/api/games/novel/regenerate",
+            {"premise": "新梗概"},
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("source_job_id", body["error"])
+
+    def test_regenerate_needs_a_non_empty_premise(self) -> None:
+        fake_source = {
+            "run_id": "abc", "city": "wuzhen", "title": "未命名",
+            "chapters": [], "cast": [
+                {"agent_id": 1, "name": "老李", "role": "主角", "arc": "经历了一夜"},
+                {"agent_id": 2, "name": "小王", "role": "对手", "arc": "执念"},
+            ],
+            "style": {"id": "realistic", "title": "现实主义", "text": "x", "point_of_view": "第三人称"},
+            "target_words": 5000, "premise": "老梗概", "outline_text": "老大纲", "created_at": 1.0,
+        }
+        with mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source), \
+             mock.patch("gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]), \
+             mock.patch.object(novel_api, "_run_novel_with_locked_cast", return_value={**fake_source, "premise": ""}):
+            body, status = novel_api.handle_post(
+                "/api/games/novel/regenerate",
+                {"source_job_id": "abc", "premise": "  "},
+            )
+            self.assertEqual(status, 400)
+            self.assertIn("不能为空", body["error"])
+
+    def test_regenerate_runs_a_new_job_with_a_locked_cast(self) -> None:
+        fake_source = {
+            "run_id": "abc", "city": "wuzhen", "title": "未命名",
+            "chapters": [], "cast": [
+                {"agent_id": 1, "name": "老李", "role": "主角", "arc": "经历了一夜"},
+                {"agent_id": 2, "name": "小王", "role": "对手", "arc": "执念"},
+            ],
+            "style": {"id": "realistic", "title": "现实主义", "text": "x", "point_of_view": "第三人称"},
+            "target_words": 5000, "premise": "老梗概", "outline_text": "老大纲", "created_at": 1.0,
+        }
+        captured: dict = {}
+
+        def fake_regen(**kwargs):
+            captured.update(kwargs)
+            return {
+                "run_id": "xyz",
+                "city": kwargs["city"],
+                "title": kwargs["title_hint"] or "未命名",
+                "back_cover": "",
+                "premise": kwargs["premise"],
+                "outline_text": kwargs["outline"],
+                "outline": [],
+                "chapters": [],
+                "cast": kwargs["locked_cast"],
+                "style": kwargs["style"],
+                "target_word": kwargs["target_words"],
+                "stats": {"chapters": 0, "target_word": kwargs["target_words"], "total_words": 0, "on_target": True, "avg_chapter_words": 0, "character_appearances": {}},
+                "co_occurrences": [],
+                "created_at": 2.0,
+            }
+
+        with mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source), \
+             mock.patch("gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]), \
+             mock.patch.object(novel_api, "_run_novel_with_locked_cast", side_effect=fake_regen):
+            body, status = novel_api.handle_post(
+                "/api/games/novel/regenerate",
+                {"source_job_id": "abc", "premise": "新梗概", "outline": "细纲补充"},
+            )
+            self.assertEqual(status, 202)
+            self.assertIn("job_id", body)
+            self.assertEqual(captured["city"], "wuzhen")
+            self.assertEqual(captured["premise"], "新梗概")
+            self.assertEqual(captured["outline"], "细纲补充")
+            self.assertEqual([c["agent_id"] for c in captured["locked_cast"]], [1, 2])
+            self.assertEqual(captured["target_words"], 5000)
+
+    def test_regenerate_unknown_source_returns_400(self) -> None:
+        with mock.patch.object(novel_api, "_load_source_novel", return_value=None):
+            body, status = novel_api.handle_post(
+                "/api/games/novel/regenerate",
+                {"source_job_id": "missing", "premise": "新"},
+            )
+            self.assertEqual(status, 400)
+            self.assertIn("找不到", body["error"])
+
+    def test_runs_listing_includes_archived_results(self) -> None:
+        # Inject one fake archived record into the game archive directory.
+        import json as _json
+        import os
+        import tempfile
+
+        from gaworld.apps import game_archive
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_dir = os.path.join(tmp, "novel")
+            os.makedirs(archive_dir, exist_ok=True)
+            record = {
+                "kind": "novel",
+                "job_id": "arch1",
+                "archived_at": time.time(),
+                "provider": "",
+                "result": {
+                    "run_id": "arch1", "city": "wuzhen", "title": "归档的一本",
+                    "chapters": [{"chapter": 1, "title": "x", "summary": "", "target_words": 100, "characters": [1, 2], "text": "正文", "word_count": 2, "presence": {}}],
+                    "cast": [{"agent_id": 1, "name": "老李", "role": "主角", "arc": ""}],
+                    "target_words": 100, "premise": "已归档", "outline_text": "已归档",
+                    "stats": {"chapters": 1, "target_words": 100, "total_words": 2, "on_target": True, "avg_chapter_words": 2, "character_appearances": {1: 1, 2: 1}},
+                    "created_at": 99.0,
+                },
+            }
+            path = os.path.join(archive_dir, "20990101-000000-arch1.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                _json.dump(record, handle, ensure_ascii=False)
+
+            with mock.patch.object(game_archive, "ARCHIVE_DIR", tmp):
+                listing = novel_api.list_runs()
+                self.assertEqual(listing[0]["job_id"], "arch1")
+                self.assertEqual(listing[0]["title"], "归档的一本")
 
 
 # ---------------------------------------------------------------------------

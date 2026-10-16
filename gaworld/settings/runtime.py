@@ -265,6 +265,18 @@ def simulation_settings() -> dict[str, Any]:
             "inject_into_cognition": True,
             "inject_into_work_brief": True,
             "max_per_prompt": 4,
+            # 接到工作时在整个技能库里按任务搜索合适的技能（关掉 = 只看自己已有的）；用上并交付成功的技能会挂到居民身上
+            "auto_search": True,
+            # 额外的技能目录（*.md 或 <名字>/SKILL.md），并入公共技能库一起搜索
+            "search_dirs": [],
+            # 联网技能市场：本地技能不够时去 skills.sh 搜索，只下载 SKILL.md 文本、从不执行；结果缓存在 cache_dir
+            "online": {
+                "enabled": False,
+                "api_base": "https://skills.sh",
+                "cache_dir": "output/skills_market",
+                "min_installs": 100,  # 安装数低于此值的技能不用
+                "timeout_seconds": 10,
+            },
         },
         # Policy events (description only; effect inferred by LLM)
         "policy_events": [

@@ -140,6 +140,8 @@ DEFAULT_ECONOMY_CONFIG = {
         # Social insurance base salary cap (3x local average, Hangzhou ~36000)
         "base_cap": 36000.0,
         "base_floor": 4462.0,
+        # Share of a medical emergency the insurance pays, drawn per event.
+        "medical_reimbursement_range": (0.50, 0.85),
     },
 
     # --- Spending & Engel coefficient ---
@@ -1084,7 +1086,8 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
         si_cfg = cfg.get("social_insurance", {})
         reimbursement_rate = 0.0
         if si_cfg.get("enabled", True):
-            reimbursement_rate = _rng.uniform(0.50, 0.85)
+            low, high = si_cfg.get("medical_reimbursement_range", (0.50, 0.85))
+            reimbursement_rate = _rng.uniform(_clip(low, 0.0, 1.0), _clip(high, 0.0, 1.0))
         reimbursed = round(raw_cost * reimbursement_rate, 2)
         out_of_pocket = round(raw_cost - reimbursed, 2)
         accounts = econ.get("accounts", {})
@@ -2540,6 +2543,11 @@ def _employment_status(agent):
         if any(keyword in job for keyword in keywords):
             return value
     return EMPLOYED_STATUS
+
+
+def employment_status(agent):
+    """Public read of :func:`_employment_status` for other subsystems."""
+    return _employment_status(agent)
 
 
 def restore_employment_state(agent):

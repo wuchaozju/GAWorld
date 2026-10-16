@@ -290,7 +290,7 @@ print(f"95% 置信区间:[{lower:.3f}, {upper:.3f}]")
 > 11.6 节"完整流程"展示了一个真实研究的分析步骤。读者可以照这个流程做自己的研究。下一章讨论"可信度":一个仿真结果要满足什么条件,才能被同行评议接受?
 ---
 
-### 11.8 扩展:异质性分析的工程实现
+## 11.8 扩展:异质性分析的工程实现
 
 异质性分析是政策类仿真研究最有价值的输出——但很多研究者只做总体均值,不做异质性分层。本节给出完整的异质性分析工作流。
 
@@ -395,7 +395,7 @@ forest_plot({
 
 ---
 
-### 11.9 扩展:稳健性检验与敏感性分析
+## 11.9 扩展:稳健性检验与敏感性分析
 
 仿真结果的稳健性需要系统检验。本节给出三个常用方法。
 
@@ -458,7 +458,7 @@ print(f"种子变异系数:{cv:.3f}")
 
 ---
 
-### 11.10 扩展:长期趋势的检测方法
+## 11.10 扩展:长期趋势的检测方法
 
 长时段仿真(1 年以上)需要检测"趋势"和"突变"。
 
@@ -510,7 +510,7 @@ print(f"变化点:{cps}")  # [60, 90, 180] 等
 
 ---
 
-### 11.11 扩展:从仿真数据到学术论文
+## 11.11 扩展:从仿真数据到学术论文
 
 最后,给读者一个"仿真数据 → 学术论文"的工程流程:
 
@@ -570,56 +570,7 @@ output/
 5. **模拟同行评议**(自己扮审稿人)
 6. **修改、定稿、投稿**
 
-这一流程在 17 章会详细展开,本节先给出工程层的工作流。
-
----
-
-## 11.12　本章小结(扩展版)
-
-- 数据分析是"从仿真日志到统计结论"的工程过程。
-- 三层数据(原始日志、状态日志、记忆快照)协同回答机制问题。
-- 指标白话化是论文可读性的关键。
-- 偏离度、分叉点、轨迹对齐是平行世界分析的三大指标。
-- 四张必画图:时间序列、分叉度、分布对比、逐人影响。
-- 异质性分析比总体均值更有政策价值,需要分层维度 + 交互效应回归 + 森林图。
-- 稳健性检验包括参数敏感性、种子敏感性、可复现性证书。
-- 长期趋势检测需要滑动窗口 + 变化点检测 + 因果冲击识别。
-- 论文写作流程:数据齐 → IM化
-- **lme4 / nlme**:混合模型
-- **igraph**:网络分析
-- **survival**:生存分析
-
-### 11.13.3　混合使用
-
-Python 和 R 可以混合使用:
-
-```bash
-# 用 Python 做数据预处理
-python preprocess.py input.csv > processed.csv
-
-# 用 R 做统计分析
-Rscript analyze.R processed.csv
-```
-
-### 11.13.4　Notebook 工作流
-
-Jupyter / R Markdown 是数据分析的常用工具:
-
-```python
-# Cell 1: 加载数据
-import pandas as pd
-df = pd.read_csv("output/run_<ts>/state/agent_state_history.csv")
-
-# Cell 2: 探索性分析
-df.describe()
-
-# Cell 3: 假设检验
-# ...
-```
-
----
-
-### 11.14 扩展:统计推断的细节
+这一流程在 17 章会详细展开,本节先给出工程层的工作流。## 11.14 扩展:统计推断的细节
 
 ### 11.14.1　样本量的确定
 
@@ -666,7 +617,7 @@ def required_sample_size(effect_size, alpha=0.05, power=0.8):
 
 ---
 
-### 11.15 扩展:可重复分析
+## 11.15 扩展:可重复分析
 
 ### 11.15.1　版本控制
 
@@ -727,7 +678,7 @@ def reproducibility_certificate(analysis_dir):
 
 ---
 
-### 11.17 扩展:大规模数据的处理
+## 11.17 扩展:大规模数据的处理
 
 ### 11.17.1　大规模数据的挑战
 
@@ -769,16 +720,7 @@ result = df.groupby("agent_id").mean().compute()
 
 - **时间序列**:展示趋势
 - **分布图**:展示分布形状
-- **比较图**:展示差异
-- **关系图**:展示相关
-- **网络图**:展示结构
-
-### 11.18.4　可视化工具对比
-
-| 工具 | 优势 | 劣势 |
-|---|---|---|
-| matplotlib | 灵活 | 繁琐 |
-| seaborn | 统计图好 | 不灵活 |
+- **比较| seaborn | 统计图好 | 不灵活 |
 | plotly | 交互式 | 体积大 |
 | ggplot2 | 优雅 | 学习曲线 |
 | D3.js | 强大 | 学习曲线陡 |
@@ -794,7 +736,7 @@ result = df.groupby("agent_id").mean().compute()
 
 ---
 
-### 11.20 扩展:高级统计方法
+## 11.20 扩展:高级统计方法
 
 ### 11.20.1　广义线性模型
 
@@ -843,33 +785,7 @@ mod是因果推断的好场景:
 
 - 倾向得分匹配
 - 工具变量
-- 中介分析
-
----
-
-### 11.21 扩展:数据分析的工程实践
-
-### 11.21.1　分析工作流
-
-完整的工作流:
-
-1. 数据加载
-2. 数据清洗
-3. 探索性分析
-4. 假设检验
-5. 异质性分析
-6. 稳健性检验
-7. 结果可视化
-8. 报告生成
-
-### 11.21.2　分析脚本模板
-
-```python
-# analysis_template.py
-import pandas as pd
-import numpy as np
-
-def main(input_csv: str, output_dir: str):
+- 中介分析(input_csv: str, output_dir: str):
     """分析主函数"""
     # 1. 加载数据
     df = pd.read_csv(input_csv)
@@ -1028,43 +944,7 @@ def run_tests(df: pd.DataFrame) -> dict:
 ### 11.27.2　滑动窗口均值
 
 ```python
-def rolling_window(df, metric, window=30):
-    """滑动窗口均值"""
-    return df.groupby("day")[metric].mean().rolling(window).mean()
-```
-
-滑动窗口均值用于看长期趋势。
-
-### 11.27.3　指数平滑
-
-```python
-def exponential_smoothing(series, alpha=0.3):
-    """指数平滑"""
-    result = [series[0]]
-    for n in range(1, len(series)):
-        result.append(alpha * series[n] + (1 - alpha) * result[-1])
-    return result
-```
-
-指数平滑近期数据比远期数据更重要。
-
-### 11.27., 1)):
-    """ARIMA 模型"""
-    model = ARIMA(series, order=order)
-    fitted = model.fit()
-    return fitted
-```
-
-ARIMA 用于预测。
-
-### 11.27.5　变化点检测
-
-```python
-import ruptures as rpt
-
-def detect_change_points(series, n_bkps=3):
-    """变化点检测"""
-    algo = rpt.Pelt(model="rbf").fit(series.values)
+def rolling_window(df, metric, s.values)
     change_points = algo.predict(pen=10)
     return change_points
 ```
@@ -1091,7 +971,7 @@ def detect_change_points(series, n_bkps=3):
 
 ---
 
-### 11.28 扩展:多层数据结构的处理
+## 11.28 扩展:多层数据结构的处理
 
 社会仿真数据常常是多层的:
 
@@ -1110,99 +990,7 @@ def detect_change_points(series, n_bkps=3):
 import statsmodels.formula.api as smf
 
 # 多层模型
-model = smf.mixedlm("outcome ~ treatment * income",
-                    data=df,
-                    groups=df["city"])
-result = model.fit()
-```
-
-### 11.28.1　固定效应 vs 随机效应
-
-- **固定效应**:假设群组效应是固定的(每个群组有不同的常数)
-- **随机效应**:假设群组效应是随机的(从某个分布抽取)
-
-社会科学里,随机效应更常见——城市是"从城市总体抽出来的样本"。
-
-### 11.28.2　群组内相关
-
-多层数据的关键问题是"群组内相关"——同一城市的智能体有相似的环境。如果忽略这个相关,标准误会被低估。
-
-处理方法:
-
-- **稳健标准误**(Cluster-robust SE)
-- **多层模型**
-- **GEE(Generalized Estimating Equations)**
-
-### 11.28.3　多层分析的常见错误
-
-- **错误 1**:忽略群组结构,使用 OLS
-- **错误 2**:把群组效应当作固定效应处理(失去推广性)
-- **错误 3**:跨群组比较时不做群组校正
-
-读者做多层数据分析时,要避免这些错误。
-
----
-
-### 11.29 扩展:贝叶斯分析
-
-贝叶斯分析在社会仿真里越来越重要。
-
-### 11.29.1　贝叶斯基本思路
-
-贝叶斯分析的核心是贝叶斯定理:
-
-$$P(\theta|D) = \frac{P(D|\theta) \times P(\theta)}{P(D)}$$
-
-- $P(\theta)$:先验概率
-- $P(D|\theta)$:似然(给定参数,数据概率)
-- $P(\theta|D)$:后验概率(给定数据,参数概率)
-
-### 11.29.2　贝叶斯分析的优势
-
-- 自然处理不确定性
-- 整合先验知识
-- 自然处理多层数据
-- 自然处理缺失数据
-
-### 11.29.3　PyMC 应用
-
-```python
-import pymc as pm
-
-with pm.Model() as model:
-    # 先验
-    mu = pm.Normal("mu", mu=0, sigma=10)
-    sigma = pm.HalfNormal("sigma", sigma=5)
-
-    # 似然
-    likelihood = pm.Normal("y", mu=mu, sigma=sigma, observed=data)
-
-    # 采样
-    trace = pm.sample(2000)
-```
-
-PyMC 是 Python 的贝叶斯建模库。
-
-### 11.29.4　贝叶斯在社会仿真里的价值
-
-- **参数估计**:用先验 + 数据得到参数分布
-- **预测**:用后验预测分布
-- **模型比较**:用 Bayes Factor
-- **决策**:用后验损失函数
-
----
-
-### 11.30 扩展:因果推断的具体技术
-
-因果推断是社会仿真数据分析的核心。
-
-### 11.30.1　倾向得分匹配
-
-```python
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import NearestNeighbors
-
-def propensity_score_matching(treatment, covariates, outcome):
+model = smf.mixedlm("outcome ~ treatmement, covariates, outcome):
     """倾向得分匹配"""
     # 估计倾向得分
     model = LogisticRegression()
@@ -1275,7 +1063,7 @@ def synthetic_control(treated_unit, control_units, y_pre):
 
 ---
 
-### 11.31 扩展:数据可视化的最佳实践
+## 11.31 扩展:数据可视化的最佳实践
 
 ### 11.31.1　可视化的常见错误
 
@@ -1336,7 +1124,7 @@ def plot_comprehensive(df, output="output.png"):
 
 ---
 
-### 11.32 扩展:数据伦理与隐私
+## 11.32 扩展:数据伦理与隐私
 
 ### 11.32.1　数据隐私的边界
 
@@ -1374,7 +1162,7 @@ GDPR(欧盟通用数据保护条例)对仿真数据有要求:
 
 ---
 
-### 11.33 扩展:数据分析的元科学
+## 11.33 扩展:数据分析的元科学
 
 ### 11.33.1　元科学的兴起
 

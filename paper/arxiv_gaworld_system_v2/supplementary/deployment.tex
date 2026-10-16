@@ -1,0 +1,116 @@
+\section{Deployment profiles and configuration}
+\label{supp:deployment}
+
+This supplementary section enumerates the v2 deployment profiles, the
+configuration keys that change between profiles, and the runtime
+constraints that apply to each profile.  The profiles are mutually
+exclusive; a deployment that mixes two profiles is misconfigured.
+
+\subsection{Single-tenant, single-process (S1P)}
+
+\paragraph{Use case.}  Local research, bundled benchmarks, a single
+researcher running one world.
+
+\paragraph{Configuration.}
+\texttt{accounts.enabled = false} (the default).  The
+\texttt{GAWORLD\_DASHBOARD\_TOKEN} environment variable is the only
+credential; a Bearer header in an HTTP request authenticates as admin.
+
+\paragraph{Runtime constraints.}  At most one running simulation.
+All paths under \texttt{output/} are used directly.  No per-tenant
+quotas apply.
+
+\subsection{Multi-tenant, single-process (M1P)}
+
+\paragraph{Use case.}  A classroom, a workshop, a small research group
+sharing a single server.
+
+\paragraph{Configuration.}
+\texttt{accounts.enabled = true}; the account store is initialized
+with \texttt{python -m gaworld.accounts init --admin <nickname>}.
+Invites are issued in batches with \texttt{python -m gaworld.accounts
+invite --count N --label <class>}.  Quotas are configured by the
+admin through \texttt{POST /api/worlds/settings}.
+
+\paragraph{Runtime constraints.}
+A \emph{default} world always exists for back-compat; non-default
+worlds are stored under \texttt{output/worlds/<id>/}.  A world has
+at most one running simulation; the deployment as a whole has at
+most \texttt{max\_concurrent\_runs} (default 4).  Each user has at
+most \texttt{max\_runs\_per\_user} (default 1) running simulations;
+admins are exempt.
+
+\subsection{Multi-tenant, multi-node (M1N)}
+
+\paragraph{Use case.}  A school lab, a cross-campus collaboration, a
+multi-region test, a teacher whose students run their own model keys
+on their own laptops.
+
+\paragraph{Configuration.}
+Same as M1P, plus at least one node registered with
+\texttt{POST /api/worlds/<id>/nodes} and joined with
+\texttt{python -m gaworld.cluster join <hub-url> --token <token>}.
+
+\paragraph{Runtime constraints.}
+Same as M1P, plus a per-node intervention poll interval (default 1 s)
+and a per-node record-upload interval (default 1 s).  The hub
+publishes a logical clock that is the median of the per-node clocks;
+the visualizer and the intervention display consult this clock but
+do not require it for correctness.  A node that disconnects keeps
+running locally and back-fills records on reconnection; a node
+whose token is revoked receives 401 on its next request and stops
+the simulation.
+
+\subsection{Backwards compatibility}
+
+The \texttt{AccountStore} is optional.  An installation that has not
+run \texttt{python -m gaworld.accounts init} continues to behave
+exactly as v1 did, with \texttt{GAWORLD\_DASHBOARD\_TOKEN} as the only
+credential and a single \texttt{default} world.  Migration to
+multi-tenancy is a one-way operation: the account store cannot be
+removed without deleting every world.  The v2 path-resolution layer
+honors the v1 module constants when \texttt{accounts.enabled = false},
+so unit tests that monkey-patch module constants continue to work.
+
+\subsection{Hardening checklist}
+
+For a production deployment, the following additional hardening steps
+are recommended.  They are not part of v2 by default and are not
+required for local research.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{TLS.}  Terminate TLS at a reverse proxy (nginx,
+  Caddy, or a managed load balancer).  Set
+  \texttt{HSTS}, \texttt{Secure} cookie, and a redirect from HTTP
+  to HTTPS.
+  \item \textbf{Authentication.}  Replace
+  \texttt{GAWORLD\_DASHBOARD\_TOKEN} with a per-user token issued by
+  the account store.  Enable rate limiting and brute-force
+  protection on \texttt{/api/auth}.
+  \item \textbf{Authorization.}  Audit the per-role permissions in
+  \texttt{gaworld/accounts/policy.py} and confirm that the role
+  \texttt{owner} cannot exceed \texttt{max\_concurrent\_runs} by
+  hiding as \texttt{admin}.
+  \item \textbf{Quota.}  Configure a per-tenant LLM-call quota
+  appropriate to the underlying provider's billing model.  A dry-run
+  mode logs the would-be denial without refusing the request.
+  \item \textbf{Audit.}  Forward the \texttt{audit} table to a
+  long-term store (a SQL database or a log-shipping service) and
+  retain the records for the period required by the institution.
+  \item \textbf{Redis / database.}  Replace the in-process
+  \texttt{DistributedRelayBackend} with a Redis-backed relay if
+  the deployment crosses a process boundary that the in-process
+  relay cannot serve.  Replace the SQLite \texttt{accounts.sqlite}
+  with a managed database if the deployment has more than one
+  dashboard process.
+  \item \textbf{Secret management.}  Load \texttt{OPENAI\_API\_KEY},
+  \texttt{ANTHROPIC\_API\_KEY}, and other provider credentials from
+  a secret manager (AWS Secrets Manager, GCP Secret Manager, or
+  HashiCorp Vault) rather than from a dotenv file in the working
+  directory.
+\end{itemize}
+
+These steps do not change the protocol semantics; they raise the
+deployment to a production bar.  Without them, a public deployment
+exposes the research surface to the open Internet and inherits the
+risks of any such exposure.

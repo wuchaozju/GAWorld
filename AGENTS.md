@@ -16,6 +16,7 @@ GAWorld/
 │   ├── distributed/          # 分布式通信（comm.py：中继客户端）
 │   ├── cluster/              # 分布式世界（nodes/hub/bundle/node/plugin：一个世界的居民分到多台机器，枢纽 = dashboard）
 │   ├── economy/              # 经济模块（finance.py + plugin.py）
+│   ├── public_sector/        # 公共部门（policy/plugin：政府与政策 → 改写经济规则 + 转移支付 + 居民简报；换届；默认关）
 │   ├── env/                  # 环境系统（system.py）
 │   ├── events/               # 生命事件（life.py + plugin.py）
 │   ├── family/               # 家庭与户（assign/overrides/ties/duties/finance/events + plugin.py）
@@ -96,28 +97,37 @@ GAWorld/
   - `python -m gaworld.interview --spec round.json --out answers.json`
   - Sessions land in `output/interviews/<session_id>/`; docs in `docs/GROUP_INTERVIEW_TUTORIAL.md`
 - Play a round against residents (游戏场): the dashboard hub at `/site/dashboard/games.html`.
-  The arena keeps its own `/api/arena/*`; every other game hangs off `/api/games/<game>/*`:
-  - persuasion — ask a question, chat within a turn limit, re-ask and let a judge model decide
-    whether the position really moved
-  - disaster mode — a batch of residents live through a disaster stage by stage; each answers in
-    structured JSON (action / panic / help / quote), so the histogram needs no judge call.
-    Implemented in `gaworld/apps/disaster_api.py`; `games_api` only forwards the prefix
-  - rumor spread — a rumor travels a network derived from the roster (same block / surname /
-    trade / age; no simulation run needed). The model picks the verb (forward, ask around,
-    debunk, sit on it), the graph picks the recipients, and the run reports the diffusion tree.
-    Implemented in `gaworld/apps/rumor_api.py`
-  - team duel — two teams get the same task and two opposed methods; each member plays to their
-    own persona, the moves become a team plan, and a judge scores both plans blind (relabelled
-    方案一/方案二 in shuffled order) per criterion. The winner is decided by the summed scores,
-    not by the winner the model names. Implemented in `gaworld/apps/duel_api.py`
-  - referendum — a motion with real stakes goes to a private vote, then a public one with the
-    tally, the loudest quotes and an optional campaign line in between; the run reports the swing.
-    `gaworld/apps/referendum_api.py`
-  - read the room — one resident, one dilemma, one guess, one call; "ask again" re-samples the
-    same dilemma to measure whether the persona is stable. `gaworld/apps/guess_api.py`
+  The arena keeps its own `/api/arena/*`; every other game hangs off `/api/games/<game>/*`.
+  A one-page overview (按"问题形状"分家族、按研究问题反查) lives at
+  `docs/GAMES_OVERVIEW.md`; how each game runs end-to-end is in `docs/PLAYGROUND_TUTORIAL.md`.
   Games that need a background job share `gaworld/apps/game_jobs.py` (one `JobStore` each).
   Games keep their state in memory and never write to a city bundle.
-  Docs in `docs/PLAYGROUND_TUTORIAL.md`
+  当前 14 个游戏,按玩法家族分四组:
+  - 一对一(对一个居民):
+    - persuasion — 提问 + 聊天 + 复问;裁判模型对比首尾两份答案是否真改主意。`gaworld/apps/games_api.py`
+    - read the room (`/api/games/guess/*`) — 一人一道两难,直接猜;复问还能测稳定性。`gaworld/apps/guess_api.py`
+    - jury (`/api/games/jury/*`) — 3–5 名陪审员三轮讨论 + 匿名投票 + 量刑,裁决从票里出、不是裁判给的。`gaworld/apps/jury_api.py`
+  - 一群人同时面对一件事:
+    - disaster mode — 一批居民过同一灾难 stage by stage;每人一个结构化 JSON
+      (action / panic / help / quote),直方图不需要裁判。`gaworld/apps/disaster_api.py`
+    - warzone (`/api/games/warzone/*`) — 仓库见底时每天一次全员提议 + 全员互投;
+      死亡率、基尼系数、投票分歧率都是确定性代码算的。`gaworld/apps/warzone_api.py`
+    - rumor spread — 一条传闻沿熟人关系网传;模型选 verb(转发 / 求证 / 辟谣 / 不管),
+      图选收件人;跑完给传播树。`gaworld/apps/rumor_api.py`
+    - referendum — 有利害的议案先私投再公开表决,可夹一段宣传语;跑完给民意的位移。`gaworld/apps/referendum_api.py`
+    - news commentary (`/api/games/commentary/*`) — 一条新闻 + 1–12 位居民各自一句评论 + 立场 + 强度。`gaworld/apps/commentary_api.py`
+  - 任务协作 / 创意:
+    - team duel — 两队拿同一任务两条相反路子,评审蒙着队名按维度逐项打分;
+      胜负按总分定,不是模型自己说的赢家。`gaworld/apps/duel_api.py`
+    - novel writer (`/api/games/novel/*`) — 2–6 位居民当主角,按他们档案写一本带大纲的小说。`gaworld/apps/novel_api.py`
+  - 长期同居 / 多人(长会话 + 真人参与):
+    - roommate mode (`/api/games/roommate/*`) — 2–6 位居民合租一间公寓,
+      唯一的"长会话游戏",前端按 tick 反复拉。`gaworld/apps/roommate_api.py`
+    - who's human (`/api/games/whois/*`) — 居民和真人同坐一个匿名群聊,
+      **唯一一个真人入场的游戏**;真人凭座位链接入座。`gaworld/apps/whois_api.py`
+    - timeslip (`/api/games/timeslip/*`) — 把 2–8 位居民扔进一个真实朝代的关键时刻,
+      每幕写一句古人口吻 + 一句现代内心独白;三轴评分(era_fit / stability / inner_conflict)
+      是确定性代码算的、不是裁判给的。`gaworld/apps/timeslip_api.py`
 - Build a resident from a real person (真人蒸馏): Agent Studio → **＋ 从真人蒸馏**, backed by
   `/api/persona/*`. A name or a URL is searched, read and distilled into a sourced portrait
   (identity + state + Big Five + mental models / heuristics / expression DNA / limits):
@@ -138,6 +148,13 @@ GAWorld/
     proposes modifications and a revised policy, which is re-simulated on the same residents — the
     highest composite score is the recommendation (`/api/research/policy/*`). Runs in
     `output/research/policy/`; `gaworld/research/policy_sim.py` + `gaworld/apps/policy_sim_api.py`
+  - 社会调查/实验拟合度 tab (`research.html?tab=replication`): upload a paper that reports a survey or an experiment
+    on real people; one model call extracts an editable spec (conditions with their stimuli, questions on their own
+    scales, the human results with their sources — nothing unreported is estimated), the researcher corrects it,
+    then a seeded sample of residents of the chosen size takes the same study (between-subjects or paired) and code
+    compares: per-cell error on the item's range, human value inside the agents' 95% CI, treatment effects'
+    direction and significance, a fidelity score (`/api/research/replication/*`). Runs in
+    `output/research/replication/`; `gaworld/research/replication.py` + `gaworld/apps/replication_api.py`
   - 平行世界 · 反事实推断 tab (`research.html?tab=worlds`; the old `worlds.html` / `/console#worlds`
     redirect here): design 2–8 worlds by hand, run them (optionally under several `seeds`, one grouped
     experiment per seed), and read counterfactual estimates — paired per-resident ATE with bootstrap CI,
@@ -162,10 +179,11 @@ GAWorld/
     environment events and the background prompt at that bundle.
   - Residents of *any* city are readable without switching to it, straight from the
     bundle: `GET /api/city/agents?city=<slug>` / `GET /api/city/agent?city=<slug>&id=<n>`
-    (`city` omitted = the default world). The 城市 panel lists them; Agent Studio's city
-    picker browses them **read-only** — agent ids restart at 1 in every city while
-    memory, Big Five, social and finance are one flat per-id namespace belonging to the
-    running city, so editing across cities would write onto somebody else. Docs in
+    (`city` omitted = the default world). The 城市 panel lists them (its hand-off into
+    Agent Studio is **read-only**). Agent Studio's city picker makes the picked city the
+    running one and edits it: agent ids restart at 1 in every city, so Studio only ever
+    edits the running city, and `world_paths.state_csv_path()` / `profile_path()` /
+    `big5_csv_path()` follow a city selected after the server started. Docs in
     `docs/CITY_TUTORIAL.md`.
 
 There is no build step beyond installing Python dependencies.

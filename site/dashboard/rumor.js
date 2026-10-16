@@ -43,8 +43,12 @@
     run: null,      // finished run
     roundFilter: null,
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
     jobTimer: null,
-    maxAgents: 14,
+    maxAgents: 0,
   };
 
   const exporter = GAWorldGameExport.attach(() => state.run && {
@@ -92,7 +96,7 @@
       const resp = await fetch("/api/games/rumor/catalogue");
       const data = await resp.json();
       state.rumors = data.rumors || [];
-      state.maxAgents = data.max_agents || 14;
+      state.maxAgents = data.max_agents || 0;
       sel.innerHTML = state.rumors
         .map((r) => `<option value="${esc(r.id)}">${esc(r.emoji + " " + r.title)}</option>`)
         .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("rumor.custom_option", "自己写一条…"))}</option>`;
@@ -165,10 +169,17 @@
         const id = parseInt(box.value, 10);
         if (box.checked) state.picked.add(id);
         else state.picked.delete(id);
-        if (state.picked.size > state.maxAgents) {
+        // The dashboard no longer hard-caps agent count: the per-user daily
+        // LLM quota (gaworld.accounts.usage) decides how big a run can be.
+        // `state.maxAgents` falls back to 0 ("no cap") when the server says
+        // so, so we only refuse picks when a non-zero cap is configured.
+        if (state.maxAgents && state.picked.size > state.maxAgents) {
           state.picked.delete(id);
           box.checked = false;
-          setStatus(t("rumor.too_many", "最多 14 人"), true);
+          setStatus(
+            t("rumor.too_many", "最多 {max} 人").replace("{max}", state.maxAgents),
+            true
+          );
           return;
         }
         afterPick();
@@ -185,7 +196,9 @@
     const people = state.agents.filter(
       (a) => wanted.has(a.residence || t("rumor.no_block", "（无住址）"))
     );
-    state.picked = new Set(people.slice(0, state.maxAgents).map((a) => a.id));
+    state.picked = new Set(
+      (state.maxAgents ? people.slice(0, state.maxAgents) : people).map((a) => a.id)
+    );
     renderAgents();
     afterPick();
   }
@@ -266,6 +279,7 @@
     }
 
     $("#rRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#rRunBtn"), "rumor.running", "传开中…");
     setProgress(0);
     setStatus(t("rumor.running", "传开中…"));
     try {
@@ -280,7 +294,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#rRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -317,7 +331,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#rRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------

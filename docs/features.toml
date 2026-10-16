@@ -132,6 +132,12 @@ desc = "2–3 种不同思路的设计，城市/人口/时间/条件/事件/指�
 features = ["研究工作台"]
 
 [[axis.group.feature]]
+name = "社会调查/实验拟合度"
+desc = "文献里的真人调查/实验 → 居民重做 → 代码比对拟合度"
+entry = "`/site/dashboard/research.html?tab=replication`"
+features = ["社会调查/实验拟合度（研究工作台页签）"]
+
+[[axis.group.feature]]
 name = "代码判定与报告"
 desc = "supported/contradicted/inconclusive/unmeasured，附判定依据"
 entry = "`GET /api/research/studies/<id>/report`"
@@ -261,7 +267,7 @@ features = ["本地 Dashboard"]
 
 [[axis.group.feature]]
 name = "外部系统观测台"
-desc = "观察/编辑货币/环境/对外服务"
+desc = "观察/编辑货币/环境/对外服务/公共部门"
 entry = "`/site/dashboard/external.html`"
 features = ["外部系统观测台"]
 doc = "docs/EXTERNAL_SYSTEMS_TUTORIAL.md"
@@ -449,6 +455,13 @@ name = "经济仿真"
 desc = "货币守恒、部门池、个税五险一金、恩格尔消费"
 entry = "`CONFIG[\"economy\"]`"
 features = ["经济仿真"]
+
+[[axis.group.feature]]
+name = "公共部门"
+desc = "不同政府与政策：税、社保、最低时薪、转移支付"
+entry = "`CONFIG[\"public_sector\"]`"
+features = ["公共部门"]
+doc = "docs/EXTERNAL_SYSTEMS_TUTORIAL.md"
 
 [[axis.group.feature]]
 name = "多后端 LLM 路由"

@@ -71,6 +71,26 @@ BASIC_PAYLOAD = {
 
 
 class SpecTests(unittest.TestCase):
+    def test_fast_world_respects_configured_sample_and_pinned_model(self):
+        experiment = spec_mod.normalize_experiment({**BASIC_PAYLOAD, "fast": True, "llm_provider": "chosen"})
+        config = {"agent_ids": [9], "llm": {"routing": {
+            "tasks": {"schedule": "local"}, "agents": {"9": "local"}, "fallback": ["local"]}}}
+        overrides = spec_mod.world_overrides(experiment, experiment.worlds[0], "r/a", base_config=config)
+        self.assertEqual(overrides["agent_ids"], [9])
+        self.assertEqual(overrides["llm"]["routing"]["fallback"], [])
+        self.assertEqual(overrides["llm"]["routing"]["agents"], {"9": "chosen"})
+
+    def test_fast_world_normalizes_ambient_sample_without_replacing_explicit_ids(self):
+        experiment = spec_mod.normalize_experiment({**BASIC_PAYLOAD, "fast": True})
+        for configured, expected in ((9, [9]), ("9", [9]), (None, []), ([], [])):
+            with self.subTest(configured=configured):
+                result = spec_mod.world_overrides(experiment, experiment.worlds[0], "r/a",
+                                                  base_config={"agent_ids": configured})
+                self.assertEqual(result["agent_ids"], expected)
+        experiment.agent_ids = [7]
+        result = spec_mod.world_overrides(experiment, experiment.worlds[0], "r/a", base_config={"agent_ids": None})
+        self.assertEqual(result["agent_ids"], [7])
+
     def test_baseline_defaults_to_the_world_without_events(self):
         payload = {
             "worlds": [
@@ -314,6 +334,26 @@ class AdmissionTests(unittest.TestCase):
         self.runner.stop()
         thread.join(5)
         self.assertIsNone(result["proc"])
+
+    def test_a_paused_world_stays_queued_when_a_slot_opens(self):
+        thread, result = self._spawn_in_background()
+        try:
+            time.sleep(0.1)
+            self.runner.pause()
+            self.allowed[0] = True
+            time.sleep(0.15)
+            self.assertNotIn("proc", result)
+            self.runner.resume()
+            thread.join(5)
+            self.assertIsNotNone(result["proc"])
+        finally:
+            self.runner.stop()
+            thread.join(5)
+            proc = result.get("proc")
+            if proc is not None:
+                proc.wait(5)
+                with runner._LIVE_LOCK:
+                    runner._LIVE.discard(proc)
 
     def test_the_dashboard_gate_counts_experiment_worlds(self):
         store = mock.Mock(get_setting=lambda key, default: {"max_concurrent_runs": 2}.get(key, default))

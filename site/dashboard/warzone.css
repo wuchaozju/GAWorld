@@ -1,0 +1,273 @@
+/* 《这是我的战争》 (Warzone) — game-specific layout.
+ *
+ * Two-column grid like the other gameplay pages. The left panel is the
+ * setup form (city / scenario / days / resident picker); the right panel
+ * is the result board (overall metrics + stock trail + day log).
+ */
+
+.warzone-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 360px) 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+}
+@media (max-width: 880px) {
+  .warzone-grid { grid-template-columns: 1fr; }
+}
+
+.warzone-side {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+}
+.warzone-side .field { display: block; margin-bottom: 12px; }
+.warzone-side .field > span {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+.warzone-side select,
+.warzone-side input:not([type="checkbox"]),
+.warzone-side textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border, rgba(0,0,0,0.16));
+  border-radius: 6px;
+  background: var(--bg-input, #fff);
+  color: inherit;
+  font: inherit;
+}
+.warzone-side textarea { min-height: 84px; resize: vertical; }
+
+.warzone-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 12px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.warzone-stock-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.warzone-block { margin: 16px 0; }
+.warzone-block h4 { font-size: 14px; margin: 0 0 8px; display: flex; gap: 8px; align-items: baseline; }
+.warzone-block h4 b { font-weight: 600; }
+
+.warzone-toolbar { display: flex; gap: 6px; margin-bottom: 8px; }
+
+.warzone-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--border, rgba(0,0,0,0.12));
+  border-radius: 6px;
+}
+.warzone-list li { padding: 4px 8px; border-bottom: 1px solid rgba(0,0,0,0.04); }
+.warzone-list li:last-child { border-bottom: none; }
+.warzone-list label { display: flex; gap: 8px; align-items: baseline; cursor: pointer; font-size: 13px; }
+.warzone-list .who { font-weight: 600; }
+.warzone-list .meta { color: var(--muted); font-size: 12px; }
+.warzone-empty { padding: 8px; color: var(--muted); font-size: 13px; }
+.warzone-empty.is-error { color: #b91c1c; }
+
+.warzone-actions { margin: 12px 0; }
+
+.warzone-history { margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 12px; }
+.warzone-history ul { list-style: none; margin: 0; padding: 0; }
+.warzone-history button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid var(--border, rgba(0,0,0,0.12));
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.warzone-history .who { display: block; font-weight: 600; font-size: 13px; }
+.warzone-history .meta { display: block; color: var(--muted); font-size: 12px; }
+
+/* Board */
+.warzone-main {
+  min-height: 320px;
+  padding: 0;
+}
+.warzone-main-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.warzone-main-head h3 { margin: 0; font-size: 18px; }
+.warzone-status { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.warzone-status.is-error { color: #b91c1c; }
+.warzone-progress { width: 30%; min-width: 200px; }
+.warzone-progress .bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.warzone-progress .bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #b91c1c);
+  transition: width 0.2s ease;
+}
+.warzone-progress .muted { display: block; text-align: right; font-size: 12px; margin-top: 4px; }
+
+#wIdle, #wResult { padding: 18px; }
+.warzone-idle { color: var(--muted); font-size: 13px; }
+
+.warzone-summary {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.04);
+}
+.warzone-summary h4 { margin: 0 0 6px; font-size: 14px; }
+.warzone-summary p { margin: 0; line-height: 1.5; font-size: 14px; }
+
+.warzone-overall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.warzone-metric {
+  padding: 8px 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 6px;
+}
+.warzone-metric .label { display: block; font-size: 12px; color: var(--muted); }
+.warzone-metric b { font-size: 16px; font-weight: 600; }
+.warzone-metric .suffix { color: var(--muted); font-size: 12px; margin-left: 2px; }
+
+/* Stock trail: one row per resource, one pill per day */
+.warzone-stock-trail { margin-bottom: 24px; }
+.warzone-stock-trail h4 { margin: 0 0 8px; font-size: 14px; }
+.warzone-stock-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.warzone-stock-label { font-size: 13px; font-weight: 600; }
+.warzone-stock-cells {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+.warzone-stock-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    rgba(245, 158, 11, 0.18) var(--w, 10%),
+    rgba(0,0,0,0.04) var(--w, 10%)
+  );
+  border: 1px solid rgba(0,0,0,0.06);
+  font-size: 12px;
+  min-width: 28px;
+}
+.warzone-stock-pill b { font-weight: 600; line-height: 1; }
+.warzone-stock-pill i { font-style: normal; color: var(--muted); font-size: 11px; }
+
+/* Day log */
+.warzone-log { display: flex; flex-direction: column; gap: 16px; }
+.warzone-day {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.warzone-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.warzone-day-head h4 { margin: 0; font-size: 15px; }
+.warzone-day-meta { color: var(--muted); font-size: 12px; }
+.warzone-day-text { margin: 6px 0 10px; font-size: 14px; line-height: 1.5; }
+.warzone-day-winner, .warzone-day-tally {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.warzone-day-winner b { color: inherit; font-weight: 600; }
+.warzone-day-deaths { margin: 4px 0 0; color: #b91c1c; font-weight: 600; font-size: 13px; }
+
+/* Proposals grid inside a day */
+.warzone-proposals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.warzone-plan {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.02);
+}
+.warzone-plan header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.warzone-plan .plan-label { font-size: 13px; font-weight: 600; }
+.warzone-plan .plan-author { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.warzone-plan .plan-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.warzone-plan .plan-rows li { padding: 2px 0; }
+
+/* Votes row */
+.warzone-votes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px;
+}
+.warzone-vote {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  border-left: 3px solid var(--muted);
+}
+.warzone-vote.is-yes { border-left-color: #16a34a; background: rgba(22, 163, 74, 0.06); }
+.warzone-vote.is-no { border-left-color: #b91c1c; background: rgba(185, 28, 28, 0.06); }
+.warzone-vote.is-abstain { border-left-color: rgba(0,0,0,0.2); }
+.warzone-vote .who { font-weight: 600; }
+.warzone-vote .choice { font-weight: 600; text-transform: uppercase; }
+.warzone-vote .for { color: var(--muted); }
+.warzone-vote .reason { color: var(--muted); flex: 1; }

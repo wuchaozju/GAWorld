@@ -55,6 +55,14 @@ class Study:
     #: Bumped by a reset, so a re-run writes a fresh experiment tree instead
     #: of overwriting the one the previous attempt left behind.
     attempt: int = 1
+    parent_study_id: str = ""
+    protocol_changes: dict[str, Any] = field(default_factory=dict)
+    source_plan: dict[str, Any] = field(default_factory=dict)
+    protocol_revisions: list[dict[str, Any]] = field(default_factory=list)
+    owner_id: str | None = None
+    owner: str = ""
+    world_id: str = ""
+    runtime: dict[str, Any] = field(default_factory=dict)
     protocol: dict[str, Any] = field(default_factory=dict)
     preflight: dict[str, Any] = field(default_factory=dict)
     runs: list[dict[str, Any]] = field(default_factory=list)
@@ -120,6 +128,7 @@ def new_study(
         autopilot=bool(autopilot),
         protocol=protocol,
         preflight=preflight,
+        source_plan={key: value for key, value in plan.items() if key != "revisions"},
     )
 
 
@@ -180,6 +189,8 @@ def _summary(study: Study) -> dict[str, Any]:
         "preflight_ok": bool((study.preflight or {}).get("ok")),
         "summary": evaluation.get("summary") or {},
         "error": study.error,
+        "owner_id": study.owner_id,
+        "world_id": study.world_id,
     }
 
 

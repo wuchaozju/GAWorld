@@ -130,6 +130,19 @@
     api("POST", "/api/play/claim", { agent_id: id }).then(refresh, function (err) { status(err.message, true); });
   }
 
+  /** Wrap a click handler with button-busy treatment. */
+  function withBusy(btn, fn, busyKey, busyFallback) {
+    return function () {
+      if (!btn || btn.disabled) return;
+      var release = (typeof setButtonBusy === "function")
+        ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+        : (function () { btn.disabled = true; return function () { btn.disabled = false; }; })();
+      var p;
+      try { p = fn(); } catch (err) { release(); throw err; }
+      Promise.resolve(p).then(release, function (err) { release(); throw err; });
+    };
+  }
+
   function heartbeat() {
     if (play && play.mine != null) {
       api("POST", "/api/play/claim", { agent_id: play.mine }).catch(function (err) { status(err.message, true); });
@@ -202,9 +215,9 @@
       status(t("play.sent", "已送出，下一个 tick 生效"));
     }, function (err) { status(err.message, true); });
   });
-  $("pRelease").addEventListener("click", function () {
-    api("POST", "/api/play/release", {}).then(refresh, function (err) { status(err.message, true); });
-  });
+  $("pRelease").addEventListener("click", withBusy($("pRelease"), function () {
+    return api("POST", "/api/play/release", {}).then(refresh, function (err) { status(err.message, true); });
+  }, "play.release", "释放中…"));
   // Closing the tab lets go at once instead of after the lease runs out.
   window.addEventListener("pagehide", function () {
     if (play && play.mine != null && navigator.sendBeacon) {
