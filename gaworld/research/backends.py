@@ -173,6 +173,7 @@ def default_seed_runner(
     base_config: dict[str, Any] | None,
     experiment_prefix: str,
     active: dict[str, Any],
+    owner: dict[str, Any] | None = None,
 ) -> SeedRunner:
     """The real thing: fork the worlds as subprocesses and wait for them.
 
@@ -192,6 +193,7 @@ def default_seed_runner(
             base_config=config,
             experiment_id=f"{experiment_prefix}_s{seed}",
             group=experiment_prefix,
+            owner=owner,
         )
         ledger_path = active.get("ledger")
         if ledger_path:

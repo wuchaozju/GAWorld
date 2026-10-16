@@ -17,6 +17,7 @@ show eight worlds advancing instead of a spinner.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import re
@@ -27,6 +28,7 @@ import threading
 import time
 from typing import Any, Callable
 
+from gaworld.accounts import ownership
 from gaworld.core.comparability import CURRENT_EPOCH
 from gaworld.logging_setup import get_logger
 from gaworld.parallel.analysis import (
@@ -93,6 +95,7 @@ def prepare_experiment(
     base_config: dict[str, Any] | None = None,
     experiment_id: str | None = None,
     group: str | None = None,
+    owner: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create the on-disk tree for an experiment and write its manifest.
 
@@ -129,6 +132,7 @@ def prepare_experiment(
         "spec": spec.to_dict(),
         "worlds": worlds,
         "status": "prepared",
+        **(ownership.stamp() if owner is None else {"owner_id": owner.get("owner_id"), "owner": owner.get("owner", "")}),
     }
     from gaworld.research.workspaces import stamp
 
@@ -285,7 +289,9 @@ class ExperimentRunner:
         return os.path.join(self.repo_root, rel)
 
     def _env(self, world_id: str) -> dict[str, str]:
-        env = os.environ.copy()
+        from gaworld.accounts.usage import child_env
+
+        env = child_env(os.environ.copy())
         env.update(self._usage_env)
         env["PYTHONUNBUFFERED"] = "1"
         import copy
@@ -569,7 +575,8 @@ class ExperimentRunner:
                     self._set(world_id, status="error", error=str(exc), finished_at=time.time())
 
         threads = [
-            threading.Thread(target=worker, name=f"world-{index}", daemon=True)
+            threading.Thread(target=contextvars.copy_context().run, args=(worker,),
+                             name=f"world-{index}", daemon=True)
             for index in range(min(self.max_parallel, max(1, len(pending))))
         ]
         for thread in threads:

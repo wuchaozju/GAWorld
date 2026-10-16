@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "date": "2026-10-13",
+  "asset": "../../site/home/assets/cultural-montage.png",
+  "prompt": "Create a refined editorial art image for GAWorld, a Chinese culturally situated generative social simulation research website. A wide cinematic photographic montage, approximately 3:2 landscape, no text and no logos. Authentic contemporary Hangzhou daily life, not an exotic stereotype: a quiet West Lake bridge in mist, weathered residential lane and window balconies, a modern city's very faint distant skyline, subtle everyday commuters, a bicycle, tea table still life. Layer discrete photographic fragments and torn translucent washi paper in an intelligent museum exhibition collage. Large finely composed negative spaces at edges. Muted celadon green, warm ivory, ink black, small vermilion accent. Analogue film grain, atmospheric photographic realism, exquisite architectural proportions, restrained sophistication, art direction like a cultural journal. Not a busy scrapbook, no fantasy, no neon sci fi, no fake glyphs, no diagrams, no interface. The image will be used as an artistic illustration, not documentary evidence.",
+  "interpretation": "Artistic illustration, not an observed simulation output.",
+  "design_references": [
+    "https://agentsociety2.fiblab.net/",
+    "https://github.com/tsinghua-fib-lab/agentsociety"
+  ]
+}

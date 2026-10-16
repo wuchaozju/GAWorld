@@ -180,9 +180,6 @@ _TEMPLATE_RULES: dict[str, dict[str, Callable[[Context], Any]]] = {
         "gate": _bereavable,
         "weight": lambda ctx: _int(ctx, "age", 30) / 90.0,
     },
-    "relocation": {
-        "weight": lambda ctx: 0.4 * _sv(ctx, "mobility_intent") - 0.2 * _sv(ctx, "city_identity"),
-    },
     "retirement": {
         "gate": lambda ctx: _int(ctx, "age", 30) >= 55 and _employment(ctx) != "retired",
         "weight": lambda ctx: max(0.0, (_int(ctx, "age", 30) - 55) / 15.0),

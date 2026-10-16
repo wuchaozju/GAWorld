@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gaworld"
-version = "0.2.0"
+version = "0.2.1"
 description = "Generative multi-agent simulator for urban social behavior experiments."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -38,15 +38,19 @@ dev = [
 ]
 
 [project.scripts]
-gaworld = "generative_city_sim:_main"
+gaworld = "gaworld.launcher:main"
 gaworld-deploy = "gaworld.apps.deploy_services:main"
 
 [tool.setuptools]
 # All logic lives in gaworld/. The only root-level module is the CLI entry point.
 # Legacy shims have been moved to legacy/ and are no longer distributed.
 py-modules = [
-    "generative_city_sim",   # CLI entry point
+    "generative_city_sim",   # Historical Python API
+    "environment",           # Existing compatibility import used by the simulator
 ]
+
+[tool.setuptools.cmdclass]
+build_py = "gaworld.packaging.build.BuildRuntime"
 
 [tool.setuptools.packages.find]
 include = ["gaworld*"]
@@ -150,6 +154,7 @@ addopts = [
     "--strict-markers",
 ]
 markers = [
+    "integration: integration tests spanning simulation components",
     # Tests that spawn real child processes or import the whole simulator per
     # case. They run by default; `-m "not slow"` skips them for a fast loop.
     "slow: spawns subprocesses or imports the full simulator",

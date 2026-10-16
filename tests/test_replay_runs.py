@@ -143,7 +143,7 @@ class ReplayPageTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
     def test_pages_load_the_indoor_view_after_its_dependencies(self):
-        for page in ("site/simviz/index.html", "site/terminal/simviz.html", "site/dashboard/index.html"):
+        for page in ("site/simviz/index.html", "site/dashboard/index.html"):
             html = (ROOT / page).read_text(encoding="utf-8")
             self.assertIn('id="indoorView"', html, page)
             order = [html.index(src) for src in (
@@ -153,6 +153,11 @@ class ReplayPageTests(unittest.TestCase):
                 "/site/dashboard/indoor-view.js",
             )]
             self.assertEqual(sorted(order), order, page)
+
+    def test_terminal_alias_redirects_to_the_maintained_replay(self):
+        html = (ROOT / "site/terminal/simviz.html").read_text(encoding="utf-8")
+        self.assertIn('content="0;url=/site/simviz/index.html"', html)
+        self.assertIn('location.search + location.hash', html)
 
 
 if __name__ == "__main__":

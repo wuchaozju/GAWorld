@@ -24,6 +24,8 @@ Level = Literal["public", "member", "city", "world", "admin"]
 PUBLIC_PAGES = ("/login", "/join", "/reset")
 PUBLIC_PREFIXES = ("/site/auth/",)
 PUBLIC_API = {
+    ("GET", "/api/health"),
+    ("HEAD", "/api/health"),
     ("POST", "/api/auth/login"),
     ("POST", "/api/auth/register"),
     ("POST", "/api/auth/reset"),
@@ -36,6 +38,7 @@ ADMIN_READS = ("/api/auth/users", "/api/auth/invites", "/api/auth/audit", "/api/
 #: up (the dashboard checks; admins are exempt). Saving config, stopping a run
 #: or deleting something never is.
 QUOTA_GATED_EXACT = {
+    "/api/settings/llm/test",
     "/api/run/start",
     "/api/run/schedule",
     "/api/interview",
@@ -59,19 +62,34 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
+STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete"})
+
+
+def study_action(path: str) -> str | None:
+    parts = path.strip("/").split("/")
+    if parts == ["api", "research", "studies"]:
+        return "create"
+    if len(parts) == 5 and parts[:3] == ["api", "research", "studies"] and parts[4] in STUDY_ACTIONS:
+        return parts[4]
+    return None
+
+
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
         return True
-    if path == "/api/research/studies" or (
-        path.startswith("/api/research/studies/")
-        and path.rsplit("/", 1)[-1] in {"run", "approve", "check-provider"}
-    ):
-        return True
-    return path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+    return (
+        path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+        or study_action(path) in {"create", "approve", "run", "resume", "reset"}
+    )
 
 
 MEMBER_WRITES_EXACT = {
+    "/api/settings/llm/credential",
+    "/api/settings/llm/test",
+    "/api/todos/create",
+    "/api/todos/create-form",
+    "/api/todos/update",
     "/api/auth/logout",
     "/api/auth/password",
     "/api/interview",
@@ -124,9 +142,6 @@ CITY_WRITES = {
 
 def required(method: str, path: str) -> Level:
     path = path.rstrip("/") or "/"
-    # The sign-in page shares this public brand asset; other assets stay gated.
-    if method in ("GET", "HEAD") and path == "/site/assets/logo-emergent.png":
-        return "public"
     if (method, path) in PUBLIC_API or path in PUBLIC_PAGES or path.startswith(PUBLIC_PREFIXES):
         return "public"
     if method in ("GET", "HEAD"):
@@ -146,6 +161,8 @@ def required(method: str, path: str) -> Level:
         return "member"  # creating, selecting; owning the world is checked by the handler
     if path.startswith("/api/cluster/"):
         return "member"  # a world's nodes; owning the world is checked by the handler
+    if study_action(path) is not None:
+        return "member"  # every study handler checks ownership before reading or writing
     # Deleting is owner business: these handlers check the record's owner
     # (gaworld.accounts.ownership); every other delete stays admin-only.
     if "delete" in path.split("/"):

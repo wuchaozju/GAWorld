@@ -8,7 +8,6 @@
   <meta name="description" data-i18n-content="console.shell_description" content="GAWorld 一体化控制台：控制台 · 仿真回放 · 智能体工作台" />
   <link rel="stylesheet" href="/site/console/console.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
-  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
 </head>
 <body>
   <header class="console-bar">
@@ -16,7 +15,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
     <a class="brand" href="/" data-i18n-title="console.home_title" title="返回首页">
-      <span class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></span>
       <span class="brand-name">GAWorld Console</span>
     </a>
     <div class="crumb" id="crumb" aria-live="polite">
@@ -25,6 +23,11 @@
       <strong class="crumb-view" id="crumbView"></strong>
     </div>
     <div class="bar-right">
+      <select id="themeMode" aria-label="外观" title="外观">
+        <option value="system">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
       <span class="world-chip" id="worldChip" hidden>
         <select id="worldSelect" data-i18n-aria="world.label" aria-label="世界"></select>
         <button type="button" class="open-new" id="worldManageBtn" data-i18n="world.manage">管理世界</button>

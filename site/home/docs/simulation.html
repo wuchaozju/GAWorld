@@ -1,0 +1,591 @@
+<!doctype html>
+<html class="no-js" lang="zh-CN" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="GAWorld 文档：仿真运行与时间尺度。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="回放、分析与导出" href="results.html"><link rel="prev" title="技能与真实工作" href="skills-work.html">
+        <link rel="prefetch" href="_static/logo.svg" as="image">
+
+    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>仿真运行与时间尺度 - GAWorld 文档</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=c92b6c3a" />
+    <link rel="stylesheet" type="text/css" href="_static/prompts.css?v=56adfc9f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">GAWorld 文档</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  <div class="sidebar-logo-container">
+    
+    <img class="sidebar-logo" src="_static/logo.svg" alt="GAWorld" width="480" height="281">
+    
+  </div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">工作区、城市与世界</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
+<li class="toctree-l1"><a class="reference internal" href="research.html">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">提示词</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="prompts/index.html">提示词总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/simulation.html">仿真认知提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/interviews.html">访谈问答提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/research.html">研究与实验提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/editing.html">修改与验证</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">案例分析</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cases/index.html">案例总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/simulation-records.html">已有仿真实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/classics.html">经典行为实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/demand.html">需求估计提示词</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/client.html">HTTP 客户端</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
+</ul>
+
+</div>
+
+
+<section class="visitor-widget" aria-labelledby="visitor-widget-title" hidden>
+  <h2 id="visitor-widget-title">访问统计</h2>
+  <template id="visitor-widget-embed"><script type="text/javascript" id="mapmyvisitors" src="https://mapmyvisitors.com/map.js?d=Qv8NcKeQND1Rw6TTxjM9dacMMD10_yGRj76gBrTDnd4&amp;cl=ffffff&amp;w=a"></script></template>
+  <p class="visitor-widget-status" role="status">正在加载访问统计…</p>
+  <div class="visitor-widget-map"></div>
+  <p>地图显示访客的大致地区。</p>
+</section>
+
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/blob/main/site/documentation/simulation.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/edit/main/site/documentation/simulation.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="id1">
+<h1>仿真运行与时间尺度<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
+<p>一次仿真使用选定的居民、城市与模型配置，推进居民行动，并记录状态、记忆、关系和环境变化。</p>
+<p>开始前完成模型配置，确认城市、当前世界和参与居民；先用少量居民验证流程。</p>
+<section id="id2">
+<h2>设置运行范围<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>在仿真页面选择居民，设置时长与模型，然后保存配置。先完成一次短运行，确认居民、环境和模型输出符合实验设置，再增加运行规模。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>设置</p></th>
+<th class="head"><p>作用</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>居民选择</p></td>
+<td><p>决定参与本次运行的智能体</p></td>
+</tr>
+<tr class="row-odd"><td><p>仿真时长</p></td>
+<td><p>决定推进多少天、月或年</p></td>
+</tr>
+<tr class="row-even"><td><p>默认模型与日程模型</p></td>
+<td><p>决定行动和日程所使用的后端</p></td>
+</tr>
+<tr class="row-odd"><td><p>长时段快进</p></td>
+<td><p>将日内细节压缩为阶段简报</p></td>
+</tr>
+<tr class="row-even"><td><p>步长单位</p></td>
+<td><p>在快进中选择天、月或年</p></td>
+</tr>
+<tr class="row-odd"><td><p>随机性</p></td>
+<td><p>调节快进模式中的突发事件频率与状态波动</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="guide-shot align-default" id="id15">
+<a class="reference external image-reference" href="_static/screenshots/simulation.png"><img alt="GAWorld 运行设置和长时段快进选项" src="_images/simulation.png" />
+</a>
+<figcaption>
+<p><span class="caption-text">运行参数集中在控制台顶部；长时段快进与步长单位在同一区域设置。 点击图片查看完整尺寸。</span><a class="headerlink" href="#id15" title="链接到此图片">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="id3">
+<h2>启动、观察与停止<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<p>点击启动后，在日志中查看运行进度。轨迹回放展示居民位置与移动，居民详情展示状态、记忆和关系。</p>
+<p>需要结束当前运行时，使用控制台的停止操作。查看最后的日志与已保存结果，再决定下一次运行的参数。</p>
+</section>
+<section id="id4">
+<h2>长时段快进<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<p>研究长期变化时，在工具栏开启 <strong>长时段快进</strong>，选择步长单位和时长。快进以每位居民的阶段简报推进状态、目标和关系。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>时间尺度</p></th>
+<th class="head"><p>运行方式</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>日内行动</p></td>
+<td><p>常规仿真，按日内时刻推进</p></td>
+</tr>
+<tr class="row-odd"><td><p>数十天到数百天</p></td>
+<td><p>按天快进，每天生成日简报</p></td>
+</tr>
+<tr class="row-even"><td><p>月度变化</p></td>
+<td><p>按月快进，每月生成阶段简报</p></td>
+</tr>
+<tr class="row-odd"><td><p>年度变化</p></td>
+<td><p>按年快进，每年生成阶段简报</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>时间尺度决定输出的细节层次。对照实验中的各组使用相同的步长与快进设置。平行世界的 <code class="docutils literal notranslate"><span class="pre">fast</span></code> 则控制确定性认知与每日总结，具体差异见 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">快速模式与长时段快进</span></a>。</p>
+</section>
+<section id="id5">
+<h2>命令行运行<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p>完成模型配置并选定城市后，在工作区执行：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+<p>按天快进和按月、年推进：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gaworld<span class="w"> </span>run<span class="w"> </span>--sim-days<span class="w"> </span><span class="m">60</span><span class="w"> </span>--fast-forward
+gaworld<span class="w"> </span>run<span class="w"> </span>--sim-months<span class="w"> </span><span class="m">24</span>
+gaworld<span class="w"> </span>run<span class="w"> </span>--sim-years<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2>群体模式<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<p>需要研究人口分布时，可以按属性将居民组织为 cohort（群体），再选择重点个体进行更细的模拟。群体模式保留群体均值与离散度；个体的完整行动轨迹使用个体模式查看。</p>
+<p>独立群体模拟可先用无模型模式检查流程：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>gaworld.group<span class="w"> </span>--size<span class="w"> </span><span class="m">500</span><span class="w"> </span>--days<span class="w"> </span><span class="m">7</span><span class="w"> </span>--no-llm
+</pre></div>
+</div>
+<p>群体划分、网络耦合和近似误差的验证方法见仓库的 <a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/docs/GROUP_SIMULATION_TUTORIAL.md">群体模拟说明</a>。</p>
+</section>
+<section id="id7">
+<h2>运行中施加干预<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>通过 <a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a> 可以向当前运行提交干预。例如调整居民状态后，在日志与状态历史中检查其后续变化。做条件比较时，使用 <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界</span></a> 保存共同基线和各组设置。</p>
+</section>
+<section id="id8">
+<h2>运行结束后<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<p>在 <a class="reference internal" href="results.html"><span class="std std-doc">回放、分析与导出</span></a> 中定位日志、轨迹与状态时间序列；在 <a class="reference internal" href="interviews.html"><span class="std std-doc">访谈与群体采访</span></a> 中查看居民的回答。</p>
+</section>
+<section id="id9">
+<h2>完成后检查<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h2>
+<p>在日志中确认居民数量、时间尺度和进度。结束后查看本次运行的轨迹与状态文件；常规模式重点查看行动过程，快进模式重点查看阶段简报和状态变化。</p>
+</section>
+<section id="id10">
+<h2>从点击运行到第一条记录<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h2>
+<p>保存表单后，<code class="docutils literal notranslate"><span class="pre">runs.start_simulation()</span></code> 读取当前配置并启动子进程；<code class="docutils literal notranslate"><span class="pre">run_simulation()</span></code> 加载居民、装配插件，再进入日内管线。居民一次行动完成后，状态与记忆模块更新数据，visualizer 保存可回放的帧。排查时依次看启动日志、居民编号、模型调用和输出目录，可以判断问题发生在配置、执行还是记录阶段。</p>
+</section>
+<section id="id11">
+<h2>代码结构与执行流程<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h2>
+<section id="id12">
+<h3>模块分工<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/app.js">site/dashboard/app.js</a></p></td>
+<td><p>运行参数表单、启动与停止操作、状态轮询和日志显示。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/runs.py">gaworld/apps/runs.py</a></p></td>
+<td><p>校验运行请求、管理排队与名额、启动和停止仿真子进程。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/generative_city_sim.py">generative_city_sim.py</a></p></td>
+<td><p>run_simulation() 装配运行环境并推进主循环。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/pipeline.py">gaworld/sim/pipeline.py</a></p></td>
+<td><p>StagePipeline 定义每个居民的认知阶段执行顺序。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/sim/_fastforward.py">gaworld/sim/_fastforward.py</a></p></td>
+<td><p>规划日、月、年跨度，生成阶段简报并应用状态变化。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/core/runner.py">gaworld/core/runner.py</a></p></td>
+<td><p>提供保持输入顺序的并发映射工具。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/plugins/__init__.py">gaworld/plugins/__init__.py</a></p></td>
+<td><p>装配内置插件，将经济、技能等机制接入生命周期。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id13">
+<h3>执行流程<a class="headerlink" href="#id13" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>运行表单 → runs.start_simulation() → 仿真子进程
+  → run_simulation() → 常规认知管线 / 快进阶段
+  → 插件更新与记录 → 日志、状态、记忆和轨迹
+</pre></div>
+</div>
+<p>网页运行由 runs 管理子进程，命令行则直接进入仿真入口。常规运行按日内时间点执行居民认知与行动；快进由 <code class="docutils literal notranslate"><span class="pre">_fastforward.py</span></code> 提供跨度规划和简报逻辑，主循环负责钩子调用与持久化。独立群体模拟使用 <code class="docutils literal notranslate"><span class="pre">gaworld/group/</span></code> 下的另一套入口。</p>
+</section>
+<section id="id14">
+<h3>从哪里修改<a class="headerlink" href="#id14" title="链接到此标题。">¶</a></h3>
+<p>调整启动、排队或停止行为查看 <code class="docutils literal notranslate"><span class="pre">apps/runs.py</span></code>；调整认知阶段查看 <code class="docutils literal notranslate"><span class="pre">sim/pipeline.py</span></code> 及其阶段实现；调整长时段简报查看 <code class="docutils literal notranslate"><span class="pre">_fastforward.py</span></code>。新增机制通过插件接入，开发步骤见 <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a>。</p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="results.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">回放、分析与导出</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="skills-work.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">技能与真实工作</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">仿真运行与时间尺度</a><ul>
+<li><a class="reference internal" href="#id2">设置运行范围</a></li>
+<li><a class="reference internal" href="#id3">启动、观察与停止</a></li>
+<li><a class="reference internal" href="#id4">长时段快进</a></li>
+<li><a class="reference internal" href="#id5">命令行运行</a></li>
+<li><a class="reference internal" href="#id6">群体模式</a></li>
+<li><a class="reference internal" href="#id7">运行中施加干预</a></li>
+<li><a class="reference internal" href="#id8">运行结束后</a></li>
+<li><a class="reference internal" href="#id9">完成后检查</a></li>
+<li><a class="reference internal" href="#id10">从点击运行到第一条记录</a></li>
+<li><a class="reference internal" href="#id11">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id12">模块分工</a></li>
+<li><a class="reference internal" href="#id13">执行流程</a></li>
+<li><a class="reference internal" href="#id14">从哪里修改</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="index.html">当前版本 v0.2.1</a>
+    <a href="read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../index.html">项目主页</a>
+  </div>
+</details>
+<script src="_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/translations.js?v=540d3cec"></script>
+    <script src="_static/navigation.js?v=258b3747"></script>
+    <script src="_static/visitors.js?v=b764520e"></script>
+    <script src="_static/brand-reveal.js?v=2bb05bd8"></script>
+    </body>
+</html>

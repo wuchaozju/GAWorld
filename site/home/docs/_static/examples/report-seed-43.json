@@ -1,0 +1,528 @@
+{
+  "baseline_id": "baseline",
+  "metrics": [
+    "stress"
+  ],
+  "metric_labels": {
+    "stress": "压力"
+  },
+  "steps": 6,
+  "steps_per_day": 2.0,
+  "sim_days": 3,
+  "split_threshold": 0.02,
+  "worlds": [
+    {
+      "id": "baseline",
+      "label": "基准",
+      "events": [],
+      "config": {},
+      "role": "baseline",
+      "dose": null,
+      "is_baseline": true,
+      "has_data": true,
+      "steps": 6,
+      "agents": 8,
+      "divergence_final": 0.0,
+      "divergence_peak": 0.0,
+      "split_step": null,
+      "top_metric": null,
+      "top_label": null,
+      "top_delta": 0.0,
+      "trace": "fixtures/seed-43/worlds/baseline/visualization/simulation_trace.json",
+      "dir": "fixtures/seed-43/worlds/baseline"
+    },
+    {
+      "id": "subsidy",
+      "label": "补贴通告",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "租金补贴通告",
+          "description": "市政部门宣布为低收入家庭提供租金补贴。"
+        }
+      ],
+      "config": {},
+      "role": "treatment",
+      "dose": null,
+      "is_baseline": false,
+      "has_data": true,
+      "steps": 6,
+      "agents": 8,
+      "divergence_final": 0.08000000000000002,
+      "divergence_peak": 0.08000000000000002,
+      "split_step": 2,
+      "top_metric": "stress",
+      "top_label": "压力",
+      "top_delta": -0.08000000000000002,
+      "trace": "fixtures/seed-43/worlds/subsidy/visualization/simulation_trace.json",
+      "dir": "fixtures/seed-43/worlds/subsidy"
+    },
+    {
+      "id": "placebo",
+      "label": "例行通告",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "例行通告",
+          "description": "市政部门发布办公时间未发生变化的例行通告。"
+        }
+      ],
+      "config": {},
+      "role": "placebo",
+      "dose": null,
+      "is_baseline": false,
+      "has_data": true,
+      "steps": 6,
+      "agents": 8,
+      "divergence_final": 0.0050000000000000044,
+      "divergence_peak": 0.0050000000000000044,
+      "split_step": null,
+      "top_metric": "stress",
+      "top_label": "压力",
+      "top_delta": 0.0050000000000000044,
+      "trace": "fixtures/seed-43/worlds/placebo/visualization/simulation_trace.json",
+      "dir": "fixtures/seed-43/worlds/placebo"
+    }
+  ],
+  "trajectories": {
+    "stress": {
+      "baseline": [
+        0.445,
+        0.455,
+        0.46499999999999997,
+        0.475,
+        0.485,
+        0.495
+      ],
+      "subsidy": [
+        0.445,
+        0.455,
+        0.385,
+        0.395,
+        0.405,
+        0.415
+      ],
+      "placebo": [
+        0.445,
+        0.455,
+        0.47,
+        0.48,
+        0.49,
+        0.5
+      ]
+    }
+  },
+  "divergence": {
+    "baseline": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "subsidy": [
+      0.0,
+      0.0,
+      0.07999999999999996,
+      0.07999999999999996,
+      0.07999999999999996,
+      0.08000000000000002
+    ],
+    "placebo": [
+      0.0,
+      0.0,
+      0.0050000000000000044,
+      0.0050000000000000044,
+      0.0050000000000000044,
+      0.0050000000000000044
+    ]
+  },
+  "deltas": [
+    {
+      "world_id": "subsidy",
+      "metric": "stress",
+      "label": "压力",
+      "baseline_final": 0.495,
+      "final": 0.415,
+      "delta_final": -0.08000000000000002,
+      "baseline_mean": 0.47,
+      "mean": 0.4166666666666667,
+      "delta_mean": -0.05333333333333329
+    },
+    {
+      "world_id": "placebo",
+      "metric": "stress",
+      "label": "压力",
+      "baseline_final": 0.495,
+      "final": 0.5,
+      "delta_final": 0.0050000000000000044,
+      "baseline_mean": 0.47,
+      "mean": 0.47333333333333333,
+      "delta_mean": 0.003333333333333355
+    }
+  ],
+  "movers": {
+    "subsidy": [
+      {
+        "agent_id": "1",
+        "distance": 0.09400000000000003,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.09400000000000003,
+        "deltas": {
+          "stress": -0.09400000000000003
+        }
+      },
+      {
+        "agent_id": "2",
+        "distance": 0.08999999999999997,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.08999999999999997,
+        "deltas": {
+          "stress": -0.08999999999999997
+        }
+      },
+      {
+        "agent_id": "3",
+        "distance": 0.08599999999999997,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.08599999999999997,
+        "deltas": {
+          "stress": -0.08599999999999997
+        }
+      },
+      {
+        "agent_id": "4",
+        "distance": 0.08200000000000002,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.08200000000000002,
+        "deltas": {
+          "stress": -0.08200000000000002
+        }
+      },
+      {
+        "agent_id": "5",
+        "distance": 0.07800000000000001,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.07800000000000001,
+        "deltas": {
+          "stress": -0.07800000000000001
+        }
+      },
+      {
+        "agent_id": "6",
+        "distance": 0.07400000000000001,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.07400000000000001,
+        "deltas": {
+          "stress": -0.07400000000000001
+        }
+      },
+      {
+        "agent_id": "7",
+        "distance": 0.07,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.07,
+        "deltas": {
+          "stress": -0.07
+        }
+      },
+      {
+        "agent_id": "8",
+        "distance": 0.066,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": -0.066,
+        "deltas": {
+          "stress": -0.066
+        }
+      }
+    ],
+    "placebo": [
+      {
+        "agent_id": "1",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "2",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "3",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "4",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "5",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "6",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "7",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      },
+      {
+        "agent_id": "8",
+        "distance": 0.0050000000000000044,
+        "top_metric": "stress",
+        "top_label": "压力",
+        "top_delta": 0.0050000000000000044,
+        "deltas": {
+          "stress": 0.0050000000000000044
+        }
+      }
+    ]
+  },
+  "split_threshold_source": "default",
+  "causal": {
+    "baseline_id": "baseline",
+    "alpha": 0.05,
+    "method": {
+      "estimand": "post_event_mean",
+      "bootstrap": 2000,
+      "permutations": 5000,
+      "exact_permutation_max_n": 12,
+      "balance_tolerance": 0.01,
+      "responder_eps": 0.01,
+      "rng_seed": 20261002
+    },
+    "estimates": [
+      {
+        "world_id": "subsidy",
+        "metric": "stress",
+        "label": "压力",
+        "n": 8,
+        "event_step": 2,
+        "ate": -0.07999999999999999,
+        "ci_low": -0.0865,
+        "ci_high": -0.07350000000000001,
+        "se": 0.0032864596979383562,
+        "p_value": 0.0078125,
+        "d_z": -8.164965809277257,
+        "ate_final": -0.08,
+        "baseline_mean": 0.48,
+        "relative": -0.16666666666666666,
+        "pre_gap": 0.0,
+        "did": -0.07999999999999999,
+        "balanced": true,
+        "share_up": 0.0,
+        "share_down": 1.0,
+        "role": "treatment",
+        "q_value": 0.0078125,
+        "noise": 0.0050000000000000044,
+        "verdict": "robust"
+      },
+      {
+        "world_id": "placebo",
+        "metric": "stress",
+        "label": "压力",
+        "n": 8,
+        "event_step": 2,
+        "ate": 0.0050000000000000044,
+        "ci_low": 0.0050000000000000044,
+        "ci_high": 0.0050000000000000044,
+        "se": 0.0,
+        "p_value": 0.0078125,
+        "d_z": null,
+        "ate_final": 0.0050000000000000044,
+        "baseline_mean": 0.48,
+        "relative": 0.010416666666666676,
+        "pre_gap": 0.0,
+        "did": 0.0050000000000000044,
+        "balanced": true,
+        "share_up": 0.0,
+        "share_down": 0.0,
+        "role": "placebo",
+        "q_value": 0.0078125,
+        "noise": null,
+        "verdict": "robust"
+      }
+    ],
+    "noise": {
+      "stress": 0.0050000000000000044
+    },
+    "dynamics": {
+      "subsidy": {
+        "metrics": {
+          "stress": {
+            "onset_step": 2,
+            "peak_step": 2,
+            "peak": -0.08,
+            "final": -0.08,
+            "persistence": 1.0,
+            "half_life": null,
+            "threshold": 0.02
+          }
+        },
+        "order": [
+          "stress"
+        ]
+      },
+      "placebo": {
+        "metrics": {
+          "stress": {
+            "onset_step": null,
+            "peak_step": 2,
+            "peak": 0.005,
+            "final": 0.005,
+            "persistence": 1.0,
+            "half_life": null,
+            "threshold": 0.02
+          }
+        },
+        "order": []
+      }
+    },
+    "effect_curves": {
+      "subsidy": {
+        "stress": {
+          "mean": [
+            0.0,
+            0.0,
+            -0.08,
+            -0.08,
+            -0.08,
+            -0.08
+          ],
+          "lo": [
+            0.0,
+            0.0,
+            -0.08679,
+            -0.08679,
+            -0.08679,
+            -0.08679
+          ],
+          "hi": [
+            0.0,
+            0.0,
+            -0.07321,
+            -0.07321,
+            -0.07321,
+            -0.07321
+          ]
+        }
+      },
+      "placebo": {
+        "stress": {
+          "mean": [
+            0.0,
+            0.0,
+            0.005,
+            0.005,
+            0.005,
+            0.005
+          ],
+          "lo": [
+            0.0,
+            0.0,
+            0.005,
+            0.005,
+            0.005,
+            0.005
+          ],
+          "hi": [
+            0.0,
+            0.0,
+            0.005,
+            0.005,
+            0.005,
+            0.005
+          ]
+        }
+      }
+    },
+    "event_steps": {
+      "subsidy": 2,
+      "placebo": 2
+    },
+    "dose_response": [],
+    "placebo_ids": [
+      "placebo"
+    ],
+    "noise_reference_id": "baseline",
+    "warnings": [
+      {
+        "kind": "placebo_moved",
+        "world_id": "placebo",
+        "metric": "stress"
+      }
+    ],
+    "summary": {
+      "robust": 2,
+      "below_noise": 0,
+      "unbalanced": 0,
+      "suggestive": 0,
+      "null": 0,
+      "insufficient": 0
+    }
+  },
+  "experiment_id": "seed-43",
+  "root": "fixtures/seed-43",
+  "name": "补贴通告与压力：教学配置",
+  "created_at": "2026-10-14 21:57:54",
+  "group": null,
+  "seed": 43,
+  "comparability_epoch": null,
+  "summary": [
+    "基准世界：基准",
+    "补贴通告：第 2 步开始分叉，终局距离基准 0.0800（峰值 0.0800），最大变化为压力下降 0.0800",
+    "例行通告：全程未明显分叉，终局距离基准 0.0050（峰值 0.0050），最大变化为压力上升 0.0050"
+  ]
+}

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import sys
 import threading
 from typing import Any, Callable, Iterator
 
@@ -307,7 +308,7 @@ class MockLLM:
     # The actual stub
     # ------------------------------------------------------------------
 
-    def __call__(self, prompt: str, task: str | None = None, agent_id: Any = None) -> str:
+    def __call__(self, prompt: str, task: str | None = None, agent_id: Any = None, **kwargs: Any) -> str:
         with self._lock:
             self.calls.append(
                 {"prompt": prompt, "task": task or "", "agent_id": agent_id}
@@ -320,17 +321,19 @@ class MockLLM:
 
 @contextlib.contextmanager
 def install(mock: MockLLM | None = None) -> Iterator[MockLLM]:
-    """Patch ``gaworld.llm.providers.call_llm`` and ``generative_city_sim.call_llm``.
+    """Patch the router and imported call_llm aliases, including cognition.
 
-    The simulator imports ``call_llm`` into its own module namespace,
-    so we have to patch both bindings to make the substitution
-    universal.
+    Restoring late imports matters too: otherwise one smoke test leaves its
+    mock installed in modules first imported while the context was active.
     """
     from gaworld.llm import providers as llm_providers
 
     real_mock = mock if mock is not None else MockLLM()
     original_router = llm_providers.call_llm
+    original_router_call = llm_providers.LLM_ROUTER.call
     llm_providers.call_llm = real_mock  # type: ignore[assignment]
+    # Function defaults and plugin closures can retain the pre-patch callable.
+    llm_providers.LLM_ROUTER.call = real_mock
 
     # Patch the simulator module binding too if it has been imported.
     legacy = None
@@ -344,12 +347,24 @@ def install(mock: MockLLM | None = None) -> Iterator[MockLLM]:
         original_legacy = legacy.call_llm
         legacy.call_llm = real_mock  # type: ignore[assignment]
 
+    def modules():
+        return [module for name, module in list(sys.modules.items())
+                if module is not None and (name.startswith("gaworld.") or name == "generative_city_sim")]
+
+    for module in modules():
+        if getattr(module, "call_llm", None) is original_router:
+            module.call_llm = real_mock
+
     try:
         yield real_mock
     finally:
+        for module in modules():
+            if getattr(module, "call_llm", None) is real_mock:
+                module.call_llm = original_router
         llm_providers.call_llm = original_router  # type: ignore[assignment]
+        llm_providers.LLM_ROUTER.call = original_router_call
         if legacy is not None and original_legacy is not None:
-            legacy.call_llm = original_legacy  # type: ignore[assignment]
+            legacy.call_llm = original_router if original_legacy is real_mock else original_legacy
 
 
 __all__ = ["DEFAULT_RESPONSES", "GENERIC_RESPONSE", "MockLLM", "install"]

@@ -384,6 +384,11 @@ AGENT_FIELDS = {
 
 def _core() -> dict[str, Any]:
     return {
+        "/api/health": {
+            "get": _op("meta", "Public readiness without user data", errors={"503": "Accounts unavailable"},
+                       ok=_obj(ok=BOOL, service=STR, accounts=BOOL, accounts_required=BOOL)),
+            "head": _op("meta", "Readiness headers only", errors={"503": "Accounts unavailable"}),
+        },
         "/api/openapi.json": {"get": _op("meta", "This document")},
         # accounts (gaworld/apps/accounts_api.py)
         "/api/auth/me": {
@@ -1111,23 +1116,16 @@ def _panels() -> dict[str, Any]:
             )
         },
         "/api/settings/reset-all": {"post": _op("settings", "Drop every override")},
-        "/api/settings/llm/provider": {
-            "post": _op(
-                "settings",
-                "Add or replace a model provider",
-                body=_obj(("name", "type"), name=STR, type=STR, config=OBJ),
-            )
-        },
-        "/api/settings/llm/test": {
-            "post": _op(
-                "settings",
-                "One real generation against a saved provider or a draft",
-                body=_obj(name=STR, config=_d(OBJ, "Draft provider, tested before saving")),
-            )
-        },
-        "/api/external-systems/overview": {
-            "get": _op("external-systems", "Economy, environment and services")
-        },
+        "/api/settings/llm/provider": {"post": _op("settings", "Add or replace a model provider", body=_obj(
+            ("name", "type"), name=STR, type=STR, config=OBJ))},
+        "/api/settings/llm/test": {"post": _op(
+            "settings", "One real generation against a saved provider or a draft",
+            body=_obj(name=STR, config=_d(OBJ, "Draft provider, tested before saving")))},
+        "/api/settings/llm/credential": {"post": _op(
+            "settings", "Write-only personal credential scoped to the signed-in account; never returned",
+            body=_obj(("name",), name=STR, action=_d(STR, "save or delete"),
+                      api_key={"type": "string", "format": "password", "writeOnly": True}))},
+        "/api/external-systems/overview": {"get": _op("external-systems", "Economy, environment and services")},
         "/api/external-systems/health": {"get": _op("external-systems", "Reachability of external services")},
         "/api/external-systems/interventions": {
             "get": _op("external-systems", "Scheduled economy interventions"),

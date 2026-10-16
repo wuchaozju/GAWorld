@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="670" viewBox="0 0 760 670" role="img" aria-labelledby="title desc">
+<title id="title">城市、世界与运行的数据关系</title><desc id="desc">城市包提供居民、地图和环境。团队世界复制居民输入，读取城市地图与环境；运行写入当前世界输出。平行实验使用共同输入和独立条件，分别写入各条件目录。</desc>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#416080"/></marker></defs>
+<rect width="760" height="670" fill="#f9fbfd" rx="12"/>
+<g font-family="system-ui,-apple-system,sans-serif" fill="#183550">
+<text x="32" y="38" font-size="22" font-weight="600">输入、工作单元与输出</text>
+<g stroke="#bacbdf" fill="#fff"><rect x="32" y="65" width="696" height="92" rx="8"/><rect x="32" y="235" width="326" height="119" rx="8"/><rect x="402" y="235" width="326" height="119" rx="8"/><rect x="32" y="435" width="326" height="160" rx="8"/><rect x="402" y="435" width="326" height="160" rx="8"/></g>
+<g font-size="20" font-weight="600"><text x="52" y="96">城市包 · City</text><text x="52" y="268">团队世界 · World</text><text x="422" y="268">平行实验 · Experiment</text><text x="52" y="468">一次运行 · Run</text><text x="422" y="468">各条件分别运行</text></g>
+<g font-size="17"><text x="52" y="128">居民初始数据、档案、地图与环境</text><text x="52" y="298">居民副本 + 世界配置</text><text x="52" y="327">地图与环境通过城市配置读取</text><text x="422" y="298">共同居民输入 + 公共设置</text><text x="422" y="327">各条件事件或参数补丁</text><text x="52" y="500">当前世界：状态、日志、记忆</text><text x="52" y="529">轨迹另按 run_id 归档</text><text x="52" y="570" fill="#536c83">后续运行可更新当前输出</text><text x="422" y="500">基准 / 处理 / 安慰剂</text><text x="422" y="529">独立输出 → 配对分析报告</text><text x="422" y="570" fill="#536c83">路径记录于 experiment.json</text></g>
+<g stroke="#416080" fill="none" stroke-width="2" marker-end="url(#a)"><path d="M195 157 V230"/><path d="M565 157 V230"/><path d="M195 354 V430"/><path d="M565 354 V430"/></g>
+<g font-size="16" fill="#416080"><rect x="122" y="181" width="146" height="26" fill="#f9fbfd"/><text x="132" y="200">复制居民输入</text><rect x="502" y="181" width="126" height="26" fill="#f9fbfd"/><text x="512" y="200">读取共同输入</text><rect x="152" y="380" width="86" height="26" fill="#f9fbfd"/><text x="162" y="399">启动并写入</text><rect x="512" y="380" width="106" height="26" fill="#f9fbfd"/><text x="522" y="399">逐条件写入</text></g>
+<text x="32" y="636" font-size="16" fill="#536c83">本地单人运行也可直接读取城市配置，使用该城市对应的输出目录。</text>
+</g></svg>

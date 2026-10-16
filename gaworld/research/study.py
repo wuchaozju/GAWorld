@@ -72,6 +72,9 @@ class Study:
     #: Rendered on the way to ``reported``; stored as ``report.md``, not in
     #: the JSON record.
     report_markdown: str = ""
+    owner_id: int | None = None
+    owner: str = ""
+    world_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -190,6 +193,7 @@ def _summary(study: Study) -> dict[str, Any]:
         "summary": evaluation.get("summary") or {},
         "error": study.error,
         "owner_id": study.owner_id,
+        "owner": study.owner,
         "world_id": study.world_id,
     }
 

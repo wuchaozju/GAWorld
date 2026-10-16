@@ -1,0 +1,10 @@
+{% set visitor_embed %}{% include "sidebar/visitor-embed.html" %}{% endset %}
+{% if visitor_widget_enabled and visitor_embed | trim %}
+<section class="visitor-widget" aria-labelledby="visitor-widget-title" hidden>
+  <h2 id="visitor-widget-title">访问统计</h2>
+  <template id="visitor-widget-embed">{{ visitor_embed | safe }}</template>
+  <p class="visitor-widget-status" role="status">正在加载访问统计…</p>
+  <div class="visitor-widget-map"></div>
+  <p>地图显示访客的大致地区。</p>
+</section>
+{% endif %}

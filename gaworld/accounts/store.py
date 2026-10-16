@@ -213,6 +213,10 @@ class AccountStore:
             rows = db.execute(f"SELECT {_USER_COLUMNS} FROM users ORDER BY id").fetchall()
         return [_user(row) for row in rows]  # type: ignore[misc]
 
+    def has_admin(self) -> bool:
+        with self._db() as db:
+            return db.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone() is not None
+
     def authenticate(self, nickname: str, password: str) -> dict[str, Any] | None:
         with self._db() as db:
             row = db.execute(

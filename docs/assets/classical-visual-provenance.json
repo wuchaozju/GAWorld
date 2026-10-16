@@ -1,0 +1,13 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "asset": "../../site/home/assets/classical-engraving.png",
+  "prompt": "A refined British classical architectural frontispiece, an original fine copperplate engraving for the website of GAWorld, a contemporary social simulation research platform. A fictional and non-identifiable late Georgian Palladian academic library facade, dignified English classical proportions, a restrained central Ionic portico with four slender stone columns, pediment, finely detailed tall sash windows, symmetrical wings, graceful stone steps and two small ornamental trees. The building is imagined, not an existing university or college. Extremely fine sepia and dark forest-green engraved lines and crosshatching on clean warm ivory paper. Sophisticated archival print quality, delicate draughtsmanship, architectural precision. Wide landscape composition, around 3:2 aspect, building occupies central 65% with generous empty ivory margins and a little sky, slight three-quarter perspective. Quiet intellectual character reminiscent of a British scholarly book's engraved plate. No text, no inscriptions, no coats of arms, no badges, no logos, no dates, no humans, no dramatic lighting, no photorealism, no digital sci fi, no collage, no borders. Decorative architectural study, not evidence of affiliation or of a real project building.",
+  "interpretation": "An imagined architectural study used as decoration; not the project's premises or an affiliation.",
+  "interface_palette": {
+    "Oxford_blue": "#173353",
+    "ivory": "#f7f3eb",
+    "antique_gold": "#b6a781"
+  },
+  "user_direction": "British classical, upper-class aesthetic; retain blue.",
+  "date": "2026-10-13"
+}

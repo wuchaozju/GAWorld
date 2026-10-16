@@ -1,0 +1,11 @@
+{
+  "name": "qwen_27b_server13",
+  "config": {
+    "type": "ollama",
+    "url": "http://127.0.0.1:11436/api/generate",
+    "model": "qwen3.5:27b-q4_K_M",
+    "timeout": 600,
+    "think": false,
+    "num_ctx": 65536
+  }
+}

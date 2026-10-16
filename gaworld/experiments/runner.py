@@ -14,6 +14,7 @@ re-parse rather than a re-run.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import threading
@@ -278,7 +279,7 @@ def _execute(
     aborted = False
     with open(results_path, "a", encoding="utf-8") as handle:
         with ThreadPoolExecutor(max_workers=spec.max_workers) as pool:
-            futures = {pool.submit(_record, spec, cell): cell for cell in todo}
+            futures = {pool.submit(contextvars.copy_context().run, _record, spec, cell): cell for cell in todo}
             for future in as_completed(futures):
                 row = future.result()
                 with lock:

@@ -33,7 +33,7 @@ def test_service_specs_build_dashboard_and_relay_commands():
         "--port",
         "8766",
     ]
-    assert specs[0].health_url == "http://127.0.0.1:8766/api/config"
+    assert specs[0].health_url == "http://127.0.0.1:8766/api/health"
     assert specs[0].systemd_unit == "gaworld-dashboard.service"
     assert specs[1].command[:3] == ["/repo/.venv/bin/python", "generative_city_sim.py", "serve-distributed"]
     assert specs[1].health_url == "http://127.0.0.1:8877/health"

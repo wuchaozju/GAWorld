@@ -1612,4 +1612,3 @@
 **核心状态变量**：emotion 0.83｜stress 0.80｜econ_security 0.70｜city_identity 0.60
 
 ---
-

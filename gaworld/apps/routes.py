@@ -29,6 +29,7 @@ class Route:
 
 
 GET_ROUTES = (
+    Route("health_api", "/api/health"),
     # Kernel surface: generic interventions (the SSE record stream and the
     # OpenAPI spec are answered by the handler, ahead of this table).
     Route("kernel_api", "/api/interventions/", bare=True),

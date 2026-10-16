@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextvars
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -187,6 +188,7 @@ class CollaborationService:
             if self._executor is None:
                 raise RuntimeError("collaboration executor is not running")
             self._futures[session_id] = self._executor.submit(
+                contextvars.copy_context().run,
                 self.run_session,
                 session_id,
             )

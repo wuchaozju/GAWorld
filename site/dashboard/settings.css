@@ -185,6 +185,11 @@
 }
 .llm-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .llm-row-actions .button { padding: 4px 10px; font-size: 12px; }
+.llm-credential { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 10px; }
+.llm-credential .llm-field { flex: 1 1 200px; }
+.llm-credential input { box-sizing: border-box; min-width: 0; }
+.llm-credential .button { min-height: 34px; white-space: normal; }
+.llm-credential [data-key-result] { flex-basis: 100%; }
 .llm-key { font-size: 11px; font-weight: 700; }
 .llm-key.is-ok { color: var(--green, #0e7a58); }
 .llm-key.is-bad { color: #b06a1f; }

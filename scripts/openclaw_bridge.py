@@ -50,6 +50,37 @@ _DEFAULT_MAX_INBOUND = 5              # max messages per poll cycle
 _DEFAULT_MESSAGE_MAX_CHARS = 300      # truncate outbound messages
 
 
+def _normalize_text(value: Any, max_chars: int = 200) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if max_chars > 0 and len(text) > max_chars:
+        text = text[:max_chars].rstrip()
+    return text
+
+
+def _build_public_profile(profile: dict[str, str]) -> dict[str, Any]:
+    tags = []
+    for raw in (profile.get("job", ""), profile.get("personality", ""), profile.get("values", "")):
+        text = _normalize_text(raw, max_chars=24)
+        if text and text not in tags:
+            tags.append(text)
+    return {
+        "summary": _normalize_text(profile.get("background_summary", ""), max_chars=180),
+        "status": "",
+        "focus": _normalize_text(profile.get("job", ""), max_chars=64),
+        "tags": tags[:3],
+    }
+
+
+def _build_social_summary(text: str, activity: str = "", ask: str = "") -> dict[str, str]:
+    return {
+        "summary": _normalize_text(text, max_chars=180),
+        "topic": "跨节点交流",
+        "status": _normalize_text(activity or "回复消息", max_chars=80),
+        "emotion": "平稳",
+        "ask": _normalize_text(ask, max_chars=120),
+    }
+
+
 # =====================================================================
 # SOUL.md → agent profile
 # =====================================================================
@@ -163,12 +194,14 @@ class RelayClient:
 
     def register(self, profile: dict[str, str]) -> int:
         """Register with the relay.  Returns the assigned agent_id."""
+        register_profile = dict(profile)
+        register_profile["public_profile"] = _build_public_profile(profile)
         payload = {
             "cluster": self.cluster,
             "node_id": self.node_id,
             "agent_type": "openclaw",
             "token": self.token,
-            "agents": [profile],
+            "agents": [register_profile],
         }
         data = self._post("/register", payload)
         ids = data.get("assigned_ids", [])
@@ -198,8 +231,19 @@ class RelayClient:
                     self._last_seen[k] = nv
         return messages if isinstance(messages, list) else []
 
-    def send(self, to_agent: int, text: str, day: int = 0,
-             time_str: str = "", activity: str = "") -> bool:
+    def send(
+        self,
+        to_agent: int,
+        text: str,
+        day: int = 0,
+        time_str: str = "",
+        activity: str = "",
+        *,
+        social_summary: dict[str, Any] | None = None,
+        public_state: dict[str, Any] | None = None,
+        intent: str = "conversation",
+        conversation_id: str = "",
+    ) -> bool:
         if not self.agent_id or not text:
             return False
         payload = {
@@ -214,6 +258,13 @@ class RelayClient:
                 "day": day,
                 "time": time_str,
                 "activity": activity,
+                "conversation_id": conversation_id,
+                "intent": intent,
+                "visibility": "direct",
+                "private_level": "summary",
+                "memory_policy": "social_summary",
+                "social_summary": social_summary or _build_social_summary(text, activity=activity),
+                "public_state": public_state or {"status": _normalize_text(activity or "回复消息", max_chars=80)},
             },
         }
         data = self._post("/message/send", payload)
@@ -320,10 +371,23 @@ def build_prompt(messages: list[dict], tick: dict, profile: dict,
         sender_name = msg.get("from_name") or dir_map.get(int(sender_id), f"Agent {sender_id}")
         text = msg.get("text", "")
         activity = msg.get("activity", "")
+        social_summary = msg.get("social_summary", {}) if isinstance(msg.get("social_summary"), dict) else {}
         line = f"- {sender_name}"
         if activity:
             line += f"（正在{activity}）"
         line += f"：{text}"
+        extras = []
+        topic = _normalize_text(social_summary.get("topic", ""), max_chars=32)
+        status = _normalize_text(social_summary.get("status", ""), max_chars=48)
+        ask = _normalize_text(social_summary.get("ask", ""), max_chars=64)
+        if topic:
+            extras.append(f"主题：{topic}")
+        if status:
+            extras.append(f"状态：{status}")
+        if ask:
+            extras.append(f"期待：{ask}")
+        if extras:
+            line += f"（{'；'.join(extras)}）"
         parts.append(line)
     parts.append("")
     parts.append("请用简短的中文回复（1-3句话），保持你的人物性格，自然地参与对话。")
@@ -385,9 +449,18 @@ def run_bridge(args):
     print(f"[bridge] registered as agent #{assigned_id}")
 
     # Update from_name on the relay client for outbound messages.
-    relay_send_original = relay.send
-
-    def _send_with_name(to_agent, text, day=0, time_str="", activity=""):
+    def _send_with_name(
+        to_agent,
+        text,
+        day=0,
+        time_str="",
+        activity="",
+        *,
+        social_summary=None,
+        public_state=None,
+        intent="conversation",
+        conversation_id="",
+    ):
         if not relay.agent_id or not text:
             return False
         payload = {
@@ -402,6 +475,13 @@ def run_bridge(args):
                 "day": day,
                 "time": time_str,
                 "activity": activity,
+                "conversation_id": conversation_id,
+                "intent": intent,
+                "visibility": "direct",
+                "private_level": "summary",
+                "memory_policy": "social_summary",
+                "social_summary": social_summary or _build_social_summary(text, activity=activity),
+                "public_state": public_state or {"status": _normalize_text(activity or "回复消息", max_chars=80)},
             },
         }
         data = relay._post("/message/send", payload)
@@ -453,6 +533,14 @@ def run_bridge(args):
                             day=day,
                             time_str=sim_time,
                             activity="回复消息",
+                            social_summary=_build_social_summary(
+                                reply,
+                                activity="回复消息",
+                                ask="继续保持交流",
+                            ),
+                            public_state={"status": "正在参与跨节点交流"},
+                            intent="conversation",
+                            conversation_id=_normalize_text(msg.get("conversation_id", ""), max_chars=64),
                         )
                         replied_to.add(sender_id)
                         print(f"[bridge]   → replied to agent #{sender_id}")

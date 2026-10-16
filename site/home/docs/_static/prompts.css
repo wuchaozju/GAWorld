@@ -1,0 +1,33 @@
+/* Prompt documentation extends the existing Furo reading system. */
+.prompt-intro {padding:1.3rem 1.5rem;margin:1.4rem 0 1.8rem;border-left:3px solid var(--color-brand-primary);background:var(--color-background-secondary);border-radius:0 6px 6px 0}
+.prompt-intro p {margin:0}
+.prompt-intro p+p {margin-top:.7rem}
+.prompt-route {display:grid;grid-template-columns:9rem minmax(0,1fr);gap:1rem;padding:1.2rem 0;border-bottom:1px solid var(--color-background-border)}
+.prompt-route:first-child {padding-top:.2rem}
+.prompt-route a {font-weight:600;font-size:1rem;text-decoration:none}
+.prompt-route a:hover {text-decoration:underline}
+.prompt-route p {margin:0;color:var(--color-foreground-secondary)}
+.prompt-flow {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:1.4rem 0 1.8rem;padding:0;list-style:none;border:1px solid var(--color-background-border);border-radius:6px;overflow:hidden}
+article .prompt-flow li {padding:1.1rem;margin:0;border-left:1px solid var(--color-background-border);background:var(--color-background-secondary)}
+article .prompt-flow li:first-child {border-left:0}
+.prompt-flow strong {display:block;color:var(--color-brand-content);margin-bottom:.45rem;font-size:.98rem}
+.prompt-flow span {display:block;color:var(--color-foreground-secondary);font-size:.9rem;line-height:1.65}
+.prompt-specimen {margin:1.5rem 0;border:1px solid var(--color-background-border);border-radius:6px;overflow:hidden}
+.prompt-specimen-head {padding:1rem 1.25rem;background:var(--color-background-secondary);border-bottom:1px solid var(--color-background-border);font-weight:600}
+.prompt-segment {display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.5rem;padding:1.2rem 1.25rem}
+.prompt-segment+.prompt-segment {border-top:1px solid var(--color-background-border)}
+.prompt-segment pre {white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-family:inherit;font-size:.95rem;line-height:1.8;color:var(--color-foreground-primary)}
+.prompt-annotation {border-left:2px solid var(--color-brand-primary);padding-left:1rem;font-size:.9rem;line-height:1.7;color:var(--color-foreground-secondary)}
+.prompt-annotation strong {display:block;color:var(--color-brand-content);font-size:.95rem;margin-bottom:.35rem}
+.prompt-specimen-caption {padding:.85rem 1.25rem;border-top:1px solid var(--color-background-border);font-size:.9rem;color:var(--color-foreground-secondary)}
+.prompt-details {margin:1.2rem 0;border:1px solid var(--color-background-border);border-radius:6px;overflow:hidden}
+.prompt-details>summary {padding:.9rem 1.1rem;cursor:pointer;font-weight:600;color:var(--color-brand-content);background:var(--color-background-secondary)}
+.prompt-details>summary:focus-visible {outline:2px solid var(--color-brand-primary);outline-offset:-4px}
+.prompt-details>.highlight-text {margin:0;border:0}
+.prompt-details .highlight pre {white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;padding:1.2rem;font-size:.9rem}
+.prompt-details>p {margin:1rem 1.2rem}
+.prompt-source {padding:.85rem 1.1rem;margin:1.3rem 0;border-left:2px solid var(--color-background-border);font-size:.9rem;color:var(--color-foreground-secondary);overflow-wrap:anywhere}
+.prompt-source a {font-weight:500}
+@media(max-width:45em){.prompt-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.prompt-flow li:nth-child(3){border-left:0}.prompt-flow li:nth-child(n+3){border-top:1px solid var(--color-background-border)}}
+@media(max-width:32em){.prompt-intro{padding:1rem}.prompt-route{grid-template-columns:1fr;gap:.4rem}.prompt-segment{grid-template-columns:1fr;gap:.8rem;padding:1rem}.prompt-annotation{padding-left:.8rem}.prompt-flow li{padding:.9rem}.prompt-details .highlight pre{padding:1rem}}
+@media print{.prompt-flow,.prompt-segment{break-inside:avoid}.prompt-details>summary{background:transparent}}

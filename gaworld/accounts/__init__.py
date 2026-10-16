@@ -7,10 +7,19 @@ created it, the dashboard behaves exactly as the single-user console.
 from __future__ import annotations
 
 import os
+import sqlite3
 
 from .store import AccountError, AccountStore
 
 DEFAULT_DB = os.path.join("output", "accounts", "accounts.sqlite")
+
+
+class AccountConfigurationError(RuntimeError):
+    """The deployment requires accounts, but its account store is not ready."""
+
+
+def required() -> bool:
+    return os.environ.get("GAWORLD_REQUIRE_ACCOUNTS", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def db_path(repo_root: str) -> str:
@@ -26,12 +35,33 @@ def enabled_store(repo_root: str) -> AccountStore | None:
     """The store when accounts are switched on (the database exists), else None."""
     path = db_path(repo_root)
     if not os.path.exists(path):
+        if required():
+            raise AccountConfigurationError(
+                "Account database missing; initialize or restore it before serving users"
+            )
         return None
     store = AccountStore(path)
-    if path not in _SCHEMA_CHECKED:
-        store.init_schema()
-        _SCHEMA_CHECKED.add(path)
+    try:
+        if path not in _SCHEMA_CHECKED:
+            store.init_schema()
+            _SCHEMA_CHECKED.add(path)
+        if required() and not store.has_admin():
+            raise AccountConfigurationError(
+                "Account database has no administrator; finish account initialization"
+            )
+    except (OSError, sqlite3.Error) as exc:
+        raise AccountConfigurationError(
+            "Account database unavailable; check the server account configuration"
+        ) from exc
     return store
 
 
-__all__ = ["DEFAULT_DB", "AccountError", "AccountStore", "db_path", "enabled_store"]
+__all__ = [
+    "DEFAULT_DB",
+    "AccountConfigurationError",
+    "AccountError",
+    "AccountStore",
+    "db_path",
+    "enabled_store",
+    "required",
+]
