@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 460" role="img" aria-label="GAWorld 分析面板示意图:左侧运行总览指标,中间状态演化折线,右侧居民状态雷达" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <!-- soft warm-cream wash, same hue as the paper token -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef3ee"/>
+      <stop offset="1" stop-color="#f6f9f5"/>
+    </linearGradient>
+    <linearGradient id="lineArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0e7a58" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0e7a58" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="lineArea2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d6a81e" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#d6a81e" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="3" result="off"/>
+      <feFlood flood-color="#0a4a37" flood-opacity="0.10"/>
+      <feComposite in2="off" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- outer canvas -->
+  <rect x="0" y="0" width="720" height="460" rx="18" fill="url(#bg)"/>
+
+  <!-- window chrome -->
+  <g transform="translate(24,22)">
+    <rect width="672" height="416" rx="14" fill="#ffffff" stroke="#dde6de" stroke-width="1" filter="url(#cardShadow)"/>
+
+    <!-- topbar of the panel mock -->
+    <rect x="0" y="0" width="672" height="44" rx="14" fill="#fbfdfb"/>
+    <rect x="0" y="22" width="672" height="22" fill="#fbfdfb"/>
+    <line x1="0" y1="44" x2="672" y2="44" stroke="#dde6de"/>
+    <circle cx="20" cy="22" r="5" fill="#e3f2ea" stroke="#0e7a58" stroke-width="1"/>
+    <circle cx="38" cy="22" r="5" fill="#e3f2ea" stroke="#0e7a58" stroke-width="1"/>
+    <circle cx="56" cy="22" r="5" fill="#e3f2ea" stroke="#0e7a58" stroke-width="1"/>
+
+    <!-- title + run tag -->
+    <text x="84" y="27" font-size="13" font-weight="700" fill="#0a4a37">仿真结果分析 · Hangzhou #42</text>
+    <rect x="500" y="11" width="78" height="22" rx="11" fill="#e3f2ea"/>
+    <text x="539" y="26" font-size="11" font-weight="700" fill="#0a4a37" text-anchor="middle">运行中</text>
+    <rect x="588" y="11" width="68" height="22" rx="11" fill="#fff" stroke="#dde6de"/>
+    <text x="622" y="26" font-size="11" font-weight="700" fill="#616f67" text-anchor="middle">Day 7</text>
+
+    <!-- KPI row -->
+    <g transform="translate(20,62)">
+      <!-- kpi 1 -->
+      <rect x="0" y="0" width="148" height="64" rx="10" fill="#f7faf7" stroke="#dde6de"/>
+      <text x="12" y="20" font-size="10" font-weight="700" fill="#0e7a58" letter-spacing="0.08em">RESIDENTS</text>
+      <text x="12" y="46" font-size="22" font-weight="800" fill="#1a2420">51</text>
+      <text x="64" y="46" font-size="10" fill="#616f67">位居民</text>
+      <text x="12" y="58" font-size="9" fill="#0e7a58" font-weight="700">↑ 3 天持续追踪</text>
+
+      <!-- kpi 2 -->
+      <rect x="160" y="0" width="148" height="64" rx="10" fill="#f7faf7" stroke="#dde6de"/>
+      <text x="172" y="20" font-size="10" font-weight="700" fill="#3c5a68" letter-spacing="0.08em">EVENT WINDOWS</text>
+      <text x="172" y="46" font-size="22" font-weight="800" fill="#1a2420">2</text>
+      <text x="200" y="46" font-size="10" fill="#616f67">个反事实</text>
+      <text x="172" y="58" font-size="9" fill="#3c5a68" font-weight="700">with / without event</text>
+
+      <!-- kpi 3 -->
+      <rect x="320" y="0" width="148" height="64" rx="10" fill="#f7faf7" stroke="#dde6de"/>
+      <text x="332" y="20" font-size="10" font-weight="700" fill="#d6a81e" letter-spacing="0.08em">Δ STRESS</text>
+      <text x="332" y="46" font-size="22" font-weight="800" fill="#1a2420">+0.18</text>
+      <text x="392" y="46" font-size="10" fill="#616f67">vs 对照</text>
+      <text x="332" y="58" font-size="9" fill="#d6a81e" font-weight="700">↑ 显著 (p &lt; 0.05)</text>
+
+      <!-- kpi 4 -->
+      <rect x="480" y="0" width="152" height="64" rx="10" fill="#f7faf7" stroke="#dde6de"/>
+      <text x="492" y="20" font-size="10" font-weight="700" fill="#0e7a58" letter-spacing="0.08em">EPISODES</text>
+      <text x="492" y="46" font-size="22" font-weight="800" fill="#1a2420">1,284</text>
+      <text x="552" y="46" font-size="10" fill="#616f67">条结构化经验</text>
+      <text x="492" y="58" font-size="9" fill="#0e7a58" font-weight="700">↑ 跨天记忆积累</text>
+    </g>
+
+    <!-- main chart: state evolution -->
+    <g transform="translate(20,146)">
+      <text x="0" y="0" font-size="12" font-weight="700" fill="#1a2420">智能体状态变化</text>
+      <text x="0" y="14" font-size="10" fill="#616f67">stress · emotion · econ_security · 51 位居民 · 7 天</text>
+      <rect x="404" y="-12" width="78" height="18" rx="9" fill="#fff" stroke="#dde6de"/>
+      <circle cx="416" cy="-3" r="3" fill="#0e7a58"/>
+      <text x="424" y="0" font-size="9" fill="#1a2420">有事件</text>
+      <circle cx="455" cy="-3" r="3" fill="#d6a81e"/>
+      <text x="463" y="0" font-size="9" fill="#1a2420">无事件</text>
+
+      <!-- chart frame -->
+      <rect x="0" y="22" width="488" height="186" rx="10" fill="#fbfdfb" stroke="#dde6de"/>
+
+      <!-- gridlines -->
+      <g stroke="#eef3ee" stroke-width="1">
+        <line x1="32" y1="48" x2="476" y2="48"/>
+        <line x1="32" y1="86" x2="476" y2="86"/>
+        <line x1="32" y1="124" x2="476" y2="124"/>
+        <line x1="32" y1="162" x2="476" y2="162"/>
+      </g>
+      <!-- y labels -->
+      <g font-size="8" fill="#9aa59d">
+        <text x="6" y="51">1.0</text>
+        <text x="10" y="89">0.75</text>
+        <text x="14" y="127">0.5</text>
+        <text x="14" y="165">0.25</text>
+        <text x="20" y="200">0</text>
+      </g>
+      <!-- x labels -->
+      <g font-size="8" fill="#9aa59d" text-anchor="middle">
+        <text x="42" y="218">Day1</text>
+        <text x="108" y="218">Day2</text>
+        <text x="174" y="218">Day3</text>
+        <text x="240" y="218">Day4</text>
+        <text x="306" y="218">Day5</text>
+        <text x="372" y="218">Day6</text>
+        <text x="438" y="218">Day7</text>
+      </g>
+
+      <!-- event marker on Day3 -->
+      <line x1="174" y1="38" x2="174" y2="190" stroke="#c04545" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+      <text x="178" y="46" font-size="8" fill="#c04545" font-weight="700">交通限行事件 09:00</text>
+
+      <!-- background ghost lines (other residents) -->
+      <g stroke="#0e7a58" stroke-width="0.8" fill="none" opacity="0.18">
+        <path d="M32,140 C80,142 110,138 174,140 C220,142 260,135 306,128 C360,118 410,108 476,96"/>
+        <path d="M32,120 C80,118 110,122 174,120 C220,118 260,110 306,98 C360,86 410,78 476,72"/>
+        <path d="M32,90 C80,88 110,94 174,90 C220,86 260,82 306,72 C360,62 410,56 476,52"/>
+        <path d="M32,160 C80,156 110,160 174,158 C220,156 260,150 306,144 C360,138 410,134 476,130"/>
+      </g>
+      <g stroke="#d6a81e" stroke-width="0.8" fill="none" opacity="0.20">
+        <path d="M32,142 C80,140 110,144 174,138 C220,134 260,140 306,132 C360,126 410,130 476,124"/>
+        <path d="M32,118 C80,114 110,118 174,116 C220,114 260,120 306,114 C360,110 410,108 476,104"/>
+        <path d="M32,158 C80,152 110,158 174,156 C220,154 260,160 306,152 C360,146 410,148 476,144"/>
+      </g>
+
+      <!-- highlighted "with event" mean line — stress RISES after Day3 -->
+      <path d="M32,118 L80,118 L120,118 L174,118 L220,98 L260,82 L306,68 L360,60 L410,56 L438,54 L474,52"
+            fill="none" stroke="#0e7a58" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M32,118 L80,118 L120,118 L174,118 L220,98 L260,82 L306,68 L360,60 L410,56 L438,54 L474,52 L476,38 L32,38 Z"
+            fill="url(#lineArea)"/>
+
+      <!-- "without event" mean line — stress stays flat -->
+      <path d="M32,138 L80,140 L120,140 L174,140 L220,142 L260,144 L306,142 L360,140 L438,140 L474,140"
+            fill="none" stroke="#d6a81e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4"/>
+      <path d="M32,138 L80,140 L120,140 L174,140 L220,142 L260,144 L306,142 L360,140 L438,140 L474,140 L476,190 L32,190 Z"
+            fill="url(#lineArea2)" opacity="0.4"/>
+    </g>
+
+    <!-- right panel: radar + top movers -->
+    <g transform="translate(524,146)">
+      <rect x="0" y="0" width="128" height="208" rx="10" fill="#fbfdfb" stroke="#dde6de"/>
+      <text x="12" y="18" font-size="11" font-weight="700" fill="#1a2420">最终状态雷达</text>
+      <text x="12" y="32" font-size="9" fill="#616f67">#7 王秀英</text>
+
+      <!-- radar -->
+      <g transform="translate(64,108)">
+        <!-- grid -->
+        <polygon points="0,-44 38,-22 38,22 0,44 -38,22 -38,-22" fill="none" stroke="#dde6de"/>
+        <polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16" fill="none" stroke="#eef3ee"/>
+        <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10" fill="none" stroke="#eef3ee"/>
+        <polygon points="0,-8 7,-4 7,4 0,8 -7,4 -7,-4" fill="none" stroke="#eef3ee"/>
+        <!-- axes -->
+        <g stroke="#dde6de">
+          <line x1="0" y1="0" x2="0" y2="-44"/>
+          <line x1="0" y1="0" x2="38" y2="-22"/>
+          <line x1="0" y1="0" x2="38" y2="22"/>
+          <line x1="0" y1="0" x2="0" y2="44"/>
+          <line x1="0" y1="0" x2="-38" y2="22"/>
+          <line x1="0" y1="0" x2="-38" y2="-22"/>
+        </g>
+        <!-- "with event" filled: stress high, emotion & econ lower -->
+        <polygon points="0,-22 36,-20 16,12 -4,28 -22,14 -28,-18" fill="#0e7a58" fill-opacity="0.18" stroke="#0e7a58" stroke-width="1.6"/>
+        <!-- "without event" outline: stable around mid -->
+        <polygon points="0,-28 26,-12 24,16 -2,22 -18,12 -22,-14" fill="#d6a81e" fill-opacity="0.10" stroke="#d6a81e" stroke-width="1.4" stroke-dasharray="3 2"/>
+
+        <!-- labels -->
+        <g font-size="8" fill="#616f67">
+          <text x="0" y="-48" text-anchor="middle">情绪</text>
+          <text x="44" y="-20" text-anchor="start">压力</text>
+          <text x="44" y="26" text-anchor="start">经济</text>
+          <text x="0" y="52" text-anchor="middle">认同</text>
+          <text x="-44" y="26" text-anchor="end">风险</text>
+          <text x="-44" y="-20" text-anchor="end">社交</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- bottom strip: event timeline mini -->
+    <g transform="translate(20,366)">
+      <rect x="0" y="0" width="632" height="34" rx="8" fill="#fbfdfb" stroke="#dde6de"/>
+      <text x="12" y="14" font-size="10" font-weight="700" fill="#1a2420">事件时间线</text>
+      <text x="12" y="28" font-size="9" fill="#616f67">有事件世界 · 7 天</text>
+
+      <!-- day ticks -->
+      <g transform="translate(120,16)">
+        <line x1="0" y1="0" x2="500" y2="0" stroke="#dde6de" stroke-width="1"/>
+        <g font-size="8" fill="#9aa59d" text-anchor="middle">
+          <text x="0" y="-6">D1</text>
+          <text x="83" y="-6">D2</text>
+          <text x="166" y="-6">D3</text>
+          <text x="250" y="-6">D4</text>
+          <text x="333" y="-6">D5</text>
+          <text x="416" y="-6">D6</text>
+          <text x="500" y="-6">D7</text>
+        </g>
+        <!-- event pin -->
+        <circle cx="166" cy="0" r="5" fill="#c04545"/>
+        <circle cx="166" cy="0" r="9" fill="#c04545" opacity="0.18"/>
+        <!-- minor ticks -->
+        <g fill="#9aa59d">
+          <circle cx="40" cy="0" r="1.6"/>
+          <circle cx="100" cy="0" r="1.6"/>
+          <circle cx="200" cy="0" r="1.6"/>
+          <circle cx="280" cy="0" r="1.6"/>
+          <circle cx="360" cy="0" r="1.6"/>
+          <circle cx="440" cy="0" r="1.6"/>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- subtle floating accent on top of canvas (paper texture substitute) -->
+  <rect x="0" y="0" width="720" height="460" rx="18" fill="none" stroke="#dde6de"/>
+</svg>
