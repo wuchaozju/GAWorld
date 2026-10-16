@@ -111,6 +111,21 @@ npm run dev
 3. Click "New Simulation" to create a simulation
 4. Advance turns, create branches, and view agent logs
 
+### GAWorld integration (current state)
+
+When embedded in GAWorld, the built frontend is served by the GAWorld
+dashboard at `/fos/`; `/fos/api/*` and `/fos/uploads/*` reach this backend
+(default `127.0.0.1:8000`). See `docs/FOS_Integration.md` (repo root) for the
+current architecture, ownership split (FOS owns provider/model config and
+per-agent assignments; GAWorld owns populations, checkpoints and LLM routing
+at run time), routing precedence `explicit > agent > task > default` with no
+silent fallback, checkpoint semantics (completed-day checkpoints; Retry /
+Fix / Substitute restore the last completed one), and the verified
+environment variables.
+
+Smoke / Playwright buckets that need a local Ollama server are excluded from
+routine runs; run them only with Ollama active.
+
 ### Tech Stack
 
 - **Backend**: Python 3.12, Litestar, SQLAlchemy, Pydantic

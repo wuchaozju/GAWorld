@@ -110,7 +110,57 @@ produce an English summary of (typically Chinese) simulation output.
 
 
 
-## 3. Integrated deployment (FOS UI + backend under GAWorld)
+## 3. Current architecture (GAWorldScene integration)
+
+How a FOS simulation tree (SimTree) launches and drives a GAWorld run:
+
+```
+Browser ──> GAWorld dashboard (:8766)  ──serves──>  /fos/  (FOS React app)
+            │  forwards /fos/api/* and /fos/uploads/*
+            ▼
+        FOS backend (:8000)  <── public entry via Caddy :8780 (deployment/public/Caddyfile)
+            │
+        SimTree ──> GAWorldScene ──> worldrun ──> GAWorld subprocess
+        Parallel Worlds (PW) ──> worldrun ──> GAWorld subprocess
+```
+
+Ownership split:
+
+- **GAWorld** owns populations, checkpoints and the LLM router runtime
+  (`gaworld/llm/` — `LLMRouter` / `call_llm`); the child process resolves
+  providers itself at run time.
+- **FOS** owns provider/model configuration (Settings → LLM Providers),
+  per-agent model assignments, and the failure policy for GAWorld runs.
+- **Routing precedence** for every model call in a GAWorld child:
+  `explicit override > per-agent > per-task > default` — resolved by one
+  function (`tests/test_llm_routing_phase4.py`); there is **no silent
+  fallback** to another provider.
+- A GAWorld checkpoint is written **after a completed day only**; the FOS
+  lifecycle actions **Retry / Fix / Substitute** restore the **last completed
+  checkpoint** (`fos/src/fos/backend/services/simtree_lifecycle.py`,
+  status `attention_required` on provider failure).
+- Per-day agent **state history is an analysis output**, not the checkpoint
+  truth; backups are the FOS database plus the GAWorld `output/` tree.
+
+Environment variables (all optional, placeholders — no secrets here):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `FOS_SINGLE_USER_MODE` | `false` | single-user mode (no login) |
+| `FOS_SINGLE_USER_USERNAME` | `local` | local user name in single-user mode |
+| `FOS_SINGLE_USER_ALLOW_REMOTE_BIND` | `false` | allow non-loopback bind in single-user mode |
+| `GAWORLD_API_URL` | `http://127.0.0.1:8766` | dashboard API used by FOS |
+| `GAWORLD_API_TIMEOUT_S` | `30` | dashboard API call timeout |
+| `FRONTEND_BASE_URL` | — | frontend base for links (e.g. `/fos/`) |
+| `FOS_GAWORLD_MAX_SUBPROCESSES` | `2` | bounded concurrent GAWorld subprocesses |
+| `FOS_GAWORLD_DAY_TIMEOUT_S` | built-in default | per-day wait timeout |
+| `GAWORLD_CONFIG_OVERRIDES` | — | JSON config overrides passed to the child |
+| `GAWORLD_PATH` / `GAWORLD_LLM_SECRETS_PATH` / `OLLAMA_BASE_URL` | — | child-run locations and local provider |
+
+The branch-day budget is **not** an env var — it is the settings field
+`fos_branch_day_budget` (default 200, `fos/src/fos/backend/core/config.py`).
+
+## 4. Integrated deployment (FOS UI + backend under GAWorld)
 
 The built FOS frontend is served by the GAWorld dashboard at `/fos/`; API and
 upload requests under `/fos/api/*` and `/fos/uploads/*` are forwarded to the
