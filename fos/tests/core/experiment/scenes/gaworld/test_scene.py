@@ -3,8 +3,8 @@
 - test_type_identifier_matches_expected_value checks the scene type value.
 - test_constructor_starts_with_empty_skipped_days checks skipped days starts empty.
 - test_initialize_sets_translator_without_starting_subprocess checks initialize avoids starting GAWorld.
-- test_initialize_populates_display_agents_and_name_map checks real GAWorld profiles feed the UI and output mapping.
-- test_read_day_data_uses_config_agent_ids checks GAWorld output reads selected profile agent files.
+- test_initialize_populates_display_agents_and_name_map checks GAWorld agents feed the UI and output mapping.
+- test_read_day_data_uses_config_agent_ids checks GAWorld output reads selected agent files.
 - test_read_day_data_scans_memory_when_name_map_is_empty checks output loading still works without config IDs.
 - test_run_round_launches_subprocess_on_first_round checks first run_round lazily starts GAWorld.
 - test_run_round_launches_gaworld_for_one_day checks the first advance only asks GAWorld for day one.
@@ -14,9 +14,7 @@
 - test_run_round_logs_gaworld_diagnostics checks run_round logs the GAWorld handoff path.
 - test_run_round_skips_day_when_translation_key_missing checks key errors skip a day without crashing.
 - test_launch_subprocess_passes_gaworld_output_paths checks GAWorld writes under the FOS output folder.
-- test_launch_subprocess_passes_profiles_as_gaworld_csv_path checks GAWorld reads FOS profiles.
 - test_launch_subprocess_omits_empty_agent_ids_override checks blank agent selection keeps GAWorld defaults.
-- test_launch_subprocess_omits_empty_profiles_csv_override checks GAWorld default data is kept when no profiles exist.
 - test_launch_subprocess_uses_fos_ollama_provider_config checks GAWorld routes through FOS Ollama.
 - test_launch_subprocess_uses_ollama_environment_config checks GAWorld reads Ollama env config.
 - test_launch_subprocess_does_not_inject_provider_api_key checks FOS keys stay out of GAWorld.
@@ -36,7 +34,6 @@ from typing import Any
 
 import fos.core.experiment.scenes.gaworld.scene as scene_module
 from fos.core.experiment.config import ExperimentConfig
-from fos.core.experiment.scenes.gaworld.profiles import GAWorldAgentProfile
 from fos.core.experiment.scenes.gaworld.scene import GAWorldScene
 
 
@@ -51,32 +48,6 @@ def _make_config() -> ExperimentConfig:
         parameters={"seed": 7},
     )
 
-
-def _make_profile(profile_id: str = "1") -> GAWorldAgentProfile:
-    return GAWorldAgentProfile(
-        id=profile_id,
-        name="Lin",
-        gender="female",
-        age=29,
-        hukou="urban",
-        residence="Hangzhou",
-        occupation="designer",
-        income="medium",
-        education="college",
-        personality_traits="kind and careful",
-        daily_routine="works and exercises",
-        social_network="close friends",
-        values="family and growth",
-        policy_sensitivity=0.8,
-        platform_dependence=0.5,
-        risk_preference=0.3,
-        voice_propensity=0.7,
-        mobility_intent=0.4,
-        emotion=0.6,
-        stress=0.2,
-        econ_security=0.7,
-        city_identity=0.9,
-    )
 
 
 def test_type_identifier_matches_expected_value() -> None:
@@ -204,8 +175,6 @@ def test_run_round_launches_gaworld_for_one_day(tmp_path: Path, monkeypatch) -> 
         def kill(self) -> None:
             captured["killed"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -241,8 +210,6 @@ def test_run_round_launches_gaworld_through_target_day(tmp_path: Path, monkeypat
         def kill(self) -> None:
             captured["killed"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -426,8 +393,6 @@ def test_launch_subprocess_passes_gaworld_output_paths(tmp_path: Path, monkeypat
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("1")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -446,36 +411,6 @@ def test_launch_subprocess_passes_gaworld_output_paths(tmp_path: Path, monkeypat
     assert captured["output_dir"] == output_dir
     assert captured["launched"] is True
 
-
-def test_launch_subprocess_passes_profiles_as_gaworld_csv_path(tmp_path: Path, monkeypatch) -> None:
-    config = _make_config()
-    config.parameters["output_dir"] = tmp_path / "gaworld-output"
-    config.parameters["gaworld_path"] = tmp_path / "GAWorld"
-    captured: dict[str, Any] = {}
-    exported_paths: list[Path] = []
-
-    class FakeManager:
-        def __init__(self, **kwargs: Any) -> None:
-            captured.update(kwargs)
-            self.output_dir = kwargs["output_dir"]
-
-        def launch(self) -> None:
-            captured["launched"] = True
-
-    def fake_export_profiles_csv(_profiles: list[Any], path: Path) -> None:
-        exported_paths.append(path)
-
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("1")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", fake_export_profiles_csv)
-    monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
-
-    scene = GAWorldScene(config)
-    scene._launch_subprocess(1)
-
-    overrides = captured["config_overrides"]
-    assert len(exported_paths) == 1
-    assert overrides["csv_path"] == str(exported_paths[0])
-    assert "profiles_csv" not in overrides
 
 
 def test_launch_subprocess_uses_config_agent_ids_when_text_field_is_blank(
@@ -496,8 +431,6 @@ def test_launch_subprocess_uses_config_agent_ids_when_text_field_is_blank(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -519,7 +452,6 @@ def test_launch_subprocess_uses_explicit_agent_ids_when_text_field_is_blank(
     config.parameters["output_dir"] = tmp_path / "gaworld-output"
     config.parameters["gaworld_path"] = tmp_path / "GAWorld"
     captured: dict[str, Any] = {}
-    exported_profiles: list[list[str]] = []
 
     class FakeManager:
         def __init__(self, **kwargs: Any) -> None:
@@ -529,11 +461,6 @@ def test_launch_subprocess_uses_explicit_agent_ids_when_text_field_is_blank(
         def launch(self) -> None:
             captured["launched"] = True
 
-    def fake_export_profiles_csv(profiles: list[Any], _path: Path) -> None:
-        exported_profiles.append([profile.id for profile in profiles])
-
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("34"), _make_profile("35"), _make_profile("99")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", fake_export_profiles_csv)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -541,7 +468,6 @@ def test_launch_subprocess_uses_explicit_agent_ids_when_text_field_is_blank(
     scene._launch_subprocess(1)
 
     assert captured["config_overrides"]["agent_ids"] == ["34", "35"]
-    assert exported_profiles == [["34", "35"]]
 
 
 def test_launch_subprocess_disables_local_environment_and_distributed_services(
@@ -561,8 +487,6 @@ def test_launch_subprocess_disables_local_environment_and_distributed_services(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("1")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -591,8 +515,6 @@ def test_launch_subprocess_disables_optional_gaworld_extensions_and_real_work(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("1")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -631,8 +553,6 @@ def test_launch_subprocess_routes_real_work_paths_under_fos_output_when_enabled(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile("1")])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -645,34 +565,6 @@ def test_launch_subprocess_routes_real_work_paths_under_fos_output_when_enabled(
     assert real_work["capabilities_cache"] == str(output_dir / "work" / "capabilities.json")
     assert real_work["market"]["store_path"] == str(output_dir / "work" / "market.jsonl")
 
-
-def test_launch_subprocess_omits_empty_profiles_csv_override(tmp_path: Path, monkeypatch) -> None:
-    config = _make_config()
-    config.parameters["output_dir"] = tmp_path / "gaworld-output"
-    config.parameters["gaworld_path"] = tmp_path / "GAWorld"
-    captured: dict[str, Any] = {}
-    exported_paths: list[Path] = []
-
-    class FakeManager:
-        def __init__(self, **kwargs: Any) -> None:
-            captured.update(kwargs)
-            self.output_dir = kwargs["output_dir"]
-
-        def launch(self) -> None:
-            captured["launched"] = True
-
-    def fake_export_profiles_csv(_profiles: list[Any], path: Path) -> None:
-        exported_paths.append(path)
-
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", fake_export_profiles_csv)
-    monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
-
-    scene = GAWorldScene(config)
-    scene._launch_subprocess(1)
-
-    assert exported_paths == []
-    assert "csv_path" not in captured["config_overrides"]
 
 
 def test_launch_subprocess_uses_fos_ollama_provider_config(tmp_path: Path, monkeypatch) -> None:
@@ -696,8 +588,6 @@ def test_launch_subprocess_uses_fos_ollama_provider_config(tmp_path: Path, monke
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -729,8 +619,6 @@ def test_launch_subprocess_uses_ollama_environment_config(tmp_path: Path, monkey
     monkeypatch.setenv("LLM_DIALECT", "ollama")
     monkeypatch.setenv("LLM_BASE_URL", "http://127.0.0.1:11434/")
     monkeypatch.setenv("LLM_MODEL", "gemma3:12b")
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -767,8 +655,6 @@ def test_launch_subprocess_does_not_inject_provider_api_key(tmp_path: Path, monk
     monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -803,8 +689,6 @@ def test_launch_subprocess_ignores_gaworld_api_key_and_uses_default_fos_ollama(
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.setenv("GAWORLD_LLM_API_KEY", "gaworld-key")
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -845,8 +729,6 @@ def test_launch_subprocess_defaults_to_fos_ollama_without_warning(tmp_path: Path
     monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)

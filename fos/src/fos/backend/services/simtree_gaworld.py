@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import re
 
+from fos.backend.services.gaworld_agents import GAWorldUnavailableError
+
 #: Phase 9 single-implementation audit marker: branch_runtime_overrides
 #: takes its run-path key set from the authoritative worldrun definition.
 _RUN_ROOT_OVERRIDES_SOURCE = "gaworld.worldrun"
@@ -40,30 +42,53 @@ def should_use_gaworld_profile_agents(agents: list[dict]) -> bool:
     return all(_looks_like_generated_placeholder_agent(agent) for agent in agents)
 
 
+def _live_gaworld_population(city: str = "") -> list[dict]:
+    """Fetch the LIVE GAWorld population (exact int IDs) via the gaworld_agents
+    service, paging until every resident of the selected city is collected.
+
+    GAWorld owns the residents; there is deliberately NO snapshot fallback —
+    a down or empty GAWorld raises :class:`GAWorldUnavailableError` so the
+    caller surfaces a typed error instead of silently substituting bundled
+    snapshot data behind the user's back.
+    """
+    from fos.backend.services import gaworld_agents as gaworld_agents_service
+
+    collected: list[dict] = []
+    offset = 0
+    while True:
+        page = gaworld_agents_service.get_agents(city=city, offset=offset)
+        agents = list(page.get("agents") or [])
+        collected.extend(agents)
+        offset += len(agents)
+        if not agents or offset >= int(page.get("total") or offset):
+            break
+    return [gaworld_agents_service.to_fos_agent(agent) for agent in collected]
+
+
 def resolve_gaworld_agents(agent_config: dict) -> list[dict]:
-    """Return GAWorld profile agents when request agents are not meaningful."""
+    """Return LIVE GAWorld agents when request agents are not meaningful.
+
+    Placeholder or missing request agents are replaced with the live GAWorld
+    population (exact int IDs) — never with a bundled snapshot. When GAWorld
+    cannot answer, the typed :class:`GAWorldUnavailableError` propagates.
+    """
     agents = list(agent_config.get("agents") or [])
-    if not agents:
-        from fos.core.experiment.scenes.gaworld import profiles as profiles_module
-
-        return profiles_module.profiles_to_fos_agents(profiles_module.load_profiles())
-
-    if not should_use_gaworld_profile_agents(agents):
+    if agents and not should_use_gaworld_profile_agents(agents):
         return agents
 
-    from fos.core.experiment.scenes.gaworld import profiles as profiles_module
-
-    profile_agents = profiles_module.profiles_to_fos_agents(
-        profiles_module.load_profiles()
-    )
-    if not profile_agents:
-        return agents
+    city = str(agent_config.get("city") or "").strip()
+    live_agents = _live_gaworld_population(city=city)
+    if not live_agents:
+        raise GAWorldUnavailableError(
+            "GAWorld returned no residents for the selected city; "
+            "refusing to fall back to a snapshot population"
+        )
 
     requested_count = len(agents)
-    if requested_count < len(profile_agents):
-        profile_agents = profile_agents[:requested_count]
+    if 0 < requested_count < len(live_agents):
+        live_agents = live_agents[:requested_count]
 
-    return profile_agents
+    return live_agents
 
 
 def resolve_gaworld_agent_ids(params: dict, agents: list[dict]) -> list[str]:

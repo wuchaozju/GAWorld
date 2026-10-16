@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
+from fos.backend.services import gaworld_agents as gaworld_agents_service
 from fos.backend.services import simtree_runtime
-from fos.core.experiment.scenes.gaworld import profiles as profiles_module
 from fos.core.experiment.scenes.gaworld import GAWorldScene
 from fos.core.registry import get_information_model, get_scene_class
 from fos.core.scenarios.registry import ALL_SCENARIOS
@@ -110,6 +110,16 @@ def test_gaworld_routing_uses_startup_path_after_env_changes(monkeypatch: pytest
     changed_path = "C:/changed/gaworld"
     monkeypatch.setattr(simtree_runtime, "_GAWORLD_PATH", startup_path)
     monkeypatch.setenv("GAWORLD_PATH", changed_path)
+    # Population resolution is out of scope here — stub the live GAWorld
+    # population so the tree build focuses on path capture.
+    fake_page = {
+        "total": 1,
+        "offset": 0,
+        "agents": [{"id": 1, "name": "Resident", "profile_text": ""}],
+    }
+    monkeypatch.setattr(
+        gaworld_agents_service, "get_agents", lambda **_kwargs: dict(fake_page)
+    )
 
     sim_record = type(
         "SimRecord",
@@ -131,21 +141,28 @@ def test_gaworld_routing_uses_startup_path_after_env_changes(monkeypatch: pytest
     assert scene_parameters["gaworld_path"] == startup_path
 
 
-def test_gaworld_routing_uses_profiles_when_no_agents_are_passed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Empty GAWorld agent config is filled from profile conversion."""
-    fake_profiles = [object()]
-    fake_agents = [
-        {
-            "id": "34",
-            "name": "Xu Guilan",
-            "properties": {"occupation": "courier"},
-            "role_prompt": "Real GAWorld profile",
-            "llm_config": {},
-        }
-    ]
+def test_gaworld_routing_uses_live_population_when_no_agents_are_passed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty GAWorld agent config is filled from the LIVE GAWorld population."""
+    fake_page = {
+        "city": {"slug": "liuxi-cun", "name": "柳溪村", "selected": True},
+        "total": 1,
+        "limit": 200,
+        "offset": 0,
+        "agents": [
+            {
+                "id": 34,
+                "name": "Xu Guilan",
+                "profile_text": "Real GAWorld resident",
+                "gender": "female",
+                "age": 41,
+                "residence": "柳溪村",
+            }
+        ],
+    }
     monkeypatch.setattr(simtree_runtime, "_GAWORLD_PATH", "C:/startup/gaworld")
-    monkeypatch.setattr(profiles_module, "load_profiles", lambda: fake_profiles)
-    monkeypatch.setattr(profiles_module, "profiles_to_fos_agents", lambda profiles: fake_agents if profiles == fake_profiles else [])
+    monkeypatch.setattr(gaworld_agents_service, "get_agents", lambda **_kwargs: dict(fake_page))
 
     sim_record = type(
         "SimRecord",
@@ -154,7 +171,7 @@ def test_gaworld_routing_uses_profiles_when_no_agents_are_passed(monkeypatch: py
             "id": "SIM-GAWORLD-3",
             "scene_type": "gaworld_scene",
             "scene_config": {"parameters": {}},
-            "name": "GAWorld Profile Agents Test",
+            "name": "GAWorld Live Population Test",
             "description": "",
             "notes": "",
             "agent_config": {"agents": []},
@@ -164,23 +181,30 @@ def test_gaworld_routing_uses_profiles_when_no_agents_are_passed(monkeypatch: py
     tree = simtree_runtime._build_tree_for_sim(sim_record, clients={})
 
     scene_agents = tree.nodes[tree.root]["sim"].scene.config.agents
-    assert scene_agents == fake_agents
+    assert [agent["id"] for agent in scene_agents] == [34]
+    assert scene_agents[0]["name"] == "Xu Guilan"
 
 
-def test_gaworld_routing_replaces_placeholder_agents(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generic builder placeholders are replaced with real GAWorld agents."""
-    fake_agents = [
-        {
-            "id": "34",
-            "name": "Xu Guilan",
-            "properties": {"residence": "Hangzhou"},
-            "role_prompt": "Real GAWorld profile",
-            "llm_config": {},
-        }
-    ]
+def test_gaworld_routing_replaces_placeholder_agents(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Generic builder placeholders are replaced with live GAWorld agents."""
+    fake_page = {
+        "city": {"slug": "liuxi-cun", "name": "柳溪村", "selected": True},
+        "total": 1,
+        "limit": 200,
+        "offset": 0,
+        "agents": [
+            {
+                "id": 34,
+                "name": "Xu Guilan",
+                "profile_text": "Real GAWorld resident",
+                "residence": "柳溪村",
+            }
+        ],
+    }
     monkeypatch.setattr(simtree_runtime, "_GAWORLD_PATH", "C:/startup/gaworld")
-    monkeypatch.setattr(profiles_module, "load_profiles", lambda: [object()])
-    monkeypatch.setattr(profiles_module, "profiles_to_fos_agents", lambda _profiles: fake_agents)
+    monkeypatch.setattr(gaworld_agents_service, "get_agents", lambda **_kwargs: dict(fake_page))
 
     sim_record = type(
         "SimRecord",
@@ -198,7 +222,9 @@ def test_gaworld_routing_replaces_placeholder_agents(monkeypatch: pytest.MonkeyP
 
     tree = simtree_runtime._build_tree_for_sim(sim_record, clients={})
 
-    assert tree.nodes[tree.root]["sim"].scene.config.agents == fake_agents
+    scene_agents = tree.nodes[tree.root]["sim"].scene.config.agents
+    assert [agent["id"] for agent in scene_agents] == [34]
+    assert scene_agents[0]["name"] == "Xu Guilan"
 
 
 def test_gaworld_routing_keeps_explicit_agents_when_text_selection_is_blank(

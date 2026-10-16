@@ -35,6 +35,18 @@ vi.mock('../../wizard/Step2DemographicsEditor', () => ({
   Step2DemographicsEditor: () => <div />,
 }));
 
+// Starter cohorts are derived from the LIVE GAWorld population at call time;
+// the fetch is stubbed here so the tests pin the derive-and-filter flow.
+vi.mock('../gaworldStarterCohorts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../gaworldStarterCohorts')>();
+  return {
+    ...actual,
+    getGAWorldStarterCohortIds: vi.fn((count: number) =>
+      Promise.resolve(Array.from({ length: count }, (_, index) => String(index + 1))),
+    ),
+  };
+});
+
 vi.mock('../../../store/helpers', () => ({
   generateAgentsWithDemographics: vi.fn(),
   isZh: () => false,

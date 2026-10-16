@@ -404,9 +404,11 @@ export const Step4Agents: React.FC = () => {
   };
 
   const handleLoadGAWorldPopulation = () => {
-    const agentIds = getGAWorldStarterCohortIds(selectedGAWorldPopulation).join(',');
     setIsLoadingGAWorldPopulation(true);
-    void loadDefaultAgentsForScenario('gaworld', agentIds)
+    // Starter cohorts are derived from the LIVE population at call time —
+    // the first N resident IDs of the selected city, never a static list.
+    void getGAWorldStarterCohortIds(selectedGAWorldPopulation)
+      .then((agentIds) => loadDefaultAgentsForScenario('gaworld', agentIds.join(',')))
       .then(() => {
         setImportError(null);
         setIsAgentListOpen(true);

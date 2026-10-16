@@ -4,9 +4,9 @@ Provides endpoints for fetching scenario definitions and actions, plus the
 live GAWorld population endpoints used by the experiment builder (Step 4):
 populations/cities, paginated agents, generation jobs and export.
 
-GAWorld is the source of truth for populations — there is no fallback to the
-bundled hangzhou_50.json snapshot on these paths. A down GAWorld surfaces as
-HTTP 503 with an explicit "GAWorld backend unavailable" message.
+GAWorld is the source of truth for populations — the bundled snapshot was
+retired outright, so there is no fallback data on these paths. A down GAWorld
+surfaces as HTTP 503 with an explicit "GAWorld backend unavailable" message.
 """
 
 from typing import Any

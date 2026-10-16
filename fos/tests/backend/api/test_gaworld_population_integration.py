@@ -328,14 +328,21 @@ class TestRoutes:
         assert response.status_code == 503
         assert "GAWorld backend unavailable" in response.json()["error"]
 
-    def test_normal_path_does_not_read_hangzhou_snapshot(self, fake_gaworld, monkeypatch):
+    def test_normal_path_does_not_read_hangzhou_snapshot(self, fake_gaworld):
         """Brief §12: prove the new path never touches hangzhou_50.json."""
-        from fos.core.experiment.scenes.gaworld import profiles as profiles_module
+        import importlib.util
 
-        def _forbidden(*args: Any, **kwargs: Any) -> None:
-            raise AssertionError("hangzhou_50.json snapshot path was read")
+        import fos.core.experiment.scenes.gaworld as gaworld_scene_pkg
 
-        monkeypatch.setattr(profiles_module, "load_profiles", _forbidden)
+        # The snapshot module and its dataset were deleted outright: there is
+        # no code left that could read hangzhou_50.json.
+        assert (
+            importlib.util.find_spec(
+                "fos.core.experiment.scenes.gaworld.profiles"
+            )
+            is None
+        )
+        assert not (Path(gaworld_scene_pkg.__file__).parent / "profiles").exists()
         with TestClient(app=_scenarios_app()) as client:
             response = client.get("/scenarios/gaworld/agents", params={"city": "liuxi-cun"})
         assert response.status_code == 200

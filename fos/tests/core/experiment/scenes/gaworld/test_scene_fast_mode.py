@@ -1,7 +1,6 @@
 """This file tests the low-fidelity GAWorld launch mode for faster FOS runs.
 
 - _make_config builds a small GAWorld config for launch tests.
-- _make_profile builds one fake GAWorld profile row.
 - test_launch_subprocess_disables_heavy_gaworld_features_for_fast_mode checks
   that FOS turns off expensive optional GAWorld systems by default.
 - test_launch_subprocess_uses_coarse_time_steps_for_fast_mode checks that FOS
@@ -28,7 +27,6 @@ from typing import Any
 
 import fos.core.experiment.scenes.gaworld.scene as scene_module
 from fos.core.experiment.config import ExperimentConfig
-from fos.core.experiment.scenes.gaworld.profiles import GAWorldAgentProfile
 from fos.core.experiment.scenes.gaworld.scene import GAWorldScene
 
 
@@ -40,32 +38,6 @@ def _make_config() -> ExperimentConfig:
         parameters={"seed": 7},
     )
 
-
-def _make_profile() -> GAWorldAgentProfile:
-    return GAWorldAgentProfile(
-        id="1",
-        name="Lin",
-        gender="female",
-        age=29,
-        hukou="urban",
-        residence="Hangzhou",
-        occupation="designer",
-        income="medium",
-        education="college",
-        personality_traits="kind and careful",
-        daily_routine="works and exercises",
-        social_network="close friends",
-        values="family and growth",
-        policy_sensitivity=0.8,
-        platform_dependence=0.5,
-        risk_preference=0.3,
-        voice_propensity=0.7,
-        mobility_intent=0.4,
-        emotion=0.6,
-        stress=0.2,
-        econ_security=0.7,
-        city_identity=0.9,
-    )
 
 
 def test_launch_subprocess_disables_heavy_gaworld_features_for_fast_mode(
@@ -85,12 +57,6 @@ def test_launch_subprocess_disables_heavy_gaworld_features_for_fast_mode(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(
-        scene_module,
-        "export_profiles_csv",
-        lambda _profiles, _path: None,
-    )
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -121,12 +87,6 @@ def test_launch_subprocess_uses_coarse_time_steps_for_fast_mode(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(
-        scene_module,
-        "export_profiles_csv",
-        lambda _profiles, _path: None,
-    )
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -152,12 +112,6 @@ def test_launch_subprocess_enables_deterministic_fast_mode_shortcuts(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(
-        scene_module,
-        "export_profiles_csv",
-        lambda _profiles, _path: None,
-    )
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -199,8 +153,6 @@ def test_launch_subprocess_uses_balanced_execution_profile(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -237,8 +189,6 @@ def test_launch_subprocess_uses_full_fidelity_execution_profile(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -271,8 +221,6 @@ def test_launch_subprocess_maps_information_mode_to_runtime_overrides(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -302,8 +250,6 @@ def test_launch_subprocess_maps_memory_mode_to_runtime_overrides(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)
@@ -338,8 +284,6 @@ def test_launch_subprocess_explicit_city_system_modes_override_preset_defaults(
         def launch(self) -> None:
             captured["launched"] = True
 
-    monkeypatch.setattr(scene_module, "load_profiles", lambda: [_make_profile()])
-    monkeypatch.setattr(scene_module, "export_profiles_csv", lambda _profiles, _path: None)
     monkeypatch.setattr(scene_module, "GAWorldSubprocessManager", FakeManager)
 
     scene = GAWorldScene(config)

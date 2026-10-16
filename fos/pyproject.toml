@@ -25,7 +25,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-fos = ["locales/*.json", "core/experiment/scenes/gaworld/profiles/*.json"]
+fos = ["locales/*.json"]
 
 [tool.coverage.run]
 source = ["fos"]

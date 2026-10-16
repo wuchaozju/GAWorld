@@ -23,17 +23,13 @@ import logging
 import os
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 
 from fos.core.experiment.runner import RoundResult
 from fos.core.experiment.scene import ExperimentScene
-from fos.core.experiment.scenes.gaworld.profiles import (
-    export_profiles_csv,
-    load_profiles,
-)
 from fos.core.experiment.scenes.gaworld.runtime_modes import (
     build_daily_life_overrides,
     build_information_overrides,
@@ -46,7 +42,6 @@ from fos.core.experiment.scenes.gaworld.subprocess_manager import (
     GAWorldCancelledError,
     GAWorldSubprocessManager,
     GAWorldTimeoutError,
-    gaworld_process_registry,
     gaworld_subprocess_semaphore,
 )
 from fos.core.experiment.scenes.gaworld.translator import GAWorldOutputTranslator
@@ -81,7 +76,7 @@ def resolve_day_timeout_s() -> float:
     return GAWORLD_WAIT_TIMEOUT_S
 
 
-def record_queue_diagnostics(scene: "GAWorldScene") -> dict[str, Any]:
+def record_queue_diagnostics(scene: GAWorldScene) -> dict[str, Any]:
     """Queue diagnostics for a scene: queued/started timestamps and wait."""
     queued_at = getattr(scene, "queued_at", None)
     started_at = getattr(scene, "started_at", None)
@@ -350,8 +345,8 @@ def _provider_settings_from_client(client: Any) -> LLMProviderSettings | None:
     model = str(getattr(provider, "model", "") or "").strip()
     if (
         not model
-        or dialect not in _DIALECT_TO_GAWORLD_TYPE
-        and dialect not in _OPENAI_COMPATIBLE_DIALECTS
+        or (dialect not in _DIALECT_TO_GAWORLD_TYPE
+        and dialect not in _OPENAI_COMPATIBLE_DIALECTS)
     ):
         return None
     base_url = str(getattr(provider, "base_url", "") or "").strip()
@@ -548,13 +543,12 @@ class GAWorldScene(ExperimentScene):
             if isinstance(self.config.parameters.get("population"), dict)
             else {}
         ) or {}
+        # GAWorld owns the residents on every path — the bundled snapshot
+        # population was retired; the city ref and exact int agent IDs are
+        # passed through and GAWorld resolves the residents itself.
+        city_slug = str(population.get("city", "") or "").strip()
+        generation_job_id = population.get("generation_job_id")
         live_population = str(population.get("source", "")).strip() == "gaworld"
-        profiles: list[Any] = []
-        if not live_population:
-            profiles = load_profiles()
-            if self._agent_ids:
-                selected = set(self._agent_ids)
-                profiles = [profile for profile in profiles if profile.id in selected]
 
         temp_dir = Path(tempfile.mkdtemp(prefix="gaworld_"))
         output_dir = Path(self.config.parameters.get("output_dir", temp_dir / "output"))
@@ -578,18 +572,12 @@ class GAWorldScene(ExperimentScene):
             config_overrides,
             _build_city_system_runtime_overrides(self.config.parameters),
         )
-        if profiles:
-            profiles_path = temp_dir / "profiles.csv"
-            export_profiles_csv(profiles, profiles_path)
-            config_overrides["csv_path"] = str(profiles_path)
+        if city_slug:
+            config_overrides["city"] = city_slug
+        if generation_job_id:
+            config_overrides["population_job_id"] = str(generation_job_id)
         if live_population:
-            # GAWorld owns the residents on this path — pass the city ref and
-            # the exact int agent IDs; no duplicate FOS profile CSV is written.
-            city_slug = str(population.get("city", "") or "").strip()
-            if city_slug:
-                config_overrides["city"] = city_slug
-            if population.get("generation_job_id"):
-                config_overrides["population_job_id"] = str(population["generation_job_id"])
+            # GAWorld agent IDs are exact ints on the wire.
             try:
                 config_overrides["agent_ids"] = [
                     int(str(agent_id).strip()) for agent_id in self._agent_ids
@@ -618,10 +606,10 @@ class GAWorldScene(ExperimentScene):
             os.environ.get("GAWORLD_PATH"),
         )
         logger.info(
-            "GAWorld launch config: agent_ids=%s, profile_count=%d, hermetic=%s, "
+            "GAWorld launch config: agent_ids=%s, city=%s, hermetic=%s, "
             "external_environment_enabled=%s, distributed_enabled=%s",
             self._agent_ids,
-            len(profiles),
+            city_slug or "(default)",
             True,
             config_overrides["external_environment_service"]["enabled"],
             config_overrides["distributed"]["enabled"],
