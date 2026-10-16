@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import sys
 import tempfile
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -33,8 +32,11 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from litestar.exceptions import HTTPException
 
+# The ``fos`` package itself resolves via fos/pytest.ini (pythonpath = src .);
+# the repo root is used here only as a FILE path for the golden fixtures —
+# never insert it into sys.path (its ``scripts`` regular package would
+# shadow fos's namespace ``scripts`` for the rest of the pytest session).
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-sys.path.insert(0, REPO_ROOT)
 
 import fos.backend.api.routes.experiments as experiments_routes  # noqa: E402
 
