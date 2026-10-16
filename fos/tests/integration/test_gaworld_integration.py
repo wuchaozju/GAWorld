@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from fos.backend.services import gaworld_agents, simtree_runtime
+from fos.backend.services import simtree_runtime
 from fos.core.experiment.scenes.gaworld import profiles as profiles_module
 from fos.core.experiment.scenes.gaworld import GAWorldScene
 from fos.core.registry import get_information_model, get_scene_class
@@ -37,34 +37,6 @@ def test_gaworld_scenario_does_not_include_gaworld_path_parameter() -> None:
     scenario = next(item for item in ALL_SCENARIOS if item.get("id") == "gaworld")
     parameter_ids = {param.get("id") for param in scenario.get("parameters", [])}
     assert "gaworld_path" not in parameter_ids
-
-
-def test_gaworld_default_agents_endpoint_returns_profile_agents(monkeypatch: pytest.MonkeyPatch) -> None:
-    """GAWorld default agents endpoint returns converted bundled profiles."""
-    fake_profiles = [object()]
-    fake_agents = [
-        {
-            "id": "34",
-            "name": "Xu Guilan",
-            "properties": {"residence": "Hangzhou"},
-            "role_prompt": "Real GAWorld profile",
-            "llm_config": {},
-        }
-    ]
-    captured_agent_ids: list[str] | None = None
-
-    def _fake_profiles_to_fos_agents(profiles, agent_ids=None):
-        nonlocal captured_agent_ids
-        captured_agent_ids = agent_ids
-        return fake_agents if profiles == fake_profiles else []
-
-    monkeypatch.setattr(gaworld_agents.profiles_module, "load_profiles", lambda: fake_profiles)
-    monkeypatch.setattr(gaworld_agents.profiles_module, "profiles_to_fos_agents", _fake_profiles_to_fos_agents)
-
-    result = gaworld_agents.get_default_gaworld_agents(agent_ids="34, 35")
-
-    assert result == fake_agents
-    assert captured_agent_ids == ["34", "35"]
 
 
 def test_gaworld_adapter_logs_scene_failures_for_frontend() -> None:

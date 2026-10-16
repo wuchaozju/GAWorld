@@ -1,5 +1,0 @@
-TASK=2646
-ROLE=test
-STAGE=WRITING_TESTS
-DETAIL=writing failing worldrun contract tests (tests/test_worldrun_phase9.py)
-UPDATED=2026-10-15T18:08:34Z

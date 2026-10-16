@@ -6,10 +6,6 @@
 - GAWorld agent IDs are ints on the wire and are preserved exactly.
 - A down GAWorld raises :class:`GAWorldUnavailableError` — never a raw
   traceback, never a silent fallback to the bundled snapshot.
-
-Legacy note: :func:`get_default_gaworld_agents` still reads the bundled
-``hangzhou_50.json`` snapshot for backward compatibility with old experiment
-configs, but it is no longer referenced by any active runtime route.
 """
 
 from __future__ import annotations
@@ -18,8 +14,6 @@ import os
 from typing import Any
 
 import httpx
-
-from fos.core.experiment.scenes.gaworld import profiles as profiles_module
 
 GAWORLD_API_URL: str = os.environ.get("GAWORLD_API_URL", "http://127.0.0.1:8766").rstrip("/")
 GAWORLD_TIMEOUT_S: float = float(os.environ.get("GAWORLD_API_TIMEOUT_S", "30"))
@@ -157,14 +151,3 @@ def to_fos_agent(agent: dict) -> dict:
     }
 
 
-def get_default_gaworld_agents(agent_ids: str | None = None) -> list[dict]:
-    """Legacy snapshot loader — kept only for old experiment configs.
-
-    Active runtime routes no longer call this; they read live GAWorld data
-    via :func:`get_agents`.
-    """
-    profiles = profiles_module.load_profiles()
-    return profiles_module.profiles_to_fos_agents(
-        profiles,
-        agent_ids=parse_agent_ids(agent_ids),
-    )

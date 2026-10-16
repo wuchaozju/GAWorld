@@ -1,5 +1,0 @@
-TASK=2657
-ROLE=test
-STAGE=READING_TASK
-DETAIL=preflight: branch/HEAD/tree check
-UPDATED=2026-10-16T05:25:08Z
