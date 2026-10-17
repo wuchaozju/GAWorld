@@ -83,6 +83,10 @@ def load_environment_config(path: str | None) -> dict[str, Any]:
 
 def apply_runtime_overrides(config: dict[str, Any]) -> dict[str, Any]:
     overrides = load_env_override()
+    if os.environ.get("GAWORLD_RESEARCH_FROZEN_CONFIG") == "1":
+        # The batch runner supplies the complete private effective config.
+        # Never merge current dashboard/city defaults into frozen repetitions.
+        return overrides
     # dashboard_config.json is the panel's live scratch file, not a committed
     # setting. GAWORLD_IGNORE_LOCAL_CONFIG lets the test suite opt out of it so
     # a city or horizon someone picked in the dashboard cannot silently become

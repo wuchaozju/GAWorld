@@ -196,6 +196,10 @@ def default_seed_runner(
             owner=owner,
         )
         ledger_path = active.get("ledger")
+        if active.get("frozen_batch"):
+            from gaworld.research.batch_inputs import apply_world_inputs
+
+            apply_world_inputs(manifest, config)
         if ledger_path:
             manifest["research"] = {
                 "ledger": ledger_path,
@@ -228,6 +232,8 @@ def default_seed_runner(
         if prepared:
             prepared(manifest, seed)
         runner = prunner.ExperimentRunner(manifest, repo_root, max_parallel=spec.max_parallel)
+        if active.get("frozen_batch"):
+            runner.research_frozen_config = config
         if ledger_path and selected:
             runner.research_provider_config = (config.get("llm") or {}).get("providers", {}).get(selected)
         active["runner"] = runner
@@ -295,6 +301,7 @@ def default_survey_runner(
     pause: threading.Event | None = None,
     ledger_path: str = "",
     provider_config: dict[str, Any] | None = None,
+    frozen_config: dict[str, Any] | None = None,
 ) -> SurveyRunner:
     """Interview every world's residents with that world's memories.
 
@@ -345,6 +352,13 @@ def default_survey_runner(
             import copy
 
             overrides = copy.deepcopy(world.get("overrides") or {})
+            if frozen_config is not None:
+                from gaworld.settings.overrides import deep_update
+
+                full = copy.deepcopy(frozen_config)
+                deep_update(full, overrides)
+                overrides = full
+                env["GAWORLD_RESEARCH_FROZEN_CONFIG"] = "1"
             if provider and provider_config:
                 overrides.setdefault("llm", {}).setdefault("providers", {})[provider] = provider_config
             env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(overrides, ensure_ascii=False)

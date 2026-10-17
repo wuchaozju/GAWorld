@@ -931,6 +931,7 @@
   function renderStudy() {
     var host = $("rwStudy");
     var study = state.study;
+    document.dispatchEvent(new CustomEvent("research-study-selected", { detail: study }));
     if (!study) {
       logStream.stop();
       host.hidden = true;
@@ -954,6 +955,7 @@
     if (study.autopilot) badges.push("<span class=\"rw-badge\">" + esc(t("autopilot_short", "自动执行")) + "</span>");
     if (study.paused) badges.push("<span class=\"rw-badge rw-stage-paused\">" + esc(t("stage_paused", "已暂停")) + "</span>");
     var actions = [];
+    actions.push("<button class=\"btn tiny ghost\" id=\"rwCreateBatch\">" + esc(t("batch_open", "多模型 / 跨城 / 重复实验")) + "</button>");
     if (!study.live && executionMode(protocol) !== "daily_brief") actions.push("<button class=\"btn tiny ghost\" id=\"rwQuickStudy\">" + esc(t("quick_create", "创建快速试跑版本")) + "</button>");
     if (canEdit) actions.push("<button class=\"btn tiny ghost\" id=\"rwEditProtocol\">" + esc(t("edit_protocol", "编辑运行方案")) + "</button>");
     actions.push("<button class=\"btn tiny ghost\" id=\"rwReviseStudy\">" + esc(t("revise_study", "复制并修订")) + "</button>");
@@ -1184,6 +1186,7 @@
       if (el) el.addEventListener("click", fn);
     };
     bind("rwApprove", function () { studyAction("approve", {}); });
+    bind("rwCreateBatch", function () { document.dispatchEvent(new CustomEvent("research-batch-open")); });
     bind("rwApproveRun", function () { studyAction("approve", { run: true }); });
     bind("rwRunStudy", function () { studyAction("run", {}); });
     bind("rwStopStudy", function () { studyAction("stop", {}); });
@@ -1510,6 +1513,7 @@
   }
 
   function init() {
+    document.addEventListener("research-open-study", function (event) { openStudy(event.detail); });
     document.querySelectorAll("input[name=rwKind]").forEach(function (radio) {
       radio.addEventListener("change", function () {
         syncKindPlaceholder();

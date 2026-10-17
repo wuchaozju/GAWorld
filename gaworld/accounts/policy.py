@@ -62,7 +62,7 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
-STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete"})
+STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"})
 
 
 def study_action(path: str) -> str | None:
@@ -77,6 +77,8 @@ def study_action(path: str) -> str | None:
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
+        return True
+    if path.startswith("/api/research/batches/") and path.rsplit("/", 1)[-1] in {"run", "resume"}:
         return True
     return (
         path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
@@ -107,7 +109,6 @@ MEMBER_WRITES_PREFIX = (
     "/api/research/games",
     "/api/research/policy",
     "/api/research/replication",
-    "/api/research/studies/",
     "/api/research/plans/",
 )
 
@@ -163,6 +164,11 @@ def required(method: str, path: str) -> Level:
         return "member"  # a world's nodes; owning the world is checked by the handler
     if study_action(path) is not None:
         return "member"  # every study handler checks ownership before reading or writing
+    if path in {"/api/research/batches", "/api/research/batches/import"} or (
+        len(parts) == 6 and parts[2:4] == ["research", "batches"]
+        and parts[5] in {"run", "pause", "resume", "stop", "compare"}
+    ):
+        return "member"  # batch handlers enforce the same user/world ownership boundary
     # Deleting is owner business: these handlers check the record's owner
     # (gaworld.accounts.ownership); every other delete stays admin-only.
     if "delete" in path.split("/"):

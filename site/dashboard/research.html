@@ -82,9 +82,20 @@
         <div class="rw-card" id="rwPlanEditor" hidden></div>
         <div class="rw-card rw-study" id="rwStudy" hidden></div>
         <div class="rw-card" id="rwProtocolEditor" hidden></div>
+        <section class="rw-card rb-panel" id="rwBatchPanel" aria-labelledby="rwBatchHeading">
+          <div class="rb-eyebrow" data-i18n="research.batch_eyebrow">实验复现与比较</div>
+          <h3 id="rwBatchHeading" data-i18n="research.batch_title">多模型 · 多城市 · 重复运行</h3>
+          <div id="rwBatchForm"></div>
+          <p id="rwBatchError" class="rw-warn" role="alert"></p>
+          <div id="rwBatchViewer"></div>
+        </section>
       </div>
 
       <aside class="rw-side">
+        <div class="rw-side-card">
+          <h3 data-i18n="research.batch_history">实验批次</h3>
+          <div id="rwBatches" class="rw-history"></div>
+        </div>
         <div class="rw-side-card">
           <h3 data-i18n="research.history">历史方案</h3>
           <div id="rwHistory" class="rw-history"></div>
@@ -440,6 +451,7 @@
   <script src="/site/dashboard/research-runtime.js"></script>
   <script src="/site/dashboard/research-editors.js"></script>
   <script src="/site/dashboard/research.js"></script>
+  <script src="/site/dashboard/research-batches.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
   <script src="/site/dashboard/replication.js"></script>

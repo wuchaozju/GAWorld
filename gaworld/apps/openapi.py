@@ -1387,6 +1387,29 @@ def _studies() -> dict[str, Any]:
         "/api/interview/delete": {
             "post": _op("interview", "Delete a session", body=_obj(("session_id",), session_id=STR))
         },
+        "/api/research/batches": {
+            "get": _op("research", "Owned experiment batches"),
+            "post": _op("research", "Freeze a model/city/repetition matrix without running models", status="201",
+                        body=_obj(("study_id", "providers", "cities"), study_id=STR, providers=STR_LIST, cities=STR_LIST,
+                                  repeats=INT, seed=INT, seed_strategy={"type": "string", "enum": ["vary", "fixed"]}, sample_size=INT)),
+        },
+        "/api/research/batches/context": {"get": _op("research", "Available models, cities and batch limits")},
+        "/api/research/batches/import": {"post": _op("research", "Import a portable experiment without running it", status="201", body=OBJ)},
+        "/api/research/batches/{batch_id}": {"get": _op("research", "Batch progress and run-level comparison", errors={"404": "Unknown batch"})},
+        "/api/research/batches/{batch_id}/report": {"get": _op("research", "Batch report as Markdown")},
+        "/api/research/batches/{batch_id}/export": {"get": _op("research", "Portable Python experiment ZIP as base64 JSON")},
+        **{
+            f"/api/research/batches/{{batch_id}}/{action}": {
+                "post": _op("research", summary, body=body, status=status, errors={"404": "Unknown batch", "400": "Invalid batch", "409": "Batch capacity reached"})
+            }
+            for action, summary, body, status in (
+                ("run", "Approve and run pending cells; retain every previous attempt", _obj(retry_failed=BOOL), "202"),
+                ("pause", "Pause batch and active child", OBJ, "200"),
+                ("resume", "Resume batch and active child", OBJ, "200"),
+                ("stop", "Stop batch and preserve completed results", OBJ, "200"),
+                ("compare", "Compare a selected subset of cells", _obj(cells=STR_LIST), "200"),
+            )
+        },
         "/api/research/context": {
             "get": _op("research", "What the workbench can build on (features, cities)")
         },

@@ -18,6 +18,39 @@
 
 .rw-panel { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 
+/* Batch workbench: restrained laboratory grid within the existing City Lab theme. */
+.rb-panel { border-top: 3px solid var(--green); }
+.rb-eyebrow { color: var(--green); font-size: 11px; font-weight: 650; letter-spacing: .08em; margin-bottom: 6px; }
+.rb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.rb-grid fieldset { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.rb-grid legend { font-size: 12px; font-weight: 650; padding: 0 6px; }
+.rb-choices { display: grid; gap: 9px; max-height: 190px; overflow: auto; }
+.rb-choices label { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; cursor: pointer; overflow-wrap: anywhere; }
+.rb-knobs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.rb-knobs input, .rb-knobs select { width: 100%; min-width: 0; box-sizing: border-box; }
+.rb-batch-head { display: flex; gap: 12px; justify-content: space-between; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.rb-batch-head h4 { margin: 8px 0; }
+.rb-batch-head .rw-actions { align-content: flex-start; }
+.rb-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+.rb-summary > div { padding: 10px; background: var(--sunken); border-radius: var(--radius-sm); }
+.rb-summary span { display: block; color: var(--muted); font-size: 11px; }
+.rb-summary strong { display: block; margin-top: 4px; font-size: 22px; font-variant-numeric: tabular-nums; }
+.rb-progress { width: 100%; height: 7px; accent-color: var(--green); }
+.rb-tasks { max-height: 370px; overflow: auto; }
+.rb-panel .rw-table { min-width: 650px; }
+.rb-note { margin-top: 12px; }
+.rb-history { width: 100%; display: grid; gap: 4px; text-align: left; padding: 10px 0; background: transparent; color: var(--ink); border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.rb-history strong { font-size: 12px; font-weight: 550; }
+.rb-history span { color: var(--muted); font-size: 11px; }
+.rb-history:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.rb-panel details { font-size: 12px; overflow-wrap: anywhere; }
+#rwBatchError:empty { display: none; }
+@media (max-width: 640px) {
+  .rb-grid, .rb-knobs { grid-template-columns: minmax(0, 1fr); }
+  .rb-batch-head { flex-direction: column; }
+  .rb-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 .rw-side {
   display: grid;
   gap: 12px;

@@ -511,14 +511,15 @@ def _member() -> bool:
     return user is not None and user.get("role") != "admin"
 
 
-def _preflight(protocol: Any) -> dict[str, Any]:
+def _preflight(protocol: Any, *, base_config: dict[str, Any] | None = None) -> dict[str, Any]:
     import copy
 
     from gaworld.accounts import policy
     from gaworld.llm import credentials
     from gaworld.research import protocol as protocol_mod
 
-    check = protocol_mod.preflight(protocol, default_agents=_default_agents(_base_config()))
+    source_config = _base_config() if base_config is None else base_config
+    check = protocol_mod.preflight(protocol, default_agents=_default_agents(source_config))
     if _member():
         # Model-generated patches are untrusted input, just like HTTP patches.
         def inspect(value: Any, path: str) -> None:
@@ -533,7 +534,7 @@ def _preflight(protocol: Any) -> dict[str, Any]:
         for condition in protocol.conditions:
             for key, value in (condition.get("config") or {}).items():
                 inspect(value, str(key))
-    config = copy.deepcopy(_base_config())
+    config = copy.deepcopy(source_config)
     if protocol.sim_provider:
         routing = config.setdefault("llm", {}).setdefault("routing", {})
         routing["default"] = protocol.sim_provider
@@ -549,8 +550,178 @@ def _preflight(protocol: Any) -> dict[str, Any]:
 def _check_scope(study: Any) -> None:
     # Persisted protocols must not silently run against another world's seed.
     world_id = (world_paths.current_world() or {}).get("id")
-    if study.owner_id is not None and study.world_id != world_id:
+    if study.owner_id is not None and str(study.world_id or "") != str(world_id or ""):
         raise ValueError("请切回创建此研究时的世界后再运行或修改协议。")
+
+
+def _attempt_dir(study: Any) -> Path:
+    from gaworld.research.study import study_dir
+
+    return study_dir(study.id) / f"attempt_{study.attempt}"
+
+
+def _telemetry(study: Any) -> dict[str, Any]:
+    from gaworld.llm.run_state import RunLedger
+
+    path = _attempt_dir(study) / "providers.sqlite"
+    if path.is_file():
+        return RunLedger(str(path)).snapshot()
+    from gaworld.research.telemetry import historical_snapshot
+
+    return study.runtime.get("telemetry") or historical_snapshot(study, _repo_root())
+
+
+def quick_study(study_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    from gaworld.research import protocol as protocols
+    from gaworld.research import study as store
+    from gaworld.research.quick import original_sample, quick_protocol
+
+    parent = _load_study(study_id)
+    config = _base_config()
+    source = protocols.Protocol.from_dict(copy.deepcopy(parent.protocol))
+    current_sample = (payload or {}).get("use_current_sample") is True
+    if current_sample:
+        evidence = {}
+        source.sample["agent_ids"] = list(config.get("agent_ids") or [])
+        source.sample.pop("seed_identity", None)
+    else:
+        evidence = original_sample(parent, _repo_root())
+    if evidence.get("agent_ids"):
+        source.sample["agent_ids"] = evidence["agent_ids"]
+    if evidence.get("seed_identity"):
+        source.sample["seed_identity"] = evidence["seed_identity"]
+    protocol, changes = quick_protocol(source, config, repo_root=_repo_root())
+    changes["sample"]["before"] = parent.protocol.get("sample") or {}
+    if current_sample:
+        changes["sample_origin"] = {
+            "before": "parent study sample not reused",
+            "after": "current_city_independent_pilot",
+        }
+    check = protocols.preflight(protocol, default_agents=_default_agents(config))
+    child = store.new_study(
+        {"id": parent.plan_id, "language": parent.language},
+        protocol.to_dict(),
+        check,
+        provider=parent.provider,
+    )
+    child.parent_study_id = parent.id
+    child.protocol_changes = changes
+    child.source_plan = parent.source_plan or plan_detail(parent.plan_id) or {}
+    _stamp_study(child)
+    store.save_study(child)
+    return {"study_id": child.id, "stage": child.stage, "preflight": check, "protocol_changes": changes}
+
+
+def _stamp_study(study: Any) -> None:
+    for key, value in workspaces.stamp().items():
+        setattr(study, key, value)
+    study.world_id = str((world_paths.current_world() or {}).get("id") or "")
+
+
+def check_study_provider(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    from gaworld.research.provider_check import inspect_provider
+    from gaworld.research.run_logs import configured_secrets, redact
+
+    study = _load_study(study_id)
+    config = _base_config()
+    result = inspect_provider(
+        config,
+        str(payload.get("provider") or study.protocol.get("sim_provider") or ""),
+        local=True,
+        probe=payload.get("probe") is True,
+    )
+    # Probe errors can include server responses. Keep credentials out of UI.
+    secrets = configured_secrets(config)
+
+    def clean(value: Any) -> Any:
+        if isinstance(value, str):
+            return redact(value, secrets)
+        if isinstance(value, dict):
+            return {key: clean(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [clean(item) for item in value]
+        return value
+
+    return clean(result)
+
+
+def study_logs(study_id: str, query: dict[str, Any]) -> dict[str, Any]:
+    from gaworld.parallel.runner import load_manifest
+    from gaworld.research.run_logs import configured_secrets, read_chunk, safe_path
+
+    study = _load_study(study_id)
+    active = _active(study_id)
+    repo = Path(_repo_root())
+    sources: list[dict[str, Any]] = [{"seed": None, "world": "", "kind": "events", "status": study.stage}]
+    paths: dict[tuple[str, str, str], tuple[Path, Path]] = {
+        ("", "", "events"): (_attempt_dir(study) / "events.log", _attempt_dir(study))
+    }
+    runs = list(study.runs)
+    secrets = configured_secrets(_base_config())
+    with _ACTIVE_LOCK:
+        secrets.extend(_ATTEMPT_LOG_SECRETS.get((study.id, study.attempt), []))
+        if active.get("study_id") == study.id:
+            secrets.extend(configured_secrets(active.get("base_config") or {}))
+        runner = active.get("runner") if active.get("study_id") == study.id else None
+        if runner is not None:
+            manifest = runner.manifest
+            active_root = manifest.get("root")
+            if active_root not in {r.get("root") for r in runs}:
+                runs.append({"seed": manifest.get("spec", {}).get("seed"), "root": active_root})
+    prefix = f"study_{study.id}" + (f"_r{study.attempt}" if study.attempt > 1 else "")
+    for run in runs:
+        seed = str(run.get("seed"))
+        expected = repo / "output" / "parallel_worlds" / f"{prefix}_s{seed}"
+        supplied = repo / str(run.get("root") or "")
+        if supplied.absolute() != expected.absolute():
+            continue
+        safe_path(expected / "experiment.json", expected)
+        manifest = load_manifest(str(repo), str(run["root"])) or {}
+        for world, entry in (manifest.get("worlds") or {}).items():
+            if not isinstance(entry, dict) or world not in {
+                str(c.get("id")) for c in study.protocol.get("conditions", [])
+            }:
+                continue
+            directory = expected / "worlds" / world
+            safe_path(directory, expected)
+            if (repo / str(entry.get("dir") or "")).absolute() != directory.absolute():
+                continue
+            for kind, filename in (("run", "run.log"), ("reset", "reset.log"), ("survey", "survey.log")):
+                paths[(seed, world, kind)] = (directory / filename, directory)
+                sources.append(
+                    {
+                        "seed": run.get("seed"),
+                        "world": world,
+                        "kind": kind,
+                        "status": (manifest.get("world_status") or {}).get(
+                            world, manifest.get("status", "prepared")
+                        ),
+                    }
+                )
+
+    def value(key: str, default: str = "") -> str:
+        found = query.get(key, default)
+        return str(found[0] if isinstance(found, list) and found else found)
+
+    key = (value("seed"), value("world"), value("kind", "events"))
+    if key not in paths:
+        raise ValueError("找不到当前研究/尝试的日志来源")
+    path, root = paths[key]
+    chunk = read_chunk(
+        path,
+        root,
+        offset=int(value("offset", "0")),
+        file_id=value("file_id"),
+        secrets=secrets,
+        terminal=study.stage != "running",
+    )
+    return {
+        **chunk,
+        "sources": sources,
+        "study_id": study.id,
+        "attempt": study.attempt,
+        "live": _is_live(study.id),
+    }
 
 
 def _seed_runner(study: Any) -> Any:
@@ -587,6 +758,7 @@ def _survey_runner(study: Any) -> Any:
         provider_config=((active.get("base_config") or {}).get("llm") or {})
         .get("providers", {})
         .get(provider),
+        **({"frozen_config": active["base_config"]} if active.get("frozen_batch") else {}),
     )
 
 
@@ -898,7 +1070,7 @@ def _check_runtime_compatibility(study: Any, config: dict[str, Any]) -> dict[str
 
 
 @_mutation
-def _launch_run(study_id: str) -> str:
+def _launch_run(study_id: str, *, base_config: dict[str, Any] | None = None) -> str:
     from gaworld.research import study as study_mod
 
     study = _load_study(study_id)
@@ -910,12 +1082,15 @@ def _launch_run(study_id: str) -> str:
     if _member():
         from gaworld.research.protocol import Protocol
 
-        check = _preflight(Protocol.from_dict(study.protocol))
+        check = _preflight(
+            Protocol.from_dict(study.protocol),
+            **({"base_config": base_config} if base_config is not None else {}),
+        )
         if not check["ok"]:
             raise ValueError("跑前检查没有通过：" + "；".join(check["errors"]))
     from gaworld.research.provider_check import inspect_provider
 
-    config = _base_config()
+    config = copy.deepcopy(_base_config() if base_config is None else base_config)
     identity = _check_runtime_compatibility(study, config)
     from gaworld.research.protocol import Protocol, preflight
 
@@ -982,6 +1157,7 @@ def _launch_run(study_id: str) -> str:
             "ledger": ledger,
             "actual_provider": check["primary"],
             "base_config": frozen_config,
+            "frozen_batch": base_config is not None,
         }
         _update_job(job_id, _event_log=str(directory / "events.log"), _ledger_path=ledger)
         study.set_stage("running")

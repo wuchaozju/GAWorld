@@ -136,7 +136,7 @@ def prepare_experiment(
     }
     from gaworld.research.workspaces import stamp
 
-    manifest.update(stamp())
+    manifest.update({key: value for key, value in stamp().items() if owner is None or key not in {"owner_id", "owner"}})
     if group:
         manifest["group"] = group
     write_manifest(repo_root, manifest)
@@ -297,6 +297,14 @@ class ExperimentRunner:
         import copy
 
         overrides = copy.deepcopy(self.manifest["worlds"][world_id]["overrides"])
+        frozen = getattr(self, "research_frozen_config", None)
+        if frozen is not None:
+            from gaworld.settings.overrides import deep_update
+
+            full = copy.deepcopy(frozen)
+            deep_update(full, overrides)
+            overrides = full
+            env["GAWORLD_RESEARCH_FROZEN_CONFIG"] = "1"
         selected = (self.manifest.get("research") or {}).get("actual_provider")
         if selected and self.research_provider_config:
             overrides.setdefault("llm", {}).setdefault("providers", {})[selected] = (

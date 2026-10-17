@@ -26,9 +26,13 @@ def classroom(monkeypatch, request):
     root = Path(host.tmp.name)
     monkeypatch.setattr(workbench, "PROJECT_ROOT", root)
     monkeypatch.setattr(world_paths, "REPO_ROOT", str(root))
-    monkeypatch.setattr(research_api, "_base_config", lambda: {"agent_ids": [1, 2, 3]})
+    monkeypatch.setattr(research_api, "_base_config", lambda: {
+        "agent_ids": [1, 2, 3],
+        "llm": {"providers": {"test": {"type": "openai", "model": "fixture", "api_key": "fixture-key"}},
+                "routing": {"default": "test"}},
+    })
     monkeypatch.setattr(research_api, "_JOBS", {})
-    monkeypatch.setattr(research_api, "_ACTIVE_STUDY", dict.fromkeys(research_api._ACTIVE_STUDY))
+    monkeypatch.setattr(research_api, "_ACTIVE_STUDIES", {})
     store = account_support._store(host.tmp.name)
     users = {name: store.create_user(name, account_support.PASSWORD, role=role)
              for name, role in [("owner", "member"), ("other", "member"), ("teacher", "admin")]}
@@ -245,8 +249,7 @@ def test_teacher_run_preserves_study_output_ownership(classroom):
 def test_finished_study_cannot_stop_another_active_study(classroom, monkeypatch):
     sid = create(classroom)["study_id"]
     other_stop = mock.Mock()
-    monkeypatch.setattr(research_api, "_is_live", lambda _: True)
-    monkeypatch.setattr(research_api, "_ACTIVE_STUDY", {"study_id": "another-study", "stop": other_stop})
+    monkeypatch.setattr(research_api, "_ACTIVE_STUDIES", {"another-study": {"study_id": "another-study", "stop": other_stop}})
     status, result = req(classroom, "owner", "POST", "/api/research/studies/" + sid + "/stop", {})
     assert status == 200 and result["stopping"] is False
     other_stop.set.assert_not_called()
