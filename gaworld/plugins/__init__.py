@@ -15,10 +15,14 @@ from __future__ import annotations
 def validate_runtime_config(config):
     """Run built-in preflight checks outside warning-only plugin setup."""
     from gaworld.group.plugin import validate_config as validate_group_config
+    from gaworld.holiday import validate_config as validate_holiday_config
     from gaworld.organizations.validation import validate_config
+    from gaworld.public_sector.policy import validate_config as validate_public_sector_config
 
     validate_config(config)
     validate_group_config(config)
+    validate_holiday_config(config)
+    validate_public_sector_config(config)
 
 
 def builtin_plugins():
@@ -31,6 +35,7 @@ def builtin_plugins():
     from gaworld.family.plugin import FamilyPlugin
     from gaworld.goals_plugin import GoalsPlugin
     from gaworld.group.plugin import GroupPlugin
+    from gaworld.holiday.plugin import HolidayPlugin
     from gaworld.infosources.plugin import InfoSourcesPlugin
     from gaworld.interests_plugin import InterestsPlugin
     from gaworld.moltbook.plugin import MoltbookPlugin
@@ -38,6 +43,7 @@ def builtin_plugins():
     from gaworld.organizations.plugin import OrganizationsPlugin
     from gaworld.personality.plugin import BigFivePlugin
     from gaworld.policy.plugin import InterventionPlugin
+    from gaworld.public_sector.plugin import PublicSectorPlugin
     from gaworld.skills.plugin import SkillsPlugin
     from gaworld.travel.plugin import TravelPlugin
     from gaworld.work.plugin import RealWorkPlugin
@@ -47,6 +53,7 @@ def builtin_plugins():
         RoomsPlugin,
         SpatialPreferencesPlugin,
         TrafficPlugin,
+        TransportHabitPlugin,
         VehicleOwnershipPlugin,
         VenueCapacityPlugin,
     )
@@ -65,6 +72,9 @@ def builtin_plugins():
         GoalsPlugin(),
         LifeEventsPlugin(),
         EconomyPlugin(),
+        # Rewrites the economy's config from the government in office and pays
+        # its transfers; its hooks carry explicit priorities around Economy's.
+        PublicSectorPlugin(),
         # Family sits after Economy so its day-end billing (priority -10)
         # lands on top of an already-settled day.
         FamilyPlugin(),
@@ -75,6 +85,8 @@ def builtin_plugins():
         # Ownership is a precondition of mode choice, so it is assigned
         # whether or not the congestion layer is switched on.
         VehicleOwnershipPlugin(),
+        # Habits are decided from ownership, so they come right after it.
+        TransportHabitPlugin(),
         # Traffic rides the same tick refresh as LocalPhysical and must commit
         # the previous tick's flows before any agent plans a trip this tick.
         TrafficPlugin(),
@@ -106,5 +118,10 @@ def builtin_plugins():
         # Its day-end handler carries its own priority, so position here only
         # orders its day-start cohort shift after the others' day start.
         GroupPlugin(),
+        # Holiday mode sits between Group and Organizations: both final-round
+        # plugins have no `requires`, so a single obs+audit pair keeps the
+        # topo order matching the registration list — the
+        # ``test_extension_hooks_resolve`` exact-equality check demands.
+        HolidayPlugin(),
         OrganizationsPlugin(),
     ]

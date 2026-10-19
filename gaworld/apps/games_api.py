@@ -1,7 +1,7 @@
 """Dashboard backend for the 游戏场 (Agent Playground).
 
 The playground is a *hub*: one place where a user plays short, interactive
-games against the residents of a city. Seven games live there today:
+games against the residents of a city. Fourteen games live there today:
 
 * **斗兽场 (Agent Arena)** — unchanged, and still served by
   :mod:`gaworld.apps.arena_api` under ``/api/arena/*``. The playground only
@@ -14,6 +14,11 @@ games against the residents of a city. Seven games live there today:
 * **灾害模式 (Disaster Mode)** — a batch of residents live through a disaster
   stage by stage. Big enough to deserve its own module, so this one only
   forwards ``/api/games/disaster/*`` to :mod:`gaworld.apps.disaster_api`.
+* **这是我的战争 (Warzone)** — a trapped group shares one stockpile; every
+  in-game day each resident proposes how to split the resources and votes on
+  today's proposals, and the aggregate tracks mortality, dissent and the
+  Gini of food distributions. ``/api/games/warzone/*`` forwards to
+  :mod:`gaworld.apps.warzone_api`.
 * **谣言扩散局 (Rumor Spread)** — a rumor moves through a network derived from
   the roster, and the run reports the diffusion tree. Same arrangement:
   ``/api/games/rumor/*`` forwards to :mod:`gaworld.apps.rumor_api`.
@@ -53,6 +58,17 @@ games against the residents of a city. Seven games live there today:
   chat; after a few simultaneous rounds every person marks each number
   human or resident. Revealed rooms are archived for GAWorld-Bench Track D.
   ``/api/games/whois/*`` forwards to :mod:`gaworld.apps.whois_api`.
+* **穿越历史 (Timeslip)** — pick a dynasty and a handful of residents,
+  watch them play through it scene by scene, each in 古人口吻 (era register)
+  and 现代内心独白 (modern inner monologue). ``/api/games/timeslip/*``
+  forwards to :mod:`gaworld.apps.timeslip_api`.
+* **连续剧 (Serial Drama)** — pick a few residents, pick a *theme* (a built-in
+  genre or a one-liner of your own), and the model writes a multi-episode
+  drama as **shot cards**: location, time of day, shot type, characters, a
+  visual prompt a text-to-video model can use, optional dialogue, duration
+  and transition. Output is JSON-friendly so it can be piped straight into
+  Kling / Sora / Veo / Hailuo / Vidu. ``/api/games/serial/*`` forwards to
+  :mod:`gaworld.apps.serial_api`.
 
 Adding another game means adding a ``/api/games/<game>/*`` branch in
 :func:`handle_get` / :func:`handle_post` plus a page under
@@ -536,6 +552,10 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         from gaworld.apps import disaster_api
 
         return disaster_api.handle_get(path, query)
+    if path.startswith("/api/games/warzone/"):
+        from gaworld.apps import warzone_api
+
+        return warzone_api.handle_get(path, query)
     if path.startswith("/api/games/rumor/"):
         from gaworld.apps import rumor_api
 
@@ -572,6 +592,14 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         from gaworld.apps import whois_api
 
         return whois_api.handle_get(path, query)
+    if path.startswith("/api/games/timeslip/"):
+        from gaworld.apps import timeslip_api
+
+        return timeslip_api.handle_get(path, query)
+    if path.startswith("/api/games/serial/"):
+        from gaworld.apps import serial_api
+
+        return serial_api.handle_get(path, query)
     try:
         if path == "/api/games/agents":
             return {"agents": list_agents(_one(query, "city"))}, 200
@@ -597,6 +625,10 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         from gaworld.apps import disaster_api
 
         return disaster_api.handle_post(path, payload)
+    if path.startswith("/api/games/warzone/"):
+        from gaworld.apps import warzone_api
+
+        return warzone_api.handle_post(path, payload)
     if path.startswith("/api/games/rumor/"):
         from gaworld.apps import rumor_api
 
@@ -633,6 +665,14 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
         from gaworld.apps import whois_api
 
         return whois_api.handle_post(path, payload)
+    if path.startswith("/api/games/timeslip/"):
+        from gaworld.apps import timeslip_api
+
+        return timeslip_api.handle_post(path, payload)
+    if path.startswith("/api/games/serial/"):
+        from gaworld.apps import serial_api
+
+        return serial_api.handle_post(path, payload)
     try:
         if path == "/api/games/persuasion/start":
             return start_session(

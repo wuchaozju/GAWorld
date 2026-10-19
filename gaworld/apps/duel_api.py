@@ -456,9 +456,17 @@ def _judge_prompt(task: dict[str, Any], first: dict[str, Any], second: dict[str,
         "（「代价」和「副作用」打的是**这份方案好不好**：代价越小、副作用越少，分越高。）\n"
         "只看在这件事上哪份更可能真的做成，别因为某种路子听起来更正规、更有力度就给高分；"
         "也别因为两份都写得像模像样就都给高分——写得漂亮但落不了地的，可行性就该低。\n"
+        "说明（写给读者看的版本，会逐项填到结果面板上）：先用一句话讲赢家靠什么赢（写在"
+        " winner_strength），再用一句话讲输家栽在哪（写在 loser_risk），最后挑一两项"
+        " 分数差距最大的维度写关键差异（写在 key_diff）。不要堆形容词、不要"
+        " 「体现了 / 有利于 / 凸显了」这种空话，每条不超过 30 字。\n"
         "只输出一个 JSON 对象，不要任何解释：\n"
         '{"one": {' + ", ".join(f'"{key}": 0-{MAX_SCORE}' for key, _ in CRITERIA) + "}, "
-        '"two": {同样四项}, "winner": "one" 或 "two" 或 "tie", "reason": "一句话说清赢在哪"}'
+        '"two": {同样四项}, "winner": "one" 或 "two" 或 "tie", '
+        '"reason": "保留的一句总结（也是 fallback）", '
+        '"winner_strength": "赢方一句话靠什么赢（30 字内）", '
+        '"loser_risk": "输方一句话栽在哪（30 字内）", '
+        '"key_diff": ["关键差异项 1（短）", "关键差异项 2（短）"]}'
     )
 
 
@@ -516,14 +524,28 @@ def _score_block(payload: Any) -> dict[str, int]:
 
 
 def parse_verdict(raw: str) -> dict[str, Any]:
-    """The judge's sheet: per-criterion scores plus the winner it *said*."""
+    """The judge's sheet: per-criterion scores plus the winner it *said*.
+
+    Newer LLMs emit a structured `reason` packet (winner_strength / loser_risk /
+    key_diff). Older or malformed outputs only carry a plain `reason` string; the
+    front-end renders that as a fallback summary so old runs still look right.
+    """
     payload = first_json_object(str(raw or ""))
     said = str(payload.get("winner") or "").strip().lower()
+    key_diff = payload.get("key_diff")
+    # Tolerate a single string or a comma-joined list from a sloppy reply.
+    if isinstance(key_diff, str):
+        key_diff = [s.strip() for s in key_diff.split("、") if s.strip()]
+    elif not isinstance(key_diff, list):
+        key_diff = []
     return {
         "one": _score_block(payload.get("one")),
         "two": _score_block(payload.get("two")),
         "judge_said": said if said in ("one", "two", "tie") else "",
         "reason": str(payload.get("reason") or "").strip()[:300],
+        "winner_strength": str(payload.get("winner_strength") or "").strip()[:120],
+        "loser_risk": str(payload.get("loser_risk") or "").strip()[:120],
+        "key_diff": [str(s).strip()[:80] for s in key_diff if str(s).strip()][:3],
     }
 
 
@@ -667,6 +689,9 @@ def judge_plans(
         "winner": winner,
         "scores": scores,
         "reason": sheet["reason"],
+        "winner_strength": sheet.get("winner_strength", ""),
+        "loser_risk": sheet.get("loser_risk", ""),
+        "key_diff": sheet.get("key_diff", []),
         "judge_said": judge_said_team,
         "order": order,
         "criteria": [{"key": key, "label": label} for key, label in CRITERIA],

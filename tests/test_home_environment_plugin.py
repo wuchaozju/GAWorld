@@ -282,6 +282,107 @@ class TestHomePluginTick(unittest.TestCase):
             c.cleanup()
 
 
+class TestHomePluginArrival(unittest.TestCase):
+    """Perception runs before the move, so home mode switches on ``agent.moved``."""
+
+    def _perceive(self, c, sim, agent, time_str="18:00", activity="回家"):
+        c.ctx.bus.collect(
+            "perception.compose",
+            agent=agent,
+            sim=sim,
+            day=1,
+            time_str=time_str,
+            step={"scheduled_activity": activity, "activity": activity},
+        )
+
+    def _move(self, c, sim, agent, to, activity, time_str="18:00"):
+        agent["locations"]["current"] = to
+        c.ctx.bus.emit("agent.moved", sim=sim, agent=agent, activity=activity, day=1, time_str=time_str)
+        c.ctx.bus.emit("on_agent_post_step", sim=sim, agent=agent, day=1, time_str=time_str)
+
+    def _rows(self, c):
+        jsonl = Path(c.output_root) / "home" / "agent_1.jsonl"
+        if not jsonl.exists():
+            return []
+        return [json.loads(line) for line in jsonl.read_text(encoding="utf-8").splitlines()]
+
+    def test_arriving_home_enters_home_mode_in_the_same_tick(self):
+        c = _Ctx({"enabled": True, "seed": 42})
+        try:
+            HomeEnvironmentPlugin().setup(c.ctx)
+            sim = c.sim()
+            agent = _agent(current="Office Tower")
+            c.ctx.bus.emit("agents.built", sim=sim, agents=[agent])
+            self._perceive(c, sim, agent)
+            self.assertFalse(agent["_home_observation"]["is_at_home"])
+            self._move(c, sim, agent, "H1", "做饭")
+            obs = agent["_home_observation"]
+            self.assertTrue(obs["is_at_home"])
+            self.assertTrue(obs["just_arrived"])
+            self.assertEqual(obs["current_room"]["key"], "kitchen")
+            rows = self._rows(c)
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0]["just_arrived"])
+            entered = [args[1] for args, _ in sim.recorder.records if args[0] == "home.entered"]
+            self.assertEqual(
+                entered, [{"agent_id": 1, "day": 1, "time": "18:00", "home_node": "H1", "room": "kitchen"}]
+            )
+        finally:
+            c.cleanup()
+
+    def test_the_next_tick_at_home_is_no_longer_an_arrival(self):
+        c = _Ctx({"enabled": True, "seed": 42})
+        try:
+            HomeEnvironmentPlugin().setup(c.ctx)
+            sim = c.sim()
+            agent = _agent(current="Office Tower")
+            c.ctx.bus.emit("agents.built", sim=sim, agents=[agent])
+            self._perceive(c, sim, agent)
+            self._move(c, sim, agent, "H1", "做饭")
+            self._perceive(c, sim, agent, time_str="18:30", activity="看电视")
+            self._move(c, sim, agent, "H1", "看电视", time_str="18:30")
+            self.assertNotIn("just_arrived", agent["_home_observation"])
+            self.assertEqual([r.get("just_arrived", False) for r in self._rows(c)], [True, False])
+            names = [args[0] for args, _ in sim.recorder.records]
+            self.assertEqual(names.count("home.entered"), 1)
+        finally:
+            c.cleanup()
+
+    def test_leaving_home_ends_home_mode_before_the_tick_is_recorded(self):
+        c = _Ctx({"enabled": True, "seed": 42})
+        try:
+            HomeEnvironmentPlugin().setup(c.ctx)
+            sim = c.sim()
+            agent = _agent()
+            c.ctx.bus.emit("agents.built", sim=sim, agents=[agent])
+            self._perceive(c, sim, agent, time_str="08:00", activity="上班")
+            self.assertTrue(agent["_home_observation"]["is_at_home"])
+            agent["locations"]["in_transit"] = True
+            self._move(c, sim, agent, "H1", "上班", time_str="08:00")
+            self.assertEqual(agent["_home_observation"], {"is_at_home": False, "reason": "in_transit"})
+            self.assertEqual(self._rows(c), [])
+            left = [args[1] for args, _ in sim.recorder.records if args[0] == "home.left"]
+            self.assertEqual(left, [{"agent_id": 1, "day": 1, "time": "08:00", "home_node": "H1"}])
+        finally:
+            c.cleanup()
+
+    def test_record_off_switches_mode_without_recording(self):
+        c = _Ctx({"enabled": True, "seed": 42, "record_observations": False})
+        try:
+            HomeEnvironmentPlugin().setup(c.ctx)
+            sim = c.sim()
+            agent = _agent(current="Office Tower")
+            c.ctx.bus.emit("agents.built", sim=sim, agents=[agent])
+            self._perceive(c, sim, agent)
+            self._move(c, sim, agent, "H1", "做饭")
+            self.assertTrue(agent["_home_observation"]["is_at_home"])
+            names = [args[0] for args, _ in sim.recorder.records]
+            self.assertNotIn("home.entered", names)
+            self.assertEqual(self._rows(c), [])
+        finally:
+            c.cleanup()
+
+
 class TestHomePluginDisabled(unittest.TestCase):
     def test_disabled_resets_agent_key_and_contributes_nothing(self):
         c = _Ctx({"enabled": False})

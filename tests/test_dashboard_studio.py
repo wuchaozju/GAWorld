@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from gaworld.apps import residents, world_paths
 
@@ -54,6 +55,45 @@ class TestStateRoundTrip(unittest.TestCase):
         again = residents.agent_state(1)
         self.assertEqual(again["state"]["stress"], 1.0)
         self.assertEqual(again["state"]["emotion"], 0.0)
+
+
+class TestSelectedCityFollowsConfig(unittest.TestCase):
+    """Studio edits the city selected now, not the one the server started on."""
+
+    def _effective(self, city):
+        cfg = {
+            "csv_path": f"data/cities/{city}/agents_state.csv",
+            "md_path": f"data/cities/{city}/profiles.md",
+            "personality": {"profile_path": f"data/cities/{city}/agents_big5.csv"},
+        }
+        if city:
+            cfg["city"] = city
+        return lambda: cfg
+
+    def test_unchanged_city_keeps_the_startup_paths(self):
+        with mock.patch.dict(world_paths.CONFIG, {"city": "wuzhen"}), mock.patch.object(
+            world_paths, "effective_config", self._effective("wuzhen")
+        ):
+            self.assertEqual(world_paths.state_csv_path(), world_paths.STATE_CSV_PATH)
+            self.assertEqual(world_paths.profile_path(), world_paths.PROFILE_PATH)
+            self.assertEqual(world_paths.big5_csv_path(), world_paths.BIG5_CSV_PATH)
+
+    def test_a_city_selected_since_startup_is_the_one_edited(self):
+        city_dir = os.path.join(REPO_ROOT, "data", "cities", "meiwan")
+        with mock.patch.dict(world_paths.CONFIG, {"city": "wuzhen"}), mock.patch.object(
+            world_paths, "effective_config", self._effective("meiwan")
+        ):
+            self.assertEqual(world_paths.state_csv_path(), os.path.join(city_dir, "agents_state.csv"))
+            self.assertEqual(world_paths.profile_path(), os.path.join(city_dir, "profiles.md"))
+            self.assertEqual(world_paths.big5_csv_path(), os.path.join(city_dir, "agents_big5.csv"))
+
+    def test_back_to_the_default_world(self):
+        with mock.patch.dict(world_paths.CONFIG, {"city": "wuzhen"}), mock.patch.object(
+            world_paths, "effective_config", lambda: {"csv_path": "data/hangzhou_agents_state_init.csv"}
+        ):
+            self.assertEqual(world_paths.state_csv_path(), REAL_CSV)
+            # A key the config lacks keeps the startup path rather than guessing.
+            self.assertEqual(world_paths.profile_path(), world_paths.PROFILE_PATH)
 
 
 class TestCreateAgent(unittest.TestCase):

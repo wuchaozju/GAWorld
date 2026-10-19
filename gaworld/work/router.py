@@ -21,7 +21,6 @@ from typing import Any, Optional
 
 from gaworld.logging_setup import get_logger
 from gaworld.settings import CONFIG
-from gaworld.skills.prompt_helpers import relevant_skills_for_text, render_agent_skills
 from gaworld.skills.registry import SkillRegistry, get_default_registry
 from gaworld.skills.schemas import Skill
 from gaworld.work.market import (
@@ -38,6 +37,7 @@ from gaworld.work.schemas import (
     MarketJob,
     WorkBrief,
 )
+from gaworld.work.skill_lookup import append_skills, find_local_skills
 
 _LOG = get_logger("gaworld.work.router")
 
@@ -135,33 +135,8 @@ def _build_brief_text(
         f"【简报】{description}"
     )
     if relevant_skills:
-        skill_text = render_agent_skills(relevant_skills, max_skills=3, include_body=True)
-        if skill_text:
-            base += f"\n【可用技能】\n{skill_text}"
+        base = append_skills(base, relevant_skills)
     return base
-
-
-def _skills_for_action(
-    agent: dict[str, Any],
-    *,
-    registry: SkillRegistry | None,
-    action_text: str,
-    enabled: bool,
-) -> list[Skill]:
-    """Pick the top skills relevant to a chosen action.
-
-    Wrapped in a try/except so a misconfigured skill directory never
-    blocks work dispatch — the router falls back to behaving as before.
-    """
-    if not enabled or registry is None:
-        return []
-    try:
-        all_skills = registry.list_for_agent(agent)
-    except Exception:  # noqa: BLE001
-        return []
-    if not all_skills:
-        return []
-    return relevant_skills_for_text(all_skills, action_text, limit=3)
 
 
 class RealWorkRouter:
@@ -183,6 +158,7 @@ class RealWorkRouter:
         self._market_cfg = self.config.get("market", {}) if isinstance(self.config, dict) else {}
         skills_cfg = CONFIG.get("skills", {}) if isinstance(CONFIG, dict) else {}
         self._skills_enabled = bool(skills_cfg.get("inject_into_work_brief", True))
+        self._skills_auto_search = bool(skills_cfg.get("auto_search", True))
         # Resolve lazily so tests that don't touch skills pay nothing.
         self._skill_registry = skill_registry
         if self._skills_enabled and self._skill_registry is None:
@@ -190,6 +166,29 @@ class RealWorkRouter:
                 self._skill_registry = get_default_registry()
             except Exception:  # noqa: BLE001
                 self._skill_registry = None
+
+    @property
+    def skill_registry(self) -> Optional[SkillRegistry]:
+        return self._skill_registry
+
+    def _find_skills(
+        self,
+        agent: dict[str, Any],
+        *,
+        text: str,
+        deliverable: str,
+        extra_keywords: list[str] | None = None,
+    ) -> list[Skill]:
+        if not self._skills_enabled:
+            return []
+        return find_local_skills(
+            agent,
+            self._skill_registry,
+            text=text,
+            deliverable=deliverable,
+            extra_keywords=extra_keywords or (),
+            auto_search=self._skills_auto_search,
+        )
 
     # ------------------------------------------------------------------
     def maybe_dispatch(
@@ -304,12 +303,11 @@ class RealWorkRouter:
         adapter = _DELIVERABLE_TO_ADAPTER.get(job.deliverable)
         if adapter is None:
             return None
-        action_hint = f"{job.title} {job.description}"
-        relevant = _skills_for_action(
+        relevant = self._find_skills(
             agent,
-            registry=self._skill_registry,
-            action_text=action_hint,
-            enabled=self._skills_enabled,
+            text=f"{job.title} {job.description}",
+            deliverable=job.deliverable,
+            extra_keywords=list(job.required_skills),
         )
         brief_text = _build_brief_text(
             agent, capabilities,
@@ -331,6 +329,7 @@ class RealWorkRouter:
             estimated_minutes=_ESTIMATED_MINUTES.get(job.deliverable, 25),
             submitted_at=time.time(),
             market_job_id=job.job_id,
+            skill_ids=[sk.skill_id for sk in relevant],
         )
 
     # ------------------------------------------------------------------
@@ -357,11 +356,10 @@ class RealWorkRouter:
             f"基于角色背景与当前活动【{activity}】自主推进，"
             f"输出一个 {deliverable} 类型的产物。"
         )
-        relevant = _skills_for_action(
+        relevant = self._find_skills(
             agent,
-            registry=self._skill_registry,
-            action_text=f"{chosen_action} {activity}",
-            enabled=self._skills_enabled,
+            text=f"{chosen_action} {activity}",
+            deliverable=deliverable,
         )
         brief_text = _build_brief_text(
             agent, capabilities,
@@ -383,6 +381,7 @@ class RealWorkRouter:
             estimated_minutes=_ESTIMATED_MINUTES.get(deliverable, 25),
             submitted_at=time.time(),
             market_job_id=None,
+            skill_ids=[sk.skill_id for sk in relevant],
         )
         self.queue.submit(brief)
         return f"开始着手【{title}】，已投递任务 {brief.task_id[:10]}"

@@ -2,12 +2,19 @@ import unittest
 from unittest.mock import patch
 
 import generative_city_sim as sim
+from gaworld.llm import providers as llm_providers
+
+
+def _pin_randomness(value):
+    """Pin ``routine_change.randomness`` (read at call time in ``gaworld.sim._step``)."""
+    section = {**(sim.CONFIG.get("routine_change") or {}), "randomness": value}
+    return patch.dict(sim.CONFIG, {"routine_change": section})
 
 
 class TestRoutineChangeCommitment(unittest.TestCase):
     """Trigger strength versus an activity's commitment resistance.
 
-    Every test here pins ``ROUTINE_CHANGE_RANDOMNESS`` to 0. The knob defaults
+    Every test here pins ``routine_change.randomness`` to 0. The knob defaults
     to 0.85, and at that setting it scales resistance down to ~0.40x and adds
     ~0.38 of free-floating restlessness to the trigger — enough to carry *any*
     trigger past *any* commitment level. The "resists" case would then survive
@@ -20,7 +27,7 @@ class TestRoutineChangeCommitment(unittest.TestCase):
     """
 
     def setUp(self):
-        patcher = patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 0.0)
+        patcher = _pin_randomness(0.0)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -44,7 +51,7 @@ class TestRoutineChangeCommitment(unittest.TestCase):
                 "time_pressure": 0.3,
             },
         }
-        with patch.object(sim, "call_llm") as mock_call:
+        with patch.object(llm_providers, "call_llm") as mock_call:
             activity, reason, changed = sim.maybe_adjust_activity(
                 agent,
                 "10:00",
@@ -82,7 +89,7 @@ class TestRoutineChangeCommitment(unittest.TestCase):
         }
         response = '{"change": true, "activity": "吃点东西", "reason": "又饿又累，想先恢复一下"}'
         with patch.object(sim.random, "random", return_value=0.0), patch.object(
-            sim, "call_llm", return_value=response
+            llm_providers, "call_llm", return_value=response
         ) as mock_call:
             activity, reason, changed = sim.maybe_adjust_activity(
                 agent,

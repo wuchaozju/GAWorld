@@ -54,6 +54,7 @@ def experiment_payload(protocol: Protocol, seed: int, *, name: str = "") -> dict
         "seed": seed,
         "llm_provider": protocol.sim_provider or None,
         "fast": protocol.fast,
+        "execution_mode": protocol.mode,
         "max_parallel": protocol.max_parallel,
         "baseline_id": protocol.baseline_id,
         "worlds": [
@@ -108,7 +109,7 @@ def run_protocol(
         spec = experiment_spec(protocol, seed, name=name)
         result = run_seed(spec, seed, _seed_reporter(report, seed, index * share, sim_share))
         run = {"seed": seed, **(result or {})}
-        if surveyed and not (stop is not None and stop.is_set()):
+        if surveyed and not run.get("provider_blocked") and not (stop is not None and stop.is_set()):
             sub = _seed_reporter(report, seed, index * share + sim_share, share - sim_share)
             try:
                 run["survey"] = run_survey(protocol, run, sub)
@@ -116,6 +117,8 @@ def run_protocol(
                 _LOG.warning("survey for seed %s failed: %s", seed, exc)
                 run["survey"] = {"error": str(exc)}
         runs.append(run)
+        if run.get("provider_blocked"):
+            break
     return runs
 
 
@@ -170,6 +173,7 @@ def default_seed_runner(
     base_config: dict[str, Any] | None,
     experiment_prefix: str,
     active: dict[str, Any],
+    owner: dict[str, Any] | None = None,
 ) -> SeedRunner:
     """The real thing: fork the worlds as subprocesses and wait for them.
 
@@ -178,19 +182,68 @@ def default_seed_runner(
     """
 
     def run(spec: ExperimentSpec, seed: int, report: ReportFn) -> dict[str, Any]:
+        config = dict(base_config or {})
+        config["simulate_realtime"] = False
+        selected = active.get("actual_provider")
+        if selected:
+            spec.llm_provider = str(selected)
         manifest = prunner.prepare_experiment(
             spec,
             repo_root,
-            base_config=base_config,
+            base_config=config,
             experiment_id=f"{experiment_prefix}_s{seed}",
             group=experiment_prefix,
+            owner=owner,
         )
+        ledger_path = active.get("ledger")
+        if active.get("frozen_batch"):
+            from gaworld.research.batch_inputs import apply_world_inputs
+
+            apply_world_inputs(manifest, config)
+        if ledger_path:
+            manifest["research"] = {
+                "ledger": ledger_path,
+                "execution_mode": spec.execution_mode,
+                "actual_provider": spec.llm_provider,
+                "actual_model": ((config.get("llm") or {}).get("providers", {}).get(selected) or {}).get(
+                    "model"
+                ),
+            }
+            # The display pace is not a modelling parameter. Condition patches
+            # cannot put a batch study back into real-time animation waits.
+            for world in manifest["worlds"].values():
+                world["overrides"]["simulate_realtime"] = False
+                for key in ("csv_path", "md_path", "map_path", "background"):
+                    if config.get(key) is not None:
+                        world["overrides"][key] = config[key]
+                if not spec.agent_ids and config.get("agent_ids"):
+                    world["overrides"]["agent_ids"] = list(config["agent_ids"])
+                if selected:
+                    patch = world["overrides"].setdefault("llm", {})
+                    routing = patch.get("routing") or {}
+                    patch["routing"] = {
+                        "default": str(selected),
+                        "fallback": [],
+                        "tasks": {key: str(selected) for key in routing.get("tasks", {})},
+                        "agents": {key: str(selected) for key in routing.get("agents", {})},
+                    }
+            prunner.write_manifest(repo_root, manifest)
+        prepared = active.get("on_prepared")
+        if prepared:
+            prepared(manifest, seed)
         runner = prunner.ExperimentRunner(manifest, repo_root, max_parallel=spec.max_parallel)
+        if active.get("frozen_batch"):
+            runner.research_frozen_config = config
+        if ledger_path and selected:
+            runner.research_provider_config = (config.get("llm") or {}).get("providers", {}).get(selected)
         active["runner"] = runner
         # A pause that landed between two seeds applies to this one too.
         pause = active.get("pause")
         if pause is not None and pause.is_set():
             runner.pause()
+        stop = active.get("stop")
+        if stop is not None and stop.is_set():
+            runner.stop()
         try:
             result = runner.run(report)
         finally:
@@ -201,6 +254,13 @@ def default_seed_runner(
             "status": runner.manifest.get("status", "unknown"),
             "world_status": dict(runner.manifest.get("world_status") or {}),
             "report": result,
+            "execution_mode": spec.execution_mode or ("lean_tick" if spec.fast else "tick"),
+            "actual_provider": spec.llm_provider,
+            "actual_model": (manifest.get("research") or {}).get("actual_model"),
+            "queued_seconds": sum(
+                float(w.get("queued_seconds") or 0) for w in runner.manifest.get("world_timings", [])
+            ),
+            "provider_blocked": bool(getattr(runner, "provider_blocked", False)),
         }
 
     return run
@@ -213,9 +273,10 @@ def _respondent_ids(repo_root: str, world: dict[str, Any], spec_ids: list[int]) 
     are left out."""
     from gaworld.family.promote import PROMOTED_ID_BASE
 
-    if spec_ids:
-        return [aid for aid in spec_ids if aid < PROMOTED_ID_BASE]
-    path = os.path.join(repo_root, world.get("state_csv") or "")
+    state_csv = world.get("state_csv") or os.path.join(
+        world.get("dir") or "", "state", "agent_state_history.csv"
+    )
+    path = os.path.join(repo_root, state_csv)
     ids: list[int] = []
     try:
         with open(path, encoding="utf-8") as handle:
@@ -228,10 +289,20 @@ def _respondent_ids(repo_root: str, world: dict[str, Any], spec_ids: list[int]) 
                     ids.append(aid)
     except OSError:
         return []
-    return ids
+    return [aid for aid in ids if not spec_ids or aid in spec_ids]
 
 
-def default_survey_runner(*, repo_root: str, provider: str = "", timeout: float = 3600.0) -> SurveyRunner:
+def default_survey_runner(
+    *,
+    repo_root: str,
+    provider: str = "",
+    timeout: float = 3600.0,
+    stop: threading.Event | None = None,
+    pause: threading.Event | None = None,
+    ledger_path: str = "",
+    provider_config: dict[str, Any] | None = None,
+    frozen_config: dict[str, Any] | None = None,
+) -> SurveyRunner:
     """Interview every world's residents with that world's memories.
 
     One ``python -m gaworld.interview`` child per world, with the world's own
@@ -249,7 +320,14 @@ def default_survey_runner(*, repo_root: str, provider: str = "", timeout: float 
         out: dict[str, Any] = {}
         conditions = [cond for cond in protocol.conditions if cond["id"] in worlds]
         for index, cond in enumerate(conditions):
+            _wait_while_paused(pause, stop, report, index / max(1, len(conditions)))
+            if stop is not None and stop.is_set():
+                break
             world = worlds[cond["id"]]
+            status = (seed_run.get("world_status") or manifest.get("world_status") or {}).get(cond["id"])
+            if status in {"error", "stopped"}:
+                out[cond["id"]] = {"error": "世界运行失败或已停止，跳过运行后问卷"}
+                continue
             report(index / max(1, len(conditions)), f"采访世界 {cond['label']} 的居民…")
             ids = _respondent_ids(repo_root, world, spec_ids)
             if not ids:
@@ -271,24 +349,51 @@ def default_survey_runner(*, repo_root: str, provider: str = "", timeout: float 
             from gaworld.accounts.usage import child_env
 
             env = child_env(os.environ.copy())
-            env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(world.get("overrides") or {}, ensure_ascii=False)
+            import copy
+
+            overrides = copy.deepcopy(world.get("overrides") or {})
+            if frozen_config is not None:
+                from gaworld.settings.overrides import deep_update
+
+                full = copy.deepcopy(frozen_config)
+                deep_update(full, overrides)
+                overrides = full
+                env["GAWORLD_RESEARCH_FROZEN_CONFIG"] = "1"
+            if provider and provider_config:
+                overrides.setdefault("llm", {}).setdefault("providers", {})[provider] = provider_config
+            env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(overrides, ensure_ascii=False)
             env["PYTHONUNBUFFERED"] = "1"
-            proc = subprocess.run(
-                [sys.executable, "-m", "gaworld.interview", "--spec", spec_path, "--out", out_path],
-                cwd=repo_root, env=env, capture_output=True, text=True, timeout=timeout,
-            )
+            if ledger_path:
+                env["GAWORLD_RESEARCH_RUN_STATE"] = ledger_path
+            env["GAWORLD_LOG_FILE"] = os.path.join(world_dir, "logs", "survey.log")
+            log_path = os.path.join(world_dir, "survey.log")
+            with open(log_path, "w", encoding="utf-8") as log_handle:
+                proc = subprocess.run(
+                    [sys.executable, "-m", "gaworld.interview", "--spec", spec_path, "--out", out_path],
+                    cwd=repo_root,
+                    env=env,
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=timeout,
+                )
             if proc.returncode != 0 or not os.path.exists(out_path):
-                tail = (proc.stderr or proc.stdout or "")[-600:]
+                tail = prunner.log_tail(log_path, max_chars=600)
                 out[cond["id"]] = {"error": f"采访进程失败（退出码 {proc.returncode}）：{tail}"}
                 continue
             with open(out_path, encoding="utf-8") as handle:
                 transcripts = (json.load(handle) or {}).get("transcripts") or []
             scores = survey_mod.score(survey, transcripts)
-            record = {"scores": scores, "respondents": len(ids), "transcripts": os.path.relpath(out_path, repo_root)}
+            record = {
+                "scores": scores,
+                "respondents": len(ids),
+                "transcripts": os.path.relpath(out_path, repo_root),
+            }
             with open(os.path.join(world_dir, "survey.json"), "w", encoding="utf-8") as handle:
                 json.dump({**record, "transcripts": transcripts}, handle, ensure_ascii=False)
             out[cond["id"]] = record
-        report(1.0, "采访完成")
+        if stop is None or not stop.is_set():
+            report(1.0, "采访完成")
         return out
 
     return run

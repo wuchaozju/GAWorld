@@ -80,9 +80,9 @@ class OwnershipTest(unittest.TestCase):
             "/api/research/games/g1/delete",
             "/api/research/games/sessions/s1/delete",
             "/api/research/policy/r1/delete",
+            "/api/research/studies/x/delete",
         ):
             self.assertEqual(policy.required("POST", path), "member", path)
-        self.assertEqual(policy.required("POST", "/api/research/studies/x/delete"), "admin")
         self.assertTrue(policy.quota_gated("/api/games/duel/run"))
         self.assertFalse(policy.quota_gated("/api/config"))
 

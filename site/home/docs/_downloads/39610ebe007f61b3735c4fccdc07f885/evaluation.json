@@ -1,0 +1,107 @@
+{
+  "seeds": [
+    42,
+    43
+  ],
+  "baseline_id": "baseline",
+  "placebo_id": "placebo",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "补贴通告条件下的期末压力低于基准条件",
+      "measure": "stress",
+      "treatment": "subsidy",
+      "control": "baseline",
+      "direction": "decrease",
+      "min_effect": 0.02,
+      "aggregation": "final",
+      "measure_label": "压力",
+      "measure_grade": "c",
+      "measure_basis": "事件与政策对它的影响由一次模型调用直接给出（每件事 ±0.2 以内，`infer_event_effect`）——效应方向就是模型对这件事的判断；之后按手写的均值回归公式（目标值与系数都是定的，`update_state`）每步拉回；人生事件与家庭事件另带固定增量（数值是定的）；另受记忆唤起、当日消费被截断（+0.02）、家庭单职工负担影响（系数都是定的）",
+      "direction_only": true,
+      "effects": [
+        {
+          "seed": 42,
+          "treatment_value": 0.395,
+          "control_value": 0.495,
+          "effect": -0.09999999999999998,
+          "placebo_gap": 0.0050000000000000044,
+          "paired": {
+            "ate": -0.1,
+            "ci_low": -0.1065,
+            "ci_high": -0.0935,
+            "p_value": 0.0078125,
+            "q_value": 0.0078125,
+            "n": 8,
+            "verdict": "robust"
+          }
+        },
+        {
+          "seed": 43,
+          "treatment_value": 0.415,
+          "control_value": 0.495,
+          "effect": -0.08000000000000002,
+          "placebo_gap": 0.0050000000000000044,
+          "paired": {
+            "ate": -0.07999999999999999,
+            "ci_low": -0.0865,
+            "ci_high": -0.07350000000000001,
+            "p_value": 0.0078125,
+            "q_value": 0.0078125,
+            "n": 8,
+            "verdict": "robust"
+          }
+        }
+      ],
+      "mean_effect": -0.09,
+      "seed_ci": [
+        -0.21705999999999975,
+        0.03705999999999976
+      ],
+      "noise": 0.0050000000000000044,
+      "seeds_with_data": 2,
+      "verdict": "supported",
+      "reasons": [
+        "2/2 个种子的方向与预测一致",
+        "均值效应 -0.0900，最小效应要求 0.0200",
+        "安慰剂噪声底线 0.0050",
+        "种子层面 95% t 区间 -0.2171 ~ +0.0371",
+        "所有 2 个种子的居民配对检验都在同一方向显著（q<0.05）",
+        "指标来源 (c) 级：只读方向，效应大小不作数"
+      ]
+    }
+  ],
+  "values": {
+    "stress": {
+      "baseline": {
+        "42": 0.495,
+        "43": 0.495
+      },
+      "subsidy": {
+        "42": 0.395,
+        "43": 0.415
+      },
+      "placebo": {
+        "42": 0.5,
+        "43": 0.5
+      }
+    }
+  },
+  "quality": {
+    "ok": true,
+    "issues": []
+  },
+  "summary": {
+    "supported": 1,
+    "contradicted": 0,
+    "inconclusive": 0,
+    "unmeasured": 0
+  },
+  "comparability": {
+    "epochs": {
+      "42": null,
+      "43": null
+    },
+    "mixed": false
+  }
+}

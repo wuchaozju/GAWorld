@@ -1,6 +1,6 @@
 """HomeEnvironmentPlugin — at-home perception & activity detail (P5).
 
-Three jobs:
+Four jobs:
 
 1. **Seed (``agents.built``)** — design each agent's home once. Procedural
    by default (deterministic off agent id + config seed), optional LLM polish
@@ -11,7 +11,13 @@ Three jobs:
    (current room, ambiance, vibe). Priority 25 keeps the snippet ahead of the
    physical-environment (30 → 20 transition reads more naturally than the
    inverse).
-3. **Tick (``on_agent_post_step``)** — refresh the ambient state from the
+3. **Arrive / leave (``agent.moved``)** — perception runs before the move,
+   so its snapshot still says where the agent *was*. The moment a move lands
+   at the home node the agent enters home mode (snapshot marked
+   ``just_arrived``, ``home.entered`` recorded); the moment it leaves, home
+   mode ends (``home.left``). Priority 10 runs ahead of the room placement,
+   which reads the snapshot to pick the room inside the flat.
+4. **Tick (``on_agent_post_step``)** — refresh the ambient state from the
    current activity, and append a per-tick observation row to
    ``output/home/agent_<id>.jsonl`` so downstream tooling can analyse home
    life independently of the Recorder.
@@ -56,6 +62,7 @@ class HomeEnvironmentPlugin(Plugin):
 
         ctx.bus.on("agents.built", self._seed_homes, priority=10)
         ctx.bus.on("perception.compose", self._compose, priority=25)
+        ctx.bus.on("agent.moved", self._moved, priority=10)
         ctx.bus.on("on_agent_post_step", self._tick, priority=5)
 
     # -- helpers ------------------------------------------------------------
@@ -67,6 +74,40 @@ class HomeEnvironmentPlugin(Plugin):
         from pathlib import Path
 
         return str(Path(self._output_dir) / "home")
+
+    @staticmethod
+    def _is_at_home(agent: dict, home: dict) -> bool:
+        locations = agent.get("locations") or {}
+        if locations.get("in_transit"):
+            return False
+        current = locations.get("current") or locations.get("home")
+        home_node = locations.get("home") or home.get("home_node")
+        return bool(current and home_node and current == home_node)
+
+    @staticmethod
+    def _weather(hook_ctx) -> str:
+        sim = hook_ctx.get("sim")
+        env_system = getattr(sim, "extras", {}).get("env_system") if sim is not None else None
+        try:
+            if env_system is not None and hasattr(env_system, "export_runtime_state"):
+                return str((env_system.export_runtime_state() or {}).get("weather_state", "") or "")
+        except Exception:
+            pass
+        return ""
+
+    def _observe(self, agent: dict, home: dict, hook_ctx, activity: str) -> dict:
+        """Refresh the ambiance for this tick and return the home snapshot."""
+        time_str = hook_ctx.get("time_str") or ""
+        self._he.update_ambiance(
+            home, time_str=time_str, weather_state=self._weather(hook_ctx), activity=activity
+        )
+        return self._he.home_observation(agent, home, activity=activity, time_str=time_str)
+
+    @staticmethod
+    def _record_event(hook_ctx, name: str, payload: dict) -> None:
+        recorder = getattr(hook_ctx.get("sim"), "recorder", None)
+        if recorder is not None:
+            recorder.record(name, payload)
 
     # -- hooks ---------------------------------------------------------------
 
@@ -126,38 +167,17 @@ class HomeEnvironmentPlugin(Plugin):
         if not home:
             agent["_home_observation"] = {}
             return None
-        locations = agent.get("locations") or {}
-        if locations.get("in_transit"):
+        if (agent.get("locations") or {}).get("in_transit"):
             agent["_home_observation"] = {"is_at_home": False, "reason": "in_transit"}
             return None
-        current = locations.get("current") or locations.get("home")
-        home_node = locations.get("home") or home.get("home_node")
-        if not current or not home_node or current != home_node:
+        if not self._is_at_home(agent, home):
             agent["_home_observation"] = {"is_at_home": False}
             return None
         step = hook_ctx.get("step") or {}
         activity = step.get("scheduled_activity") or step.get("activity") or ""
-        time_str = hook_ctx.get("time_str") or ""
-        env_state = ""
-        env_system = (
-            hook_ctx.get("sim", {}).extras.get("env_system")
-            if isinstance(hook_ctx.get("sim"), object)
-            else None
-        )
-        try:
-            if env_system is not None and hasattr(env_system, "export_runtime_state"):
-                env_state = str((env_system.export_runtime_state() or {}).get("weather_state", "") or "")
-        except Exception:
-            env_state = ""
         # Refresh ambiance for the *current* tick so the prompt reflects the
         # new tick's lighting/sound even before ``on_agent_post_step`` runs.
-        self._he.update_ambiance(home, time_str=time_str, weather_state=env_state, activity=activity)
-        obs = self._he.home_observation(
-            agent,
-            home,
-            activity=activity,
-            time_str=time_str,
-        )
+        obs = self._observe(agent, home, hook_ctx, activity)
         agent["_home_observation"] = obs
         if not self._inject:
             return None
@@ -167,6 +187,39 @@ class HomeEnvironmentPlugin(Plugin):
         # Return the room + ambiance block as one string the perception stage
         # can split on its own. Two short sentences read better than three.
         return "".join(lines)
+
+    def _moved(self, hook_ctx):
+        """Enter home mode as soon as the agent gets home; leave it as soon as
+        they go out. Staying put keeps the perception snapshot."""
+        agent = hook_ctx["agent"]
+        home = agent.get("_home")
+        if not home:
+            return
+        was_home = bool((agent.get("_home_observation") or {}).get("is_at_home"))
+        now_home = self._is_at_home(agent, home)
+        if now_home == was_home:
+            return
+        locations = agent.get("locations") or {}
+        event = {
+            "agent_id": agent.get("id"),
+            "day": hook_ctx.get("day"),
+            "time": hook_ctx.get("time_str", ""),
+            "home_node": locations.get("home") or home.get("home_node"),
+        }
+        if not now_home:
+            agent["_home_observation"] = (
+                {"is_at_home": False, "reason": "in_transit"}
+                if locations.get("in_transit")
+                else {"is_at_home": False}
+            )
+            if self._record:
+                self._record_event(hook_ctx, "home.left", event)
+            return
+        obs = self._observe(agent, home, hook_ctx, hook_ctx.get("activity") or "")
+        obs["just_arrived"] = True
+        agent["_home_observation"] = obs
+        if self._record:
+            self._record_event(hook_ctx, "home.entered", {**event, "room": obs["current_room"]["key"]})
 
     def _tick(self, hook_ctx):
         """Refresh ambiance, persist a per-tick observation row, and post the

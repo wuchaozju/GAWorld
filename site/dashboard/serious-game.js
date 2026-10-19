@@ -1,6 +1,6 @@
 /* 研究工作台 · 严肃游戏 — 一段描述 → 一个可以开玩的回合制情景推演。
  *
- * 也管页面顶部的三个 Tab（实施方案 / 严肃游戏 / 政策仿真与优化），当前 Tab 记在 ?tab= 里。
+ * 也管页面顶部的 Tab（实施方案 / 严肃游戏 / 政策仿真与优化 / 社会调查/实验拟合度 / 平行世界），当前 Tab 记在 ?tab= 里。
  *
  * 三种视图：
  *   - 设计：描述 → POST /api/research/games/design（后台任务）→ 游戏设计 + 座位配置；
@@ -106,7 +106,11 @@
       var pane = $(tab.getAttribute("aria-controls"));
       if (pane) pane.hidden = !on;
     });
-    setUrl({ tab: name === "plan" ? "" : name, run: name === "policy" ? params().get("run") : "" });
+    setUrl({
+      tab: name === "plan" ? "" : name,
+      run: name === "policy" ? params().get("run") : "",
+      rep: name === "replication" ? params().get("rep") : "",
+    });
   }
 
   /* ----------------------------------------------------------------- setup */
@@ -792,7 +796,7 @@
     var seat = query.get("seat") || "";
     var sessionId = query.get("session") || "";
     if (query.get("tab") === "game" || sessionId) showTab("game");
-    else if (query.get("tab") === "policy" || query.get("tab") === "worlds") showTab(query.get("tab"));
+    else if (["policy", "replication", "worlds"].indexOf(query.get("tab")) >= 0) showTab(query.get("tab"));
 
     if (sessionId && seat) {
       // Player view: one role, nothing else on the page.

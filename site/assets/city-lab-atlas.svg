@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" role="img" aria-label="城市实验室示意图：居民在街区间活动，两个平行世界比较同一事件的影响" font-family="Avenir Next, PingFang SC, sans-serif">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#536048"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="m0 0 10 5-10 5" fill="#c4e48e"/></marker>
+  </defs>
+  <rect width="720" height="480" fill="#242f26"/>
+  <rect width="720" height="480" fill="url(#grid)"/>
+  <text x="30" y="40" font-family="monospace" font-size="12" letter-spacing="2" fill="#e4ebd5">GAWORLD / CITY ATLAS</text>
+  <text x="30" y="63" font-size="11" fill="#a6b594">每一个点，是一位有记忆的居民。</text>
+  <path d="M420 90c-70 80 80 140 15 210s-60 90-30 180" fill="none" stroke="#354c41" stroke-width="45"/>
+  <path d="M420 90c-70 80 80 140 15 210s-60 90-30 180" fill="none" stroke="#688275" stroke-width="1" stroke-dasharray="5 6"/>
+  <g fill="#35402e" stroke="#536048">
+    <rect x="45" y="108" width="142" height="94"/><rect x="214" y="108" width="126" height="94"/>
+    <rect x="45" y="230" width="142" height="128"/><rect x="214" y="230" width="130" height="128"/>
+    <rect x="492" y="108" width="176" height="94"/><rect x="492" y="230" width="176" height="128"/>
+  </g>
+  <g fill="#d2d6bb" font-size="12">
+    <text x="59" y="130">居住街区</text><text x="228" y="130">社区广场</text><text x="507" y="130">工作与市场</text>
+    <text x="59" y="252">学校与家庭</text><text x="228" y="252">公共空间</text><text x="507" y="252">社交与信息</text>
+  </g>
+  <g fill="none" stroke="#748961" stroke-width="2">
+    <path d="M25 216h670M200 90v288M476 90v288"/>
+    <path d="M76 170h84M76 288h84M76 320h84M526 168h103M526 283h103M526 321h103" stroke="#4c5d40"/>
+  </g>
+  <g fill="#c4e48e" stroke="#242f26" stroke-width="3">
+    <circle cx="92" cy="169" r="6"/><circle cx="150" cy="182" r="6"/><circle cx="242" cy="170" r="6"/>
+    <circle cx="309" cy="184" r="6"/><circle cx="200" cy="217" r="6"/><circle cx="113" cy="292" r="6"/>
+    <circle cx="157" cy="321" r="6"/><circle cx="257" cy="302" r="6"/><circle cx="313" cy="274" r="6"/>
+    <circle cx="529" cy="168" r="6"/><circle cx="610" cy="180" r="6"/><circle cx="584" cy="292" r="6"/>
+    <circle cx="642" cy="321" r="6"/><circle cx="476" cy="216" r="6"/>
+  </g>
+  <path d="M152 182 200 216 309 184M257 302 200 216 476 216 584 292" fill="none" stroke="#c4e48e" stroke-dasharray="4 5" opacity=".65" marker-end="url(#arrow)"/>
+  <circle cx="200" cy="216" r="20" fill="none" stroke="#ef7041"/>
+  <circle cx="200" cy="216" r="7" fill="#ef7041"/>
+  <g transform="translate(246 206)"><rect width="139" height="25" fill="#ef7041"/><text x="10" y="17" font-size="11" fill="#242820">事件介入 · 历史分叉</text></g>
+  <path d="M32 393h656" stroke="#536048"/>
+  <text x="34" y="420" font-family="monospace" font-size="10" letter-spacing="1" fill="#a6b594">SAME RESIDENTS / SAME SEED</text>
+  <text x="34" y="451" font-size="16" fill="#e4ebd5">同一座城市，两种可能。</text>
+  <g transform="translate(473 410)" font-size="11"><rect width="90" height="34" fill="#35402e" stroke="#748961"/><text x="12" y="22" fill="#c4e48e">基线世界</text><path d="M99 17h17" stroke="#ef7041"/><rect x="126" width="90" height="34" fill="#493b2c" stroke="#ef7041"/><text x="138" y="22" fill="#f3ad81">事件世界</text></g>
+</svg>

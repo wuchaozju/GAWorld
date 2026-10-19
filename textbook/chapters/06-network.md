@@ -310,7 +310,7 @@ plt.savefig('social_opinion_network.png', dpi=100, bbox_inches='tight')
 > 6.3 节的 SIR 模型是社会仿真里**最经典也最有用**的模型——读者如果只能学一个模型,就学这个。把它和 6.4 节的共演化模型组合,就能解释"谣言如何传播""意见如何极化""行为如何传染"等一大类社会现象。第 15 章的案例三会用到这些模型。下一章我们进入"语言模型作为仿真引擎"——LLM 如何让社会仿真产生"人味"?
 ---
 
-### 6.10 扩展:社会网络的高级主题
+## 6.10 扩展:社会网络的高级主题
 
 本节讨论社会网络研究的高级主题,适合研究生或博士生。
 
@@ -429,7 +429,7 @@ def network_intervention_effect(baseline_network, treated_node, treatment_effect
 
 ---
 
-### 6.11 扩展:网络研究的应用领域
+## 6.11 扩展:网络研究的应用领域
 
 ### 6.11.1　公共卫生
 
@@ -467,7 +467,7 @@ GAWorld 在所有这些领域都有应用潜力。
 
 ---
 
-### 6.12 扩展:网络的批判性视角
+## 6.12 扩展:网络的批判性视角
 
 社会网络不是万能的,本节讨论局限。
 
@@ -497,182 +497,7 @@ GAWorld 在所有这些领域都有应用潜力。
 - 边缘节点被边缘化
 - 网络断裂导致群体隔离
 
-仿真研究必须考虑"网络权力"对结果的潜在影响。
-
----
-
-## 6.13　本章小结(扩展版)
-
-- 网络时间演化包括衰减、强化、新连接、偶遇接触。
-- 多层网络(家庭/同事/社区/兴趣/在线)更接近真实社会。
-- 共演化是行为和网络的双向耦合,是社会仿真最高级形态。
-- 网络因果识别是社会网络研究的前沿。
-- 应用领域:公共卫生、市场营销、组织管理、公共政策。
-- 批判性视角:测量、同质性、网络结构与权力。
-rage_clustering(G),
-        "path_length": nx.average_shortest_path_length(G),
-        "components": nx.number_connected_components(G),
-        "diameter": nx.diameter(G) if nx.is_connected(G) else float("inf")
-    }
-```
-
-### 6.14.2　中心性指标
-
-```python
-def centrality_metrics(G):
-    """计算各种中心性"""
-    return {
-        "degree": nx.degree_centrality(G),
-        "betweenness": nx.betweenness_centrality(G),
-        "closeness": nx.closeness_centrality(G),
-        "eigenvector": nx.eigenvector_centrality(G, max_iter=1000),
-        "pagerank": nx.pagerank(G)
-    }
-```
-
-### 6.14.3　社区检测
-
-```python
-import community as community_louvain
-
-def detect_communities(G):
-    """Louvain 社区检测"""
-    partition = community_louvain.best_partition(G)
-    n_communities = len(set(partition.values()))
-    return {
-        "partition": partition,
-        "n_communities": n_communities,
-        "modularity": community_louvain.modularity(partition, G)
-    }
-```
-
-### 6.14.4　网络可视化
-
-```python
-import matplotlib.pyplot as plt
-
-def visualize_network(G, communities=None, output="network.png"):
-    """可视化网络"""
-    fig, ax = plt.subplots(figsize=(12, 8))
-    pos = nx.spring_layout(G, k=0.5, seed=42)
-    if communities:
-        colors = [communities[n] for n in G.nodes()]
-        nx.draw_networkx_nodes(G, pos, node_color=colors,
-                              cmap=plt.cm.tab20, node_size=100, ax=ax)
-    else:
-        nx.draw_networkx_nodes(G, pos, node_size=100, ax=ax)
-    nx.draw_networkx_edges(G, pos, alpha=0.3, ax=ax)
-    plt.title(f"网络: {G.number_of_nodes()} 节点, "
-              f"{G.number_of_edges()} 边")
-    plt.axis("off")
-    plt.savefig(output, dpi=100, bbox_inches="tight")
-```
-
----
-
-### 6.15 扩展:网络传播的工程细节
-
-### 6.15.1　SIR 模型变种
-
-```python
-def sir_variants(G, beta, gamma, model="standard", days=30):
-    """不同 SIR 变种"""
-    if model == "standard":
-        return standard_sir(G, beta, gamma, days)
-    elif model == "complex":
-        return complex_contagion(G, beta, gamma, days, threshold=0.3)
-    elif model == "weighted":
-        return weighted_sir(G, beta, gamma, days)
-```
-
-### 6.15.2　复杂传染模型
-
-```python
-def complex_contagion(G, beta, gamma, days, threshold=0.3):
-    """复杂传染:需要多个邻居都已感染才感染"""
-    status = {n: "S" for n in G.nodes()}
-    status[0] = "I"  # 种子节点
-    history = []
-    for day in range(days):
-        new_status = status.copy()
-        for n in G.nodes():
-            if status[n] == "S":
-                # 计算已感染邻居比例
-                infected_neighbors = sum(
-                    1 for m in G.neighbors(n) if status[m] == "I"
-                )
-                if infected_neighbors > 0:
-                    infected_ratio = infected_neighbors / G.degree(n)
-                    if infected_ratio > threshold and random.random() < beta:
-                        new_status[n] = "I"
-            elif status[n] == "I":
-                if random.random() < gamma:
-                    new_status[n] = "R"
-        status = new_status
-        history.append((day, sum(1 for v in status.values() if v == "I")))
-    return history
-```
-
-### 6.15.3　网络干预
-
-```python
-def network_intervention(G, intervention_type, params):
-    """网络干预"""
-    if intervention_type == "remove_high_degree":
-        # 移除高度节点(打破传播)
-        degrees = dict(G.degree())
-        threshold = params.get("threshold", 0.95)
-        nodes_to_remove = [n for n, d in degrees.items()
-                          if d > np.percentile(list(degrees.values()), threshold * 100)]
-        new_G = G.copy()
-        new_G.remove_nodes_from(nodes_to_remove)
-        return new_G
-    elif intervention_type == "add_random_edges":
-        # 增加随机边(促进传播)
-        new_G = G.copy()
-        n_add = params.get("n_edges", 100)
-        for _ in range(n_add):
-            u, v = random.sample(list(G.nodes()), 2)
-            if not new_G.has_edge(u, v):
-                new_G.add_edge(u, v)
-        return new_G
-```
-
----
-
-### 6.16 扩展:网络结构的批判性视角
-
-### 6.16.1　网络假设的现实检验
-
-仿真里常用的网络假设需要现实检验:
-
-- 小世界假设:平均路径长度 ~ 6,真实网络可能更短或更长
-- 无标度假设:度分布服从幂律,真实网络可能偏离
-- 高聚类假设:聚类系数 ~ 0.4,真实网络可能不同
-
-### 6.16.2　网络生成的可复现性
-
-不同生成算法给出的网络差异巨大:
-
-- Watts-Strogatz:小世界、高聚类
-- Barabási-Albert:无标度
-- Random:Erdős-Rényi,无结构
-
-仿真研究必须明确使用的网络生成方法。
-
-### 6.16.3　网络与行为的因果性
-
-网络和行为哪个是因、哪个是果?
-
-- "网络影响行为"(结构 → 行为)
-- "行为塑造网络"(行为 → 结构)
-- 两者共演化(共演化)
-
-社会仿真必须明确处理这个问题。
-
----
-
-## 6.17　本章小结(最终扩展版)
+仿真研究必须考虑"网络权力"对结果的潜在影响。## 6.17　本章小结(最终扩展版)
 
 - 网络分析工具:常用指标、中心性、社区检测、可视化。
 - 网络传播:SIR 变种、复杂传染、网络干预。
@@ -1034,7 +859,7 @@ print("模块化:", community_louvain.modularity(partition, G))
 
 ---
 
-### 6.30 扩展:网络与行为的双向耦合
+## 6.30 扩展:网络与行为的双向耦合
 
 ### 6.30.1　选择 vs 影响
 
@@ -1045,143 +870,13 @@ print("模块化:", community_louvain.modularity(partition, G))
 
 这两个机制在真实网络中交织,区分它们是技术难题。
 
-### 6.30.2　Christakis-Fowler 的方法
-
-Christakis-Fowler 用三种方法分离影响和选择:
-
-- **延迟分析**:在朋友变化前后测量我的变化
-- **匹配控制**:选择"未受影响"的朋友作为对照
-- **网络重构**:用潜在变量模型重构因果链
-
-### 6.30.3　社会网络传染模型
-
-社会网络传染的模型:
-
-- **线性阈值模型**(Linear Threshold Model):节点达到阈值后激活
-- **独立级联模型**(Independent Cascade Model):每个邻居有独立激活概率
-- **传染病模型**:基于 SIR 过程
-
-### 6.30.4　网络传染与行为传染
-
-Christakis-Fowler 区分:
-
-- **信息传染**:信息传播(快、浅)
-- **行为传染**:行为传播(慢、深入)
-
-他们发现肥胖是**行为传染**——需要多轮累积才会改变。
-
----
-
-### 6.31 扩展:网络与制度
-
-### 6.31.1　制度作为网络
-
-制度(institutions)可以被理解为社会网络:
-
-- 法律关系(谁被谁监管)
-- 雇佣关系(谁雇佣谁)
-- 交易关系(谁和谁做生意)
-
-社会仿真研究制度时,可以把它建模为网络。
-
-### 6.31.2　网络结构对制度的塑造
-
-网络结构塑造制度:
-
-- 中心化的网络倾向于等级制度
-- 分散的网络倾向于平等制度
-- 模块化的网络倾向于联邦制度
-
-### 6.31.3　制度对网络的反作用
-
-制度也影响网络:
-
-- 法律影响雇佣网络
-- 习俗影响社会网络
-- 经济影响商业网络
-
-社会仿真可以模拟"网络 + 制度"的共演化。
-
----
-
-### 6.32 扩展:网络与文化
-
-### 6.32.1　文化通过网络传播
-
-文化通过网络传播:
-
-- 习俗的扩散
-- 语言的传播
-- 时尚的演化
-- 价值观的传染
-
-### 6.32.2　文化网络特性
-
-文化网络通常有:
-
-- 高聚类(同文化群体)
-- 长尾分布(少数文化明星)
-- 强弱连接混合
-
-### 6.32.3　文化变迁的仿真
-
-仿真文化变迁需要:
-
-- 文化内容表示
-- 文化传播机制
-- 文化选择压力
-- 文化演化追踪
-
-### 6.32.4　文化多样性的维护
-
-文化多样性的维护:
-
-- 多语言政策
-- 文化交流
-- 保护少数民族文化
-- 推广本土文化
-
-社会仿真可以研究不同文化政策的长期影响。
-
----
-
-### 6.33 扩展:网络与权力
-
-### 6.33.1　权力的网络基础
-
-权力的网络基础:
-
-- 中心节点 → 影响力
-- 桥接节点 → 信息垄断
-- 高密度子网 → 群体力量
-
-### 6.33.2　权力的测量
-
-权力的网络测量:
-
-- 中心性指标(度、介数、PageRank)
-- 结构洞(中介中心性)
-- 影响力传播(基于网络扩散)
-
-### 6.33.3　权力的仿真
-
-仿真权力的差异:
-
-- 不同权力结构的结果
-- 权力变化的影响
-- 权力对网络的影响
-
-### 6.33.4　权力的伦理
-
-权力的伦理问题:
-
-- 权力是否合法
+### 6.30.2　Christakis-Fow是否合法
 - 权力是否被滥用
 - 弱势群体保护
 
 ---
 
-### 6.34 扩展:网络与健康
+## 6.34 扩展:网络与健康
 
 ### 6.34.1　健康传染
 
@@ -1217,7 +912,7 @@ Christakis-Fowler 区分:
 
 ---
 
-### 6.35 扩展:网络与经济
+## 6.35 扩展:网络与经济
 
 ### 6.35.1　经济网络
 
@@ -1252,7 +947,7 @@ Christakis-Fowler 区分:
 
 ---
 
-### 6.36 扩展:网络与组织
+## 6.36 扩展:网络与组织
 
 ### 6.36.1　组织网络
 
@@ -1280,7 +975,7 @@ Christakis-Fowler 区分:
 
 ---
 
-### 6.37 扩展:网络与教育
+## 6.37 扩展:网络与教育
 
 ### 6.37.1　教育网络
 
@@ -1308,7 +1003,7 @@ Christakis-Fowler 区分:
 
 ---
 
-### 6.38 扩展:网络与传播学
+## 6.38 扩展:网络与传播学
 
 ### 6.38.1　新闻传播
 
@@ -1333,33 +1028,3 @@ Christakis-Fowler 区分:
 - **极化**:不同阵营加深
 - **泡沫**:同质化加深
 - **沉默螺旋**:少数派沉默
-
-### 6.38.4　网络舆论仿真
-
-仿真研究网络舆论:
-
-- COVID-19 期间的舆论极化
-- 选举期间的"过滤气泡"
-- 谣言传播的"超级传播者"
-
----
-
-## 6.39　本章小结(最终扩展版)
-
-经过本章(包括扩展部分),读者应该已经具备:
-
-- 社会网络的核心结构:关系、网络、节点、边
-- 网络拓扑生成:小世界、无标度、随机
-- 网络传染机制:SIR、复杂传染
-- 网络演化:衰减、强化、共演化
-- 幽灵节点:跨城关系
-- 网络科学理论:小世界、无标度、模块化
-- 网络与社会耦合:网络嵌入性、网络社会资本、网络不平等
-- 网络科学批判:简化、因果、伦理
-- 网络分析方法:中心性、社区检测、网络对比
-- 网络与其他社会现象的耦合:制度、文化、权力、健康、经济、组织、教育、传播
-
-**核心信息**:网络是社会仿真最重要的子系统,理解网络是做好社会仿真的基础。
-
-读者读这份教材后,应该能用网络科学思维,看待社会现象——任何社会现象都发生在网络上,网络视角让你看到"看不见的结构"。
-

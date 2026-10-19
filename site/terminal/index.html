@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GAWorld // 生成式城市社会仿真</title>
+  <meta name="description" content="GAWorld Terminal — control-room view of a generative city simulation. Same model, same 51 residents, a darker front door." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+  <link rel="stylesheet" href="/terminal/landing.css" />
+</head>
+<body class="brand-on-dark">
+  <!-- CRT layers: scanlines, sweep, vignette. Sweep is the only moving one. -->
+  <div class="crt crt-scanlines" aria-hidden="true"></div>
+  <div class="crt crt-sweep"     aria-hidden="true"></div>
+  <div class="crt crt-vignette"  aria-hidden="true"></div>
+  <div class="bg-grid"           aria-hidden="true"></div>
+
+  <div class="shell">
+
+    <!-- topbar — same anchors as the cream page so navigation stays comparable. -->
+    <header class="topbar">
+      <a class="brand" href="/terminal/index.html" aria-label="GAWorld home">
+        <span class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></span>
+        <span class="brand-name">GAWorld</span>
+        <span class="brand-tag">// terminal_view</span>
+      </a>
+      <nav class="topnav" aria-label="页面导航">
+        <a href="#abstract">abstract</a>
+        <a href="#capabilities">capabilities</a>
+        <a href="#entries">console</a>
+        <a href="/console">/console</a>
+      </nav>
+      <span class="topbar-status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        SIM_LIVE · 51 agents · day 14
+      </span>
+    </header>
+
+    <!-- hero -->
+    <section class="hero">
+      <div>
+        <p class="hero-meta">
+          <span><span class="prompt">$</span> gaworld --view=landing --palette=terminal</span>
+          <span>// same model, same 51 residents, same seed</span>
+          <span>// render only differs<span class="cursor" aria-hidden="true"></span></span>
+        </p>
+
+        <h1>
+          把政策影响<br/>
+          从<span class="quiet">讨论</span>变成<br/>
+          <span class="accent-amber">对照实验</span><span class="accent-phosphor">.</span>
+        </h1>
+
+        <p class="hero-sub">
+          GAWorld 把人物画像 / 环境扰动 / 政策冲击 / 长期记忆整合为一个可回放的城市社会仿真系统。
+          同一批居民、<span class="hi-phosphor">同一个种子</span>,只换一件事,看历史怎么分叉。
+        </p>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/console">$ open_console</a>
+          <a class="btn btn-ghost" href="#abstract">$ read_abstract</a>
+          <a class="btn btn-ghost" href="/console#docs">$ docs</a>
+        </div>
+
+        <ul class="hero-facts" aria-label="平台特点">
+          <li><b>local_run</b><span>仿真 / 数据 / 面板都在你的机器上</span></li>
+          <li><b>counterfactual</b><span>有事件 / 无事件两个世界并行推进</span></li>
+          <li><b>replay</b><span>逐帧回看每位居民的位置、状态与活动</span></li>
+          <li><b>bilingual</b><span>控制台全程双语,无构建步骤</span></li>
+        </ul>
+      </div>
+
+      <!--
+        ASCII city panel — real text, not a raster. Each cell is a <span>;
+        CSS colour rules drive the palette. One row of agents (the dark-on-
+        amber squares) and one "alarm" cell on the right show the simulation
+        is mid-step, not a static screenshot.
+      -->
+      <aside class="city-panel" aria-label="GAWorld 终端面板预览:点阵小城 + 实时事件">
+        <header>
+          <span class="left">CITY // HANGZHOU · LINAN · DAY 14 · 09:42</span>
+          <span class="right">
+            <span>seed:2026-0317</span>
+            <span class="live">● live</span>
+          </span>
+        </header>
+
+        <pre class="city-ascii" aria-hidden="false"><span class="c-faint">                                                                              </span>
+<span class="c-faint">     ·  ·     ·  ·  ·     ·  ·  ·       ·     ·  ·     ·  ·       ·     ·</span>
+<span class="c-faint">                                                                              </span>
+<span class="c-faint">      </span><span class="c-tree">T</span><span class="c-faint">                </span><span class="c-tree">T</span>      <span class="c-tree">T</span><span class="c-faint">            </span><span class="c-tree">T</span>            <span class="c-tree">T</span>          <span class="c-amber">[!]</span><span class="c-faint">  </span>
+<span class="c-faint">   </span><span class="c-house">┌─┐</span><span class="c-faint">    </span><span class="c-house">┌───┐</span><span class="c-faint">     </span><span class="c-house">┌─┐</span><span class="c-faint">    </span><span class="c-house">┌───┐</span><span class="c-faint">  </span><span class="c-tree">T</span><span class="c-faint">   </span><span class="c-house">┌─┐</span><span class="c-faint">          </span><span class="c-red">▮</span><span class="c-faint">  </span>
+<span class="c-faint">   </span><span class="c-house">│·│</span><span class="c-faint">    </span><span class="c-house">│·c·│</span><span class="c-faint">     </span><span class="c-house">│·│</span><span class="c-faint">    </span><span class="c-house">│·o·│</span><span class="c-faint">    </span><span class="c-house">│·│</span><span class="c-faint">      <span class="c-amber">EVENT</span>  </span>
+<span class="c-faint">   </span><span class="c-house">└┬┘</span><span class="c-faint">    </span><span class="c-house">└─┬─┘</span><span class="c-faint">     </span><span class="c-house">└┬┘</span><span class="c-faint">    </span><span class="c-house">└─┬─┘</span><span class="c-faint">    </span><span class="c-house">└┬┘</span><span class="c-faint">      <span class="c-amber">  ON</span>    </span>
+<span class="c-faint">    │        │            │        │          │                       </span>
+<span class="c-faint">  </span><span class="c-ground">~~~~</span><span class="c-faint">    </span><span class="c-water">~~~~~</span><span class="c-faint">    </span><span class="c-ground">~~~~</span><span class="c-faint">    </span><span class="c-water">~~~~</span><span class="c-faint">   </span><span class="c-water">~~~</span><span class="c-faint">                       </span>
+<span class="c-faint">    │        │            │        │          │                       </span>
+<span class="c-faint">   </span><span class="c-house">┌─┐</span><span class="c-faint">  </span><span class="c-tree">T</span><span class="c-faint">  </span><span class="c-house">┌───┐</span><span class="c-faint">     </span><span class="c-house">┌─┐</span><span class="c-faint">    </span><span class="c-house">┌───┐</span><span class="c-faint">    </span><span class="c-house">┌─┐</span><span class="c-faint">               </span><span class="c-tree">T</span><span class="c-faint">  </span>
+<span class="c-faint">   </span><span class="c-house">│·│</span><span class="c-faint">  </span><span class="c-tree">T</span><span class="c-faint">  </span><span class="c-house">│·c·│</span><span class="c-faint">     </span><span class="c-house">│·│</span><span class="c-faint">    </span><span class="c-house">│·o·│</span><span class="c-faint">    </span><span class="c-house">│·│</span><span class="c-faint">                      </span>
+<span class="c-faint">   </span><span class="c-house">└┬┘</span><span class="c-faint">     </span><span class="c-house">└─┬─┘</span><span class="c-faint">     </span><span class="c-house">└┬┘</span><span class="c-faint">    </span><span class="c-house">└─┬─┘</span><span class="c-faint">    </span><span class="c-house">└┬┘</span><span class="c-faint">                      </span>
+<span class="c-faint">    │        │            │        │          │                       </span>
+<span class="c-faint">  </span><span class="c-tree">T</span><span class="c-faint">      </span><span class="c-tree">T</span><span class="c-faint">          </span><span class="c-tree">T</span><span class="c-faint">       </span><span class="c-tree">T</span><span class="c-faint">       </span><span class="c-tree">T</span><span class="c-faint">                  </span><span class="c-tree">T</span><span class="c-faint">    </span>
+<span class="c-faint"> </span><span class="c-ground">▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒</span>
+<span class="c-faint">  </span><span class="c-amber">▶</span><span class="c-faint">   </span><span class="c-amber">▶</span><span class="c-faint">     </span><span class="c-amber">▶</span><span class="c-faint">   </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">   </span><span class="c-amber">▶</span><span class="c-faint">   </span><span class="c-amber">▶</span><span class="c-faint">     </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">    </span><span class="c-amber">▶</span><span class="c-faint">  </span>
+<span class="c-faint"> </span><span class="c-ground">▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒</span></pre>
+
+        <footer>
+          <span class="legend">
+            <span><i></i>居民</span>
+            <span><i class="amber"></i>建筑</span>
+            <span><i class="steel"></i>水系</span>
+            <span><i class="red"></i>事件点</span>
+            <span><i class="faint"></i>道路</span>
+          </span>
+          <span>tick 0.25s · step_size 5min</span>
+        </footer>
+      </aside>
+    </section>
+
+    <!-- stat bar (mirrors index.html 7-stat strip but compressed to 6 cols) -->
+    <section class="stat-bar" aria-label="项目事实">
+      <div class="stat"><b>51</b><span>位居民 · 默认人口</span></div>
+      <div class="stat"><b>13</b><span>个视图 · 控制台面板</span></div>
+      <div class="stat"><b>5</b><span>阶段工作流</span></div>
+      <div class="stat"><b>2</b><span>个反事实</span></div>
+      <div class="stat"><b>zh / EN</b><span>全程双语</span></div>
+      <div class="stat soft"><b>2026-09-26</b><span>最近更新</span></div>
+    </section>
+
+    <!-- Abstract / 研究总览 — terminal styled, hand-built like the cream
+         page's .abstract, no raster. -->
+    <section id="abstract" class="section">
+      <header class="section-head">
+        <div>
+          <p class="kicker">// graphical_abstract</p>
+          <h2>城市输入 → 有记忆的智能体 → 反事实对照</h2>
+        </div>
+        <p class="section-lead">
+          城市输入经由具有记忆的智能体,在「有事件 / 无事件」两个世界里分别演化;
+          两个世界的差异,就是事件影响的估计。
+        </p>
+      </header>
+
+      <div class="terminal-stream" aria-label="研究总览流程">
+        <div class="line"><span class="ts">[01]</span><span class="msg"><span class="who">INPUTS</span> 地图 / 政策 / 环境 / 外部信息 <span class="quiet">— 城市侧的所有变量</span></span></div>
+        <div class="line"><span class="ts">[02]</span><span class="msg"><span class="who">AGENTS</span> 51 位居民,每位持有状态 / 记忆 / 关系 / 习惯 <span class="quiet">— 跨天持续体</span></span></div>
+        <div class="line"><span class="ts">[03]</span><span class="msg"><span class="who">LOOP</span>    perceive → plan → act → reflect <span class="quiet">— 每个 tick 的认知循环</span></span></div>
+        <div class="line"><span class="ts">[04]</span><span class="msg"><span class="who amber">WITH_EVENT</span>  同一种子,叠加政策冲击 <span class="quiet">— 一个世界</span></span></div>
+        <div class="line"><span class="ts">[05]</span><span class="msg"><span class="who steel">WITHOUT</span>     同一种子,不叠加 <span class="quiet">— 另一个世界</span></span></div>
+        <div class="line"><span class="ts">[06]</span><span class="msg"><span class="who red">IMPACT</span>  Δ(with, without) → 行为轨迹 / 状态演化 / 社会动态 / 对照摘要 <span class="quiet">— 影响估计</span></span></div>
+      </div>
+    </section>
+
+    <!-- Capabilities — three dark cards, same copy as cream page 01/02/03. -->
+    <section id="capabilities" class="section">
+      <header class="section-head">
+        <div>
+          <p class="kicker">// what_it_is_for</p>
+          <h2>你可以用它做什么</h2>
+        </div>
+        <p class="section-lead">三个最常用的研究姿势。剩下的能力在控制台 13 个视图里。</p>
+      </header>
+
+      <div class="cards">
+        <article class="card">
+          <span class="card-no">01 // counterfactual</span>
+          <h3>政策前后对照</h3>
+          <p>并行运行「有事件 / 无事件」两组仿真,量化压力 / 情绪 / 出行等指标的差异。</p>
+          <span class="card-tag">uses // parallel_worlds · analytics</span>
+        </article>
+        <article class="card">
+          <span class="card-no">02 // memory</span>
+          <h3>跨天经验积累</h3>
+          <p>居民不是一次性脚本角色,而是会形成习惯 / 关系 / 日常行为倾向的持续体。</p>
+          <span class="card-tag">uses // memory · interview</span>
+        </article>
+        <article class="card">
+          <span class="card-no">03 // extensible</span>
+          <h3>可扩展社会实验</h3>
+          <p>通过插件、配置和外部环境服务快速接入经济 / 环境 / 外部信息等新模块。</p>
+          <span class="card-tag">uses // plugin · external_system</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- Console entries — same five stages as cream page, restyled. -->
+    <section id="entries" class="section">
+      <header class="section-head">
+        <div>
+          <p class="kicker">// console_views</p>
+          <h2>功能入口</h2>
+        </div>
+        <p class="section-lead">
+          下面每一项都是控制台里的一个视图,共用同一批居民 / 同一份配置 / 同一条仿真轨迹。
+        </p>
+      </header>
+
+      <div class="entry-stages">
+        <div class="entry-stage">
+          <h3 class="stage-title"><span class="stage-no">1</span>BUILD · 构建</h3>
+          <div class="entry-grid">
+            <a class="entry" href="/console#city"><span class="entry-en">cities</span><span class="entry-name">城市</span><span class="entry-desc">给一个地名,自动取地理坐标与 OpenStreetMap 路网。</span></a>
+            <a class="entry" href="/console#population"><span class="entry-en">population</span><span class="entry-name">人口与群体</span><span class="entry-desc">设定人口结构,生成几百个居民,先按群体低成本试跑。</span></a>
+            <a class="entry" href="/console#studio"><span class="entry-en">agent_studio</span><span class="entry-name">智能体工作台</span><span class="entry-desc">逐个设计具有状态 / 记忆 / 社交 / 目标的数字居民。</span></a>
+          </div>
+        </div>
+
+        <div class="entry-stage">
+          <h3 class="stage-title"><span class="stage-no">2</span>RUN · 运行</h3>
+          <div class="entry-grid">
+            <a class="entry" href="/console#dashboard"><span class="entry-en">dashboard</span><span class="entry-name">控制台</span><span class="entry-desc">配置 / 运行 / 采访 / 记忆 — 一站式本地仿真面板。</span></a>
+            <a class="entry" href="/console#simviz"><span class="entry-en">simulation</span><span class="entry-name">仿真回放</span><span class="entry-desc">按帧回看每个时刻居民在城市中的位置、状态与活动。</span></a>
+          </div>
+        </div>
+
+        <div class="entry-stage">
+          <h3 class="stage-title"><span class="stage-no">3</span>EXPERIMENT · 实验</h3>
+          <div class="entry-grid">
+            <a class="entry" href="/console#worlds"><span class="entry-en">parallel_worlds</span><span class="entry-name">平行世界</span><span class="entry-desc">同一批人 / 同一个种子,只换一件事。</span></a>
+            <a class="entry" href="/console#collaboration"><span class="entry-en">cooperation</span><span class="entry-name">合作任务</span><span class="entry-desc">给一组居民一个共同目标,看他们怎么分工。</span></a>
+            <a class="entry" href="/console#survey"><span class="entry-en">survey</span><span class="entry-name">群体采访</span><span class="entry-desc">把同一问题抛给多个居民,收集结构化答复。</span></a>
+            <a class="entry" href="/console#external"><span class="entry-en">external_system</span><span class="entry-name">外部系统</span><span class="entry-desc">接外部 LLM / API / 数据源,做联合仿真。</span></a>
+          </div>
+        </div>
+
+        <div class="entry-stage">
+          <h3 class="stage-title"><span class="stage-no">4</span>ANALYZE · 分析</h3>
+          <div class="entry-grid">
+            <a class="entry" href="/console#analytics"><span class="entry-en">analytics</span><span class="entry-name">结果分析</span><span class="entry-desc">指标 / 折线 / 雷达 / 事件时间线。</span></a>
+            <a class="entry" href="/console#research"><span class="entry-en">research</span><span class="entry-name">研究工作台</span><span class="entry-desc">把一次实验写进可复现的 research notebook。</span></a>
+          </div>
+        </div>
+
+        <div class="entry-stage">
+          <h3 class="stage-title"><span class="stage-no">5</span>PLAYGROUND · 游戏场</h3>
+          <div class="entry-grid">
+            <a class="entry" href="/console#games"><span class="entry-en">games</span><span class="entry-name">互动游戏场</span><span class="entry-desc">辩论 / 灾难 / 谣言扩散 — 三个轻量交互。</span></a>
+            <a class="entry" href="/console#docs"><span class="entry-en">docs</span><span class="entry-name">文档</span><span class="entry-desc">13 个视图的入门与教程。</span></a>
+            <a class="entry" href="/console#settings"><span class="entry-en">settings</span><span class="entry-name">设置</span><span class="entry-desc">语言 / 默认城市 / 性能参数。</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>$ gaworld --version // 2026-09-26 · still iterating</span>
+      <span class="links">
+        <a href="/console">/console</a>
+        <a href="/console#docs">docs</a>
+        <a href="/site/index.html">cream_view</a>
+      </span>
+    </footer>
+
+  </div>
+</body>
+</html>

@@ -28,6 +28,7 @@ import unittest
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
+from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -280,6 +281,21 @@ class RoutingTests(unittest.TestCase):
         listed, _ = self._get("/api/external-systems/interventions")
         self.assertEqual(1, len(listed["pending"]))
 
+    def test_public_sector_routes_are_served(self):
+        payload, status = self._post(
+            "/api/external-systems/public/governments", {"id": "green_city", "name": "绿色政府"}
+        )
+        self.assertEqual(200, status)
+        self.assertEqual("green_city", payload["created"])
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/external-systems/public/switch",
+            data=json.dumps({"government": "green_city"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request, timeout=10)
+        self.assertEqual(409, caught.exception.code)
+
     def test_unknown_subpath_is_a_404_not_a_static_file(self):
         request = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/external-systems/nope")
         try:
@@ -288,6 +304,105 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual(404, exc.code)
         else:
             self.fail("expected 404")
+
+
+class PublicSectorTests(unittest.TestCase):
+    """The 公共部门 tab: governments side by side, next-run picker, live switch."""
+
+    def _publish(self, registered):
+        from gaworld.apps import kernel_api
+        from gaworld.kernel import remote
+
+        path = kernel_api._queue_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"active": True, "pid": os.getpid(), "registered": registered, "pending": []}, f)
+        return path, remote
+
+    def test_overview_carries_every_government(self):
+        # records_dir is bound to the real repo at import; keep a real run's
+        # records out of a test that expects none.
+        with _TempRepo() as repo, mock.patch.object(world_paths, "records_dir", return_value=repo.root):
+            payload = api.overview()
+        runtime = payload["public"]["runtime"]
+        ids = [gov["id"] for gov in runtime["governments"]]
+        self.assertIn("baseline", ids)
+        self.assertIn("welfare", ids)
+        self.assertFalse(runtime["enabled"])
+        self.assertEqual([], runtime["daily"])
+        self.assertFalse(runtime["live"]["running"])
+        self.assertIn("public_sector", payload["public"]["config"])
+        # `schedule` means a model task elsewhere; the full path carries its own label.
+        self.assertEqual("换届安排", payload["labels"]["public_sector.schedule"]["zh"])
+
+    def test_only_the_latest_run_is_reported(self):
+        with _TempRepo() as repo, mock.patch.object(world_paths, "records_dir") as records_dir:
+            records = os.path.join(repo.root, "output", "records")
+            records_dir.return_value = records
+            os.makedirs(records)
+            with open(os.path.join(records, "public_sector.daily.jsonl"), "w", encoding="utf-8") as f:
+                for run, day in (("old", 1), ("old", 2), ("new", 1)):
+                    f.write(json.dumps({"run": run, "day": day, "transfers": {"pension_daily": 10.0},
+                                        "transfers_total": 10.0, "government_balance": -day}) + "\n")
+            with open(os.path.join(records, "public_sector.change.jsonl"), "w", encoding="utf-8") as f:
+                for run in ("old", "new"):
+                    f.write(json.dumps({"run": run, "day": 0, "name": "x", "source": "config"}) + "\n")
+            runtime = api.public_runtime()
+        self.assertEqual(1, len(runtime["daily"]))
+        self.assertEqual(1, len(runtime["changes"]))
+        self.assertEqual({"pension_daily": 10.0}, runtime["transfer_totals"])
+
+    def test_picking_a_government_for_the_next_run(self):
+        with _TempRepo() as repo:
+            api.save_config({"public_sector": {"enabled": True, "government": "welfare"}})
+            self.assertEqual("welfare", repo.config()["public_sector"]["government"])
+            with self.assertRaisesRegex(ValueError, "nope"):
+                api.save_config({"public_sector": {"government": "nope"}})
+
+    def test_creating_and_deleting_a_government(self):
+        with _TempRepo() as repo:
+            api.create_government({"id": "green_city", "name": "绿色政府", "base": "welfare"})
+            stored = repo.config()["public_sector"]["governments"]["green_city"]
+            self.assertEqual("绿色政府", stored["name"])
+            self.assertEqual(80.0, stored["policies"]["unemployment_benefit_daily"])
+            # Its policies are now editable through the generic config path.
+            api.save_config({"public_sector": {"governments": {"green_city": {"policies": {"pension_daily": 9}}}}})
+            self.assertEqual(9.0, repo.config()["public_sector"]["governments"]["green_city"]["policies"]["pension_daily"])
+            with self.assertRaises(ValueError):
+                api.create_government({"id": "green_city", "name": "again"})
+            with self.assertRaises(ValueError):
+                api.create_government({"id": "Bad Id", "name": "x"})
+            with self.assertRaises(ValueError):
+                api.delete_government({"id": "welfare"})
+            api.delete_government({"id": "green_city"})
+            self.assertNotIn("green_city", repo.config()["public_sector"]["governments"])
+
+    def test_a_government_in_use_cannot_be_deleted(self):
+        with _TempRepo():
+            api.create_government({"id": "green_city", "name": "绿色政府"})
+            api.save_config({"public_sector": {"government": "green_city"}})
+            with self.assertRaisesRegex(ValueError, "green_city"):
+                api.delete_government({"id": "green_city"})
+
+    def test_switching_needs_a_run_with_the_public_sector_on(self):
+        with _TempRepo():
+            body, status = api.switch_government({"government": "welfare"})
+            self.assertEqual(409, status, body)
+            self._publish(["update_config"])
+            body, status = api.switch_government({"government": "welfare"})
+            self.assertEqual(409, status, body)
+            body, status = api.switch_government({"government": "nope"})
+            self.assertEqual(400, status, body)
+
+    def test_switching_queues_the_intervention(self):
+        with _TempRepo():
+            path, remote = self._publish([api.SWITCH_INTERVENTION])
+            self.assertTrue(api.public_runtime()["live"]["can_switch"])
+            body, status = api.switch_government({"government": "austerity", "note": "选举"})
+            self.assertEqual(202, status, body)
+            pending = remote.read(path)["pending"]
+        self.assertEqual(api.SWITCH_INTERVENTION, pending[0]["name"])
+        self.assertEqual({"government": "austerity", "note": "选举"}, pending[0]["kwargs"])
 
 
 class FrontendTests(unittest.TestCase):

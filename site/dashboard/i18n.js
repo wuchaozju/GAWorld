@@ -67,8 +67,13 @@
     return resp.json();
   }
 
-  window.__ = function (key) {
+  // Backward-compatible: `__(key)` returns the translation if present, the
+  // key string if missing, or the caller-supplied `fallback` when provided and
+  // the key is missing. Game pages use the `t(key, fallback)` idiom to keep a
+  // readable Chinese string available even before a locale ships the key.
+  window.__ = function (key, fallback) {
     if (translations[key] !== undefined) return translations[key];
+    if (fallback !== undefined) return fallback;
     return key;
   };
 

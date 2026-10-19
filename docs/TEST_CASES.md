@@ -97,7 +97,7 @@
 | A4-14 | 异常作为一等信号（P2） | 高严重度事件、日内冲击、人流激增 | 标成 anomaly 并提高优先级；高分异常不可恢复；日常天气不算异常；关闭后什么都不标 | `test_anomaly_modeling.py`、`test_env_structured_signals.py` | P1 |
 | A4-15 | 当日反应式重规划（P3） | 持续性异常 | 只重排受影响区间（顺延或就地改址）；日程保持有序且不重复；没有受影响的活动时不做任何事 | `test_replan_interval.py` | P1 |
 | A4-16 | 结构化空间学习（P4） | 反复遇到某地异常 | 规避分数累积并衰减；超过阈值后改去同类别中更不讨厌的地点；偏好文件往返不丢 | `test_spatial_preferences.py`、`test_env_preferences_persistence.py` | P2 |
-| A4-17 | 居家环境 | 按收入生成住宅；在家的活动 | 同一种子结果确定；房间与活动对应；做饭会污染空气，打扫后恢复；不在家时不向 prompt 贡献内容 | `test_home_environment.py`、`test_home_environment_plugin.py`、`test_home_api.py` | P2 |
+| A4-17 | 居家环境 | 按收入生成住宅；在家的活动 | 同一种子结果确定；房间与活动对应；做饭会污染空气，打扫后恢复；不在家时不向 prompt 贡献内容；到家当拍即进入居家模式（记录到家这一拍、按家里的房间落座），出门当拍即退出 | `test_home_environment.py`、`test_home_environment_plugin.py`、`test_home_api.py` | P2 |
 | A4-18 | 日程网格对齐 | 开启 `time_grid_snap` | 所有时段落在网格上；tick 数不随人口规模增长；幂等；默认关闭 | `test_time_grid_snap.py` | P2 |
 | A4-19 | 目标系统 | 三层目标；周回顾；事件回顾 | 持久化往返；每日进度有上限且不倒退；周回顾不能改人生目标；目标内容进入意图、日程、采访、日记的 prompt | `test_goals_module.py`、`test_goals_plugin.py`、`test_goals_prompt_injection.py`、`test_goals_dashboard.py` | P1 |
 
@@ -287,16 +287,26 @@
 | A17-05 | 孪生标定 | 聚合 → 补丁 | 不批准就不写入；只包含超过阈值的地点 | `test_twin_calibrate.py`、`test_twin_life.py` | P2 |
 | A17-06 | 分布式 relay | 发送与轮询 | 消息能送达；收件箱格式正确；公开冒烟必须确认消息真的送达，而不只是 HTTP 成功 | `test_distributed_comm.py`、`test_public_smoke.py` | P2 |
 
-### 2.18 国际化
+### 2.18 国际化与工程约束
 
 | 编号 | 用例 | 步骤 / 输入 | 预期结果 | 自动化 | 级别 |
 |---|---|---|---|---|---|
 | A18-01 | 语言文件一致 | en / zh | 键集合相同且顺序一致；HTML 和 JS 引用的键都存在 | `test_i18n.py`、`test_i18n_js.py` | P2 |
 | A18-02 | 配置文档中英对照 | 标签与帮助文字 | 每条都有英文版，且不是中文原样复制；没有孤立的英文条目 | `test_i18n.py::TestConfigDocsBilingualParity` | P2 |
+| A18-03 | 主文件只减不增 | `generative_city_sim.py` 与 `run_simulation` 的行数 | 超过 `tests/line_budget.json` 的上限失败；低于上限 50 行以上也失败，提示把上限调低 | `test_line_budget.py` | P1 |
+| A18-04 | lint 棘轮 | 临时 git 仓库 + 自带 ruff 配置 | 改动过的文件新增 ruff 问题失败，修掉旧问题通过；原本没格式化的旧文件可以只改一行；新文件必须干净且已格式化；全仓总数高于基线失败 | `test_lint_ratchet.py` | P1 |
+| A18-05 | 功能注册表 | `docs/features.toml` | 结构完整、同一主轴下不重名；`FEATURE_MAP.html` 由它生成且是最新的；导图节点不含会被 Mermaid 当成形状的括号；每一项都指向 FEATURES.md 的一行或标题，FEATURES.md 每一行都在图上；引用的教程在文档面板、两份 README 与 FEATURES.md 里都列着 | `test_feature_registry.py` | P1 |
 
 ### 2.19 手工 UI 验收（浏览器）
 
-后端测试覆盖了接口，但页面渲染和交互要在浏览器里确认。先启动 `python generative_city_sim.py dashboard --port 8766`，再逐页检查：
+两页已有自动冒烟（`tests/test_browser_smoke.py`，装了 Playwright 与 Chromium 才跑，CI 会装）：
+
+| 编号 | 场景 | 输入 | 预期结果 | 测试文件 | 级别 |
+|---|---|---|---|---|---|
+| A19-01 | Population Studio 冒烟 | 真实控制台服务 + Chromium | 页面加载、首次参数体检回来；走到第 2 步，拖一个滑块触发重新体检且返回 200；全程无页面错误 | `test_browser_smoke.py` | P1 |
+| A19-02 | 工作台家庭编辑冒烟 | 同上 | 家庭预览返回 200；第 5 步打开家庭编辑，改为手动并添加一个子女，出现姓名输入框；不保存；全程无页面错误 | `test_browser_smoke.py` | P1 |
+
+其余页面仍需手工确认。先启动 `python generative_city_sim.py dashboard --port 8766`，再逐页检查：
 
 | 编号 | 页面 | 步骤 | 预期结果 | 级别 |
 |---|---|---|---|---|

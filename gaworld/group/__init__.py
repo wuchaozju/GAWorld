@@ -23,8 +23,9 @@ Bisbee et al. 2024 on tail collapse in LLM survey simulation). Instead:
 
 Layering, and the one rule that matters: **the individual tier is not
 touched.** Group mode is a parallel driver, not a modification of
-``run_simulation``. The 12 stages are closures over ``run_simulation``'s
-locals and cannot be reused from outside, so trying to thread cohorts through
+``run_simulation``. The 12 stages (``gaworld/sim/_stages.py``) read the run /
+day / tick state that only ``run_simulation`` assembles (``StepScope``) and
+cannot be reused from outside, so trying to thread cohorts through
 the tick loop would mean rewriting it; going through the fast-forward channel
 instead keeps individual runs bit-identical.
 """

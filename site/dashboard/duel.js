@@ -25,7 +25,12 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
-  const t = (key, fallback) => (typeof __ === "function" ? __(key) : fallback);
+  // Falls back to the second arg when the locale is missing the key, so the
+  // page reads as intended Chinese even before every i18n string has shipped.
+  const t = (key, fallback) => {
+    const value = typeof __ === "function" ? __(key) : "";
+    return !value || value === key ? (fallback || "") : value;
+  };
 
   const CUSTOM = "__custom__";
 
@@ -41,6 +46,10 @@
     run: null,
     jobId: null,
     jobTimer: null,
+    // Release function returned by setButtonBusy() while dRunBtn is busy.
+    // pollJob/stopPolling read this to re-enable the button when the job
+    // ends; null when the button is at rest.
+    runRelease: null,
   };
 
   const exporter = GAWorldGameExport.attach(() => state.run && {
@@ -253,6 +262,7 @@
     }
 
     $("#dRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#dRunBtn"), "duel.running", "开赛…");
     setProgress(0);
     setStatus(t("duel.running", "开赛…"));
     try {
@@ -267,7 +277,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#dRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -303,7 +313,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#dRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------
@@ -339,6 +349,45 @@
       ? t("duel.tie", "打平")
       : (said === "A" ? teamA.name : said === "B" ? teamB.name : "");
 
+    // Structured "why" (newer judges): the winner's edge, the loser's worry,
+    // and the criteria where the gap was biggest. Older runs only carry the
+    // plain `reason`, so we still render that as a collapsible tail so the
+    // page never looks empty.
+    const winnerName = winner === "A" ? teamA.name : winner === "B" ? teamB.name : "";
+    const loserName = winner === "A" ? teamB.name : winner === "A" ? teamB.name : winner === "B" ? teamA.name : "";
+    const strength = (verdict.winner_strength || "").trim();
+    const risk = (verdict.loser_risk || "").trim();
+    const diffs = Array.isArray(verdict.key_diff) ? verdict.key_diff.filter(Boolean) : [];
+    const hasStructured = winner !== "tie" && (strength || risk || diffs.length > 0);
+    const summary = (verdict.reason || "").trim();
+    const structuralHtml = hasStructured
+      ? `<div class="duel-reason-panel">
+          <div class="duel-reason-row is-strength">
+            <span class="duel-reason-tag">${esc(t("duel.reason_winner", "赢在"))}</span>
+            <span class="duel-reason-name">${esc(winnerName)}：</span>
+            <span class="duel-reason-text">${esc(strength || t("duel.reason_no_strength", "评审没写出具体赢点，看右侧分数。"))}</span>
+          </div>
+          <div class="duel-reason-row is-risk">
+            <span class="duel-reason-tag">${esc(t("duel.reason_loser", "栽在"))}</span>
+            <span class="duel-reason-name">${esc(loserName)}：</span>
+            <span class="duel-reason-text">${esc(risk || t("duel.reason_no_risk", "评审没指出风险点。"))}</span>
+          </div>
+          ${diffs.length
+            ? `<div class="duel-reason-diff">
+                <span class="duel-reason-tag">${esc(t("duel.reason_key_diff", "关键差异"))}</span>
+                <ul>${diffs.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
+              </div>`
+            : ""}
+        </div>`
+      : "";
+
+    const summaryHtml = summary
+      ? `<details class="duel-reason-summary">
+          <summary>${esc(t("duel.reason_summary", "评审的完整一句话"))}</summary>
+          <p>${esc(summary)}</p>
+        </details>`
+      : "";
+
     $("#dVerdict").className = "duel-verdict is-" + (winner === "tie" ? "tie" : winner.toLowerCase());
     $("#dVerdict").innerHTML = `
       <div class="duel-score">
@@ -353,7 +402,8 @@
         </span>
       </div>
       <h4>${esc(label)}</h4>
-      <p>${esc(verdict.reason || "")}</p>
+      ${structuralHtml}
+      ${summaryHtml}
       <p class="duel-blind">${esc(t("duel.blind", "评审看到的是「方案一 / 方案二」，不知道谁是谁。这一场的顺序："))}
         ${esc((verdict.order || []).map((k) => (k === "A" ? teamA.name : teamB.name)).join(" → "))}
         ${disagreed ? `<b class="duel-flag">${esc(t("duel.disagreed", "评审自己说的赢家是 ") + saidLabel + t("duel.disagreed_tail", "，和分数对不上——两份方案很接近。"))}</b>` : ""}
@@ -398,7 +448,7 @@
       const history = earlier.length
         ? `<details class="duel-history-plans">
              <summary>${esc(t("duel.earlier_rounds", "更早几轮的方案"))}（${earlier.length}）</summary>
-             ${earlier.map((p) => `<p><b>${t("duel.round", "第")}${p.round + 1}${t("duel.round_tail", "轮")}：</b>${esc(p.headline)}</p>`).join("")}
+             ${earlier.map((p) => `<p><b>${t("duel.round", `第 ${p.round + 1} 轮`)}：</b>${esc(p.headline)}</p>`).join("")}
            </details>`
         : "";
       return `<section class="duel-board is-${key.toLowerCase()}">

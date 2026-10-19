@@ -1,4 +1,4 @@
-/* 外部系统观测台 —— 看住世界本身：货币系统 / 外部环境 / 对外服务。
+/* 外部系统观测台 —— 看住世界本身：货币系统 / 外部环境 / 对外服务 / 公共部门。
  *
  * 三个刻意的设计：
  *
@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var TABS = ["currency", "environment", "services"];
+  var TABS = ["currency", "environment", "services", "public"];
 
   var state = {
     tab: "currency",
@@ -84,9 +84,18 @@
     "peer_agent_ids", "llm", "default",
   ];
 
-  function label(key) {
+  /* `path` lets a full-path label win (`public_sector.schedule` is a list of
+     elections, `llm.routing.tasks.schedule` a model task), and names a
+     government's subtree by the government's own name rather than its key. */
+  function label(key, path) {
     if (LABEL_OVERRIDES.indexOf(key) >= 0) return __("ext.label." + key);
-    var entry = (state.data && state.data.labels && state.data.labels[key]) || null;
+    var government = /^public_sector\.governments\.([^.]+)$/.exec(path || "");
+    if (government) {
+      var gov = findGovernment(government[1]);
+      if (gov) return gov.name + " · " + gov.id;
+    }
+    var labels = (state.data && state.data.labels) || {};
+    var entry = (path && labels[path]) || labels[key] || null;
     if (!entry) return key;
     var english = typeof getLocale === "function" && getLocale() === "en";
     return (english && entry.en) || entry.zh || key;
@@ -150,6 +159,13 @@
     "traffic.congested_ticks", "traffic.peak", "traffic.peak_flow", "trough",
     "use_cache_first", "weather_states", "willingness_factor", "year_end_bonus_enabled",
     "year_end_bonus_months",
+    // 公共部门
+    "basic_income_daily", "income_tax_exemption", "income_tax_rate_scale", "medical_reimbursement",
+    "min_hourly_wage", "pension_daily", "pub.balance", "pub.brief", "pub.compare", "pub.fiscal",
+    "pub.new", "pub.pick", "pub.switch", "public_sector", "public_sector.announce",
+    "public_sector.enabled", "public_sector.government", "public_sector.governments",
+    "public_sector.schedule", "social_insurance_rate_scale", "tab.public",
+    "unemployment_benefit_daily",
   ];
 
   function helpText(key) {
@@ -272,7 +288,7 @@
         return renderNode(childKey, value[childKey], pathKey(path, childKey), depth + 1);
       }).join("");
       return '<details class="ext-group"' + (depth === 0 ? " open" : "") + ">" +
-        "<summary>" + esc(label(key)) + hint + "</summary>" +
+        "<summary>" + esc(label(key, path)) + hint + "</summary>" +
         '<div class="ext-group-body">' + body + "</div></details>";
     }
 
@@ -280,17 +296,17 @@
       var on = currentValue(path, value);
       return '<label class="' + fieldClass(path) + ' inline">' +
         '<input type="checkbox" data-path="' + esc(path) + '" data-kind="bool"' + (on ? " checked" : "") + " />" +
-        "<span>" + esc(label(key)) + hint + "</span></label>";
+        "<span>" + esc(label(key, path)) + hint + "</span></label>";
     }
 
     if (typeof value === "number") {
-      return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key)) + hint + "</span>" +
+      return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key, path)) + hint + "</span>" +
         '<input type="number" step="any" data-path="' + esc(path) + '" data-kind="number" value="' +
         esc(currentValue(path, value)) + '" /></label>';
     }
 
     if (typeof value === "string") {
-      return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key)) + hint + "</span>" +
+      return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key, path)) + hint + "</span>" +
         '<input type="text" data-path="' + esc(path) + '" data-kind="text" value="' +
         esc(currentValue(path, value)) + '" /></label>';
     }
@@ -298,7 +314,7 @@
     // 数组 / null：JSON 文本框。结构化控件在这里得不偿失，而 JSON 是可校验的。
     var raw = currentValue(path, value);
     var text = typeof raw === "string" && state.invalid[path] ? raw : JSON.stringify(raw);
-    return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key)) + hint +
+    return '<label class="' + fieldClass(path) + '"><span>' + esc(label(key, path)) + hint +
       (state.invalid[path] ? ' <b class="ext-warn">' + esc(__("ext.json_invalid")) + "</b>" : "") + "</span>" +
       '<textarea data-path="' + esc(path) + '" data-kind="json">' + esc(text) + "</textarea></label>";
   }
@@ -677,6 +693,178 @@
     return renderConfigCard("services", data.config, __("ext.cfg_svc_hint"));
   }
 
+  /* --------------------------------------------------- observe: public sector */
+
+  /* The levers a government pulls, in the order a resident would feel them. */
+  var LEVERS = [
+    "income_tax_exemption", "income_tax_rate_scale", "social_insurance_rate_scale",
+    "medical_reimbursement", "min_hourly_wage", "unemployment_benefit_daily",
+    "pension_daily", "basic_income_daily",
+  ];
+  var TRANSFER_LEVERS = ["unemployment_benefit_daily", "pension_daily", "basic_income_daily"];
+  var CHANGE_SOURCES = ["config", "schedule", "intervention"];
+
+  function publicRuntime() {
+    return (state.data && state.data.public && state.data.public.runtime) || {};
+  }
+
+  function findGovernment(id) {
+    var list = publicRuntime().governments || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function governmentName(id) {
+    var gov = findGovernment(id);
+    return gov ? gov.name : String(id || "—");
+  }
+
+  /** A policy value as a resident would read it; null means "the economy decides". */
+  function leverValue(key, value) {
+    if (value == null) return __("ext.pub_inherit");
+    if (/_scale$/.test(key)) return pct(value, 0);
+    if (key === "medical_reimbursement") {
+      return Array.isArray(value) && value.length === 2 ? pct(value[0], 0) + "–" + pct(value[1], 0) : String(value);
+    }
+    if (/_daily$/.test(key) && !(Number(value) > 0)) return __("ext.pub_not_paid");
+    var n = Number(value);
+    return isFinite(n) ? String(n) : String(value);
+  }
+
+  function governmentOptions(selected) {
+    return (publicRuntime().governments || []).map(function (gov) {
+      return '<option value="' + esc(gov.id) + '"' + (gov.id === selected ? " selected" : "") + ">" +
+        esc(gov.name) + " (" + esc(gov.id) + ")</option>";
+    }).join("");
+  }
+
+  function liveNoteKey(live) {
+    if (live.can_switch) return "ext.pub_live_on";
+    return live.running ? "ext.pub_live_off" : "ext.pub_no_run";
+  }
+
+  function renderFiscal(rt) {
+    var daily = rt.daily || [];
+    if (!daily.length) {
+      return '<p class="ext-hint">' + __f("ext.pub_no_records", { path: esc(rt.records_path) }) + "</p>";
+    }
+    var totals = rt.transfer_totals || {};
+    var grand = Object.keys(totals).reduce(function (sum, key) { return sum + Number(totals[key] || 0); }, 0);
+    var balance = rt.latest_balance;
+    return tiles([
+      { label: __("ext.pub_days"), value: daily.length },
+      { label: __("ext.pub_transfers_total"), value: money(grand) },
+      { label: __("ext.pub_balance"), value: money(balance), warn: Number(balance) < 0, help: "pub.balance" },
+    ].concat(TRANSFER_LEVERS.map(function (key) {
+      return { label: label(key), value: money(totals[key] || 0) };
+    }))) +
+      lineChart([{
+        label: __("ext.pub_balance_series"), color: "#3c5a68",
+        points: daily.map(function (d) { return Number(d.government_balance); }),
+      }], { hiLabel: __("ext.axis_high"), loLabel: __("ext.axis_low") }) +
+      lineChart([{
+        label: __("ext.pub_transfers_series"), color: "#0e7a58",
+        points: daily.map(function (d) { return Number(d.transfers_total); }),
+      }], { hiLabel: __("ext.axis_high"), loLabel: __("ext.axis_low") });
+  }
+
+  function renderPublicObserve(data) {
+    var rt = data.runtime;
+    var current = findGovernment(rt.government) ||
+      { id: rt.government, name: rt.government, summary: [], brief: "", description: "" };
+
+    var summary = (current.summary || []).length
+      ? "<ul>" + current.summary.map(function (line) { return "<li>" + esc(line) + "</li>"; }).join("") + "</ul>"
+      : '<p class="ext-hint">' + esc(__("ext.pub_no_policy")) + "</p>";
+
+    var govs = rt.governments || [];
+    var head = "<tr><th>" + esc(__("ext.pub_col_policy")) + "</th>" + govs.map(function (gov) {
+      var on = gov.id === rt.government;
+      return "<th" + (on ? ' class="is-current"' : "") + ">" + esc(gov.name) + (on ? " ★" : "") + "</th>";
+    }).join("") + "</tr>";
+    var rows = LEVERS.map(function (key) {
+      return "<tr><td>" + esc(label(key)) + tip(key) + "</td>" + govs.map(function (gov) {
+        return '<td class="num' + (gov.id === rt.government ? " is-current" : "") + '">' +
+          esc(leverValue(key, (gov.policies || {})[key])) + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+
+    var changes = (rt.changes || []).slice().reverse().map(function (row) {
+      var source = CHANGE_SOURCES.indexOf(row.source) >= 0
+        ? __("ext.pub_src_" + row.source) : String(row.source || "");
+      return "<li><b>" + esc(__f("ext.env_day", { day: row.day })) + "</b> · " + esc(row.name) +
+        " · " + esc(source) + (row.note ? " · " + esc(row.note) : "") + "</li>";
+    }).join("");
+
+    return (
+      '<div class="ext-card"><h2>' + esc(__("ext.pub_current_title")) + tip("tab.public") + "</h2>" +
+      '<p class="ext-lede">' + esc(__("ext.pub_lede")) + "</p>" +
+      '<div class="ext-gov"><b>' + esc(current.name) + "</b> <code>" + esc(current.id) + "</code>" +
+        (current.description ? "<p>" + esc(current.description) + "</p>" : "") + summary + "</div>" +
+      '<p class="ext-hint ' + (rt.enabled ? "ext-ok" : "ext-warn") + '">' +
+        esc(__(rt.enabled ? "ext.pub_on" : "ext.pub_off")) + "</p>" +
+      '<p class="ext-hint">' + esc(__(liveNoteKey(rt.live || {}))) + "</p>" +
+      "<h3>" + esc(__("ext.pub_brief_title")) + tip("pub.brief") + "</h3>" +
+      '<blockquote class="ext-brief">' + esc(current.brief || "") + "</blockquote>" +
+      "</div>" +
+
+      '<div class="ext-card"><h2>' + esc(__("ext.pub_compare_title")) + tip("pub.compare") + "</h2>" +
+      '<div class="ext-scroll"><table class="ext-table ext-compare"><thead>' + head + "</thead><tbody>" +
+        rows + "</tbody></table></div></div>" +
+
+      '<div class="ext-card"><h2>' + esc(__("ext.pub_fiscal_title")) + tip("pub.fiscal") + "</h2>" +
+      renderFiscal(rt) +
+      "<h3>" + esc(__("ext.pub_changes_title")) + "</h3>" +
+      (changes ? '<ul class="ext-queue">' + changes + "</ul>"
+        : '<p class="ext-hint">' + esc(__("ext.pub_no_changes")) + "</p>") +
+      "</div>"
+    );
+  }
+
+  function renderPublicEdit(data) {
+    var rt = data.runtime;
+    var live = rt.live || {};
+    var custom = (rt.governments || []).filter(function (gov) { return !gov.builtin; });
+    var customList = custom.map(function (gov) {
+      return "<li><b>" + esc(gov.name) + "</b> <code>" + esc(gov.id) + "</code> " +
+        '<button class="button subtle" data-del="' + esc(gov.id) + '">' + esc(__("ext.pub_delete")) + "</button></li>";
+    }).join("");
+
+    return (
+      '<div class="ext-edit-card"><h3>' + esc(__("ext.pub_pick_title")) + tip("pub.pick") + "</h3>" +
+      '<p class="ext-note">' + esc(__("ext.pub_pick_note")) + "</p>" +
+      '<label class="ext-field inline"><input type="checkbox" id="pubEnabled"' + (rt.enabled ? " checked" : "") +
+        " /><span>" + esc(__("ext.pub_enable")) + tip("public_sector.enabled") + "</span></label>" +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_government")) + tip("public_sector.government") +
+        '</span><select id="pubGovernment">' + governmentOptions(rt.government) + "</select></label>" +
+      '<div class="ext-edit-actions"><button class="button" id="pubApply">' + esc(__("ext.pub_apply")) +
+        "</button></div></div>" +
+
+      '<div class="ext-edit-card"><h3>' + esc(__("ext.pub_switch_title")) + tip("pub.switch") + "</h3>" +
+      '<p class="ext-note">' + esc(__(live.can_switch ? "ext.pub_switch_note" : liveNoteKey(live))) + "</p>" +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_government")) +
+        '</span><select id="pubSwitchGov">' + governmentOptions(rt.government) + "</select></label>" +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_note")) +
+        '</span><input type="text" id="pubSwitchNote" placeholder="' + esc(__("ext.pub_switch_note_ph")) + '" /></label>' +
+      '<div class="ext-edit-actions"><button class="button" id="pubSwitch"' + (live.can_switch ? "" : " disabled") + ">" +
+        esc(__("ext.pub_switch_btn")) + "</button></div></div>" +
+
+      '<div class="ext-edit-card"><h3>' + esc(__("ext.pub_new_title")) + tip("pub.new") + "</h3>" +
+      '<p class="ext-note">' + esc(__("ext.pub_new_note")) + "</p>" +
+      '<div class="ext-row">' +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_new_id")) +
+        '</span><input type="text" id="pubNewId" placeholder="green_city" /></label>' +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_new_name")) + '</span><input type="text" id="pubNewName" /></label>' +
+      "</div>" +
+      '<label class="ext-field"><span>' + esc(__("ext.pub_new_base")) + '</span><select id="pubNewBase">' +
+        governmentOptions(rt.government) + "</select></label>" +
+      '<div class="ext-edit-actions"><button class="button" id="pubCreate">' + esc(__("ext.pub_create")) + "</button></div>" +
+      (customList ? "<h3>" + esc(__("ext.pub_custom")) + '</h3><ul class="ext-queue">' + customList + "</ul>" : "") +
+      "</div>" +
+      renderConfigCard("public", data.config, __("ext.cfg_public_hint"))
+    );
+  }
+
   /* -------------------------------------------------------------- rendering */
 
   function renderConfigCard(tab, config, note) {
@@ -698,13 +886,17 @@
     currency: { observe: renderCurrencyObserve, edit: renderCurrencyEdit },
     environment: { observe: renderEnvironmentObserve, edit: renderEnvironmentEdit },
     services: { observe: renderServicesObserve, edit: renderServicesEdit },
+    public: { observe: renderPublicObserve, edit: renderPublicEdit },
   };
 
   function render() {
     var data = state.data && state.data[state.tab];
     if (!data) {
-      $("extObserve").innerHTML =
-        '<div class="ext-card"><p class="ext-hint">' + esc(__("ext.loading")) + "</p></div>";
+      // Loaded, yet no payload for this tab: the dashboard process predates
+      // the tab. Saying "loading" here would spin forever.
+      $("extObserve").innerHTML = '<div class="ext-card"><p class="ext-hint' +
+        (state.data ? ' ext-warn">' + esc(__("ext.tab_missing")) : '">' + esc(__("ext.loading"))) +
+        "</p></div>";
       $("extEdit").innerHTML = "";
       return;
     }
@@ -724,6 +916,19 @@
 
     // 每次渲染都重建了 innerHTML，之前绑好的「?」全没了，要重新扫一遍。
     if (window.HelpTips) window.HelpTips.scan();
+  }
+
+  /** Wrap an async handler with the standard button-busy treatment. */
+  function withBusy(btn, fn, busyKey, busyFallback) {
+    return function () {
+      if (!btn || btn.disabled) return;
+      var release = (typeof setButtonBusy === "function")
+        ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+        : (function () { btn.disabled = true; return function () { btn.disabled = false; }; })();
+      var p;
+      try { p = fn(); } catch (err) { release(); throw err; }
+      Promise.resolve(p).then(release, function (err) { release(); throw err; });
+    };
   }
 
   function load() {
@@ -840,6 +1045,56 @@
     });
   }
 
+  /* The government picked here is for the next run, saved through the same
+     config endpoint as the tree below; the running one is only reachable
+     through the kernel queue (`public/switch`). */
+  function applyGovernment() {
+    var enabled = $("pubEnabled").checked;
+    var government = $("pubGovernment").value;
+    status(__("ext.saving"));
+    api("POST", "/api/external-systems/config", {
+      config: { public_sector: { enabled: enabled, government: government } },
+    }).then(function (res) {
+      if (res.error) { status(res.error, "err"); return; }
+      status(enabled ? __f("ext.pub_applied", { name: governmentName(government) }) : __("ext.pub_applied_off"), "ok");
+      load();
+    });
+  }
+
+  function switchGovernment() {
+    var government = $("pubSwitchGov").value;
+    api("POST", "/api/external-systems/public/switch", {
+      government: government,
+      note: $("pubSwitchNote").value,
+    }).then(function (res) {
+      if (res.error) { status(res.error, "err"); return; }
+      status(__f("ext.pub_switch_queued", { name: governmentName(government) }), "ok");
+      load();
+    });
+  }
+
+  function createGovernment() {
+    var name = $("pubNewName").value;
+    api("POST", "/api/external-systems/public/governments", {
+      id: $("pubNewId").value,
+      name: name,
+      base: $("pubNewBase").value,
+    }).then(function (res) {
+      if (res.error) { status(res.error, "err"); return; }
+      status(__f("ext.pub_created", { name: name }), "ok");
+      load();
+    });
+  }
+
+  function deleteGovernment(id) {
+    if (!window.confirm(__f("ext.pub_delete_confirm", { name: governmentName(id) }))) return;
+    api("POST", "/api/external-systems/public/governments/delete", { id: id }).then(function (res) {
+      if (res.error) { status(res.error, "err"); return; }
+      status(__("ext.pub_deleted"), "ok");
+      load();
+    });
+  }
+
   function probeServices() {
     status(__("ext.probing"));
     api("GET", "/api/external-systems/health").then(function (res) {
@@ -875,16 +1130,20 @@
       else if (id === "cfgReset") { state.dirty = {}; state.invalid = {}; status(""); render(); }
       else if (id === "ivSubmit") submitIntervention();
       else if (id === "ivClear") clearInterventions();
+      else if (id === "pubApply") applyGovernment();
+      else if (id === "pubSwitch") switchGovernment();
+      else if (id === "pubCreate") createGovernment();
+      else if (event.target.dataset && event.target.dataset.del) deleteGovernment(event.target.dataset.del);
     });
 
     $("extObserve").addEventListener("click", function (event) {
       if (event.target.id === "svcProbe") probeServices();
     });
 
-    $("extRefresh").addEventListener("click", function () {
+    $("extRefresh").addEventListener("click", withBusy($("extRefresh"), function () {
       status(__("ext.refreshing"));
-      load().then(function () { status(__("ext.refreshed"), "ok"); });
-    });
+      return load().then(function () { status(__("ext.refreshed"), "ok"); });
+    }, "external.refresh", "刷新中…"));
 
     load();
   }

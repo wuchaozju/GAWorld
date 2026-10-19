@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-10-10 — 工程：行数闸门、lint 棘轮、功能注册表、浏览器冒烟
+
+### Added
+
+- **研究工作台 · 社会调查/实验拟合度**（`research.html?tab=replication`）— 上传一篇报告真人调查或实验结果的文献，一次模型调用抽取成可编辑的规格（条件与材料、量表 / 单选 / 数值题、带出处的真人结果，没报告的不估算），核对后选城市、智能体规模（5–500）、组间或配对分配，让居民重做；代码比较逐题误差、真人值是否落在居民 95% 区间内、处理效应的方向与显著性，合成拟合度分。`gaworld/research/replication.py` + `gaworld/apps/replication_api.py`（`/api/research/replication/*`），记录在 `output/research/replication/`；教程见 `docs/RESEARCH_WORKBENCH_TUTORIAL.md` §15。
+- **行数闸门** `tests/test_line_budget.py` — `generative_city_sim.py` 与 `run_simulation` 只许减不许增（上限在 `tests/line_budget.json`；超了失败，低于上限 50 行以上也失败、要求把上限调低）。
+- **先迁一批辅助函数**：作图与状态历史 → `gaworld/sim/_plots.py`，`compare-event` / `parallel-worlds` 子命令 → `gaworld/sim/_compare.py`（主文件 6,254 → 5,679 行，原名照旧可用）。下一步见 `docs/RUN_SIMULATION_EXTRACTION_PLAN.md`。
+- **第二批**：每步的临时改程与临时念头（`maybe_adjust_activity`、`maybe_generate_transient_thought`、当天重排用的生命事件挑选，共 13 个函数）→ `gaworld/sim/_step.py`，`routine_change.*` / `spontaneity.*` / `life_events.reshape.severity_threshold` 改为调用时读配置（默认值不变；导入后再改 `CONFIG` 现在会生效）。主文件 5,679 → 5,232 行，`run_simulation` 未动。
+- **第三批：拆 `run_simulation` 本体** — 12 个认知阶段从 `run_simulation` 的闭包变成 `gaworld/sim/_stages.py` 里的普通函数，整轮 / 当天 / 当前时刻的状态经 `StepScope` 传入（每个居民每步之前刷新），本文件的配置常量与尚未迁走的 6 个辅助函数每轮传入一次；两处在整轮运行里拦截函数的测试改为打桩 `gaworld.sim._stages`。`run_simulation` 2,280 → 1,359 行，主文件 5,232 → 4,264 行。
+- **lint 棘轮** `scripts/lint_ratchet.py` — CI 不再跑全仓 `ruff check .` / `ruff format --check .`（存量约 1,070 条、440 个文件未格式化，每次都失败）：改动过的文件 ruff 问题不许变多，新文件和原本已格式化的文件必须格式化，全仓总数不许超过 `scripts/lint_baseline.json`。本地不带参数运行即检查未提交的改动。
+- **功能注册表** `docs/features.toml` — 功能地图 `docs/FEATURE_MAP.html` 由它生成（`python scripts/build_feature_map.py`）；`tests/test_feature_registry.py` 检查地图是最新的、注册表与 FEATURES.md 一一对得上、引用的教程在文档面板和两份 README 里都列着。补上了图上缺的 11 项（基准评测、经典实验库、场所容量、室内房间、组织等）和 FEATURES.md 缺的「多人共玩」一行；文档面板补了研究工作台与持久组织两篇教程。
+- **出行习惯** `gaworld/world/mobility.py` + `TransportHabitPlugin`（`transport_habit`，默认开，可比性版本 10）— 每个居民按自身情况有一种默认交通工具（`default_transport`）：从城市既有的选择模型对其通勤的结果出发，再按年龄（70 岁起不再开车 / 骑车，改公交或步行）、职业（外卖 / 快递骑电动车，司机开车）、档案里的生活方式（爱散步、骑行、低碳）调整，始终限于自己有的车、够得着的距离。每次出行：习惯合适就用习惯（0.5 km 以内照旧步行，雨雪天露天方式让位给模型的选择），另有 `deviation_probability`（默认 0.12）的概率换用其他可行方式；按居民自己的出行次数取随机数，结果可复现。出行记录带 `mode_reason`（habit / model / alternative）。测试 `tests/test_transport_habit.py`。
+- **工作时自动搜技能**（`skills.auto_search`，默认开，可比性版本 11）— 居民接单 / 自驱开工时，在整个技能库（私有 + 全部公共技能 + `skills.search_dirs` 里的 `*.md` / `<名>/SKILL.md`）里按任务标题、简报、产物类型和订单所需技能打分，取最合适的 ≤3 个写进工作简报，不再只限已挂载的；交付成功后用上的技能挂到居民身上，工作记忆记下「运用了技能：…」。可选**联网技能市场**（`skills.online.enabled`，默认关）：本地不够时由后台 worker 去 skills.sh 搜索，只下载 SKILL.md 文本（不执行任何东西），缓存在 `output/skills_market/` 并并入技能库。`gaworld/skills/search.py`、`gaworld/skills/market.py`、`gaworld/work/skill_lookup.py`，测试 `tests/test_skill_search.py`，说明见 `docs/SKILL_SYSTEM.md` §6.2–6.3。
+- **浏览器冒烟** `tests/test_browser_smoke.py`（Playwright + Chromium，缺了就跳过；CI 安装）：Population Studio 走到第 2 步并重新体检，工作台家庭编辑添加一个子女，全程无页面错误。
+
+### Fixed
+
+- 英文界面里「居家模式」面板的小标题与标题同为 “Home Mode”（`PanelHeadingTest` 一直失败），标题改为 “Life at Home”。
+
 ## [Unreleased] — 2026-10-05 — 室内房间：空间树进入仿真
 
 ### Added

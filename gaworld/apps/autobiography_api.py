@@ -123,7 +123,7 @@ def _gather_materials(agent_id: int) -> dict[str, Any]:
         all_events = list_life_events(CONFIG, include_consumed=True) or []
         for ev in all_events:
             try:
-                if int((ev.get("agent_id") or ev.get("resident_id") or 0)) == int(agent_id):
+                if int(ev.get("agent_id") or ev.get("resident_id") or 0) == int(agent_id):
                     life_events.append(ev)
             except (TypeError, ValueError):
                 continue
@@ -388,13 +388,115 @@ def _count_cjk_chars(text: str) -> int:
     return sum(1 for char in text if "\u4e00" <= char <= "\u9fff")
 
 
+#: How many characters of the autobiography to fold into long-term memory.
+    #: ~700 Chinese characters is enough to anchor self-image without bloating
+    #: every subsequent cognition prompt with the whole 20k-character essay.
+_MEMORY_SUMMARY_CHARS = 700
+
+
+def _summarize_for_memory(markdown: str, name: str) -> str:
+    """Build a single long-term memory line that captures the autobiography's
+    self-image, so the next simulation tick reads it as a stable fact.
+
+    We keep the chapter titles (the spine of the essay) and the first
+    paragraph of each chapter — that gives the agent a one-shot refresh of "who
+    I decided I was" without flooding every prompt with 20k characters.
+    """
+    lines = markdown.replace("\r\n", "\n").split("\n")
+    kept: list[str] = []
+    current: list[str] = []
+    in_code = False
+
+    def flush() -> None:
+        if current:
+            para = " ".join(line.strip() for line in current if line.strip()).strip()
+            if para:
+                kept.append(para[:240])
+            current.clear()
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code:
+            continue
+        if not stripped:
+            flush()
+            continue
+        if stripped.startswith("#"):
+            flush()
+            # Keep H1 title and H2 chapter names — they are the spine.
+            kept.append(stripped)
+            continue
+        current.append(stripped)
+
+    flush()
+    spine = "\n".join(kept[: _MEMORY_SUMMARY_CHARS // 4])
+    return f"[自传 摘要] 我（{name}）写过一篇自传，章节与首段如下：\n{spine}"[:_MEMORY_SUMMARY_CHARS]
+
+
+def _append_memory(agent_id: int, summary: str) -> None:
+    """Append *summary* to the resident's long-term memory store.
+
+    Best-effort: the dashboard must not fail the whole compose call because
+    the resident already had an autobiography summary or the memory store is
+    unwritable. We log a warning so a human can investigate.
+
+    The active user/world context is captured by ``ownership.spawn`` so a
+    shared deployment writes the new memory into the right user's world
+    rather than the shared default.
+    """
+    from gaworld.accounts import ownership
+    from gaworld.apps import residents as residents_mod
+
+    def _write() -> None:
+        residents_mod.append_agent_memory(
+            agent_id,
+            {"kind": "memory", "text": summary},
+        )
+
+    try:
+        ownership.spawn(_write)()
+    except ValueError as exc:
+        _LOG.warning(
+            "autobiography: memory summary rejected for agent %s: %s",
+            agent_id,
+            exc,
+        )
+    except Exception:
+        _LOG.warning(
+            "autobiography: could not append memory for agent %s",
+            agent_id,
+            exc_info=True,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Synchronous core — the part that actually talks to the LLM
 # ---------------------------------------------------------------------------
 
 
+def _output_dir() -> str:
+    """Where the markdown lives for the request's active world.
+
+    Falls back to the module-level base (``output/autobiography``) when the
+    dashboard has not entered a world, so the smoke tests and the default
+    single-user mode still write to a known location.
+    """
+    base = _OUTPUT_DIR
+    try:
+        from gaworld.apps import world_paths
+
+        if world_paths.current_world():
+            base = os.path.join(world_paths.run_root(), "autobiography")
+    except Exception:
+        _LOG.debug("autobiography: world_paths unavailable, using base", exc_info=True)
+    return base
+
+
 def _output_path(agent_id: int) -> str:
-    return os.path.join(_OUTPUT_DIR, f"agent_{int(agent_id)}.md")
+    return os.path.join(_output_dir(), f"agent_{int(agent_id)}.md")
 
 
 def compose(agent_id: int, *, provider: str | None = None) -> dict[str, Any]:
@@ -437,6 +539,13 @@ def compose(agent_id: int, *, provider: str | None = None) -> dict[str, Any]:
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(markdown)
 
+    # Fold a distilled self-portrait into the resident's long-term memory so
+    # the next simulation tick already knows what the agent decided to call
+    # themselves. Done last (after the file is durable) and best-effort: a
+    # memory-store failure must not erase the autobiography we just wrote.
+    summary = _summarize_for_memory(markdown, name)
+    _append_memory(agent_id, summary)
+
     return {
         "agent_id": int(agent_id),
         "name": name,
@@ -445,6 +554,7 @@ def compose(agent_id: int, *, provider: str | None = None) -> dict[str, Any]:
         "length_cjk": _count_cjk_chars(markdown),
         "path": path,
         "profile_block_size": len(materials_block),
+        "memory_summary_chars": len(summary),
     }
 
 
@@ -609,7 +719,7 @@ def handle_get(path: str, _query: dict[str, Any] | None = None) -> tuple[dict[st
     path = _output_path(agent_id)
     if not os.path.exists(path):
         return {"error": "尚未生成自传"}, 404
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path, encoding="utf-8") as handle:
         markdown = handle.read()
     return {
         "agent_id": int(agent_id),
@@ -622,4 +732,32 @@ def handle_get(path: str, _query: dict[str, Any] | None = None) -> tuple[dict[st
     }, 200
 
 
-__all__ = ["compose", "enqueue", "handle_get", "handle_post", "job_status"]
+__all__ = ["compose", "enqueue", "handle_download", "handle_get", "handle_post", "job_status"]
+
+
+def handle_download(path: str) -> tuple[str | None, str, str, int]:
+    """``GET /api/agents/<id>/autobiography/download`` — stream the saved file.
+
+    Returns ``(filename, content_type, body, status)`` so the dashboard can
+    answer with a real ``Content-Disposition: attachment`` header instead of
+    a JSON wrapper. ``body`` is read straight off disk so it survives any
+    re-render of the studio panel — the user might have closed the panel
+    between the original compose and clicking download.
+
+    Status ``200`` carries ``body``; status ``404`` returns ``body=None`` and
+    the dashboard synthesises a small JSON error reply.
+    """
+    parts = path.strip("/").split("/")
+    if len(parts) != 5 or parts[0] != "api" or parts[1] != "agents" or parts[3] != "autobiography" or parts[4] != "download":
+        return None, "application/json", "{}", 404
+    try:
+        agent_id = int(parts[2])
+    except ValueError:
+        return None, "application/json", '{"error": "Invalid agent id"}', 400
+    output_path = _output_path(agent_id)
+    if not os.path.exists(output_path):
+        return None, "application/json", '{"error": "尚未生成自传"}', 404
+    with open(output_path, encoding="utf-8") as handle:
+        body = handle.read()
+    filename = f"agent-{agent_id}-autobiography.md"
+    return filename, "text/markdown; charset=utf-8", body, 200

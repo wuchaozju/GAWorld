@@ -14,6 +14,7 @@ from copy import deepcopy
 from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 from urllib.request import Request as _UpstreamRequest
@@ -41,7 +42,6 @@ DASHBOARD_ROOT = os.path.join(paths.REPO_ROOT, "site", "dashboard")
 TODO_BOARD_PATH = os.path.join(paths.REPO_ROOT, "output", "dashboard", "todo_board.json")
 
 
-
 TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
@@ -55,30 +55,6 @@ _WORLD = request_context.WORLD
 #: scheduled starts carry it in their copied context, for the per-user limit.
 _USER = request_context.USER
 WORLD_COOKIE = "gaworld_world"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def _todo_board_payload():
@@ -146,10 +122,6 @@ def _update_todo_item(payload):
                 board["items"][index] = _normalize_todo_item(payload, existing=item)
                 return _save_todo_board(board["items"])
     raise ValueError(f"todo item {item_id} not found")
-
-
-
-
 
 
 def _city_source_config(city):
@@ -237,9 +209,7 @@ def _get_collaboration_service():
                     "output/collaboration/sessions",
                 )
             ),
-            memory_dir=_repo_path(
-                config.get("memory_dir", "output/memory")
-            ),
+            memory_dir=_repo_path(config.get("memory_dir", "output/memory")),
             agent_loader=lambda agent_id: residents.agent_detail(int(agent_id)),
             llm=call_llm,
             episode_writer=lambda agent_id, episode: append_agent_episode(
@@ -280,10 +250,7 @@ def _public_collaboration_session(payload):
         and session_id not in {".", ".."}
         and "/" not in session_id
         and "\\" not in session_id
-        and all(
-            ord(character) >= 32 and ord(character) != 127
-            for character in session_id
-        )
+        and all(ord(character) >= 32 and ord(character) != 127 for character in session_id)
     )
     session_root = sessions_dir
     session_root_is_safe = False
@@ -303,9 +270,7 @@ def _public_collaboration_session(payload):
         except ValueError:
             pass
         else:
-            result["artifact_base_url"] = (
-                "/" + public_artifacts_root.as_posix().rstrip("/") + "/"
-            )
+            result["artifact_base_url"] = "/" + public_artifacts_root.as_posix().rstrip("/") + "/"
 
     artifacts = result.get("artifacts")
     if not isinstance(artifacts, list):
@@ -377,20 +342,12 @@ def _collaboration_roles(payload):
         raise ValueError("role_overrides must be an object")
     normalized = {}
     for agent_id, role in roles.items():
-        if (
-            isinstance(agent_id, bool)
-            or not isinstance(agent_id, (int, str))
-            or not isinstance(role, str)
-        ):
-            raise ValueError(
-                "role_overrides must map agent ids to role strings"
-            )
+        if isinstance(agent_id, bool) or not isinstance(agent_id, (int, str)) or not isinstance(role, str):
+            raise ValueError("role_overrides must map agent ids to role strings")
         try:
             normalized[str(int(agent_id))] = role
         except ValueError as exc:
-            raise ValueError(
-                "role_overrides must map agent ids to role strings"
-            ) from exc
+            raise ValueError("role_overrides must map agent ids to role strings") from exc
     return normalized
 
 
@@ -510,9 +467,7 @@ def _sanitize_config_patch(payload):
         except (TypeError, ValueError):
             count = 1
         if unit in ("day", "month", "year"):
-            patch["sim_days"] = span_days(
-                unit, count, start_date=_sim_start_date(paths.effective_config())
-            )
+            patch["sim_days"] = span_days(unit, count, start_date=_sim_start_date(paths.effective_config()))
     if "agent_ids" in payload:
         ids = payload.get("agent_ids")
         if isinstance(ids, str):
@@ -647,7 +602,10 @@ def _save_config_patch(payload):
             remote.enqueue(
                 kernel_api._queue_path(),
                 "update_config",
-                {"path": "multiplayer.wait_for_players_seconds", "value": patch["multiplayer"]["wait_for_players_seconds"]},
+                {
+                    "path": "multiplayer.wait_for_players_seconds",
+                    "value": patch["multiplayer"]["wait_for_players_seconds"],
+                },
             )
         except LookupError:
             pass  # nothing running; the next run reads the saved config
@@ -676,14 +634,6 @@ def _save_config_patch(payload):
     return _config_summary()
 
 
-
-
-
-
-
-
-
-
 # ---------------------------------------------------------------------------
 # Agent state (CSV seed) read / write, skills, finance, and agent creation.
 # The CSV is the machine-readable seed the simulator loads; the Markdown
@@ -692,61 +642,10 @@ def _save_config_patch(payload):
 # ---------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # --- Memory content (Studio step 4) -----------------------------------------
 # The counts alone don't say what an agent actually remembers, so the Studio
 # also reads the memory bodies. Lists are capped to keep the detail payload —
 # which the collaboration service reuses per LLM turn — from ballooning.
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # --- Finance (Studio step 7) ------------------------------------------------
@@ -755,60 +654,9 @@ def _save_config_patch(payload):
 # CSV is a run artifact — readable, but not a place to write back into.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ---------------------------------------------------------------------------
 # Big Five (OCEAN) seed scores — studio panel, step 2.
 # ---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def _run_log_markdown():
@@ -847,70 +695,6 @@ def _run_log_markdown():
     ]
     stamp = time.strftime("%Y%m%d-%H%M%S")
     return "\n".join(lines), f"gaworld-run-log-{stamp}.md"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def _interview_agent(payload):
@@ -974,6 +758,10 @@ def _replay_runs():
     seen = {}
 
     def visible(run):
+        from gaworld.research.workspaces import artifact_visible
+
+        if not artifact_visible(run["id"], paths.REPO_ROOT):
+            return False
         parts = run["id"].split("/")
         if parts[:2] != ["output", "worlds"] or len(parts) < 3:
             return True
@@ -1000,9 +788,7 @@ def _life_events_payload():
 
 
 def _add_life_event(payload):
-    event = add_life_event(
-        _expand_candidate_payload(payload), CONFIG, current_frame=_current_trace_frame()
-    )
+    event = add_life_event(_expand_candidate_payload(payload), CONFIG, current_frame=_current_trace_frame())
     return {
         "event": event,
         "events": list_life_events(CONFIG, include_consumed=True),
@@ -1014,6 +800,7 @@ def _add_life_event(payload):
 # catalogue against one agent's situation; the reading of that situation off
 # the files on disk is this module's job (see `context_from_agent`).
 # ---------------------------------------------------------------------------
+
 
 def _expand_candidate_payload(payload):
     """Turn a tag-cloud click into a full life-event body.
@@ -1187,7 +974,9 @@ def _analytics_run_paths(run_id, runs=None):
     """
     if not run_id:
         return _live_analytics_paths()
-    run = next((item for item in (runs if runs is not None else _replay_runs()) if item["id"] == run_id), None)
+    run = next(
+        (item for item in (runs if runs is not None else _replay_runs()) if item["id"] == run_id), None
+    )
     if run is None:
         return None
     if run["kind"] == "live":
@@ -1282,6 +1071,53 @@ def _analytics_payload(section, paths=None):
     return None
 
 
+def _system_panel_payload() -> dict[str, Any]:
+    """Build the cross-world system summary used by ``/api/analytics/system``.
+
+    Reuses the live analytics paths and the per-run listing so the panel never
+    re-walks the active city's artifacts: the city we already trust as the
+    current world becomes the ``current_world`` block, and the same ``overview``
+    numbers feed both this panel and the per-run overview section. Everything
+    else (``cities/``, ``parallel_worlds/``, ``personas/`` ...) is enumerated
+    one level above the active city so the panel stays city-aware: when a city
+    is selected, only its own artifacts qualify as "current world".
+    """
+    active_paths = _live_analytics_paths()
+    names = _agent_name_map()
+    overview = analytics.overview(
+        active_paths["output_dir"],
+        active_paths["memory_dir"],
+        active_paths["visualization_dir"],
+        active_paths["diary_dir"],
+        names,
+    )
+    listed = _analytics_runs()
+    current_world = listed[0] if listed else None
+
+    # The configured ``run_output_dir`` is always either the bare ``output/``
+    # or ``output/cities/<slug>`` for an active city. The cross-world panel
+    # needs the parent ``output/`` so it can enumerate sibling cities —
+    # walking from the basename would guess the depth, but reading it off the
+    # config keeps the resolution stable when a city is selected.
+    configured = paths.effective_config().get("run_output_dir") or "output"
+    configured_abs = configured if os.path.isabs(configured) else os.path.join(paths.REPO_ROOT, configured)
+    normpath = os.path.normpath(configured_abs)
+    if normpath.endswith(os.path.join("output", "cities")) or os.path.basename(normpath) == "cities":
+        normpath = os.path.dirname(normpath)
+    elif normpath != os.path.join(paths.REPO_ROOT, "output"):
+        # An entirely custom run_output_dir that does not live under output/
+        # cannot be reasoned about — fall back to the repo's output/ tree.
+        normpath = os.path.join(paths.REPO_ROOT, "output")
+    output_root = normpath
+
+    return analytics.system_panel(
+        output_root=output_root,
+        current_world=current_world,
+        overview=overview,
+        agent_names=names,
+    )
+
+
 def _fos_export(payload: dict) -> dict:
     """Handle ``POST /api/fos-export``.
 
@@ -1357,7 +1193,11 @@ def world_readable(world, user):
     """Owners and admins see a world; others only once it is shared."""
     if user is None:
         return False
-    return user.get("role") == "admin" or world.get("owner_id") == user.get("id") or world.get("visibility") != "private"
+    return (
+        user.get("role") == "admin"
+        or world.get("owner_id") == user.get("id")
+        or world.get("visibility") != "private"
+    )
 
 
 #: user id -> wall time of their latest request; the teacher console's
@@ -1526,6 +1366,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # Readiness exposes no user data and works with either authentication mode.
         if path == "/api/health" and self.command in ("GET", "HEAD"):
             return False
+        if not path.startswith("/api/"):
+            # Classify static permissions by the served file, so an auth-page
+            # prefix cannot hide ../ or a symlink into private output.
+            root = os.path.realpath(paths.REPO_ROOT)
+            target = os.path.realpath(self.translate_path(path))
+            if os.path.commonpath([root, target]) != root:
+                self._deny(404, "Not found")
+                return True
+            relative = os.path.relpath(target, root)
+            path = "/" if relative == "." else "/" + relative.replace(os.sep, "/")
         try:
             self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         except accounts.AccountConfigurationError:
@@ -1561,7 +1411,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 self.user = TOKEN_ADMIN
                 return self._enter_world(path)
         if self.accounts is None:
-            self._deny(401, "authentication required: open /?token=<token> or send Authorization: Bearer <token>")
+            self._deny(
+                401, "authentication required: open /?token=<token> or send Authorization: Bearer <token>"
+            )
             return True
         morsel = SimpleCookie(self.headers.get("Cookie", "")).get(accounts_api.SESSION_COOKIE)
         self.user = self.accounts.session_user(morsel.value) if morsel is not None else None
@@ -1588,12 +1440,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.accounts is None:
             return False
         _USER.set(self.user)
-        # Judge the path by its non-empty segments, the way translate_path
-        # resolves the file: `/output//worlds/…` serves the same file.
+        # Static paths have already been resolved and normalized by _guard.
         parts = [part for part in path.split("/") if part]
         if parts[:2] == ["output", "worlds"]:
             target = self.accounts.get_world(parts[2]) if len(parts) > 2 else None
             if target is None or not world_readable(target, self.user):
+                self._deny(404, "Not found")
+                return True
+        if len(parts) >= 3 and parts[:2] in (["output", "parallel_worlds"], ["output", "comparisons"]):
+            from gaworld.apps import parallel_worlds_api
+
+            if parallel_worlds_api._load_any_manifest(os.path.join(*parts[:3])) is None:
                 self._deny(404, "Not found")
                 return True
         morsel = SimpleCookie(self.headers.get("Cookie", "")).get(WORLD_COOKIE)
@@ -1601,10 +1458,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             world = self.accounts.get_world(morsel.value)
             if world is not None and world_readable(world, self.user):
                 _WORLD.set(world)
+        from gaworld.research.workspaces import artifact_visible
+
+        if not artifact_visible(path, paths.REPO_ROOT):
+            self._deny(404, "Not found")
+            return True
         return False
 
     def _token_ok(self, path, query, token):
-        """"ok" when the request carries the operator token, "answered" when a
+        """ "ok" when the request carries the operator token, "answered" when a
         `?token=` login was handled here (redirect or refusal), else "no"."""
         params = parse_qs(query, keep_blank_values=True)
         offered = (params.pop("token", [""]) or [""])[0]
@@ -1859,10 +1721,33 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(data)
         if path.startswith("/api/agents/") and "/autobiography/jobs/" in path:
             from gaworld.apps import autobiography_api
+
             payload, status = autobiography_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/agents/") and path.endswith("/autobiography/download"):
+            from gaworld.apps import autobiography_api
+
+            filename, content_type, body, status = autobiography_api.handle_download(path)
+            if status != 200:
+                return self._json_response(
+                    {"error": "尚未生成自传"} if status == 404 else {"error": body},
+                    status=status,
+                )
+            data = body.encode("utf-8") if isinstance(body, str) else body
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header(
+                "Content-Disposition",
+                f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename}",
+            )
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if path.startswith("/api/agents/") and path.endswith("/autobiography"):
             from gaworld.apps import autobiography_api
+
             payload, status = autobiography_api.handle_get(path, query)
             return self._json_response(payload, status=status)
         if path.startswith("/api/agents/") and path.endswith("/detail"):
@@ -1881,6 +1766,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             section = path[len("/api/analytics/") :]
             if section == "runs":
                 return self._json_response({"runs": _analytics_runs()})
+            if section == "system":
+                return self._json_response(_system_panel_payload())
             # No ?run= means the current run, so bookmarked links keep working.
             paths = _analytics_run_paths((query.get("run") or [""])[0])
             if paths is None:
@@ -1894,9 +1781,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(runs.run_status(int(raw_offset) if raw_offset else None))
         if path == "/api/run/log/export":
             markdown, filename = _run_log_markdown()
-            return self._download_response(
-                markdown.encode("utf-8"), "text/markdown; charset=utf-8", filename
-            )
+            return self._download_response(markdown.encode("utf-8"), "text/markdown; charset=utf-8", filename)
         if path == "/api/trace/meta":
             return self._json_response(_latest_trace_meta())
         if path == "/api/trace/data":
@@ -1910,9 +1795,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             if not agent_id:
                 return self._json_response({"error": "agent_id is required"}, status=400)
             raw_limit = (query.get("limit") or [""])[0].strip()
-            payload = _life_event_candidates_payload(
-                agent_id, int(raw_limit) if raw_limit else None
-            )
+            payload = _life_event_candidates_payload(agent_id, int(raw_limit) if raw_limit else None)
             if payload is None:
                 return self._json_response({"error": "Agent not found"}, status=404)
             return self._json_response(payload)
@@ -1929,27 +1812,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             )
             return self._json_response(
                 {
-                    "sessions": [
-                        _public_collaboration_session(item)
-                        for item in sessions
-                    ],
+                    "sessions": [_public_collaboration_session(item) for item in sessions],
                     "health": service.health(),
                 }
             )
         parts = path.strip("/").split("/")
-        if (
-            len(parts) == 4
-            and parts[:3] == ["api", "collaboration", "sessions"]
-        ):
+        if len(parts) == 4 and parts[:3] == ["api", "collaboration", "sessions"]:
             session = _get_collaboration_service().get_session(parts[3])
-            return self._json_response(
-                _public_collaboration_session(session)
-            )
-        if (
-            len(parts) == 5
-            and parts[:3] == ["api", "collaboration", "sessions"]
-            and parts[4] == "events"
-        ):
+            return self._json_response(_public_collaboration_session(session))
+        if len(parts) == 5 and parts[:3] == ["api", "collaboration", "sessions"] and parts[4] == "events":
             after = int((query.get("after") or [0])[0])
             events = _get_collaboration_service().events(
                 parts[3],
@@ -1979,12 +1850,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if path.startswith("/api/cluster/"):
             from gaworld.apps import cluster_api
 
-            body, status = cluster_api.handle_post(self.user if store is not None else None, path, payload, store)
+            body, status = cluster_api.handle_post(
+                self.user if store is not None else None, path, payload, store
+            )
             return self._json_response(body, status=status)
         if path.startswith("/api/play/"):
             from gaworld.apps import play_api
 
-            body, status = play_api.handle_post(self.user if store is not None else None, path, payload, store)
+            body, status = play_api.handle_post(
+                self.user if store is not None else None, path, payload, store
+            )
             return self._json_response(body, status=status)
         delegated = routes.dispatch_post(path, payload)
         if delegated is not None:
@@ -2022,6 +1897,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 return self._json_response({"error": str(exc)}, status=400)
         if path.startswith("/api/agents/") and path.endswith("/autobiography"):
             from gaworld.apps import autobiography_api
+
             body, status = autobiography_api.handle_post(path, payload)
             return self._json_response(body, status=status)
         if path.startswith("/api/agents/") and path.endswith("/goals"):
@@ -2064,9 +1940,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response(_fos_export(payload))
         if path == "/api/relationships/friends":
             return self._json_response(
-                _get_collaboration_service().make_friends(
-                    _collaboration_agent_ids(payload)
-                )
+                _get_collaboration_service().make_friends(_collaboration_agent_ids(payload))
             )
         if path == "/api/collaboration/sessions":
             service = _get_collaboration_service()
@@ -2094,12 +1968,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                     role_overrides=_collaboration_roles(payload),
                 )
             else:
-                raise ValueError(
-                    "kind must be discussion or cooperation"
-                )
-            return self._json_response(
-                _public_collaboration_session(session.to_dict())
-            )
+                raise ValueError("kind must be discussion or cooperation")
+            return self._json_response(_public_collaboration_session(session.to_dict()))
         parts = path.strip("/").split("/")
         if (
             len(parts) == 5
@@ -2108,9 +1978,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         ):
             service = _get_collaboration_service()
             result = getattr(service, parts[4])(parts[3])
-            return self._json_response(
-                _public_collaboration_session(result)
-            )
+            return self._json_response(_public_collaboration_session(result))
         return self._json_response({"error": "Unknown endpoint"}, status=404)
 
     def do_GET(self):

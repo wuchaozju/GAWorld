@@ -64,11 +64,29 @@
 
   /* Long operations disable every submit button rather than only the one that
      was pressed: creating a city and populating it at the same time would race
-     on the same manifest file. */
-  function setBusy(busy) {
+     on the same manifest file. The *most recent* caller also flashes a
+     "generating…" label on the pressed button so the user knows something is
+     happening — disabling silently leaves a gap that looks like a hang. */
+  function setBusy(busy, busyMessage) {
     state.busy = busy;
     var buttons = document.querySelectorAll(".city-form button");
-    for (var i = 0; i < buttons.length; i += 1) buttons[i].disabled = busy;
+    if (busy) {
+      // Mark the pressed button (if any) with the calling message so the user
+      // can see which action is in flight; the rest just go disabled.
+      var target = (busyMessage && state._lastPressedButton) || null;
+      for (var i = 0; i < buttons.length; i += 1) {
+        var btn = buttons[i];
+        if (target && btn === target && typeof setButtonBusy === "function") {
+          state._busyRelease = setButtonBusy(btn, "city.generating", busyMessage || "正在生成…");
+        } else {
+          btn.disabled = true;
+        }
+      }
+    } else {
+      if (state._busyRelease) { state._busyRelease(); state._busyRelease = null; }
+      state._lastPressedButton = null;
+      for (var j = 0; j < buttons.length; j += 1) buttons[j].disabled = false;
+    }
   }
 
   function fillOptions(select, values, placeholderText, preferred) {
@@ -365,10 +383,13 @@
   }
 
   function knowledgeAction(path, body, busyKey) {
-    return async function () {
+    return async function (event) {
       if (state.busy || !state.detail) return;
       var node = el("cityKnowledgeStatus");
-      setBusy(true);
+      // Capture the pressed button so setBusy can flip its label too.
+      var btn = event && (event.currentTarget || event.target);
+      state._lastPressedButton = (btn && btn.tagName === "BUTTON") ? btn : null;
+      setBusy(true, __(busyKey));
       status(node, __(busyKey), "busy");
       try {
         var result = await post(path, Object.assign({ city: state.detail.slug }, body || {}));
@@ -552,10 +573,15 @@
       return;
     }
 
-    setBusy(true);
-    status(node, __(
+    // The submitter is the actual button pressed (forms can be submitted by
+    // Enter on any input, so the submit event doesn't always carry it).
+    var submitter = event.submitter || event.currentTarget.querySelector("button[type=submit]");
+    state._lastPressedButton = submitter;
+    var busyMsg = __(
       virtual ? "city.imagining" : (el("cityOffline").checked ? "city.generating" : "city.geocoding")
-    ), "busy");
+    );
+    setBusy(true, busyMsg);
+    status(node, busyMsg, "busy");
     try {
       var result = await post("/api/city/create", {
         name: name,
@@ -600,7 +626,9 @@
       event.preventDefault();
       if (state.busy || !state.detail) return;
       var node = el("cityActionStatus");
-      setBusy(true);
+      var submitter = event.submitter || event.currentTarget.querySelector("button[type=submit]");
+      state._lastPressedButton = submitter;
+      setBusy(true, __("city.working"));
       status(node, __("city.working"), "busy");
       try {
         var result = await post(endpoint, Object.assign(
@@ -619,6 +647,7 @@
 
   async function onSelectForRun(payload) {
     var node = el("cityActionStatus");
+    state._lastPressedButton = null;
     setBusy(true);
     try {
       var result = await post("/api/city/select", payload);
@@ -640,7 +669,8 @@
       return;
     }
     var node = el("cityActionStatus");
-    setBusy(true);
+    state._lastPressedButton = el("cityDeleteBtn") || null;
+    setBusy(true, __("city.deleting", "删除中…"));
     try {
       await post("/api/city/delete", { city: state.detail.slug });
       state.detail = null;

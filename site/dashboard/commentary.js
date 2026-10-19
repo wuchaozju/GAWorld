@@ -40,6 +40,10 @@
     picked: new Set(),
     run: null,
     jobId: null,
+    // Release function returned by setButtonBusy() while the run
+    // button is busy. pollJob/stopPolling read this to re-enable
+    // the button when the job ends; null when at rest.
+    runRelease: null,
     jobTimer: null,
     stances: ["支持", "反对", "中立", "质疑", "其他"],
     // Per-block mode: 0 = paste, 1 = url. The first block (index 0) is the
@@ -334,6 +338,7 @@
     const body = Object.assign({ city: state.city, agent_ids: Array.from(state.picked) }, newsPayload);
 
     $("#cRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#cRunBtn"), "commentary.running", "评论中…");
     setProgress(0);
     setStatus(t("commentary.running", "评论中…"));
     try {
@@ -348,7 +353,7 @@
       pollJob();
     } catch (err) {
       setStatus(String(err.message || err), true);
-      $("#cRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -384,7 +389,7 @@
   function stopPolling() {
     clearInterval(state.jobTimer);
     state.jobTimer = null;
-    $("#cRunBtn").disabled = false;
+    if (state.runRelease) { state.runRelease(); state.runRelease = null; }
   }
 
   // -- rendering ----------------------------------------------------------

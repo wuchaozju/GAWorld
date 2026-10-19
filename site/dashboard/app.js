@@ -34,11 +34,9 @@ const state = {
   // Null until the first fetch; `{available:false}` once we know a run has
   // not produced any yet.
   family: null,
-  // The city /api/agents actually serves, captured once at load (see
-  // loadConfig): that data is resolved from disk at server start and does not
-  // move until a restart, even though the toolbar's city picker (and
-  // state.config.city) can change immediately on save. null until the first
-  // loadConfig() call.
+  // The city /api/agents actually serves: the saved config's, captured on
+  // every loadConfig(). The toolbar's city picker can differ from it until the
+  // form is saved. null until the first loadConfig() call.
   runningCity: null,
   // True while the "人物设定" card is previewing a city other than
   // runningCity — a read-only mode mirroring Agent Studio's cross-city
@@ -72,6 +70,10 @@ const els = {
   scheduleRunBtn: document.getElementById("scheduleRunBtn"),
   cancelScheduleBtn: document.getElementById("cancelScheduleBtn"),
   resetRunBtn: document.getElementById("resetRunBtn"),
+  holidayDaysInput: document.getElementById("holidayDaysInput"),
+  startHolidayBtn: document.getElementById("startHolidayBtn"),
+  endHolidayBtn: document.getElementById("endHolidayBtn"),
+  holidayStatusBadge: document.getElementById("holidayStatusBadge"),
   stopBtn: document.getElementById("stopBtn"),
   runStatusBadge: document.getElementById("runStatusBadge"),
   traceStatus: document.getElementById("traceStatus"),
@@ -273,20 +275,23 @@ function syncRunButtons() {
   document.body.classList.toggle("is-running", running);
 }
 
-// Wrap an async click handler: disable the button and show a spinner while
-// it runs, and surface any error on the message line.
-function withBusy(btn, fn) {
+// Wrap an async click handler: disable the button, flip its label to a
+// "busy" copy (so the user sees "运行中…" instead of greying out silently),
+// and restore both when the work finishes — even when it throws.
+function withBusy(btn, fn, busyKey, busyFallback) {
   return async () => {
     if (btn.disabled) return;
-    btn.disabled = true;
-    btn.classList.add("busy");
+    const release = (typeof setButtonBusy === "function")
+      ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+      : (() => { btn.disabled = true; btn.classList.add("busy"); return () => {
+          btn.disabled = false; btn.classList.remove("busy");
+        }; })();
     try {
       await fn();
     } catch (error) {
       message(error.message, "error");
     } finally {
-      btn.disabled = false;
-      btn.classList.remove("busy");
+      release();
       // Re-apply run-state locking in case this button is one of the
       // run controls (e.g. 停止 must stay disabled once nothing runs).
       syncRunButtons();
@@ -446,10 +451,9 @@ async function loadConfig() {
   renderCityChoices(cfg.cities || [], cfg.city || "");
   // Captured from the picker's own (post-fallback) value, not cfg.city
   // directly: a saved city that no longer exists falls back to the default
-  // world the same way the server does when it resolves paths at start, so
-  // this has to agree with that fallback rather than the raw, possibly-stale
-  // slug.
-  if (state.runningCity == null) state.runningCity = els.citySelect ? els.citySelect.value : "";
+  // world the same way the server does when it resolves paths, so this has to
+  // agree with that fallback rather than the raw, possibly-stale slug.
+  state.runningCity = els.citySelect ? els.citySelect.value : "";
   els.agentIdsInput.value = (cfg.agent_ids || []).join(",");
   const span = cfg.sim_span || { unit: "day", count: cfg.sim_days || 1 };
   els.simDaysInput.value = span.count || 1;
@@ -483,18 +487,17 @@ function fillProviderSelect(select, providers, selected) {
   });
 }
 
-// The agent roster below (the "Agent IDs" picker and the avatar strip) is
-// read once at server start and does not follow a city switch — the server
-// process resolves its CSV/profile paths once, at import, the same
-// constraint Agent Studio's cross-city browsing works around. So a save that
-// actually changes the city gets a restart notice instead of the roster
-// silently staying on the old city's residents.
+// A save that changes the city swaps the population /api/agents serves, so the
+// roster below is reloaded rather than left on the old city's residents.
 async function saveConfig() {
   const previousCity = state.config ? state.config.city || "" : "";
   await api("/api/config", { method: "POST", body: JSON.stringify(configPayloadFromForm()) });
   await loadConfig();
   const newCity = state.config.city || "";
   if (newCity !== previousCity) {
+    state.selectedAgentId = null;
+    await loadAgents();
+    exitCityBrowse();
     const cityInfo = (state.config.cities || []).find((city) => city.slug === newCity);
     const cityName = cityInfo ? cityInfo.display_name : __("sim.city_default");
     message(__f("sim.city_switch_notice", { name: cityName }));
@@ -641,13 +644,12 @@ async function loadAgents() {
 }
 
 /* ------------------------------------------------------- city browse mode
- * The toolbar's city picker can point anywhere, but /api/agents (and every
- * per-agent endpoint memory/family/big5/finance rely on) only ever serves
- * runningCity's residents until the server restarts. Picking a different
- * city here previews that city's roster read-only — identity + profile text
- * only — instead of silently mixing a foreign agent's name into the running
- * city's memory/family data. Same split Agent Studio uses (see city-agents.js
- * and studio.js's pickCity/browseCity).
+ * The toolbar's city picker is part of the unsaved config form, but /api/agents
+ * (and every per-agent endpoint memory/family/big5/finance rely on) serves
+ * runningCity's residents until the config is saved. Picking a different city
+ * here previews that city's roster read-only — identity + profile text only —
+ * instead of mixing a foreign agent's name into the running city's
+ * memory/family data. Saving makes it the running city (see saveConfig).
  */
 
 function cityView() {
@@ -1544,6 +1546,60 @@ async function stopSimulation() {
   await refreshStatus();
 }
 
+// 放假: 与运行时协作。当仿真没在跑时点击会收到 4xx,
+// dashboard 已经在 message 里把它翻译成人话。
+async function startHoliday() {
+  const raw = els.holidayDaysInput.value;
+  const days = parseInt(raw, 10);
+  if (!Number.isFinite(days) || days < 1) {
+    message(__("holiday.invalid_days"), "error");
+    return;
+  }
+  try {
+    await api("/api/interventions/start_holiday", {
+      method: "POST",
+      body: JSON.stringify({ days }),
+    });
+    message(window.__f("holiday.started", { days }), "info");
+    await refreshHolidayStatus();
+  } catch (err) {
+    message(err.message || __("holiday.start_failed"), "error");
+  }
+}
+
+async function endHoliday() {
+  try {
+    await api("/api/interventions/end_holiday", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    message(__("holiday.ended"), "info");
+    await refreshHolidayStatus();
+  } catch (err) {
+    message(err.message || __("holiday.end_failed"), "error");
+  }
+}
+
+async function refreshHolidayStatus() {
+  // 与仿真状态分离轮询 —— 放假结束由控制器审计,这只是顶部状态条。
+  try {
+    const data = await api("/api/interventions");
+    const applied = Array.isArray(data.applied) ? data.applied : [];
+    const lastStart = applied.find((row) => row && row.kwargs && row.kwargs.days);
+    if (lastStart) {
+      els.holidayStatusBadge.hidden = false;
+      els.holidayStatusBadge.textContent = `🎉 放假 ${lastStart.kwargs.days} 天`;
+      els.endHolidayBtn.hidden = false;
+    } else {
+      els.holidayStatusBadge.hidden = true;
+      els.endHolidayBtn.hidden = true;
+    }
+  } catch (_) {
+    // 仿真实时轮询失败是常见路径(机器人在 CLI 跑),这里静默吞掉,
+    // 状态条保持隐藏。
+  }
+}
+
 function resetRunLog() {
   state.runLog = { text: "", offset: null, size: 0, skipped: 0 };
 }
@@ -1628,6 +1684,9 @@ async function refreshStatus() {
   state.startError = status.start_error || null;
   applyRunLog(status);
   if (status.running) loadTrace(false).catch(() => {});
+  // Holiday badge: read from the controller's applied audit. Safe to call
+  // even when the sim isn't running — refreshHolidayStatus swallows the error.
+  refreshHolidayStatus();
 }
 
 // The simulator only rewrites simulation_trace.json every N frames but
@@ -1890,23 +1949,25 @@ function bindEvents() {
   });
   els.stepUnitSelect.addEventListener("change", onStepUnitChanged);
   els.fastForwardInput.addEventListener("change", onFastForwardChanged);
-  els.saveConfigBtn.addEventListener("click", withBusy(els.saveConfigBtn, saveConfig));
-  els.runBtn.addEventListener("click", withBusy(els.runBtn, () => runSimulation(false)));
-  els.scheduleRunBtn.addEventListener("click", withBusy(els.scheduleRunBtn, scheduleSimulation));
-  els.cancelScheduleBtn.addEventListener("click", withBusy(els.cancelScheduleBtn, cancelScheduledSimulation));
-  els.resetRunBtn.addEventListener("click", withBusy(els.resetRunBtn, () => runSimulation(true)));
-  els.stopBtn.addEventListener("click", withBusy(els.stopBtn, stopSimulation));
+  els.saveConfigBtn.addEventListener("click", withBusy(els.saveConfigBtn, saveConfig, "btn.saving", "保存中…"));
+  els.runBtn.addEventListener("click", withBusy(els.runBtn, () => runSimulation(false), "btn.starting", "启动中…"));
+  els.scheduleRunBtn.addEventListener("click", withBusy(els.scheduleRunBtn, scheduleSimulation, "btn.scheduling", "定时中…"));
+  els.cancelScheduleBtn.addEventListener("click", withBusy(els.cancelScheduleBtn, cancelScheduledSimulation, "btn.cancelling", "取消中…"));
+  els.resetRunBtn.addEventListener("click", withBusy(els.resetRunBtn, () => runSimulation(true), "btn.starting", "启动中…"));
+  els.stopBtn.addEventListener("click", withBusy(els.stopBtn, stopSimulation, "btn.stopping", "停止中…"));
+  els.startHolidayBtn.addEventListener("click", withBusy(els.startHolidayBtn, startHoliday, "btn.starting", "启动中…"));
+  els.endHolidayBtn.addEventListener("click", withBusy(els.endHolidayBtn, endHoliday, "btn.stopping", "停止中…"));
   els.reloadTraceBtn.addEventListener("click", withBusy(els.reloadTraceBtn, async () => {
     await loadTrace(true);
     message(__("msg.trace_refreshed"));
-  }));
+  }, "btn.reloading", "刷新中…"));
   els.reloadStatusBtn.addEventListener("click", withBusy(els.reloadStatusBtn, async () => {
     // An explicit refresh reloads the whole log, so a panel that missed polls
     // (or a log rotated behind our back) recovers.
     resetRunLog();
     await refreshStatus();
     message(__("msg.status_refreshed"));
-  }));
+  }, "btn.reloading", "刷新中…"));
   els.exportRunLogBtn.addEventListener("click", exportRunLog);
   els.agentSelect.addEventListener("change", () => {
     if (state.browsing) {
@@ -1936,24 +1997,24 @@ function bindEvents() {
       await loadProfile();
     }
     message(__("msg.profile_refreshed"));
-  }));
+  }, "btn.reloading", "刷新中…"));
   if (els.refreshFamilyBtn) {
     els.refreshFamilyBtn.addEventListener("click", withBusy(els.refreshFamilyBtn, async () => {
       await loadFamily();
       message(__("msg.family_refreshed"));
-    }));
+    }, "btn.reloading", "刷新中…"));
   }
   if (els.refreshHomeBtn) {
     els.refreshHomeBtn.addEventListener("click", withBusy(els.refreshHomeBtn, async () => {
       await loadHome();
       message(__("msg.home_refreshed", "居家模式已刷新"));
-    }));
+    }, "btn.reloading", "刷新中…"));
   }
   els.reloadMemoryBtn.addEventListener("click", withBusy(els.reloadMemoryBtn, async () => {
     await loadMemory();
     if (!els.rawModal.hidden) renderRawModal();
     message(__("msg.memory_refreshed"));
-  }));
+  }, "btn.reloading", "刷新中…"));
   els.rawMemoryBtn.addEventListener("click", () => openRawModal(state.rawSourceKey));
   document.querySelectorAll("[data-raw-open]").forEach((btn) => {
     btn.addEventListener("click", () => openRawModal(btn.getAttribute("data-raw-open")));
@@ -1984,7 +2045,7 @@ function bindEvents() {
   });
   els.interviewBtn.addEventListener("click", withBusy(els.interviewBtn, () => interview().catch((error) => {
     els.interviewOutput.textContent = __f("interview.failed", {error: error.message});
-  })));
+  }), "btn.starting", "启动中…"));
   els.lifeEventTemplateSelect.addEventListener("change", () => {
     els.lifeEventTitleInput.value = "";
     els.lifeEventDescriptionInput.value = "";
@@ -1996,20 +2057,20 @@ function bindEvents() {
       message(__f("msg.life_event_target_set", {id: state.selectedAgentId}));
     }
   });
-  els.addLifeEventBtn.addEventListener("click", withBusy(els.addLifeEventBtn, addLifeEvent));
+  els.addLifeEventBtn.addEventListener("click", withBusy(els.addLifeEventBtn, addLifeEvent, "btn.starting", "启动中…"));
   if (els.lifeEventCandidates) {
     els.lifeEventCandidates.addEventListener("click", (event) => {
       const tag = event.target.closest(".candidate-tag");
       if (!tag || tag.disabled) return;
-      withBusy(tag, () => triggerLifeEventCandidate(tag.dataset.key))();
+      withBusy(tag, () => triggerLifeEventCandidate(tag.dataset.key), "btn.starting", "启动中…")();
     });
   }
   els.reloadLifeEventsBtn.addEventListener("click", withBusy(els.reloadLifeEventsBtn, async () => {
     await loadLifeEvents();
     await loadLifeEventCandidates(true);
     message(__("msg.life_events_refreshed"));
-  }));
-  els.fosExportBtn.addEventListener("click", () => fosExport().catch((error) => message(error.message, "error")));
+  }, "btn.reloading", "刷新中…"));
+  els.fosExportBtn.addEventListener("click", () => withBusy(els.fosExportBtn, () => fosExport().catch((error) => message(error.message, "error")), "fos_export.generating", "FOS prompt 生成中...")());
   els.fosCopyBtn.addEventListener("click", () => {
     const text = els.fosOutputBox.textContent;
     if (text && text !== window.__("fos_export.no_output")) {

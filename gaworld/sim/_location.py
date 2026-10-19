@@ -388,8 +388,18 @@ def move_agent(
 
     # Pass time_str for rush-hour detection; weather from environment if available
     _weather = agent.get("_env_weather", None)
+    deviation, trip_rng = 0.0, None
+    if agent.get("default_transport"):
+        # Keyed on the resident's own trip count, so whether this trip breaks
+        # the habit does not depend on the order agents are stepped in.
+        trip_no = int(locations.get("trips_taken", 0) or 0) + 1
+        locations["trips_taken"] = trip_no
+        habit_cfg = CONFIG.get("transport_habit", {}) or {}
+        deviation = float(habit_cfg.get("deviation_probability", 0.0) or 0.0)
+        trip_rng = random.Random(f"trip:{CONFIG.get('random_seed')}:{agent.get('id')}:{trip_no}")
     travel = build_travel_plan(
-        agent, city_map, origin, target, activity=activity, time_str=time_str, weather=_weather
+        agent, city_map, origin, target, activity=activity, time_str=time_str, weather=_weather,
+        deviation=deviation, rng=trip_rng,
     )
     travel_minutes = max(1, int(travel.get("travel_minutes", 1) or 1))
     arrival_minutes = (current_minutes + travel_minutes) % (24 * 60)
@@ -418,6 +428,7 @@ def move_agent(
             "target_location": target,
             "travel": {
                 "mode": travel.get("mode", ""),
+                "mode_reason": travel.get("mode_reason", "model"),
                 "distance_km": float(travel.get("distance_km", 0.0) or 0.0),
                 "minutes": travel_minutes,
                 "progress": 1.0,
@@ -440,6 +451,7 @@ def move_agent(
         "target_location": target,
         "travel": {
             "mode": travel.get("mode", ""),
+            "mode_reason": travel.get("mode_reason", "model"),
             "distance_km": float(travel.get("distance_km", 0.0) or 0.0),
             "minutes": travel_minutes,
             "progress": float(locations["travel_progress"]),

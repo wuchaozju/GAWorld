@@ -160,6 +160,74 @@
     );
   }
 
+  // -- 这是我的战争 -------------------------------------------------------
+  function warzone(run, now) {
+    const sc = run.scenario || {};
+    const stats = run.stats || {};
+    const residents = run.residents || [];
+    const log = run.log || [];
+
+    const overview = [
+      `- 死亡率：${pct(stats.mortality)}`,
+      `- 投票分歧率：${pct(stats.dissent_rate)}`,
+      `- 食物基尼：${stats.food_gini == null ? "—" : stats.food_gini}`,
+      `- 平均道德焦虑：${stats.avg_moral_distress == null ? "—" : stats.avg_moral_distress}/5`,
+      `- 最先耗尽：${stats.depleted_first || "（未耗尽）"}`,
+      `- 最坚定建议者：${stats.strongest_id ? "#" + stats.strongest_id : "—"}`,
+      `- 最被排斥居民：${stats.most_excluded_id ? "#" + stats.most_excluded_id : "—"}`,
+    ].join("\n");
+
+    const finalRoster = residents
+      .map((r) => `- #${r.agent_id} ${one(r.name)}(健康${r.health}/${5}, 饱腹${r.hunger}, 士气${r.morale})${r.alive ? "" : "（已故）"}`)
+      .join("\n");
+
+    const sections = [
+      run.essay ? `## 战后总结\n\n${quote(run.essay)}` : "",
+      `## 总览\n\n${overview}`,
+      `## 最终状态\n\n${finalRoster}`,
+    ];
+
+    log.forEach((day, index) => {
+      const winner = day.winning_proposal || {};
+      const tally = day.tally || {};
+      const tallyLine = Object.entries(tally)
+        .map(([idx, n]) => `方案${parseInt(idx, 10) + 1}:${n}`).join(" · ") || "（无）";
+      const proposalRows = (day.proposals || []).map((p, i) => {
+        const rows = (p.plan || []).map((row) =>
+          `- ${row.resource} → ${row.recipient_id}:${row.amount}`
+        ).join("\n") || "-（无条目）";
+        return [
+          `### 方案${i + 1} — #${p.author_id} ${one(p.author_name)}`,
+          `${one(p.rationale)}`,
+          rows,
+        ].filter(Boolean).join("\n\n");
+      }).join("\n\n");
+      const voteRows = (day.votes || []).map((v) => {
+        const target = v.for ? `, 投方案${v.for}` : "";
+        return `- 投票人 \\#${v.voter_id} ${v.choice}${target} — ${one(v.reason)}`;
+      }).join("\n") || "-（无人投票）";
+      const distributed = (day.distributed || []).join(" · ") || "（无）";
+      sections.push([
+        `## 第 ${index + 1} 天`,
+        quote(day.text || ""),
+        `**胜出方案：** ${winner.author_id ? "#" + winner.author_id + " " + one(winner.author_name) : "（无）"} — ${one(winner.rationale || "")}`,
+        `**票数：** ${tallyLine}`,
+        `**执行结果：** ${distributed}`,
+        `**库存（执行后）：** ${Object.entries(day.stock_after || {}).map(([k, v]) => `${k} ${v}`).join(" · ")}`,
+        day.deaths && day.deaths.length ? `**今天走了：** ${day.deaths.join("、")}` : "",
+        `### 提议\n\n${proposalRows}`,
+        `### 投票\n\n${voteRows}`,
+      ].filter(Boolean).join("\n\n"));
+    });
+
+    return doc(
+      `这是我的战争：${sc.emoji || ""} ${sc.name || ""}`.trim(),
+      [run.city ? `城市：${run.city}` : "", `${residents.length} 人`, `${log.length} 天`],
+      sections,
+      now
+    );
+  }
+
   // -- 团队对决 -------------------------------------------------------------
   function duel(run, now) {
     const task = run.task || {};
@@ -485,6 +553,53 @@
     return one(s).replace(/[\\/:*?"<>|\s]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "result";
   }
 
+  // -- 穿越历史 -----------------------------------------------------------
+  function timeslip(run, now) {
+    const dyn = run.dynasty || {};
+    const stats = run.stats || {};
+    const stages = run.stages || [];
+    const residents = stats.residents || [];
+    const quickest = residents.slice().sort((a, b) => (b.scores.era_fit + 0) - (a.scores.era_fit + 0));
+    const summary = (stats.most_in_period && stats.most_in_period.name)
+      ? `最像古人 #${stats.most_in_period.agent_id} ${one(stats.most_in_period.name)}；最格格不入 #${stats.least_in_period.agent_id} ${one(stats.least_in_period.name)}；撕裂最重 #${stats.most_torn.agent_id} ${one(stats.most_torn.name)}。`
+      : "";
+
+    const meta = [
+      run.city ? `城市：${run.city}` : "",
+      `朝代：${one(dyn.dynasty || "—")}`,
+      `背景：${one(dyn.frame || "—")}`,
+      `人数：${residents.length || "—"} · 幕数：${stats.stages || stages.length || "—"}`,
+    ].filter(Boolean);
+
+    const headings = stages.map((stage) => {
+      const lines = (stage.reactions || []).map((r) => {
+        return `- **#${r.agent_id} ${one(r.name || "")}** ——「${one(r.line || "—")}」\n  _内心独白：${one(r.inner || "—")}_\n  时代契合 ${r.scores.era_fit} · 稳定度 ${r.scores.stability} · 内在冲突 ${r.scores.inner_conflict}`;
+      }).join("\n");
+      return `## 第${stage.index + 1}幕　${one(stage.stage_mood || "")}\n\n${one(stage.text || "")}\n\n${lines}`;
+    }).join("\n\n");
+
+    const rosterTable = [
+      "| # | 居民 | 时代契合 | 稳定度 | 内在冲突 | 名句 |",
+      "| --- | --- | ---: | ---: | ---: | --- |",
+      ...residents.map((p) => `| #${p.agent_id} | ${one(p.name || "")}（${one(p.job || "—")}） | ${p.scores.era_fit} | ${p.scores.stability} | ${p.scores.inner_conflict} | ${one(p.best_line || "—")} |`),
+    ].join("\n");
+
+    return doc(
+      dyn.dynasty || "穿越历史",
+      meta,
+      [
+        summary,
+        "## 一幕一幕",
+        headings || "（无）",
+        "## 穿越者速写",
+        rosterTable,
+        run.essay ? "## 穿越纪实\n\n" + one(run.essay) : "",
+        "## 关于分数\n\n" + one(run.scoring_note || ""),
+      ],
+      now
+    );
+  }
+
   function fileName(game, label, now) {
     const d = now || new Date();
     const p = (n) => String(n).padStart(2, "0");
@@ -504,5 +619,5 @@
     return { sync };
   }
 
-  return { arena, attach, commentary, disaster, duel, fileName, guess, jury, novel, persuasion, referendum, rumor };
+  return { arena, attach, commentary, disaster, duel, fileName, guess, jury, novel, persuasion, referendum, rumor, timeslip, warzone };
 }));

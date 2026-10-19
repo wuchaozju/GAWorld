@@ -1,0 +1,9 @@
+{
+  "_comment": "Upper bounds that may only go down. Moving code out lowers the count; lower the bound in the same change (the test asks once you are 50+ lines under). See docs/RUN_SIMULATION_EXTRACTION_PLAN.md.",
+  "generative_city_sim.py": {
+    "lines": 4264,
+    "functions": {
+      "run_simulation": 1359
+    }
+  }
+}

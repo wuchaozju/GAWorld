@@ -61,7 +61,7 @@
           <input id="rRounds" type="number" min="1" max="5" value="3" />
         </label>
         <p class="disaster-hint" data-i18n="rumor.rounds_hint">
-          每人最多开口一次（被辟谣说动的信谣者多一次）。所以开销上限是 人数 × 2 + 1，不随轮数涨。
+          这里是上限——实际通常 1–2 轮就跑完。每一轮处理上一波新触达的人，没人愿意再传就停。每个人的开销封顶 1 次发言（被辟谣说动的信谣者 +1），所以总调用数 ＝ 人数 × 2 + 1，不随轮数变。
         </p>
 
         <div class="disaster-block">
@@ -135,7 +135,8 @@
   </main>
 
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/game-export.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/game-export.js"></script>
   <script src="/site/dashboard/rumor.js"></script>
 </body>
 </html>

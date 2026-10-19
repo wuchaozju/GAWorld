@@ -185,6 +185,14 @@ p { color: var(--muted); line-height: 1.65; }
 .schedule-run input { width: auto; min-width: 0; flex: 1; }
 .schedule-run .button { flex-shrink: 0; white-space: nowrap; }
 
+/* 放假: K-day input + buttons live inside the Life Event panel, alongside
+   人生事件 controls. The label wraps the input so the existing
+   "label > input" rule keeps the field on its own line under the
+   caption in narrow viewports, without leaking to other panel labels. */
+.holiday-run { align-items: flex-end; margin-top: 8px; }
+.holiday-days { min-width: 96px; }
+.holiday-days input { width: 100%; }
+
 label { display: grid; gap: 6px; color: var(--ink-soft); font-size: var(--fs-xs); font-weight: 600; }
 input, select, textarea {
   width: 100%;

@@ -252,14 +252,16 @@
     event.preventDefault();
     if (!canWrite || (!create && (!selectedOrg || selectedOrg.organization_id !== selected))) return;
     var button = event.target.querySelector('button[type="submit"]');
-    button.disabled = true;
+    var release = (typeof setButtonBusy === "function")
+      ? setButtonBusy(button, "organizations.submitting", "提交中…")
+      : (function () { button.disabled = true; return function () { button.disabled = !canWrite; }; })();
     try {
       var fields = values(event.target);
       var command = await api("/api/organizations/commands", buildCommand(create ? "create" : fields.type, fields, selected));
       await refresh();
       status("命令 " + command.command_id + " 已排队；当前状态：" + (STATUSES[command.status] || command.status) + "。请等待下一次日边界并查看执行结果。");
     } catch (error) { status(error.message, true); }
-    finally { button.disabled = !canWrite; }
+    finally { release(); }
   }
   el("orgList").addEventListener("click", function (event) {
     var button = event.target.closest("[data-org-id]");
@@ -268,8 +270,20 @@
     el("orgCommandFields").disabled = true;
     refresh();
   });
-  el("orgRefresh").addEventListener("click", refresh);
-  el("orgDownload").addEventListener("click", downloadMetrics);
+  el("orgRefresh").addEventListener("click", function () {
+    if (typeof setButtonBusy === "function") {
+      var release = setButtonBusy(el("orgRefresh"), "organizations.refresh", "刷新中…");
+      return Promise.resolve(refresh()).then(release, release);
+    }
+    return refresh();
+  });
+  el("orgDownload").addEventListener("click", function () {
+    if (typeof setButtonBusy === "function") {
+      var release = setButtonBusy(el("orgDownload"), "organizations.downloading", "下载中…");
+      return Promise.resolve(downloadMetrics()).then(release, release);
+    }
+    return downloadMetrics();
+  });
   el("orgKind").addEventListener("change", updateTemplate);
   el("orgCommandType").addEventListener("change", commandInputs);
   el("orgCreateForm").addEventListener("submit", function (event) { submit(event, true); });

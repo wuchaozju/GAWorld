@@ -413,7 +413,7 @@ python -m gaworld.interview \
 > 14.7 节的脚本是"开箱即用"的——读者按 README 跑 1–2 小时,就能得到 1000 人态度分布。下一章是案例三——"平行世界实验",演示政策冲击的对照实验。
 ---
 
-### 14.12 扩展:采访质量的系统评估
+## 14.12 扩展:采访质量的系统评估
 
 采访结果的质量需要系统评估,而不是仅靠"看起来对"。
 
@@ -523,7 +523,7 @@ def stability_test(question: str, agent: dict, n_repeats: int = 5) -> float:
 
 ---
 
-### 14.13 扩展:追问策略的优化
+## 14.13 扩展:追问策略的优化
 
 追问是采访深度的关键。本节讨论三种追问策略及其效果。
 
@@ -642,7 +642,7 @@ CONCERN_FOLLOWUP = """
 - 仿真结果应在"适用域"内有效
 - 工程实现要考虑"可复现性"而非"完美"
 
-### 14.14 扩展:跨城市对比的扩展设计
+## 14.14 扩展:跨城市对比的扩展设计
 
 本案例对比了 5 个城市,可以进一步扩展。
 
@@ -701,7 +701,7 @@ TIME_FOLLOWUP = """
 
 ---
 
-### 14.15 扩展:从仿真采访到真实调查
+## 14.15 扩展:从仿真采访到真实调查
 
 仿真采访是预研工具,但最终要过渡到真实调查。本节讨论过渡流程。
 
@@ -783,7 +783,7 @@ def compare_sim_real(sim_results: dict, real_results: dict) -> dict:
 
 ---
 
-### 14.16 扩展:采访的伦理边界
+## 14.16 扩展:采访的伦理边界
 
 采访涉及伦理问题,本节展开讨论。
 
@@ -840,126 +840,7 @@ def anonymize_interview_data(answers: list) -> list:
                 anon_ans[key] = "[REDACTED]"
         anonymized.append(anon_ans)
     return anonymized
-```
-
----
-
-## 14.17　本章小结(扩展版)
-
-- 采访质量需要系统评估:长度分布、多样性、身份一致性、语义稳定性。
-- 追问策略有场景、社会、关切三类,关切追问效果最好。
-- 跨城市 + 多议题 + 时间维度 + 条件变量的扩展设计能产出更丰富的态度矩阵。
-- 仿真采访是真实调查的预研工具,需要过渡到真实调查。
-- 采访涉及伦理边界:避免敏感问题、明确使用边界、匿名化数据。
-- 与真实调查对照是仿真采访可信度的最终检验。
-ify_by_income(agents: list, n_per_stratum: int = 100) -> list:
-    """按收入分层抽样"""
-    strata = {k: [] for k in INCOME_QUARTILES}
-    for a in agents:
-        for k, (lo, hi) in INCOME_QUARTILES.items():
-            if lo <= a.cash < hi:
-                strata[k].append(a)
-                break
-    return [random.sample(s, min(n_per_stratum, len(s)))
-            for s in strata.values()]
-```
-
-### 14.18.2　追问深度的控制
-
-最多 3 轮追问,但可以根据 agent 反应调整:
-
-```python
-def adaptive_followup_depth(agent: dict, responses: list) -> int:
-    """自适应追问深度"""
-    if len(responses) == 0:
-        return 0
-    # 如果回答详细,继续追问
-    if len(responses[-1]["response"]) > 100:
-        return min(3, len(responses) + 1)
-    # 如果回答敷衍,停止追问
-    return min(2, len(responses) + 1)
-```
-
-### 14.18.3　跨语言支持
-
-如果 agent 用不同语言,需要 prompt 适配:
-
-```python
-LANGUAGE_PROMPTS = {
-    "zh": "你是{name},请用中文回答问题",
-    "en": "You are {name}, please answer in English",
-    "ja": "あなたは{name}です,日本語で答えてください"
-}
-```
-
-### 14.18.4　多模态采访
-
-未来可以加入:
-
-- 图像(街景、商品图)
-- 音频(对话录音)
-- 视频(行为录像)
-
----
-
-### 14.19 扩展:采访结果的可视化
-
-### 14.19.1　态度分布的环形图
-
-```python
-import matplotlib.pyplot as plt
-
-def plot_attitude_donut(distribution: dict, output: str):
-    """态度分布环形图"""
-    labels = list(distribution.keys())
-    sizes = list(distribution.values())
-    colors = ["#66c2a5", "#fc8d62", "#8da0cb"]
-    fig, ax = plt.subplots()
-    ax.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%",
-           startangle=90, wedgeprops={"width": 0.4})
-    ax.axis("equal")
-    plt.title("态度分布")
-    plt.savefig(output, dpi=100)
-```
-
-### 14.19.2　分层的堆积柱状图
-
-```python
-def plot_stratified(stra_results: dict, output: str):
-    """分层态度的堆积柱状图"""
-    import numpy as np
-    strata = list(stra_results.keys())
-    attitudes = ["support", "neutral", "oppose"]
-    fig, ax = plt.subplots()
-    bottom = np.zeros(len(strata))
-    for att in attitudes:
-        values = [stra_results[s][att] for s in strata]
-        ax.bar(strata, values, bottom=bottom, label=att)
-        bottom += values
-    ax.legend()
-    plt.xticks(rotation=45)
-    plt.title("分层态度分布")
-    plt.tight_layout()
-    plt.savefig(output, dpi=100)
-```
-
-### 14.19.3　热力图:子群 × 议题
-
-```python
-def plot_attention_heatmap(group_topic_matrix: dict, output: str):
-    """态度热力图"""
-    import seaborn as sns
-    df = pd.DataFrame(group_topic_matrix)
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(df, annot=True, cmap="RdYlGn", center=0, ax=ax)
-    plt.title("群体 × 议题 态度")
-    plt.tight_layout()
-    plt.savefig(output, dpi=100)
-```
-
----
-
-## 14.20　本章小结(最终扩展版)
+```## 14.20　本章小结(最终扩展版)
 
 - 工程细节:样本分层、追问深度、跨语言、多模态。
 - 可视化:环形图、堆积柱状图、热力图。
@@ -1044,7 +925,7 @@ def plot_attitude_sankey(answers: list, output: str):
 
 ---
 
-### 14.24 扩展:采访案例的二次开发
+## 14.24 扩展:采访案例的二次开发
 
 ### 14.24.1　扩展到更多议题
 
@@ -1092,7 +973,7 @@ def plot_attitude_sankey(answers: list, output: str):
 
 ---
 
-### 14.27 扩展:案例的二次创作
+## 14.27 扩展:案例的二次创作
 
 ### 14.27.1　基于案例的课程
 
@@ -1131,7 +1012,7 @@ def plot_attitude_sankey(answers: list, output: str):
 
 ---
 
-### 14.28 扩展:LLM 采访的未来
+## 14.28 扩展:LLM 采访的未来
 
 ### 14.28.1　更大的样本
 
@@ -1183,7 +1064,7 @@ def plot_attitude_sankey(answers: list, output: str):
 
 ---
 
-### 14.31 扩展:社会调查方法论的历史
+## 14.31 扩展:社会调查方法论的历史
 
 群体采访是社会调查方法的新发展。本节回顾其演进。
 
@@ -1198,73 +1079,7 @@ def plot_attitude_sankey(answers: list, output: str):
 
 ### 14.31.2　计算机辅助调查
 
-1980 年代开始,计算机辅助调查普及:
-
-- **CATI**(Computer-Assisted Telephone Interviewing)
-- **CAPI**(Computer-Assisted Personal Interviewing)
-- **ACASI**(Audio Computer-Assisted Self-Interviewing)
-
-### 14.31.3　数字时代的调查
-
-2010 年后,数字调查兴起:
-
-- **在线面板**(Online Panel)
-- **移动调查**(Mobile Survey)
-- **社交媒体调查**(Social Media Survey)
-
-### 14.31.4　LLM 时代的调查
-
-2023 年后,LLM 群体采访出现:
-
-- **生成式调查**(Generative Survey):LLM 生成问题、模拟回答
-- **多模态调查**:图像、视频、音频综合
-- **跨境调查**:语言、文化自动适应
-
-### 14.31.5　仿真采访的位置
-
-仿真采访是**预研工具**,不是**替代工具**:
-
-- 用 LLM 群体采访做**预研**:了解大概的态度分布
-- 用真实调查做**确认**:验证仿真预测
-
-这种"成采访的比例
-- **完成时间**(Completion Time):平均时长
-- **跳题率**(Skip Rate):跳过的题目比例
-
-### 14.32.2　可靠性指标
-
-可靠性指标:
-
-- **重测信度**:同一问题重复测量,看一致性
-- **内部一致性**:Cronbach α 系数
-- **评估者一致性**:不同 LLM 评分的一致性
-
-### 14.32.3　有效性指标
-
-有效性指标:
-
-- **表面效度**(Face Validity):看起来是否合理
-- **内容效度**(Content Validity):是否覆盖应测内容
-- **构念效度**(Construct Validity):是否测量正确概念
-
-### 14.32.4　LLM 评估的特定指标
-
-LLM 群体采访的特定指标:
-
-- **一致性**:同一问题,不同次调用,结果一致
-- **多样性**:不同回答问题,结果不同
-- **诚实性**:没有"幻觉",引用真实
-- **针对性**:回答针对问题,不是套话
-
----
-
-### 14.33 扩展:LLM 采访的偏差与校正
-
-LLM 群体采访有各种偏差。本节讨论偏差与校正。
-
-### 14.33.1　位置偏差(LLM)
-
-LLM 倾向给"放在前面"的选项更高分。校正:
+1高分。校正:
 
 - 打乱选项顺序
 - 多次平均
@@ -1310,7 +1125,7 @@ LLM 有训练数据的偏见:
 
 ---
 
-### 14.34 扩展:采访数据的预处理
+## 14.34 扩展:采访数据的预处理
 
 LLM 群体采访的数据需要预处理。
 
@@ -1349,7 +1164,7 @@ LLM 群体采访的数据需要预处理。
 
 ---
 
-### 14.35 扩展:采访数据的深度分析
+## 14.35 扩展:采访数据的深度分析
 
 ### 14.35.1　主题建模
 
@@ -1364,16 +1179,7 @@ from bertopic import BERTopic
 
 # BERTopic 主题建模
 topic_model = BERTopic()
-topics, probs = topic_model.fit_transform(documents)
-print(topic_model.get_topic_info())
-```
-
-### 14.35.2　情感分析
-
-情感分析方法:
-
-- **词典方法**(VADER):基于情感词典
-- **机器学习方法**:SVM、随机森林
+topics, probs = topic_model.fit_transform(documentsM、随机森林
 - **深度学习方法**:BERT、GPT
 - **LLM 方法**:直接用 GPT 评分
 
@@ -1395,7 +1201,7 @@ print(topic_model.get_topic_info())
 
 ---
 
-### 14.36 扩展:跨文化采访的特殊问题
+## 14.36 扩展:跨文化采访的特殊问题
 
 ### 14.36.1　翻译问题
 
@@ -1418,20 +1224,7 @@ print(topic_model.get_topic_info())
 跨文化采样的偏差:
 
 - **语言偏向**:英语受访者更多
-- **网络偏向**:网络用户更年轻
-- **设备偏向**:智能手机用户更年轻
-
-读者做跨研究时,要谨慎处理采样偏差。
-
----
-
-### 14.37 扩展:采访的伦理与法律
-
-### 14.37.1　知情同意
-
-知情同意的要求:
-
-- **明确告知**:研究目的、数据用途
+- **网络偏向**:网据用途
 - **自愿参与**:受访者可以拒绝
 - **可撤回**:可以随时退出
 - **匿名化**:数据匿名处理
@@ -1458,7 +1251,7 @@ print(topic_model.get_topic_info())
 
 ---
 
-### 14.38 扩展:采访数据的可视化
+## 14.38 扩展:采访数据的可视化
 
 ### 14.38.1　态度分布可视化
 
@@ -1478,14 +1271,7 @@ def plot_attitude_distribution(results):
 
 ### 14.38.2　分层可视化
 
-```python
-def plot_stratified(results, group_col):
-    """分层可视化"""
-    groups = {}
-    for r in results:
-        g = r[group_col]
-        if g not in groups:
-            groups[g] = {"支持": 0, "反对": 0, "中立": 0}
+```p        groups[g] = {"支持": 0, "反对": 0, "中立": 0}
         groups[g][r["judgment"]] += 1
 
     fig, ax = plt.subplots()
@@ -1516,7 +1302,7 @@ def plot_time_series(results, time_col="day"):
 
 ---
 
-### 14.39 扩展:采访与其他社会仿真方法的结合
+## 14.39 扩展:采访与其他社会仿真方法的结合
 
 ### 14.39.1　采访 + 平行世界
 

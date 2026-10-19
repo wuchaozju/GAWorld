@@ -469,7 +469,7 @@ def _parse_outline(raw: str, picked_ids: list[int]) -> list[dict[str, Any]]:
 # Jobs
 # ---------------------------------------------------------------------------
 
-_JOBS = JobStore("novel")
+_JOBS = JobStore("novel", archive=True)
 
 
 def job_status(job_id: str) -> dict[str, Any] | None:
@@ -482,24 +482,89 @@ def reset_jobs() -> None:
 
 
 def list_runs() -> list[dict[str, Any]]:
-    """Finished novels still in memory, newest first."""
-    rows = []
+    """Finished novels, in-memory first then on disk (newest first).
+
+    In-memory results can disappear on server restart; the archive directory
+    keeps every finished novel so the "最近几本" list survives a reboot.
+    """
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _to_row(job_id: str, result: dict[str, Any]) -> dict[str, Any]:
+        stats = result.get("stats") or {}
+        return {
+            "job_id": job_id,
+            "run_id": result.get("run_id"),
+            "city": result.get("city"),
+            "title": result.get("title", ""),
+            "target_words": result.get("target_words"),
+            "actual_words": stats.get("total_words"),
+            "chapters": len(result.get("chapters", [])),
+            "created_at": result.get("created_at"),
+        }
+
     for row in _JOBS.results():
         result = row["result"] or {}
-        stats = result.get("stats") or {}
+        job_id = row["job_id"]
+        rows.append(_to_row(job_id, result))
+        seen.add(job_id)
+
+    for entry in _archived_runs():
+        if entry["job_id"] in seen:
+            continue
+        rows.append(entry)
+
+    rows.sort(key=lambda r: -(float(r.get("created_at") or 0)))
+    return rows
+
+
+def _archived_runs() -> list[dict[str, Any]]:
+    """Read every archived novel from disk, newest first."""
+    import json
+    import os
+
+    from gaworld.apps import game_archive
+
+    folder = os.path.join(game_archive.ARCHIVE_DIR, "novel")
+    if not os.path.isdir(folder):
+        return []
+    rows: list[dict[str, Any]] = []
+    for name in sorted(os.listdir(folder), reverse=True):
+        if not name.endswith(".json"):
+            continue
+        path = os.path.join(folder, name)
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                record = json.load(handle)
+        except Exception:
+            continue
+        result = record.get("result") or {}
+        if not result:
+            continue
+        if not _record_visible_to_owner(record):
+            continue
         rows.append(
             {
-                "job_id": row["job_id"],
+                "job_id": record.get("job_id") or name.rsplit(".", 1)[0],
                 "run_id": result.get("run_id"),
                 "city": result.get("city"),
                 "title": result.get("title", ""),
                 "target_words": result.get("target_words"),
-                "actual_words": stats.get("total_words"),
+                "actual_words": (result.get("stats") or {}).get("total_words"),
                 "chapters": len(result.get("chapters", [])),
                 "created_at": result.get("created_at"),
             }
         )
     return rows
+
+
+def _record_visible_to_owner(record: dict[str, Any]) -> bool:
+    try:
+        from gaworld.accounts import ownership
+
+        return bool(ownership.visible(record))
+    except Exception:
+        return True
 
 
 # ---------------------------------------------------------------------------
@@ -683,6 +748,7 @@ def run_novel(
         "title": title_hint.strip() or _title_from_premise(premise) or "未命名",
         "back_cover": back_cover,
         "premise": premise,
+        "outline_text": outline,
         "outline": [c.to_dict() for c in written],
         "chapters": [c.to_dict() for c in written],
         "cast": novel_draft["cast"],
@@ -784,9 +850,9 @@ def start_run(payload: dict[str, Any]) -> str:
         raise ValueError(f"至少选 {MIN_AGENTS} 个居民当主角")
     if len(agent_ids) > MAX_AGENTS:
         raise ValueError(f"主角团最多 {MAX_AGENTS} 人")
+    # Outline is optional. An empty outline is allowed; the structure prompt
+    # already says "（大纲留白,请你自行设计完整故事线…）" so the model fills it in.
     outline = str(payload.get("outline") or "").strip()
-    if not outline:
-        raise ValueError("先填一段故事大纲")
     target_words = int(payload.get("target_words") or DEFAULT_TARGET_WORDS)
     if target_words < MIN_TARGET_WORDS or target_words > MAX_TARGET_WORDS:
         raise ValueError(f"目标字数要在 {MIN_TARGET_WORDS}–{MAX_TARGET_WORDS} 之间")
@@ -808,6 +874,237 @@ def start_run(payload: dict[str, Any]) -> str:
             progress=progress,
         )
     )
+
+
+def start_regenerate(payload: dict[str, Any]) -> str:
+    """Rewrite only the chapters of an earlier run, with a new premise.
+
+    Cast, style, word target and city all carry over from the source run; the
+    caller only supplies a fresh ``premise`` (and optionally a tweak to the
+    ``outline``). Useful when the front-end user clicks "按新梗概重新生成".
+    """
+    source_job_id = str(payload.get("source_job_id") or "").strip()
+    if not source_job_id:
+        raise ValueError("需要指明 source_job_id（要重生成的那本）")
+    source = _load_source_novel(source_job_id)
+    if source is None:
+        raise ValueError(f"找不到 source_job_id={source_job_id} 的旧本")
+
+    premise = str(payload.get("premise") or "").strip()
+    if not premise:
+        raise ValueError("新故事梗概不能为空")
+    outline_override = str(payload.get("outline") or "").strip()
+    outline = outline_override or str(source.get("outline_text") or "")
+    if not outline.strip():
+        # The original prompt already tells the model to design one when blank;
+        # repeat that here so the chapter loop still has something to anchor to.
+        outline = "（请围绕上面的核心情境自行设计完整故事线,保证从头到尾是一个完整的故事）"
+
+    agent_ids = [int(c["agent_id"]) for c in source.get("cast") or []]
+    if len(agent_ids) < MIN_AGENTS:
+        raise ValueError(f"旧本主角团不足 {MIN_AGENTS} 人,不能重生成")
+    city = str(source.get("city") or payload.get("city") or "")
+    style_id = str(payload.get("style_id") or (source.get("style") or {}).get("id") or "realistic")
+    style_custom = (
+        payload.get("style_custom")
+        if isinstance(payload.get("style_custom"), dict)
+        else (source.get("style") if (source.get("style") or {}).get("id") == "custom" else None)
+    )
+    target_words = int(payload.get("target_words") or source.get("target_words") or DEFAULT_TARGET_WORDS)
+    if target_words < MIN_TARGET_WORDS or target_words > MAX_TARGET_WORDS:
+        raise ValueError(f"目标字数要在 {MIN_TARGET_WORDS}–{MAX_TARGET_WORDS} 之间")
+    title_hint = str(payload.get("title_hint") or source.get("title") or "")
+    # Cast has already been locked in the source run — re-use its arc/role rows.
+    locked_cast = [
+        {"agent_id": int(c["agent_id"]), "role": str(c.get("role") or "见证者"), "arc": str(c.get("arc") or "")}
+        for c in (source.get("cast") or [])
+        if int(c.get("agent_id") or 0) in agent_ids
+    ]
+    cards = _load_personas(city, agent_ids)
+    name_lookup: dict[int, str] = {int(card["agent_id"]): str(card["name"]) for card in cards}
+    style = resolve_style(style_id, style_custom)
+
+    return _JOBS.run(
+        lambda progress: _run_novel_with_locked_cast(
+            city=city,
+            agent_ids=agent_ids,
+            cards=cards,
+            locked_cast=locked_cast,
+            outline=outline,
+            premise=premise,
+            style=style,
+            target_words=target_words,
+            title_hint=title_hint,
+            name_lookup=name_lookup,
+            progress=progress,
+        )
+    )
+
+
+def _run_novel_with_locked_cast(
+    *,
+    city: str,
+    agent_ids: list[int],
+    cards: list[dict[str, Any]],
+    locked_cast: list[dict[str, Any]],
+    outline: str,
+    premise: str,
+    style: dict[str, str],
+    target_words: int,
+    title_hint: str,
+    name_lookup: dict[int, str],
+    progress: Callable[[float, str], None],
+) -> dict[str, Any]:
+    """Same loop as ``run_novel`` but skips the cast/outline calls.
+
+    Used by ``start_regenerate``: cast and outline are already known, so we
+    only re-run the chapter calls (and the back-cover summary).
+    """
+    from gaworld.llm.providers import call_llm
+
+    author = lambda prompt: str(call_llm(prompt, task="games.novel", temperature=0.85, allow_fallback=True))
+    summary_fn = lambda prompt: str(call_llm(prompt, task="games.novel.summary", temperature=0.5, allow_fallback=True))
+
+    progress(0.02, "正在按新梗概重写…")
+
+    outline_list = _parse_outline(
+        json.dumps(
+            {
+                "chapters": [
+                    {
+                        "chapter": i + 1,
+                        "title": "",
+                        "summary": "",
+                        "target_words": max(800, target_words // 8),
+                        "characters": list(agent_ids),
+                    }
+                    for i in range(8)
+                ]
+            }
+        ),
+        agent_ids,
+    )
+    outline_list = _allocate_budgets(outline_list, target_words)
+
+    progress(0.10, f"准备重写 {len(outline_list)} 章…")
+
+    written: list[Chapter] = []
+    recent_summaries: list[tuple[int, str]] = []
+    recent_chapters: list[tuple[int, str]] = []
+    prior_chapter_text = ""
+
+    chapter_window = max(1.0 - 0.10 - 0.05, 0.01)
+    for index, meta in enumerate(outline_list):
+        chapter = Chapter(
+            chapter=int(meta["chapter"]),
+            title=str(meta.get("title") or f"第{index + 1}章"),
+            summary=str(meta.get("summary") or ""),
+            target_words=int(meta.get("target_words") or 1500),
+            characters=list(meta.get("characters") or agent_ids),
+        )
+        progress(
+            0.10 + chapter_window * (index / max(1, len(outline_list))) * 0.85,
+            f"第{chapter.chapter}章《{chapter.title}》",
+        )
+        prompt = _chapter_prompt(
+            chapter_meta={"chapter": chapter.chapter, "summary": chapter.summary, "target_words": chapter.target_words, "characters": chapter.characters},
+            cards=cards,
+            style=style,
+            premise=premise,
+            recent_summaries=recent_summaries[-3:],
+            recent_chapters=recent_chapters[-RECENT_CHAPTERS_VERBATIM:],
+            prior_chapter_text=prior_chapter_text,
+        )
+        try:
+            raw = author(prompt)
+        except Exception as exc:  # pragma: no cover - provider failure
+            _LOG.warning("novel regen chapter %s failed: %s", chapter.chapter, exc)
+            raw = ""
+        chapter.text = str(raw).strip()
+        chapter.word_count = count_words(chapter.text)
+        chapter.presence = compute_presence(chapter, name_lookup)
+        written.append(chapter)
+        recent_summaries.append((chapter.chapter, _chapter_summary(chapter)))
+        recent_chapters.append((chapter.chapter, chapter.text))
+        prior_chapter_text = chapter.text
+
+    progress(0.95, "正在写封面简介…")
+    novel_draft = {
+        "title": title_hint.strip() or f"《{premise[:6]}》" if premise else "",
+        "chapters": [c.to_dict() for c in written],
+        "cast": [
+            {
+                "agent_id": c["agent_id"],
+                "name": next((card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"),
+                "role": c["role"],
+                "arc": c["arc"],
+            }
+            for c in locked_cast
+        ],
+        "premise": premise,
+    }
+    try:
+        back_cover = str(summary_fn(_summary_prompt(novel_draft))).strip()
+    except Exception as exc:  # pragma: no cover - provider failure
+        _LOG.warning("novel regen summary failed: %s", exc)
+        back_cover = ""
+
+    progress(0.98, "正在收尾…")
+    stats = _stats(written, target_words, locked_cast)
+    return {
+        "run_id": uuid.uuid4().hex[:8],
+        "city": str(city or ""),
+        "title": title_hint.strip() or _title_from_premise(premise) or "未命名",
+        "back_cover": back_cover,
+        "premise": premise,
+        "outline_text": outline,
+        "outline": [c.to_dict() for c in written],
+        "chapters": [c.to_dict() for c in written],
+        "cast": novel_draft["cast"],
+        "style": style,
+        "target_words": target_words,
+        "stats": stats,
+        "co_occurrences": compute_co_occurrences(written),
+        "created_at": time.time(),
+        "regenerated_from": _source_pointer(),
+    }
+
+
+def _source_pointer() -> dict[str, Any]:
+    """A no-op hook so the regenerated novel can remember its source if the
+    caller wants to thread it through later. Currently always empty."""
+    return {}
+
+
+def _load_source_novel(job_id: str) -> dict[str, Any] | None:
+    """Find a finished novel by job_id — in-memory first, then archive."""
+    record = _JOBS.status(job_id)
+    if record and record.get("status") == "done" and record.get("result"):
+        return record["result"]
+
+    import json
+    import os
+    import re
+
+    from gaworld.apps import game_archive
+
+    folder = os.path.join(game_archive.ARCHIVE_DIR, "novel")
+    if not os.path.isdir(folder):
+        return None
+    for name in os.listdir(folder):
+        if not name.endswith(".json"):
+            continue
+        if job_id and job_id not in name:
+            continue
+        path = os.path.join(folder, name)
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                rec = json.load(handle)
+        except Exception:
+            continue
+        if (rec.get("job_id") or re.sub(r"\.json$", "", name)) == job_id:
+            return rec.get("result")
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -877,6 +1174,8 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
     try:
         if path == "/api/games/novel/run":
             return {"job_id": start_run(payload)}, 202
+        if path == "/api/games/novel/regenerate":
+            return {"job_id": start_regenerate(payload)}, 202
     except ValueError as exc:
         return {"error": str(exc)}, 400
     except Exception as exc:  # pragma: no cover - defensive
@@ -902,6 +1201,7 @@ __all__ = [
     "reset_jobs",
     "resolve_style",
     "run_novel",
+    "start_regenerate",
     "start_run",
     "style_by_id",
 ]

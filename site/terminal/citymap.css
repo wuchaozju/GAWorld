@@ -1,0 +1,337 @@
+/* CityMap terminal variant — same DOM/IDs as site/citymap/index.html, only
+ * palette and chrome change. Phaser canvas is left alone; we just paint
+ * the chrome around it in terminal colours. */
+
+@import url("/terminal/tokens-terminal.css");
+
+:root {
+  /* Override terminal tokens with CityMap's own (darker bg) */
+  --bg:        #0f1311;
+  --bg-soft:   #161a17;
+  --bg-card:   #1c201d;
+  --bg-deep:   #0a0d0b;
+  --grid:      #1f2421;
+  --ink:       #d7e0d4;
+  --muted:     #7c8a82;
+  --line:      #232826;
+  --phosphor:  #5fe3a1;
+  --phosphor-dim: rgba(95, 227, 161, 0.18);
+  --amber:     #f3b54a;
+  --steel:     #6fb3c8;
+  --red:       #ff7a6b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 1fr 312px;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+#stage {
+  position: relative;
+  grid-row: 1 / 3;
+  grid-column: 1;
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+#game { position: absolute; inset: 0; }
+#game canvas { display: block; }
+
+#side {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  background: var(--bg-soft);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.side-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.side-head h1 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.side-head h1::before {
+  content: "▸ ";
+  color: var(--phosphor);
+}
+
+.side-head .sub {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.side-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.group { margin-bottom: 18px; }
+.group > .label {
+  color: var(--phosphor);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+
+.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.toggle input { accent-color: var(--phosphor); }
+
+.toggle:hover { color: var(--phosphor); }
+
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.chip-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.chip:hover, .chip.on {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+}
+
+button, select {
+  background: var(--bg-card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover, select:hover { border-color: var(--phosphor); color: var(--phosphor); }
+
+button.primary {
+  background: var(--phosphor);
+  color: #0a1614;
+  border-color: var(--phosphor);
+  font-weight: 600;
+}
+
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#transport {
+  grid-row: 2;
+  grid-column: 1;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#transport.hidden { display: none; }
+
+#scrub { flex: 1; accent-color: var(--phosphor); }
+
+.play {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  padding: 0;
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  min-width: 132px;
+  color: var(--ink-2);
+}
+
+.clock b { color: var(--phosphor); }
+
+#tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9;
+  background: rgba(15, 19, 17, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px;
+  max-width: 260px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.08s;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+#tooltip .t-name { font-weight: 600; margin-bottom: 3px; color: var(--phosphor); }
+#tooltip .t-row { color: var(--muted); display: flex; justify-content: space-between; gap: 14px; }
+#tooltip .t-row span:last-child { color: var(--ink); }
+
+#hud {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 11px;
+  background: rgba(15, 19, 17, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+#legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  background: rgba(15, 19, 17, 0.86);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 12px;
+  max-width: 240px;
+}
+
+#legend .label {
+  color: var(--phosphor);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+
+#legend .items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+}
+
+#legend .li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+#back-btn {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 9;
+  display: none;
+}
+
+#back-btn.show { display: inline-block; }
+
+.slider {
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--line);
+  border-radius: 4px;
+  flex: 1;
+  accent-color: var(--phosphor);
+}
+
+.small { font-size: 11px; color: var(--muted); }
+
+.agent-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  margin: 4px 0;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.agent-pill .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.agent-pill.sel { border-color: var(--phosphor); }
+
+kbd {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 11px;
+  color: var(--phosphor);
+}
+
+.empty-hint {
+  color: var(--muted);
+  text-align: center;
+  padding: 40px 20px;
+}

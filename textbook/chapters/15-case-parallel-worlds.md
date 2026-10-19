@@ -428,7 +428,7 @@ W2 是"宣布但不实施"。**怎么保证仿真里"宣布"和"实施"是完全
 > 下一章是案例四——"灾害模式",演示用 GAWorld 模拟地震、疫情、洪水等灾害场景下居民的差异化反应。这是社会仿真另一个重要应用领域。
 ---
 
-### 15.12 扩展:平行世界的工程细节
+## 15.12 扩展:平行世界的工程细节
 
 平行世界实验的工程实现有几个关键细节,本节展开讨论。
 
@@ -557,7 +557,7 @@ GAWorld 默认每个世界有独立的经济系统,但读者可以用 `shared_ec
 - 仿真结果应在"适用域"内有效
 - 工程实现要考虑"可复现性"而非"完美"
 
-### 15.13 扩展:分叉度的更精细量化
+## 15.13 扩展:分叉度的更精细量化
 
 本案例用均值差衡量分叉度。本节讨论更精细的方法。
 
@@ -720,7 +720,7 @@ def individual_impact(agent_id: int, world_a_state: dict,
 - 仿真结果应在"适用域"内有效
 - 工程实现要考虑"可复现性"而非"完美"
 
-### 15.14 扩展:政策建议的提炼
+## 15.14 扩展:政策建议的提炼
 
 仿真结果最终要服务于政策建议。本节讨论从仿真到建议的工程方法。
 
@@ -786,7 +786,7 @@ def simulate_policy_recommendation(base_world: str,
 
 ---
 
-### 15.15 扩展:从平行世界到因果识别
+## 15.15 扩展:从平行世界到因果识别
 
 平行世界实验天然适合因果识别。本节讨论几个因果识别策略。
 
@@ -858,7 +858,7 @@ def mediation_analysis(treatment: str, mediator: str, outcome: str,
 
 ---
 
-### 15.16 扩展:平行世界实验的局限与应对
+## 15.16 扩展:平行世界实验的局限与应对
 
 平行世界不是万能的,本节讨论局限和应对。
 
@@ -890,104 +890,7 @@ LLM 决策在不同时间、不同 prompt 下可能给出不同答案。这破�
 - **仿真内的因果识别容易**(我们知道机制)
 - **推广到真实世界难**(真实世界可能完全不同)
 
-应对:把仿真作为"机制演示",而不是"因果预测"。
-
----
-
-## 15.17　本章小结(扩展版)
-
-- 平行世界的工程细节:种子-世界组合、事件同步、经济隔离、网络共享、事件级联。
-- 分叉度的精细量化:KL 散度、MMD、网络层面、个体层面。
-- 政策建议提炼:从仿真结果到政策清单的工程流程。
-- 因果识别策略:反事实、异质处理效应、中介分析、工具变量。
-- 平行世界的局限:理想化、样本量、LLM 可重复性、因果识别局限。
-- 与真实数据对照 + 跨城市对照 + 跨时间对照 是应对局限的核心方法。
-ivergence.index, divergence.values, label=world_name)
-    ax.axhline(0, color="black", linestyle="--")
-    ax.set_xlabel("仿真日")
-    ax.set_ylabel("偏离度")
-    ax.set_title("分叉度曲线")
-    ax.legend()
-    plt.savefig(output, dpi=100)
-```
-
-### 15.18.2　逐人影响热力图
-
-```python
-def plot_individual_impact(impacts: pd.DataFrame, output: str):
-    """逐人影响热力图"""
-    import seaborn as sns
-    pivot = impacts.pivot(index="agent_id", columns="world",
-                          values="impact")
-    fig, ax = plt.subplots(figsize=(10, 12))
-    sns.heatmap(pivot, cmap="RdBu_r", center=0, ax=ax)
-    plt.title("逐人影响")
-    plt.tight_layout()
-    plt.savefig(output, dpi=100)
-```
-
-### 15.18.3　交互式 Dashboard
-
-GAWorld 的 worlds.html 提供完整的交互式可视化:
-
-- 多世界对比
-- 时间序列
-- 分布对比
-- 逐人影响
-
-读者可在浏览器里探索结果。
-
----
-
-### 15.19 扩展:政策建议的提炼工程
-
-### 15.19.1　从异质性到政策建议
-
-```python
-def extract_policy_recommendations(heterogeneity: dict) -> list:
-    """从异质性分析提取政策建议"""
-    recommendations = []
-    for group, effects in heterogeneity.items():
-        # 找出被影响最大的群体
-        most_affected = max(effects, key=lambda k: abs(effects[k]))
-        if abs(effects[most_affected]) > 0.2:
-            recommendations.append({
-                "group": group,
-                "issue": most_affected,
-                "magnitude": effects[most_affected],
-                "suggestion": f"针对 {group} 的 {most_affected} 制定差异化政策"
-            })
-    return recommendations
-```
-
-### 15.19.2　建议的优先级排序
-
-```python
-def prioritize_recommendations(recommendations: list) -> list:
-    """按影响排序"""
-    return sorted(recommendations,
-                 key=lambda r: abs(r["magnitude"]),
-                 reverse=True)
-```
-
-### 15.19.3　建议的可行性评估
-
-```python
-def feasibility_score(recommendation: dict) -> float:
-    """可行性评分 0-1"""
-    # 简化:基于政策类型
-    policy_feasibility = {
-        "补贴": 0.8,
-        "扩建": 0.6,
-        "限制": 0.4,
-        "补偿": 0.7
-    }
-    return policy_feasibility.get(recommendation["type"], 0.5)
-```
-
----
-
-## 15.20　本章小结(最终扩展版)
+应对:把仿真作为"机制演示",而不是"因果预测"。## 15.20　本章小结(最终扩展版)
 
 - 可视化:分叉度曲线、逐人影响热力图、交互式 Dashboard。
 - 政策建议提炼:异质性 → 建议 → 优先级 → 可行性。
@@ -1207,23 +1110,3 @@ def feasibility_score(recommendation: dict) -> float:
 政策仿真支持全球治理:
 
 - 跨国问题(气候、流行病)
-- 国际组织(联合国、WHO)
-- 全球公共物品
-- 国际协调
-
----
-
-## 15.29　本章小结(最终扩展版)
-
-- 案例与决策辅助:决策、政策实验室、多方参与、透明决策。
-- 案例的国际化:跨文化比较、国际合作、政策学习、全球治理。
-- 平行世界实验是社会仿真作为政策评估工具的核心功能。
-- 与实证研究的对比
-- 因果识别策略
-- 政策建议提炼
-- 二次开发与国际化
-
-读者在自己的研究中,可以参考本案例的结构,但**不要直接照搬**——要根据具体研究问题调整。
-
-最后,祝读者在自己的政策冲击研究中取得成功!
-

@@ -20,6 +20,7 @@
 - [7. API 速查](#7-api-速查)
 - [8. 参数速查](#8-参数速查)
 - [9. 常见问题](#9-常见问题)
+- [10. 公共部门面板](#10-公共部门面板)
 
 ---
 
@@ -38,13 +39,14 @@ GAWorld 的大部分界面都对着 **agent**：这个居民是谁、他记得�
 | 让第 20 天开始进入经济衰退 | 改不了 | 排一条干预，到点自动生效 |
 | 确认外部环境服务通不通 | `curl .../health` | 点一下「探测一次」 |
 
-### 三个子系统
+### 四个子系统
 
 | 面板 | 管的是 | 底层 |
 |---|---|---|
 | **货币系统** | 宏观周期、通胀、失业、企业/政府/银行三个部门池、货币守恒、财富分布 | `gaworld/economy/finance.py`、`CONFIG["economy"]` |
 | **外部环境** | 每天生成的自然 / 经济 / 政策 / 科技事件，天气池，政策冲击排期 | `gaworld/env/system.py`、`CONFIG["external_environment"]` |
 | **对外服务** | 外部环境服务、分布式中继、外部信息注入、新闻源、LLM 路由 | `CONFIG` 里对应的连接配置 |
+| **公共部门** | 谁在执政、推行什么政策（个税、社保、医保报销、最低时薪、失业救济 / 养老金 / 基本收入），换届 | `gaworld/public_sector/`、`CONFIG["public_sector"]`（见 [§10](#10-公共部门面板)） |
 
 ### 什么时候用它
 
@@ -382,6 +384,7 @@ curl -s -X POST $BASE/api/external-systems/interventions/cancel \
 | 货币系统 | `economy` |
 | 外部环境 | `external_environment`、`environment`、`policy_events` |
 | 对外服务 | `external_environment_service`、`environment_server`、`external_rag`、`news`、`distributed`、`llm.routing` |
+| 公共部门 | `public_sector` |
 
 补丁会**按现有配置的类型强制成形**：`"0.09"` → `0.09`，`"false"` → `False`，
 不认识的键直接丢弃并在响应的 `dropped` 里列出。所以打错一个键名不会静默地在配置里
@@ -482,6 +485,81 @@ dashboard_config.json               面板保存的配置覆盖
 
 ---
 
+## 10. 公共部门面板
+
+「货币系统」里的政府只是一个资金池：税和社保流进来，医保报销流出去。**公共部门**让这个
+池子背后有一个真正的政府——它推行一套政策，政策改写居民所处的公共环境。
+
+### 10.1 政府与政策
+
+每个政府是 `CONFIG["public_sector"]["governments"]` 里的一项：名称、施政说明、一组政策。
+政策都落在仿真真的会执行的规则上：
+
+| 政策 | 改的是 | 中性值 |
+|---|---|---|
+| `income_tax_exemption` | 个税起征点 → `economy.tax.monthly_exemption` | `null`（沿用经济设置） |
+| `income_tax_rate_scale` | 所有税率档 × 倍数（速算扣除同步缩放，税额正好 × 倍数） | `1.0` |
+| `social_insurance_rate_scale` | 养老 / 医疗 / 失业个人缴费率 × 倍数（公积金不动） | `1.0` |
+| `medical_reimbursement` | 突发医疗的报销比例区间 `[下限, 上限]` | `null` |
+| `min_hourly_wage` | 最低时薪 → `economy.min_hourly_income` | `null` |
+| `unemployment_benefit_daily` | 每位失业居民每天从政府池领的钱 | `0` |
+| `pension_daily` | 每位退休居民每天领的养老金 | `0` |
+| `basic_income_daily` | 每位有账户的居民每天无条件领的钱 | `0` |
+
+内置六个政府：现行体制（全中性，等于不开）、福利型、小政府、发展型、紧缩型、基本收入试点。
+都可以直接改；面板「新建政府」从任一政府复制一份再改。
+
+三种转移支付**两边记账**：居民活期 + x，政府池 − x，所以货币守恒审计照样通过；政府池为负
+就是财政赤字。税和社保在每 30 天的月结算时进池，余额曲线因此是锯齿形的。
+
+居民这边：每人每天第一次感知会读到一句施政简报（以及上次领到的补贴）；换届当刻所有人
+在下一次感知时得知「某某上任」。`announce: false` 关掉这句话，政策照样生效。
+
+### 10.2 三种换政府的方式
+
+| 方式 | 在哪 | 何时生效 |
+|---|---|---|
+| 下一次运行由谁执政 | 编辑区「设为执政政府」（勾选「开启公共部门」） | 下一次运行开局 |
+| 运行中按天换届 | 配置里的 `public_sector.schedule`，如 `[{"day": 30, "government": "welfare", "note": "换届选举"}]` | 那天的日开始 |
+| 给正在跑的仿真立即换届 | 编辑区「立即换届」 | 下一个 tick（经内核干预队列 `public_sector.set_government`） |
+
+换届总是**从开局的经济配置重新推导**，不是在上一届的基础上叠加：福利型 → 小政府 → 福利型，
+最后一届和第一届完全一样。只有**开着公共部门启动**的运行才能中途换届。
+
+政府名写错（`government` 或 `schedule` 里）仿真不会启动——悄悄换成别的政府跑完一整轮，
+比报错更糟。
+
+### 10.3 观察区
+
+- **现任政府**：名称、说明、政策要点，以及居民读到的那句简报原文。
+- **政府对比**：每行一项政策、每列一个政府，★ 是选定执政的。
+- **财政与转移支付**：最近一次运行每天的转移支付和政府池余额（`output/records/public_sector.daily.jsonl`），
+  以及换届记录（`public_sector.change.jsonl`）。两张表跨运行追加，面板只显示最新一轮。
+
+### 10.4 API
+
+```bash
+# 新建政府（从 welfare 复制政策）
+curl -s -X POST $BASE/api/external-systems/public/governments \
+  -H 'Content-Type: application/json' \
+  -d '{"id": "green_city", "name": "绿色政府", "base": "welfare"}'
+
+# 删除面板里新建的政府（内置的不能删）
+curl -s -X POST $BASE/api/external-systems/public/governments/delete \
+  -H 'Content-Type: application/json' -d '{"id": "green_city"}'
+
+# 下一次运行由谁执政
+curl -s -X POST $BASE/api/external-systems/config \
+  -H 'Content-Type: application/json' \
+  -d '{"config": {"public_sector": {"enabled": true, "government": "welfare"}}}'
+
+# 给正在跑的仿真立即换届（202；没有运行或运行没开公共部门时 409）
+curl -s -X POST $BASE/api/external-systems/public/switch \
+  -H 'Content-Type: application/json' -d '{"government": "austerity", "note": "选举"}'
+```
+
+---
+
 ## 相关文档
 
 - [完整教程](./TUTORIAL.v2.md)（[§5.2 经济仿真](./TUTORIAL.v2.md#52-经济仿真) ·
@@ -490,4 +568,4 @@ dashboard_config.json               面板保存的配置覆盖
   部门池、守恒、信贷、共同市场因子这些设计的来龙去脉
 - [群体模拟教程](./GROUP_SIMULATION_TUTORIAL.md) · [项目结构](./PROJECT_STRUCTURE.md)
 - [平行世界教程](./PARALLEL_WORLDS_TUTORIAL.md)（要做**严格可复现**的对照实验时用它，而不是干预队列）
-- 测试：`tests/test_dashboard_external_systems.py`、`site/dashboard/external.test.js`
+- 测试：`tests/test_dashboard_external_systems.py`、`tests/test_public_sector.py`、`site/dashboard/external.test.js`

@@ -723,6 +723,7 @@ class TestPromptWiring(unittest.TestCase):
     #: quietly shipping the old label.
     WIRED = {
         "gaworld.sim._action": ("action", 2),
+        "gaworld.sim._step": ("action", 1),
         "gaworld.sim._news": ("news", 3),
         "gaworld.sim._rag": ("news", 2),
         "gaworld.cognition.realism": ("routine", 1),
@@ -731,7 +732,7 @@ class TestPromptWiring(unittest.TestCase):
 
     #: The legacy top-level module is not a package and holds several prompts
     #: of its own; two of them were missed by a grep scoped to ``gaworld/``.
-    LEGACY = {"routine": 3, "action": 1, "news": 1}
+    LEGACY = {"routine": 3, "news": 1}
 
     def test_no_prompt_still_renders_the_old_label(self):
         import inspect

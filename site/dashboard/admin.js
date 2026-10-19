@@ -35,6 +35,19 @@
   }
   var fail = function (err) { say(String(err.message || err), true); };
 
+  /** Disable and label-flip for the duration of an async click. */
+  function withBusy(btn, fn, busyKey, busyFallback) {
+    return function () {
+      if (!btn || btn.disabled) return;
+      var release = (typeof setButtonBusy === "function")
+        ? setButtonBusy(btn, busyKey || "", busyFallback || "")
+        : (function () { btn.disabled = true; return function () { btn.disabled = false; }; })();
+      var p;
+      try { p = fn(); } catch (err) { release(); fail(err); return; }
+      Promise.resolve(p).then(function () { release(); }, function (err) { release(); fail(err); });
+    };
+  }
+
   function cell(row, content) {
     var td = document.createElement("td");
     if (content instanceof Node) td.appendChild(content);
@@ -75,13 +88,13 @@
     });
   }
 
-  $("aLimitsSave").addEventListener("click", function () {
-    api("POST", "/api/worlds/settings", {
+  $("aLimitsSave").addEventListener("click", withBusy($("aLimitsSave"), function () {
+    return api("POST", "/api/worlds/settings", {
       max_concurrent_runs: Number($("aMaxRuns").value),
       max_runs_per_user: Number($("aMaxPerUser").value),
       daily_llm_calls_per_user: Number($("aQuota").value),
     }).then(function () { say(t("admin.saved", "已保存")); }, fail);
-  });
+  }, "admin.saving", "保存中…"));
 
   // -- invites --------------------------------------------------------------
 
@@ -103,8 +116,8 @@
     });
   }
 
-  $("aInvite").addEventListener("click", function () {
-    api("POST", "/api/auth/invites", {
+  $("aInvite").addEventListener("click", withBusy($("aInvite"), function () {
+    return api("POST", "/api/auth/invites", {
       count: Number($("aCount").value),
       label: $("aLabel").value.trim(),
       expires_days: Number($("aExpires").value),
@@ -115,7 +128,7 @@
       $("aCodes").hidden = false;
       return loadInvites();
     }, fail);
-  });
+  }, "admin.generating", "生成中…"));
 
   // -- roster ---------------------------------------------------------------
 
@@ -205,11 +218,11 @@
     });
   }
 
-  $("aBroadcast").addEventListener("click", function () {
+  $("aBroadcast").addEventListener("click", withBusy($("aBroadcast"), function () {
     var ids = [];
     $("aTargets").querySelectorAll("input:checked").forEach(function (el) { ids.push(el.value); });
     if (!ids.length) { say(t("admin.pick_worlds", "先勾选至少一个世界"), true); return; }
-    api("POST", "/api/worlds/broadcast", {
+    return api("POST", "/api/worlds/broadcast", {
       world_ids: ids,
       title: $("aTitle").value.trim(),
       description: $("aDesc").value.trim(),
@@ -221,7 +234,7 @@
         "（" + t("admin.live_now", "其中运行中 ") + live.length + "）");
       return loadAudit();
     }, fail);
-  });
+  }, "admin.sending", "发送中…"));
 
   // -- audit ----------------------------------------------------------------
 

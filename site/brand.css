@@ -1,0 +1,34 @@
+/* Approved B emblem: shared by the city-lab and terminal interfaces. */
+:root .brand-mark.brand-logo {
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.brand-symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.topbar .brand-mark.brand-logo,
+.console-bar .brand-mark.brand-logo,
+.bar-head .brand-mark.brand-logo {
+  width: 36px;
+  height: 36px;
+}
+.studio-top .brand-mark.brand-logo {
+  width: 46px;
+  height: 46px;
+}
+:root .brand-name {
+  font-family: "Avenir Next", var(--font-sans, system-ui), sans-serif;
+  font-weight: 750;
+  letter-spacing: -.7px;
+}
+:root[data-theme="dark"] .brand-symbol,
+.brand-on-dark .brand-symbol {
+  filter: brightness(0) invert(1);
+}

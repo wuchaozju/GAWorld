@@ -19,8 +19,8 @@ a separate full-individual double-run.
 Note on step 5: the individual tier here is pluggable
 (``individual_day_fn``). The real integration point is the existing
 fast-forward digest or the 12-stage tick pipeline, but neither is imported
-from this module — the tick stages are closures over ``run_simulation``'s
-locals and unreachable from outside, and hard-wiring the fast-forward path
+from this module — the tick stages need the run state only
+``run_simulation`` assembles and are unreachable from outside, and hard-wiring the fast-forward path
 would make this loop untestable without a full simulator boot. The default is
 a deterministic no-op so the loop is exercisable on its own; Phase 3 wires the
 real thing in behind the same signature.

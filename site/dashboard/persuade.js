@@ -21,7 +21,12 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
-  const t = (key, fallback) => (typeof __ === "function" ? __(key) : fallback);
+  // Falls back to the second arg when the locale is missing the key, so the
+  // page reads as intended Chinese even before every i18n string has shipped.
+  const t = (key, fallback) => {
+    const value = typeof __ === "function" ? __(key) : "";
+    return !value || value === key ? (fallback || "") : value;
+  };
 
   // `city` is null until the picker loads: "" is a real city (the default
   // world), so it cannot double as "nothing selected".
@@ -208,11 +213,20 @@
     if (settled) {
       const win = session.outcome === "success";
       verdict.className = "persuade-verdict " + (win ? "is-success" : "is-failed");
+      // The judge used to dump a free-form "reason" right into a <p>; now it
+      // gets a chip-headed row so the verdict leads with the takeaway, with
+      // the original line tucked behind a <details> for the curious.
+      const reasonText = (session.reason || "").trim();
       verdict.innerHTML = `
         <h4>${win ? esc(t("persuade.win", "🎉 说服成功")) : esc(t("persuade.lose", "🪨 没说动他"))}</h4>
         <p><b>${esc(t("persuade.before", "最初"))}：</b>${esc(session.initial_answer)}</p>
         <p><b>${esc(t("persuade.after", "复问"))}：</b>${esc(session.final_answer)}</p>
-        ${session.reason ? `<p><b>${esc(t("persuade.judge", "裁判"))}：</b>${esc(session.reason)}</p>` : ""}
+        ${reasonText ? `<div class="duel-reason-panel">
+            <div class="duel-reason-row ${win ? "is-strength" : "is-risk"}">
+              <span class="duel-reason-tag">${esc(t("persuade.judge", "裁判"))}</span>
+              <span class="duel-reason-text">${esc(reasonText)}</span>
+            </div>
+          </div>` : ""}
       `;
     }
   }
@@ -233,9 +247,25 @@
 
   function setBusy(busy, message) {
     state.busy = busy;
-    $("#pStartBtn").disabled = busy;
+    // Flip the three conversation buttons into a busy state with the
+    // calling message as the visible label, so a stuck request doesn't
+    // look like the page froze. The settle button is left unlabelled
+    // because it is a deliberate user-driven end-of-conversation trigger.
+    if (busy) {
+      if (typeof setButtonBusy === "function") {
+        state._startRelease = setButtonBusy($("#pStartBtn"), "persuade.asking", "正在问他…");
+        state._sendRelease = setButtonBusy($("#pSendBtn"), "persuade.thinking", "他在想…");
+      } else {
+        $("#pStartBtn").disabled = true;
+        $("#pSendBtn").disabled = true;
+      }
+    } else {
+      if (state._startRelease) { state._startRelease(); state._startRelease = null; }
+      if (state._sendRelease) { state._sendRelease(); state._sendRelease = null; }
+      $("#pStartBtn").disabled = busy;
+      $("#pSendBtn").disabled = busy;
+    }
     const settled = state.session && state.session.status === "settled";
-    $("#pSendBtn").disabled = busy || settled;
     $("#pSettleBtn").disabled = busy || settled;
     if (busy && message) setStatus(message);
   }

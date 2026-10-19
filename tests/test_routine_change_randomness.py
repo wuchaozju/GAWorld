@@ -11,6 +11,13 @@ import unittest
 from unittest.mock import patch
 
 import generative_city_sim as sim
+from gaworld.llm import providers as llm_providers
+
+
+def _pin_randomness(value):
+    """Pin ``routine_change.randomness`` (read at call time in ``gaworld.sim._step``)."""
+    section = {**(sim.CONFIG.get("routine_change") or {}), "randomness": value}
+    return patch.dict(sim.CONFIG, {"routine_change": section})
 
 
 def _committed_agent():
@@ -38,8 +45,8 @@ def _committed_agent():
 
 class TestRoutineChangeRandomness(unittest.TestCase):
     def test_zero_randomness_keeps_committed_agent_on_routine(self):
-        with patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 0.0), patch.object(
-            sim, "call_llm"
+        with _pin_randomness(0.0), patch.object(
+            llm_providers, "call_llm"
         ) as mock_call:
             activity, reason, changed = sim.maybe_adjust_activity(
                 _committed_agent(), "10:00", "上午工作", "环境平稳", "无", "无", [], None
@@ -54,9 +61,9 @@ class TestRoutineChangeRandomness(unittest.TestCase):
         # random()==0.0 makes the final activation roll always deviate; the LLM
         # then authors the new activity. With randomness off (previous test) the
         # same agent never reaches the LLM at all.
-        with patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 1.0), patch.object(
+        with _pin_randomness(1.0), patch.object(
             sim.random, "random", return_value=0.0
-        ), patch.object(sim, "call_llm", return_value=response) as mock_call:
+        ), patch.object(llm_providers, "call_llm", return_value=response) as mock_call:
             activity, reason, changed = sim.maybe_adjust_activity(
                 _committed_agent(), "10:00", "上午工作", "环境平稳", "无", "无", [], None
             )
@@ -68,9 +75,9 @@ class TestRoutineChangeRandomness(unittest.TestCase):
         # Even at max randomness, a sleep slot should not be dragged off-script:
         # the randomness boost is skipped, so a calm agent's weak trigger loses
         # to the sleep slot's resistance and the LLM is never consulted.
-        with patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 1.0), patch.object(
+        with _pin_randomness(1.0), patch.object(
             sim.random, "random", return_value=0.0
-        ), patch.object(sim, "call_llm") as mock_call:
+        ), patch.object(llm_providers, "call_llm") as mock_call:
             activity, reason, changed = sim.maybe_adjust_activity(
                 _committed_agent(), "23:30", "睡前", "环境平稳", "无", "无", [], None
             )

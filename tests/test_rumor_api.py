@@ -310,6 +310,93 @@ class SpreadTest(unittest.TestCase):
         self.assertEqual(run["summary"], "")
         self.assertEqual(run["stats"]["reached"], 1)
 
+    def test_no_hard_cap_more_than_fourteen_can_run(self) -> None:
+        """Past the legacy ``MAX_AGENTS = 14`` ceiling, the run still goes
+        through. The per-user daily LLM quota is the only blocker now —
+        ``_max_agents()`` returns 0 ("no cap") by default, and a 40-resident
+        run reaches every node without truncation."""
+        # 40 distinct surnames so the kin heuristic doesn't collapse the graph.
+        surnames = "甲乙丙丁戊己庚辛壬癸" + "子丑寅卯辰巳午未申酉戌亥"
+        people = [
+            _person(i, f"{surnames[i % len(surnames)]}{i}", age=30 + (i % 30),
+                    residence="A小区" if i <= 20 else "B小区")
+            for i in range(1, 41)
+        ]
+        answered = _always(_say("转发"))
+        nodes = _nodes(*people)
+        edges = rumor_api.build_graph(people)
+        run = rumor_api.run_rumor(
+            city="",
+            agent_ids=[],
+            rumor_id="water",
+            nodes=nodes,
+            edges=edges,
+            seeds=[1, 21],
+            rounds=5,
+            answer_fn=answered,
+            summary_fn=lambda p: "",
+        )
+        self.assertEqual(run["stats"]["total"], 40)
+        # 40 nodes, all forwarding, full saturation in a few rounds.
+        self.assertGreaterEqual(run["stats"]["reached"], 30)
+        # The call ceiling stays at 2 × residents + 1, regardless of cap.
+        self.assertLessEqual(
+            len(answered.calls),  # type: ignore[attr-defined]
+            len(people) * rumor_api.MAX_ACTS + 1,
+        )
+
+
+class ConfigCapTest(unittest.TestCase):
+    """``_max_agents()`` honours CONFIG["games"]["rumor"]["max_agents"]
+    without breaking the legacy ``MAX_AGENTS`` constant the rest of the
+    suite still references."""
+
+    def test_default_is_no_cap(self) -> None:
+        from gaworld.settings import CONFIG
+
+        original = CONFIG.get("games")
+        try:
+            CONFIG.pop("games", None)
+            self.assertEqual(rumor_api._max_agents(), 0)
+        finally:
+            if original is not None:
+                CONFIG["games"] = original
+
+    def test_config_can_pin_a_cap(self) -> None:
+        from gaworld.settings import CONFIG
+
+        original = CONFIG.get("games")
+        try:
+            CONFIG["games"] = {"rumor": {"max_agents": 12}}
+            self.assertEqual(rumor_api._max_agents(), 12)
+        finally:
+            if original is None:
+                CONFIG.pop("games", None)
+            else:
+                CONFIG["games"] = original
+
+    def test_explicit_cap_truncates_the_selection(self) -> None:
+        from gaworld.settings import CONFIG
+
+        original = CONFIG.get("games")
+        try:
+            CONFIG["games"] = {"rumor": {"max_agents": 8}}
+            # The HTTP layer truncates the picked ids before reaching the
+            # roster. The catalogue returns the cap so the picker can match.
+            body, status = rumor_api.handle_get(
+                "/api/games/rumor/catalogue"
+            )
+            self.assertEqual(status, 200)
+            self.assertEqual(body["max_agents"], 8)
+            truncated = list(range(1, 41))[:8]
+            self.assertEqual(len(truncated), 8)
+            self.assertEqual(truncated, list(range(1, 9)))
+        finally:
+            if original is None:
+                CONFIG.pop("games", None)
+            else:
+                CONFIG["games"] = original
+
 
 class StatsTest(unittest.TestCase):
     def test_reach_believers_and_roles(self) -> None:

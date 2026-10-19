@@ -37,6 +37,7 @@
     jobTimer: null,
     leaderboard: [],
     lastResult: null,
+    runRelease: null,
   };
 
   const exporter = GAWorldGameExport.attach(() => state.leaderboard.length && {
@@ -297,7 +298,7 @@
     const status = $("#arenaStatus");
     status.className = "hint";
     status.textContent = t("arena.starting", "启动中…");
-    $("#arenaRunBtn").disabled = true;
+    state.runRelease = setButtonBusy($("#arenaRunBtn"), "arena.running", "运行中…");
     setProgress(0);
 
     try {
@@ -321,7 +322,7 @@
     } catch (err) {
       status.className = "imp-status is-error";
       status.textContent = String(err.message || err);
-      $("#arenaRunBtn").disabled = false;
+      if (state.runRelease) { state.runRelease(); state.runRelease = null; }
     }
   }
 
@@ -344,20 +345,20 @@
           state.leaderboard = (rec.result && rec.result.leaderboard) || [];
           renderLeaderboard();
           renderSurvivors();
-          $("#arenaRunBtn").disabled = false;
+          if (state.runRelease) { state.runRelease(); state.runRelease = null; }
           status.className = "imp-status is-success";
           status.textContent = t("arena.done", "本场完成");
         } else if (rec.status === "failed") {
           clearInterval(state.jobTimer);
           state.jobTimer = null;
-          $("#arenaRunBtn").disabled = false;
+          if (state.runRelease) { state.runRelease(); state.runRelease = null; }
           status.className = "imp-status is-error";
           status.textContent = (rec.error || "failed") + "";
         }
       } catch (err) {
         clearInterval(state.jobTimer);
         state.jobTimer = null;
-        $("#arenaRunBtn").disabled = false;
+        if (state.runRelease) { state.runRelease(); state.runRelease = null; }
         const status = $("#arenaStatus");
         if (status) {
           status.className = "imp-status is-error";

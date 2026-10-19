@@ -488,7 +488,7 @@ for entry in agents[0].history[::24]:  # 每天看一条
 > 至此,本书的"技术层"全部完成。接下来进入"方法层"——从研究问题到可信度评估,这是社会仿真作为研究方法的全流程。第 9 章开始讨论"如何把研究问题变成可证伪的仿真假设"。
 ---
 
-### 8.10 扩展:仿真性能优化
+## 8.10 扩展:仿真性能优化
 
 仿真运行可能很慢。本节讨论性能优化策略。
 
@@ -537,7 +537,7 @@ LLM 调用的缓存能减少 30–50% 的调用:
 
 ---
 
-### 8.11 扩展:分布式与并行计算的深度讨论
+## 8.11 扩展:分布式与并行计算的深度讨论
 
 ### 8.11.1　一致性模型
 
@@ -578,7 +578,7 @@ LLM 调用的缓存能减少 30–50% 的调用:
 
 ---
 
-### 8.12 扩展:仿真运行的工程最佳实践
+## 8.12 扩展:仿真运行的工程最佳实践
 
 ### 8.12.1　日志规范
 
@@ -643,7 +643,7 @@ except MemoryError:
 
 ---
 
-### 8.13 扩展:仿真监控与可视化
+## 8.13 扩展:仿真监控与可视化
 
 仿真运行时需要实时监控。
 
@@ -692,109 +692,7 @@ def alert_on_anomaly(issue: str):
 - 时间轴拖动
 - agent 状态热力图
 - 网络动态演化
-- 关键事件标注
-
----
-
-## 8.14　本章小结(扩展版)
-
-- 性能优化包括向量化、内存优化、分布式、缓存去重。
-- 分布式仿真的一致性模型、节点划分、故障处理、监控调优。
-- 工程最佳实践:日志规范、配置与代码分离、异常处理、资源清理。
-- 监控与可视化:实时仪表盘、性能监控、异常告警、可视化回放。
-- GAWorld 的运行系统已经实现了大部分生产级特性,读者可以直接使用。
-
-    best_diff = float("inf")
-    for _ in range(100):  # 简单网格搜索
-        candidate = perturb_parameters(parameters)
-        simulated = run_with_params(candidate)
-        diff = calculate_diff(simulated, real_data)
-        if diff < best_diff:
-            best_diff = diff
-            best_params = candidate
-    return best_params
-```
-
-### 8.15.2　校准的指标
-
-校准的常用指标:
-
-- 均方误差(MSE)
-- 平均绝对误差(MAE)
-- 相对误差
-- 相关系数
-
-### 8.15.3　仿真验证
-
-验证(validation)是确认仿真预测的准确性:
-
-```python
-def validate_simulation(sim_predictions: pd.Series,
-                       real_outcomes: pd.Series) -> dict:
-    """验证仿真预测"""
-    return {
-        "mae": np.mean(np.abs(sim_predictions - real_outcomes)),
-        "rmse": np.sqrt(np.mean((sim_predictions - real_outcomes) ** 2)),
-        "correlation": np.corrcoef(sim_predictions, real_outcomes)[0, 1]
-    }
-```
-
-### 8.15.4　校准 vs 验证
-
-- 校准:用一部分数据调整参数
-- 验证:用另一部分数据(测试集)验证
-
-两者一起做才是完整的可信度建设。
-
----
-
-### 8.16 扩展:大规模仿真的优化
-
-### 8.16.1　并行计算的层次
-
-仿真可以多层次并行:
-
-- **bit 级**:用 numpy 向量化
-- **agent 级**:agent 内并行
-- **时间步级**:不同时间步并行
-- **场景级**:不同世界并行
-
-### 8.16.2　GPU 加速
-
-大规模仿真可以用 GPU:
-
-```python
-import cupy as cp
-
-def gpu_parallel_decisions(agents, situations):
-    """GPU 并行决策"""
-    states_gpu = cp.array([a.state for a in agents])
-    # 在 GPU 上并行计算
-    decisions_gpu = compute_decisions_gpu(states_gpu)
-    return cp.asnumpy(decisions_gpu)
-```
-
-### 8.16.3　内存优化
-
-大规模仿真的内存优化:
-
-- 用 numpy 数组代替 list of dict
-- 用稀疏矩阵存关系网络
-- 定期持久化到磁盘
-- 用共享内存避免数据拷贝
-
-### 8.16.4　网络优化
-
-分布式仿真的网络优化:
-
-- 节点间只传输必要数据
-- 压缩传输(序列化)
-- 异步通信
-- 本地优先
-
----
-
-## 8.17　本章小结(最终扩展版)
+- 关键事件标注## 8.17　本章小结(最终扩展版)
 
 - 仿真校准与验证:用真实数据调整参数,用测试集验证。
 - 大规模仿真的优化:并行计算、GPU 加速、内存优化、网络优化。
@@ -963,56 +861,7 @@ LLM 调用应该用多线程,智能体循环应该用多进程。
 Python 的并行化工具:
 
 - **ThreadPoolExecutor**:线程池
-- **ProcessPoolExecutor**:进程池
-- **multiprocessing**:进程管理
-- **concurrent.futures**:统一的并行接口
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def parallel_llm_calls(prompts):
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        results = list(executor.map(call_llm, prompts))
-    return results
-```
-
-### 8.25.3　分布式计算
-
-大规模仿真需要分布式:
-
-- **D- 多机协作
-- 节点间异步同步
-- 中心化调度 + 分布式执行
-
-### 8.25.4　GPU 加速
-
-某些仿真可以用 GPU:
-
-- 大规模智能体决策(用矩阵运算)
-- 神经网络代理(用 PyTorch)
-- 图形渲染(用 OpenGL)
-
-GAWorld 的 LLM 调用主要在云端,不直接用 GPU。
-
----
-
-### 8.26 扩展:可重复性的工程实现
-
-### 8.26.1　种子管理
-
-种子的严格管理:
-
-- 默认种子 42
-- 跑前记录种子
-- 多个种子验证稳定性
-- 种子 + 配置一起打包
-
-### 8.26.2　版本管理
-
-依赖版本管理:
-
-- requirements.txt 锁定全部依赖
-- Python 版本锁定(3.11.5)
+- **ProcessPoolExecutor**:进- Python 版本锁定(3.11.5)
 - 操作系统记录
 - 库版本精确(pandas==2.1.4)
 
@@ -1044,111 +893,3 @@ runtime = {
     "dependencies": {pkg: get_version(pkg) for pkg in vim_pkgs}
 }
 ```
-
----
-
-### 8.27 扩展:仿真运行的调试与优化
-
-### 8.27.1　调试工具
-
-调试工具:
-
-- **pdb**:Python 内置调试器
-- **ipdb**:增强版调试器
-- **PyCharm/VS Code**:IDE 调试
-- **cProfile**:性能分析
-
-### 8.27.2　性能瓶颈识别
-
-性能瓶颈识别:
-
-- **CPU 瓶颈**:智能体循环、大矩阵运算
-- **IO 瓶颈**:LLM 调用、文件读写
-- **内存瓶颈**:大规模数据、图像处理
-
-### 8.27.3　优化策略
-
-```python
-# 优化 1:向量化
-def vectorized_update(agents):
-    cash = np.array([a.cash for a in agents])
-    income = np.array([a.income_hourly for a in agents])
-    cash += income * time_delta
-    for i, a in enumerate(agents):
-        a.cash = cash[i]
-
-# 优化 2:缓存
-@lru_cache(maxsize=128)
-def cached_compute(x):
-    return expensive_compute(x)
-
-# 优化 3:批处理
-def batch_llm_calls(prompts):
-    # 多个 prompt 合并为一次调用
-    ...
-```
-
-### 8.27.4　内存优化
-
-内存优化:
-
-- 稀疏矩阵存关系网络
-- 定期持久化到磁盘
-- 用生成器避免一次性加载
-
----
-
-### 8.28 扩展:仿真运行的工程伦理
-
-### 8.28.1　能源消耗
-
-大规模仿真能耗很大:
-
-- LLM 调用能耗:每次 1-10g CO2
-- 大规模仿真:可能产生数吨 CO2
-
-研究者要考虑环境影响,选择合适的规模。
-
-### 8.28.2　数据安全
-
-数据安全考虑:
-
-- 敏感数据加密
-- 访问控制
-- 删除机制
-- 备份策略
-
-### 8.28.3　责任归属
-
-仿真结果的责任:
-
-- 开发者:模型设计
-- 使用者:结果应用
-- 决策者:基于仿真做决策
-
-责任归属要明确。
-
----
-
-## 8.29　本章小结(最终扩展版)
-
-经过本章(包括扩展部分),读者应该已经具备:
-
-- 时钟与步长的选择
-- 顺序与并行的权衡
-- 同步事件与级联
-- 守恒定律的应用
-- 状态持久化与可复现性
-- 仿真运行的工程细节
-- 性能优化(向量化、并行、分布式、缓存)
-- 仿真校准与验证
-- 大规模仿真的优化
-- 仿真生态与开源
-- 仿真的可重复性
-- 仿真运行的调试与优化
-- 仿真运行的工程伦理
-
-**核心信息**:运行系统是社会仿真的"操作系统",它决定了仿真能不能跑、跑得快、跑得对。
-
-读者读完后,应该能选择合适的步长、并行策略、可重复性方案,以及在出错时做出补救。
-

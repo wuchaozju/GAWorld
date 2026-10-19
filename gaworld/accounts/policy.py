@@ -47,6 +47,8 @@ QUOTA_GATED_EXACT = {
     "/api/research/digest",
     "/api/persona/distill",
     "/api/research/policy/run",
+    "/api/research/replication/extract",
+    "/api/research/replication/run",
     "/api/research/games/design",
     "/api/research/games/sessions",
     "/api/arena/run",
@@ -60,9 +62,28 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
+STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"})
+
+
+def study_action(path: str) -> str | None:
+    parts = path.strip("/").split("/")
+    if parts == ["api", "research", "studies"]:
+        return "create"
+    if len(parts) == 5 and parts[:3] == ["api", "research", "studies"] and parts[4] in STUDY_ACTIONS:
+        return parts[4]
+    return None
+
+
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
-    return path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+    if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
+        return True
+    if path.startswith("/api/research/batches/") and path.rsplit("/", 1)[-1] in {"run", "resume"}:
+        return True
+    return (
+        path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+        or study_action(path) in {"create", "approve", "run", "resume", "reset"}
+    )
 
 
 MEMBER_WRITES_EXACT = {
@@ -79,9 +100,17 @@ MEMBER_WRITES_EXACT = {
     "/api/research/analyze",
     "/api/research/digest",
     "/api/research/extract",
+    "/api/research/studies",
     "/api/persona/distill",
 }
-MEMBER_WRITES_PREFIX = ("/api/games/", "/api/arena/", "/api/research/games", "/api/research/policy")
+MEMBER_WRITES_PREFIX = (
+    "/api/games/",
+    "/api/arena/",
+    "/api/research/games",
+    "/api/research/policy",
+    "/api/research/replication",
+    "/api/research/plans/",
+)
 
 #: Deletes whose handler only removes the caller's own record.
 OWNER_DELETES = {"/api/interview/delete", "/api/research/delete", "/api/persona/delete"}
@@ -133,11 +162,26 @@ def required(method: str, path: str) -> Level:
         return "member"  # creating, selecting; owning the world is checked by the handler
     if path.startswith("/api/cluster/"):
         return "member"  # a world's nodes; owning the world is checked by the handler
+    if study_action(path) is not None:
+        return "member"  # every study handler checks ownership before reading or writing
+    if path in {"/api/research/batches", "/api/research/batches/import"} or (
+        len(parts) == 6 and parts[2:4] == ["research", "batches"]
+        and parts[5] in {"run", "pause", "resume", "stop", "compare"}
+    ):
+        return "member"  # batch handlers enforce the same user/world ownership boundary
     # Deleting is owner business: these handlers check the record's owner
     # (gaworld.accounts.ownership); every other delete stays admin-only.
     if "delete" in path.split("/"):
         owner_checked = path in OWNER_DELETES or (
-            path.startswith(("/api/research/games/", "/api/research/policy/")) and path.endswith("/delete")
+            path.startswith(
+                (
+                    "/api/research/games/",
+                    "/api/research/policy/",
+                    "/api/research/replication/",
+                    "/api/research/studies/",
+                )
+            )
+            and path.endswith("/delete")
         )
         return "member" if owner_checked else "admin"
     if path in MEMBER_WRITES_EXACT or path.startswith(MEMBER_WRITES_PREFIX):
@@ -171,7 +215,7 @@ CONFIG_PARAM_SECTIONS = frozenset({
     "action_space", "anomaly", "car_ownership", "daily_planning", "dynamic_behavior", "economy",
     "family", "goals", "home", "human_realism", "interests", "intervention", "life_events",
     "local_physical", "location_assignment", "memory", "mode_choice", "multiplayer", "personality",
-    "replan", "routine_change", "spatial_preferences", "spontaneity", "traffic", "travel",
+    "replan", "routine_change", "spatial_preferences", "spontaneity", "traffic", "transport_habit", "travel",
     "two_wheeler_ownership", "organizations",
 })  # fmt: skip
 #: Single keys outside those sections the console itself sends to a running world.

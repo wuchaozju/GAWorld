@@ -9,8 +9,8 @@ per-agent path, run on the same initial population with the same seed. It is
 pluggable (``reference_day_fn``) and defaults to a per-agent day whose social
 influence is explicit, so the comparison isolates exactly one thing: the error
 introduced by *aggregating agents into cohorts*. It does **not** compare group
-mode against the 12-stage tick pipeline — those stages are closures over
-``run_simulation``'s locals and are not callable from here, and a comparison
+mode against the 12-stage tick pipeline — those stages need the run state
+only ``run_simulation`` assembles and are not callable from here, and a comparison
 that required a full simulator boot with live LLM access could not run in CI or
 be tested. So a pass here means "cohorting costs little relative to per-agent
 simulation of the same process", not "group mode reproduces the full

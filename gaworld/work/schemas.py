@@ -87,6 +87,7 @@ class WorkBrief:
     estimated_minutes: int
     submitted_at: float
     market_job_id: Optional[str] = None  # set if dispatched via JobMarket
+    skill_ids: list[str] = field(default_factory=list)  # skills pasted into brief_text
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -106,6 +107,7 @@ class WorkBrief:
             estimated_minutes=int(payload.get("estimated_minutes", 30)),
             submitted_at=float(payload.get("submitted_at", 0.0)),
             market_job_id=payload.get("market_job_id"),
+            skill_ids=[str(s) for s in (payload.get("skill_ids") or [])],
         )
 
 
@@ -124,6 +126,7 @@ class WorkResult:
     error: Optional[str] = None
     finished_at: float = 0.0
     duration_seconds: float = 0.0
+    skill_ids: list[str] = field(default_factory=list)  # the brief's skills, as finally run
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -139,6 +142,7 @@ class WorkResult:
             error=payload.get("error"),
             finished_at=float(payload.get("finished_at", 0.0)),
             duration_seconds=float(payload.get("duration_seconds", 0.0)),
+            skill_ids=[str(s) for s in (payload.get("skill_ids") or [])],
         )
 
 

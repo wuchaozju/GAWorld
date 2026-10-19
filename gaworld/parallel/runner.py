@@ -29,6 +29,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from gaworld.accounts import ownership
 from gaworld.core.comparability import CURRENT_EPOCH
 from gaworld.logging_setup import get_logger
 from gaworld.parallel.analysis import (
@@ -119,6 +120,7 @@ def prepare_experiment(
     base_config: dict[str, Any] | None = None,
     experiment_id: str | None = None,
     group: str | None = None,
+    owner: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create the on-disk tree for an experiment and write its manifest.
 
@@ -166,7 +168,11 @@ def prepare_experiment(
         "spec": spec.to_dict(),
         "worlds": worlds,
         "status": "prepared",
+        **(ownership.stamp() if owner is None else {"owner_id": owner.get("owner_id"), "owner": owner.get("owner", "")}),
     }
+    from gaworld.research.workspaces import stamp
+
+    manifest.update({key: value for key, value in stamp().items() if owner is None or key not in {"owner_id", "owner"}})
     if group:
         manifest["group"] = group
     write_manifest(repo_root, manifest)
@@ -276,6 +282,11 @@ class ExperimentRunner:
         self.python_bin = python_bin or sys.executable
         self.script_path = script_path or os.path.join(repo_root, "generative_city_sim.py")
         self.reset = reset
+        self.provider_blocked = False
+        self.research_provider_config: dict[str, Any] | None = None
+        from gaworld.accounts.usage import child_env
+
+        self._usage_env = child_env({})
         self._lock = threading.Lock()
         self._procs: dict[str, subprocess.Popen] = {}
         self._stop = threading.Event()
@@ -316,15 +327,57 @@ class ExperimentRunner:
         from gaworld.accounts.usage import child_env
 
         env = child_env(os.environ.copy())
+        env.update(self._usage_env)
         env["PYTHONUNBUFFERED"] = "1"
-        env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(
-            self.manifest["worlds"][world_id]["overrides"], ensure_ascii=False
-        )
+        import copy
+
+        overrides = copy.deepcopy(self.manifest["worlds"][world_id]["overrides"])
+        frozen = getattr(self, "research_frozen_config", None)
+        if frozen is not None:
+            from gaworld.settings.overrides import deep_update
+
+            full = copy.deepcopy(frozen)
+            deep_update(full, overrides)
+            overrides = full
+            env["GAWORLD_RESEARCH_FROZEN_CONFIG"] = "1"
+        selected = (self.manifest.get("research") or {}).get("actual_provider")
+        if selected and self.research_provider_config:
+            overrides.setdefault("llm", {}).setdefault("providers", {})[selected] = (
+                self.research_provider_config
+            )
+        env["GAWORLD_CONFIG_OVERRIDES"] = json.dumps(overrides, ensure_ascii=False)
         # A parallel-worlds run must not inherit the operator's dashboard
         # settings file on top of its own overrides for the paths it isolates;
         # the env override already wins, but marking the run keeps logs honest.
         env["GAWORLD_PARALLEL_WORLD"] = world_id
+        research = self.manifest.get("research") or {}
+        if research.get("ledger"):
+            env["GAWORLD_RESEARCH_RUN_STATE"] = str(research["ledger"])
+            env["GAWORLD_RESEARCH_DAILY_BRIEF"] = (
+                "1" if research.get("execution_mode") == "daily_brief" else "0"
+            )
+            env["GAWORLD_LOG_FILE"] = self._abs(
+                os.path.join(self.manifest["worlds"][world_id]["dir"], "logs", "run.log")
+            )
+            env["GAWORLD_LOG_MODE"] = "verbose"
         return env
+
+    def _provider_guard(self) -> bool:
+        path = (self.manifest.get("research") or {}).get("ledger")
+        if not path:
+            return True
+        from gaworld.llm.run_state import RunLedger
+
+        state = RunLedger(str(path)).snapshot()
+        if not state["aborted"]:
+            return True
+        self.provider_blocked = True
+        self.stop()
+        with self._lock:
+            for world in self._states.values():
+                if world["status"] != "done":
+                    world.update(status="error", error=state["reason"])
+        return False
 
     @property
     def sim_days(self) -> int:
@@ -337,6 +390,8 @@ class ExperimentRunner:
     # -- world lifecycle -------------------------------------------------
 
     def _run_world(self, world_id: str) -> None:
+        if not self._provider_guard():
+            return
         entry = self.manifest["worlds"][world_id]
         env = self._env(world_id)
         self._set(world_id, status="running", started_at=time.time())
@@ -379,8 +434,6 @@ class ExperimentRunner:
             if proc is None:  # stopped while waiting for a slot
                 self._set(world_id, status="stopped", finished_at=time.time())
                 return
-            with self._lock:
-                self._procs[world_id] = proc
             code = proc.wait()
         finally:
             handle.close()
@@ -493,9 +546,20 @@ class ExperimentRunner:
         waiting = False
         try:
             while not self._stop.is_set():
+                if not self._provider_guard():
+                    return None
+                self._wait_until_go()
+                if self._stop.is_set():
+                    return None
                 with _ADMIT_LOCK:
                     check = _ADMISSION["check"]
                     if check is None or check():
+                        # Launch through the ONE worldrun primitive; Dev's
+                        # child env (usage stamping, research provider config,
+                        # frozen-config/override vars) is already baked into
+                        # ``env`` by _env(), so it flows through the delegation
+                        # additively. Registration in self._procs happens in
+                        # the caller under the same lock as before.
                         wr_handle = worldrun_launch_subprocess(
                             [self.python_bin, self.script_path, "run"],
                             world_id=world_id,
@@ -512,11 +576,14 @@ class ExperimentRunner:
                         return proc
                 if not waiting:
                     waiting = True
-                    self._set(world_id, waiting_for_slot=True)
+                    self._set(world_id, waiting_for_slot=True, queued_at=time.time())
                 self._stop.wait(ADMIT_POLL_SECONDS)
             return None
         finally:
             if waiting:
+                with self._lock:
+                    queued_at = self._states[world_id].get("queued_at")
+                self._set(world_id, queued_seconds=max(0, time.time() - queued_at) if queued_at else 0)
                 self._set(world_id, waiting_for_slot=False)
 
     def _wait_until_go(self) -> None:
@@ -564,9 +631,7 @@ class ExperimentRunner:
                     self._run_world(world_id)
                 except Exception as exc:
                     _LOG.exception("world %s crashed", world_id)
-                    self._set(
-                        world_id, status="error", error=str(exc), finished_at=time.time()
-                    )
+                    self._set(world_id, status="error", error=str(exc), finished_at=time.time())
 
         threads = [
             threading.Thread(target=contextvars.copy_context().run, args=(worker,),
@@ -577,6 +642,7 @@ class ExperimentRunner:
             thread.start()
 
         while any(thread.is_alive() for thread in threads):
+            self._provider_guard()
             self._sample_logs()
             if on_progress:
                 snap = self.snapshot()
@@ -617,9 +683,16 @@ class ExperimentRunner:
         # pooled when they share it (gaworld/core/comparability.py).
         self.manifest["comparability_epoch"] = CURRENT_EPOCH
         report["comparability_epoch"] = CURRENT_EPOCH
-        self.manifest["world_status"] = {
-            state["id"]: state["status"] for state in states
-        }
+        self.manifest["world_status"] = {state["id"]: state["status"] for state in states}
+        self.manifest["world_timings"] = states
+        self.manifest["execution_mode"] = self.manifest.get("spec", {}).get("execution_mode") or (
+            "lean_tick" if self.manifest.get("spec", {}).get("fast") else "tick"
+        )
+        report["execution_mode"] = self.manifest["execution_mode"]
+        report["actual_provider"] = (self.manifest.get("research") or {}).get("actual_provider")
+        report["actual_model"] = (self.manifest.get("research") or {}).get("actual_model")
+        if self.provider_blocked:
+            self.manifest["status"] = "error"
         write_manifest(self.repo_root, self.manifest)
         write_report(self.repo_root, self.manifest, report)
         return report

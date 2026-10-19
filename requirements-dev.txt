@@ -11,3 +11,4 @@ ruff>=0.4
 black>=24.0
 mypy>=1.8
 openapi-spec-validator>=0.7  # tests/test_openapi.py (skipped if absent)
+playwright>=1.40  # tests/test_browser_smoke.py; also `python -m playwright install chromium` (skipped if absent)

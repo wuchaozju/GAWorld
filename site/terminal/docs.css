@@ -1,0 +1,138 @@
+/* Docs terminal variant — a clean reader-style layout, mono everywhere,
+ * gold/amber callouts. Mirrors the reading rhythm of the cream docs page. */
+
+@import url("/terminal/tokens-terminal.css");
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 36px;
+  margin-top: 36px;
+}
+
+.toc {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  border-right: 1px solid var(--line);
+  padding-right: 22px;
+}
+
+.toc .toc-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--phosphor);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 4px 0; }
+.toc a {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 3px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 0.82rem;
+  border-left: 2px solid transparent;
+}
+
+.toc a:hover, .toc a.is-active {
+  background: rgba(95, 227, 161, 0.06);
+  color: var(--phosphor);
+  border-left-color: var(--phosphor);
+}
+
+.prose {
+  max-width: 78ch;
+}
+
+.prose h2 {
+  margin: 36px 0 14px;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.prose h3 {
+  margin: 28px 0 10px;
+  font-size: 1.05rem;
+  color: var(--phosphor);
+  letter-spacing: 0.02em;
+}
+
+.prose p {
+  font-size: 0.94rem;
+  line-height: 1.7;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+}
+
+.prose p .quiet { color: var(--muted); }
+
+.prose ul {
+  padding-left: 18px;
+  margin: 0 0 14px;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.prose ul li::marker { color: var(--phosphor); }
+
+.prose code {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 0.86em;
+  color: var(--amber);
+}
+
+.prose pre {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 0 0 18px;
+}
+
+.prose pre .who { color: var(--phosphor); }
+.prose pre .comment { color: var(--muted); }
+.prose pre .string  { color: var(--amber); }
+
+.callout {
+  border-left: 3px solid var(--amber);
+  background: var(--amber-dim);
+  border-radius: 0 4px 4px 0;
+  padding: 12px 16px;
+  margin: 18px 0;
+  font-size: 0.86rem;
+  color: var(--ink);
+}
+
+.callout.steel { border-color: var(--steel); background: rgba(111, 179, 200, 0.08); }
+.callout.red   { border-color: var(--red);   background: rgba(255, 122, 107, 0.08); }
+
+.callout b {
+  color: var(--amber);
+  letter-spacing: 0.04em;
+  font-size: 0.74rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.callout.steel b { color: var(--steel); }
+.callout.red b   { color: var(--red); }
+
+@media (max-width: 920px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: relative; top: 0; border-right: none; border-bottom: 1px solid var(--line); padding: 0 0 18px; }
+}

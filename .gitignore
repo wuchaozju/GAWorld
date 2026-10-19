@@ -171,6 +171,8 @@ celerybeat.pid
 !/site/simviz/**
 !/site/citymap/
 !/site/citymap/**
+# The negations above would otherwise take Finder's files in with them.
+/site/**/.DS_Store
 dashboard_config.json
 
 # mypy
@@ -228,3 +230,7 @@ TASK*.progress
 fos.db*
 fos/test_results/
 .venv-fos-integration/
+
+# Agent tool scratch: Playwright CLI page snapshots, brainstorm / delivery pages
+/.playwright-cli/
+/.superpowers/

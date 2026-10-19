@@ -104,6 +104,85 @@ and people working on the simulator can't avoid the orchestrator.
 After the lift, `generative_city_sim.py` becomes a thin CLI + glue
 shim of well under 1,500 lines.
 
+## 2026-10-10: line budget + one more batch
+
+- Prerequisites 1–2 above are done (`gaworld/sim/_memory_recall.py`,
+  `gaworld/sim/_action.py`); meanwhile `run_simulation` grew back to
+  2,285 lines and the file to 6,254.
+- `tests/test_line_budget.py` now holds the file and `run_simulation` to
+  upper bounds in `tests/line_budget.json` that may only go down (over
+  fails; 50+ lines under fails too, asking for the bound to come down).
+- Moved out (no module-level constants, nothing tests patch): the
+  end-of-run charts → `gaworld/sim/_plots.py`, and the `compare-event` /
+  `parallel-worlds` subcommands → `gaworld/sim/_compare.py`. File
+  6,254 → 5,679 lines; `run_simulation` unchanged (2,280).
+- Next, in plan order: prerequisite 3 (per-step routines → `_step.py`)
+  together with 4 for the constants they read — tests patch
+  `sim.ROUTINE_CHANGE_RANDOMNESS`, `sim.HUMAN_REALISM_ENABLED`,
+  `sim.maybe_adjust_activity` and friends, so those patches move with them.
+
+## 2026-10-10 (later): prerequisite 3, with 4 for its knobs
+
+- Per-step routines → `gaworld/sim/_step.py`: `maybe_generate_transient_thought`,
+  `format_transient_thought`, `maybe_adjust_activity`, `_pick_reshape_life_event`
+  and the nine helpers behind them (13 functions). Re-exported, so
+  `run_simulation`'s bare-name calls and `patch.object(sim, "maybe_adjust_activity")`
+  are unchanged.
+- Their knobs (`routine_change.*`, `spontaneity.*`,
+  `life_events.reshape.severity_threshold`) are read at call time; the 23
+  module-level snapshots in the file are gone (one, `SPONTANEITY_RANDOM_ACTION_CHANCE`,
+  had been dead since `_action.py` started reading it at call time). Same
+  defaults and coercions; the only difference is that a `CONFIG` changed after
+  import is now honoured.
+- Tests that patched `sim.ROUTINE_CHANGE_RANDOMNESS` / `sim.call_llm` around
+  `maybe_adjust_activity` now pin `CONFIG["routine_change"]["randomness"]` and
+  patch `gaworld.llm.providers.call_llm`; the Big Five prompt-wiring test counts
+  the routine-change prompt in `_step.py`.
+- File 5,679 → 5,232 lines; `run_simulation` unchanged (2,280).
+- Next: the twelve stage closures inside `run_simulation` (`_stage_prepare` …
+  `_stage_record`, 937 lines). They close over ~15 run / tick locals (`day`,
+  `time_str`, `hook_bus`, `agents_by_id`, `city_map`, `daily_logs`, …) and use
+  20 names defined in this file plus 47 imported ones, nine of which tests patch
+  on `sim` (`STATEFUL`, `GOALS_ENABLED`, `HUMAN_REALISM_*`, `evoke_memory`,
+  `append_agent_log`, `vector_db_add_entry`, `maybe_adjust_activity`, `CONFIG`).
+  Lifting them needs a per-tick context object and a decision on those patches.
+
+## 2026-10-10 (evening): the twelve stages leave `run_simulation`
+
+- `_stage_prepare` … `_stage_record` → `gaworld/sim/_stages.py`, now plain
+  functions `fn(agent, step, sim, *, scope)`; `builtin_stages(scope)` binds
+  the scope for `StagePipeline.from_config`. `run_simulation` 2,280 → 1,359
+  lines, the file 5,232 → 4,264.
+- `StepScope` carries what the closures used to see. The run / day / tick
+  state (22 names: `agents`, `hook_bus`, `day`, `schedule_map`, `daily_logs`,
+  `time_str`, `env_context`, `policy`, …) is written into it before every
+  agent step, which keeps the late-binding the closures had. This module's
+  settings (`STATEFUL`, `HUMAN_REALISM_*`, `GOALS_*`, `REPLAN_*`,
+  `LIFE_EVENT_RESHAPE_*`, `DISTRIBUTED_CONFIG`, `CONFIG`, `_LOG_SIMPLE`) and
+  six helpers that still live here (`planning`, `reflection`,
+  `update_state`, `infer_event_effect`, `resolve_location`,
+  `persist_agent_locations_if_changed`) are handed in once per run.
+- Why settings ride the scope instead of becoming `CONFIG` lookups now: the
+  end-to-end tests set `sim.STATEFUL`, `sim.HUMAN_REALISM_ENABLED`, … and one
+  replaces `sim.CONFIG` wholesale, without touching the global `CONFIG` the
+  stages would otherwise read — `human_realism.enabled` defaults to on, so the
+  stages would quietly run with realism on while the rest of the run had it
+  off. Passing the values `run_simulation` already uses keeps one source.
+  They become `CONFIG` lookups in the step that lifts `run_simulation`
+  itself, where every reader and those tests change together.
+- Everything else the stages use is imported from where it lives. Two tests
+  intercepted a function inside a full run through `sim`
+  (`maybe_adjust_activity`, `choose_action`); they now patch
+  `gaworld.sim._stages`, and with the old target they fail.
+  `get_activity_for_time` / `apply_schedule_override` moved to
+  `gaworld/sim/_schedule.py`; the imports that only the stages used left this
+  file (`update_needs` and `get_social_context` stay as re-exports, tests call
+  them on `sim`).
+- Next candidates inside `run_simulation`: the fast-forward closure
+  (`_run_fast_forward_step` and its three nested helpers, ~350 lines) the
+  same way; then the six helpers above to `gaworld/sim/_cognition.py` (as
+  its docstring anticipates) and `_location.py`.
+
 ## Round-4 outcome
 
 - ✅ Audit finished, plan written, phase banners inserted.

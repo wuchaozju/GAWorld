@@ -1,0 +1,631 @@
+<!doctype html>
+<html class="no-js" lang="zh-CN" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="GAWorld 文档：研究工作台。使用步骤、配置示例与接口参考。"><link rel="index" title="索引" href="genindex.html"><link rel="search" title="搜索" href="search.html"><link rel="next" title="平行世界与对照实验" href="parallel-worlds.html"><link rel="prev" title="访谈与群体采访" href="interviews.html">
+        <link rel="prefetch" href="_static/logo.svg" as="image">
+
+    <link rel="shortcut icon" href="_static/favicon.svg"><!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>研究工作台 - GAWorld 文档</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=c92b6c3a" />
+    <link rel="stylesheet" type="text/css" href="_static/prompts.css?v=56adfc9f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-primary: rgb(0, 0, 136);
+  --color-brand-content: rgb(0, 0, 136);
+  --color-brand-visited: rgb(72, 38, 131);
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #b0b0e8;
+  --color-brand-content: #c4c4f0;
+  --color-brand-visited: #d4a8ff;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">GAWorld 文档</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  <div class="sidebar-logo-container">
+    
+    <img class="sidebar-logo" src="_static/logo.svg" alt="GAWorld" width="480" height="281">
+    
+  </div>
+  <span class="sidebar-brand-text"><span class="sidebar-brand-line sidebar-brand-title">GAWorld</span><span class="sidebar-brand-line sidebar-brand-meta">v0.2.1 · 文档</span></span>
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="搜索" name="q" aria-label="搜索">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading" aria-level="2"><span class="caption-text">入门指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">第一次仿真</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">工作区、城市与世界</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">用户指南</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="models.html">模型与运行配置</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cities.html">城市与地图</a></li>
+<li class="toctree-l1"><a class="reference internal" href="residents.html">居民与 Agent Studio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skills-work.html">技能与真实工作</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation.html">仿真运行与时间尺度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">回放、分析与导出</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interviews.html">访谈与群体采访</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">研究工作台</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel-worlds.html">平行世界与对照实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy-games.html">政策推演与严肃游戏</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">团队部署与世界管理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">命令行界面</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">提示词</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="prompts/index.html">提示词总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/simulation.html">仿真认知提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/interviews.html">访谈问答提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/research.html">研究与实验提示词</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prompts/editing.html">修改与验证</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">案例分析</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cases/index.html">案例总览</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/simulation-records.html">已有仿真实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/classics.html">经典行为实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cases/demand.html">需求估计提示词</a></li>
+</ul>
+<p class="caption" role="heading" aria-level="2"><span class="caption-text">开发者指南</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code-structure.html">代码结构与阅读路径</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">架构与可扩展性</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">编写插件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Python 与 HTTP 接口</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/agent.html">居民数据</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/skills.html">技能接口</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/env.html">环境系统</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/kernel.html">仿真内核</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html">记录与记忆</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html">配置与模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/registry.html">插件注册</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/client.html">HTTP 客户端</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">开发与贡献</a></li>
+</ul>
+
+</div>
+
+
+<section class="visitor-widget" aria-labelledby="visitor-widget-title" hidden>
+  <h2 id="visitor-widget-title">访问统计</h2>
+  <template id="visitor-widget-embed"><script type="text/javascript" id="mapmyvisitors" src="https://mapmyvisitors.com/map.js?d=Qv8NcKeQND1Rw6TTxjM9dacMMD10_yGRj76gBrTDnd4&amp;cl=ffffff&amp;w=a"></script></template>
+  <p class="visitor-widget-status" role="status">正在加载访问统计…</p>
+  <div class="visitor-widget-map"></div>
+  <p>地图显示访客的大致地区。</p>
+</section>
+
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/blob/main/site/documentation/research.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/wuchaozju/GAWorld/edit/main/site/documentation/research.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="id1">
+<h1>研究工作台<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h1>
+<p>研究工作台把研究问题或论文转成实验设计，保存条件、测量指标与判定规则，再组织运行和报告。本章用“补贴通告是否改变居民压力”演示从想法到结果的过程。</p>
+<p>先完成 <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a>，准备教程小城的 8 位居民，并配置可用的分析模型与仿真模型。分析模型用于读材料、写方案和解释结果；仿真模型用于居民行动。</p>
+<section id="id2">
+<h2>1. 写清研究问题<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
+<p>打开 <strong>研究工作台</strong>，选择 <strong>研究想法</strong>，输入：</p>
+<blockquote>
+<div><p>在教程小城的同一批 8 位居民中，比较租金补贴通告、例行通告与无新增通告三种条件。运行 3 天，第 2 天 09:00 发布通告，以期末 stress 为结果指标。预期补贴通告组低于基准组，最小效应设为 0.02，使用随机种子 42 和 43 重复。</p>
+</div></blockquote>
+<p>本例改变居民接收到的事件文本。若研究问题是“实际发放补贴的作用”，还需配置或实现转账机制，并核对经济账本中的支付记录。</p>
+<figure class="annotated-shot">
+<a class="shot-crop research-crop" href="_static/screenshots/research.png" aria-label="打开完整研究工作台截图">
+<img src="_static/screenshots/research.png" alt="研究工作台的材料输入、模型设置与研究记录，编号对应下方说明">
+<span class="shot-pin" style="left:2%;top:25%">1</span><span class="shot-pin" style="left:2%;top:44%">2</span><span class="shot-pin" style="left:68%;top:90%">3</span><span class="shot-pin" style="left:79%;top:36%">4</span>
+</a><figcaption>① 选择研究材料；② 输入研究问题；③ 选择分析模型并生成方案；④ 查看方案与研究记录。点击查看完整截图。</figcaption>
+</figure><p>选择分析模型并生成方案，检查候选设计后点击 <strong>转成研究</strong>。模型生成的设计可能调整样本、条件或指标；进入协议阶段后按下一节逐项核对。</p>
+<p>从论文开始时，可上传 TXT、Markdown 或带文字层的 PDF，先审阅论文解读中的理论、变量、方法与假设，再生成方案。后续协议与运行流程相同。</p>
+</section>
+<section id="id3">
+<h2>2. 核对协议<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>协议项目</p></th>
+<th class="head"><p>本例设置</p></th>
+<th class="head"><p>核对重点</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>样本</p></td>
+<td><p>居民 <code class="docutils literal notranslate"><span class="pre">1–8</span></code></p></td>
+<td><p>编号存在于所选城市或世界</p></td>
+</tr>
+<tr class="row-odd"><td><p>条件</p></td>
+<td><p>baseline / subsidy / placebo</p></td>
+<td><p>三组使用同一批居民</p></td>
+</tr>
+<tr class="row-even"><td><p>干预</p></td>
+<td><p>第 2 天 09:00 的通告</p></td>
+<td><p>基准无新增通告，安慰剂为办公时间未变的例行通知</p></td>
+</tr>
+<tr class="row-odd"><td><p>指标</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">stress</span></code></p></td>
+<td><p>使用已登记的居民状态指标</p></td>
+</tr>
+<tr class="row-even"><td><p>汇总</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">final</span></code></p></td>
+<td><p>比较每位居民最后一条记录</p></td>
+</tr>
+<tr class="row-odd"><td><p>H1</p></td>
+<td><p>subsidy − baseline &lt; 0，最小效应 <code class="docutils literal notranslate"><span class="pre">0.02</span></code></p></td>
+<td><p>方向为 <code class="docutils literal notranslate"><span class="pre">decrease</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>运行</p></td>
+<td><p>3 天，种子 <code class="docutils literal notranslate"><span class="pre">42,43</span></code>，快速模式关闭</p></td>
+<td><p>事件发生后仍有观察时间</p></td>
+</tr>
+<tr class="row-odd"><td><p>并行数</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>每次执行一个世界</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>协议编译结果中的 <code class="docutils literal notranslate"><span class="pre">dropped</span></code> 列出被移除的指标或假设及原因。修改设计后重新编译，直到条件、指标与假设对应完整，再进行跑前检查。</p>
+<p>可以下载本例的 <a class="reference download internal" download="" href="_downloads/53a5909bff141e80a31966914a49741f/protocol-input.json"><span class="xref download myst">协议输入</span></a> 和 <a class="reference download internal" download="" href="_downloads/50e8e23b32f09906fb5e4e41d4c62253/protocol.json"><span class="xref download myst">编译后的协议</span></a>。前者用于下面的 Python 验证；网页操作按工作台中的生成、审阅和批准流程进行。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gaworld.research.protocol</span><span class="w"> </span><span class="kn">import</span> <span class="n">protocol_from_answer</span><span class="p">,</span> <span class="n">preflight</span>
+
+<span class="n">answer</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"protocol-input.json"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
+<span class="n">protocol</span> <span class="o">=</span> <span class="n">protocol_from_answer</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"tutorial"</span><span class="p">,</span> <span class="s2">"language"</span><span class="p">:</span> <span class="s2">"zh-CN"</span><span class="p">})</span>
+<span class="n">check</span> <span class="o">=</span> <span class="n">preflight</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">default_agents</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">check</span><span class="p">[</span><span class="s2">"ok"</span><span class="p">],</span> <span class="n">check</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">check</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">][</span><span class="s2">"estimated_calls"</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>本例输出 <code class="docutils literal notranslate"><span class="pre">True</span> <span class="pre">[]</span></code> 和 <code class="docutils literal notranslate"><span class="pre">28512</span></code>。这一步只编译和检查协议，不调用模型。调用量是当前估算公式的结果；实际耗时和费用还取决于执行模式、模型及响应长度。完整检查结果见 <a class="reference download internal" download="" href="_downloads/fa4bb793d1f71256865d246bb9074c23/preflight.json"><span class="xref download myst">preflight.json</span></a>。</p>
+</section>
+<section id="id4">
+<h2>3. 批准并运行<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h2>
+<p>在工作台完成跑前检查，处理错误项并阅读提示，再批准运行。运行器按协议为每个种子建立平行世界实验；本例共运行两组实验，每组包含三个条件。</p>
+<p>研究卡片记录阶段与运行关联。进入对应平行世界，检查各条件是否完成，以及状态历史是否覆盖事件前后。某个条件失败时先查看该条件日志，修正配置后重新运行该组比较。</p>
+<p>协议还支持 <code class="docutils literal notranslate"><span class="pre">composite</span></code> 组合研究：先运行平行世界，再采访各世界中的居民。使用组合研究时，另外核对问卷题目、选项、有效回答与计分方式。</p>
+</section>
+<section id="id5">
+<h2>4. 阅读假设判定<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h2>
+<p>下面提供一组<strong>合成教学数据</strong>：输入 CSV 由脚本构造，报告由 GAWorld 的分析和判定代码计算。它用于练习结果阅读。实际仿真的数值以自己的运行报告为准。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>H1 的期末 stress</p></th>
+<th class="head"><p>种子 42</p></th>
+<th class="head"><p>种子 43</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>基准组均值</p></td>
+<td><p>0.495</p></td>
+<td><p>0.495</p></td>
+</tr>
+<tr class="row-odd"><td><p>补贴通告组均值</p></td>
+<td><p>0.395</p></td>
+<td><p>0.415</p></td>
+</tr>
+<tr class="row-even"><td><p>处理组 − 基准组</p></td>
+<td><p>−0.100</p></td>
+<td><p>−0.080</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>跨种子平均差值为 <code class="docutils literal notranslate"><span class="pre">−0.090</span></code>。它满足本例预注册的下降方向和 <code class="docutils literal notranslate"><span class="pre">0.02</span></code> 阈值，当前判定代码返回 <code class="docutils literal notranslate"><span class="pre">supported</span></code>。在 <a class="reference download internal" download="" href="_downloads/39610ebe007f61b3735c4fccdc07f885/evaluation.json"><span class="xref download myst">evaluation.json</span></a> 中同时查看每个种子的结果、有效性门槛和判定理由。</p>
+<p>两次重复的跨种子区间约为 <code class="docutils literal notranslate"><span class="pre">[-0.217,</span> <span class="pre">0.037]</span></code>，仍跨过零。这个区间描述种子间的不确定性；<a class="reference internal" href="parallel-worlds.html#read-paired-report"><span class="std std-ref">平行世界报告</span></a> 中的居民配对区间描述另一层不确定性。当前判定规则没有把跨种子区间排除零设为独立门槛，因此阅读 <code class="docutils literal notranslate"><span class="pre">supported</span></code> 时仍要结合区间与重复次数。</p>
+<p><code class="docutils literal notranslate"><span class="pre">stress</span></code> 在本例属于 C 级测量，<code class="docutils literal notranslate"><span class="pre">direction_only</span></code> 为真；它适合比较模型内的变化方向。报告中的数值差异应结合指标定义解释。工作台先由代码判定，再由模型对已有结果生成文字解释。</p>
+</section>
+<section id="id6">
+<h2>5. 保存与复现<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>文件或目录</p></th>
+<th class="head"><p>用于复查什么</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/&lt;id&gt;.json</span></code></p></td>
+<td><p>研究方案及材料解读</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">output/research/studies/&lt;id&gt;/</span></code></p></td>
+<td><p>协议、状态与报告</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output/parallel_worlds/</span></code></p></td>
+<td><p>各种子实验、各条件输出及配对报告</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>保留协议、居民输入、模型设置、种子和代码版本。团队部署中，研究记录按创建者管理访问；运行文件保存在服务器工作区。</p>
+<p>下载 <a class="reference download internal" download="" href="_downloads/5053a8e5a103df7139ef473e2a120bb3/build-reading-sample.py"><span class="xref download myst">教学数据生成脚本</span></a>，在已安装 GAWorld 的工作区执行：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>build-reading-sample.py
+</pre></div>
+</div>
+<p>脚本创建新的 <code class="docutils literal notranslate"><span class="pre">tutorial-reading-sample/</span></code> 目录，生成三组 CSV、两个种子的报告和假设判定，不启动仿真。目录中 <code class="docutils literal notranslate"><span class="pre">SOURCE.json</span></code> 记录数据来源。已有同名目录时，在另一个目录运行脚本，便于保留之前的结果。</p>
+</section>
+<section id="id7">
+<h2>一次研究在代码中如何流转<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<p>以 H1 为例：<code class="docutils literal notranslate"><span class="pre">workbench.py</span></code> 接收文字材料生成方案；<code class="docutils literal notranslate"><span class="pre">protocol_from_answer()</span></code> 将条件和 <code class="docutils literal notranslate"><span class="pre">stress</span></code> 假设编译成协议；<code class="docutils literal notranslate"><span class="pre">preflight()</span></code> 检查天数、样本与预算。<code class="docutils literal notranslate"><span class="pre">study.py</span></code> 保存阶段，<code class="docutils literal notranslate"><span class="pre">backends.py</span></code> 为种子 42 和 43 分别建立实验；<code class="docutils literal notranslate"><span class="pre">evaluate()</span></code> 读取各组最后一条状态记录，计算期末差值并应用判定规则。最后 <code class="docutils literal notranslate"><span class="pre">report.py</span></code> 将协议、数值和解释组成报告。</p>
+</section>
+<section id="id8">
+<h2>代码结构与执行流程<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
+<section id="id9">
+<h3>模块分工<a class="headerlink" href="#id9" title="链接到此标题。">¶</a></h3>
+<div class="code-map docutils container">
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>源码位置</p></th>
+<th class="head"><p>职责</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/site/dashboard/research.js">site/dashboard/research.js</a></p></td>
+<td><p>研究工作台页面：材料、方案、研究阶段和报告交互。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/apps/research_api.py">gaworld/apps/research_api.py</a></p></td>
+<td><p>处理分析、协议编译、批准、运行和报告请求。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/workbench.py">gaworld/research/workbench.py</a></p></td>
+<td><p>读取功能目录，将想法或论文转为 ResearchPlan。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/protocol.py">gaworld/research/protocol.py</a></p></td>
+<td><p>把方案编译成条件、指标和假设，执行跑前检查。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/study.py">gaworld/research/study.py</a></p></td>
+<td><p>保存研究阶段、协议与运行关联信息。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/backends.py">gaworld/research/backends.py</a></p></td>
+<td><p>按协议调用平行世界及组合研究中的跑后问卷。</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/evaluate.py">gaworld/research/evaluate.py</a></p></td>
+<td><p>按固定规则计算效应与假设判定。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld/blob/main/gaworld/research/report.py">gaworld/research/report.py</a></p></td>
+<td><p>将协议、结果和解释组织为研究报告。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="id10">
+<h3>执行流程<a class="headerlink" href="#id10" title="链接到此标题。">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>材料 → workbench 方案 → protocol 协议与检查 → study 保存
+批准运行 → backends → 平行世界 / 跑后问卷
+结果 → evaluate 判定 → interpret 解释 → report 报告
+</pre></div>
+</div>
+<p>方案生成读取 <code class="docutils literal notranslate"><span class="pre">docs/FEATURES.md</span></code> 中的能力目录；协议编译结合 <code class="docutils literal notranslate"><span class="pre">measures.py</span></code> 中的指标登记，把设计转为执行条件。backends 将每个种子的条件转换为平行世界实验。evaluate 读取数值计算判定，<code class="docutils literal notranslate"><span class="pre">interpret.py</span></code> 根据已有结果生成解释。</p>
+</section>
+<section id="id11">
+<h3>从哪里修改<a class="headerlink" href="#id11" title="链接到此标题。">¶</a></h3>
+<p>修改设计生成查看 <code class="docutils literal notranslate"><span class="pre">workbench.py</span></code>，增加可测指标时同时核对 <code class="docutils literal notranslate"><span class="pre">measures.py</span></code>、数据来源与 <code class="docutils literal notranslate"><span class="pre">evaluate.py</span></code>。改变协议格式或检查条件查看 <code class="docutils literal notranslate"><span class="pre">protocol.py</span></code>，改变报告展示查看 <code class="docutils literal notranslate"><span class="pre">report.py</span></code> 与前端。</p>
+</section>
+</section>
+<section id="id12">
+<h2>参考<a class="headerlink" href="#id12" title="链接到此标题。">¶</a></h2>
+<p><a class="reference internal" href="integration.html"><span class="std std-doc">Python 与 HTTP 接口</span></a> · <a class="reference internal" href="parallel-worlds.html"><span class="std std-doc">平行世界与对照实验</span></a> · <a class="reference internal" href="api/client.html"><span class="std std-doc">客户端 API</span></a></p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="parallel-worlds.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">平行世界与对照实验</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="interviews.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">访谈与群体采访</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, GAWorld contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">研究工作台</a><ul>
+<li><a class="reference internal" href="#id2">1. 写清研究问题</a></li>
+<li><a class="reference internal" href="#id3">2. 核对协议</a></li>
+<li><a class="reference internal" href="#id4">3. 批准并运行</a></li>
+<li><a class="reference internal" href="#id5">4. 阅读假设判定</a></li>
+<li><a class="reference internal" href="#id6">5. 保存与复现</a></li>
+<li><a class="reference internal" href="#id7">一次研究在代码中如何流转</a></li>
+<li><a class="reference internal" href="#id8">代码结构与执行流程</a><ul>
+<li><a class="reference internal" href="#id9">模块分工</a></li>
+<li><a class="reference internal" href="#id10">执行流程</a></li>
+<li><a class="reference internal" href="#id11">从哪里修改</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id12">参考</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div>
+<details class="doc-tools">
+  <summary aria-label="文档版本与下载"><span>文档</span><span class="doc-language">zh-cn</span><span class="doc-version">v0.2.1</span></summary>
+  <div class="doc-tools-panel">
+    <p>GAWorld · 中文文档</p>
+    <a href="index.html">当前版本 v0.2.1</a>
+    <a href="read.doc" download>下载 Word 文档</a>
+    <a href="https://github.com/wuchaozju/GAWorld">GitHub</a>
+    <a href="../index.html">项目主页</a>
+  </div>
+</details>
+<script src="_static/documentation_options.js?v=36d8f30a"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/translations.js?v=540d3cec"></script>
+    <script src="_static/navigation.js?v=258b3747"></script>
+    <script src="_static/visitors.js?v=b764520e"></script>
+    <script src="_static/brand-reveal.js?v=2bb05bd8"></script>
+    </body>
+</html>

@@ -163,5 +163,51 @@ class TestPluginStillReadsWhatThePanelWrites(_TempSeeds):
         self.assertEqual(set(profiles), seeded)  # every seeded resident, none lost to the new column
 
 
+class TestCityWithoutASeedFile(_TempSeeds):
+    """City bundles ship no ``agents_big5.csv``: the run samples the prior, so
+    the panel must show that draw rather than "Agent not found"."""
+
+    def setUp(self):
+        super().setUp()
+        os.remove(world_paths.BIG5_CSV_PATH)
+
+    def test_a_resident_reads_the_prior_draw_a_full_run_would_make(self):
+        from gaworld.personality.plugin import BigFivePlugin
+
+        data = residents.agent_big5(1)
+        self.assertEqual(data["source"], "prior_sampled")
+        self.assertEqual(data["authored"], {})  # no paragraph was written from a draw
+        self.assertTrue(all(f["state"] == "unknown" for f in data["consistency"].values()))
+
+        class _Ctx:
+            recorder = type("R", (), {"record": lambda *a, **k: None})()
+
+            def agent_ext(self, agent, plugin_id):
+                return agent.setdefault("ext", {}).setdefault(plugin_id, {})
+
+        plugin = BigFivePlugin()
+        personality = world_paths.effective_config()["personality"]
+        plugin._cfg = {**personality, "profile_path": "", "output_dir": os.path.join(self.tmp, "traits")}
+        agents = [{"id": item["id"]} for item in residents.agents_summary()]
+        plugin._seed({"sim": _Ctx(), "agents": agents})
+        seeded = agents[0]["ext"]["big_five"]
+        for dim in residents.BIG5_DIMENSIONS:
+            self.assertAlmostEqual(data["values"][dim], seeded[dim], places=4)
+
+    def test_a_non_resident_is_still_not_found(self):
+        self.assertIsNone(residents.agent_big5(9999))
+        with self.assertRaises(ValueError):
+            residents.save_agent_big5(9999, {"values": {"o": 1.0}})
+
+    def test_saving_creates_the_file_with_only_that_resident(self):
+        residents.save_agent_big5(1, {"values": {"o": 1.25}})
+        self.assertEqual([residents.row_id(r) for r in residents.read_big5_rows()[1]], [1])
+        data = residents.agent_big5(1)
+        self.assertEqual(data["source"], "hand_edited")
+        self.assertAlmostEqual(data["values"]["o"], 1.25, places=4)
+        self.assertEqual(data["authored"], {})
+        self.assertEqual(residents.agent_big5(2)["source"], "prior_sampled")
+
+
 if __name__ == "__main__":
     unittest.main()

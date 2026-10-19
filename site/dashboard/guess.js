@@ -18,6 +18,39 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
+  // Same subset as studio.js / app.js renderMarkdown: profile_md is Markdown
+  // (## headers, **bold**, - lists, `code`), so the player has to read the
+  // profile rendered, not as escaped plain text. Keep this in sync with the
+  // other two renderers when the subset grows.
+  function renderMarkdown(md) {
+    const inline = (t) => esc(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>");
+    const lines = String(md == null ? "" : md).replace(/\r\n?/g, "\n").split("\n");
+    let html = "";
+    let inList = false;
+    const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+    for (const ln of lines) {
+      const h = ln.match(/^(#{1,4})\s+(.*)$/);
+      const li = ln.match(/^\s*[-*]\s+(.*)$/);
+      if (h) {
+        closeList();
+        const lvl = Math.min(h[1].length + 1, 5);
+        html += `<h${lvl}>${inline(h[2])}</h${lvl}>`;
+      } else if (li) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += `<li>${inline(li[1])}</li>`;
+      } else if (ln.trim() === "") {
+        closeList();
+      } else {
+        closeList();
+        html += `<p>${inline(ln)}</p>`;
+      }
+    }
+    closeList();
+    return html;
+  }
   // Same contract as city-agents.js: an unresolved key means i18n has not
   // loaded yet (the catalogue fetch can win that race), so fall back to the
   // inline text rather than rendering "vote.custom_option" at the user.
@@ -147,7 +180,7 @@
     $("#gFile").innerHTML = `
       <h4>#${agent.agent_id} ${esc(agent.name)}</h4>
       <p class="meta">${esc(meta)}</p>
-      <div class="file-body">${esc(agent.file || t("guess.no_file", "（这个人没有档案，只有一行身份信息——猜起来全靠运气）"))}</div>
+      <div class="file-body md-body">${agent.file ? renderMarkdown(agent.file) : `<p class="muted-line">${esc(t("guess.no_file", "（这个人没有档案，只有一行身份信息——猜起来全靠运气）"))}</p>`}</div>
     `;
 
     $("#gDilemma").textContent = round.dilemma.text;
@@ -176,9 +209,15 @@
       const samples = round.samples || [];
       const spread = new Set(samples.map((s) => s.choice));
       reveal.className = "guess-reveal " + (round.correct ? "is-hit" : "is-miss");
+      const why = (round.why || "").trim();
       reveal.innerHTML = `
         <h4>${round.correct ? esc(t("guess.win", "🎯 猜中了")) : esc(t("guess.lose", "🙈 没猜中"))}</h4>
-        <p>${esc(round.why || t("guess.no_reason", "（他没说理由）"))}</p>
+        <div class="duel-reason-panel">
+          <div class="duel-reason-row ${round.correct ? "is-strength" : "is-risk"}">
+            <span class="duel-reason-tag">${esc(t("guess.why_tag", "他的理由"))}</span>
+            <span class="duel-reason-text">${esc(why || t("guess.no_reason", "（他没说理由）"))}</span>
+          </div>
+        </div>
         ${samples.length > 1
           ? `<p class="samples"><b>${esc(t("guess.asked_n", "问了"))} ${samples.length} ${esc(t("guess.times", "次"))}：</b>
              ${samples.map((s) => esc(s.choice || "?")).join(" / ")} —
@@ -206,8 +245,27 @@
 
   function setBusy(busy, message) {
     state.busy = busy;
-    $("#gDealBtn").disabled = busy;
-    $("#gNextBtn").disabled = busy;
+    // Primary action buttons flip into a busy state with the calling
+    // message as the visible label so they don't silently grey out. The
+    // option buttons stay labelled the same (they are quick picks, not
+    // the run trigger) but are still disabled while a request is in flight.
+    if (busy) {
+      if (typeof setButtonBusy === "function") {
+        state._dealRelease = setButtonBusy($("#gDealBtn"), "guess.dealing", "正在发牌…");
+        state._nextRelease = setButtonBusy($("#gNextBtn"), "guess.asking", "正在问他…");
+        state._againRelease = setButtonBusy($("#gAgainBtn"), "guess.asking_again", "再问一次…");
+      } else {
+        $("#gDealBtn").disabled = true;
+        $("#gNextBtn").disabled = true;
+        $("#gAgainBtn").disabled = true;
+      }
+    } else {
+      if (state._dealRelease) { state._dealRelease(); state._dealRelease = null; }
+      if (state._nextRelease) { state._nextRelease(); state._nextRelease = null; }
+      if (state._againRelease) { state._againRelease(); state._againRelease = null; }
+      $("#gDealBtn").disabled = busy;
+      $("#gNextBtn").disabled = busy;
+    }
     $("#gAgainBtn").disabled = busy || !(state.round && state.round.settled) || exhausted();
     Array.from($("#gOptions").querySelectorAll("button")).forEach((btn) => {
       btn.disabled = busy || (state.round && state.round.settled);

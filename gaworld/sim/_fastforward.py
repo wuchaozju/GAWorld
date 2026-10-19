@@ -53,6 +53,7 @@ honoured, matching :mod:`gaworld.sim._diary`.
 from __future__ import annotations
 
 import json
+import os
 import random as _random
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -1168,23 +1169,39 @@ def _run_digest(
     action_candidates: list[str] | None = None,
 ) -> dict[str, Any] | None:
     """One digest call; ``None`` when the response is unusable."""
-    try:
-        resp = llm_fn(prompt, task=task, agent_id=agent.get("id"))
-    except Exception as exc:  # noqa: BLE001 - never let a fast-forward step crash the run
-        _LOG.warning("%s LLM call failed for agent %s: %s", task, agent.get("id"), exc)
-        resp = ""
-    parsed = _parse_json_object(resp)
-    if not parsed or not str(parsed.get("brief", "")).strip():
-        # Previously silent. A run whose provider returns unparseable JSON
-        # every step then produces a full set of placeholder briefs that read
-        # like real (dull) periods, which is indistinguishable from a working
-        # run over uneventful years.
-        _LOG.warning(
-            "%s for agent %s produced no usable brief; using the deterministic "
-            "fallback. Response head: %r",
-            task, agent.get("id"), str(resp or "")[:160],
+    from gaworld.llm.run_state import current_ledger
+
+    ledger = current_ledger()
+    if ledger is not None and os.environ.get("GAWORLD_RESEARCH_DAILY_BRIEF") == "1":
+        from gaworld.research.briefs import request_brief
+
+        parsed = request_brief(
+            llm_fn,
+            prompt=prompt,
+            task=task,
+            agent_id=agent.get("id"),
+            ledger=ledger,
+            state_keys=set(LONG_RUN_STATE_KEYS),
         )
-        return None
+    else:
+        try:
+            resp = llm_fn(prompt, task=task, agent_id=agent.get("id"))
+        except Exception as exc:  # noqa: BLE001 - never let a fast-forward step crash the run
+            _LOG.warning("%s LLM call failed for agent %s: %s", task, agent.get("id"), exc)
+            resp = ""
+        parsed = _parse_json_object(resp)
+        if not parsed or not str(parsed.get("brief", "")).strip():
+            # Previously silent. A run whose provider returns unparseable JSON
+            # every step then produces a full set of placeholder briefs that read
+            # like real (dull) periods, which is indistinguishable from a working
+            # run over uneventful years.
+            _LOG.warning(
+                "%s for agent %s produced no usable brief; using the deterministic fallback. Response head: %r",
+                task,
+                agent.get("id"),
+                str(resp or "")[:160],
+            )
+            return None
     digest = _normalize_digest(
         parsed,
         max_delta=max_delta,

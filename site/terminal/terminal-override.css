@@ -1,0 +1,187 @@
+/* GAWorld Terminal Override — loaded LAST in every terminal HTML.
+ *
+ * Two purposes:
+ *   1. Re-declare every cream dashboard token so page-specific CSS that
+ *      declares the same names (games.css, studio.css, etc.) is overridden
+ *      back to the terminal palette. CSS custom properties are inherited,
+ *      so re-declaring at :root here wins regardless of load order.
+ *   2. Patch known hard-coded colours / link styles in the cream CSS
+ *      family — bright blue underlines on links inside .panel, the
+ *      `Noto Sans SC` fallback, etc.
+ *
+ * The point: drop in this file as the LAST stylesheet on every terminal
+ * HTML and the page is guaranteed to look like the terminal variant
+ * even when the page-specific CSS fights back.
+ */
+
+:root {
+  --paper: #1a1d1b !important;
+  --card:  #262a2e !important;
+  --panel: #262a2e !important;
+  --ink:   #d7e0d4 !important;
+  --muted: #7c8a82 !important;
+  --line:  #2f3438 !important;
+  --green: #5fe3a1 !important;
+  --on-accent: #ffffff !important;
+  --green-deep: #0e7a58 !important;
+  --green-soft: rgba(95, 227, 161, 0.14) !important;
+  --red:   #ff7a6b !important;
+  --amber: #f3b54a !important;
+  --steel: #6fb3c8 !important;
+  --radius: 8px !important;
+  --radius-sm: 4px !important;
+  --shadow-sm: 0 1px 0 rgba(95, 227, 161, 0.04), 0 6px 24px rgba(0, 0, 0, 0.35) !important;
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  --ink-soft: #b9c4b7 !important;
+  --faint: #5f6b64 !important;
+  --line-strong: #3d444a !important;
+  --red-soft: rgba(255, 122, 107, 0.14) !important;
+  --amber-soft: rgba(243, 181, 74, 0.14) !important;
+  --radius-lg: 10px !important;
+  --ring: 0 0 0 3px rgba(95, 227, 161, 0.28) !important;
+}
+
+/* ---- Generic link / text recolour ---- */
+
+a {
+  color: var(--green);
+}
+
+.panel a,
+.card a,
+.game-card a,
+.step a,
+.kicker a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+.panel a:hover,
+.card a:hover,
+.game-card a:hover {
+  color: var(--amber);
+  text-decoration: underline;
+}
+
+p a, li a, .kicker a, small a {
+  color: var(--green);
+  text-decoration: underline;
+  text-decoration-color: rgba(95, 227, 161, 0.4);
+}
+
+/* ---- Hard-coded fallback colours seen in cream CSS ---- */
+
+[style*="#ffffff"],
+[style*="#fff "] {
+  color: var(--ink);
+}
+
+[style*="color:#fff"] { color: var(--ink); }
+[style*="color: white"] { color: var(--ink); }
+[style*="background:#fff"] { background: var(--card); }
+[style*="background: white"] { background: var(--card); }
+[style*="background:#edf"] { background: var(--bg-deep, #14171a); }
+
+/* ---- Card titles & headings (mono everywhere) ---- */
+
+h1, h2, h3, h4 {
+  color: var(--ink);
+  font-family: var(--font-mono, ui-monospace, "JetBrains Mono", monospace);
+}
+
+/* ---- Default browser link blue (game cards, doc cross-refs) ---- */
+
+a.game-card,
+a.game-card:visited,
+a.game-card:hover,
+a.game-card:focus {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.game-card h3,
+a.game-card .game-tagline,
+a.game-card .game-meta {
+  color: var(--ink);
+}
+
+a.game-card .game-meta { color: var(--muted); }
+
+/* Plain links inside games-cards were inheriting; ensure they stay on-palette */
+.game-card,
+.game-card * { color: inherit; }
+.game-card .game-emoji { color: initial; }
+
+/* Any anchor that's still untouched defaults to phosphor green */
+a:not([class]) {
+  color: var(--green);
+  text-decoration: underline;
+  text-decoration-color: rgba(95, 227, 161, 0.4);
+}
+
+/* ---- Sticky / sticky-ish backgrounds ---- */
+
+.toolbar,
+.toolbar-fields,
+.toolbar-lower {
+  background: transparent;
+}
+
+/* ---- Game-card hover in the games hub ---- */
+
+.game-card {
+  border-color: var(--line);
+}
+.game-card:hover {
+  border-color: var(--green);
+  background: rgba(95, 227, 161, 0.06);
+}
+
+/* ---- Studio step rail in dark variant ---- */
+
+.step .num {
+  background: var(--card);
+  color: var(--muted);
+  border-color: var(--line);
+}
+.step.is-active .num {
+  background: var(--green);
+  color: #0a1614;
+}
+
+/* ---- Modal backdrop tint for terminal ---- */
+
+.modal-backdrop,
+[role="dialog"] + * {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* ---- Code inline / blocks ---- */
+
+code, pre, kbd {
+  font-family: var(--font-mono, ui-monospace, "JetBrains Mono", monospace);
+}
+code {
+  background: var(--card);
+  color: var(--amber);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+/* ---- Selection highlight ---- */
+
+::selection {
+  background: rgba(95, 227, 161, 0.32);
+  color: #0a1614;
+}
+
+/* ---- Scrollbar ---- */
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+::-webkit-scrollbar-track { background: transparent; }

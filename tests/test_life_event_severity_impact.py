@@ -16,6 +16,13 @@ from unittest.mock import patch
 
 import generative_city_sim as sim
 from gaworld.events.plugin import LifeEventsPlugin
+from gaworld.llm import providers as llm_providers
+
+
+def _pin_randomness(value):
+    """Pin ``routine_change.randomness`` (read at call time in ``gaworld.sim._step``)."""
+    section = {**(sim.CONFIG.get("routine_change") or {}), "randomness": value}
+    return patch.dict(sim.CONFIG, {"routine_change": section})
 
 
 def _calm_agent():
@@ -60,7 +67,7 @@ class TestSeverityWeightedTrigger(unittest.TestCase):
         # "购物" is a medium-commitment activity: a mild event leaves it intact
         # (LLM never consulted), a severe event forces the routine-change query.
         #
-        # ROUTINE_CHANGE_RANDOMNESS has to be pinned for that to be what is
+        # routine_change.randomness has to be pinned for that to be what is
         # actually under test. At its shipped default (0.85) the knob scales
         # resistance down to ~0.40x and adds ~0.38 of free-floating restlessness
         # to the trigger, which carries *any* event past *any* commitment level:
@@ -71,8 +78,8 @@ class TestSeverityWeightedTrigger(unittest.TestCase):
         # severity-versus-commitment claim this test exists to make.
         # The randomness path itself is covered by test_routine_change_randomness.
         agent = _calm_agent()
-        with patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 0.0), patch.object(
-            sim, "call_llm"
+        with _pin_randomness(0.0), patch.object(
+            llm_providers, "call_llm"
         ) as mock_call:
             _, _, changed_mild = sim.maybe_adjust_activity(
                 agent, "15:00", "购物", "环境平稳", "目标：随便逛逛",
@@ -82,9 +89,9 @@ class TestSeverityWeightedTrigger(unittest.TestCase):
         mock_call.assert_not_called()
 
         response = '{"change": true, "activity": "回家处理", "reason": "家里出急事"}'
-        with patch.object(sim, "ROUTINE_CHANGE_RANDOMNESS", 0.0), patch.object(
+        with _pin_randomness(0.0), patch.object(
             sim.random, "random", return_value=0.0
-        ), patch.object(sim, "call_llm", return_value=response) as mock_call:
+        ), patch.object(llm_providers, "call_llm", return_value=response) as mock_call:
             activity, _, changed_severe = sim.maybe_adjust_activity(
                 agent, "15:00", "购物", "环境平稳", "目标：随便逛逛", "无",
                 [{"severity": 0.86, "name": "家中急事", "description": "家人突然需要帮助"}],

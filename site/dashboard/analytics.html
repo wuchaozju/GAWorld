@@ -39,6 +39,19 @@
 
     <p id="anRunNote" class="an-run-note" hidden></p>
 
+    <section class="panel" id="anSystemPanel">
+      <div class="section-head">
+        <div>
+          <p class="kicker">System</p>
+          <h2 data-i18n="analytics.system_heading">系统分析 · 综合面板</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.system_hint" data-help="整个 GAWorld 系统的整体观察：当前世界、本世界内的运行 KPI，以及跨世界汇总（城市 / 平行世界研究 / 研究工作台 / 群体采访 / 人物画像 / 实验 / 立法会成员等）。每张卡片可点击展开查看详细列表。"></span>
+      </div>
+      <div id="anSystemKpis" class="an-kpis"></div>
+      <div id="anSystemHealth" class="an-system-health"></div>
+      <div id="anSystemGrid" class="an-system-grid"></div>
+    </section>
+
     <section class="panel">
       <div class="section-head">
         <div>
@@ -195,7 +208,8 @@
     </section>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/help.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/analytics-export.js"></script>
   <script src="/site/dashboard/analytics.js"></script>
 </body>

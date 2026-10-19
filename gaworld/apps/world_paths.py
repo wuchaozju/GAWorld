@@ -57,21 +57,44 @@ def config_path() -> str:
     return worlds.config_path(REPO_ROOT, world["id"]) if world else DASHBOARD_CONFIG_PATH
 
 
+def _selected_city_seed(constant: str, key: str) -> str:
+    """*constant*, or the same seed file of the city selected since startup.
+
+    The constants are resolved once, at import, for the city the server
+    started on. Selecting another city afterwards (``/api/city/select``, the
+    配置 panel) left Agent Studio editing the old city's residents until a
+    restart, so it showed the new one read-only. Everything else keyed by
+    agent id (memory, family, Moltbook) already follows ``effective_config()``.
+    While the city is unchanged the constant stands; tests point it elsewhere.
+    """
+    cfg = effective_config()
+    if (cfg.get("city") or "") == (CONFIG.get("city") or ""):
+        return constant
+    value: Any = cfg
+    for part in key.split("."):
+        value = value.get(part) if isinstance(value, dict) else None
+    return os.path.join(REPO_ROOT, value) if value else constant
+
+
 def profile_path() -> str:
     world = current_world()
-    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[1]) if world else PROFILE_PATH
+    if world:
+        return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[1])
+    return _selected_city_seed(PROFILE_PATH, "md_path")
 
 
 def state_csv_path() -> str:
     world = current_world()
-    return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[0]) if world else STATE_CSV_PATH
+    if world:
+        return os.path.join(REPO_ROOT, worlds.seed_paths(world["id"])[0])
+    return _selected_city_seed(STATE_CSV_PATH, "csv_path")
 
 
 def big5_csv_path() -> str:
     """The Big Five seed table of the active world (its own copy under ``seed/``)."""
     world = current_world()
     if not world:
-        return BIG5_CSV_PATH
+        return _selected_city_seed(BIG5_CSV_PATH, "personality.profile_path")
     return os.path.join(REPO_ROOT, worlds.root(world["id"]), "seed", AGENT_FILES["personality.profile_path"])
 
 

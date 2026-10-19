@@ -13,6 +13,7 @@ from .integrations import integration_settings
 from .llm import llm_settings
 from .organizations import organizations_settings
 from .personality import personality_settings
+from .public_sector import public_sector_settings
 from .runtime import simulation_settings
 
 
@@ -27,6 +28,7 @@ def build_default_config() -> dict[str, Any]:
         intervention_settings(),
         human_realism_settings(),
         economy_settings(),
+        public_sector_settings(),
         family_settings(),
         organizations_settings(),
         personality_settings(),

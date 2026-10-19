@@ -59,6 +59,8 @@ def economy_settings() -> dict[str, Any]:
                 "housing_fund_employer_rate": 0.08,
                 "base_cap": 36000.0,
                 "base_floor": 4462.0,
+                # Share of a medical emergency the insurance pays, drawn per event.
+                "medical_reimbursement_range": (0.50, 0.85),
             },
             # --- Spending (Engel coefficient curve) ---
             "spending": {

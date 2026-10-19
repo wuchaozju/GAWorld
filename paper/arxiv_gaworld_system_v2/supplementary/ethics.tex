@@ -1,0 +1,126 @@
+\section{Ethical and participatory checklist}
+\label{supp:ethics}
+
+This supplementary section is a working checklist for researchers who
+intend to use GAWorld v2 in a study that touches identifiable people,
+sensitive attributes, or consequential applications.  It is not a
+replacement for institutional review; it is a reminder of the
+specific risks that an LLM-based artificial-society platform
+introduces and of the mitigations that the platform already provides.
+
+\subsection{Identifiable profiles and personas}
+
+A \emph{persona distillation} takes a name or a URL and produces a
+sourced portrait that can be deployed as a resident.  The portrait
+is held under \texttt{output/personas/<slug>/} and only an explicit
+\emph{deploy} step writes the seed CSV that a researcher can publish.
+A researcher who intends to use a portrait derived from a real
+person should:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Document the source} (URL, archive, date of access)
+  in the portrait's \texttt{research.md};
+  \item \textbf{Document the consent} or the public-figure
+  justification for distillation, and the institution's policy on
+  distillation;
+  \item \textbf{Separate the distill from the deploy}: the portrait
+  may be inspected and reviewed without ever producing a resident;
+  \item \textbf{Audit the deployed resident} against the portrait and
+  against the source; record the SHA-256 of both;
+  \item \textbf{Restrict access} to the deployed resident; do not
+  include it in a population whose output is public.
+\end{itemize}
+
+\subsection{Sensitive attributes and within-group flattening}
+
+Language models may reproduce stereotypes and suppress within-group
+heterogeneity.  v2 provides a personality-anchor rewriter that
+calibrates Big-Five proxies against a corpus and warns when one
+trait dominates a group that the configuration does not intend to
+dominate.  A researcher who uses a sensitive attribute (race,
+gender, religion, disability, sexual orientation, immigration
+status) should:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Document the attribute source} (census, registry,
+  self-report, model generation);
+  \item \textbf{Document the within-group variability} the
+  configuration is intended to represent;
+  \item \textbf{Run the personality-anchor rewriter} and report
+  the resulting distribution;
+  \item \textbf{Audit outputs} for stereotype markers; do not
+  report aggregate outputs as evidence of population behavior
+  without a within-group breakdown.
+\end{itemize}
+
+\subsection{Consequential applications}
+
+A consequential application is one whose output can affect a
+person's housing, health, employment, policing, mobility, or
+information governance.  GAWorld v2 must not substitute for
+engagement with people affected by a research question or policy.
+A researcher who intends to use v2 in a consequential study should:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Engage affected communities} in problem
+  formulation, outcome choice, and release conditions;
+  \item \textbf{Document the engagement} in a process record that
+  survives the study;
+  \item \textbf{Map simulated constructs to external measures}
+  before interpreting an aggregate output;
+  \item \textbf{Reserve targets} for testing rather than
+  calibration; do not tune to a target and then report agreement;
+  \item \textbf{Report uncertainty} across seeds, plausible
+  parameterizations, and counterfactual pipelines;
+  \item \textbf{Do not release} a model, a population, or an
+  archive that could re-identify a real person.
+\end{itemize}
+
+\subsection{Human participation and player interventions}
+
+A player intervention is a real, inspectable input to a simulation;
+it is not a ground truth.  A researcher who uses an
+\emph{open} world with player interventions should:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Document the participant pool} and the recruitment
+  procedure;
+  \item \textbf{Document the consent} and the data retention
+  policy;
+  \item \textbf{Separate player interventions from automatic
+  interventions} in the analysis; do not pool them;
+  \item \textbf{Do not infer} that a player's claim is faithful to
+  the claimed resident; report it as a real intervention, not as
+  evidence about the resident.
+\end{itemize}
+
+\subsection{Audit trail and reproducibility}
+
+Every mutation that crosses the v2 API is recorded in the
+\texttt{audit} table, with the caller's user id, the world's id, the
+operation type, the target entity, and a timestamp.  A researcher
+who intends to publish a study should:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Retain} the \texttt{audit} table for the period
+  required by the institution;
+  \item \textbf{Bind} every reported number to a hash, an
+  evidence class, the producing code path, and the world and node
+  identifiers;
+  \item \textbf{Disclose} the provider, the model, the prompt
+  version, and the sampling parameters used in each run;
+  \item \textbf{Estimate} replay variability rather than promise
+  bitwise determinism for hosted models;
+  \item \textbf{Submit} the artifact set to a stable repository
+  (Zenodo, Dryad, or the institution's archive) before
+  publication.
+\end{itemize}
+
+\subsection{Withdrawal and deletion}
+
+A participant or a deployed profile can be withdrawn from a study
+by removing the world's seed directory, the run artifacts, and the
+audit rows that reference the participant.  v2 provides no
+automatic redaction; the redaction is a researcher-driven
+operation.  A withdrawal request should be honored within the
+period required by the institution and the consent agreement.

@@ -1,0 +1,358 @@
+/* Landing page layout — imports tokens-terminal.css for the shared palette
+ * & atoms; this file only adds the hero / cards / entry layout that the
+ * landing page needs. */
+
+@import url("/terminal/tokens-terminal.css");
+
+/* ---------------------------------------------------------- hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: stretch;
+  padding: 96px 0 72px;
+  position: relative;
+}
+
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.hero-meta .prompt { color: var(--phosphor); }
+
+.hero h1 {
+  margin: 18px 0 28px;
+  font-size: clamp(2.6rem, 5.2vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.hero h1 .accent-amber { color: var(--amber); }
+.hero h1 .accent-phosphor { color: var(--phosphor); }
+.hero h1 .accent-red { color: var(--red); }
+.hero h1 .quiet { color: var(--muted); font-weight: 400; }
+
+.hero-sub {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 32px;
+}
+
+.hero-sub .hi-phosphor { color: var(--phosphor); }
+
+.cta-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+
+.hero-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 28px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.hero-facts li { display: flex; align-items: baseline; gap: 8px; }
+.hero-facts li::before { content: "▸"; color: var(--phosphor); font-size: 0.7rem; }
+.hero-facts b { color: var(--ink); font-weight: 600; }
+
+/* ----------------------------------------------- ASCII city panel */
+
+.city-panel {
+  position: relative;
+  background: linear-gradient(180deg, #1d2120 0%, #181b1a 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+.city-ascii {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--phosphor);
+  margin: 0;
+  white-space: pre;
+  letter-spacing: 0;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.city-ascii .c-ground { color: rgba(95, 227, 161, 0.4); }
+.city-ascii .c-tree   { color: var(--phosphor); }
+.city-ascii .c-house  { color: var(--amber); }
+.city-ascii .c-water  { color: var(--steel); }
+.city-ascii .c-agent  { color: var(--ink); background: var(--amber); }
+.city-ascii .c-amber  { color: var(--amber); }
+.city-ascii .c-red    { color: var(--red); }
+.city-ascii .c-faint  { color: rgba(215, 224, 212, 0.25); }
+
+.city-panel footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.city-panel footer .legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.city-panel footer .legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.city-panel footer .legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--phosphor);
+}
+
+.city-panel footer .legend i.amber  { background: var(--amber); }
+.city-panel footer .legend i.steel  { background: var(--steel); }
+.city-panel footer .legend i.red    { background: var(--red); }
+.city-panel footer .legend i.faint  { background: rgba(215, 224, 212, 0.25); }
+
+/* ----------------------------------------------- stat bar */
+
+.stat-bar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+
+.stat-bar .stat {
+  background: var(--bg-soft);
+  padding: 16px 18px;
+  font-size: 0.78rem;
+}
+
+.stat-bar .stat b {
+  display: block;
+  font-size: 1.4rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.stat-bar .stat span { color: var(--muted); letter-spacing: 0.04em; }
+.stat-bar .stat.soft b { color: var(--amber); }
+
+/* ----------------------------------------------- capability cards */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  position: relative;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--phosphor);
+  transform: translateY(-2px);
+}
+
+.card .card-no {
+  font-size: 0.72rem;
+  color: var(--phosphor);
+  letter-spacing: 0.12em;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.card p { margin: 0; font-size: 0.86rem; line-height: 1.6; color: var(--muted); }
+
+.card .card-tag {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+/* ----------------------------------------------- entries */
+
+.entry-stages { display: flex; flex-direction: column; gap: 24px; }
+
+.entry-stage {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  background: var(--bg-soft);
+}
+
+.stage-title {
+  margin: 0 0 18px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-title .stage-no {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--phosphor-dim);
+  color: var(--phosphor);
+  font-size: 0.78rem;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.entry {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.entry:hover { border-color: var(--phosphor); }
+
+.entry .entry-en {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--phosphor);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.entry .entry-name { font-size: 0.9rem; font-weight: 600; }
+
+.entry .entry-desc {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------- terminal stream */
+
+.terminal-stream {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.terminal-stream .line {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 18px;
+  padding: 4px 0;
+}
+
+.terminal-stream .ts {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+.terminal-stream .who { color: var(--phosphor); }
+.terminal-stream .who.amber { color: var(--amber); }
+.terminal-stream .who.steel { color: var(--steel); }
+.terminal-stream .who.red   { color: var(--red); }
+
+.terminal-stream .msg .quiet { color: var(--muted); }
+.terminal-stream .msg .hi-amber { color: var(--amber); }
+
+/* ----------------------------------------------- footer */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.foot .links a {
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 18px;
+}
+
+.foot .links a:hover { color: var(--phosphor); }
+
+@media (max-width: 920px) {
+  .hero { grid-template-columns: 1fr; padding: 56px 0 32px; gap: 36px; }
+  .cards, .entry-grid { grid-template-columns: 1fr; }
+  .stat-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .stat-bar { grid-template-columns: 1fr; }
+  .hero-facts { grid-template-columns: 1fr; }
+  .city-ascii { font-size: 10px; }
+}

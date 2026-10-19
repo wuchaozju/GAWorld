@@ -212,3 +212,29 @@
 .ext-status.err { color: var(--red, #c04545); }
 .ext-status.ok { color: var(--green, #0e7a58); }
 .ext-actions { display: flex; gap: 8px; }
+
+/* ---- public sector ---- */
+.ext-gov {
+  border: 1px solid var(--line, #dde6de);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 8px 0 10px;
+  background: rgba(227, 242, 234, 0.35);
+}
+.ext-gov p { margin: 6px 0; font-size: 13px; line-height: 1.7; }
+.ext-gov ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.8; }
+
+.ext-brief {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--green, #0e7a58);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted, #66746c);
+}
+
+/* Six governments side by side do not fit the observe column on a laptop. */
+.ext-scroll { overflow-x: auto; }
+.ext-compare th, .ext-compare td { white-space: nowrap; }
+.ext-compare .is-current { background: rgba(14, 122, 88, 0.08); font-weight: 600; }
+.ext-edit-actions + h3 { margin-top: 16px; }

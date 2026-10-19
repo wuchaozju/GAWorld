@@ -846,6 +846,49 @@ python generative_city_sim.py parallel-worlds --help
 - 命令行参数详解帮助读者理解每个选项。
 
 
+### B.21.1　CLI 使用的"五步法"
+
+CLI 使用的标准流程:
+
+**步骤一:看 help**
+
+```bash
+python generative_city_sim.py --help
+```
+
+**步骤二:小规模试运行**
+
+```bash
+python generative_city_sim.py run --sim-days 7
+```
+
+**步骤三:看输出**
+
+- 看 logs/
+- 看 output/
+- 验证结果合理
+
+**步骤四:扩大规模**
+
+```bash
+python generative_city_sim.py run --sim-days 30
+```
+
+**步骤五:正式运行**
+
+```bash
+python generative_city_sim.py run --sim-days 180
+```
+
+**常见错误**:
+
+- 不看 help 就用 → 90% 的问题
+- 第一次就用大参数 → 浪费算力
+- 不看输出 → 发现错误太晚
+- 不备份配置 → 丢失实验
+
+学生做研究时,严格走这五步,避免常见错误。
+
 ---
 
 ## B.22　扩展:GAWorld 高级功能命令

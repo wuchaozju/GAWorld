@@ -1,0 +1,118 @@
+{
+  "title": "补贴通告与压力：教学协议",
+  "kind": "parallel_worlds",
+  "language": "zh-CN",
+  "plan_id": "tutorial",
+  "sample": {
+    "city": "",
+    "agent_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "note": ""
+  },
+  "sim_days": 3,
+  "fast": false,
+  "max_parallel": 2,
+  "sim_provider": "",
+  "conditions": [
+    {
+      "label": "基准",
+      "role": "baseline",
+      "events": [],
+      "config": {},
+      "note": "",
+      "id": "baseline",
+      "aliases": [
+        "baseline",
+        "基准"
+      ]
+    },
+    {
+      "label": "补贴通告",
+      "role": "treatment",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "租金补贴通告",
+          "description": "市政部门宣布为低收入家庭提供租金补贴。"
+        }
+      ],
+      "config": {},
+      "note": "",
+      "id": "subsidy",
+      "aliases": [
+        "subsidy",
+        "补贴通告"
+      ]
+    },
+    {
+      "label": "例行通告",
+      "role": "placebo",
+      "events": [
+        {
+          "day": 2,
+          "time": "09:00",
+          "name": "例行通告",
+          "description": "市政部门发布办公时间未发生变化的例行通告。"
+        }
+      ],
+      "config": {},
+      "note": "",
+      "id": "placebo",
+      "aliases": [
+        "placebo",
+        "例行通告"
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "id": "stress",
+      "label": "压力",
+      "source": "state/agent_state_history.csv",
+      "note": "九维状态之一，0–1 归一化",
+      "grade": "c",
+      "basis": "事件与政策对它的影响由一次模型调用直接给出（每件事 ±0.2 以内，`infer_event_effect`）——效应方向就是模型对这件事的判断；之后按手写的均值回归公式（目标值与系数都是定的，`update_state`）每步拉回；人生事件与家庭事件另带固定增量（数值是定的）；另受记忆唤起、当日消费被截断（+0.02）、家庭单职工负担影响（系数都是定的）"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "补贴通告条件下的期末压力低于基准条件",
+      "measure": "stress",
+      "treatment": "subsidy",
+      "control": "baseline",
+      "direction": "decrease",
+      "min_effect": 0.02,
+      "aggregation": "final"
+    }
+  ],
+  "survey": {},
+  "validity": {
+    "seeds": [
+      42,
+      43
+    ],
+    "placebo": true
+  },
+  "budget": {
+    "agents": 8,
+    "worlds": 3,
+    "seeds": 2,
+    "sim_days": 3,
+    "calls_per_agent_day": 198,
+    "estimated_calls": 28512,
+    "survey_calls": 0,
+    "limit": 50000
+  },
+  "dropped": [],
+  "notes": ""
+}

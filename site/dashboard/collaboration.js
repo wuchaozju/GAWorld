@@ -1015,6 +1015,24 @@
         action,
       );
       state.actionPending = candidate;
+      // Flip the trigger button into a busy state so the user sees a
+      // "处理中…" label instead of the disappearing pause/resume/cancel
+      // trio that renderWorkspace() just hid.
+      const busyBtn = document.getElementById(
+        action === "pause" ? "pauseTaskBtn"
+          : action === "resume" ? "resumeTaskBtn"
+          : "cancelTaskBtn"
+      );
+      if (busyBtn && typeof setButtonBusy === "function") {
+        state._busyRelease = setButtonBusy(busyBtn,
+          action === "pause" ? "collab.pausing"
+            : action === "resume" ? "collab.resuming"
+            : "collab.cancelling",
+          action === "pause" ? "暂停中…"
+            : action === "resume" ? "恢复中…"
+            : "取消中…"
+        );
+      }
       renderWorkspace();
       try {
         const session = await request(
@@ -1035,6 +1053,7 @@
           state.actionPending,
           candidate,
         );
+        if (state._busyRelease) { state._busyRelease(); state._busyRelease = null; }
         renderWorkspace();
         setFormStatus(t("cl.status_updated"), false);
         loadSessions();
@@ -1047,6 +1066,7 @@
           state.actionPending,
           candidate,
         );
+        if (state._busyRelease) { state._busyRelease(); state._busyRelease = null; }
         renderWorkspace();
         setFormStatus(error.message, true);
         schedulePoll();

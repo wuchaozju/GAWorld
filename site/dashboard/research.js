@@ -50,7 +50,109 @@
     busy: false,
     pollTimer: null,
     studyPollTimer: null,
+    studyRequest: 0,
+    studyActionPending: false,
+    providerResult: null,
+    logSource: "",
+    autoScroll: true,
   };
+
+  var logStream = window.GAResearchRuntime.createLogStream({ api: api,
+    isHidden: function () { return document.hidden; }, onUpdate: renderLogPanel });
+
+  function executionMode(protocol) {
+    return protocol.execution_mode || (protocol.fast ? "lean_tick" : "tick");
+  }
+
+  function modeLabel(mode) {
+    return { tick: t("mode_tick", "日内完整运行"), lean_tick: t("mode_lean", "精简认知（日内循环）"),
+      daily_brief: t("mode_daily", "按天简报（近似探索）") }[mode] || mode;
+  }
+
+  function renderLogPanel(data) {
+    var output = $("rwLogOutput");
+    var picker = $("rwLogSource");
+    if (!output || !picker) return;
+    output.textContent = data.text || (data.missing ? t("log_missing", "此阶段尚未写入日志。") : t("log_empty", "等待日志…"));
+    $("rwLogError").textContent = data.error || "";
+    var sources = data.sources || [];
+    var signature = JSON.stringify(sources.map(function (s) { return [s.seed, s.world, s.kind]; }));
+    if (picker.dataset.sources !== signature) {
+      picker.innerHTML = sources.map(function (s) {
+        var value = JSON.stringify({ seed: s.seed, world: s.world, kind: s.kind });
+        var label = s.kind === "events" ? t("log_events", "阶段记录") : "s" + s.seed + " · " + s.world + " · " + s.kind;
+        return "<option value=\"" + esc(value) + "\">" + esc(label) + "</option>";
+      }).join("");
+      picker.dataset.sources = signature;
+      if (state.logSource && Array.from(picker.options).some(function (o) { return o.value === state.logSource; })) picker.value = state.logSource;
+    }
+    if (state.autoScroll) output.scrollTop = output.scrollHeight;
+  }
+
+  function renderRuntimeMetrics(job, study) {
+    var target = $("rwRunMetrics");
+    if (!target) return;
+    var runtime = (study || {}).runtime || {};
+    var stats = (job || {}).telemetry || runtime.telemetry || {};
+    if (stats.available === false) {
+      target.textContent = t("metrics_missing", "此历史实验未保存可用的模型调用统计。");
+      return;
+    }
+    var timing = job || runtime;
+    function measuredTime(value) { return value === undefined || value === null ? "—" : duration(value); }
+    var providers = Object.keys(stats.providers || {}).map(function (name) {
+      var p = stats.providers[name];
+      var seconds = Math.max(0, Math.ceil((p.cooldown_until || 0) - Date.now() / 1000));
+      return name + (seconds ? " · " + tf("provider_cooling", "冷却 {n} 秒", { n: seconds }) : "") +
+        (p.last_error ? " · " + p.last_error : "");
+    });
+    target.textContent = tf("run_measured", "实测请求 {requests} · 失败 {errors} · 回退 {fallbacks} · provider 尝试 {calls}", {
+      requests: stats.requests || 0, errors: stats.requests_failed || 0,
+      fallbacks: stats.requests_fell_back || 0, calls: stats.call_count || 0 }) + "\n" +
+      (stats.http_attempts !== undefined ? tf("run_http", "HTTP 提交 {attempts} · HTTP 失败 {failures}", { attempts: stats.http_attempts || 0, failures: stats.http_failures || 0 }) + "\n" : "") +
+      (stats.brief_tracking_version ? tf("run_briefs", "有效简报 {valid} · 格式错误 {invalid} · 修复后可用 {recovered} · 最终不可用 {failed}", {
+        valid: stats.valid_briefs || 0, invalid: stats.brief_parse_failures || 0,
+        recovered: stats.recovered_briefs || 0, failed: stats.invalid_briefs || 0 }) + "\n" : "") +
+      tf("run_clocks", "活动 {active} · 日历 {wall} · 暂停 {paused} · 排队累计 {queued} · provider 冷却累计 {cooldown}", {
+        active: measuredTime(timing.elapsed_seconds), wall: measuredTime(timing.wall_seconds),
+        paused: measuredTime(timing.paused_seconds), queued: measuredTime(timing.queued_seconds),
+        cooldown: measuredTime(stats.cooldown_seconds) }) +
+      (providers.length ? "\n" + providers.join("；") : "") + (stats.reason ? "\n" + briefFailureMessage(stats.reason) : "") +
+      (stats.last_brief_failure ? "\n" + t("brief_diagnostic", "最近一次简报诊断") + "：" + JSON.stringify(stats.last_brief_failure) : "") +
+      (stats.partial ? "\n" + t("metrics_partial", "统计来自已有完成世界；失败世界统计缺失，总量是下界。") : "");
+  }
+
+  function briefFailureMessage(message) {
+    return message === "研究简报失败预算已耗尽；没有可用简报数据" ?
+      t("brief_stopped", "研究因简报解析错误达到失败上限而停止；此前生成的日志仍保留。重置后可使用格式修复机制重新运行。") : message;
+  }
+
+  function createQuickStudy(useCurrentSample) {
+    if (!state.study) return;
+    var id = state.study.id;
+    setStudyProgress(t("quick_creating", "正在生成独立快速试跑协议…"), "live");
+    api("POST", "/api/research/studies/" + encodeURIComponent(id) + "/quick", { use_current_sample: useCurrentSample === true })
+      .then(function (data) { return openStudy(data.study_id).then(refreshStudies); })
+      .catch(function (err) {
+        setStudyProgress(err.message, "error");
+        if ($("rwCurrentSamplePilot")) $("rwCurrentSamplePilot").hidden = false;
+      });
+  }
+
+  function checkProvider(probe) {
+    if (!state.study) return;
+    var id = state.study.id;
+    setStudyProgress(t("provider_checking", "正在检查模型…"), "live");
+    api("POST", "/api/research/studies/" + encodeURIComponent(id) + "/check-provider", {
+      provider: $("rwKnobSimProvider") ? $("rwKnobSimProvider").value : state.study.protocol.sim_provider,
+      probe: !!probe })
+      .then(function (result) {
+        if (!state.study || state.study.id !== id) return;
+        state.providerResult = result;
+        $("rwProviderResult").textContent = JSON.stringify(result, null, 2);
+        setStudyProgress(result.status, "");
+      }).catch(function (err) { setStudyProgress(err.message, "error"); });
+  }
 
   /* ------------------------------------------------------------------- api */
 
@@ -196,8 +298,18 @@
     $("rwSkipDigest").disabled = busy;
     if ($("rwDesignFromDigest")) $("rwDesignFromDigest").disabled = busy;
     if ($("rwRedigest")) $("rwRedigest").disabled = busy;
-    if (busy) $("rwRun").textContent = t("running", "分析中…");
-    else syncRunLabel();
+    if (busy) {
+      // Flip the run button's label too. saveRunLabel() restores it correctly
+      // even after a locale switch in the middle of a long run.
+      if (typeof setButtonBusy === "function") {
+        state._rwRunRelease = setButtonBusy($("rwRun"), "research.running", "分析中…");
+      } else {
+        $("rwRun").textContent = t("running", "分析中…");
+      }
+    } else {
+      if (state._rwRunRelease) { state._rwRunRelease(); state._rwRunRelease = null; }
+      syncRunLabel();
+    }
   }
 
   /* ---------------------------------------------------------------- upload */
@@ -445,6 +557,33 @@
       });
   }
 
+  function editPlan() {
+    var plan = state.plan;
+    if (!plan) return;
+    window.ResearchEditors.open($("rwPlanEditor"), "plan", plan, function (edited) {
+      var content = {};
+      ["title", "summary", "research_questions", "hypotheses", "design", "designs", "recommended_design", "steps"].forEach(function (key) { content[key] = edited[key]; });
+      return api("POST", "/api/research/plans/" + encodeURIComponent(plan.id) + "/update", { plan: content })
+        .then(function (saved) { state.plan = saved; renderPlan(); return refreshHistory(); });
+    });
+  }
+
+  function editProtocol() {
+    var study = state.study;
+    if (!study) return;
+    window.ResearchEditors.open($("rwProtocolEditor"), "protocol", study.protocol, function (edited) {
+      return api("POST", "/api/research/studies/" + encodeURIComponent(study.id) + "/update", { protocol: edited })
+        .then(function () { return openStudy(study.id); }).then(refreshStudies);
+    });
+  }
+
+  function reviseStudy() {
+    if (!state.study) return;
+    api("POST", "/api/research/studies/" + encodeURIComponent(state.study.id) + "/revise", {})
+      .then(function (data) { return openStudy(data.study_id); }).then(refreshStudies).then(editProtocol)
+      .catch(function (err) { setStudyProgress(err.message, "error"); });
+  }
+
   function saveMarkdown(data) {
     var blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
     var url = URL.createObjectURL(blob);
@@ -537,6 +676,43 @@
     el.classList.toggle("is-error", mode === "error");
   }
 
+  function duration(seconds) {
+    var minutes = Math.max(1, Math.ceil(Number(seconds) / 60));
+    if (Number(seconds) < 60) return tf("duration_seconds", "{n} 秒", { n: Math.max(0, Math.round(seconds)) });
+    if (minutes < 60) return tf("duration_minutes", "{n} 分钟", { n: minutes });
+    return tf("duration_hours", "{h} 小时 {m} 分钟", { h: Math.floor(minutes / 60), m: minutes % 60 });
+  }
+
+  function renderStudyRunStatus(job) {
+    renderRuntimeMetrics(job, state.study);
+    var panel = $("rwRunStatus");
+    if (!panel) return;
+    panel.hidden = !job;
+    if (!job) return;
+    var paused = !!job.paused;
+    var stopping = !!job.stopping;
+    var percent = Math.max(0, Math.min(100, Math.round((job.progress || 0) * 100)));
+    $("rwRunPercent").textContent = percent + "%";
+    $("rwRunBar").value = percent;
+    $("rwRunBar").setAttribute("aria-valuetext", percent + "%");
+    $("rwRunLabel").textContent = stopping ? t("stage_stopping", "正在停止…")
+      : paused ? t("stage_paused", "已暂停")
+      : job.status === "done" ? t("run_complete", "运行完成")
+      : job.status === "stopped" ? t("stage_stopped", "已停止")
+      : job.status === "error" ? t("stage_error", "出错") : t("stage_running", "运行中");
+    $("rwRunMessage").textContent = job.message || "";
+    $("rwRunElapsed").textContent = tf("run_elapsed", "已运行 {time}", { time: duration(job.elapsed_seconds || 0) });
+    var remaining = job.remaining_seconds;
+    $("rwRunRemaining").textContent = stopping ? t("stop_pending", "正在结束当前任务…")
+      : job.status !== "running" ? ""
+      : remaining === null || remaining === undefined ? t("eta_pending", "剩余时间：正在估算…")
+      : tf(paused ? "eta_paused" : "eta_remaining", paused ? "继续后预计还需约 {time}" : "预计剩余约 {time}", { time: duration(remaining) });
+    $("rwRunHint").textContent = job.status === "running"
+      ? t("run_control_hint", "时间按当前进度粗估，暂停时间不计入。问卷、评分和解读会在当前调用结束后暂停或停止。") : "";
+    panel.classList.toggle("is-paused", paused);
+    panel.classList.toggle("is-stopping", stopping);
+  }
+
   function createStudy() {
     if (!state.plan) return;
     var autopilot = !!($("rwAutopilot") && $("rwAutopilot").checked);
@@ -563,7 +739,7 @@
           setProgress(job.message || t("compiling", "正在编译预注册协议…"), "live");
           state.studyPollTimer = setTimeout(function () {
             pollStudyJob(jobId);
-          }, POLL_MS);
+          }, document.hidden ? 15000 : POLL_MS);
           return;
         }
         if (job.status !== "done") {
@@ -573,7 +749,6 @@
         setProgress(t("study_created", "协议已生成。"), "");
         var result = job.result || {};
         return openStudy(result.study_id).then(function () {
-          if (result.run_job_id) pollStudyRun(result.run_job_id);
           return refreshStudies();
         });
       })
@@ -584,38 +759,61 @@
 
   function pollStudyRun(jobId) {
     clearTimeout(state.studyPollTimer);
-    api("GET", "/api/research/jobs/" + encodeURIComponent(jobId))
-      .then(function (job) {
+    if (!state.study) return;
+    var studyId = state.study.id;
+    var request = state.studyRequest;
+    var current = function () { return request === state.studyRequest && state.study && state.study.id === studyId; };
+    Promise.all([
+      api("GET", "/api/research/jobs/" + encodeURIComponent(jobId)),
+      api("GET", "/api/research/studies/" + encodeURIComponent(studyId)),
+    ])
+      .then(function (data) {
+        if (!current()) return;
+        var job = data[0];
+        var study = data[1];
+        var changed = state.study.stage !== study.stage || state.study.paused !== study.paused ||
+          state.study.stopping !== study.stopping || state.study.live !== study.live;
+        study.run_status = job;
+        state.study = study;
+        if (changed) renderStudy();
+        renderStudyRunStatus(job);
         if (job.status === "running") {
-          var paused = !!(state.study && state.study.paused);
-          setStudyProgress(
-            (paused ? t("paused_progress", "已暂停：") : t("run_progress", "运行中：")) +
-              (job.message || "") + " " + Math.round((job.progress || 0) * 100) + "%",
-            paused ? "" : "live"
-          );
           state.studyPollTimer = setTimeout(function () {
             pollStudyRun(jobId);
-          }, POLL_MS);
+          }, document.hidden ? 15000 : POLL_MS);
           return;
         }
-        var id = state.study && state.study.id;
-        return Promise.all([id ? openStudy(id) : null, refreshStudies()]).then(function () {
-          if (job.status !== "done") setStudyProgress(t("study_failed", "研究失败：") + (job.message || ""), "error");
+        // The parallel detail request may have arrived before this terminal
+        // job status. Read again so the final report and controls are current.
+        return api("GET", "/api/research/studies/" + encodeURIComponent(studyId)).then(function (finalStudy) {
+          if (!current()) return;
+          finalStudy.run_status = job;
+          state.study = finalStudy;
+          renderStudy();
+          if (job.status === "error") setStudyProgress(t("study_failed", "研究失败：") + (job.message || ""), "error");
+          return refreshStudies();
         });
       })
       .catch(function (err) {
+        if (!current()) return;
         // A job that cannot be read any more (restart, evicted record) is not
         // a study stuck at 运行中: re-read the study, which the server has by
         // then marked interrupted, so its buttons come back.
         var message = t("task_lost", "任务丢失了：") + err.message;
-        var id = state.study && state.study.id;
-        if (!id) {
+        api("GET", "/api/research/studies/" + encodeURIComponent(studyId)).then(function (study) {
+          if (!current()) return;
+          state.study = study;
+          renderStudy();
           setStudyProgress(message, "error");
-          return;
-        }
-        openStudy(id).then(function () {
+          if (study.live && study.active_job_id) {
+            state.studyPollTimer = setTimeout(function () { if (current()) pollStudyRun(study.active_job_id); }, POLL_MS * 2);
+          } else {
+            refreshStudies();
+          }
+        }).catch(function () {
+          if (!current()) return;
           setStudyProgress(message, "error");
-          return refreshStudies();
+          state.studyPollTimer = setTimeout(function () { if (current()) pollStudyRun(jobId); }, POLL_MS * 2);
         });
       });
   }
@@ -629,35 +827,58 @@
 
   function openStudy(studyId) {
     if (!studyId) return Promise.resolve();
+    clearTimeout(state.studyPollTimer);
+    var request = ++state.studyRequest;
+    state.providerResult = null;
     return api("GET", "/api/research/studies/" + encodeURIComponent(studyId))
       .then(function (study) {
+        if (request !== state.studyRequest) return;
         state.study = study;
+        state.logSource = "";
+        logStream.activate(study.id, study.attempt || 1, study.live);
         renderStudy();
         renderStudies();
+        if (study.plan_id) {
+          api("GET", "/api/research/plans/" + encodeURIComponent(study.plan_id)).then(function (plan) {
+            if (request !== state.studyRequest) return;
+            state.plan = plan;
+            renderPlan();
+            renderHistory();
+          }).catch(function () { /* The study's source snapshot remains available after a plan is deleted. */ });
+        }
         if (study.active_job_id) pollStudyRun(study.active_job_id);
         $("rwStudy").scrollIntoView({ behavior: "smooth", block: "start" });
       })
       .catch(function (err) {
+        if (request !== state.studyRequest) return;
         setProgress(t("open_failed", "打开方案失败：") + err.message, "error");
       });
   }
 
   function studyAction(action, body) {
-    if (!state.study) return;
+    if (!state.study || state.studyActionPending) return;
     var id = state.study.id;
+    var request = state.studyRequest;
+    state.studyActionPending = true;
+    ["rwPauseStudy", "rwResumeStudy", "rwStopStudy", "rwRunStudy", "rwApproveRun"].forEach(function (id) {
+      if ($(id)) $(id).disabled = true;
+    });
     setStudyProgress("…", "live");
     api("POST", "/api/research/studies/" + encodeURIComponent(id) + "/" + action, body || {})
       .then(function (data) {
-        var jobId = data.job_id || data.run_job_id;
+        state.studyActionPending = false;
+        if (request !== state.studyRequest) return;
         // The card is rebuilt by openStudy, so anything the server wants said
         // has to be written into the fresh one.
         return openStudy(id).then(function () {
           setStudyProgress(data.note || "", data.note ? "error" : "");
-          if (jobId) pollStudyRun(jobId);
           return refreshStudies();
         });
       })
       .catch(function (err) {
+        state.studyActionPending = false;
+        if (request !== state.studyRequest) return;
+        renderStudy();
         setStudyProgress(err.message, "error");
       });
   }
@@ -672,9 +893,10 @@
     studyAction("update", {
       seeds: $("rwKnobSeeds").value,
       sim_days: $("rwKnobDays").value,
-      fast: $("rwKnobFast").checked,
+      execution_mode: $("rwKnobMode").value,
       agent_ids: $("rwKnobAgents").value,
       sim_provider: $("rwKnobSimProvider").value,
+      max_parallel: $("rwKnobParallel").value,
     });
   }
 
@@ -695,6 +917,9 @@
     api("POST", "/api/research/studies/" + encodeURIComponent(state.study.id) + "/delete", {})
       .then(function () {
         state.study = null;
+        logStream.stop();
+        ++state.studyRequest;
+        clearTimeout(state.studyPollTimer);
         renderStudy();
         return refreshStudies();
       })
@@ -706,7 +931,9 @@
   function renderStudy() {
     var host = $("rwStudy");
     var study = state.study;
+    document.dispatchEvent(new CustomEvent("research-study-selected", { detail: study }));
     if (!study) {
+      logStream.stop();
       host.hidden = true;
       host.innerHTML = "";
       return;
@@ -714,29 +941,38 @@
     var protocol = study.protocol || {};
     var preflight = study.preflight || {};
     var stage = study.stage || "";
-    var editable = stage === "protocol" || stage === "error";
+    var hasResults = window.ResearchEditors.hasResults(study);
+    var editable = !study.live && !hasResults && (stage === "protocol" || stage === "error");
+    var canEdit = editable || (!study.live && !hasResults && stage === "approved");
     var sample = protocol.sample || {};
     var validity = protocol.validity || {};
 
     var badges = [
-      "<span class=\"rw-badge rw-stage-" + esc(stage) + "\">" + esc(stageLabel(stage)) + "</span>",
+      "<span class=\"rw-badge rw-stage-" + esc(stage) + "\">" + esc(stage === "protocol" ? (preflight.ok ? t("draft_ready", "待批准 · 可运行") : t("draft_blocked", "需修正")) : stageLabel(stage)) + "</span>",
       "<span class=\"rw-badge\">" + esc(t("plan_of_study", "来源方案") + "：" + (study.plan_id || "")) + "</span>",
       "<span class=\"rw-badge\">" + esc(fmtTime(study.created_at)) + "</span>",
     ];
     if (study.autopilot) badges.push("<span class=\"rw-badge\">" + esc(t("autopilot_short", "自动执行")) + "</span>");
     if (study.paused) badges.push("<span class=\"rw-badge rw-stage-paused\">" + esc(t("stage_paused", "已暂停")) + "</span>");
     var actions = [];
+    actions.push("<button class=\"btn tiny ghost\" id=\"rwCreateBatch\">" + esc(t("batch_open", "多模型 / 跨城 / 重复实验")) + "</button>");
+    if (!study.live && executionMode(protocol) !== "daily_brief") actions.push("<button class=\"btn tiny ghost\" id=\"rwQuickStudy\">" + esc(t("quick_create", "创建快速试跑版本")) + "</button>");
+    if (canEdit) actions.push("<button class=\"btn tiny ghost\" id=\"rwEditProtocol\">" + esc(t("edit_protocol", "编辑运行方案")) + "</button>");
+    actions.push("<button class=\"btn tiny ghost\" id=\"rwReviseStudy\">" + esc(t("revise_study", "复制并修订")) + "</button>");
+    if (study.plan_id) actions.push("<button class=\"btn tiny ghost\" id=\"rwSourcePlan\">" + esc(t("open_source_plan", "打开实施方案")) + "</button>");
+    if (!study.live) actions.push("<button class=\"btn tiny ghost\" id=\"rwCurrentSamplePilot\" hidden>" + esc(t("quick_current_sample", "改用当前城市创建独立探索版（样本会改变）")) + "</button>");
     if (editable) {
       var can = preflight.ok ? "" : " disabled";
       actions.push("<button class=\"btn tiny\" id=\"rwApprove\"" + can + ">" + esc(t("approve", "批准")) + "</button>");
       actions.push("<button class=\"btn tiny\" id=\"rwApproveRun\"" + can + ">" + esc(t("approve_run", "批准并运行")) + "</button>");
     }
-    if (stage === "approved") actions.push("<button class=\"btn tiny\" id=\"rwRunStudy\">" + esc(t("run_study", "运行")) + "</button>");
-    if (stage === "running" && study.live) {
+    if (stage === "approved" && !study.live) actions.push("<button class=\"btn tiny\" id=\"rwRunStudy\">" + esc(t("run_study", "运行")) + "</button>");
+    if (study.live) {
+      var disabled = study.stopping || state.studyActionPending ? " disabled" : "";
       actions.push(study.paused
-        ? "<button class=\"btn tiny\" id=\"rwResumeStudy\">" + esc(t("resume", "继续")) + "</button>"
-        : "<button class=\"btn tiny ghost\" id=\"rwPauseStudy\">" + esc(t("pause", "暂停")) + "</button>");
-      actions.push("<button class=\"btn tiny ghost danger\" id=\"rwStopStudy\">" + esc(t("stop", "停止")) + "</button>");
+        ? "<button class=\"btn tiny\" id=\"rwResumeStudy\"" + disabled + ">" + esc(t("resume", "继续")) + "</button>"
+        : "<button class=\"btn tiny ghost\" id=\"rwPauseStudy\"" + disabled + ">" + esc(t("pause", "暂停")) + "</button>");
+      actions.push("<button class=\"btn tiny ghost danger\" id=\"rwStopStudy\"" + disabled + ">" + esc(t(study.stopping ? "stage_stopping" : "stop", study.stopping ? "正在停止…" : "停止")) + "</button>");
     }
     // Anything that has already run — including a run cut short — can be put
     // back to the starting line. The old worlds stay on disk.
@@ -748,16 +984,44 @@
 
     var html = "<div class=\"rw-result-head\"><div><h3>" + esc(study.title) + "</h3><div class=\"rw-badges\">" + badges.join("") + "</div></div>" +
       "<div class=\"rw-actions\">" + actions.join("") + "</div></div>" +
+      "<div class=\"rw-run-status\" id=\"rwRunStatus\" hidden>" +
+      "<div class=\"rw-run-summary\"><strong id=\"rwRunLabel\"></strong><strong id=\"rwRunPercent\"></strong></div>" +
+      "<progress id=\"rwRunBar\" max=\"100\" value=\"0\" aria-label=\"" + esc(t("run_bar_label", "研究运行进度")) + "\"></progress>" +
+      "<p id=\"rwRunMessage\"></p><div class=\"rw-run-times\"><span id=\"rwRunElapsed\"></span><span id=\"rwRunRemaining\"></span></div>" +
+      "<p class=\"rw-run-hint\" id=\"rwRunHint\"></p></div>" +
       "<p class=\"rw-progress\" id=\"rwStudyProgress\" aria-live=\"polite\"></p>";
-    if (study.error) html += "<p class=\"rw-rationale rw-warn\">" + esc(study.error) + "</p>";
+    if (study.error) html += "<p class=\"rw-rationale rw-warn\">" + esc(briefFailureMessage(study.error)) + "</p>";
+    if (editable && !preflight.ok) html += "<p class=\"rw-rationale rw-warn\">" + esc(t("approval_blocked", "批准被阻止：请编辑运行方案或重新检查。") + " " + (preflight.errors || []).join("；")) + "</p>";
+    if (Object.keys(study.source_plan || {}).length > 1) html += "<details class=\"rw-source-plan\"><summary>" + esc(t("source_plan_snapshot", "查看编译时的实施方案（历史版本）")) + "</summary><pre>" + esc(study.source_plan.markdown || JSON.stringify(study.source_plan, null, 2)) + "</pre></details>";
+    if (protocol.purpose === "exploratory" || executionMode(protocol) === "daily_brief") {
+      html += "<p class=\"rw-rationale rw-warn\">" + esc(t("quick_evidence", "近似探索 / 流程检查：结果不作正式假设验证。原研究保留，种子与样本差异见下方。")) + "</p>";
+    }
+    if (study.parent_study_id) html += "<p class=\"rw-hint\">" + esc(t("quick_parent", "原研究") + "：" + study.parent_study_id) + "</p><pre class=\"rw-runtime-note\">" + esc(JSON.stringify(study.protocol_changes || {}, null, 2)) + "</pre>";
+    if (editable && study.parent_study_id && executionMode(protocol) === "daily_brief" && !preflight.ok) {
+      html += "<button class=\"btn tiny ghost\" id=\"rwExcludeIncompatible\">" + esc(t("quick_exclude", "排除不兼容指标及相关假设（仅当前探索版本）")) + "</button>";
+    }
+    html += "<pre id=\"rwRunMetrics\" class=\"rw-runtime-note\"></pre>" +
+      "<div class=\"rw-row\"><button class=\"btn tiny ghost\" id=\"rwCheckProvider\">" + esc(t("provider_inspect", "检查模型配置与本地连接")) + "</button>" +
+      "<button class=\"btn tiny ghost\" id=\"rwProbeProvider\">" + esc(t("provider_probe", "测试生成（一次模型调用）")) + "</button></div>" +
+      "<pre id=\"rwProviderResult\" class=\"rw-runtime-note\">" + esc(state.providerResult ? JSON.stringify(state.providerResult, null, 2) : "") + "</pre>" +
+      "<details class=\"rw-log-panel\" open><summary>" + esc(t("log_title", "运行日志")) + "</summary>" +
+      "<div class=\"rw-row\"><select id=\"rwLogSource\" aria-label=\"" + esc(t("log_source", "日志来源")) + "\"></select>" +
+      "<label><input type=\"checkbox\" id=\"rwLogScroll\"" + (state.autoScroll ? " checked" : "") + " /> " + esc(t("log_scroll", "自动滚动")) + "</label>" +
+      "<button class=\"btn tiny ghost\" id=\"rwLogRefresh\">" + esc(t("log_refresh", "刷新日志")) + "</button></div>" +
+      "<pre id=\"rwLogOutput\" tabindex=\"0\"></pre><p id=\"rwLogError\" class=\"rw-warn\"></p></details>";
+    var actual = study.runtime || {};
+    if (actual.actual_agent_ids) html += "<p class=\"rw-hint\">" + esc(t("actual_sample", "实际运行人口") + "：" + actual.actual_agent_ids.length + " · " + (actual.actual_city || "") + " · " + (actual.actual_provider || "")) + "</p>";
 
     var pf = "";
     var budget = preflight.budget || {};
     if (budget.estimated_calls !== undefined) {
-      pf += "<p class=\"rw-rationale\"><b>" + esc(t("budget", "估算调用量")) + "：</b>" +
+      pf += "<p class=\"rw-rationale\"><b>" + esc(budget.components ? t("budget", "估算调用量") : t("budget_historical", "历史预算（旧估算规则）")) + "：</b>" +
         esc(Number(budget.estimated_calls).toLocaleString() + " / " + Number(budget.limit).toLocaleString() +
-          "（" + budget.agents + " × " + budget.sim_days + "d × " + budget.calls_per_agent_day + " × " + budget.worlds + " × " + budget.seeds + "）") + "</p>";
+          "（" + t("budget_simulation_only", "主体仿真") + "：" + budget.agents + " × " + budget.sim_days + "d × " + budget.calls_per_agent_day + " × " + budget.worlds + " × " + budget.seeds + "）") + "</p>";
     }
+    if (protocol.fast && !budget.components) pf += "<p class=\"rw-hint rw-warn\">" + esc(t("budget_legacy_hint", "旧预算低估了精简认知的调用量；重新检查或重跑时会按当前规则估算。")) + "</p>";
+    if (budget.components) pf += "<p class=\"rw-hint\">" + esc(Object.keys(budget.components).map(function (key) { return key + ": " + budget.components[key]; }).join(" · ")) + "</p>";
+    if (budget.estimate_note) pf += "<p class=\"rw-hint\">" + esc(t("estimate_note", "粗估不包含失败重试和插件额外调用；精简认知仍运行日内循环。")) + "</p>";
     (preflight.errors || []).forEach(function (item) {
       pf += "<div class=\"rw-gap\"><b>" + esc(item) + "</b></div>";
     });
@@ -771,9 +1035,13 @@
         "<label class=\"rw-field\"><span>" + esc(t("knobs_seeds", "种子（逗号分隔）")) + "</span><input id=\"rwKnobSeeds\" value=\"" + esc((validity.seeds || []).join(", ")) + "\" /></label>" +
         "<label class=\"rw-field\"><span>" + esc(t("knobs_days", "仿真天数")) + "</span><input id=\"rwKnobDays\" type=\"number\" min=\"1\" value=\"" + esc(protocol.sim_days) + "\" /></label>" +
         "<label class=\"rw-field\"><span>" + esc(t("knobs_agents", "参与居民 id（留空 = 全部）")) + "</span><input id=\"rwKnobAgents\" value=\"" + esc((sample.agent_ids || []).join(", ")) + "\" /></label>" +
+        "<label class=\"rw-field\"><span>" + esc(t("knobs_parallel", "每项研究的世界并发数")) + "</span><input id=\"rwKnobParallel\" type=\"number\" min=\"1\" max=\"4\" value=\"" + esc(protocol.max_parallel || 2) + "\" /></label>" +
         "<label class=\"rw-field\"><span>" + esc(t("knobs_sim_provider", "仿真模型（居民跑在哪个模型上）")) + "</span>" +
         "<select id=\"rwKnobSimProvider\">" + providerOptions(protocol.sim_provider) + "</select></label>" +
-        "<label class=\"rw-check\"><input type=\"checkbox\" id=\"rwKnobFast\"" + (protocol.fast ? " checked" : "") + " /> " + esc(t("knobs_fast", "快速模式")) + "</label>" +
+        "<label class=\"rw-field\"><span>" + esc(t("execution_mode", "运行方式")) + "</span><select id=\"rwKnobMode\">" +
+        ["tick", "lean_tick"].concat(executionMode(protocol) === "daily_brief" ? ["daily_brief"] : []).map(function (mode) {
+          return "<option value=\"" + mode + "\"" + (executionMode(protocol) === mode ? " selected" : "") + ">" + esc(modeLabel(mode)) + "</option>";
+        }).join("") + "</select></label>" +
         "<button class=\"btn tiny ghost\" id=\"rwRecheck\">" + esc(t("recheck", "重新检查")) + "</button></div>";
     } else {
       html += section(t("prereg", "预注册"), dl([
@@ -781,6 +1049,7 @@
         [t("knobs_days", "仿真天数"), String(protocol.sim_days) + (protocol.fast ? " · " + t("knobs_fast", "快速模式") : "")],
         [t("knobs_agents", "参与居民 id（留空 = 全部）"), (sample.agent_ids || []).join(", ") || "—"],
         [t("sim_model", "仿真模型"), providerLabel(protocol.sim_provider)],
+        [t("execution_mode", "运行方式"), modeLabel(executionMode(protocol))],
       ]));
     }
     if (sample.note) html += "<p class=\"rw-rationale\">" + esc(sample.note) + "</p>";
@@ -902,11 +1171,22 @@
 
     host.innerHTML = html;
     host.hidden = false;
+    host.querySelectorAll("table.rw-table").forEach(function (table) {
+      var scroll = document.createElement("div");
+      scroll.className = "rw-table-scroll";
+      table.parentNode.insertBefore(scroll, table);
+      scroll.appendChild(table);
+    });
+    renderStudyRunStatus(study.run_status);
+    renderRuntimeMetrics(study.run_status, study);
+    renderLogPanel(logStream.snapshot());
+    logStream.activate(study.id, study.attempt || 1, study.live);
     var bind = function (id, fn) {
       var el = $(id);
       if (el) el.addEventListener("click", fn);
     };
     bind("rwApprove", function () { studyAction("approve", {}); });
+    bind("rwCreateBatch", function () { document.dispatchEvent(new CustomEvent("research-batch-open")); });
     bind("rwApproveRun", function () { studyAction("approve", { run: true }); });
     bind("rwRunStudy", function () { studyAction("run", {}); });
     bind("rwStopStudy", function () { studyAction("stop", {}); });
@@ -914,6 +1194,20 @@
     bind("rwResumeStudy", function () { studyAction("resume", {}); });
     bind("rwResetStudy", resetStudy);
     bind("rwRecheck", recheckStudy);
+    bind("rwEditProtocol", editProtocol);
+    bind("rwReviseStudy", reviseStudy);
+    bind("rwSourcePlan", function () { openPlan(study.plan_id); });
+    bind("rwQuickStudy", function () { createQuickStudy(false); });
+    bind("rwCurrentSamplePilot", function () { createQuickStudy(true); });
+    bind("rwExcludeIncompatible", function () { studyAction("update", { exclude_incompatible: true }); });
+    bind("rwCheckProvider", function () { checkProvider(false); });
+    bind("rwProbeProvider", function () { checkProvider(true); });
+    bind("rwLogRefresh", function () { logStream.refresh(); });
+    $("rwLogScroll").addEventListener("change", function () { state.autoScroll = this.checked; });
+    $("rwLogSource").addEventListener("change", function () {
+      state.logSource = this.value;
+      logStream.select(JSON.parse(this.value));
+    });
     // Picking a model is one discrete act, so save it right away rather than
     // leaving it to be lost when 批准 skips the knobs.
     var simProvider = $("rwKnobSimProvider");
@@ -932,17 +1226,28 @@
     host.innerHTML = state.studies.map(function (item) {
       var active = state.study && state.study.id === item.id;
       var summary = item.summary || {};
-      var meta = [stageLabel(item.stage), fmtTime(item.created_at)];
+      var meta = [item.paused ? t("stage_paused", "已暂停") : stageLabel(item.stage), fmtTime(item.created_at)];
       if (item.stage === "reported" || item.stage === "evaluated") {
         meta.push(t("verdict_supported", "支持") + " " + (summary.supported || 0) + "/" + item.hypotheses);
       }
-      return "<button type=\"button\" class=\"rw-history-item" + (active ? " is-active" : "") + "\" data-id=\"" + esc(item.id) + "\">" +
+      return "<div class=\"rw-history-row\"><button type=\"button\" class=\"rw-history-item" + (active ? " is-active" : "") + "\" data-id=\"" + esc(item.id) + "\">" +
         "<span class=\"rw-hist-title\">" + esc(item.title || item.id) + "</span>" +
-        "<span class=\"rw-hist-meta\">" + esc(meta.filter(Boolean).join(" · ")) + "</span></button>";
+        "<span class=\"rw-hist-meta\">" + esc(meta.filter(Boolean).join(" · ")) + "</span></button>" +
+        (!item.live && item.stage !== "running" ? "<button type=\"button\" class=\"btn tiny ghost danger rw-history-delete\" data-delete-study=\"" + esc(item.id) + "\" aria-label=\"删除研究：" + esc(item.title) + "\">" + esc(t("delete", "删除")) + "</button>" : "") + "</div>";
     }).join("");
     Array.prototype.forEach.call(host.querySelectorAll(".rw-history-item"), function (button) {
       button.addEventListener("click", function () {
         openStudy(button.dataset.id);
+      });
+    });
+    host.querySelectorAll("[data-delete-study]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (!window.confirm(t("delete_study_ask", "删除这项研究？来源实施方案会保留。"))) return;
+        var id = button.dataset.deleteStudy;
+        api("POST", "/api/research/studies/" + encodeURIComponent(id) + "/delete", {}).then(function () {
+          if (state.study && state.study.id === id) { ++state.studyRequest; state.study = null; logStream.stop(); renderStudy(); }
+          return refreshStudies();
+        }).catch(function (err) { setProgress(err.message, "error"); });
       });
     });
   }
@@ -1024,6 +1329,7 @@
     var html = "";
     html += "<div class=\"rw-result-head\"><div><h3>" + esc(plan.title) + "</h3><div class=\"rw-badges\">" + badges.join("") + "</div></div>";
     html += "<div class=\"rw-actions\">" +
+      "<button class=\"btn tiny ghost\" id=\"rwEditPlan\">" + esc(t("edit_plan", "编辑实施方案")) + "</button>" +
       "<button class=\"btn tiny\" id=\"rwToStudy\">" + esc(t("to_study", "转成研究")) + "</button>" +
       "<label class=\"rw-check\" title=\"" + esc(t("autopilot", "自动执行（跑前检查通过即运行）")) + "\"><input type=\"checkbox\" id=\"rwAutopilot\" /> " + esc(t("autopilot_short", "自动执行")) + "</label>" +
       "<button class=\"btn tiny ghost\" id=\"rwDownload\">" + esc(t("download", "下载 Markdown")) + "</button>" +
@@ -1104,6 +1410,7 @@
     host.innerHTML = html;
     host.hidden = false;
     $("rwToStudy").addEventListener("click", createStudy);
+    $("rwEditPlan").addEventListener("click", editPlan);
     $("rwDownload").addEventListener("click", downloadPlan);
     $("rwCopy").addEventListener("click", copyPlan);
     $("rwDelete").addEventListener("click", deletePlan);
@@ -1168,13 +1475,23 @@
     host.innerHTML = state.plans.map(function (item) {
       var active = state.plan && state.plan.id === item.id;
       var meta = [kindLabel(item.kind), verdictLabel(item.verdict), fmtTime(item.created_at)].filter(Boolean).join(" · ");
-      return "<button type=\"button\" class=\"rw-history-item" + (active ? " is-active" : "") + "\" data-id=\"" + esc(item.id) + "\">" +
+      return "<div class=\"rw-history-row\"><button type=\"button\" class=\"rw-history-item" + (active ? " is-active" : "") + "\" data-id=\"" + esc(item.id) + "\">" +
         "<span class=\"rw-hist-title\">" + esc(item.title || item.id) + "</span>" +
-        "<span class=\"rw-hist-meta\">" + esc(meta) + "</span></button>";
+        "<span class=\"rw-hist-meta\">" + esc(meta) + "</span></button><button type=\"button\" class=\"btn tiny ghost danger rw-history-delete\" data-delete-plan=\"" + esc(item.id) + "\" aria-label=\"删除实施方案：" + esc(item.title) + "\">" + esc(t("delete", "删除")) + "</button></div>";
     }).join("");
     Array.prototype.forEach.call(host.querySelectorAll(".rw-history-item"), function (button) {
       button.addEventListener("click", function () {
         openPlan(button.dataset.id);
+      });
+    });
+    host.querySelectorAll("[data-delete-plan]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (!window.confirm(t("delete_ask", "删除这份方案？"))) return;
+        var id = button.dataset.deletePlan;
+        api("POST", "/api/research/delete", { plan_id: id }).then(function () {
+          if (state.plan && state.plan.id === id) { state.plan = null; renderPlan(); }
+          return refreshHistory();
+        }).catch(function (err) { setProgress(err.message, "error"); });
       });
     });
   }
@@ -1182,12 +1499,21 @@
   function renderTopMeta() {
     var el = $("rwTopMeta");
     var n = (state.context && state.context.providers || []).length;
-    el.textContent = tf("topmeta", "{n} 个可用模型 · {m} 份历史方案", { n: n, m: state.plans.length });
+    var workspace = (state.context || {}).workspace || {};
+    var label = workspace.mode === "multi_user" ? (workspace.owner || t("private_workspace", "账号工作台")) : t("single_workspace", "单用户工作台");
+    el.textContent = label + " · " + tf("topmeta", "{n} 个可用模型 · {m} 份历史方案", { n: n, m: state.plans.length });
   }
 
   /* ------------------------------------------------------------------ init */
 
+  function pollHistory() {
+    refreshStudies().catch(function () {}).then(function () {
+      setTimeout(pollHistory, document.hidden ? 15000 : 5000);
+    });
+  }
+
   function init() {
+    document.addEventListener("research-open-study", function (event) { openStudy(event.detail); });
     document.querySelectorAll("input[name=rwKind]").forEach(function (radio) {
       radio.addEventListener("change", function () {
         syncKindPlaceholder();
@@ -1236,6 +1562,7 @@
         syncKindPlaceholder();
         syncRunLabel();
         syncCount();
+        setTimeout(pollHistory, 5000);
       })
       .catch(function (err) {
         setProgress(err.message, "error");

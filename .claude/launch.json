@@ -4,14 +4,35 @@
     {
       "name": "dashboard",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "gaworld.apps.dashboard_server", "--port", "8766"],
+      "runtimeArgs": [
+        "-m",
+        "gaworld.apps.dashboard_server",
+        "--port",
+        "8766"
+      ],
       "port": 8766
     },
     {
       "name": "dashboard-external",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "gaworld.apps.dashboard_server", "--port", "8778"],
+      "runtimeArgs": [
+        "-m",
+        "gaworld.apps.dashboard_server",
+        "--port",
+        "8778"
+      ],
       "port": 8778
+    },
+    {
+      "name": "dashboard-replication",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "gaworld.apps.dashboard_server",
+        "--port",
+        "8791"
+      ],
+      "port": 8791
     }
   ]
 }

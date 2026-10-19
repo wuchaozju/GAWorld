@@ -131,4 +131,35 @@ test("fileName is filesystem safe", () => {
   assert(gx.fileName("x", "", NOW).includes("-result-"));
 });
 
+test("warzone: header, stats, day table, proposal/vote sections", () => {
+  const run = {
+    scenario: { emoji: "🏰", name: "围城战" },
+    stats: { mortality: 0.33, dissent_rate: 0.5, food_gini: 0.42, avg_moral_distress: 3.1,
+             depleted_first: "药品", strongest_id: 1, most_excluded_id: 3 },
+    residents: [{ agent_id: 1, name: "甲", health: 5, hunger: 4, morale: 3, alive: true },
+                { agent_id: 2, name: "乙", health: 0, hunger: 0, morale: 0, alive: false }],
+    log: [{
+      day: 0, text: "第 1 天", stock_before: { 食物: 10 },
+      stock_after: { 食物: 8, 药品: 5 },
+      proposals: [{ author_id: 1, author_name: "甲", rationale: "我给病人", plan: [{ resource: "食物", recipient_id: "#2", amount: 2 }] }],
+      votes: [{ voter_id: 2, choice: "yes", for: 1, reason: "好" }],
+      tally: { 0: 1 }, winning_proposal: { author_id: 1, author_name: "甲", rationale: "我给病人", plan: [] },
+      distributed: ["食物→#2(2)"], deaths: [],
+      aggregate: { yes: 1, no: 0, abstain: 0, dissent_rate: 0, food_gini: 0, food_values: { 2: 2 } },
+    }],
+    essay: "他们撑过了第一天。",
+  };
+  const md = gx.warzone(run, NOW);
+  assert(md.includes("# 这是我的战争：🏰 围城战"));
+  assert(md.includes("死亡率：33%"));
+  assert(md.includes("食物基尼：0.42"));
+  assert(md.includes("最先耗尽：药品"));
+  assert(md.includes("## 第 1 天"));
+  assert(md.includes("方案1 — #1 甲"));
+  assert(md.includes("投票"));
+  assert(md.includes("投票人 \\#2 yes, 投方案1"));
+  assert(md.includes("（已故）"));
+  assert(md.includes("他们撑过了第一天。"));
+});
+
 console.log(`${passed} passed`);

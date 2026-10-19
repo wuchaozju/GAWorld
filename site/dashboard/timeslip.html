@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <script src="/site/theme.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="timeslip.page_title">GAWorld · 穿越历史</title>
+  <meta name="description" data-i18n-content="timeslip.meta_description" content="GAWorld 穿越历史 — 几位居民被扔进真实的朝代，面对历史时刻用古人的口吻应对，每一幕都同时露出他们的现代内心独白。" />
+  <link rel="stylesheet" href="/site/dashboard/styles.css" />
+  <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
+  <link rel="stylesheet" href="/site/dashboard/games.css" />
+  <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/assets/logo-emergent.png" />
+</head>
+<body class="studio-body">
+  <main class="studio-shell games-shell">
+    <header class="studio-top">
+      <div class="brand">
+        <div class="brand-mark brand-logo" aria-hidden="true"><img class="brand-symbol" src="/site/assets/logo-emergent.png" alt="" width="46" height="46" /></div>
+        <div class="brand-copy">
+          <p class="kicker" data-i18n="timeslip.kicker">GAWorld Playground · Timeslip</p>
+          <h1 data-i18n="timeslip.headline">穿越历史:让居民回到某个朝代</h1>
+          <p class="sub" data-i18n="timeslip.sub">
+            选一个朝代、几个居民，看他们用古人口吻应对那个时代的真实时刻。古人口吻要挂得上礼数，现代内心独白是这位居民真实人格在那处境里会想到的——两张嘴同时亮出来。
+          </p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="gameExportBtn" class="button" type="button" hidden data-i18n="games.export_md">⬇ 下载 Markdown</button>
+        <a class="button" href="/site/dashboard/games.html" target="_top" data-i18n="timeslip.back">← 返回游戏场</a>
+      </div>
+    </header>
+
+    <section class="disaster-grid">
+      <!-- Left column: set up one crossing -->
+      <aside class="disaster-side panel">
+        <h3 data-i18n="timeslip.section_setup">本场穿越</h3>
+
+        <label class="field">
+          <span data-i18n="timeslip.city_label">城市</span>
+          <select id="tCity"></select>
+        </label>
+
+        <label class="field">
+          <span data-i18n="timeslip.dynasty_label">朝代</span>
+          <select id="tDynasty"></select>
+        </label>
+        <p id="tDynastyText" class="disaster-hint"></p>
+
+        <div id="tCustomBlock" hidden>
+          <label class="field">
+            <span data-i18n="timeslip.custom_name_label">朝代名</span>
+            <input id="tCustomName" type="text" data-i18n-placeholder="timeslip.custom_name_placeholder" placeholder="例如:北宋 汴京 / 民国 武汉 1938" />
+          </label>
+          <label class="field">
+            <span data-i18n="timeslip.custom_frame_label">时代背景</span>
+            <textarea id="tCustomFrame" data-i18n-placeholder="timeslip.custom_frame_placeholder" placeholder="一句话交代这个时代发生了什么。"></textarea>
+          </label>
+          <label class="field">
+            <span data-i18n="timeslip.custom_stages_label">一幕一幕发生的事(每行一幕,至少两行)</span>
+            <textarea id="tCustomStages" rows="6" data-i18n-placeholder="timeslip.custom_stages_placeholder" placeholder="例如:&#10;府衙里的米只够三天&#10;夜里有人敲门,要借粮&#10;..."></textarea>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="timeslip.stages_label">演几幕</span>
+          <input id="tStages" type="number" min="2" max="8" value="4" />
+        </label>
+        <p id="tCost" class="disaster-hint"></p>
+
+        <div class="disaster-block">
+          <h4>
+            <span data-i18n="timeslip.roster_title">穿越者名单</span>
+            <b id="tCount">0</b>
+          </h4>
+          <p class="disaster-hint" data-i18n="timeslip.roster_hint">
+            点「选」把人加进队伍，再点一次取消。古今之间的张力来自他们真正的职业、年龄、价值观——选同样一行的人，演出来会很像。
+          </p>
+          <div class="disaster-toolbar">
+            <button class="button" id="tPickRandom" data-i18n="timeslip.pick_random">🎲 随机 6 人</button>
+            <button class="button" id="tPickNone" data-i18n="timeslip.pick_none">清空</button>
+          </div>
+          <ul id="tAgents" class="disaster-list"></ul>
+        </div>
+
+        <div class="disaster-actions">
+          <button id="tRunBtn" class="button primary" data-i18n="timeslip.run">开始穿越</button>
+        </div>
+
+        <section class="disaster-history">
+          <h4 data-i18n="timeslip.history">最近几次穿越</h4>
+          <ul id="tHistory"></ul>
+        </section>
+      </aside>
+
+      <!-- Right column: the chronicle -->
+      <section class="disaster-main panel">
+        <header class="disaster-main-head">
+          <div>
+            <h3 id="tTitle" data-i18n="timeslip.section_board">穿越实况</h3>
+            <p id="tStatus" class="disaster-status" data-i18n="timeslip.idle">还没开始</p>
+          </div>
+          <div class="disaster-progress">
+            <div class="bar"><span id="tBar" style="width:0%"></span></div>
+            <span id="tPct" class="muted">0%</span>
+          </div>
+        </header>
+
+        <div id="tResult" hidden>
+          <section id="tScoreboard" class="timeslip-scoreboard"></section>
+          <section id="tStagesBlock" class="timeslip-stages"></section>
+          <section id="tRoster" class="timeslip-roster"></section>
+          <section id="tEssay" class="timeslip-essay"></section>
+        </div>
+
+        <p id="tIdle" class="disaster-idle" data-i18n="timeslip.idle_hint">左边选一个朝代、几个人，点「开始穿越」。</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/site/dashboard/i18n.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/game-export.js"></script>
+  <script src="/site/dashboard/timeslip.js"></script>
+</body>
+</html>

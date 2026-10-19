@@ -324,6 +324,39 @@ class VehicleOwnershipPlugin(Plugin):
             _LOG.info("two-wheeler ownership assigned: %.1f%% of residents", two_rate * 100)
 
 
+class TransportHabitPlugin(Plugin):
+    """Each resident's usual transport mode (see ``world/mobility.py``).
+
+    Runs after :class:`VehicleOwnershipPlugin`, whose flags decide what a
+    resident can take at all. Per-trip use of the habit, and the chance of
+    breaking it, happen in ``travel_plan``.
+    """
+
+    id = "transport_habit"
+
+    def setup(self, ctx):
+        cfg = ctx.config.get("transport_habit", {}) or {}
+        if not bool(cfg.get("enabled", True)):
+            return
+        ctx.bus.on("agents.built", self._assign)
+
+    def _assign(self, hook_ctx):
+        from collections import Counter
+
+        from gaworld.world import mobility
+
+        city_map = hook_ctx["sim"].extras.get("city_map")
+        if not city_map:
+            return
+        counts = Counter(
+            mobility.assign_default_mode(agent, city_map)
+            for agent in hook_ctx.get("agents", []) or []
+            if isinstance(agent, dict)
+        )
+        hook_ctx["sim"].plugin_state(self.id)["default_mode_counts"] = dict(counts)
+        _LOG.info("default transport modes: %s", dict(counts))
+
+
 class TrafficPlugin(Plugin):
     """P1: endogenous road congestion (see ``gaworld/world/traffic.py``).
 

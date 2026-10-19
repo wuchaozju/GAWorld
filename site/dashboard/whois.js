@@ -33,6 +33,7 @@
     view: null,
     topics: [],
     timer: null,
+    busy: false,
   };
 
   async function call(method, path, body) {
@@ -91,6 +92,7 @@
   }
 
   async function createRoom() {
+    if (state.busy) return;
     showError(null);
     const topic = $("#wTopic").value;
     const payload = {
@@ -101,6 +103,7 @@
     };
     if (topic === CUSTOM) payload.custom = { text: $("#wCustom").value };
     else payload.topic_id = topic;
+    setBusy(true);
     try {
       const view = await call("POST", "/rooms", payload);
       state.roomId = view.id;
@@ -110,6 +113,8 @@
       loadRooms();
     } catch (err) {
       showError(err);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -279,26 +284,75 @@
     }
   }
 
+  // Flip the host + composer buttons into a busy state so the rapid
+  // back-and-forth chat/guess loop doesn't fire the same action twice
+  // while the previous one is still in flight.
+  function setBusy(busy) {
+    state.busy = busy;
+    const labels = busy
+      ? {
+          wCreate: ["whois.creating", "创建中…"],
+          wNext: ["whois.advancing", "翻下一轮…"],
+          wReveal: ["whois.revealing", "揭晓中…"],
+          wSay: ["whois.sending", "发送中…"],
+          wVote: ["whois.voting", "提交中…"],
+        }
+      : null;
+    ["#wCreate", "#wNext", "#wReveal", "#wSay", "#wVote"].forEach((sel) => {
+      const btn = $(sel);
+      if (!btn) return;
+      if (busy) {
+        const lbl = labels[sel.replace("#", "")];
+        if (typeof setButtonBusy === "function" && lbl) {
+          if (!btn.dataset._busyOrigDisabled) {
+            state._busyRelease = setButtonBusy(btn, lbl[0], lbl[1]);
+          } else {
+            btn.disabled = true;
+          }
+        } else {
+          btn.disabled = true;
+        }
+      } else {
+        if (state._busyRelease) { state._busyRelease(); state._busyRelease = null; }
+      }
+    });
+  }
+
   function say() {
     const text = $("#wText").value.trim();
-    if (!text) return;
-    post("say", { seat: state.seat, text }).then(() => { $("#wText").value = ""; });
+    if (!text || state.busy) return;
+    setBusy(true);
+    post("say", { seat: state.seat, text }).then(() => {
+      $("#wText").value = "";
+      setBusy(false);
+    }, () => setBusy(false));
   }
 
   function vote() {
+    if (state.busy) return;
     const verdicts = {};
     for (const card of state.view.seats) {
       const picked = document.querySelector(`input[name="v-${CSS.escape(card.alias)}"]:checked`);
       if (picked) verdicts[card.alias] = picked.value;
     }
-    post("vote", { seat: state.seat, verdicts, reason: $("#wReason").value });
+    setBusy(true);
+    post("vote", { seat: state.seat, verdicts, reason: $("#wReason").value })
+      .then(() => setBusy(false), () => setBusy(false));
   }
 
   async function init() {
     $("#wSay").addEventListener("click", say);
     $("#wVote").addEventListener("click", vote);
-    $("#wNext").addEventListener("click", () => post("next"));
-    $("#wReveal").addEventListener("click", () => post("reveal"));
+    $("#wNext").addEventListener("click", () => {
+      if (state.busy) return;
+      setBusy(true);
+      post("next").then(() => setBusy(false), () => setBusy(false));
+    });
+    $("#wReveal").addEventListener("click", () => {
+      if (state.busy) return;
+      setBusy(true);
+      post("reveal").then(() => setBusy(false), () => setBusy(false));
+    });
     $("#wSeats").addEventListener("click", (event) => {
       const button = event.target.closest("[data-copy]");
       if (button && navigator.clipboard) navigator.clipboard.writeText(button.dataset.copy);

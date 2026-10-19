@@ -62,6 +62,23 @@ class TestFallbackChain(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             router.call("hi")
         self.assertIn("b simulated", str(ctx.exception))
+        self.assertIn("a simulated", str(ctx.exception))
+
+    def test_anthropic_rate_limit_keeps_response_for_bounded_retry(self):
+        from unittest import mock
+
+        import requests
+
+        response = requests.Response()
+        response.status_code = 429
+        response._content = b'{"error":"rate_limit_error"}'
+        provider = AnthropicProvider("https://example.invalid", "m", api_key="test", attempts=2)
+        with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+            with mock.patch("gaworld.llm.providers.time.sleep"):
+                with self.assertRaises(requests.HTTPError) as ctx:
+                    provider.call("hi")
+        self.assertEqual(post.call_count, 2)
+        self.assertIs(ctx.exception.response, response)
 
     def test_fallback_string_value_is_normalized_to_list(self):
         a = _StubProvider("a", fail=True)

@@ -729,10 +729,13 @@ def orchestrate_track_c_multiseed(seeds: list[int], days: int, provider: str | N
 # never how large a real effect is. The disaster thresholds turn "rare" and
 # "common" into numbers; the claim is the qualitative one.
 #
-# Why no rumor S-curve: a game has at most 14 residents, 5 rounds and a
-# forward reaches at most 4 new people, so the cumulative-reach curve's shape
-# is mostly that arithmetic. Its continued-influence check reads a turn the
-# model actually answers.
+# Why no rumor S-curve: a game has 5 rounds and a forward reaches at most 4
+# new people. The agent count is no longer hard-capped by the rumor backend
+# (CONFIG["games"]["rumor"]["max_agents"] is the only knob, and 0 = "let
+# the per-user daily LLM quota decide"), so the cumulative-reach curve's
+# shape is governed by the selection of residents rather than by an
+# arithmetic ceiling. The continued-influence check reads a turn the model
+# actually answers, regardless of population size.
 GAMES_DIR = PROJECT_ROOT / "output" / "games"
 GAME_KINDS = ("referendum", "disaster", "rumor")
 #: Fewer eligible games than this and a fact abstains.

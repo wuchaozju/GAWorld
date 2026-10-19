@@ -1,0 +1,5 @@
+{
+  "ruff": "ruff 0.17.0",
+  "ruff_findings": 1040,
+  "unformatted_files": 443
+}

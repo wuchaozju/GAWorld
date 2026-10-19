@@ -1,0 +1,343 @@
+\begin{thebibliography}{44}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Argyle et~al.(2023)Argyle, Busby, Fulda, Gubler, Rytting, and
+  Wingate]{argyle2023outofone}
+Lisa~P. Argyle, Ethan~C. Busby, Nancy Fulda, Joshua~R. Gubler, Christopher
+  Rytting, and David Wingate.
+\newblock Out of one, many: Using language models to simulate human samples,
+  2023.
+\newblock URL \url{https://arxiv.org/abs/2209.06899}.
+
+\bibitem[Benjamini and Hochberg(1995)]{benjamini1995fdr}
+Yoav Benjamini and Yosef Hochberg.
+\newblock Controlling the false discovery rate: A practical and powerful
+  approach to multiple testing.
+\newblock \emph{Journal of the Royal Statistical Society Series B}, 57\penalty0
+  (1):\penalty0 289--300, 1995.
+\newblock \doi{10.1111/j.2517-6161.1995.tb02031.x}.
+
+\bibitem[Dillion et~al.(2023)Dillion, Tandon, Gu, and Gray]{dillion2023replace}
+Dania Dillion, Niket Tandon, Yuling Gu, and Kurt Gray.
+\newblock Can {AI} language models replace human participants?
+\newblock \emph{Trends in Cognitive Sciences}, 27\penalty0 (7):\penalty0
+  597--600, 2023.
+\newblock \doi{10.1016/j.tics.2023.04.008}.
+
+\bibitem[Epstein(2006)]{epstein2006generative}
+Joshua~M. Epstein.
+\newblock \emph{Generative Social Science: Studies in Agent-Based Computational
+  Modeling}.
+\newblock Princeton University Press, 2006.
+
+\bibitem[Fagiolo et~al.(2007)Fagiolo, Moneta, and Windrum]{fagiolo2007critical}
+Giorgio Fagiolo, Alessio Moneta, and Paul Windrum.
+\newblock A critical guide to empirical validation of agent-based models in
+  economics: Methodologies, procedures, and open problems.
+\newblock \emph{Computational Economics}, 30\penalty0 (3):\penalty0 195--226,
+  2007.
+\newblock \doi{10.1007/s10614-007-9104-4}.
+
+\bibitem[Fujimoto(2016)]{fujimoto2016parallel}
+Richard~M. Fujimoto.
+\newblock \emph{Parallel and Distributed Simulation Systems}.
+\newblock Wiley, 2016.
+
+\bibitem[Gao et~al.(2025)Gao, Lei, Liu, Chen, Lan, Liu, Wang,
+  et~al.]{gao2025agentsociety}
+Chen Gao, Hang Lei, Yuyang Liu, Jiaxuan Chen, Zhenzhong Lan, Bin Liu, Zhongyu
+  Wang, et~al.
+\newblock An efficient multi-agent framework for {LLM}-based social simulation,
+  2025.
+\newblock URL \url{https://arxiv.org/abs/2501.02533}.
+
+\bibitem[Grimm et~al.(2006)Grimm, Berger, Bastiansen, Eliassen, Ginot, Giske,
+  Goss-Custard, Grand, Heinz, Huse, Huth, Jepsen, J{\o}rgensen, Mooij,
+  M{\"u}ller, Pe'er, Piou, Railsback, Robbins, Robbins, Rossmanith, R{\"u}ger,
+  Strand, Souissi, Stillman, Vab{\o}, Visser, and DeAngelis]{grimm2006odd}
+Volker Grimm, Uta Berger, Finn Bastiansen, Sigrunn Eliassen, Vincent Ginot,
+  Jarl Giske, John Goss-Custard, Tamara Grand, Simone~K. Heinz, Geir Huse,
+  Andreas Huth, Jane~U. Jepsen, Christian J{\o}rgensen, Wolf~M. Mooij, Birgit
+  M{\"u}ller, Guy Pe'er, Cyril Piou, Steven~F. Railsback, Andrew~M. Robbins,
+  Martha~M. Robbins, Eva Rossmanith, Nadja R{\"u}ger, Espen Strand, Sami
+  Souissi, Richard~A. Stillman, Rune Vab{\o}, Ute Visser, and Donald~L.
+  DeAngelis.
+\newblock A standard protocol for describing individual-based and agent-based
+  models.
+\newblock \emph{Ecological Modelling}, 198\penalty0 (1--2):\penalty0 115--126,
+  2006.
+\newblock \doi{10.1016/j.ecolmodel.2006.03.013}.
+
+\bibitem[Hashimoto et~al.(2022)Hashimoto, Zhang, and
+  Liang]{hashimoto2022generate}
+Tatsunori~B. Hashimoto, Hugh Zhang, and Percy Liang.
+\newblock Unsupervised three-dimensional quantification of political speech.
+\newblock \emph{Proceedings of the National Academy of Sciences}, 119\penalty0
+  (17):\penalty0 e2118310119, 2022.
+\newblock \doi{10.1073/pnas.2118310119}.
+
+\bibitem[Hern{\'a}n and Robins(2020)]{hernan2020causal}
+Miguel~A. Hern{\'a}n and James~M. Robins.
+\newblock \emph{Causal Inference: What If}.
+\newblock CRC Press, 2020.
+
+\bibitem[Ie et~al.(2019)Ie, Hsu, Mladenov, Joglekar, Chandak, He,
+  et~al.]{ie2019recsim}
+Eugene Ie, Chih-Wei Hsu, Martin Mladenov, Vihan Joglekar, Praveen Chandak,
+  James He, et~al.
+\newblock {RecSim}: A configurable simulation platform for recommender systems.
+\newblock In \emph{arXiv preprint arXiv:1909.04847}, 2019.
+\newblock URL \url{https://arxiv.org/abs/1909.04847}.
+
+\bibitem[Kapania et~al.(2025)Kapania, Wang, Li, and Zhu]{kapania2025between}
+Shivani Kapania, Ruiyi Wang, Toby Jia-Jun Li, and Haijun Zhu.
+\newblock Between the lines: How {LLM}-driven code generation impacts the
+  coding process for beginners, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.00376}.
+
+\bibitem[Leng and Yuan(2024)]{leng2024llm}
+Yan Leng and Yikun Yuan.
+\newblock Do {LLM} agents exhibit social behavior?, 2024.
+\newblock URL \url{https://arxiv.org/abs/2406.10836}.
+
+\bibitem[Li et~al.(2023)Li, Hammoud, Itani, Khizbullin, and
+  Ghanem]{li2023camel}
+Guohao Li, Hasan Abed Al~Kader Hammoud, Hani Itani, Dmitrii Khizbullin, and
+  Bernard Ghanem.
+\newblock {CAMEL}: Communicative agents for ``mind'' exploration of large
+  language model society, 2023.
+\newblock URL \url{https://arxiv.org/abs/2303.17760}.
+
+\bibitem[Lipsitch et~al.(2010)Lipsitch, Tchetgen~Tchetgen, and
+  Cohen]{lipsitch2010negative}
+Marc Lipsitch, Eric Tchetgen~Tchetgen, and Ted Cohen.
+\newblock Negative controls: A tool for detecting hidden biases and biases in
+  observational studies.
+\newblock \emph{Epidemiology}, 21\penalty0 (3):\penalty0 383--388, 2010.
+\newblock \doi{10.1097/EDE.0b013e3181d61eeb}.
+
+\bibitem[Liu et~al.(2024)Liu, Yu, Zhang, Xu, Lei, Lai, Gu, Ding, Men, Yang,
+  Zhang, Deng, Zeng, Du, Zhang, Shen, Zhang, Su, Sun, Huang, Dong, and
+  Tang]{liu2024agentbench}
+Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu Lei, Hanyu Lai, Yu~Gu,
+  Hangliang Ding, Kaiwen Men, Kejuan Yang, Shudan Zhang, Xiang Deng, Aohan
+  Zeng, Zhengxiao Du, Chenhui Zhang, Sheng Shen, Tianjun Zhang, Yu~Su, Huan
+  Sun, Minlie Huang, Yuxiao Dong, and Jie Tang.
+\newblock {AgentBench}: Evaluating {LLM}s as agents.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=zAdUB0aCTQ}.
+
+\bibitem[Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He]{ma2024agentboard}
+Chang Ma, Junlei Zhang, Zhihao Zhu, Cheng Yang, Yujiu Yang, Yaohui Jin,
+  Zhenzhong Lan, Lingpeng Kong, and Junxian He.
+\newblock {AgentBoard}: An analytical evaluation board of multi-turn {LLM}
+  agents.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~37, 2024.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2024/hash/877b40688e330a0e2a3fc24084208dfa-Abstract-Datasets_and_Benchmarks_Track.html}.
+
+\bibitem[Park et~al.(2023)Park, O'Brien, Cai, Morris, Liang, and
+  Bernstein]{park2023generative}
+Joon~Sung Park, Joseph O'Brien, Carrie~Jun Cai, Meredith~Ringel Morris, Percy
+  Liang, and Michael~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock In \emph{Proceedings of the 36th Annual ACM Symposium on User
+  Interface Software and Technology}, pages 1--22, 2023.
+\newblock \doi{10.1145/3586183.3606763}.
+\newblock URL \url{https://doi.org/10.1145/3586183.3606763}.
+
+\bibitem[Park et~al.(2024)Park, Zou, Kamphorst, Egan, Shaw, Hill, Cai, Morris,
+  Liang, Willer, and Bernstein]{park2024grounded}
+Joon~Sung Park, Carolyn~Q. Zou, Jonne Kamphorst, Niles Egan, Aaron Shaw,
+  Benjamin~Mako Hill, Carrie Cai, Meredith~Ringel Morris, Percy Liang, Robb
+  Willer, and Michael~S. Bernstein.
+\newblock {LLM} agents grounded in self-reports enable general-purpose
+  simulation of individuals, 2024.
+\newblock URL \url{https://arxiv.org/abs/2411.10109}.
+
+\bibitem[Pearl et~al.(2016)Pearl, Glymour, and Jewell]{pearl2018book}
+Judea Pearl, Madelyn Glymour, and Nicholas~P. Jewell.
+\newblock \emph{Causal Inference in Statistics: A Primer}.
+\newblock Wiley, 2016.
+
+\bibitem[Project(2026{\natexlab{a}})]{gawoerldv1}
+GAWorld Project.
+\newblock {GAWorld}: Building persistent and situated {LLM} agent societies.
+\newblock arXiv preprint (system paper v1), 2026{\natexlab{a}}.
+\newblock Frozen at repository commit 35a551e, 2026-07-13.
+
+\bibitem[Project(2026{\natexlab{b}})]{gaworldarena}
+GAWorld Project.
+\newblock Agent arena tutorial.
+\newblock GAWorld tutorial, \texttt{docs/ARENA\_TUTORIAL.md},
+  2026{\natexlab{b}}.
+
+\bibitem[Project(2026{\natexlab{c}})]{gaworldbench}
+GAWorld Project.
+\newblock Research workbench tutorial.
+\newblock GAWorld tutorial, \texttt{docs/RESEARCH\_WORKBENCH\_TUTORIAL.md},
+  2026{\natexlab{c}}.
+
+\bibitem[Project(2026{\natexlab{d}})]{gaworldgovernance}
+GAWorld Project.
+\newblock Persistent organization governance v1: Proposal--vote--execution.
+\newblock GAWorld proposal, 2026-10-04,
+  \texttt{docs/proposals/2026-10-04-organization-governance-v1-design.md},
+  2026{\natexlab{d}}.
+
+\bibitem[Project(2026{\natexlab{e}})]{gaworldinflation}
+GAWorld Project.
+\newblock Endogenous inflation from resident behavior.
+\newblock GAWorld proposal, 2026-10-03,
+  \texttt{docs/proposals/2026-10-03-endogenous-inflation.md},
+  2026{\natexlab{e}}.
+
+\bibitem[Project(2026{\natexlab{f}})]{gaworldinterview}
+GAWorld Project.
+\newblock Group interview tutorial.
+\newblock GAWorld tutorial, \texttt{docs/GROUP\_INTERVIEW\_TUTORIAL.md},
+  2026{\natexlab{f}}.
+
+\bibitem[Project(2026{\natexlab{g}})]{gaworldpersona}
+GAWorld Project.
+\newblock Persona distillation tutorial.
+\newblock GAWorld tutorial, \texttt{docs/PERSONA\_DISTILL\_TUTORIAL.md},
+  2026{\natexlab{g}}.
+
+\bibitem[Project(2026{\natexlab{h}})]{gaworldplayground}
+GAWorld Project.
+\newblock Agent playground tutorial: Fourteen game-based probes.
+\newblock GAWorld tutorial, \texttt{docs/PLAYGROUND\_TUTORIAL.md},
+  2026{\natexlab{h}}.
+
+\bibitem[Project(2026{\natexlab{i}})]{gaworldplugin}
+GAWorld Project.
+\newblock Plugin authoring guide.
+\newblock GAWorld documentation, \texttt{docs/PLUGIN\_AUTHORING.md},
+  2026{\natexlab{i}}.
+\newblock URL
+  \url{https://github.com/GAWorld/GAWorld/blob/main/docs/PLUGIN_AUTHORING.md}.
+
+\bibitem[Project(2026{\natexlab{j}})]{gaworldpolicy}
+GAWorld Project.
+\newblock Policy simulation and optimization.
+\newblock GAWorld tutorial, \texttt{docs/RESEARCH\_WORKBENCH\_TUTORIAL.md}
+  (Section 14), 2026{\natexlab{j}}.
+
+\bibitem[Project(2026{\natexlab{k}})]{gaworldrag}
+GAWorld Project.
+\newblock Agent information sources: Web search and information diet.
+\newblock GAWorld proposal, 2026-09-19,
+  \texttt{docs/proposals/2026-09-19-agent-information-sources.md},
+  2026{\natexlab{k}}.
+
+\bibitem[Project(2026{\natexlab{l}})]{gaworldseriousgame}
+GAWorld Project.
+\newblock Serious game workshop.
+\newblock GAWorld tutorial, \texttt{docs/RESEARCH\_WORKBENCH\_TUTORIAL.md}
+  (Section 13), 2026{\natexlab{l}}.
+
+\bibitem[Project(2026{\natexlab{m}})]{gaworldtravel}
+GAWorld Project.
+\newblock Agents leaving the city: Business trips, family visits, and travel.
+\newblock GAWorld proposal, 2026-09-19,
+  \texttt{docs/proposals/2026-09-19-agents-leaving-the-city.md},
+  2026{\natexlab{m}}.
+
+\bibitem[Rubin(2005)]{rubin2005causal}
+Donald~B. Rubin.
+\newblock Causal inference using potential outcomes: Design, modeling,
+  decisions.
+\newblock \emph{Journal of the American Statistical Association}, 100\penalty0
+  (469):\penalty0 322--331, 2005.
+\newblock \doi{10.1198/016214504000001880}.
+
+\bibitem[Shinn et~al.(2023)Shinn, Cassano, Gopinath, Narasimhan, and
+  Yao]{shinn2023reflexion}
+Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik Narasimhan, and Shunyu
+  Yao.
+\newblock {Reflexion}: Language agents with verbal reinforcement learning.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36, 2023.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2023/hash/5b371e4b02b8c1b6e3b6b3b2b3b3b3b3-Abstract-Conference.html}.
+
+\bibitem[Sumers et~al.(2024)Sumers, Yao, Narasimhan, and
+  Griffiths]{sumers2024coala}
+Theodore~R. Sumers, Shunyu Yao, Karthik Narasimhan, and Thomas~L. Griffiths.
+\newblock Cognitive architectures for language agents ({CoALA}).
+\newblock \emph{Transactions on Machine Learning Research}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=1iDZC2artE}.
+
+\bibitem[Vezhnevets et~al.(2023)Vezhnevets, Agapiou, Aharon, Ziv, Matyas,
+  Du{\'e}{\~n}as, Mao, Liu, Feng, Zinkov, et~al.]{vezhnevets2023generative}
+Alexander~Sasha Vezhnevets, John~P. Agapiou, Avia Aharon, Ron Ziv, Jayd Matyas,
+  Guillermo Du{\'e}{\~n}as, Shu Mao, Zhengdong Liu, William Feng, Robert
+  Zinkov, et~al.
+\newblock Generative agent-based modeling with actions grounded in physical,
+  social, or digital space using {Concordia}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2312.03664}.
+
+\bibitem[Wang et~al.(2025)Wang, Morgenstern, and Dickerson]{wang2025flatten}
+Angelina Wang, Jacob Morgenstern, and John~P. Dickerson.
+\newblock Large language models that replace human participants can behave
+  similarly to them, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.00398}.
+
+\bibitem[Wang et~al.(2023)Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, and
+  Anandkumar]{wang2023voyager}
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar, Chaowei Xiao, Yuke Zhu,
+  Linxi Fan, and Anima Anandkumar.
+\newblock Voyager: An open-ended embodied agent with large language models.
+\newblock In \emph{arXiv preprint arXiv:2305.16291}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2305.16291}.
+
+\bibitem[Windrum et~al.(2007)Windrum, Fagiolo, and
+  Moneta]{windrum2007empirical}
+Paul Windrum, Giorgio Fagiolo, and Alessio Moneta.
+\newblock Empirical validation of agent-based models: Alternatives and
+  prospects.
+\newblock \emph{Journal of Artificial Societies and Social Simulation},
+  10\penalty0 (2):\penalty0 8, 2007.
+\newblock URL \url{https://www.jasss.org/10/2/8.html}.
+
+\bibitem[Yang et~al.(2024)Yang, Zhang, Zheng, Jiang, Gan, Wang, Feng,
+  et~al.]{yang2024oasis}
+Ziyi Yang, Zaibin Zhang, Zirui Zheng, Yuyan Jiang, Ziyue Gan, Zhiyu Wang, Feng
+  Feng, et~al.
+\newblock {OASIS}: One agent to govern a million agents: A scalable approach
+  for {LLM}-based social simulation, 2024.
+\newblock URL \url{https://arxiv.org/abs/2411.03881}.
+
+\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and
+  Cao]{yao2023react}
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik~R.
+  Narasimhan, and Yuan Cao.
+\newblock {ReAct}: Synergizing reasoning and acting in language models.
+\newblock In \emph{International Conference on Learning Representations}, 2023.
+\newblock URL \url{https://openreview.net/forum?id=WE_vluYUL-i}.
+
+\bibitem[Zhong et~al.(2024)Zhong, Guo, Chen, and Xu]{zhong2024memorybank}
+Wanjun Zhong, Tinghong Guo, Gao Chen, and Qingfu Xu.
+\newblock Memorybank: Enhancing large language models with long-term memory.
+\newblock \emph{Proceedings of the AAAI Conference on Artificial Intelligence},
+  38\penalty0 (10):\penalty0 11924--11931, 2024.
+\newblock \doi{10.1609/aaai.v38i10.29039}.
+
+\bibitem[Zhou et~al.(2024)Zhou, Zhu, Mathur, Zhang, Yu, Qi, Morency, Bisk,
+  Fried, Neubig, and Sap]{zhou2024sotopia}
+Xuhui Zhou, Hao Zhu, Leena Mathur, Ruohong Zhang, Haofei Yu, Zhengyang Qi,
+  Louis-Philippe Morency, Yonatan Bisk, Daniel Fried, Graham Neubig, and
+  Maarten Sap.
+\newblock {SOTOPIA}: Interactive evaluation for social intelligence in language
+  agents.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=mM7VurbA4r}.
+
+\end{thebibliography}

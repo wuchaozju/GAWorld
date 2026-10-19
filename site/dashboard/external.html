@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title data-i18n="external.page_title">GAWorld · 外部系统</title>
-  <meta name="description" data-i18n-content="external.meta_description" content="GAWorld 外部系统观测台：货币系统 · 外部环境 · 对外服务" />
+  <meta name="description" data-i18n-content="external.meta_description" content="GAWorld 外部系统观测台：货币系统 · 外部环境 · 对外服务 · 公共部门" />
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
   <link rel="stylesheet" href="/site/dashboard/external.css" />
@@ -39,6 +39,10 @@
         <i>⇄</i><span data-i18n="external.tab_services">对外服务</span>
         <span class="help-tip" data-i18n-help="external.tab_services_hint" data-help="仿真要往外拨号的地方：外部环境服务、多机中继、新闻源、用哪个大模型。这里可以看通不通，也可以改。"></span>
       </button>
+      <button class="step" data-tab="public">
+        <i>⚖</i><span data-i18n="external.tab_public">公共部门</span>
+        <span class="help-tip" data-i18n-help="external.tab_public_hint" data-help="谁在执政、推行什么政策：个税、社保、医保报销、最低时薪，以及从政府池按天发的失业救济、养老金和基本收入。在这里选政府、建新政府、排换届，或给正在跑的仿真立即换届。"></span>
+      </button>
     </nav>
 
     <section class="ext-main">
@@ -56,7 +60,8 @@
     </footer>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/help.js"></script>
+  
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/external.js"></script>
 </body>
 </html>

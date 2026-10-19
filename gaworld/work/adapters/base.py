@@ -53,6 +53,7 @@ def make_failed(brief: WorkBrief, error: str, started_at: float) -> WorkResult:
         error=error[:400],
         finished_at=time.time(),
         duration_seconds=max(0.0, time.time() - started_at),
+        skill_ids=list(brief.skill_ids),
     )
 
 
@@ -71,6 +72,7 @@ def make_ok(
         error=None,
         finished_at=time.time(),
         duration_seconds=max(0.0, time.time() - started_at),
+        skill_ids=list(brief.skill_ids),
     )
 
 
