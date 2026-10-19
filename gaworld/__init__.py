@@ -19,6 +19,20 @@ the other way around, so adopting one module at a time is safe.
 
 from __future__ import annotations
 
+import os as _os
+
+# Force a headless matplotlib backend BEFORE anything in this package (or any
+# module importing this package) can import ``matplotlib.pyplot``. pyplot
+# resolves its backend at import time from ``MPLBACKEND``, so selecting it here
+# keeps GUI toolkits (Tk/Qt) out of every GAWorld process: dashboard, simulator,
+# cluster nodes and the test suite. A cyclic-GC pass destroying a Tkapp created
+# on the dashboard's HTTP worker thread was crashing the interpreter with
+# ``Tcl_AsyncDelete: async handler deleted by the wrong thread`` (SIGILL).
+# GAWorld has no interactive ``plt.show`` usage, so Agg is safe everywhere.
+# ``setdefault`` keeps an explicit user override working.
+if not _os.environ.get("MPLBACKEND"):
+    _os.environ["MPLBACKEND"] = "Agg"
+
 from pathlib import Path as _Path
 
 from gaworld.env_loader import load_env_file as _load_env_file
