@@ -571,6 +571,13 @@ class ExperimentRunner:
                             new_process_group=False,
                         )
                         proc = wr_handle.proc
+                        # Dev's registration semantics: register under the
+                        # same lock used to enumerate processes for
+                        # pause/stop, so neither request can miss a world
+                        # between spawning and registration. The launch
+                        # itself stays delegated to worldrun.
+                        with self._lock:
+                            self._procs[world_id] = proc
                         with _LIVE_LOCK:
                             _LIVE.add(proc)
                         return proc

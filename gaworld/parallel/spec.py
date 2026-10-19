@@ -329,24 +329,35 @@ def world_overrides(
     if spec.llm_provider:
         routing = base_config.get("llm", {}).get("routing", {})
         task_map = routing.get("tasks", {})
-        # §24 + Dev: forcing a provider must NOT erase the ambient per-agent
-        # routing table — per-agent assignments are an operator decision
-        # orthogonal to "which provider runs the default tasks". Dev's empty
-        # ``fallback`` list is kept (no silent substitution), but agent
-        # entries pass through unflattened.
+        # Reconciled Dev + §24 semantics, distinguished by entry type:
+        # - a plain-string ambient agent entry is a weak default-level
+        #   assignment — the forced provider overrides it (Dev: a forked
+        #   counterfactual world is pinned uniformly);
+        # - a structured dict entry (explicit provider+model pin) is an
+        #   operator decision — §24: it is preserved verbatim, never
+        #   flattened, so the Phase-4 precedence explicit>agent>task>default
+        #   still routes that agent deliberately.
+        # An empty ``fallback`` keeps the no-silent-substitution policy.
         forced = (
             {str(key): str(spec.llm_provider) for key in task_map}
             if isinstance(task_map, dict)
             else {}
         )
-        new_routing = {
-            "default": str(spec.llm_provider),
-            "tasks": forced,
-            "fallback": [],
+        ambient_agents = (
+            routing.get("agents") if isinstance(routing.get("agents"), dict) else {}
+        )
+        kept_agents = {
+            str(key): (entry if isinstance(entry, dict) else str(spec.llm_provider))
+            for key, entry in ambient_agents.items()
         }
-        if isinstance(routing.get("agents"), dict):
-            new_routing["agents"] = dict(routing["agents"])
-        overrides["llm"] = {"routing": new_routing}
+        overrides["llm"] = {
+            "routing": {
+                "default": str(spec.llm_provider),
+                "tasks": forced,
+                "agents": kept_agents,
+                "fallback": [],
+            }
+        }
 
     # World-level patch last: it is the thing the experiment is varying, so it
     # wins over the shared defaults above (minus the reserved keys, which
