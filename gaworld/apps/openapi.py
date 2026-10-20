@@ -1387,6 +1387,26 @@ def _studies() -> dict[str, Any]:
         "/api/interview/delete": {
             "post": _op("interview", "Delete a session", body=_obj(("session_id",), session_id=STR))
         },
+        "/api/research/organization-intelligence": {
+            "get": _op("research", "Organization intelligence template, models and owned studies"),
+            "post": _op("research", "Freeze an exploratory organization intelligence protocol without model calls",
+                        body=_obj((), provider=STR, repeats=INT, seed=INT), status="201"),
+        },
+        "/api/research/organization-intelligence/{study_id}": {
+            "get": _op("research", "Frozen protocol, objective results and live telemetry")
+        },
+        "/api/research/organization-intelligence/{study_id}/run": {
+            "post": _op("research", "Start a frozen study once with its pinned model", body=OBJ, status="202")
+        },
+        "/api/research/organization-intelligence/{study_id}/stop": {
+            "post": _op("research", "Stop at the next model request boundary", body=OBJ)
+        },
+        "/api/research/organization-intelligence/{study_id}/logs": {
+            "get": _op("research", "Read owned study audit log", query=[_q("offset", "Byte offset", INT)])
+        },
+        "/api/research/organization-intelligence/{study_id}/export": {
+            "get": _op("research", "Export the study report as Markdown")
+        },
         "/api/research/batches": {
             "get": _op("research", "Owned experiment batches"),
             "post": _op("research", "Freeze a model/city/repetition matrix without running models", status="201",

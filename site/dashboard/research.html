@@ -9,13 +9,17 @@
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
   <link rel="stylesheet" href="/site/dashboard/research.css" />
+  <link rel="stylesheet" href="/site/dashboard/organization-intelligence.css" />
   <link rel="stylesheet" href="/site/dashboard/worlds.css" />
+  <link rel="stylesheet" href="/site/brand.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body class="studio-body">
   <main class="studio-shell">
     <header class="studio-top">
       <div class="brand">
+        <span class="brand-mark brand-logo" aria-hidden="true"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="46" height="46" /></span>
         <div class="brand-copy">
           <p class="kicker" data-i18n="research.kicker">GAWorld 研究工作台</p>
           <h1 data-i18n="research.headline">把研究想法变成可执行的仿真方案</h1>
@@ -34,7 +38,45 @@
       <button type="button" class="rw-tab" role="tab" id="rwTabPolicy" data-tab="policy" aria-selected="false" aria-controls="rwPanePolicy" data-i18n="research.tab_policy">政策仿真与优化</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabReplication" data-tab="replication" aria-selected="false" aria-controls="rwPaneReplication" data-i18n="research.tab_replication">社会调查/实验拟合度</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabWorlds" data-tab="worlds" aria-selected="false" aria-controls="rwPaneWorlds" data-i18n="research.tab_worlds">平行世界 · 反事实推断</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabOrganizationIntelligence" data-tab="organization-intelligence" aria-selected="false" aria-controls="rwPaneOrganizationIntelligence">组织智能</button>
     </nav>
+
+    <section class="studio-main rw-main oi-pane" id="rwPaneOrganizationIntelligence" role="tabpanel" aria-labelledby="rwTabOrganizationIntelligence" hidden>
+      <div class="rw-column">
+        <article class="rw-card">
+          <p class="oi-kicker">组织智能 · 实验模板 01</p>
+          <h2>人换了，组织还会吗？</h2>
+          <p>在同一组救援任务中，比较分散信息的汇集、组织档案与成员更替。先学习，再冻结经验，最后用新任务检验能力保留。</p>
+          <div class="oi-phases"><span>01 · 三轮训练</span><span>02 · 档案 / 换人</span><span>03 · 三轮新任务</span></div>
+          <p class="oi-note">探索性研究。程序按真实任务状态评分；每个测试条件每题均为四次模型请求。组织档案另用一次归纳调用。不据此推断真人组织或一般智能。</p>
+          <form id="oiForm" class="oi-form">
+            <label>实验模型<select id="oiProvider" required></select></label>
+            <label>独立运行组数<input id="oiRepeats" type="number" min="1" max="20" value="3" required /></label>
+            <label>随机种子<input id="oiSeed" type="number" min="0" max="2147483548" value="20261020" required /></label>
+            <p id="oiBudget" class="oi-note"></p>
+            <button type="submit" class="btn primary" id="oiCreate">生成并冻结实验协议</button>
+          </form>
+          <p id="oiError" class="rw-warn" role="alert"></p>
+        </article>
+        <article class="rw-card" id="oiStudy" hidden>
+          <div class="oi-heading"><h3 id="oiStudyTitle">研究记录</h3><strong id="oiStatus"></strong></div>
+          <p id="oiIdentity" class="oi-note"></p>
+          <progress id="oiProgress" max="1" value="0" aria-label="研究进度"></progress>
+          <pre id="oiMetrics" class="oi-metrics" aria-live="polite"></pre>
+          <div class="oi-actions">
+            <button type="button" class="btn primary" id="oiRun">按冻结协议启动研究</button>
+            <button type="button" class="btn" id="oiStop" hidden>停止研究</button>
+            <button type="button" class="btn" id="oiExport">下载研究报告</button>
+            <button type="button" class="btn" id="oiProtocolDownload">下载冻结协议</button>
+            <button type="button" class="btn" id="oiAuditDownload">下载完整审计日志</button>
+          </div>
+          <div id="oiResults"></div>
+          <details><summary>查看协议、居民与任务设置</summary><pre id="oiProtocol" class="oi-log"></pre></details>
+          <details id="oiLogDetails"><summary>查看实际请求与原始回答</summary><p class="oi-note">窗口保留最近读入的 60,000 字符；完整证据可用上方按钮下载。</p><pre id="oiLogs" class="oi-log"></pre></details>
+        </article>
+      </div>
+      <aside class="rw-column"><article class="rw-card"><h3>研究记录</h3><p class="oi-note">实验协议生成后不会自动调用模型。启动后固定模型；失败保留原始证据，不自动重跑。</p><div id="oiStudies"></div></article></aside>
+    </section>
 
     <section class="studio-main rw-main" id="rwPanePlan" role="tabpanel" aria-labelledby="rwTabPlan">
       <div class="rw-panel">
@@ -452,6 +494,7 @@
   <script src="/site/dashboard/research-editors.js"></script>
   <script src="/site/dashboard/research.js"></script>
   <script src="/site/dashboard/research-batches.js"></script>
+  <script src="/site/dashboard/organization-intelligence.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
   <script src="/site/dashboard/replication.js"></script>

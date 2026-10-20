@@ -259,6 +259,14 @@ class HttpTest(unittest.TestCase):
             self.assertEqual(resp.status, 200)
             self.assertIn("text/html", resp.getheader("Content-Type"))
         self.assertEqual(self._req("GET", "/site/assets/city-lab-atlas.svg")[0].status, 303)
+        for path in (
+            "/site/auth/brand/gaworld-symbol-a.png",
+            "/site/auth/brand/gaworld-lockup-a.png",
+        ):
+            for method in ("GET", "HEAD"):
+                resp, _ = self._req(method, path)
+                self.assertEqual(resp.status, 200, path)
+                self.assertIn("image/png", resp.getheader("Content-Type"))
 
     def test_classroom_flow(self):
         store = _store(self.tmp.name)

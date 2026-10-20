@@ -1,0 +1,28 @@
+.oi-pane { align-items: start; }
+.rw-tabs { flex-wrap: wrap; }
+.rw-tabs .rw-tab { flex: 0 0 auto; white-space: nowrap; }
+.oi-pane .rw-column { min-width: 0; }
+.oi-kicker { color: var(--accent, #39778a); font-size: .8rem; font-weight: 700; letter-spacing: .08em; }
+.oi-pane h2 { margin: .5rem 0 1rem; font-size: clamp(1.4rem, 3vw, 2rem); }
+.oi-pane p { line-height: 1.7; }
+.oi-note { color: var(--muted, #75828d); font-size: .86rem; }
+.oi-phases { display: flex; flex-wrap: wrap; gap: .7rem; margin: 1.3rem 0; }
+.oi-phases span { padding: .6rem .85rem; border: 1px solid var(--line, #dce3e6); border-radius: 8px; font-size: .85rem; }
+.oi-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+.oi-form label { display: grid; gap: .5rem; font-size: .86rem; min-width: 0; }
+.oi-form input, .oi-form select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; color: inherit; background: var(--panel, transparent); border: 1px solid var(--line, #bcc8cf); border-radius: 6px; }
+.oi-form p, .oi-form button { grid-column: 1 / -1; }
+.oi-form button { justify-self: start; }
+.oi-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.oi-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+.oi-metrics { white-space: pre-wrap; font-family: inherit; font-size: .86rem; line-height: 1.7; }
+.oi-log { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 420px; overflow: auto; font-size: .78rem; line-height: 1.6; }
+.oi-pane progress { width: 100%; accent-color: var(--accent, #39778a); }
+.oi-pane details { border-top: 1px solid var(--line, #dce3e6); padding: 1rem 0; }
+.oi-pane summary { cursor: pointer; }
+.oi-pane table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.oi-pane td, .oi-pane th { padding: .6rem; border-bottom: 1px solid var(--line, #dce3e6); text-align: left; }
+.oi-record { display: block; width: 100%; text-align: left; padding: .85rem; margin-bottom: .6rem; color: inherit; background: transparent; border: 1px solid var(--line, #dce3e6); border-radius: 8px; cursor: pointer; overflow-wrap: anywhere; }
+.oi-record[aria-current="true"] { border-color: var(--accent, #39778a); }
+.oi-pane [hidden] { display: none !important; }
+@media (max-width: 700px) { .oi-form { grid-template-columns: 1fr; } .oi-pane { grid-template-columns: minmax(0, 1fr); } }

@@ -796,7 +796,7 @@
     var seat = query.get("seat") || "";
     var sessionId = query.get("session") || "";
     if (query.get("tab") === "game" || sessionId) showTab("game");
-    else if (["policy", "replication", "worlds"].indexOf(query.get("tab")) >= 0) showTab(query.get("tab"));
+    else if (["policy", "replication", "worlds", "organization-intelligence"].indexOf(query.get("tab")) >= 0) showTab(query.get("tab"));
 
     if (sessionId && seat) {
       // Player view: one role, nothing else on the page.

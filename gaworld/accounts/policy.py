@@ -76,6 +76,8 @@ def study_action(path: str) -> str | None:
 
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
+    if path.startswith("/api/research/organization-intelligence/") and path.endswith("/run"):
+        return True
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
         return True
     if path.startswith("/api/research/batches/") and path.rsplit("/", 1)[-1] in {"run", "resume"}:
@@ -104,6 +106,7 @@ MEMBER_WRITES_EXACT = {
     "/api/persona/distill",
 }
 MEMBER_WRITES_PREFIX = (
+    "/api/research/organization-intelligence",
     "/api/games/",
     "/api/arena/",
     "/api/research/games",

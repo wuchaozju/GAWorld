@@ -11,6 +11,7 @@
          font-family: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif; background: #f4f1ea; color: #222; }
   main { width: min(360px, 92vw); background: #fff; border-radius: 12px; padding: 28px;
          box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+  .auth-brand { display: block; width: 240px; max-width: 100%; height: auto; margin: 0 auto 22px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   p.hint { margin: 0 0 18px; color: #666; font-size: 13px; }
   label { display: block; font-size: 13px; margin: 12px 0 4px; }
@@ -24,9 +25,11 @@
   nav a { color: #2f4f7f; }
   [hidden] { display: none !important; }
 </style>
+  <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body>
 <main>
+  <img class="auth-brand" src="/site/auth/brand/gaworld-lockup-a.png" alt="GAWorld" width="240" height="80">
   <h1 id="title">登录 GAWorld</h1>
   <p class="hint" id="hint">用昵称和密码登录。</p>
   <form id="form" autocomplete="on">

@@ -48,6 +48,7 @@ GET_ROUTES = (
     # Trailing slash on purpose: the single-agent `POST /api/interview` is a
     # different, older endpoint and must not be shadowed.
     Route("interview_api", "/api/interview/"),
+    Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),
     Route("research_api", "/api/research/"),
     Route("persona_api", "/api/persona/"),
@@ -69,6 +70,7 @@ POST_ROUTES = (
     Route("games_api", "/api/games/"),
     Route("family_api", "/api/family"),
     Route("interview_api", "/api/interview/"),
+    Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),
     Route("research_api", "/api/research/"),
     Route("persona_api", "/api/persona/"),

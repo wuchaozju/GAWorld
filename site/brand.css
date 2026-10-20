@@ -1,4 +1,4 @@
-/* Approved B emblem: shared by the city-lab and terminal interfaces. */
+/* Selected A, "emergent community": one master image across website surfaces. */
 :root .brand-mark.brand-logo {
   flex: none;
   padding: 0;
@@ -6,12 +6,37 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  width: 46px;
+  height: 46px;
 }
 .brand-symbol {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.gaworld-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  flex: none;
+}
+.gaworld-page-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gaworld-page-brand .gaworld-logo { width: 30px; height: 30px; }
+.header .brand-mark.brand-logo { width: 44px; height: 44px; }
+.footer .brand-mark.brand-logo { width: 38px; height: 38px; }
+.gaworld-doc-lockup {
+  width: 100%;
+  height: auto;
+  max-width: 240px;
+  padding: 10px;
+  border-radius: 4px;
+  background: #f3f3e9;
 }
 .topbar .brand-mark.brand-logo,
 .console-bar .brand-mark.brand-logo,
@@ -31,4 +56,14 @@
 :root[data-theme="dark"] .brand-symbol,
 .brand-on-dark .brand-symbol {
   filter: brightness(0) invert(1);
+}
+:root[data-theme="dark"] .gaworld-logo,
+.brand-on-dark .gaworld-logo {
+  filter: brightness(0) invert(1);
+}
+html.is-embedded .brand-mark.brand-logo,
+html.is-embedded .gaworld-page-brand .gaworld-logo { display: none; }
+@media (max-width: 650px) {
+  .header .brand-mark.brand-logo { width: 36px; height: 36px; }
+  .studio-top .brand-mark.brand-logo { width: 34px; height: 34px; }
 }
