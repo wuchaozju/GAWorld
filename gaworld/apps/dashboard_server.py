@@ -2127,11 +2127,43 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         return self._do_fos_or_404()
 
 
+def _ensure_fos_backend():
+    """Start/reuse the managed integrated FOS backend (None = external)."""
+    from gaworld.apps import fos_supervisor
+
+    return fos_supervisor.ensure_backend()
+
+
+def _shutdown_fos_backend(handle):
+    """Terminate a FOS backend only if this process spawned it."""
+    from gaworld.apps import fos_supervisor
+
+    fos_supervisor.shutdown_backend(handle)
+
+
 def run_server(host="127.0.0.1", port=8766):
-    server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+    try:
+        server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+    except OSError as exc:
+        print(f"error: GAWorld console cannot bind {host}:{port} ({exc}).")
+        print("Is another GAWorld dashboard already running on that port?")
+        raise SystemExit(1) from exc
     url = f"http://{host}:{int(port)}/"
+    try:
+        fos_handle = _ensure_fos_backend()
+    except Exception as exc:  # actionable FosBackendError or unexpected failure
+        print(f"error: integrated FOS backend could not be started: {exc}")
+        server.server_close()
+        raise SystemExit(1) from exc
     print(f"GAWorld console: {url}")
     print("Press Ctrl+C to stop.")
+
+    def _on_sigterm(signum, frame):
+        raise KeyboardInterrupt
+
+    import signal
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -2140,6 +2172,7 @@ def run_server(host="127.0.0.1", port=8766):
         runs.stop_all_simulations()
         _reset_collaboration_service_for_tests()
         server.server_close()
+        _shutdown_fos_backend(fos_handle)
 
 
 #: Names that used to live here -> ``(module they moved to, name there)``.
