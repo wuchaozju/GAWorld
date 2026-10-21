@@ -3,6 +3,7 @@ import json
 import math
 import os
 import sys
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -152,8 +153,17 @@ class DistributedRelayBackend:
             "max_messages": int(self.max_messages),
             "updated_at": time.time(),
         }
-        with open(self.state_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
+        # Keep the last complete snapshot if a write or process shutdown interrupts persistence.
+        descriptor, temporary = tempfile.mkstemp(prefix=".relay-state-", dir=directory or ".")
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False, indent=2)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.state_path)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
 
     def _load(self):
         if not self.state_path or not os.path.exists(self.state_path):
@@ -161,10 +171,10 @@ class DistributedRelayBackend:
         try:
             with open(self.state_path, encoding="utf-8") as f:
                 payload = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            return
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"Cannot read relay state {self.state_path}; restore a verified backup") from exc
         if not isinstance(payload, dict):
-            return
+            raise ValueError(f"Invalid relay state {self.state_path}: expected a JSON object")
         self.next_message_id = max(1, _to_int(payload.get("next_message_id", 1), 1))
         raw_messages = payload.get("messages", [])
         self.messages = raw_messages if isinstance(raw_messages, list) else []
