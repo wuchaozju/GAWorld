@@ -80,7 +80,7 @@ def main() -> int:
                 path = OUT / f"{name}.png"
                 page.screenshot(path=str(path), full_page=full)
                 print(f"OK   {name}  {path.stat().st_size // 1024} KB")
-            except Exception as error:  # noqa: BLE001 - report and continue
+            except Exception as error:
                 failures.append((name, str(error)[:160]))
                 print(f"FAIL {name}: {str(error)[:160]}")
             time.sleep(0.4)

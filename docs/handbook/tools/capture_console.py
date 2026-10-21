@@ -55,7 +55,7 @@ def main() -> int:
                 select.select_option(value)
                 page.wait_for_timeout(3500)
                 shoot(page, "37-console-agent-selected")
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             print(f"agent select failed: {str(error)[:120]}")
 
         # 4) expand every collapsed panel (memory, logs, family, collaboration…)
@@ -68,7 +68,7 @@ def main() -> int:
             )
             page.wait_for_timeout(1800)
             shoot(page, "38-console-panels-expanded")
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             print(f"expand failed: {str(error)[:120]}")
 
         # 5) the configuration centre (#settings hash on the console)
@@ -88,7 +88,7 @@ def main() -> int:
             )
             page.wait_for_timeout(800)
             shoot(page, "40-console-memory")
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             print(f"memory shot failed: {str(error)[:120]}")
 
         browser.close()

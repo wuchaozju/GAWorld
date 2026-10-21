@@ -59,9 +59,9 @@ class Study:
     protocol_changes: dict[str, Any] = field(default_factory=dict)
     source_plan: dict[str, Any] = field(default_factory=dict)
     protocol_revisions: list[dict[str, Any]] = field(default_factory=list)
-    owner_id: str | None = None
+    owner_id: int | None = None
     owner: str = ""
-    world_id: str = ""
+    world_id: str | None = None
     runtime: dict[str, Any] = field(default_factory=dict)
     protocol: dict[str, Any] = field(default_factory=dict)
     preflight: dict[str, Any] = field(default_factory=dict)
@@ -72,9 +72,6 @@ class Study:
     #: Rendered on the way to ``reported``; stored as ``report.md``, not in
     #: the JSON record.
     report_markdown: str = ""
-    owner_id: int | None = None
-    owner: str = ""
-    world_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

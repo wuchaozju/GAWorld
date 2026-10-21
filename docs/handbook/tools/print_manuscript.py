@@ -54,10 +54,17 @@ def main() -> int:
         return 1
     subprocess.run(
         [
-            "pandoc", str(manuscript), "-o", str(HTML),
-            "--toc", "--toc-depth=2", "--standalone",
-            "--metadata", "toc-title=目录",
-            "--from", "markdown-implicit_figures+pipe_tables+tex_math_dollars+link_attributes",
+            "pandoc",
+            str(manuscript),
+            "-o",
+            str(HTML),
+            "--toc",
+            "--toc-depth=2",
+            "--standalone",
+            "--metadata",
+            "toc-title=目录",
+            "--from",
+            "markdown-implicit_figures+pipe_tables+tex_math_dollars+link_attributes",
         ],
         check=True,
         capture_output=True,
@@ -86,7 +93,7 @@ def main() -> int:
         import pypdf
 
         print("PAGES:", len(pypdf.PdfReader(str(PDF)).pages))
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:
         print("page count unavailable:", error)
     return 0
 

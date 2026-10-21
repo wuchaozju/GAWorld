@@ -135,6 +135,9 @@ class PolicyTest(unittest.TestCase):
             ("GET", "/console"): "member",
             ("GET", "/api/config"): "member",
             ("GET", "/api/auth/users"): "admin",
+            ("GET", "/api/analytics/system"): "admin",
+            ("HEAD", "/api/analytics/system"): "admin",
+            ("GET", "/api/analytics/overview"): "member",
             ("POST", "/api/auth/logout"): "member",
             ("POST", "/api/auth/invites"): "admin",
             ("POST", "/api/interview/run"): "member",
@@ -268,6 +271,26 @@ class HttpTest(unittest.TestCase):
                 self.assertEqual(resp.status, 200, path)
                 self.assertIn("image/png", resp.getheader("Content-Type"))
 
+    def test_cross_world_analytics_is_admin_only(self):
+        store = _store(self.tmp.name)
+        store.create_user("teacher", PASSWORD, role="admin")
+        store.create_user("student", PASSWORD, role="member")
+        teacher, student = self._login("teacher"), self._login("student")
+        with mock.patch.object(
+            ds, "_system_panel_payload", return_value={"private": "other study"}
+        ) as summary:
+            for method in ("GET", "HEAD"):
+                response, _ = self._req(method, "/api/analytics/system", cookie=student)
+                self.assertEqual(response.status, 403)
+            summary.assert_not_called()
+            response, body = self._req("GET", "/api/analytics/system", cookie=teacher)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(body, {"private": "other study"})
+        with mock.patch.object(ds, "_analytics_payload", return_value={"own": True}):
+            response, body = self._req("GET", "/api/analytics/overview", cookie=student)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(body, {"own": True})
+
     def test_classroom_flow(self):
         store = _store(self.tmp.name)
         store.create_user("老师", PASSWORD, role="admin")
@@ -348,14 +371,28 @@ class HttpTest(unittest.TestCase):
         store.create_user("student", PASSWORD)
         teacher, student = self._login("teacher"), self._login("student")
         endpoint = "/api/settings/llm/credential"
-        cfg = {"llm": {"providers": {"test": {
-            "type": "openai", "base_url": "https://test.invalid/v1", "model": "test",
-        }}}}
+        cfg = {
+            "llm": {
+                "providers": {
+                    "test": {
+                        "type": "openai",
+                        "base_url": "https://test.invalid/v1",
+                        "model": "test",
+                    }
+                }
+            }
+        }
         path = str(Path(self.tmp.name).resolve() / "private-keys" / "keys.json")
-        with mock.patch.dict(os.environ, {"GAWORLD_LLM_SECRETS_PATH": path}), \
-                mock.patch.object(settings_api.world_paths, "effective_config", return_value=cfg):
-            self.assertEqual(self._req("POST", endpoint, {"name": "test", "api_key": "unused"})[0].status, 401)
-            resp, body = self._req("POST", endpoint, {"name": "test", "api_key": "student-test-key"}, cookie=student)
+        with (
+            mock.patch.dict(os.environ, {"GAWORLD_LLM_SECRETS_PATH": path}),
+            mock.patch.object(settings_api.world_paths, "effective_config", return_value=cfg),
+        ):
+            self.assertEqual(
+                self._req("POST", endpoint, {"name": "test", "api_key": "unused"})[0].status, 401
+            )
+            resp, body = self._req(
+                "POST", endpoint, {"name": "test", "api_key": "student-test-key"}, cookie=student
+            )
             self.assertEqual(resp.status, 200)
             self.assertNotIn("student-test-key", json.dumps(body))
             overview = self._req("GET", "/api/settings/overview", cookie=student)[1]
@@ -364,12 +401,25 @@ class HttpTest(unittest.TestCase):
             teacher_view = self._req("GET", "/api/settings/overview", cookie=teacher)[1]
             self.assertFalse(teacher_view["providers"][0]["key_ready"])
             self.assertNotIn("student-test-key", json.dumps(teacher_view))
-            self.assertEqual(self._req("POST", endpoint, {
-                "name": "test", "action": "delete", "user_id": 2}, cookie=teacher)[0].status, 400)
-            self.assertEqual(self._req("POST", "/api/settings/llm/test", {
-                "name": "test", "config": cfg["llm"]["providers"]["test"]}, cookie=student)[0].status, 403)
-            self.assertEqual(self._req("POST", endpoint, {
-                "name": "test", "action": "delete"}, cookie=student)[0].status, 200)
+            self.assertEqual(
+                self._req(
+                    "POST", endpoint, {"name": "test", "action": "delete", "user_id": 2}, cookie=teacher
+                )[0].status,
+                400,
+            )
+            self.assertEqual(
+                self._req(
+                    "POST",
+                    "/api/settings/llm/test",
+                    {"name": "test", "config": cfg["llm"]["providers"]["test"]},
+                    cookie=student,
+                )[0].status,
+                403,
+            )
+            self.assertEqual(
+                self._req("POST", endpoint, {"name": "test", "action": "delete"}, cookie=student)[0].status,
+                200,
+            )
 
     def test_operator_token_is_still_an_admin(self):
         _store(self.tmp.name)

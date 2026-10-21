@@ -16,9 +16,9 @@ LlmFn = Callable[[str], str]
 class AdapterContext:
     """Runtime injection so adapters don't reach for globals."""
 
-    artifacts_root: str          # e.g. "output/work"
-    llm: LlmFn                   # call_llm wrapper; tests pass a stub
-    config: dict                 # adapter-specific config block
+    artifacts_root: str  # e.g. "output/work"
+    llm: LlmFn  # call_llm wrapper; tests pass a stub
+    config: dict  # adapter-specific config block
 
     def task_dir(self, brief: WorkBrief) -> str:
         path = os.path.join(
@@ -42,6 +42,7 @@ class WorkAdapter(Protocol):
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def make_failed(brief: WorkBrief, error: str, started_at: float) -> WorkResult:
     return WorkResult(

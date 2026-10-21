@@ -44,9 +44,18 @@ PLAN = {
         "population": "50 人",
         "agents": "",
         "timeline": "14 天",
-        "conditions": [{"name": "对照", "manipulation": "无"}, {"name": "补贴", "manipulation": "第 2 天起发放"}],
+        "conditions": [
+            {"name": "对照", "manipulation": "无"},
+            {"name": "补贴", "manipulation": "第 2 天起发放"},
+        ],
         "events": ["租金补贴"],
-        "measures": [{"name": "压力", "operationalization": "state 里的 stress", "source": "state/agent_state_history.csv"}],
+        "measures": [
+            {
+                "name": "压力",
+                "operationalization": "state 里的 stress",
+                "source": "state/agent_state_history.csv",
+            }
+        ],
     },
     "gaps": [{"limitation": "没有住房市场", "workaround": "把补贴写成事件"}],
     "estimated_cost": {"llm_calls": "几百次"},
@@ -64,16 +73,47 @@ ANSWER = {
             "id": "subsidy",
             "label": "补贴",
             "role": "treatment",
-            "events": [{"day": 2, "time": "09:00", "name": "租金补贴", "description": "低收入家庭收到租金补贴。"}],
+            "events": [
+                {"day": 2, "time": "09:00", "name": "租金补贴", "description": "低收入家庭收到租金补贴。"}
+            ],
         },
     ],
     "measures": ["stress", "压力", "不存在的指标"],
     "hypotheses": [
-        {"id": "H1", "statement": "补贴降低压力", "measure": "stress", "treatment": "subsidy", "control": "baseline",
-         "direction": "decrease", "min_effect": 0.02, "aggregation": "final"},
-        {"id": "H2", "statement": "补贴提升情绪", "measure": "情绪", "treatment": "补贴", "direction": "上升", "min_effect": 0.01},
-        {"id": "H3", "statement": "测不到", "measure": "出生数", "treatment": "subsidy", "control": "baseline", "direction": "increase"},
-        {"id": "H4", "statement": "条件不存在", "measure": "stress", "treatment": "nope", "control": "baseline", "direction": "increase"},
+        {
+            "id": "H1",
+            "statement": "补贴降低压力",
+            "measure": "stress",
+            "treatment": "subsidy",
+            "control": "baseline",
+            "direction": "decrease",
+            "min_effect": 0.02,
+            "aggregation": "final",
+        },
+        {
+            "id": "H2",
+            "statement": "补贴提升情绪",
+            "measure": "情绪",
+            "treatment": "补贴",
+            "direction": "上升",
+            "min_effect": 0.01,
+        },
+        {
+            "id": "H3",
+            "statement": "测不到",
+            "measure": "出生数",
+            "treatment": "subsidy",
+            "control": "baseline",
+            "direction": "increase",
+        },
+        {
+            "id": "H4",
+            "statement": "条件不存在",
+            "measure": "stress",
+            "treatment": "nope",
+            "control": "baseline",
+            "direction": "increase",
+        },
     ],
     "validity": {"seeds": [42, 43], "placebo": True},
     "notes": "没有住房市场。",
@@ -100,8 +140,13 @@ def fake_report(values, *, baseline="baseline", missing=()):
         "baseline_id": baseline,
         "trajectories": values,
         "worlds": [
-            {"id": world, "label": world, "is_baseline": world == baseline, "has_data": world not in missing,
-             "status": "error" if world in missing else "done"}
+            {
+                "id": world,
+                "label": world,
+                "is_baseline": world == baseline,
+                "has_data": world not in missing,
+                "status": "error" if world in missing else "done",
+            }
             for world in world_ids
         ],
         "deltas": [],
@@ -110,8 +155,15 @@ def fake_report(values, *, baseline="baseline", missing=()):
 
 def runs_for(*seed_values):
     """``[(seed, {metric: {world: series}}), ...]`` → what ``run_protocol`` returns."""
-    return [{"seed": seed, "root": f"output/parallel_worlds/x_s{seed}", "status": "done", "report": fake_report(values)}
-            for seed, values in seed_values]
+    return [
+        {
+            "seed": seed,
+            "root": f"output/parallel_worlds/x_s{seed}",
+            "status": "done",
+            "report": fake_report(values),
+        }
+        for seed, values in seed_values
+    ]
 
 
 def series(baseline, subsidy, placebo=None, *, metric="stress"):
@@ -170,8 +222,14 @@ def test_protocol_keeps_what_can_run_and_records_the_rest():
     assert [h["id"] for h in protocol.hypotheses] == ["H1", "H2"]
     h2 = protocol.hypotheses[1]
     assert h2 == {
-        "id": "H2", "statement": "补贴提升情绪", "measure": "emotion", "treatment": "subsidy", "control": "baseline",
-        "direction": "increase", "min_effect": 0.01, "aggregation": "final",
+        "id": "H2",
+        "statement": "补贴提升情绪",
+        "measure": "emotion",
+        "treatment": "subsidy",
+        "control": "baseline",
+        "direction": "increase",
+        "min_effect": 0.01,
+        "aggregation": "final",
     }
     assert [m["id"] for m in protocol.measures] == ["stress", "emotion"]
     dropped = [item for item in protocol.dropped if item["what"] == "hypothesis"]
@@ -194,15 +252,25 @@ def test_roles_and_ids_are_inferred_when_missing():
     answer = {
         "conditions": [
             {"label": "什么都不做"},
-            {"label": "轻度限行", "events": [{"day": 3, "time": "07:00", "name": "限行", "description": "单双号"}]},
-            {"label": "安慰剂通告", "events": [{"day": 3, "time": "10:00", "name": "通告", "description": "例行"}]},
+            {
+                "label": "轻度限行",
+                "events": [{"day": 3, "time": "07:00", "name": "限行", "description": "单双号"}],
+            },
+            {
+                "label": "安慰剂通告",
+                "events": [{"day": 3, "time": "10:00", "name": "通告", "description": "例行"}],
+            },
         ],
-        "hypotheses": [{"measure": "stress", "treatment": "轻度限行", "control": "什么都不做", "direction": "increase"}],
+        "hypotheses": [
+            {"measure": "stress", "treatment": "轻度限行", "control": "什么都不做", "direction": "increase"}
+        ],
         "validity": {"placebo": False},
     }
     protocol = protocol_from_answer(answer, PLAN)
     assert [(c["id"], c["role"]) for c in protocol.conditions] == [
-        ("baseline", "baseline"), ("t1", "treatment"), ("placebo", "placebo"),
+        ("baseline", "baseline"),
+        ("t1", "treatment"),
+        ("placebo", "placebo"),
     ]
     assert protocol.hypotheses[0]["id"] == "H1"
     assert protocol.hypotheses[0]["treatment"] == "t1"
@@ -211,7 +279,10 @@ def test_roles_and_ids_are_inferred_when_missing():
 
 def test_round_trip_and_overrides():
     protocol = Protocol.from_dict(make_protocol().to_dict())
-    apply_overrides(protocol, {"seeds": "7, 8, 8", "sim_days": "9", "fast": False, "agent_ids": "4,5", "sim_provider": "m1"})
+    apply_overrides(
+        protocol,
+        {"seeds": "7, 8, 8", "sim_days": "9", "fast": False, "agent_ids": "4,5", "sim_provider": "m1"},
+    )
     assert protocol.seeds == [7, 8]
     assert protocol.sim_days == 9
     assert protocol.fast is False
@@ -293,7 +364,10 @@ def test_run_protocol_runs_every_seed_and_honours_stop():
     assert seen == [(42, 42), (43, 43)]
     assert [run["seed"] for run in runs] == [42, 43]
     assert messages[0] == (0.25, "种子 42：跑到一半")
-    assert backends.slim_runs(runs) == [{"seed": 42, "root": "r42", "status": "done"}, {"seed": 43, "root": "r43", "status": "done"}]
+    assert backends.slim_runs(runs) == [
+        {"seed": 42, "root": "r42", "status": "done"},
+        {"seed": 43, "root": "r43", "status": "done"},
+    ]
 
     stop = threading.Event()
 
@@ -364,10 +438,14 @@ def test_contradicted_when_every_seed_moves_the_other_way():
 def test_inconclusive_when_seeds_disagree_or_noise_swallows_the_effect():
     protocol = make_protocol()
     protocol.hypotheses = protocol.hypotheses[:1]
-    mixed = evaluate(protocol, runs_for((42, series(0.5, 0.4, 0.5)), (43, series(0.5, 0.6, 0.5))))["hypotheses"][0]
+    mixed = evaluate(protocol, runs_for((42, series(0.5, 0.4, 0.5)), (43, series(0.5, 0.6, 0.5))))[
+        "hypotheses"
+    ][0]
     assert mixed["verdict"] == "inconclusive"
     assert any("方向不一致" in reason for reason in mixed["reasons"])
-    noisy = evaluate(protocol, runs_for((42, series(0.5, 0.45, 0.6)), (43, series(0.5, 0.46, 0.4))))["hypotheses"][0]
+    noisy = evaluate(protocol, runs_for((42, series(0.5, 0.45, 0.6)), (43, series(0.5, 0.46, 0.4))))[
+        "hypotheses"
+    ][0]
     assert noisy["verdict"] == "inconclusive"
     assert noisy["noise"] == pytest.approx(0.1)
 
@@ -383,14 +461,23 @@ def test_single_seed_without_placebo_cannot_be_supported():
     # A single seed *with* a placebo world has a noise floor and may pass.
     with_placebo = make_protocol()
     with_placebo.hypotheses = with_placebo.hypotheses[:1]
-    assert evaluate(with_placebo, runs_for((42, series(0.5, 0.3, 0.505))))["hypotheses"][0]["verdict"] == "supported"
+    assert (
+        evaluate(with_placebo, runs_for((42, series(0.5, 0.3, 0.505))))["hypotheses"][0]["verdict"]
+        == "supported"
+    )
 
 
 def test_unmeasured_and_quality_issues():
     protocol = make_protocol()
     protocol.hypotheses = protocol.hypotheses[:1]
-    run = {"seed": 42, "root": "r", "status": "error",
-           "report": fake_report({"stress": {"baseline": [0.5, 0.5], "placebo": [0.5, 0.5]}}, missing=("subsidy",))}
+    run = {
+        "seed": 42,
+        "root": "r",
+        "status": "error",
+        "report": fake_report(
+            {"stress": {"baseline": [0.5, 0.5], "placebo": [0.5, 0.5]}}, missing=("subsidy",)
+        ),
+    }
     result = evaluate(protocol, [run])
     assert result["hypotheses"][0]["verdict"] == "unmeasured"
     issues = result["quality"]["issues"]
@@ -402,10 +489,22 @@ def _with_paired(runs, by_seed, *, control="baseline"):
     """Attach per-resident estimates (what ``gaworld.parallel.causal`` writes) to each seed's report."""
     for run in runs:
         ate, low, high, q = by_seed[run["seed"]]
-        run["report"]["causal"] = {"baseline_id": control, "estimates": [
-            {"world_id": "subsidy", "metric": "stress", "ate": ate, "ci_low": low, "ci_high": high,
-             "p_value": q, "q_value": q, "n": 30, "verdict": "robust" if q < 0.05 else "null"},
-        ]}
+        run["report"]["causal"] = {
+            "baseline_id": control,
+            "estimates": [
+                {
+                    "world_id": "subsidy",
+                    "metric": "stress",
+                    "ate": ate,
+                    "ci_low": low,
+                    "ci_high": high,
+                    "p_value": q,
+                    "q_value": q,
+                    "n": 30,
+                    "verdict": "robust" if q < 0.05 else "null",
+                },
+            ],
+        }
     return runs
 
 
@@ -454,8 +553,14 @@ def test_mean_aggregation_reads_the_whole_series():
     protocol = make_protocol()
     protocol.hypotheses = [dict(protocol.hypotheses[0], aggregation="mean", min_effect=0.0)]
     runs = runs_for(
-        (42, {"stress": {"baseline": [0.5, 0.5, 0.5], "subsidy": [0.5, 0.2, 0.5], "placebo": [0.5, 0.5, 0.5]}}),
-        (43, {"stress": {"baseline": [0.5, 0.5, 0.5], "subsidy": [0.5, 0.2, 0.5], "placebo": [0.5, 0.5, 0.5]}}),
+        (
+            42,
+            {"stress": {"baseline": [0.5, 0.5, 0.5], "subsidy": [0.5, 0.2, 0.5], "placebo": [0.5, 0.5, 0.5]}},
+        ),
+        (
+            43,
+            {"stress": {"baseline": [0.5, 0.5, 0.5], "subsidy": [0.5, 0.2, 0.5], "placebo": [0.5, 0.5, 0.5]}},
+        ),
     )
     item = evaluate(protocol, runs)["hypotheses"][0]
     assert item["effects"][0]["effect"] == pytest.approx(-0.1)
@@ -637,9 +742,7 @@ def stubbed_api(isolated_root, monkeypatch):
         return run
 
     monkeypatch.setattr(research_api, "_seed_runner", fake_seed_runner)
-    monkeypatch.setattr(
-        research_api, "_ACTIVE_STUDIES", {}
-    )
+    monkeypatch.setattr(research_api, "_ACTIVE_STUDIES", {})
     return seen
 
 
@@ -685,12 +788,20 @@ def test_study_compiles_the_chosen_design(stubbed_api, monkeypatch):
         return original(plan, **kwargs)
 
     monkeypatch.setattr(protocol_mod, "build_compile_prompt", spy)
-    body, status = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "design_index": 1})
+    body, status = research_api.handle_post(
+        "/api/research/studies", {"plan_id": PLAN["id"], "design_index": 1}
+    )
     assert status == 202
     assert _await_job(body["job_id"])["status"] == "done"
     assert compiled == ["乙"]
-    assert research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "design_index": 5})[1] == 400
-    assert research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "design_index": "x"})[1] == 400
+    assert (
+        research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "design_index": 5})[1]
+        == 400
+    )
+    assert (
+        research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "design_index": "x"})[1]
+        == 400
+    )
 
 
 def test_copilot_flow_compile_approve_run_report(stubbed_api):
@@ -763,10 +874,22 @@ def test_autopilot_runs_without_a_click(stubbed_api):
 def test_all_worlds_failed_is_an_error_without_model_interpretation(stubbed_api, monkeypatch):
     def failed_seed_runner(study):
         def run(spec, seed, report):
-            return {"status": "error", "world_status": {w.id: "error" for w in spec.worlds},
-                    "report": {"worlds": [{"id": w.id, "has_data": False, "status": "error",
-                                           "error": "MiniMax HTTP 429; Ollama connection refused"}
-                                          for w in spec.worlds]}}
+            return {
+                "status": "error",
+                "world_status": {w.id: "error" for w in spec.worlds},
+                "report": {
+                    "worlds": [
+                        {
+                            "id": w.id,
+                            "has_data": False,
+                            "status": "error",
+                            "error": "MiniMax HTTP 429; Ollama connection refused",
+                        }
+                        for w in spec.worlds
+                    ]
+                },
+            }
+
         return run
 
     monkeypatch.setattr(research_api, "_seed_runner", failed_seed_runner)
@@ -787,8 +910,12 @@ def test_all_worlds_failed_is_an_error_without_model_interpretation(stubbed_api,
 def test_failed_report_does_not_repeat_raw_tracebacks():
     _, study = _evaluated_study()
     study.set_stage("error", error="没有数据")
-    issue = {"seed": 42, "condition": "baseline", "issue": "没有状态数据",
-             "detail": 'Traceback (most recent call last):\n  File "run.py", line 1\nConnectionError: refused'}
+    issue = {
+        "seed": 42,
+        "condition": "baseline",
+        "issue": "没有状态数据",
+        "detail": 'Traceback (most recent call last):\n  File "run.py", line 1\nConnectionError: refused',
+    }
     study.evaluation["quality"] = {"ok": False, "issues": [issue]}
     doc = render_study_markdown(study.to_dict())
     assert "ConnectionError: refused" in doc
@@ -796,7 +923,9 @@ def test_failed_report_does_not_repeat_raw_tracebacks():
 
 
 def test_autopilot_stops_at_a_failed_preflight(stubbed_api):
-    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True, "sim_days": 1})
+    body, _ = research_api.handle_post(
+        "/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True, "sim_days": 1}
+    )
     record = _await_job(body["job_id"])
     assert record["status"] == "done", record
     assert record["result"]["stage"] == "protocol"
@@ -810,7 +939,9 @@ def test_one_study_runs_at_a_time(stubbed_api):
     research_api.handle_post(f"/api/research/studies/{study_id}/approve", {})
     with research_api._JOBS_LOCK:
         research_api._JOBS["run-busy"] = {"id": "run-busy", "status": "running", "started_at": time.time()}
-    research_api._ACTIVE_STUDIES.update({str(i): {"study_id": str(i), "job_id": "run-busy"} for i in range(4)})
+    research_api._ACTIVE_STUDIES.update(
+        {str(i): {"study_id": str(i), "job_id": "run-busy"} for i in range(4)}
+    )
     assert research_api.handle_post(f"/api/research/studies/{study_id}/run", {})[1] == 409
     assert research_api.handle_post(f"/api/research/studies/{study_id}/stop", {})[0]["stopping"] is False
 
@@ -968,8 +1099,14 @@ def test_pause_holds_the_next_seed_until_resume(stubbed_api, monkeypatch):
             started.append(seed)
             gate.wait(10)
             values = {**series(0.5, 0.4, 0.51), **series(0.5, 0.53, 0.5, metric="emotion")}
-            return {"root": f"output/parallel_worlds/x_s{seed}", "id": f"x_s{seed}", "status": "done",
-                    "world_status": {w.id: "done" for w in spec.worlds}, "report": fake_report(values)}
+            return {
+                "root": f"output/parallel_worlds/x_s{seed}",
+                "id": f"x_s{seed}",
+                "status": "done",
+                "world_status": {w.id: "done" for w in spec.worlds},
+                "report": fake_report(values),
+            }
+
         return run
 
     monkeypatch.setattr(research_api, "_seed_runner", slow_seed_runner)

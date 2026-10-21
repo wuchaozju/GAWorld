@@ -6,7 +6,6 @@ import types
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Pure service tests
 # ---------------------------------------------------------------------------
@@ -146,9 +145,7 @@ def test_format_holiday_plan_block_under_budget():
 def test_summarize_replacement_log_is_one_line():
     from gaworld.holiday import service
 
-    line = service.summarize_replacement_log(
-        {"activity": "出门短途出游", "reason": "换一种节奏过日子"}
-    )
+    line = service.summarize_replacement_log({"activity": "出门短途出游", "reason": "换一种节奏过日子"})
     assert line.startswith("[放假] ")
     assert line.count("\n") == 0
 
@@ -173,14 +170,16 @@ def test_validate_config_accepts_well_formed_block():
     from gaworld.holiday import validate_config
 
     # Should not raise.
-    validate_config({
-        "holiday": {
-            "max_days": 30,
-            "min_days": 1,
-            "default_days": 7,
-            "plan_prompt_budget_chars": 240,
+    validate_config(
+        {
+            "holiday": {
+                "max_days": 30,
+                "min_days": 1,
+                "default_days": 7,
+                "plan_prompt_budget_chars": 240,
+            }
         }
-    })
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -238,9 +237,10 @@ def _run_one_tick(agent, time_str, day):
     """Emulate the kernel's per-tick flow as far as HolidayPlugin cares."""
     import os
 
+    from gaworld.holiday import normalize_config
+
     # Lazy import so each test gets a fresh module-instance via importlib.
     from gaworld.holiday.plugin import HolidayPlugin
-    from gaworld.holiday import normalize_config
 
     plugin = HolidayPlugin()
     plugin._cfg = normalize_config({})
@@ -284,7 +284,6 @@ def test_plugin_passes_through_sleep_hour():
 
 
 def test_plugin_controller_intervention_start_and_cancel():
-    from gaworld.holiday import service
     from gaworld.holiday.plugin import HolidayPlugin
 
     plugin = HolidayPlugin()

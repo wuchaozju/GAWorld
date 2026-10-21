@@ -810,6 +810,7 @@
   */
   function renderSystemPanel() {
     var data = state.system;
+    if ($("anSystemPanel")) $("anSystemPanel").hidden = !data;
     var kpisEl = $("anSystemKpis");
     var healthEl = $("anSystemHealth");
     var gridEl = $("anSystemGrid");
@@ -1144,6 +1145,8 @@
     status.className = "an-status is-busy";
     try {
       await loadRuns();
+      var account = await api("/api/auth/me");
+      var canReadSystem = account.mode === "single" || (account.user && account.user.role === "admin");
       var results = await Promise.all([
         section("overview"),
         section("state-history"),
@@ -1153,7 +1156,7 @@
         section("events"),
         // ``system`` is independent of the run picker — it always describes the
         // current world plus the cross-world tree.
-        api("/api/analytics/system"),
+        canReadSystem ? api("/api/analytics/system") : Promise.resolve(null),
       ]);
       state.overview = results[0];
       state.history = results[1];
