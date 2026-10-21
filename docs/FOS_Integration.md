@@ -169,7 +169,19 @@ with `FOS_BACKEND_URL`). The `/fos` prefix is kept end-to-end — the backend
 natively answers `/fos/api` and `/fos/uploads`, so development, GAWorld-direct
 and the Caddy `/fos/*` proxy all behave identically.
 
-### Development startup (two terminals)
+### Development startup (recommended: the integrated launcher)
+
+The supported integrated startup is `scripts/start_fos_integrated.sh`. It
+launches the FOS backend in the background with `FOS_SINGLE_USER_MODE=true`
+(only in that backend process's env — standalone FOS deployments keep normal
+authentication), binds it to `127.0.0.1` only, then runs the GAWorld dashboard
+in the foreground and cleans up the backend on exit.
+
+```bash
+scripts/start_fos_integrated.sh
+```
+
+Equivalent manual startup (two terminals):
 
 ```bash
 # Terminal 1 — FOS backend (single-user mode, loopback only)
@@ -186,7 +198,11 @@ cd fos && ../.venv-fos-integration/bin/python -m uvicorn fos.backend.main:app \
 python gaworld/apps/dashboard_server.py
 ```
 
-Open `http://127.0.0.1:8766/fos/` — with single-user mode on, no login is
-required (a local user is provisioned automatically on first startup);
-GAWorld console pages under `/` are unaffected. With
-`FOS_SINGLE_USER_MODE=false` (default), normal FOS login applies.
+Open `http://127.0.0.1:8766/fos/` — in the GAWorld-integrated runtime, FOS
+automatically uses the local persisted single user (a local user is
+provisioned automatically on first startup, so no FOS login is required);
+GAWorld console pages under `/` are unaffected. Standalone FOS deployments
+(fos/README.md, fos/docker-compose.yml) keep `FOS_SINGLE_USER_MODE=false`
+(default) and therefore normal authentication. Single-user mode is not
+intended for broad-network exposure: the backend refuses to bind a
+non-loopback host unless `FOS_SINGLE_USER_ALLOW_REMOTE_BIND=true` is also set.
