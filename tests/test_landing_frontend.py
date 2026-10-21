@@ -7,6 +7,8 @@ from urllib.parse import urlsplit
 
 import pytest
 
+from gaworld.apps.dashboard_server import _static_path_allowed
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -60,6 +62,16 @@ def test_homepage_local_resources_and_section_links_resolve(name):
                 ROOT / parsed.path.lstrip("/") if parsed.path.startswith("/") else path.parent / parsed.path
             )
             assert target.exists(), url
+
+
+def test_homepage_manual_is_an_allowed_download():
+    for name in ("site/index.html", "site/home/index.html"):
+        page = PageLinks()
+        page.feed((ROOT / name).read_text())
+        assert "/read.doc" in page.links
+    assert (ROOT / "read.doc").is_file()
+    assert _static_path_allowed("/read.doc")
+    assert not _static_path_allowed("/dashboard_config.json")
 
 
 def test_legacy_feature_hashes_still_open_the_console():

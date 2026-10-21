@@ -166,6 +166,16 @@
       tags: ["research", "研究工作台", "预注册", "论文", "hypothesis", "AI 社会科学家"],
     },
     {
+      id: "organization-intelligence",
+      path: "/docs/ORGANIZATION_INTELLIGENCE_TUTORIAL.md",
+      title: "组织智能教程",
+      en: "Organization Intelligence",
+      group: "专题教程",
+      summary: "冻结救援任务、人口与模型，对照组织档案保留、移除和全员更替，按请求审计并导出结果。",
+      en_summary: "Freeze the rescue task, population and model, compare archive retention, removal and member turnover, and audit and export results.",
+      tags: ["organization intelligence", "组织智能", "研究", "救援"],
+    },
+    {
       id: "organizations",
       path: "/docs/ORGANIZATIONS_TUTORIAL.md",
       title: "持久组织教程",
