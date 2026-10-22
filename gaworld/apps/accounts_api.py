@@ -9,6 +9,7 @@ header or None.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from gaworld.accounts import AccountError, AccountStore
@@ -17,7 +18,8 @@ SESSION_COOKIE = "gaworld_session"
 
 
 def session_cookie(token: str) -> str:
-    return f"{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={7 * 24 * 3600}"
+    secure = "; Secure" if os.environ.get("GAWORLD_PUBLIC_URL", "").startswith("https://") else ""
+    return f"{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={7 * 24 * 3600}{secure}"
 
 
 def clear_cookie() -> str:
@@ -29,6 +31,10 @@ Result = tuple[dict[str, Any], int, str | None]
 
 def handle_get(store: AccountStore | None, user: dict[str, Any] | None, path: str) -> Result:
     path = path.rstrip("/")
+    if path == "/api/auth/config":
+        from gaworld.apps.community_auth import config
+
+        return config(), 200, None
     if path == "/api/auth/me":
         if store is None:
             return {"mode": "single"}, 200, None
@@ -79,6 +85,11 @@ def handle_post(
 def _post(
     store: AccountStore, user: dict[str, Any] | None, path: str, payload: dict[str, Any], session: str
 ) -> Result:
+    from gaworld.apps.community_auth import post
+
+    result = post(store, user, path, payload, session)
+    if result is not None:
+        return result
     if path == "/api/auth/login":
         found = store.authenticate(str(payload.get("nickname") or ""), str(payload.get("password") or ""))
         if found is None:

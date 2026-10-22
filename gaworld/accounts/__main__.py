@@ -70,7 +70,9 @@ def main(argv: list[str] | None = None) -> int:
             store.init_schema()
             user = store.create_user(nickname, password, role="admin", can_create_city=True)
             store.audit(user, "init")
-            print(f"已创建账号库 {path}，管理员「{user['nickname']}」。从现在起控制台需要登录。")
+            print(
+                f"已创建账号库 {path}，管理员「{user['nickname']}」。启动 dashboard 时添加 --multi-user True 以启用登录。"
+            )
             return 0
         if not os.path.exists(path):
             raise AccountError("账号库不存在；先运行 python -m gaworld.accounts init --admin <昵称>")

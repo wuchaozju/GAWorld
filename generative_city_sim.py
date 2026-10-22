@@ -4053,8 +4053,8 @@ def _build_arg_parser():
         "dashboard",
         help="Serve the local simulation dashboard with configuration and run controls",
     )
-    dashboard.add_argument("--host", default="127.0.0.1", help="Bind host")
-    dashboard.add_argument("--port", type=int, default=8766, help="Bind port")
+    from gaworld.apps.dashboard_cli import configure_parser
+    configure_parser(dashboard)
 
     distributed_cfg = CONFIG.get("distributed", {})
     distributed_server_cfg = (
@@ -4211,7 +4211,7 @@ def _main():
     if args.command == "dashboard":
         from gaworld.apps.dashboard_server import run_server
 
-        run_server(host=args.host, port=args.port)
+        run_server(host=args.host, port=args.port, multi_user=args.multi_user)
         return
 
     if args.command == "serve-distributed":

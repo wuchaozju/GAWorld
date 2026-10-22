@@ -167,6 +167,9 @@ class AccountStore:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         with self._db() as db:
             db.executescript(_SCHEMA)
+        from .community import migrate
+
+        migrate(self)
 
     # -- users ------------------------------------------------------------
 
@@ -202,11 +205,18 @@ class AccountStore:
         except sqlite3.IntegrityError as exc:
             raise AccountError(f"昵称「{nickname}」已被使用") from exc
         row = db.execute(f"SELECT {_USER_COLUMNS} FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
+        db.execute(
+            "INSERT INTO account_profiles(user_id,public_id,display_name) VALUES(?,?,?)",
+            (cur.lastrowid, "u" + secrets.token_hex(10), nickname),
+        )
         return _user(row)  # type: ignore[return-value]
 
     def get_user(self, user_id: int) -> dict[str, Any] | None:
         with self._db() as db:
-            return _user(db.execute(f"SELECT {_USER_COLUMNS} FROM users WHERE id = ?", (user_id,)).fetchone())
+            user = _user(db.execute(f"SELECT {_USER_COLUMNS} FROM users WHERE id = ?", (user_id,)).fetchone())
+        from .community import augment
+
+        return augment(self, user)
 
     def list_users(self) -> list[dict[str, Any]]:
         with self._db() as db:
@@ -226,7 +236,10 @@ class AccountStore:
         if row is None:
             verify_password(str(password or ""), _DUMMY_HASH)
             return None
-        return _user(row) if verify_password(str(password or ""), row["password_hash"]) else None
+        user = (
+            self.get_user(row["id"]) if verify_password(str(password or ""), row["password_hash"]) else None
+        )
+        return user if user and user["enabled"] else None
 
     def change_password(self, user_id: int, old: str, new: str) -> None:
         user = self.get_user(user_id)
@@ -270,7 +283,8 @@ class AccountStore:
                 " JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?",
                 (_digest(token), time.time()),
             ).fetchone()
-        return _user(row)
+        user = self.get_user(row["id"]) if row else None
+        return user if user and user["enabled"] else None
 
     def close_session(self, token: str) -> None:
         with self._db() as db:
@@ -400,6 +414,10 @@ class AccountStore:
             raise AccountError("世界名称最多 64 个字符")
         world_id = "w" + secrets.token_hex(4)
         with self._db() as db:
+            from .resources import check_world_count
+
+            db.execute("BEGIN IMMEDIATE")
+            check_world_count(self, db, owner_id)
             db.execute(
                 "INSERT INTO worlds (id, name, owner_id, city, visibility, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                 (world_id, name, owner_id, str(city or ""), "private", time.time()),

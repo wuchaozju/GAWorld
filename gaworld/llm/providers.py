@@ -1115,6 +1115,9 @@ def call_llm(
     document has to say so, or the provider truncates it mid-JSON and every
     parser downstream sees malformed input rather than a budget problem.
     """
+    from gaworld.accounts.community import begin_model_call, settle_call
+
+    reservation = begin_model_call()
     try:
         return LLM_ROUTER.call(
             prompt,
@@ -1128,6 +1131,8 @@ def call_llm(
             max_tokens=max_tokens,
         )
     finally:
+        if reservation is not None:
+            settle_call(*reservation)
         # A shared deployment's per-user quota (gaworld.accounts.usage);
         # writes nothing when accounts are off.
         from gaworld.accounts import usage

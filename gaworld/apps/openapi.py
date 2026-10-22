@@ -437,8 +437,8 @@ def _core() -> dict[str, Any]:
         "/api/auth/register": {
             "post": _op(
                 "auth",
-                "Register with an invite code; sets the session cookie",
-                body=_obj(("code", "nickname", "password"), code=STR, nickname=STR, password=STR),
+                "Register by invitation or configured open email verification",
+                body=_obj(("nickname", "password"), code=STR, nickname=STR, password=STR, email=STR, display_name=STR),
                 ok=_obj(user=OBJ),
             )
         },
@@ -2159,7 +2159,9 @@ Every route of the GAWorld dashboard (default port 8766). Conventions:
 
 
 def spec() -> dict[str, Any]:
-    paths: dict[str, Any] = {}
+    from gaworld.apps.community_openapi import paths as community_paths
+
+    paths: dict[str, Any] = community_paths()
     for group in (_core, _simulation, _panels, _cities, _studies, _parallel, _games, _organizations):
         paths.update(group())
     return {

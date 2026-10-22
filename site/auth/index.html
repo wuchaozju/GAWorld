@@ -41,8 +41,12 @@
       <label for="nickname">昵称</label>
       <input id="nickname" name="nickname" autocomplete="username" maxlength="32">
     </div>
+    <div id="email-row" hidden><label for="email">邮箱</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254"></div>
+    <div id="display-row" hidden><label for="display_name">公开显示名</label><input id="display_name" name="display_name" maxlength="32" autocomplete="nickname"></div>
+    <div id="password-row">
     <label for="password">密码</label>
     <input id="password" name="password" type="password" minlength="8" autocomplete="current-password">
+    </div>
     <div id="confirm-row" hidden>
       <label for="confirm">再输一次密码</label>
       <input id="confirm" name="confirm" type="password" autocomplete="new-password">
@@ -56,61 +60,6 @@
     <a href="/login" id="to-login" hidden>返回登录</a>
   </nav>
 </main>
-<script>
-(function () {
-  var MODES = {
-    login: { title: "登录 GAWorld", hint: "用昵称和密码登录。", button: "登录", api: "/api/auth/login" },
-    join: { title: "注册", hint: "用老师发的邀请码注册，密码至少 8 位。", button: "注册并登录", api: "/api/auth/register" },
-    reset: { title: "重设密码", hint: "用老师发的一次性重置码设置新密码。", button: "重设并登录", api: "/api/auth/reset" }
-  };
-  var mode = location.pathname.replace(/\/+$/, "").split("/").pop();
-  if (!MODES[mode]) mode = "login";
-  var params = new URLSearchParams(location.search);
-  var next = params.get("next") || "/console";
-  if (next.charAt(0) !== "/" || next.charAt(1) === "/" || next.charAt(1) === "\\") next = "/console";
-  // The server never sees "#city"; the browser carries it over onto this page.
-  if (location.hash && next.indexOf("#") < 0) next += location.hash;
-  var cfg = MODES[mode];
-  var $ = function (id) { return document.getElementById(id); };
-
-  $("title").textContent = cfg.title;
-  $("hint").textContent = cfg.hint;
-  $("submit").textContent = cfg.button;
-  document.title = "GAWorld · " + cfg.title;
-  var setting = mode !== "login";
-  $("code-row").hidden = !setting;
-  $("confirm-row").hidden = !setting;
-  $("nickname-row").hidden = mode === "reset";
-  $("code-label").textContent = mode === "reset" ? "重置码" : "邀请码";
-  $("code").value = params.get("code") || "";
-  $("password").autocomplete = setting ? "new-password" : "current-password";
-  $("to-join").hidden = mode !== "login";
-  $("to-reset").hidden = mode !== "login";
-  $("to-login").hidden = mode === "login";
-  (setting && !$("code").value ? $("code") : mode === "reset" ? $("password") : $("nickname")).focus();
-
-  $("form").addEventListener("submit", function (event) {
-    event.preventDefault();
-    var body = { nickname: $("nickname").value.trim(), password: $("password").value, code: $("code").value.trim() };
-    if (setting && body.password !== $("confirm").value) {
-      $("error").textContent = "两次输入的密码不一致";
-      return;
-    }
-    $("submit").disabled = true;
-    $("error").textContent = "";
-    fetch(cfg.api, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      .then(function (resp) { return resp.json().then(function (data) { return { ok: resp.ok, data: data }; }); })
-      .then(function (result) {
-        if (result.ok) { location.replace(next); return; }
-        $("error").textContent = result.data.error || "失败，请重试";
-        $("submit").disabled = false;
-      })
-      .catch(function () {
-        $("error").textContent = "网络错误，请重试";
-        $("submit").disabled = false;
-      });
-  });
-})();
-</script>
+<script src="/site/auth/auth.js"></script>
 </body>
 </html>

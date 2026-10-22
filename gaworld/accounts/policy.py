@@ -21,8 +21,8 @@ from typing import Any, Literal
 Level = Literal["public", "member", "city", "world", "admin"]
 
 #: Pages and endpoints a visitor without a session must reach to sign in.
-PUBLIC_PAGES = ("/login", "/join", "/reset")
-PUBLIC_PREFIXES = ("/site/auth/",)
+PUBLIC_PAGES = ("/login", "/join", "/reset", "/register", "/verify", "/recover")
+PUBLIC_PREFIXES = ("/site/auth/", "/site/home/")
 PUBLIC_API = {
     ("GET", "/api/health"),
     ("HEAD", "/api/health"),
@@ -146,6 +146,22 @@ CITY_WRITES = {
 
 def required(method: str, path: str) -> Level:
     path = path.rstrip("/") or "/"
+    if method in ("GET", "HEAD") and (
+        path in {"/", "/explore", "/plaza", "/site/index.html", "/site/theme.js", "/site/brand.css", "/site/city-lab.css"}
+        or (path.startswith("/site/community/") and not path.endswith("workspace.html"))
+        or re.fullmatch(r"/(publications|people|posts)/[A-Za-z0-9_-]+", path)
+        or path in {"/api/community/publications", "/api/community/posts", "/api/community/comments", "/api/community/attachment"}
+        or re.fullmatch(r"/api/community/(publications|people|posts)/[A-Za-z0-9_-]+", path)
+    ):
+        return "public"
+    if path == "/api/auth/config" and method in ("GET", "HEAD"):
+        return "public"
+    if method == "POST" and path in {"/api/auth/verify", "/api/auth/resend", "/api/auth/recover", "/api/auth/recover/reset"}:
+        return "public"
+    if path.startswith("/api/community/"):
+        return "member"
+    if path in {"/api/auth/profile", "/api/auth/sessions/close-others"}:
+        return "member"
     if (method, path) in PUBLIC_API or path in PUBLIC_PAGES or path.startswith(PUBLIC_PREFIXES):
         return "public"
     if method in ("GET", "HEAD"):

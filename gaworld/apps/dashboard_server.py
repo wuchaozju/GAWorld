@@ -21,8 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gaworld import accounts, worlds
 from gaworld.accounts import context as request_context
 from gaworld.accounts import policy as access_policy
-from gaworld.apps import accounts_api, analytics, replay_runs, residents, routes, runs
+from gaworld.apps import accounts_api, analytics, community_pages, replay_runs, residents, routes, runs
 from gaworld.apps import world_paths as paths
+from gaworld.apps.public_media import PublicMediaMixin
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
@@ -1193,7 +1194,7 @@ def _static_path_allowed(path):
     return len(parts) > 2 and parts[0] == "output" and "visualization" in parts[1:-1]
 
 
-class DashboardHandler(SimpleHTTPRequestHandler):
+class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
     server_version = "GAWorldDashboard/0.1"
 
     # -- access control ---------------------------------------------------
@@ -1248,7 +1249,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             # Classify static permissions by the served file, so an auth-page
             # prefix cannot hide ../ or a symlink into private output.
             root = os.path.realpath(paths.REPO_ROOT)
-            target = os.path.realpath(self.translate_path(path))
+            target = os.path.realpath(self.translate_path(community_pages.page_target(path) or path))
             if os.path.commonpath([root, target]) != root:
                 self._deny(404, "Not found")
                 return True
@@ -1258,6 +1259,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         except accounts.AccountConfigurationError:
             self._deny(503, "Account service unavailable; contact the administrator")
+            return True
+        from gaworld.accounts.request_security import check_request
+
+        refusal = check_request(self, path)
+        if refusal:
+            self._deny(refusal[1], refusal[0])
             return True
         from gaworld.apps import cluster_api
 
@@ -1298,6 +1305,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.user is not None:
             LAST_SEEN[self.user["id"]] = time.time()
         if self.user is not None and self._enter_world(path):
+            return True
+        if (
+            self.user
+            and not self.user.get("email_verified", True)
+            and self.command == "POST"
+            and not path.startswith("/api/auth/")
+        ):
+            self._deny(403, "请先验证邮箱")
             return True
         level = access_policy.required(self.command, path)
         if access_policy.allows(self.user, level, paths.current_world()):
@@ -1341,6 +1356,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if not artifact_visible(path, paths.REPO_ROOT):
             self._deny(404, "Not found")
             return True
+        from gaworld.accounts.request_security import check_world
+
+        refusal = check_world(self)
+        if refusal:
+            self._deny(refusal[1], refusal[0])
+            return True
         return False
 
     def _token_ok(self, path, query, token):
@@ -1372,7 +1393,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         # The login URL carries the token in its query string; keep it out of logs.
-        message = re.sub(r"token=[^&\s]*", "token=***", fmt % args)
+        message = re.sub(r"(token|code)=[^&\s]*", r"\1=***", fmt % args)
         sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
 
     def __init__(self, *args, **kwargs):
@@ -1414,6 +1435,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         user = self.user
         if not access_policy.quota_gated(path) or not user or user.get("role") == "admin":
             return None
+        from gaworld.accounts.resources import check_private_storage
+
+        try:
+            check_private_storage(self.accounts, user["id"], paths.REPO_ROOT)
+        except accounts.AccountError as exc:
+            return str(exc)
         quota = self.accounts.get_setting("daily_llm_calls_per_user", 0)
         if quota <= 0:
             return None
@@ -1887,7 +1914,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
         # console at the root, point "/" at /site/console/index.html again.
-        if path in ("/", ""):
+        if community_pages.page_target(path):
+            self.path = community_pages.page_target(path)
+        elif path in ("/", ""):
             self.path = "/site/index.html"
         elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
@@ -1910,7 +1939,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
         # console at the root, point "/" at /site/console/index.html again.
-        if path in ("/", ""):
+        if community_pages.page_target(path):
+            self.path = community_pages.page_target(path)
+        elif path in ("/", ""):
             self.path = "/site/index.html"
         elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
@@ -1975,19 +2006,23 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return self._json_response({"error": str(exc)}, status=500)
 
 
-def run_server(host="127.0.0.1", port=8766):
-    server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
-    url = f"http://{host}:{int(port)}/"
-    print(f"GAWorld console: {url}")
-    print("Press Ctrl+C to stop.")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        runs.stop_all_simulations()
-        _reset_collaboration_service_for_tests()
-        server.server_close()
+def run_server(host="127.0.0.1", port=8766, multi_user=False):
+    from gaworld.accounts.mode import dashboard_mode
+
+    with dashboard_mode(multi_user, paths.REPO_ROOT):
+        server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+        url = f"http://{host}:{int(port)}/"
+        print(f"GAWorld console: {url}")
+        print("Access mode: multi-user (login required)" if multi_user else "Access mode: single-user")
+        print("Press Ctrl+C to stop.")
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            runs.stop_all_simulations()
+            _reset_collaboration_service_for_tests()
+            server.server_close()
 
 
 #: Names that used to live here -> ``(module they moved to, name there)``.
@@ -2031,16 +2066,7 @@ sys.modules[__name__].__class__ = _MovedNamesGuard
 
 
 if __name__ == "__main__":
-    import argparse
+    # Import the canonical server through the shared CLI; never serve from a second __main__ copy.
+    from gaworld.apps.dashboard_cli import main
 
-    parser = argparse.ArgumentParser(description="Serve the GAWorld local dashboard")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8766)
-    args = parser.parse_args()
-    # Under `python -m` this file runs as `__main__`, while the API modules
-    # import `gaworld.apps.dashboard_server` -- a second copy with its own
-    # per-request world, run table and queue. Serve from that canonical copy so
-    # there is exactly one of each.
-    from gaworld.apps import dashboard_server as canonical
-
-    canonical.run_server(host=args.host, port=args.port)
+    main()

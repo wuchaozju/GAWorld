@@ -29,6 +29,8 @@ class Route:
 
 
 GET_ROUTES = (
+    Route("community_api", "/api/community/"),
+    Route("workspace_api", "/api/workspace/"),
     Route("health_api", "/api/health"),
     # Kernel surface: generic interventions (the SSE record stream and the
     # OpenAPI spec are answered by the handler, ahead of this table).
@@ -61,6 +63,7 @@ GET_ROUTES = (
 )
 
 POST_ROUTES = (
+    Route("community_api", "/api/community/"),
     Route("kernel_api", "/api/interventions/"),
     Route("organizations_api", "/api/organizations/", bare=True),
     Route("bench_api", "/api/bench/"),

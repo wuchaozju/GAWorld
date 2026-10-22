@@ -1,4 +1,59 @@
 /* A field guide to possible worlds. No external fonts or visual dependencies. */
+.intro-video-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.intro-video-heading h2 {
+  margin-top: 14px;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.3;
+  letter-spacing: -1px;
+}
+.intro-video-heading > p {
+  max-width: 420px;
+  color: var(--muted);
+}
+.intro-video-player {
+  margin: 0;
+}
+.intro-video-player video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #17231e;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.intro-video-player video:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+.intro-video-player figcaption {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.intro-video-player figcaption a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 650px) {
+  .intro-video-heading {
+    flex-direction: column;
+    align-items: start;
+    gap: 18px;
+  }
+}
+
 :root {
   --paper: #f3f3e9;
   --panel: #e9ebdd;
@@ -201,6 +256,8 @@ button {
   color: var(--lime);
 }
 .nav-actions {
+  font-size: 12px;
+  white-space: nowrap;
   margin-left: auto;
   display: flex;
   align-items: center;
@@ -1456,6 +1513,7 @@ html[lang="en"] .feature-card h3 {
   }
   .nav-actions {
     gap: 11px;
+    font-size: 11px;
   }
   .hero-grid {
     min-height: 710px;
@@ -1819,6 +1877,7 @@ html[lang="en"] .feature-card h3 {
   }
   .nav-actions {
     gap: 5px;
+    font-size: 10px;
   }
   .nav-actions #themeMode {
     max-width: 63px;

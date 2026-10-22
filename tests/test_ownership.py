@@ -299,6 +299,8 @@ class UsageTest(unittest.TestCase):
         from gaworld.llm import providers
 
         self.store.init_schema()
+        self.store.create_user("老师", PASSWORD, role="admin")
+        self.store.create_user("小王", PASSWORD)
         with as_user(A), mock.patch.object(providers.LLM_ROUTER, "call", side_effect=RuntimeError("down")):
             with self.assertRaises(RuntimeError):
                 providers.call_llm("hi", task="t")

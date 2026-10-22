@@ -161,10 +161,16 @@ celerybeat.pid
 !/site/dashboard/**
 !/site/console/
 !/site/console/**
+!/site/community/
+!/site/community/**
 !/site/auth/
 !/site/auth/**
 !/site/assets/
 !/site/assets/**
+!/site/home/
+/site/home/*
+!/site/home/media/
+!/site/home/media/**
 !/site/mobile/
 !/site/mobile/**
 !/site/simviz/

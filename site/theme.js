@@ -35,3 +35,15 @@
     if (control) control.addEventListener("change", function () { set(control.value); });
   });
 })();
+
+// Keep each private workbench page bound to its initial world across browser tabs.
+(function () {
+  if (typeof location === "undefined") return;
+  var path = location.pathname;
+  if (path === "/console" || path.startsWith("/site/dashboard/") || path.startsWith("/site/simviz/") || path === "/dashboard") {
+    var script = document.createElement("script");
+    script.src = "/site/community/context.js";
+    script.async = false;
+    document.head.appendChild(script);
+  }
+})();

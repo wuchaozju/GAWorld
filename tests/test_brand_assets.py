@@ -33,6 +33,26 @@ def test_selected_brand_images_are_public_and_present():
             assert required(method, url) == "public"
 
 
+def test_homepage_introduction_video_is_public_and_click_to_play():
+    from gaworld.accounts.policy import required
+
+    for name in ("site/index.html", "site/home/index.html"):
+        html = (ROOT / name).read_text(encoding="utf-8")
+        video = re.search(r"<video\b([^>]+)>(.*?)</video>", html, re.DOTALL)
+        assert video, name
+        attrs, body = video.groups()
+        assert "controls" in attrs and "playsinline" in attrs
+        assert 'preload="none"' in attrs and "autoplay" not in attrs
+        poster = re.search(r'poster="([^"]+)"', attrs)
+        source = re.search(r'<source[^>]+src="([^"]+)"', body)
+        assert poster and source, name
+        for url in (poster[1], source[1]):
+            assert url.startswith("/site/home/media/"), url
+            assert (ROOT / url.lstrip("/")).is_file(), url
+            for method in ("GET", "HEAD"):
+                assert required(method, url) == "public", url
+
+
 def test_login_uses_the_selected_public_lockup():
     html = (ROOT / "site/auth/index.html").read_text(encoding="utf-8")
     assert "GAWorld" in html
