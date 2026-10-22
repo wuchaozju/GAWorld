@@ -332,6 +332,12 @@ entry = "`/site/dashboard/studio.html`"
 features = ["Agent Studio"]
 
 [[axis.group.feature]]
+name = "LLM 画像撰写/丰富"
+desc = "快生成＝合成结构+模板叙述（零 LLM）；丰富＝LLM 只写叙述，结构事实锁定，失败逐人可见"
+entry = "`POST /api/persona-generate`"
+features = ["LLM 画像撰写/丰富"]
+
+[[axis.group.feature]]
 name = "九维状态雷达"
 desc = "状态变量可视化与编辑（Agent Studio 第 2 步）"
 features = ["Agent Studio"]
