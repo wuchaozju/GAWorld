@@ -5,6 +5,8 @@
   if (!/^\/(?![\/\\])/.test(next) || /[\u0000-\u0020\\]/.test(next)) next = '/workspace';
   if (location.hash && next.indexOf('#') < 0) next += location.hash;
   var code = params.get('code') || '', open = false;
+  $('form').onsubmit = function (event) { event.preventDefault(); };
+  $('submit').disabled = true;
   async function api(path, data) {
     var r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     var d = await r.json(); if (!r.ok) throw new Error(d.error || '操作失败'); return d;
@@ -45,6 +47,7 @@
         location.replace(next);
       } catch (err) { $('error').textContent = err.message; $('submit').disabled = false; }
     };
+    $('submit').disabled = false;
   }
   fetch('/api/auth/config').then(function (r) { return r.json(); }).then(function (cfg) { open = cfg.registration === 'open'; render(); }).catch(render);
 })();
