@@ -137,8 +137,7 @@ def _maybe_emit_fallback(
     except KeyError:
         return
     already = any(
-        e.actor_ids == [a_id, b_id] and e.tick == tick_idx and e.kind == "interact"
-        for e in session.events
+        e.actor_ids == [a_id, b_id] and e.tick == tick_idx and e.kind == "interact" for e in session.events
     )
     if already and not cancelled and exc is None:
         return
@@ -160,6 +159,7 @@ def _maybe_emit_fallback(
         note="fallback",
     )
     _append_event(session, event)
+
 
 #: Residents in one session. Two is "roommates", six is "a share house".
 MIN_AGENTS = 2
@@ -231,15 +231,15 @@ ROOMS: tuple[dict[str, Any], ...] = (
     # compatibility, but ``third`` / ``fourth`` / ``fifth`` were added
     # so a 3–6 person session still gives every resident a private room.
     # The front-end draws the matching sprite for each label.
-    {"id": "master",  "label": "主卧",   "x": 440, "y": 60,  "w": 90,  "h": 70},
-    {"id": "second",  "label": "次卧①", "x": 540, "y": 60,  "w": 90,  "h": 70},
-    {"id": "third",   "label": "次卧②", "x": 640, "y": 60,  "w": 90,  "h": 70},
-    {"id": "fourth",  "label": "次卧③", "x": 440, "y": 140, "w": 90,  "h": 70},
-    {"id": "fifth",   "label": "次卧④", "x": 540, "y": 140, "w": 90,  "h": 70},
-    {"id": "study",   "label": "书房",   "x": 60,  "y": 190, "w": 130, "h": 120},
-    {"id": "bath",    "label": "卫生间", "x": 200, "y": 190, "w": 110, "h": 90},
-    {"id": "balcony", "label": "阳台",   "x": 320, "y": 210, "w": 110, "h": 100},
-    {"id": "hallway", "label": "走廊",   "x": 440, "y": 220, "w": 290, "h": 90},
+    {"id": "master", "label": "主卧", "x": 440, "y": 60, "w": 90, "h": 70},
+    {"id": "second", "label": "次卧①", "x": 540, "y": 60, "w": 90, "h": 70},
+    {"id": "third", "label": "次卧②", "x": 640, "y": 60, "w": 90, "h": 70},
+    {"id": "fourth", "label": "次卧③", "x": 440, "y": 140, "w": 90, "h": 70},
+    {"id": "fifth", "label": "次卧④", "x": 540, "y": 140, "w": 90, "h": 70},
+    {"id": "study", "label": "书房", "x": 60, "y": 190, "w": 130, "h": 120},
+    {"id": "bath", "label": "卫生间", "x": 200, "y": 190, "w": 110, "h": 90},
+    {"id": "balcony", "label": "阳台", "x": 320, "y": 210, "w": 110, "h": 100},
+    {"id": "hallway", "label": "走廊", "x": 440, "y": 220, "w": 290, "h": 90},
 )
 
 #: Rooms a resident can be assigned to sleep in. The first picked gets
@@ -253,21 +253,34 @@ SLEEP_ROOMS: tuple[str, ...] = ("master", "second", "third", "fourth", "fifth")
 #: routes it to the matching room. Activities not in this dict fall back to
 #: the living room so the resident is never "nowhere".
 ACTIVITY_ROOM: dict[str, str] = {
-    "做早餐": "kitchen", "吃早餐": "kitchen",
-    "做午餐": "kitchen", "吃午餐": "kitchen",
-    "做晚餐": "kitchen", "吃晚餐": "kitchen",
-    "看书": "study", "写日记": "study", "处理工作邮件": "study",
-    "练琴": "study", "画一会儿画": "study",
-    "刷短视频": "living", "打电话": "living", "看电视": "living", "追剧": "living",
-    "健身": "living", "跟宠物玩": "living",
+    "做早餐": "kitchen",
+    "吃早餐": "kitchen",
+    "做午餐": "kitchen",
+    "吃午餐": "kitchen",
+    "做晚餐": "kitchen",
+    "吃晚餐": "kitchen",
+    "看书": "study",
+    "写日记": "study",
+    "处理工作邮件": "study",
+    "练琴": "study",
+    "画一会儿画": "study",
+    "刷短视频": "living",
+    "打电话": "living",
+    "看电视": "living",
+    "追剧": "living",
+    "健身": "living",
+    "跟宠物玩": "living",
     "打电话给家人": "living",
     # "Personal" activities don't have a single room — residents fall
     # back to their own bedroom (see ``_activity_to_room``). The bare
     # ``master`` here is kept for backwards-compatibility (the model
     # still emits these activity names); the resolver below picks the
     # resident's actual bedroom when the activity is private.
-    "洗澡": "bath", "洗衣服": "bath",
-    "晾衣服": "balcony", "下楼散步": "balcony", "泡茶": "kitchen",
+    "洗澡": "bath",
+    "洗衣服": "bath",
+    "晾衣服": "balcony",
+    "下楼散步": "balcony",
+    "泡茶": "kitchen",
     "打扫房间": "living",
 }
 
@@ -275,9 +288,15 @@ ACTIVITY_ROOM: dict[str, str] = {
 #: Personal activities — the destination is *this* resident's own bedroom,
 #: not a shared one. Listed here so the activity→room resolver can pick
 #: the right room per resident instead of a single hard-coded one.
-_PERSONAL_ACTIVITIES: frozenset[str] = frozenset({
-    "午睡", "睡前阅读", "发呆", "看窗外", "睡觉",
-})
+_PERSONAL_ACTIVITIES: frozenset[str] = frozenset(
+    {
+        "午睡",
+        "睡前阅读",
+        "发呆",
+        "看窗外",
+        "睡觉",
+    }
+)
 
 
 def _activity_to_room(activity: str, resident: Resident) -> str:
@@ -290,12 +309,22 @@ def _activity_to_room(activity: str, resident: Resident) -> str:
         return resident.bedroom or ACTIVITY_ROOM.get(activity, "living")
     return ACTIVITY_ROOM.get(activity, "living")
 
+
 #: Activities that hint "I am busy / in my own world" — used to dampen
 #: the probability of an interaction when two residents meet in a room.
-SOLO_ACTIVITIES: frozenset[str] = frozenset({
-    "看书", "写日记", "处理工作邮件", "练琴", "画一会儿画",
-    "午睡", "睡前阅读", "发呆", "洗澡",
-})
+SOLO_ACTIVITIES: frozenset[str] = frozenset(
+    {
+        "看书",
+        "写日记",
+        "处理工作邮件",
+        "练琴",
+        "画一会儿画",
+        "午睡",
+        "睡前阅读",
+        "发呆",
+        "洗澡",
+    }
+)
 
 #: Mood label thresholds. The continuous -1..+1 score is bucketed so the
 #: dashboard can show a coloured chip without a chart library.
@@ -330,8 +359,7 @@ MAX_EVENTS = 200
 PERSONA_CHARS = 1100
 
 _VOICE_RULES = (
-    "用第一人称说话,像真人微信聊天一样。不要扮演助手,不要说「作为一个 AI」,"
-    "不要罗列要点,不要复述对方的话。"
+    "用第一人称说话,像真人微信聊天一样。不要扮演助手,不要说「作为一个 AI」,不要罗列要点,不要复述对方的话。"
 )
 
 
@@ -427,8 +455,11 @@ class Event:
             # 3-dim relationship deltas on the event; old fixtures that
             # used a scalar value survive via the fallback branch.
             "relationship_delta": {
-                str(k): (round(float(v), 2) if not isinstance(v, dict)
-                         else {dk: round(float(dv), 2) for dk, dv in v.items() if dk in REL_DIMENSIONS})
+                str(k): (
+                    round(float(v), 2)
+                    if not isinstance(v, dict)
+                    else {dk: round(float(dv), 2) for dk, dv in v.items() if dk in REL_DIMENSIONS}
+                )
                 for k, v in self.relationship_delta.items()
             },
             "note": self.note,
@@ -562,15 +593,17 @@ def _load_residents(city: str, agent_ids: list[int]) -> list[Resident]:
     residents: list[Resident] = []
     for agent_id in agent_ids:
         persona = load_persona(city, agent_id)
-        residents.append(Resident(
-            agent_id=int(agent_id),
-            name=str(persona.get("name") or f"#{agent_id}"),
-            age=int(persona.get("age") or 0),
-            gender=str(persona.get("gender") or ""),
-            job=str(persona.get("job") or ""),
-            profile_md=str(persona.get("profile_md") or ""),
-            emoji=_avatar_for(int(agent_id), str(persona.get("gender") or "")),
-        ))
+        residents.append(
+            Resident(
+                agent_id=int(agent_id),
+                name=str(persona.get("name") or f"#{agent_id}"),
+                age=int(persona.get("age") or 0),
+                gender=str(persona.get("gender") or ""),
+                job=str(persona.get("job") or ""),
+                profile_md=str(persona.get("profile_md") or ""),
+                emoji=_avatar_for(int(agent_id), str(persona.get("gender") or "")),
+            )
+        )
     return residents
 
 
@@ -656,9 +689,7 @@ def _bump_relationship(
             d = 0.0
         record[dim] = max(lo_abs, min(hi_abs, float(record.get(dim, 0.0)) + d))
     # Re-derive the stage from the new scores.
-    new_stage = _rel_stage_from_scores(
-        record["affinity"], record["trust"], record["closeness"]
-    )
+    new_stage = _rel_stage_from_scores(record["affinity"], record["trust"], record["closeness"])
     stage_changed = new_stage != record.get("stage")
     record["stage"] = new_stage
     # Push a history entry on stage change OR when the note is non-empty
@@ -666,14 +697,17 @@ def _bump_relationship(
     # without an explicit stage transition).
     if note or stage_changed:
         record["history"] = (record.get("history") or [])[:5]
-        record["history"].insert(0, {
-            "tick": int(tick),
-            "stage": new_stage,
-            "affinity": round(record["affinity"], 2),
-            "trust": round(record["trust"], 2),
-            "closeness": round(record["closeness"], 2),
-            "note": note,
-        })
+        record["history"].insert(
+            0,
+            {
+                "tick": int(tick),
+                "stage": new_stage,
+                "affinity": round(record["affinity"], 2),
+                "trust": round(record["trust"], 2),
+                "closeness": round(record["closeness"], 2),
+                "note": note,
+            },
+        )
     # Mirror: both directions point at the same record so the UI sees
     # the same number from either lookup. Symmetric, identical.
     mirror[a_id] = record
@@ -712,9 +746,7 @@ def _relationship_decay(session: RoommateSession) -> None:
                 else:
                     value[dim] = v + decay
             # Re-derive the stage so the label tracks the scores.
-            value["stage"] = _rel_stage_from_scores(
-                value["affinity"], value["trust"], value["closeness"]
-            )
+            value["stage"] = _rel_stage_from_scores(value["affinity"], value["trust"], value["closeness"])
 
 
 # ---------------------------------------------------------------------------
@@ -767,14 +799,34 @@ def _room_for_activity(activity: str) -> str:
 #: enough that one tick is not jarring but cumulative over an hour or
 #: two the bar moves in a visible direction.
 _ACTIVITY_MOOD_NUDGE: dict[str, float] = {
-    "做早餐": +0.04, "吃早餐": +0.08, "做午餐": +0.04, "吃午餐": +0.08,
-    "做晚餐": +0.06, "吃晚餐": +0.10, "泡茶": +0.05,
-    "看书": +0.03, "写日记": +0.05, "画一会儿画": +0.06, "练琴": +0.04,
-    "看电视": +0.02, "追剧": +0.01, "刷短视频": -0.02,
-    "健身": +0.05, "午睡": +0.04, "睡前阅读": +0.04, "睡觉": +0.02,
-    "洗澡": +0.06, "看窗外": +0.01, "打电话给家人": +0.10,
-    "打电话": +0.02, "跟宠物玩": +0.08, "处理工作邮件": -0.03,
-    "发呆": -0.04, "下楼散步": +0.03, "晾衣服": +0.01, "洗衣服": -0.01,
+    "做早餐": +0.04,
+    "吃早餐": +0.08,
+    "做午餐": +0.04,
+    "吃午餐": +0.08,
+    "做晚餐": +0.06,
+    "吃晚餐": +0.10,
+    "泡茶": +0.05,
+    "看书": +0.03,
+    "写日记": +0.05,
+    "画一会儿画": +0.06,
+    "练琴": +0.04,
+    "看电视": +0.02,
+    "追剧": +0.01,
+    "刷短视频": -0.02,
+    "健身": +0.05,
+    "午睡": +0.04,
+    "睡前阅读": +0.04,
+    "睡觉": +0.02,
+    "洗澡": +0.06,
+    "看窗外": +0.01,
+    "打电话给家人": +0.10,
+    "打电话": +0.02,
+    "跟宠物玩": +0.08,
+    "处理工作邮件": -0.03,
+    "发呆": -0.04,
+    "下楼散步": +0.03,
+    "晾衣服": +0.01,
+    "洗衣服": -0.01,
     "打扫房间": +0.02,
 }
 
@@ -802,8 +854,7 @@ def _mood_nudge_for_activity(
     ):
         delta += 0.02
     co_present = sum(
-        1 for r in session.residents
-        if r.agent_id != resident.agent_id and r.room == resident.room
+        1 for r in session.residents if r.agent_id != resident.agent_id and r.room == resident.room
     )
     if co_present and activity not in {"做早餐", "做午餐", "做晚餐", "做饭"}:
         # Doing something with company is mildly nicer than alone.
@@ -873,7 +924,7 @@ def _co_present_pairs(session: RoommateSession) -> list[tuple[Resident, Resident
             # ``second``; now any of the 5 bedroom ids is a private room.
             continue
         for i, a in enumerate(group):
-            for b in group[i + 1:]:
+            for b in group[i + 1 :]:
                 pairs.append((a, b, room))
     return pairs
 
@@ -900,13 +951,13 @@ def _interaction_probability(a: Resident, b: Resident, room: str) -> float:
 #: Day phases — coarse labels the LLM can lean on so it does not write
 #: "good morning" at 22:00. The mapping is by virtual hour.
 _DAY_PHASES: tuple[tuple[tuple[int, int], str], ...] = (
-    ((5, 8),   "清晨"),   # 5-8
-    ((8, 11),  "上午"),   # 8-11
-    ((11, 14), "中午"),   # 11-14
-    ((14, 18), "下午"),   # 14-18
-    ((18, 21), "傍晚"),   # 18-21
-    ((21, 24), "夜晚"),   # 21-24
-    ((0, 5),   "深夜"),   # 0-5
+    ((5, 8), "清晨"),  # 5-8
+    ((8, 11), "上午"),  # 8-11
+    ((11, 14), "中午"),  # 11-14
+    ((14, 18), "下午"),  # 14-18
+    ((18, 21), "傍晚"),  # 18-21
+    ((21, 24), "夜晚"),  # 21-24
+    ((0, 5), "深夜"),  # 0-5
 )
 
 
@@ -927,9 +978,13 @@ def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: Ro
     rel_stage = (rel or {}).get("stage", "初识")
     rel_summary = (
         f"当前关系: {rel_stage}"
-        + (f", 好感 {rel.get('affinity', 0):.0f}, 信任 {rel.get('trust', 0):.0f}, 亲密 {rel.get('closeness', 0):.0f}"
-           if rel else "")
-        if rel else "当前关系: 还没说过几次话"
+        + (
+            f", 好感 {rel.get('affinity', 0):.0f}, 信任 {rel.get('trust', 0):.0f}, 亲密 {rel.get('closeness', 0):.0f}"
+            if rel
+            else ""
+        )
+        if rel
+        else "当前关系: 还没说过几次话"
     )
     return (
         f"{persona_block(persona_a)}\n\n"
@@ -950,7 +1005,7 @@ def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: Ro
         '  "lines": [\n'
         '    {"who": "a_name", "text": "一句中文对话"},'
         '    {"who": "b_name", "text": "一句中文对话"},\n'
-        '    ... 共 2-6 条对话,自然分回合\n'
+        "    ... 共 2-6 条对话,自然分回合\n"
         "  ],\n"
         '  "thought_a": "a 这时的内心独白,一句话,中文",\n'
         '  "thought_b": "b 这时的内心独白,一句话,中文",\n'
@@ -982,23 +1037,30 @@ def _room_label(room_id: str) -> str:
 #: only the *delta* per interaction is what matters.
 REL_DIMENSIONS: tuple[str, ...] = ("affinity", "trust", "closeness")
 REL_DIMENSION_RANGES: dict[str, tuple[float, float]] = {
-    "affinity":  (-15.0, 15.0),
-    "trust":     (-10.0, 10.0),
+    "affinity": (-15.0, 15.0),
+    "trust": (-10.0, 10.0),
     "closeness": (-10.0, 10.0),
 }
 #: Caps on the absolute scores (the deltas are bounded by the
 #: per-dimension range; the totals here keep the bar from drifting
 #: past 100 in either direction).
 REL_DIMENSION_ABS: dict[str, tuple[float, float]] = {
-    "affinity":  (-100.0, 100.0),
-    "trust":     (-100.0, 100.0),
+    "affinity": (-100.0, 100.0),
+    "trust": (-100.0, 100.0),
     "closeness": (-100.0, 100.0),
 }
 #: Discrete stages the relationship can sit in. The stage is derived from
 #: the three dimension scores by ``_rel_stage_from_scores`` below. New
 #: stages are added as the model and the players both expect them.
 REL_STAGES: tuple[str, ...] = (
-    "陌生人", "初识", "熟客", "朋友", "好友", "亲密", "恋人", "敌对",
+    "陌生人",
+    "初识",
+    "熟客",
+    "朋友",
+    "好友",
+    "亲密",
+    "恋人",
+    "敌对",
 )
 
 
@@ -1224,17 +1286,36 @@ def end_session(session_id: str) -> dict[str, Any] | None:
 #: the matching room — anything not in this list is rejected at the door so
 #: the front-end cannot ask a resident to "drive a car" or anything else
 #: the floor plan does not support.
-_DIRECT_ACTIVITIES: frozenset[str] = frozenset({
-    "做早餐", "吃早餐",
-    "做午餐", "吃午餐",
-    "做晚餐", "吃晚餐",
-    "看书", "写日记", "处理工作邮件", "画一会儿画", "练琴",
-    "刷短视频", "追剧", "看电视",
-    "健身", "跟宠物玩", "打电话", "打电话给家人",
-    "午睡", "睡前阅读", "发呆",
-    "洗澡", "洗衣服", "晾衣服",
-    "泡茶", "下楼散步",
-})
+_DIRECT_ACTIVITIES: frozenset[str] = frozenset(
+    {
+        "做早餐",
+        "吃早餐",
+        "做午餐",
+        "吃午餐",
+        "做晚餐",
+        "吃晚餐",
+        "看书",
+        "写日记",
+        "处理工作邮件",
+        "画一会儿画",
+        "练琴",
+        "刷短视频",
+        "追剧",
+        "看电视",
+        "健身",
+        "跟宠物玩",
+        "打电话",
+        "打电话给家人",
+        "午睡",
+        "睡前阅读",
+        "发呆",
+        "洗澡",
+        "洗衣服",
+        "晾衣服",
+        "泡茶",
+        "下楼散步",
+    }
+)
 
 
 def direct_resident(
@@ -1321,15 +1402,18 @@ def direct_resident(
     if old_room != target_room:
         # Also append a move event so the side panel reads like a journal:
         # the player sees "X 去厨房做早餐" (move) followed by "X: …" (direct).
-        _append_event(session, Event(
-            seq=0,
-            tick=session.tick_index,
-            at=time.time(),
-            kind="move",
-            actor_ids=[aid],
-            room=target_room,
-            note=f"{resident.name} 去{_room_label(target_room)}{activity}",
-        ))
+        _append_event(
+            session,
+            Event(
+                seq=0,
+                tick=session.tick_index,
+                at=time.time(),
+                kind="move",
+                actor_ids=[aid],
+                room=target_room,
+                note=f"{resident.name} 去{_room_label(target_room)}{activity}",
+            ),
+        )
     _append_event(session, event)
     # Bump mood a tiny amount — being directed is mildly annoying
     # (autonomy loss) but doing an activity you chose is mildly pleasant.
@@ -1407,8 +1491,18 @@ def _advance_one_tick(
         a_id, b_id = a.agent_id, b.agent_id
         tick_idx = session.tick_index
         vibe = session.vibe
-        future = _INTERACTION_EXECUTOR.submit(contextvars.copy_context().run, _run_interaction_worker,
-                                              session.id, a_id, b_id, room, prompt, fn, tick_idx, vibe)
+        future = _INTERACTION_EXECUTOR.submit(
+            contextvars.copy_context().run,
+            _run_interaction_worker,
+            session.id,
+            a_id,
+            b_id,
+            room,
+            prompt,
+            fn,
+            tick_idx,
+            vibe,
+        )
         future._submit_time = time.time()  # type: ignore[attr-defined]
         with _INTERACTION_LOCK:
             _PENDING_FUTURES.append(future)
@@ -1416,8 +1510,11 @@ def _advance_one_tick(
         # cancel the future and emit a placeholder event so the dashboard
         # keeps moving. ``add_done_callback`` runs on the worker thread
         # once the future resolves, cancelled or not.
-        future.add_done_callback(lambda f, sid=session.id, ai=a_id, bi=b_id, r=room, t=tick_idx:
-                                _maybe_emit_fallback(sid, ai, bi, r, t, f))
+        future.add_done_callback(
+            lambda f, sid=session.id, ai=a_id, bi=b_id, r=room, t=tick_idx: _maybe_emit_fallback(
+                sid, ai, bi, r, t, f
+            )
+        )
 
 
 def _run_interaction_worker(
@@ -1457,7 +1554,10 @@ def _run_interaction_worker(
     b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
     rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
     _bump_relationship(
-        session, a_id, b_id, rel_deltas,
+        session,
+        a_id,
+        b_id,
+        rel_deltas,
         note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
         tick=tick_idx,
     )
@@ -1476,7 +1576,8 @@ def _run_interaction_worker(
         # 3-dim relationship deltas on the event; old scalar field
         # preserved as ``affinity`` for the legacy UI strip.
         relationship_delta={
-            str(b_id): rel_deltas, str(a_id): rel_deltas,
+            str(b_id): rel_deltas,
+            str(a_id): rel_deltas,
         },
     )
     _append_event(session, event)
@@ -1504,7 +1605,10 @@ def _trigger_interaction(
     b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
     rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
     _bump_relationship(
-        session, a.agent_id, b.agent_id, rel_deltas,
+        session,
+        a.agent_id,
+        b.agent_id,
+        rel_deltas,
         note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
         tick=session.tick_index,
     )
@@ -1522,7 +1626,8 @@ def _trigger_interaction(
         turns=[{"who": t.get("who", ""), "text": t.get("text", "")} for t in lines],
         mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
         relationship_delta={
-            str(b.agent_id): rel_deltas, str(a.agent_id): rel_deltas,
+            str(b.agent_id): rel_deltas,
+            str(a.agent_id): rel_deltas,
         },
     )
     _append_event(session, event)

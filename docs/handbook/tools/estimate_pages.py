@@ -59,10 +59,7 @@ def line_count(text: str, font_pt: float, width_cm: float, mono: bool = False) -
     cjk = len(re.findall(r"[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]", text))
     latin = len(text) - cjk
     em = font_pt * 0.03528  # pt -> cm
-    if mono:
-        used = (cjk + latin) * em * 0.6
-    else:
-        used = cjk * em + latin * em * 0.5
+    used = (cjk + latin) * em * 0.6 if mono else cjk * em + latin * em * 0.5
     return max(1, math.ceil(used / width_cm))
 
 
@@ -70,7 +67,6 @@ def main() -> int:
     path = Path(sys.argv[1])
     with zipfile.ZipFile(path) as archive:
         document = archive.read("word/document.xml").decode("utf-8")
-        styles = archive.read("word/styles.xml").decode("utf-8")
 
     sect_match = re.search(r"<w:pgSz[^>]*/>", document)
     mar_match = re.search(r"<w:pgMar[^>]*/>", document)
@@ -119,7 +115,9 @@ def main() -> int:
                 cell_lines = 1
                 for cell in cells:
                     cell_text = "".join(re.findall(r"<w:t[^>]*>(.*?)</w:t>", cell, re.S))
-                    cell_lines = max(cell_lines, line_count(cell_text, 10.5, col_w / max(1, len(cells)) - 0.4))
+                    cell_lines = max(
+                        cell_lines, line_count(cell_text, 10.5, col_w / max(1, len(cells)) - 0.4)
+                    )
                 height += cell_lines * 10.5 * 0.03528 * 1.2 + 0.10
             place(height + 0.12)
         else:

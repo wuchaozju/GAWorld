@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-SCRIPT = '''
+SCRIPT = """
 set docxPath to POSIX file "{docx}"
 set pdfPath to "{pdf}"
 with timeout of 900 seconds
@@ -45,7 +45,7 @@ with timeout of 900 seconds
     end tell
 end timeout
 return "OK"
-'''
+"""
 
 
 def main() -> int:
@@ -68,7 +68,7 @@ def main() -> int:
     if result.returncode != 0:
         print("osascript error:", result.stderr.strip()[:400], "| stdout:", stdout[:200])
         return result.returncode
-    if stdout.startswith("OPEN_ERROR") or stdout.startswith("SAVE_ERROR"):
+    if stdout.startswith(("OPEN_ERROR", "SAVE_ERROR")):
         print(stdout[:400])
         return 1
 

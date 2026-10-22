@@ -1175,7 +1175,7 @@ TOKEN_ADMIN = {"id": 0, "nickname": "token-admin", "role": "admin", "can_create_
 STATIC_PREFIXES = ("/site/", "/docs/", "/video/public/", "/output/population/")
 
 #: Root-level documents the 文档 panel lists (site/dashboard/docs.js).
-STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md"))
+STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md", "/read.doc"))
 
 
 #: ``/play/<world id>``: the short link a teacher shows the class (a phone

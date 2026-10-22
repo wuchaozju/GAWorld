@@ -15,10 +15,14 @@ Skipped unless Playwright and a Chromium it can launch are installed::
 
 from __future__ import annotations
 
+import os
+import tempfile
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
+from unittest import mock
 
+from gaworld.accounts import AccountStore
 from gaworld.apps import dashboard_server as ds
 
 try:
@@ -83,6 +87,30 @@ class BrowserSmokeTest(unittest.TestCase):
         page.locator('[data-fam-add="children"]').click()
         page.wait_for_selector('[data-fam-name][data-fam-kind="children"]')
         self.assertEqual(errors, [])
+
+    def test_member_analytics_loads_without_cross_world_summary(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": os.path.join(directory, "accounts.sqlite")}),
+        ):
+            store = AccountStore(os.environ["GAWORLD_ACCOUNTS_DB"])
+            store.init_schema()
+            store.create_user("analytics-member", "fixture-password", role="member")
+            page, errors = self._page()
+            response = page.request.post(
+                self.base + "/api/auth/login",
+                data={"nickname": "analytics-member", "password": "fixture-password"},
+            )
+            self.assertEqual(response.status, 200)
+            requested = []
+            page.on("request", lambda request: requested.append(request.url))
+            page.goto(self.base + "/site/dashboard/analytics.html")
+            page.wait_for_function("document.querySelector('#anOverview').children.length > 0")
+            self.assertTrue(page.locator("#anSystemPanel").is_hidden())
+            self.assertFalse(page.locator("#anStatus").evaluate("el => el.classList.contains('is-error')"))
+            self.assertFalse(any("/api/analytics/system" in url for url in requested))
+            self.assertEqual(errors, [])
+            page.close()
 
 
 if __name__ == "__main__":

@@ -64,9 +64,7 @@ class HolidayPlugin(Plugin):
         original = step.get("scheduled_activity")
         if not original:
             return
-        replacement = service.pick_replacement_activity(
-            agent, time_str=time_str, original_activity=original
-        )
+        replacement = service.pick_replacement_activity(agent, time_str=time_str, original_activity=original)
         if not replacement:
             return
         # Mark the original for the adjust-activity stage's later log.
@@ -94,9 +92,8 @@ class HolidayPlugin(Plugin):
             agent_id = agent.get("id")
             if agent_id is not None:
                 daily_logs.setdefault(agent_id, "")
-                if isinstance(daily_logs[agent_id], str):
-                    if line not in daily_logs[agent_id]:
-                        daily_logs[agent_id] = f"{daily_logs[agent_id]}\n{line}".strip()
+                if isinstance(daily_logs[agent_id], str) and line not in daily_logs[agent_id]:
+                    daily_logs[agent_id] = f"{daily_logs[agent_id]}\n{line}".strip()
         # Audit row: every agent on holiday leaves one record per tick
         # the replacement fires, so the dashboard can plot a coverage
         # timeline. Recorder.flush is per-row so a future replay sees
@@ -130,16 +127,13 @@ class HolidayPlugin(Plugin):
             raise ValueError("start_holiday requires integer `days`") from None
         if not (cfg["min_days"] <= days <= cfg["max_days"]):
             raise ValueError(
-                f"start_holiday: `days` must be between "
-                f"{cfg['min_days']} and {cfg['max_days']}; got {days}"
+                f"start_holiday: `days` must be between {cfg['min_days']} and {cfg['max_days']}; got {days}"
             )
         if day is None:
             clock = getattr(ctx, "clock", None)
             day = int(getattr(clock, "day", 1) or 1)
         agents = list(getattr(ctx, "agents", []) or [])
-        result = service.start_holiday(
-            agents, day=int(day), days=days, plan_key=plan_key, seed=seed
-        )
+        result = service.start_holiday(agents, day=int(day), days=days, plan_key=plan_key, seed=seed)
         result["min_days"] = cfg["min_days"]
         result["max_days"] = cfg["max_days"]
         if ctx.recorder is not None:

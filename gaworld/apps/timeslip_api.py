@@ -295,8 +295,7 @@ def _roster_block(cards: list[dict[str, Any]]) -> str:
     lines: list[str] = []
     for card in cards:
         lines.append(
-            f"- {card['name']}(#{card['agent_id']},{card['age']}岁,{card['gender']},"
-            f"{card['job'] or '—'})"
+            f"- {card['name']}(#{card['agent_id']},{card['age']}岁,{card['gender']},{card['job'] or '—'})"
         )
         short = card["persona_short"]
         if short:
@@ -343,11 +342,11 @@ def _stage_prompt(
         " - 所有人必须都有台词,不能丢下任何一个。\n"
         " - 这一幕已经在前一幕之后,所以台词不必承接前一幕,但可以承接——按你判断来。\n\n"
         "请只输出一个 JSON 对象,不要任何解释:\n"
-        '{\n'
+        "{\n"
         '  "stage_mood": "一句话交代这一幕的气氛和压力来源",\n'
         '  "reactions": [\n'
         '    {"agent_id": <int>, "line": "<古人口吻的一句话台词>", "inner": "<现代内心独白>"}\n'
-        '  ]\n'
+        "  ]\n"
         "}"
     )
 
@@ -463,7 +462,10 @@ def _score_reactions(reactions: list[dict[str, Any]], dyn_id: str) -> list[dict[
     report card labels them as such.
     """
     dynasty_markers = {
-        "tang_revolt": {"must": ("府", "官", "米", "绢", "军"), "banned": ("银行", "微信", "手机", "微信", "抖音")},
+        "tang_revolt": {
+            "must": ("府", "官", "米", "绢", "军"),
+            "banned": ("银行", "微信", "手机", "微信", "抖音"),
+        },
         "song_reform": {"must": ("免役", "青苗", "市易", "官"), "banned": ("银行", "微信", "手机", "抖音")},
         "ming_censor": {"must": ("奏", "臣", "陛下", "部"), "banned": ("微信", "手机", "银行")},
         "qing_foreign": {"must": ("茶", "银", "官", "洋"), "banned": ("微信", "手机", "网络")},
@@ -564,7 +566,8 @@ def _aggregate_cohort(stage_records: list[dict[str, Any]], cards: list[dict[str,
     residents: list[dict[str, Any]] = []
     for agent_id, bucket in by_id.items():
         scored = {
-            axis: (round(sum(vals) / max(1, len(vals))) if vals else 0) for axis, vals in bucket["scores"].items()
+            axis: (round(sum(vals) / max(1, len(vals))) if vals else 0)
+            for axis, vals in bucket["scores"].items()
         }
         residents.append(
             {
@@ -588,8 +591,12 @@ def _aggregate_cohort(stage_records: list[dict[str, Any]], cards: list[dict[str,
             "stages": 0,
         }
 
-    most_in_period = max(residents, key=lambda item: (item["scores"]["era_fit"], -item["scores"]["inner_conflict"]))
-    least_in_period = min(residents, key=lambda item: (item["scores"]["era_fit"], item["scores"]["stability"]))
+    most_in_period = max(
+        residents, key=lambda item: (item["scores"]["era_fit"], -item["scores"]["inner_conflict"])
+    )
+    least_in_period = min(
+        residents, key=lambda item: (item["scores"]["era_fit"], item["scores"]["stability"])
+    )
     most_torn = max(residents, key=lambda item: item["scores"]["inner_conflict"])
 
     return {
@@ -698,7 +705,9 @@ def run_timeslip(
 
     for index, stage_text in enumerate(stage_texts):
         progress(0.04 + 0.88 * (index / total_calls), f"第 {index + 1} 幕 / {dynasty['dynasty']}")
-        prompt = _stage_prompt(cards, dynasty, index, stage_text, [record.to_dict() for record in stage_records])
+        prompt = _stage_prompt(
+            cards, dynasty, index, stage_text, [record.to_dict() for record in stage_records]
+        )
         try:
             raw = stage(prompt)
         except Exception as exc:  # pragma: no cover - provider failure
@@ -720,9 +729,7 @@ def run_timeslip(
                     "scores": entry["scores"],
                 }
             )
-        stage_records.append(
-            StageRecord(index=index, text=stage_text, stage_mood=mood, reactions=enriched)
-        )
+        stage_records.append(StageRecord(index=index, text=stage_text, stage_mood=mood, reactions=enriched))
 
     aggregate = _aggregate_cohort([record.to_dict() for record in stage_records], cards)
     progress(0.95, "正在写穿越纪实…")
@@ -733,8 +740,7 @@ def run_timeslip(
         "dynasty": dynasty,
         "agent_ids": [int(i) for i in agent_ids],
         "cards": [
-            {"agent_id": int(card["agent_id"]), "name": card["name"], "job": card["job"]}
-            for card in cards
+            {"agent_id": int(card["agent_id"]), "name": card["name"], "job": card["job"]} for card in cards
         ],
         "stages": [record.to_dict() for record in stage_records],
         "stats": {

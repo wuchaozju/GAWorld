@@ -26,16 +26,24 @@ def classroom(monkeypatch, request):
     root = Path(host.tmp.name)
     monkeypatch.setattr(workbench, "PROJECT_ROOT", root)
     monkeypatch.setattr(world_paths, "REPO_ROOT", str(root))
-    monkeypatch.setattr(research_api, "_base_config", lambda: {
-        "agent_ids": [1, 2, 3],
-        "llm": {"providers": {"test": {"type": "openai", "model": "fixture", "api_key": "fixture-key"}},
-                "routing": {"default": "test"}},
-    })
+    monkeypatch.setattr(
+        research_api,
+        "_base_config",
+        lambda: {
+            "agent_ids": [1, 2, 3],
+            "llm": {
+                "providers": {"test": {"type": "openai", "model": "fixture", "api_key": "fixture-key"}},
+                "routing": {"default": "test"},
+            },
+        },
+    )
     monkeypatch.setattr(research_api, "_JOBS", {})
     monkeypatch.setattr(research_api, "_ACTIVE_STUDIES", {})
     store = account_support._store(host.tmp.name)
-    users = {name: store.create_user(name, account_support.PASSWORD, role=role)
-             for name, role in [("owner", "member"), ("other", "member"), ("teacher", "admin")]}
+    users = {
+        name: store.create_user(name, account_support.PASSWORD, role=role)
+        for name, role in [("owner", "member"), ("other", "member"), ("teacher", "admin")]
+    }
     cookies = {name: host._login(name) for name in users}
     plan = workbench.ResearchPlan.from_dict(dict(support.PLAN, provider="test", created_at="2026-10-15"))
     workbench.save_plan(plan, {"owner_id": users["owner"]["id"], "owner": "owner"})
@@ -47,14 +55,20 @@ def classroom(monkeypatch, request):
         def call(prompt):
             seen.append(("model", USER.get()["id"]))
             return json.dumps(support.ANSWER if max_tokens == PROTOCOL_MAX_TOKENS else support.INTERPRETATION)
+
         return call
 
     def seed_runner(current):
         def run(spec, seed, report):
             seen.append(("run", USER.get()["id"]))
             manifest = runner.prepare_experiment(spec, str(root), experiment_id=f"study_{current.id}_s{seed}")
-            return {"root": manifest["root"], "id": manifest["id"], "status": "done",
-                    "report": support.fake_report(support.series(0.5, 0.3, 0.5))}
+            return {
+                "root": manifest["root"],
+                "id": manifest["id"],
+                "status": "done",
+                "report": support.fake_report(support.series(0.5, 0.3, 0.5)),
+            }
+
         return run
 
     monkeypatch.setattr(research_api, "_llm", llm)
@@ -80,10 +94,17 @@ def job(host, job_id):
 
 
 def create(host, autopilot=False):
-    status, result = req(host, "owner", "POST", "/api/research/studies", {
-        "plan_id": support.PLAN["id"], "autopilot": autopilot,
-        "owner_id": host.users["other"]["id"],  # client cannot choose the owner
-    })
+    status, result = req(
+        host,
+        "owner",
+        "POST",
+        "/api/research/studies",
+        {
+            "plan_id": support.PLAN["id"],
+            "autopilot": autopilot,
+            "owner_id": host.users["other"]["id"],  # client cannot choose the owner
+        },
+    )
     assert status == 202, result
     return job(host, result["job_id"])
 
@@ -141,18 +162,25 @@ def test_force_cannot_bypass_member_preflight(classroom):
     path = "/api/research/studies/" + sid
     assert req(classroom, "owner", "POST", path + "/approve", {"force": True})[0] == 403
     record = study.load_study(sid)
-    record.protocol["conditions"][1]["config"] = {"llm": {"providers": {"bad": {"base_url": "http://invalid"}}}}
+    record.protocol["conditions"][1]["config"] = {
+        "llm": {"providers": {"bad": {"base_url": "http://invalid"}}}
+    }
     record.stage = "approved"
     study.save_study(record)
     assert req(classroom, "owner", "POST", path + "/run", {})[0] == 400
     assert not any(kind == "run" for kind, _ in classroom.seen)
 
 
-@pytest.mark.parametrize("patch", [
-    {"real_work": {"enabled": True}}, {"economy": {"output_dir": "/tmp/escape"}},
-    {"llm": {"providers": {"bad": {"base_url": "https://invalid"}}}},
-    {"plugins": ["arbitrary"]}, {"memory": {"file": "../other"}},
-])
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"real_work": {"enabled": True}},
+        {"economy": {"output_dir": "/tmp/escape"}},
+        {"llm": {"providers": {"bad": {"base_url": "https://invalid"}}}},
+        {"plugins": ["arbitrary"]},
+        {"memory": {"file": "../other"}},
+    ],
+)
 def test_generated_infrastructure_changes_fail_preflight(classroom, patch):
     token = USER.set(classroom.users["owner"])
     try:
@@ -189,7 +217,10 @@ def test_quota_gates_new_work_but_not_stop_or_delete(classroom):
     with mock.patch("gaworld.accounts.usage.TALLY.today", return_value=1):
         for suffix in ("/approve", "/run", "/resume", "/reset"):
             assert req(classroom, "owner", "POST", "/api/research/studies/" + sid + suffix, {})[0] == 429
-        assert req(classroom, "owner", "POST", "/api/research/studies", {"plan_id": support.PLAN["id"]})[0] == 429
+        assert (
+            req(classroom, "owner", "POST", "/api/research/studies", {"plan_id": support.PLAN["id"]})[0]
+            == 429
+        )
         assert req(classroom, "owner", "POST", "/api/research/studies/" + sid + "/stop", {})[0] == 200
         assert req(classroom, "owner", "POST", "/api/research/studies/" + sid + "/delete", {})[0] == 200
 
@@ -211,7 +242,12 @@ def test_parallel_outputs_and_static_traces_are_private(classroom):
         assert req(classroom, who, "GET", "/api/parallel-worlds/experiments")[1]["experiments"]
     assert req(classroom, "other", "GET", "/api/parallel-worlds/experiments")[1]["experiments"] == []
     for api in ("experiment", "interpretation", "heterogeneity"):
-        assert req(classroom, "other", "GET", f"/api/parallel-worlds/{api}?root={root}&world=base&metric=stress")[0] == 404
+        assert (
+            req(
+                classroom, "other", "GET", f"/api/parallel-worlds/{api}?root={root}&world=base&metric=stress"
+            )[0]
+            == 404
+        )
     for prefix in ("/", "/site/../", "/site/%2e%2e/", "//", "/site/auth/../../"):
         assert req(classroom, "other", "GET", prefix + manifest["worlds"]["base"]["trace"])[0] == 404
         assert classroom._req("GET", prefix + manifest["worlds"]["base"]["trace"])[0].status in (303, 404)
@@ -234,14 +270,20 @@ def test_teacher_run_preserves_study_output_ownership(classroom):
     try:
         spec = normalize_experiment({"worlds": [{"id": "base"}, {"id": "policy"}]})
         run = default_seed_runner(
-            repo_root=classroom.tmp.name, base_config={}, experiment_prefix="teacher-check", active={},
+            repo_root=classroom.tmp.name,
+            base_config={},
+            experiment_prefix="teacher-check",
+            active={},
             owner={"owner_id": classroom.users["owner"]["id"], "owner": "owner"},
         )
         with mock.patch("gaworld.research.backends.prunner.ExperimentRunner") as fake:
             fake.return_value.run.return_value = {}
             fake.return_value.manifest = {"status": "done"}
             result = run(spec, 42, lambda *args: None)
-        assert runner.load_manifest(classroom.tmp.name, result["root"])["owner_id"] == classroom.users["owner"]["id"]
+        assert (
+            runner.load_manifest(classroom.tmp.name, result["root"])["owner_id"]
+            == classroom.users["owner"]["id"]
+        )
     finally:
         USER.reset(token)
 
@@ -249,7 +291,9 @@ def test_teacher_run_preserves_study_output_ownership(classroom):
 def test_finished_study_cannot_stop_another_active_study(classroom, monkeypatch):
     sid = create(classroom)["study_id"]
     other_stop = mock.Mock()
-    monkeypatch.setattr(research_api, "_ACTIVE_STUDIES", {"another-study": {"study_id": "another-study", "stop": other_stop}})
+    monkeypatch.setattr(
+        research_api, "_ACTIVE_STUDIES", {"another-study": {"study_id": "another-study", "stop": other_stop}}
+    )
     status, result = req(classroom, "owner", "POST", "/api/research/studies/" + sid + "/stop", {})
     assert status == 200 and result["stopping"] is False
     other_stop.set.assert_not_called()

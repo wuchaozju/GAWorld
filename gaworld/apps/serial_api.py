@@ -93,10 +93,7 @@ STYLE_PRESETS: tuple[dict[str, str], ...] = (
         "id": "cinematic",
         "title": "电影质感",
         "emoji": "🎞️",
-        "text": (
-            "电影级构图,讲究光影与色彩,镜头语言细腻。适合严肃题材,"
-            "安静场景里有情绪张力,对白精炼。"
-        ),
+        "text": ("电影级构图,讲究光影与色彩,镜头语言细腻。适合严肃题材,安静场景里有情绪张力,对白精炼。"),
         "shot_style": "电影级构图,浅景深,冷暖对比,固定机位与缓慢推拉",
     },
     {
@@ -113,20 +110,14 @@ STYLE_PRESETS: tuple[dict[str, str], ...] = (
         "id": "docu",
         "title": "纪录 / 旁观",
         "emoji": "🎙️",
-        "text": (
-            "旁观者视角,采访 + 跟拍质感。减少情节推演,关注人物当下状态。"
-            "适合心理 / 现实议题。"
-        ),
+        "text": ("旁观者视角,采访 + 跟拍质感。减少情节推演,关注人物当下状态。适合心理 / 现实议题。"),
         "shot_style": "跟拍长镜头,环境声保留,人物直视或回避镜头",
     },
     {
         "id": "warm",
         "title": "温暖日常",
         "emoji": "☀️",
-        "text": (
-            "以邻里、家庭、小店为底,关心普通人的小决定与小挣扎。"
-            "镜头节奏慢一点,允许留白。"
-        ),
+        "text": ("以邻里、家庭、小店为底,关心普通人的小决定与小挣扎。镜头节奏慢一点,允许留白。"),
         "shot_style": "自然光,中景为主,留白多,色调偏暖",
     },
 )
@@ -361,7 +352,7 @@ def _premise_prompt(
         "用一两句话讲他/她在整季开头→结尾的变化或不变。\n"
         " - 整季的情绪弧线 *arc*(三句话以内,讲清从开篇到结尾情绪怎么走)。\n\n"
         "只输出一个 JSON 对象,不要任何解释:\n"
-        '{\n'
+        "{\n"
         '  "premise": "一句话核心情境",\n'
         '  "cast": [{"agent_id": <int>, "role": "<五类之一>", "arc": "一两句话弧线"}],\n'
         '  "arc": "整季情绪弧线,三句话内"\n'
@@ -407,10 +398,10 @@ def _outline_prompt(
         " - 不要把所有高潮都堆在最后一集;中间集要有 1 个转折或 1 个情绪峰值。\n"
         " - 每集至少 2 个角色出场。\n\n"
         "只输出一个 JSON 对象,不要任何解释:\n"
-        '{\n'
+        "{\n"
         '  "episodes": [\n'
         '    {"episode": <int>, "title": "<标题>", "logline": "<一句话>", "characters": [<agent_id>, ...], "hook_to_next": "<一句话>"}\n'
-        '  ]\n'
+        "  ]\n"
         "}"
     )
 
@@ -466,15 +457,15 @@ def _episode_prompt(
         f"{recent_block}\n\n"
         "请按顺序给出本集的镜头脚本,每个镜头是一个 JSON 对象。\n"
         "字段约定:\n"
-        ' - shot: 1-based 镜头序号(从 1 开始)\n'
+        " - shot: 1-based 镜头序号(从 1 开始)\n"
         ' - location: <str> 场景(如"小区楼下便利店"、"老王家的厨房")\n'
         ' - time: <str> 时间(如"白天"、"傍晚"、"夜里十一点")\n'
         ' - shot_type: <str> 镜头类型(如"特写"、"中景"、"全景"、"俯视"、"手持跟拍"、"对话双人中近景")\n'
-        ' - characters: [<agent_id>, ...] 出场角色,只能从本集出场列表里挑\n'
-        ' - visual_prompt: <str> 给视频生成模型的画面描述,80–180 字,中文。必须具体(场景、光线、镜头运动、人物状态),不要抽象。\n'
+        " - characters: [<agent_id>, ...] 出场角色,只能从本集出场列表里挑\n"
+        " - visual_prompt: <str> 给视频生成模型的画面描述,80–180 字,中文。必须具体(场景、光线、镜头运动、人物状态),不要抽象。\n"
         ' - dialogue: <str|[]> 该镜头的台词,可以是单条字符串或数组 [{character: <agent_id>, line: "..."}];无台词留空数组\n'
-        ' - sound: <str> 环境声 / 配乐提示,一句话即可\n'
-        ' - duration: <int> 该镜头秒数(2–30 之间整数)\n'
+        " - sound: <str> 环境声 / 配乐提示,一句话即可\n"
+        " - duration: <int> 该镜头秒数(2–30 之间整数)\n"
         ' - transition: <str> 与下一个镜头的转场("cut","dissolve","fade","match_cut","wipe" 之一)\n\n'
         "硬性要求:\n"
         f" - 共 {shots_per_episode} 个镜头;最后一个用 shot={shots_per_episode} 收尾。\n"
@@ -544,10 +535,7 @@ def _parse_premise(raw: str, picked_ids: list[int]) -> dict[str, Any]:
                 }
             )
     if not cleaned:
-        cleaned = [
-            {"agent_id": aid, "role": "见证者", "arc": "作为剧中的一员出现"}
-            for aid in picked_ids
-        ]
+        cleaned = [{"agent_id": aid, "role": "见证者", "arc": "作为剧中的一员出现"} for aid in picked_ids]
     return {
         "premise": str(payload.get("premise") or "").strip()[:300],
         "cast": cleaned,
@@ -648,7 +636,9 @@ def _parse_episode(raw: str, episode: dict[str, Any], shots_per_episode: int) ->
                 {
                     "character": int(item.get("character"))
                     if isinstance(item, dict) and str(item.get("character", "")).isdigit()
-                    else item.get("character") if isinstance(item, dict) else None,
+                    else item.get("character")
+                    if isinstance(item, dict)
+                    else None,
                     "line": str(item.get("line") or "").strip() if isinstance(item, dict) else "",
                 }
                 for item in dialogue
@@ -922,7 +912,17 @@ def run_serial(
     progress(0.96, "正在写发行文案…")
     draft = {
         "title": title_hint.strip() or "",
-        "cast": [{"agent_id": c["agent_id"], "name": next((card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"), "role": c["role"], "arc": c["arc"]} for c in locked_cast],
+        "cast": [
+            {
+                "agent_id": c["agent_id"],
+                "name": next(
+                    (card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"
+                ),
+                "role": c["role"],
+                "arc": c["arc"],
+            }
+            for c in locked_cast
+        ],
         "episodes": [ep.to_dict() for ep in written],
         "theme_title": theme["title"],
         "style_title": style["title"],

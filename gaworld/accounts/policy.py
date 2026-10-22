@@ -32,7 +32,13 @@ PUBLIC_API = {
     ("GET", "/api/auth/me"),
 }
 
-ADMIN_READS = ("/api/auth/users", "/api/auth/invites", "/api/auth/audit", "/api/auth/usage")
+ADMIN_READS = (
+    "/api/auth/users",
+    "/api/auth/invites",
+    "/api/auth/audit",
+    "/api/auth/usage",
+    "/api/analytics/system",
+)
 
 #: Requests that start model calls: refused once a member's daily quota is used
 #: up (the dashboard checks; admins are exempt). Saving config, stopping a run
@@ -62,7 +68,9 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
-STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"})
+STUDY_ACTIONS = frozenset(
+    {"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"}
+)
 
 
 def study_action(path: str) -> str | None:
@@ -83,7 +91,8 @@ def quota_gated(path: str) -> bool:
     if path.startswith("/api/research/batches/") and path.rsplit("/", 1)[-1] in {"run", "resume"}:
         return True
     return (
-        path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+        path in QUOTA_GATED_EXACT
+        or path.startswith(QUOTA_GATED_PREFIX)
         or study_action(path) in {"create", "approve", "run", "resume", "reset"}
     )
 
@@ -184,7 +193,8 @@ def required(method: str, path: str) -> Level:
     if study_action(path) is not None:
         return "member"  # every study handler checks ownership before reading or writing
     if path in {"/api/research/batches", "/api/research/batches/import"} or (
-        len(parts) == 6 and parts[2:4] == ["research", "batches"]
+        len(parts) == 6
+        and parts[2:4] == ["research", "batches"]
         and parts[5] in {"run", "pause", "resume", "stop", "compare"}
     ):
         return "member"  # batch handlers enforce the same user/world ownership boundary

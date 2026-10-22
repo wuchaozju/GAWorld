@@ -138,12 +138,26 @@ class ParseOutlineTest(unittest.TestCase):
 class ParseEpisodeTest(unittest.TestCase):
     def _raw(self, shots):
         import json
+
         return json.dumps({"shots": shots})
 
     def test_basic_shape(self) -> None:
-        raw = self._raw([
-            {"shot": 1, "location": "楼下", "time": "傍晚", "shot_type": "中景", "characters": [1], "visual_prompt": "a", "dialogue": "hi", "sound": "wind", "duration": 5, "transition": "dissolve"}
-        ])
+        raw = self._raw(
+            [
+                {
+                    "shot": 1,
+                    "location": "楼下",
+                    "time": "傍晚",
+                    "shot_type": "中景",
+                    "characters": [1],
+                    "visual_prompt": "a",
+                    "dialogue": "hi",
+                    "sound": "wind",
+                    "duration": 5,
+                    "transition": "dissolve",
+                }
+            ]
+        )
         shots = serial_api._parse_episode(raw, {"episode": 1, "characters": [1, 2]}, shots_per_episode=2)
         self.assertEqual(len(shots), 2)  # padded to shots_per_episode
         self.assertEqual(shots[0]["shot"], 1)
@@ -158,10 +172,12 @@ class ParseEpisodeTest(unittest.TestCase):
         self.assertEqual(shots[0]["transition"], "cut")
 
     def test_duration_clamped_to_range(self) -> None:
-        raw = self._raw([
-            {"shot": 1, "characters": [1], "duration": 9999},
-            {"shot": 2, "characters": [1], "duration": 0},
-        ])
+        raw = self._raw(
+            [
+                {"shot": 1, "characters": [1], "duration": 9999},
+                {"shot": 2, "characters": [1], "duration": 0},
+            ]
+        )
         shots = serial_api._parse_episode(raw, {"episode": 1, "characters": [1]}, shots_per_episode=2)
         self.assertEqual(shots[0]["duration"], serial_api.MAX_SHOT_SECONDS)
         self.assertEqual(shots[1]["duration"], serial_api.MIN_SHOT_SECONDS)
@@ -172,7 +188,9 @@ class ParseEpisodeTest(unittest.TestCase):
         self.assertEqual(shots[0]["characters"], [1])
 
     def test_dialogue_list_shape_preserved(self) -> None:
-        raw = self._raw([{"shot": 1, "characters": [1], "duration": 4, "dialogue": [{"character": 1, "line": "你好"}]}])
+        raw = self._raw(
+            [{"shot": 1, "characters": [1], "duration": 4, "dialogue": [{"character": 1, "line": "你好"}]}]
+        )
         shots = serial_api._parse_episode(raw, {"episode": 1, "characters": [1]}, shots_per_episode=1)
         self.assertEqual(shots[0]["dialogue"][0]["line"], "你好")
 
@@ -243,15 +261,25 @@ class RunShapeTest(unittest.TestCase):
     def test_run_below_min_shots_clamped(self) -> None:
         """shots_per_episode below MIN_SHOTS_PER_EPISODE must clamp, not crash."""
         cards = [_card(1, "老王"), _card(2, "阿芳")]
-        replies = [self._premise_reply(), self._outline_reply(),
-                   '{"shots":[{"shot":1,"characters":[1],"duration":5,"transition":"cut"}]}',
-                   '{"shots":[{"shot":1,"characters":[1],"duration":5,"transition":"cut"}]}']
+        replies = [
+            self._premise_reply(),
+            self._outline_reply(),
+            '{"shots":[{"shot":1,"characters":[1],"duration":5,"transition":"cut"}]}',
+            '{"shots":[{"shot":1,"characters":[1],"duration":5,"transition":"cut"}]}',
+        ]
         planner = _scripted([replies[0]])
         episode = _scripted(replies[2:])
         serial = serial_api.run_serial(
-            city="", agent_ids=[1, 2], theme_id="family_secret", style_id="realistic_cn",
-            episodes=2, shots_per_episode=1, seconds_per_episode=12,
-            cards=cards, planner_fn=planner, episode_fn=episode,
+            city="",
+            agent_ids=[1, 2],
+            theme_id="family_secret",
+            style_id="realistic_cn",
+            episodes=2,
+            shots_per_episode=1,
+            seconds_per_episode=12,
+            cards=cards,
+            planner_fn=planner,
+            episode_fn=episode,
             logline_fn=lambda p: "",
         )
         for ep in serial["episodes"]:
@@ -261,7 +289,9 @@ class RunShapeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             serial_api.run_serial(city="", agent_ids=[1], cards=[_card(1, "x")])
         with self.assertRaises(ValueError):
-            serial_api.run_serial(city="", agent_ids=[1, 2, 3, 4, 5, 6, 7], cards=[_card(i, f"n{i}") for i in range(1, 8)])
+            serial_api.run_serial(
+                city="", agent_ids=[1, 2, 3, 4, 5, 6, 7], cards=[_card(i, f"n{i}") for i in range(1, 8)]
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -275,7 +305,9 @@ class HttpTest(unittest.TestCase):
         # Stub the roster loader so HTTP tests don't need a real city bundle.
         self._roster_patch = mock.patch(
             "gaworld.interview.roster.load_population",
-            return_value=[{"id": 1, "name": "老王", "age": 50, "gender": "男", "job": "退休", "residence": "A小区"}],
+            return_value=[
+                {"id": 1, "name": "老王", "age": 50, "gender": "男", "job": "退休", "residence": "A小区"}
+            ],
         )
         self._roster_patch.start()
 

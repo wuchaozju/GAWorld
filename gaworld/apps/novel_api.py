@@ -32,6 +32,7 @@ progress, in-memory state, injectable LLM entry points (``answer_fn`` /
 
 from __future__ import annotations
 
+import json
 import re
 import time
 import uuid
@@ -140,7 +141,12 @@ def resolve_style(style_id: str, custom: dict[str, str] | None = None) -> dict[s
             raise ValueError("自定义风格要写点内容")
         if not pov:
             pov = "第三人称"
-        return {"id": "custom", "title": str(custom.get("title") or "自定义风格").strip() or "自定义风格", "text": text, "point_of_view": pov}
+        return {
+            "id": "custom",
+            "title": str(custom.get("title") or "自定义风格").strip() or "自定义风格",
+            "text": text,
+            "point_of_view": pov,
+        }
     found = style_by_id(str(style_id or ""))
     if found is None:
         raise ValueError(f"没有这个风格：{style_id or '（未选）'}")
@@ -259,10 +265,10 @@ def _cast_prompt(outline: str, target_words: int, style: dict[str, str], cards: 
         "【对手】可以没有,可以有一个——是主角面对的阻力,不一定坏,只是立场不同。\n"
         "其余角色承担必要的剧情钩子和情感密度。\n\n"
         "只输出一个 JSON 对象,不要任何解释:\n"
-        '{\n'
+        "{\n"
         '  "cast": [\n'
         '    {"agent_id": <int>, "role": "<五类之一>", "arc": "一两句话讲清他/她在故事开头→结尾的变化或不变"}\n'
-        '  ],\n'
+        "  ],\n"
         '  "premise": "一两句话讲清这部小说的核心情境和核心冲突"\n'
         "}"
     )
@@ -280,9 +286,7 @@ def _outline_prompt(
         card = next((c for c in cards if c["agent_id"] == entry["agent_id"]), None)
         if not card:
             continue
-        cast_lines.append(
-            f"- {card['name']}（#{entry['agent_id']}）——{entry['role']}：{entry['arc']}"
-        )
+        cast_lines.append(f"- {card['name']}（#{entry['agent_id']}）——{entry['role']}：{entry['arc']}")
     premise = str(cast_result.get("premise") or "").strip()
     return (
         f"你是一位小说编辑,现在为已经定了角色的一部小说编排章节大纲。\n"
@@ -300,10 +304,10 @@ def _outline_prompt(
         " - 第一章要把核心情境立起来;最后一章要有收束(不一定是圆满,但要有变化)。\n"
         " - 不要把所有高潮都堆在中后;第三章之前要有第一个转折或第一个钩子。\n\n"
         "只输出一个 JSON 对象,不要任何解释:\n"
-        '{\n'
+        "{\n"
         '  "chapters": [\n'
         '    {"chapter": <1-based int>, "title": "<标题>", "summary": "<一句话梗概>", "target_words": <int>, "characters": [<agent_id>, ...]}\n'
-        '  ]\n'
+        "  ]\n"
         "}"
     )
 
@@ -326,7 +330,9 @@ def _chapter_prompt(
             cast_lines.append(
                 f"- {card['name']}（#{card['agent_id']}, {card['job'] or '—'}）\n  {card['persona_short']}"
             )
-    summary_lines = "\n".join(f"第{idx}章：{summary}" for idx, summary in recent_summaries) or "（这是第一章）"
+    summary_lines = (
+        "\n".join(f"第{idx}章：{summary}" for idx, summary in recent_summaries) or "（这是第一章）"
+    )
 
     prior_block = ""
     if recent_chapters:
@@ -534,7 +540,7 @@ def _archived_runs() -> list[dict[str, Any]]:
             continue
         path = os.path.join(folder, name)
         try:
-            with open(path, "r", encoding="utf-8") as handle:
+            with open(path, encoding="utf-8") as handle:
                 record = json.load(handle)
         except Exception:
             continue
@@ -676,11 +682,15 @@ def run_novel(
         locked_cast.sort(key=lambda c: agent_ids.index(c["agent_id"]))
     else:
         # Defensive fallback: every picked resident is a 见证者 if the model failed.
-        locked_cast = [{"agent_id": aid, "role": "见证者", "arc": "作为故事的一部分出现"} for aid in agent_ids]
+        locked_cast = [
+            {"agent_id": aid, "role": "见证者", "arc": "作为故事的一部分出现"} for aid in agent_ids
+        ]
     premise = cast_result["premise"] or "（核心情境待补）"
 
     progress(0.10, "正在编排章节大纲…")
-    outline_raw = structure(_outline_prompt({"cast": locked_cast, "premise": premise}, outline, target, style, cards))
+    outline_raw = structure(
+        _outline_prompt({"cast": locked_cast, "premise": premise}, outline, target, style, cards)
+    )
     outline_list = _parse_outline(outline_raw, agent_ids)
     outline_list = _allocate_budgets(outline_list, target)
 
@@ -705,7 +715,12 @@ def run_novel(
             f"第{chapter.chapter}章《{chapter.title}》",
         )
         prompt = _chapter_prompt(
-            chapter_meta={"chapter": chapter.chapter, "summary": chapter.summary, "target_words": chapter.target_words, "characters": chapter.characters},
+            chapter_meta={
+                "chapter": chapter.chapter,
+                "summary": chapter.summary,
+                "target_words": chapter.target_words,
+                "characters": chapter.characters,
+            },
             cards=cards,
             style=style,
             premise=premise,
@@ -730,7 +745,17 @@ def run_novel(
     novel_draft = {
         "title": title_hint.strip() or f"《{premise[:6]}》" if premise else "",
         "chapters": [c.to_dict() for c in written],
-        "cast": [{"agent_id": c["agent_id"], "name": next((card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"), "role": c["role"], "arc": c["arc"]} for c in locked_cast],
+        "cast": [
+            {
+                "agent_id": c["agent_id"],
+                "name": next(
+                    (card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"
+                ),
+                "role": c["role"],
+                "arc": c["arc"],
+            }
+            for c in locked_cast
+        ],
         "premise": premise,
     }
     try:
@@ -816,10 +841,7 @@ def compute_co_occurrences(chapters: list[Chapter]) -> list[dict[str, Any]]:
             for j in range(i + 1, len(ids)):
                 key = (ids[i], ids[j])
                 pair_counts[key] = pair_counts.get(key, 0) + 1
-    rows = [
-        {"a": a, "b": b, "count": n}
-        for (a, b), n in pair_counts.items()
-    ]
+    rows = [{"a": a, "b": b, "count": n} for (a, b), n in pair_counts.items()]
     rows.sort(key=lambda row: (-row["count"], row["a"], row["b"]))
     return rows
 
@@ -916,7 +938,11 @@ def start_regenerate(payload: dict[str, Any]) -> str:
     title_hint = str(payload.get("title_hint") or source.get("title") or "")
     # Cast has already been locked in the source run — re-use its arc/role rows.
     locked_cast = [
-        {"agent_id": int(c["agent_id"]), "role": str(c.get("role") or "见证者"), "arc": str(c.get("arc") or "")}
+        {
+            "agent_id": int(c["agent_id"]),
+            "role": str(c.get("role") or "见证者"),
+            "arc": str(c.get("arc") or ""),
+        }
         for c in (source.get("cast") or [])
         if int(c.get("agent_id") or 0) in agent_ids
     ]
@@ -962,8 +988,11 @@ def _run_novel_with_locked_cast(
     """
     from gaworld.llm.providers import call_llm
 
-    author = lambda prompt: str(call_llm(prompt, task="games.novel", temperature=0.85, allow_fallback=True))
-    summary_fn = lambda prompt: str(call_llm(prompt, task="games.novel.summary", temperature=0.5, allow_fallback=True))
+    def author(prompt):
+        return str(call_llm(prompt, task="games.novel", temperature=0.85, allow_fallback=True))
+
+    def summary_fn(prompt):
+        return str(call_llm(prompt, task="games.novel.summary", temperature=0.5, allow_fallback=True))
 
     progress(0.02, "正在按新梗概重写…")
 
@@ -1007,7 +1036,12 @@ def _run_novel_with_locked_cast(
             f"第{chapter.chapter}章《{chapter.title}》",
         )
         prompt = _chapter_prompt(
-            chapter_meta={"chapter": chapter.chapter, "summary": chapter.summary, "target_words": chapter.target_words, "characters": chapter.characters},
+            chapter_meta={
+                "chapter": chapter.chapter,
+                "summary": chapter.summary,
+                "target_words": chapter.target_words,
+                "characters": chapter.characters,
+            },
             cards=cards,
             style=style,
             premise=premise,
@@ -1035,7 +1069,9 @@ def _run_novel_with_locked_cast(
         "cast": [
             {
                 "agent_id": c["agent_id"],
-                "name": next((card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"),
+                "name": next(
+                    (card["name"] for card in cards if card["agent_id"] == c["agent_id"]), f"#{c['agent_id']}"
+                ),
                 "role": c["role"],
                 "arc": c["arc"],
             }
@@ -1098,7 +1134,7 @@ def _load_source_novel(job_id: str) -> dict[str, Any] | None:
             continue
         path = os.path.join(folder, name)
         try:
-            with open(path, "r", encoding="utf-8") as handle:
+            with open(path, encoding="utf-8") as handle:
                 rec = json.load(handle)
         except Exception:
             continue
@@ -1205,4 +1241,3 @@ __all__ = [
     "start_run",
     "style_by_id",
 ]
-

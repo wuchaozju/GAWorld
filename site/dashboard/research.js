@@ -676,6 +676,13 @@
     el.classList.toggle("is-error", mode === "error");
   }
 
+  function progressLabel(progress) {
+    var percent = Math.max(0, Math.min(1, Number(progress) || 0)) * 100;
+    if (percent > 0 && percent < 0.01) return "<0.01%";
+    if (percent >= 99.995 && percent < 100) return ">99.99%";
+    return percent.toFixed(2).replace(/\.?0+$/, "") + "%";
+  }
+
   function duration(seconds) {
     var minutes = Math.max(1, Math.ceil(Number(seconds) / 60));
     if (Number(seconds) < 60) return tf("duration_seconds", "{n} 秒", { n: Math.max(0, Math.round(seconds)) });
@@ -691,10 +698,11 @@
     if (!job) return;
     var paused = !!job.paused;
     var stopping = !!job.stopping;
-    var percent = Math.max(0, Math.min(100, Math.round((job.progress || 0) * 100)));
-    $("rwRunPercent").textContent = percent + "%";
+    var percent = Math.max(0, Math.min(1, Number(job.progress) || 0)) * 100;
+    var label = progressLabel(job.progress);
+    $("rwRunPercent").textContent = label;
     $("rwRunBar").value = percent;
-    $("rwRunBar").setAttribute("aria-valuetext", percent + "%");
+    $("rwRunBar").setAttribute("aria-valuetext", label);
     $("rwRunLabel").textContent = stopping ? t("stage_stopping", "正在停止…")
       : paused ? t("stage_paused", "已暂停")
       : job.status === "done" ? t("run_complete", "运行完成")

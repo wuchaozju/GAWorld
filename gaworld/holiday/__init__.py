@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 DEFAULT_CONFIG = {
     "enabled": True,
     # Default per-day freedom bank — when the user opens K days without a
@@ -59,21 +58,18 @@ def validate_config(config) -> None:
             raise ValueError(f"holiday.{key} must be a positive integer; got {value!r}")
     if cfg["min_days"] > cfg["max_days"]:
         raise ValueError(
-            f"holiday.min_days ({cfg['min_days']}) cannot exceed "
-            f"holiday.max_days ({cfg['max_days']})"
+            f"holiday.min_days ({cfg['min_days']}) cannot exceed holiday.max_days ({cfg['max_days']})"
         )
     budget = cfg.get("plan_prompt_budget_chars")
     if not isinstance(budget, int) or not (40 <= budget <= 2000):
-        raise ValueError(
-            f"holiday.plan_prompt_budget_chars must be between 40 and 2000; got {budget!r}"
-        )
+        raise ValueError(f"holiday.plan_prompt_budget_chars must be between 40 and 2000; got {budget!r}")
 
 
 __all__ = [
     "DEFAULT_CONFIG",
-    "normalize_config",
-    "validate_config",
-    "service",
-    "plugin",
     "Any",
+    "normalize_config",
+    "plugin",
+    "service",
+    "validate_config",
 ]

@@ -138,6 +138,13 @@ entry = "`/site/dashboard/research.html?tab=replication`"
 features = ["社会调查/实验拟合度（研究工作台页签）"]
 
 [[axis.group.feature]]
+name = "组织智能"
+desc = "冻结救援任务与人口，对照组织档案保留、移除和全员更替"
+entry = "`/site/dashboard/research.html?tab=organization-intelligence`"
+features = ["组织智能（研究工作台页签）"]
+doc = "docs/ORGANIZATION_INTELLIGENCE_TUTORIAL.md"
+
+[[axis.group.feature]]
 name = "代码判定与报告"
 desc = "supported/contradicted/inconclusive/unmeasured，附判定依据"
 entry = "`GET /api/research/studies/<id>/report`"

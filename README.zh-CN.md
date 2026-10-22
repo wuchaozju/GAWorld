@@ -95,4 +95,6 @@ python -m pytest --suite core
 
 [中文完整使用指南](docs/PROJECT_GUIDE.zh-CN.md) · [English guide](docs/PROJECT_GUIDE.en.md) · [完整能力目录](docs/FEATURES.md)
 
+专题教程：[经典实验](docs/CLASSIC_EXPERIMENTS.md) · [群体仿真](docs/GROUP_SIMULATION_TUTORIAL.md) · [家庭系统](docs/FAMILY_DESIGN.md) · [持久组织](docs/ORGANIZATIONS_TUTORIAL.md) · [组织智能](docs/ORGANIZATION_INTELLIGENCE_TUTORIAL.md) · [外部系统接入](docs/EXTERNAL_SYSTEMS_TUTORIAL.md)
+
 原有命令、配置项、模型接入和实验说明保留在完整指南中。仿真输出是模型与配置共同产生的研究材料，不应直接当作真实人群的预测。仓库现有包元数据标为 `Proprietary`；本次未更改授权条款。

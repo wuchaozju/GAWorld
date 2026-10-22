@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import subprocess
 import zipfile
 from pathlib import Path
 
@@ -44,8 +43,15 @@ def patch_theme(xml: str) -> str:
     return xml
 
 
-def style_block(style_id: str, name: str, *, based_on: str = "Normal", next_style: str = "Normal",
-                ppr: str = "", rpr: str = "") -> str:
+def style_block(
+    style_id: str,
+    name: str,
+    *,
+    based_on: str = "Normal",
+    next_style: str = "Normal",
+    ppr: str = "",
+    rpr: str = "",
+) -> str:
     return (
         f'<w:style w:type="paragraph" w:customStyle="1" w:styleId="{style_id}">'
         f'<w:name w:val="{name}"/><w:basedOn w:val="{based_on}"/><w:next w:val="{next_style}"/>'
@@ -57,7 +63,7 @@ def patch_styles(xml: str) -> str:
     # --- Normal: CJK body text -------------------------------------------------
     xml = re.sub(
         r'(<w:style w:type="paragraph" w:default="1" w:styleId="Normal">.*?)<w:rPr>.*?</w:rPr>',
-        r'\1'
+        r"\1"
         f'<w:rPr><w:rFonts w:ascii="{LATIN}" w:hAnsi="{LATIN}" w:eastAsia="{CJK}" w:cs="Times New Roman"/>'
         '<w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/></w:rPr>',
         xml,
@@ -85,8 +91,11 @@ def patch_styles(xml: str) -> str:
         )
         ppat = re.compile(rf'(<w:style w:type="paragraph" w:styleId="{sid}">.*?<w:pPr>)(.*?)(</w:pPr>)', re.S)
         xml = ppat.sub(
-            r'\1<w:keepNext/><w:keepLines/><w:spacing w:before="' + str(280 if sid == "Heading1" else 220)
-            + r'" w:after="120"/><w:outlineLvl w:val="' + str(int(sid[-1]) - 1) + r'"/>\3',
+            r'\1<w:keepNext/><w:keepLines/><w:spacing w:before="'
+            + str(280 if sid == "Heading1" else 220)
+            + r'" w:after="120"/><w:outlineLvl w:val="'
+            + str(int(sid[-1]) - 1)
+            + r'"/>\3',
             xml,
             count=1,
         )
@@ -135,7 +144,7 @@ def patch_styles(xml: str) -> str:
                     '<w:spacing w:before="50" w:after="90" w:line="240" w:lineRule="auto"/>'
                     '<w:ind w:left="170" w:right="170"/>'
                     '<w:ind w:left="170" w:right="170"/>'
-                    "<w:jc w:val=\"left\"/>"
+                    '<w:jc w:val="left"/>'
                 ),
                 rpr=(
                     f'<w:rFonts w:ascii="{MONO}" w:hAnsi="{MONO}" w:eastAsia="{CJK}" w:cs="{MONO}"/>'
@@ -153,8 +162,7 @@ def patch_styles(xml: str) -> str:
                     ppr=f'<w:spacing w:before="{60 if level == 1 else 0}" w:after="60"/><w:ind w:left="{(level - 1) * 260}"/>',
                     rpr=(
                         f'<w:rFonts w:ascii="{LATIN}" w:hAnsi="{LATIN}" w:eastAsia="{CJK}"/>'
-                        f'<w:sz w:val="{21 if level == 1 else 20}"/>'
-                        + ("<w:b/>" if level == 1 else "")
+                        f'<w:sz w:val="{21 if level == 1 else 20}"/>' + ("<w:b/>" if level == 1 else "")
                     ),
                 )
             )
@@ -167,9 +175,8 @@ def patch_styles(xml: str) -> str:
 def patch_settings(xml: str) -> str:
     if "themeFontLang" not in xml:
         xml = xml.replace(
-            "<w:zoom w:percent=\"100\" />",
-            '<w:zoom w:percent="100" />'
-            '<w:themeFontLang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
+            '<w:zoom w:percent="100" />',
+            '<w:zoom w:percent="100" /><w:themeFontLang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
         )
     if "updateFields" not in xml:
         xml = xml.replace("</w:settings>", '<w:updateFields w:val="true"/></w:settings>')

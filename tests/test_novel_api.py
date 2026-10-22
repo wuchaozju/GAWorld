@@ -195,8 +195,7 @@ class AllocateBudgetTest(unittest.TestCase):
     def test_chapter_targets_sum_to_target(self) -> None:
         # 6 chapters at 1500 = 9000, asked for 30000 → each scales ~3.3x
         outline = [
-            {"chapter": i, "title": f"c{i}", "target_words": 1500, "characters": [1]}
-            for i in range(1, 7)
+            {"chapter": i, "title": f"c{i}", "target_words": 1500, "characters": [1]} for i in range(1, 7)
         ]
         scaled = novel_api._allocate_budgets(outline, 30000)
         self.assertEqual(sum(c["target_words"] for c in scaled), 30000)
@@ -268,7 +267,18 @@ class RunNovelTest(unittest.TestCase):
             progress=lambda p, m: None,
         )
         # Result contract
-        for key in ("run_id", "title", "premise", "cast", "chapters", "outline", "style", "target_words", "stats", "created_at"):
+        for key in (
+            "run_id",
+            "title",
+            "premise",
+            "cast",
+            "chapters",
+            "outline",
+            "style",
+            "target_words",
+            "stats",
+            "created_at",
+        ):
             self.assertIn(key, result)
         self.assertEqual(result["target_words"], 8000)
         self.assertEqual(len(result["chapters"]), 2)
@@ -425,11 +435,21 @@ class HttpTest(unittest.TestCase):
         cast — the structure prompt already tells the model to design its own
         story line in that case.
         """
-        with mock.patch("gaworld.apps.novel_api.run_novel", return_value={
-            "run_id": "x", "city": "wuzhen", "title": "未命名", "chapters": [], "cast": [],
-            "target_word": 5000, "stats": {"total_words": 0, "target_word": 5000, "chapters": 0},
-            "premise": "（核心情境待补）", "outline_text": "", "created_at": 1.0,
-        }) as fake:
+        with mock.patch(
+            "gaworld.apps.novel_api.run_novel",
+            return_value={
+                "run_id": "x",
+                "city": "wuzhen",
+                "title": "未命名",
+                "chapters": [],
+                "cast": [],
+                "target_word": 5000,
+                "stats": {"total_words": 0, "target_word": 5000, "chapters": 0},
+                "premise": "（核心情境待补）",
+                "outline_text": "",
+                "created_at": 1.0,
+            },
+        ) as fake:
             body, status = novel_api.handle_post(
                 "/api/games/novel/run",
                 {"city": "wuzhen", "agent_ids": [1, 2], "outline": "", "target_words": 5000},
@@ -524,17 +544,29 @@ class HttpTest(unittest.TestCase):
 
     def test_regenerate_needs_a_non_empty_premise(self) -> None:
         fake_source = {
-            "run_id": "abc", "city": "wuzhen", "title": "未命名",
-            "chapters": [], "cast": [
+            "run_id": "abc",
+            "city": "wuzhen",
+            "title": "未命名",
+            "chapters": [],
+            "cast": [
                 {"agent_id": 1, "name": "老李", "role": "主角", "arc": "经历了一夜"},
                 {"agent_id": 2, "name": "小王", "role": "对手", "arc": "执念"},
             ],
             "style": {"id": "realistic", "title": "现实主义", "text": "x", "point_of_view": "第三人称"},
-            "target_words": 5000, "premise": "老梗概", "outline_text": "老大纲", "created_at": 1.0,
+            "target_words": 5000,
+            "premise": "老梗概",
+            "outline_text": "老大纲",
+            "created_at": 1.0,
         }
-        with mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source), \
-             mock.patch("gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]), \
-             mock.patch.object(novel_api, "_run_novel_with_locked_cast", return_value={**fake_source, "premise": ""}):
+        with (
+            mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source),
+            mock.patch(
+                "gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]
+            ),
+            mock.patch.object(
+                novel_api, "_run_novel_with_locked_cast", return_value={**fake_source, "premise": ""}
+            ),
+        ):
             body, status = novel_api.handle_post(
                 "/api/games/novel/regenerate",
                 {"source_job_id": "abc", "premise": "  "},
@@ -544,13 +576,19 @@ class HttpTest(unittest.TestCase):
 
     def test_regenerate_runs_a_new_job_with_a_locked_cast(self) -> None:
         fake_source = {
-            "run_id": "abc", "city": "wuzhen", "title": "未命名",
-            "chapters": [], "cast": [
+            "run_id": "abc",
+            "city": "wuzhen",
+            "title": "未命名",
+            "chapters": [],
+            "cast": [
                 {"agent_id": 1, "name": "老李", "role": "主角", "arc": "经历了一夜"},
                 {"agent_id": 2, "name": "小王", "role": "对手", "arc": "执念"},
             ],
             "style": {"id": "realistic", "title": "现实主义", "text": "x", "point_of_view": "第三人称"},
-            "target_words": 5000, "premise": "老梗概", "outline_text": "老大纲", "created_at": 1.0,
+            "target_words": 5000,
+            "premise": "老梗概",
+            "outline_text": "老大纲",
+            "created_at": 1.0,
         }
         captured: dict = {}
 
@@ -568,14 +606,25 @@ class HttpTest(unittest.TestCase):
                 "cast": kwargs["locked_cast"],
                 "style": kwargs["style"],
                 "target_word": kwargs["target_words"],
-                "stats": {"chapters": 0, "target_word": kwargs["target_words"], "total_words": 0, "on_target": True, "avg_chapter_words": 0, "character_appearances": {}},
+                "stats": {
+                    "chapters": 0,
+                    "target_word": kwargs["target_words"],
+                    "total_words": 0,
+                    "on_target": True,
+                    "avg_chapter_words": 0,
+                    "character_appearances": {},
+                },
                 "co_occurrences": [],
                 "created_at": 2.0,
             }
 
-        with mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source), \
-             mock.patch("gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]), \
-             mock.patch.object(novel_api, "_run_novel_with_locked_cast", side_effect=fake_regen):
+        with (
+            mock.patch.object(novel_api, "_load_source_novel", return_value=fake_source),
+            mock.patch(
+                "gaworld.apps.novel_api._load_personas", return_value=[_card(1, "老李"), _card(2, "小王")]
+            ),
+            mock.patch.object(novel_api, "_run_novel_with_locked_cast", side_effect=fake_regen),
+        ):
             body, status = novel_api.handle_post(
                 "/api/games/novel/regenerate",
                 {"source_job_id": "abc", "premise": "新梗概", "outline": "细纲补充"},
@@ -587,6 +636,30 @@ class HttpTest(unittest.TestCase):
             self.assertEqual(captured["outline"], "细纲补充")
             self.assertEqual([c["agent_id"] for c in captured["locked_cast"]], [1, 2])
             self.assertEqual(captured["target_words"], 5000)
+
+    def test_locked_cast_regeneration_executes_chapter_loop(self) -> None:
+        cards = [_card(1, "Lee"), _card(2, "Wang")]
+        cast = [
+            {"agent_id": 1, "role": "lead", "arc": "learns"},
+            {"agent_id": 2, "role": "friend", "arc": "helps"},
+        ]
+        with mock.patch("gaworld.llm.providers.call_llm", return_value="Lee and Wang share a meal.") as llm:
+            result = novel_api._run_novel_with_locked_cast(
+                city="wuzhen",
+                agent_ids=[1, 2],
+                cards=cards,
+                locked_cast=cast,
+                outline="A meal",
+                premise="Two friends meet",
+                style={"title": "Realistic", "text": "realistic", "point_of_view": "third person"},
+                target_words=5000,
+                title_hint="Dinner",
+                name_lookup={1: "Lee", 2: "Wang"},
+                progress=lambda *_: None,
+            )
+        self.assertEqual(len(result["chapters"]), 8)
+        self.assertEqual(llm.call_count, 9)
+        self.assertTrue(all(chapter["text"] for chapter in result["chapters"]))
 
     def test_regenerate_unknown_source_returns_400(self) -> None:
         with mock.patch.object(novel_api, "_load_source_novel", return_value=None):
@@ -614,11 +687,33 @@ class HttpTest(unittest.TestCase):
                 "archived_at": time.time(),
                 "provider": "",
                 "result": {
-                    "run_id": "arch1", "city": "wuzhen", "title": "归档的一本",
-                    "chapters": [{"chapter": 1, "title": "x", "summary": "", "target_words": 100, "characters": [1, 2], "text": "正文", "word_count": 2, "presence": {}}],
+                    "run_id": "arch1",
+                    "city": "wuzhen",
+                    "title": "归档的一本",
+                    "chapters": [
+                        {
+                            "chapter": 1,
+                            "title": "x",
+                            "summary": "",
+                            "target_words": 100,
+                            "characters": [1, 2],
+                            "text": "正文",
+                            "word_count": 2,
+                            "presence": {},
+                        }
+                    ],
                     "cast": [{"agent_id": 1, "name": "老李", "role": "主角", "arc": ""}],
-                    "target_words": 100, "premise": "已归档", "outline_text": "已归档",
-                    "stats": {"chapters": 1, "target_words": 100, "total_words": 2, "on_target": True, "avg_chapter_words": 2, "character_appearances": {1: 1, 2: 1}},
+                    "target_words": 100,
+                    "premise": "已归档",
+                    "outline_text": "已归档",
+                    "stats": {
+                        "chapters": 1,
+                        "target_words": 100,
+                        "total_words": 2,
+                        "on_target": True,
+                        "avg_chapter_words": 2,
+                        "character_appearances": {1: 1, 2: 1},
+                    },
                     "created_at": 99.0,
                 },
             }
@@ -676,11 +771,7 @@ class PresenceTest(unittest.TestCase):
 
     def test_a_chapter_centered_on_one_character_scores_high(self) -> None:
         # Most paragraphs mention 闫然; she should dominate.
-        text = (
-            "闫然在厨房里切菜。\n\n"
-            "门外有人敲门，闫然擦了擦手。\n\n"
-            "是她的老邻居，闫然把门打开。"
-        )
+        text = "闫然在厨房里切菜。\n\n门外有人敲门，闫然擦了擦手。\n\n是她的老邻居，闫然把门打开。"
         ch = self._ch(text, characters=[1, 2])
         presence = novel_api.compute_presence(ch, {1: "闫然", 2: "李姐"})
         # Every paragraph mentions 闫然 → score saturates at 100.

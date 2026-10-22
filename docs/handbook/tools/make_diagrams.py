@@ -105,10 +105,12 @@ def esc(text: str) -> str:
 def render_stack(spec: dict) -> str:
     out = []
     for layer in spec["layers"]:
-        out.append(f'<div class="layer"><div class="layer-label">{esc(layer["label"])}</div><div class="row">')
+        out.append(
+            f'<div class="layer"><div class="layer-label">{esc(layer["label"])}</div><div class="row">'
+        )
         for item in layer["items"]:
             cls = item.get("c", "")
-            body = f'<b>{esc(item["t"])}</b><span>{esc(item.get("d", ""))}</span>'
+            body = f"<b>{esc(item['t'])}</b><span>{esc(item.get('d', ''))}</span>"
             out.append(f'<div class="box {cls}">{body}</div>')
         out.append("</div></div>")
         if layer is not spec["layers"][-1]:
@@ -122,7 +124,7 @@ def render_flow(spec: dict) -> str:
         if index:
             out.append('<div class="sep">→</div>')
         cls = item.get("c", "")
-        body = f'<b>{esc(item["t"])}</b><span>{esc(item.get("d", ""))}</span>'
+        body = f"<b>{esc(item['t'])}</b><span>{esc(item.get('d', ''))}</span>"
         out.append(f'<div class="box {cls}" style="min-width:{item.get("w", 190)}px">{body}</div>')
     out.append("</div>")
     return "\n".join(out)
@@ -149,7 +151,7 @@ def render_cycle(spec: dict) -> str:
     for index, stage in enumerate(spec["stages"]):
         out.append(
             f'<div class="stage"><span class="n">{index + 1:02d}</span>'
-            f'<h5>{esc(stage["t"])}</h5><p>{esc(stage.get("d", ""))}</p></div>'
+            f"<h5>{esc(stage['t'])}</h5><p>{esc(stage.get('d', ''))}</p></div>"
         )
     return "\n".join(out)
 
