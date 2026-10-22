@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
+from gaworld.apps.community_pages import page_target
 from gaworld.apps.dashboard_server import _static_path_allowed
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,8 +59,11 @@ def test_homepage_local_resources_and_section_links_resolve(name):
         if not parsed.path:
             assert parsed.fragment in page.ids, url
         else:
+            served_path = page_target(parsed.path) or (
+                "/site/auth/index.html" if parsed.path in {"/login", "/join", "/reset"} else parsed.path
+            )
             target = (
-                ROOT / parsed.path.lstrip("/") if parsed.path.startswith("/") else path.parent / parsed.path
+                ROOT / served_path.lstrip("/") if served_path.startswith("/") else path.parent / served_path
             )
             assert target.exists(), url
 
