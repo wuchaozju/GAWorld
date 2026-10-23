@@ -194,11 +194,22 @@ def derive_branch_dir(runs_root: str, node_id: int, run_id: int | None = None) -
     ``(node_id, run_id)`` is enough: every rerun creates a fresh node, so
     two attempts can never share a root, and a rerun of the same run id on
     a different node still isolates.
+
+    A relative ``runs_root`` (the default ``data/gaworld_runs``) is
+    absolutized against the CURRENT process cwd — the backend that calls
+    this is also the one that materializes ``kernel/interventions.json``.
+    The GAWorld subprocess runs with ``cwd = gaworld_path``, so it would
+    otherwise resolve the forwarded queue path against a DIFFERENT base
+    directory and silently drain a file nobody wrote (review 2835,
+    Finding 1). An absolute path is process-independent.
     """
+    root = str(runs_root)
+    if not os.path.isabs(root):
+        root = os.path.abspath(root)
     base = f"node_{int(node_id)}"
     if run_id is not None:
         base += f"_run_{int(run_id)}"
-    return f"{str(runs_root).rstrip('/')}/{base}"
+    return f"{root.rstrip('/')}/{base}"
 
 
 def isolate_node_runtime(

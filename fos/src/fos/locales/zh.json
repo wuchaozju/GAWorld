@@ -1639,5 +1639,9 @@
     "no_checkpoint_ref": "失败节点没有可恢复的检查点引用",
     "unknown_action": "未知恢复操作：{action}（允许：{allowed}）",
     "substitute_required": "替换必须显式指定提供商和模型（绝不静默替换）"
+  },
+  "environment": {
+    "node_not_found": "模拟 {simulation_id} 中未找到节点 {node_id}",
+    "node_id_required": "模拟 {simulation_id} 未指定目标节点"
   }
 }

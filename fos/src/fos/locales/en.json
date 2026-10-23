@@ -1639,5 +1639,9 @@
     "no_checkpoint_ref": "failed node has no checkpoint reference to restore",
     "unknown_action": "unknown recovery action: {action} (allowed: {allowed})",
     "substitute_required": "substitute requires an explicit provider and model (no silent provider substitution)"
+  },
+  "environment": {
+    "node_not_found": "Node {node_id} not found in simulation {simulation_id}",
+    "node_id_required": "No target node specified for simulation {simulation_id}"
   }
 }
