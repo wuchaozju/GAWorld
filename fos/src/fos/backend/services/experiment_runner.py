@@ -320,19 +320,22 @@ async def start_experiment_run_background(simulation_id: str, exp_id: str, turns
         tree = rec.tree
 
         # Materialize branch nodes immediately so frontend can render them right away.
+        # Every run gets FRESH attempt nodes: a completed variant node is never
+        # reused or re-run (node ownership / immutability). v.node_id is only a
+        # "latest attempt" pointer.
         variants = []
         for v in list(exp.variants or []):
-            node_id = v.node_id
-            if not node_id or int(node_id) not in tree.nodes:
-                node_id = tree.branch(int(exp.base_node), [dict(op) for op in (v.ops or [])])
-                v.node_id = int(node_id)
-                session.add(v)
+            node_id = tree.branch(int(exp.base_node), [dict(op) for op in (v.ops or [])])
+            v.node_id = int(node_id)
+            session.add(v)
             tree.nodes[int(node_id)]["meta"] = {
                 **dict(tree.nodes[int(node_id)].get("meta") or {}),
                 "experiment_id": exp.id,
                 "variant_id": v.id,
                 "variant_name": v.name,
                 "experiment_name": exp.name,
+                "run_id": run_id,
+                "attempt": run_id,
             }
             variants.append({"id": v.id, "name": v.name, "ops": v.ops or [], "base_node": int(exp.base_node), "node_id": int(node_id)})
 
@@ -398,13 +401,13 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                 raise RuntimeError(T("api.errors.simulation_tree_not_loaded"))
             tree = rec.tree
 
-            # ensure each variant has node_id; branch if missing
+            # Every run gets FRESH attempt nodes: never reuse a variant's
+            # (possibly completed) node — completed nodes are immutable.
             node_ids = []
             for v in variants:
                 # v is a dict here (id, name, ops, node_id)
-                if not v.get("node_id") or int(v.get("node_id")) not in tree.nodes:
-                    cid = tree.branch(int(exp.base_node), [dict(op) for op in (v.get("ops") or [])])
-                    v["node_id"] = int(cid)
+                cid = tree.branch(int(exp.base_node), [dict(op) for op in (v.get("ops") or [])])
+                v["node_id"] = int(cid)
                 meta = dict(tree.nodes[int(v.get("node_id"))].get("meta") or {})
                 meta.update(
                     {
@@ -412,6 +415,8 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                         "variant_id": v.get("id"),
                         "variant_name": v.get("name"),
                         "experiment_name": exp.name,
+                        "run_id": run_id,
+                        "attempt": run_id,
                     }
                 )
                 tree.nodes[int(v.get("node_id"))]["meta"] = meta
@@ -469,7 +474,16 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                 "sample_events": logs[-50:],
             }
 
-        results_summary = {"finished_nodes": finished, "summaries": summaries}
+        results_summary = {
+            "finished_nodes": finished,
+            "summaries": summaries,
+            # Per-run attempt provenance: {variant_id: attempt node id}
+            "variant_nodes": {
+                str(v.get("id")): int(v.get("node_id"))
+                for v in variants
+                if v.get("node_id") is not None
+            },
+        }
         async with get_session() as session:
             # persist node_id back to experiment_variants in DB if they were empty
             stmt = select(Experiment).options(selectinload(Experiment.variants)).where(Experiment.id == exp_id)
@@ -479,7 +493,9 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                 for v in exp_db.variants or []:
                     # find matching dict variant by id and update node_id if missing
                     for dv in variants:
-                        if dv.get("id") == v.id and dv.get("node_id") and not v.node_id:
+                        if dv.get("id") == v.id and dv.get("node_id"):
+                            # v.node_id is only the LATEST attempt pointer;
+                            # historical attempt nodes stay untouched.
                             v.node_id = int(dv.get("node_id"))
                             session.add(v)
             run = await session.get(ExperimentRun, run_id)

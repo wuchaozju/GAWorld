@@ -182,14 +182,13 @@ def run_experiment_task(self, simulation_id: str, exp_id: str, run_id: int, turn
                         detail=f"budget preflight failed: {type(exc).__name__}",
                     ) from exc
 
-            # Branch variants if needed. Materialize variant data into plain dicts
+            # Branch variants. Every run gets FRESH attempt nodes: a completed
+            # variant node is never reused or re-run (node ownership).
             node_ids = []
             db_variants = list(exp.variants or [])
             for index, v in enumerate(variants):
                 ops = v.get("ops") or []
-                cid = v.get("node_id")
-                if not cid or int(cid) not in tree.nodes:
-                    cid = tree.branch(int(v.get("base_node", tree.root)), [dict(op) for op in ops])
+                cid = tree.branch(int(v.get("base_node", tree.root)), [dict(op) for op in ops])
                 if index < len(db_variants):
                     db_variants[index].node_id = int(cid)
                     session.add(db_variants[index])

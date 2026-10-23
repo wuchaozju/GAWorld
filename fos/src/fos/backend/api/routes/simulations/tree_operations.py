@@ -931,19 +931,18 @@ async def simulation_tree_events(
         if node is None:
             raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found"))
 
-        # Collect logs from this node and all descendants
-        all_logs = list(node.get("logs", []))
-
-        def _collect_descendant_logs(nid: int) -> list:
-            logs: list = []
-            for child_id in record.tree.children.get(nid, []):
-                child_node = record.tree.nodes.get(child_id)
-                if child_node is not None:
-                    logs.extend(child_node.get("logs", []))
-                    logs.extend(_collect_descendant_logs(child_id))
-            return logs
-
-        all_logs.extend(_collect_descendant_logs(int(node_id)))
+        # Node-local events only: history display is assembled explicitly
+        # by walking the parent chain (root → … → selected); sibling events
+        # never appear here.
+        all_logs: list = []
+        chain: list = []
+        cur = node
+        while cur is not None:
+            chain.append(cur)
+            parent_cur = cur.get("parent")
+            cur = record.tree.nodes.get(parent_cur) if parent_cur is not None else None
+        for chain_node in reversed(chain):
+            all_logs.extend(chain_node.get("logs", []))
         return all_logs
 
 

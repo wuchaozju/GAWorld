@@ -1,6 +1,7 @@
 import json
 import asyncio
 import logging
+from copy import deepcopy
 from typing import Dict, List, Optional, TYPE_CHECKING
 import os
 from datetime import datetime
@@ -225,6 +226,19 @@ class SimTree:
         else:
             sim_copy = Simulator.deserialize(snap, branch_clients, log_handler=None)
 
+        # A simulator's serialize() may be lossy for mutable agent state
+        # (properties / plan / short-term memory). The clone must carry the
+        # base node's ops-applied state, so restore it explicitly from the
+        # base sim (deep copies — no shared references).
+        for name, base_agent in base_sim.agents.items():
+            agent_copy = sim_copy.agents.get(name)
+            if agent_copy is None:
+                continue
+            agent_copy.properties = deepcopy(getattr(base_agent, "properties", {}))
+            agent_copy.plan_state = deepcopy(getattr(base_agent, "plan_state", None))
+            if getattr(base_agent, "short_memory", None) is not None:
+                agent_copy.short_memory = deepcopy(base_agent.short_memory)
+
         # 先清空 clone 的 event_queue，再做一次完整自检
         sim_copy.reset_event_queue()
 
@@ -342,12 +356,13 @@ class SimTree:
         # Clone the simulator by snapshotting the node's live sim
         sim_copy = self._clone_simulator_from_node(node_id)
 
-        # Prepare a new node with inherited logs snapshot; parent/ops assigned later
+        # Prepare a new node; parent/ops assigned later. Node-local log
+        # ownership: a child starts with EMPTY logs — only events produced by
+        # that node itself. Ancestry history is assembled at read time by
+        # walking the parent chain (see the events endpoint).
         nid = self._next_id()
-        parent_logs = list(self.nodes[node_id].get("logs", []))
         parent_meta = json.loads(json.dumps(self.nodes[node_id].get("meta", {})))
-        # Deep copy parent's logs so child does not share dict references
-        child_logs: List[dict] = json.loads(json.dumps(parent_logs))
+        child_logs: List[dict] = []
         node = {
             "id": nid,
             "parent": None,
@@ -562,19 +577,15 @@ class SimTree:
         return self.attach(parent_id, [{"op": "advance", "turns": int(turns)}], cid)
 
     def branch(self, parent_id: int, ops: List[dict]) -> int:
-        # For branching (what-if scenarios), we create a SIBLING node, not a child.
-        # The new branch must therefore start from the shared parent state rather than
-        # inheriting the selected sibling's already-mutated simulator state.
+        # Branching creates a CHILD of the selected node: the child clones the
+        # selected node's state, is attached under it (parent == parent_id,
+        # depth+1), and the ops are applied only to the clone. Multiple
+        # what-if siblings of a common base are expressed by callers as
+        # repeated children of that base (see fork_from_checkpoint).
         if parent_id not in self.nodes:
             raise KeyError(T("Node {parent_id} not found in tree", parent_id=parent_id))
-        actual_parent_id = self.nodes[parent_id]["parent"]
 
-        # If the node has no parent (it's the root), we can't create a sibling
-        # In this case, fall back to creating a child (original behavior)
-        if actual_parent_id is None:
-            actual_parent_id = parent_id
-
-        cid = self.copy_sim(actual_parent_id)
+        cid = self.copy_sim(parent_id)
         sim = self.nodes[cid]["sim"]
         for op in ops:
             name = op["op"]
@@ -707,13 +718,14 @@ class SimTree:
 
         # Flush any queued events to logs
         sim.emit_remaining_events()
-        # Attach to actual_parent_id instead of parent_id to create a sibling relationship
-        return self.attach(actual_parent_id, ops, cid)
+        return self.attach(parent_id, ops, cid)
 
     def fork_from_checkpoint(
         self, parent_id: int, checkpoint_ref: dict, count: int = 2
     ) -> List[int]:
-        """Create ``count`` sibling branches all referencing one checkpoint.
+        """Create ``count`` branches as repeated CHILDREN of ``parent_id``,
+
+        all referencing one checkpoint.
 
         Records the checkpoint REFERENCE (never payloads or credentials) in
         each child's ``meta["checkpoint"]``. The restored runtime state of the

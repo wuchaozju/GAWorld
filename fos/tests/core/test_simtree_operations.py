@@ -359,7 +359,15 @@ class TestCheckSimulatorClone:
 
 
 class TestBranch:
-    """Tests for branch() what-if sibling creation and op application."""
+    """Tests for branch() what-if branching and op application.
+
+    NOTE (task 2821, bug-expectation update): branch() used to encode a
+    sibling-creation bug — branching a non-root node cloned the node's
+    PARENT and attached next to it. Per SPEC-simtree-ownership.md the
+    documented semantics are strict child semantics: branch(A) clones FROM
+    A and attaches under A. The old sibling assertion encoded the bug, not
+    product intent; updated accordingly.
+    """
 
     def test_branch_from_root_creates_child(self):
         """Branching from root (no parent) falls back to creating a child."""
@@ -369,17 +377,21 @@ class TestBranch:
         assert cid in tree.nodes
         assert tree.nodes[cid]["parent"] == 0
 
-    def test_branch_from_nonroot_creates_sibling(self):
-        """Branching from a non-root node creates a sibling (same parent)."""
+    def test_branch_from_nonroot_creates_child_of_selected(self):
+        """BUG-EXPECTATION UPDATE (task 2821): the old assertion
+        (``parent == 0`` — sibling semantics) encoded the branch-hops-to-
+        parent bug fixed by SPEC-simtree-ownership.md. Correct semantics:
+        branch(A) creates a CHILD of A."""
         tree, _ = _make_tree_via_new()
         # First advance root to create child node 1
         child1 = tree.advance(0, turns=1)
-        # Branch from child1 -> sibling of child1, both children of root
-        sibling = tree.branch(child1, [{"op": "agent_ctx_append", "name": "Alice",
+        # Branch from child1 -> child of child1 (not a sibling)
+        child2 = tree.branch(child1, [{"op": "agent_ctx_append", "name": "Alice",
                                          "role": "user", "content": "hello"}])
-        assert tree.nodes[sibling]["parent"] == 0  # same parent as child1
-        assert sibling != child1
-        assert sibling in tree.children[0]
+        assert tree.nodes[child2]["parent"] == child1
+        assert tree.nodes[child2]["depth"] == tree.nodes[child1]["depth"] + 1
+        assert child2 != child1
+        assert child2 in tree.children[child1]
 
     def test_branch_with_agent_ctx_append_adds_to_memory(self):
         tree, _ = _make_tree_via_new()
@@ -473,14 +485,19 @@ class TestCopySimAttach:
         assert cid == 1  # next id after root (0)
         assert cid in tree.nodes
 
-    def test_copy_sim_deep_copies_parent_logs(self):
+    def test_copy_sim_child_starts_with_empty_logs(self):
+        """BUG-EXPECTATION UPDATE (task 2821): the old test asserted that
+        copy_sim deep-copies the parent's logs into the child — that log
+        inheritance was storage-side contamination (Bug C in
+        SPEC-simtree-ownership.md). Correct semantics: node-local log
+        ownership — a child starts with EMPTY logs; ancestry history is
+        assembled at read time by walking the parent chain."""
         tree, _ = _make_tree_via_new()
         # Write something into root logs
         tree.nodes[0]["logs"].append({"type": "test", "data": "x"})
         cid = tree.copy_sim(0)
         child_logs = tree.nodes[cid]["logs"]
-        assert child_logs[0] == {"type": "test", "data": "x"}
-        # Must be a deep copy — not the same list object
+        assert child_logs == []
         assert child_logs is not tree.nodes[0]["logs"]
 
     def test_copy_sim_from_missing_node_raises_keyerror(self):
@@ -539,14 +556,17 @@ class TestAdvanceOps:
         assert tree.nodes[cid]["sim"].turns == 3
 
     def test_advance_updates_node_logs(self):
-        """advance() should copy parent logs into the new child node."""
+        """BUG-EXPECTATION UPDATE (task 2821): the old test asserted that
+        advance copies the parent's logs into the new child node — that was
+        the log-inheritance bug (Bug C). Node-local ownership: the child's
+        ``logs`` contain only events produced by that node; the parent's
+        pre-existing seed entry stays in the parent only."""
         tree, _ = _make_tree_via_new()
         # Manually append a log entry to root
         tree.nodes[0]["logs"].append({"type": "info", "data": "seed"})
         cid = tree.advance(0, turns=1)
-        # copy_sim deep-copies parent logs, so child inherits them
         child_logs = tree.nodes[cid]["logs"]
-        assert any(e["data"] == "seed" for e in child_logs)
+        assert all(e["data"] != "seed" for e in child_logs)
 
     def test_advance_frontier_advances_all_leaf_nodes(self):
         tree, _ = _make_tree_via_new()
