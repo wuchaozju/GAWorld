@@ -65,6 +65,90 @@ class RoundResult:
     actions: List[ActionResult]
     completed: bool
     payoffs: Optional[Dict[str, int]] = None
+    failure_reason: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Serializable summary of the round (for API/history consumers)."""
+        return {
+            "round_num": self.round_num,
+            "completed": self.completed,
+            "payoffs": self.payoffs,
+            "failure_reason": self.failure_reason,
+            "actions": [
+                {
+                    "agent_name": a.agent_name,
+                    "action_name": a.action_name,
+                    "summary": a.summary,
+                    "success": a.success,
+                    "skipped": a.skipped,
+                    "error": a.error,
+                }
+                for a in self.actions
+            ],
+        }
+
+
+class ProviderFailureError(RuntimeError):
+    """An EXECUTION failure of the LLM provider itself (connection refused,
+    timeout, auth failure, model not found, HTTP 5xx, rate-limit exhaustion).
+
+    This must never be presented as an agent "skip": a skip is a decision the
+    agent made while the provider answered. A provider failure aborts the
+    round and stops the experiment.
+    """
+
+    def __init__(self, message: str, provider: str = "", model: str = "", agent_name: str = ""):
+        super().__init__(message)
+        self.provider = provider
+        self.model = model
+        self.agent_name = agent_name
+
+
+# Message markers (lowercase) that indicate a provider-side outage when the
+# provider layer collapses to a generic exception with no typed information.
+# Connection/timeout failures arrive as typed ConnectionError/TimeoutError
+# (or a provider-package exception) and are classified by type above; parse/
+# format failures ("invalid json", ...) contain none of these markers.
+_PROVIDER_FAILURE_MARKERS = (
+    "unauthorized",
+    "invalid api key",
+    "authentication",
+    "forbidden",
+    "model not found",
+    "rate limit",
+    "too many requests",
+    "server error",
+    "service unavailable",
+    "bad gateway",
+    "gateway timeout",
+    "overloaded",
+    "provider",
+)
+
+# Third-party packages whose exception types signal provider problems.
+_PROVIDER_EXCEPTION_PACKAGES = ("requests", "httpx", "openai", "anthropic", "aiohttp")
+
+
+def is_provider_failure(exc: BaseException | None) -> bool:
+    """Classify an exception as an LLM provider/execution failure.
+
+    Typed information is preferred (builtin connection/timeout errors, and any
+    exception raised by a known provider package); only when the provider layer
+    collapses to a generic exception do we fall back to message markers.
+    Parse/format failures of a *delivered* model answer are NOT provider
+    failures — the existing retry/repair path handles those.
+    """
+    if exc is None:
+        return False
+    if isinstance(exc, ProviderFailureError):
+        return True
+    if isinstance(exc, (ConnectionError, TimeoutError, OSError, asyncio.TimeoutError)):
+        return True
+    package = (type(exc).__module__ or "").split(".")[0]
+    if package in _PROVIDER_EXCEPTION_PACKAGES:
+        return True
+    message = str(exc).lower()
+    return any(marker in message for marker in _PROVIDER_FAILURE_MARKERS)
 
 
 class ExperimentRunner:
@@ -108,6 +192,7 @@ class ExperimentRunner:
         self.round_visibility = round_visibility
         self.information_model = information_model
         self.scene = scene  # Store scene reference for action filtering
+        self._last_warmup_error: Exception | None = None
         self.scene_state: Dict[str, Any] = {}  # shared mutable ref; update via set_scene_state()
         self._debug_lock = asyncio.Lock()  # Lock for atomic debug file writes
         self._model_switch_lock = threading.Lock()  # Lock to serialize model-switch operations
@@ -348,7 +433,14 @@ class ExperimentRunner:
             _time.sleep(5.0)
 
             # Step 4: warmup chat
+            self._last_warmup_error = None
             if not self._warmup_model(model_name, client):
+                if is_provider_failure(self._last_warmup_error):
+                    logger.error(
+                        "Model '%s' warmup failed — provider unreachable, aborting preflight",
+                        model_name,
+                    )
+                    return False
                 logger.warning(
                     "Model '%s' warmup failed — continuing anyway",
                     model_name,
@@ -382,7 +474,14 @@ class ExperimentRunner:
         logger.info("Model '%s' loaded. Sending warmup request...", model_name)
 
         # ── warmup chat (json_mode=True, retry up to 5×) ──────
+        self._last_warmup_error = None
         if not self._warmup_model(model_name, client):
+            if is_provider_failure(self._last_warmup_error):
+                logger.error(
+                    "Model '%s' warmup failed — provider unreachable, aborting preflight",
+                    model_name,
+                )
+                return False
             logger.warning(
                 "Model '%s' warmup failed — continuing anyway",
                 model_name,
@@ -422,6 +521,7 @@ class ExperimentRunner:
                         model_name, attempt,
                     )
             except Exception as exc:
+                self._last_warmup_error = exc
                 logger.debug(
                     "Model '%s' warmup attempt %d raised %s — retrying...",
                     model_name, attempt, exc,
@@ -448,6 +548,7 @@ class ExperimentRunner:
                         model_name, attempt,
                     )
             except Exception as exc:
+                self._last_warmup_error = exc
                 logger.debug(
                     "Model '%s' warmup extended attempt %d raised %s — retrying...",
                     model_name, attempt, exc,
@@ -926,7 +1027,16 @@ class ExperimentRunner:
             else:  # sequential
                 round_result = await self._run_sequential_round(round_num)
 
+            self._apply_all_skipped_guard(round_result)
             results.append(round_result)
+
+            if round_result.failure_reason:
+                logger.error(
+                    "Round %d failed: %s — stopping experiment",
+                    round_num,
+                    round_result.failure_reason,
+                )
+                break
 
             # Emit round completion event (could hook into websocket)
             logger.info(f"Round {round_num} complete: {len(round_result.actions)} actions")
@@ -938,6 +1048,62 @@ class ExperimentRunner:
                 logger.info(f"[CYCLE PHASE FIX] Phase is now: {getattr(self.scene, 'cycle_phase', 'N/A')}, rounds_in_phase: {getattr(self.scene, 'rounds_in_cycle_phase', 'N/A')}")
 
         return results
+
+    def _provider_labels(self, client) -> tuple[str, str]:
+        """Best-effort human-readable (provider, model) labels for error messages."""
+        provider = getattr(client, "provider", None)
+        base_url = getattr(provider, "base_url", "") or ""
+        if not isinstance(base_url, str):
+            base_url = ""
+        model = getattr(provider, "model", "") or ""
+        if not isinstance(model, str):
+            model = ""
+        if "1234" in base_url:
+            provider_label = "LM Studio"
+        elif base_url:
+            provider_label = base_url
+        else:
+            provider_label = "default provider"
+        return provider_label, model or "unknown model"
+
+    def _execution_failure_action(
+        self, agent_name: str, round_num: int, message: str
+    ) -> ActionResult:
+        """Build a failed (NOT skipped) action result for a provider outage."""
+        return ActionResult(
+            agent_name=agent_name,
+            action_name="",
+            parameters={},
+            summary="Failed - provider error",
+            round_num=round_num,
+            success=False,
+            skipped=False,
+            error=message,
+        )
+
+    def _apply_all_skipped_guard(self, round_result: RoundResult) -> None:
+        """Defensive guard: a round where every agent 'skipped' AND at least
+        one action carries an execution error is rejected as failed. An
+        all-skip round with zero execution errors stays a legitimate outcome.
+        """
+        if getattr(round_result, "failure_reason", None):
+            return
+        actions = round_result.actions
+        if not actions:
+            if round_result.completed:
+                round_result.completed = False
+                round_result.failure_reason = "Round recorded with no actions"
+            return
+        errors = [a for a in actions if (not a.success) or a.error]
+        if errors and all(a.skipped for a in actions):
+            round_result.completed = False
+            round_result.payoffs = None
+            round_result.failure_reason = errors[0].error or "Execution error in round"
+            logger.error(
+                "Round %d rejected: all agents skipped but %d execution error(s) present",
+                round_result.round_num,
+                len(errors),
+            )
 
     def _record_action_to_agent(self, result: ActionResult) -> None:
         """Record an action result to the agent's history.
@@ -1154,6 +1320,7 @@ class ExperimentRunner:
         # timing out. Tune via FOS_CIRCUIT_BREAKER env var (default 5).
         circuit_threshold = int(os.environ.get("FOS_CIRCUIT_BREAKER", "5"))
         consecutive_failures = 0
+        provider_failure: str | None = None
 
         # Group agents by model for batched execution
         model_groups = self._group_agents_by_model(agents_to_prompt)
@@ -1178,7 +1345,11 @@ class ExperimentRunner:
                 )
 
             async with semaphore:
-                result = await self._prompt_agent(agent, round_num)
+                try:
+                    result = await self._prompt_agent(agent, round_num)
+                except ProviderFailureError as exc:
+                    exc.agent_name = agent.name
+                    raise
 
             if isinstance(result, Exception) or getattr(result, 'skipped', False) or not getattr(result, 'success', True):
                 consecutive_failures += 1
@@ -1234,11 +1405,33 @@ class ExperimentRunner:
                 self._skip_model_lock = False
 
             for result in group_results:
+                if isinstance(result, ProviderFailureError):
+                    failed_action = self._execution_failure_action(
+                        result.agent_name, round_num, str(result)
+                    )
+                    actions.append(failed_action)
+                    self._record_action_to_agent(failed_action)
+                    provider_failure = str(result)
+                    break
                 if isinstance(result, Exception):
                     logger.error(f"Agent failed: {result}")
                     continue
                 actions.append(result)
                 self._record_action_to_agent(result)
+
+            if provider_failure:
+                break
+
+        # A provider failure aborts the round: never compute game results from
+        # a partial/failed round.
+        if provider_failure:
+            return RoundResult(
+                round_num=round_num,
+                actions=actions,
+                completed=False,
+                payoffs=None,
+                failure_reason=provider_failure,
+            )
 
         # Calculate scores - use InformationModel's pairing_fn if available so
         # n-agent games calculate per-pair payoffs correctly.
@@ -1300,7 +1493,19 @@ class ExperimentRunner:
                 ]
 
         for agent in agents_to_prompt:
-            result = await self._prompt_agent(agent, round_num)
+            try:
+                result = await self._prompt_agent(agent, round_num)
+            except ProviderFailureError as exc:
+                result = self._execution_failure_action(agent.name, round_num, str(exc))
+                actions.append(result)
+                self._record_action_to_agent(result)
+                return RoundResult(
+                    round_num=round_num,
+                    actions=actions,
+                    completed=False,
+                    payoffs=None,
+                    failure_reason=str(exc),
+                )
             actions.append(result)
             # Record action to agent's history
             self._record_action_to_agent(result)
@@ -1361,7 +1566,19 @@ class ExperimentRunner:
             if active_agent_names is not None and agent_name not in active_agent_names:
                 continue
             agent = agent_map[agent_name]
-            result = await self._prompt_agent(agent, round_num)
+            try:
+                result = await self._prompt_agent(agent, round_num)
+            except ProviderFailureError as exc:
+                result = self._execution_failure_action(agent.name, round_num, str(exc))
+                actions.append(result)
+                self._record_action_to_agent(result)
+                return RoundResult(
+                    round_num=round_num,
+                    actions=actions,
+                    completed=False,
+                    payoffs=None,
+                    failure_reason=str(exc),
+                )
             actions.append(result)
             # Record action to agent's history
             self._record_action_to_agent(result)
@@ -1454,6 +1671,19 @@ class ExperimentRunner:
             pair_results = await asyncio.gather(*tasks, return_exceptions=True)
 
             for result in pair_results:
+                if isinstance(result, ProviderFailureError):
+                    failed_action = self._execution_failure_action(
+                        result.agent_name, round_num, str(result)
+                    )
+                    all_actions.append(failed_action)
+                    self._record_action_to_agent(failed_action)
+                    return RoundResult(
+                        round_num=round_num,
+                        actions=all_actions,
+                        completed=False,
+                        payoffs=None,
+                        failure_reason=str(result),
+                    )
                 if isinstance(result, Exception):
                     logger.error(f"Agent in pair failed: {result}")
                     continue
@@ -1757,7 +1987,6 @@ class ExperimentRunner:
         try:
             # Get per-agent LLM client (LLM distribution)
             agent_llm_client = self.get_agent_llm_client(agent)
-
             # Preload model if switching, then hold lock through entire chat
             # lifecycle (preload + chat + controller) so no other agent can
             # unload the model while we are using it.
@@ -2211,6 +2440,18 @@ class ExperimentRunner:
             await self._write_debug_atomically(debug_buffer)
             logger.error(f"Error prompting agent {agent.name}: {e}")
             agent.clear_feedback_buffer()
+            # A provider/runtime outage is an EXECUTION failure, not an agent
+            # decision: abort the round loudly instead of disguising it as a
+            # skip. Parse/format failures keep the legacy skip handling below.
+            if is_provider_failure(e):
+                client = locals().get("agent_llm_client")
+                provider_label, model_label = self._provider_labels(client)
+                raise ProviderFailureError(
+                    f"Provider error: {provider_label} / {model_label} could not be reached: {e}",
+                    provider=provider_label,
+                    model=model_label,
+                    agent_name=agent.name,
+                ) from e
             return ActionResult(
                 success=False,
                 action_name="",
