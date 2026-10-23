@@ -40,6 +40,8 @@ GET_ROUTES = (
     # Population Studio / group mode.
     Route("population_api", "/api/population"),
     Route("import_api", "/api/import"),
+    # LLM persona authoring/enrichment (Agent Studio / population panel).
+    Route("persona_generate_api", "/api/persona-generate", bare=True),
     # 游戏场 (playground). The arena keeps its own older namespace; every other
     # game hangs off /api/games/<game>/.
     Route("arena_api", "/api/arena"),
@@ -66,6 +68,7 @@ POST_ROUTES = (
     Route("bench_api", "/api/bench/"),
     Route("population_api", "/api/population"),
     Route("import_api", "/api/import"),
+    Route("persona_generate_api", "/api/persona-generate", bare=True),
     Route("arena_api", "/api/arena"),
     Route("games_api", "/api/games/"),
     Route("family_api", "/api/family"),

@@ -4165,5 +4165,13 @@
   "set.replace_key": "替换密钥",
   "set.save_key": "保存密钥",
   "set.team_key": "我的 API Key",
-  "set.team_key_help": "仅用于你的账号，保存到服务器的独立私有文件，不进入 Git、不回显。同类型、同接口地址的模型使用你的同一密钥。你的实验消耗自己的额度，不会借用其他用户或服务器的密钥。"
+  "set.team_key_help": "仅用于你的账号，保存到服务器的独立私有文件，不进入 Git、不回显。同类型、同接口地址的模型使用你的同一密钥。你的实验消耗自己的额度，不会借用其他用户或服务器的密钥。",
+  "studio.generate": "＋ AI 生成画像",
+  "studio.cancel": "取消生成",
+  "sd.gen_creating": "AI 生成画像：先按结构种子创建居民…",
+  "sd.gen_enriching": "居民已创建，LLM 正在撰写叙述（结构事实锁定）…",
+  "sd.gen_done": "AI 画像完成，居民 #{id} 已载入，请复核后保存。",
+  "sd.gen_partial": "居民 #{id} 已创建，但 LLM 叙述未写入（见失败原因）。",
+  "sd.gen_failed": "AI 生成失败：",
+  "sd.gen_cancelled": "已停止等待生成（后台任务会继续完成）。"
 }

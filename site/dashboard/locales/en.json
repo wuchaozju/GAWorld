@@ -4165,5 +4165,13 @@
   "set.replace_key": "Replace key",
   "set.save_key": "Save key",
   "set.team_key": "My API Key",
-  "set.team_key_help": "Private to your account, stored outside Git and never returned. Models with the same type and endpoint use your same key. Your experiments consume your allowance, never another user's or the server's key."
+  "set.team_key_help": "Private to your account, stored outside Git and never returned. Models with the same type and endpoint use your same key. Your experiments consume your allowance, never another user's or the server's key.",
+  "studio.generate": "+ AI-generate a portrait",
+  "studio.cancel": "Cancel generation",
+  "sd.gen_creating": "AI-generating a portrait: creating the resident from the structural seed…",
+  "sd.gen_enriching": "Resident created; the LLM is writing the narrative (structural facts locked)…",
+  "sd.gen_done": "AI portrait done; resident #{id} loaded — review and save.",
+  "sd.gen_partial": "Resident #{id} was created, but the LLM narrative was not written (see the failure reason).",
+  "sd.gen_failed": "AI generation failed: ",
+  "sd.gen_cancelled": "Stopped waiting for the generation (the background job finishes on its own)."
 }
