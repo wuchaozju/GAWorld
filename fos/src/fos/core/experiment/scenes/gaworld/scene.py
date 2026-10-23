@@ -160,7 +160,13 @@ def _normalize_selected_agent_ids(
 
 
 def _build_output_overrides(output_dir: Path) -> dict[str, Any]:
-    """Builds GAWorld settings so all saved files go under one FOS folder."""
+    """Builds GAWorld settings so all saved files go under one FOS folder.
+
+    The kernel intervention queue and the recorder's records output are
+    pinned under the launch output_dir too — without this every subprocess
+    falls back to the GAWorld repo-root defaults and concurrent nodes share
+    one queue/records root (task 2834 sibling-isolation defect).
+    """
     memory_dir = output_dir / "memory"
     return {
         "memory_dir": str(memory_dir),
@@ -170,6 +176,12 @@ def _build_output_overrides(output_dir: Path) -> dict[str, Any]:
         "state_output_dir": str(output_dir / "state"),
         "network_output_dir": str(output_dir / "network"),
         "vector_db_path": str(memory_dir / "vector_db.sqlite"),
+        "kernel": {
+            "interventions_path": str(output_dir / "kernel" / "interventions.json"),
+        },
+        "records": {
+            "output_dir": str(output_dir / "records"),
+        },
         "intervention": {
             "output_dir": str(output_dir / "intervention"),
         },
@@ -177,6 +189,34 @@ def _build_output_overrides(output_dir: Path) -> dict[str, Any]:
             "output_dir": str(output_dir / "visualization"),
         },
     }
+
+
+def _runtime_isolation_overrides(parameters: dict[str, Any]) -> dict[str, Any]:
+    """Forward branch-runtime isolation keys into the subprocess overrides.
+
+    A launch/rerun path that applied the ``branch_runtime_overrides`` patch
+    as a config_params_patch op leaves the isolated run-root keys at the top
+    level of ``config.parameters`` (run_output_dir, kernel, records, ...).
+    Those keys must reach ``GAWORLD_CONFIG_OVERRIDES`` so the subprocess
+    actually writes inside its own branch dir — the source checkpoint stays
+    read-only/shared. Only path-bearing keys from the authoritative
+    ``gaworld.city.config.RUN_PATHS`` table are forwarded (plus the explicit
+    checkpoint restore pin); everything else in parameters is ignored.
+    """
+    try:
+        from gaworld.city.config import RUN_PATHS
+    except Exception:  # pragma: no cover - gaworld not importable
+        return {}
+    overrides: dict[str, Any] = {}
+    for dotted in RUN_PATHS:
+        top = dotted.split(".")[0]
+        value = parameters.get(top)
+        if value is None or isinstance(value, dict):
+            if isinstance(value, dict):
+                overrides[top] = value
+        elif isinstance(value, str):
+            overrides[top] = value
+    return overrides
 
 
 def _build_real_work_overrides(output_dir: Path, enabled: bool) -> dict[str, Any]:
@@ -588,6 +628,14 @@ class GAWorldScene(ExperimentScene):
             config_overrides["agent_ids"] = list(self._agent_ids)
         llm_settings = self._resolve_llm_settings()
         config_overrides.update(_build_llm_config_overrides(llm_settings))
+        # Branch isolation (task 2834): the branch_runtime_overrides patch
+        # applied by launch/rerun paths as a config_params_patch lives in
+        # config.parameters — forward its run-root keys into the subprocess
+        # overrides LAST so the isolated paths win over the generic defaults.
+        config_overrides = merge_nested_overrides(
+            config_overrides,
+            _runtime_isolation_overrides(self.config.parameters),
+        )
         env_overrides: dict[str, str] = {}
         if llm_settings.api_key:
             env_overrides[GAWORLD_API_KEY_ENV] = llm_settings.api_key

@@ -80,7 +80,16 @@ async def get_simulation_state(
         record = await SIM_TREE_REGISTRY.get_or_create_from_sim(simulation)
 
     tree = record.tree
-    simulator, current_node_id = _resolve_simulator_node(tree, simulation_id, node_id)
+    # Read-only state view: keep the legacy newest-leaf fallback when the
+    # caller did not select a node; an EXPLICIT but missing node id still
+    # fails loudly (interventions target the selected node, invariant 2).
+    try:
+        simulator, current_node_id = _resolve_simulator_node(tree, simulation_id, node_id)
+    except ValueError:
+        if node_id is None:
+            simulator, current_node_id = _resolve_leaf_simulator(tree, simulation_id)
+        else:
+            raise
     if simulator is None or current_node_id is None:
         return _empty_simulation_state(environment_enabled, record)
 
@@ -277,20 +286,44 @@ async def _load_recent_external_events(db, simulation_id: str) -> list[dict[str,
     ]
 
 
-def _resolve_simulator_node(tree, simulation_id: str, node_id: int | None) -> tuple[Any | None, int | None]:
-    """Pick the requested node or the newest leaf and return its simulator."""
+def _resolve_simulator_node(
+    tree,
+    simulation_id: str,
+    node_id: int | None,
+    *,
+    allow_leaf_fallback: bool = False,
+) -> tuple[Any | None, int | None]:
+    """Resolve the REQUESTED node's simulator — no silent inference.
+
+    Interventions and events must target the selected node (spec invariant
+    2): a missing/stale node id or an absent node_id is rejected LOUDLY
+    instead of silently landing on the newest leaf. Read-only callers
+    (simulation state view / suggestion generation) may pass
+    ``allow_leaf_fallback=True`` to keep the legacy newest-leaf behavior.
+    """
+    from fos.i18n import T
+
     if node_id is not None:
         current_node_id = int(node_id)
         current_node = tree.nodes.get(current_node_id)
         if not current_node:
-            logger.warning("Requested node %s not found for simulation %s", current_node_id, simulation_id)
-            return _resolve_leaf_simulator(tree, simulation_id)
+            raise ValueError(
+                T(
+                    "environment.node_not_found",
+                    node_id=current_node_id,
+                    simulation_id=simulation_id,
+                )
+            )
         simulator = current_node.get("sim")
         if not simulator:
             logger.warning("No simulator found in requested node %s", current_node_id)
             return None, None
         return simulator, current_node_id
-    return _resolve_leaf_simulator(tree, simulation_id)
+    if allow_leaf_fallback:
+        return _resolve_leaf_simulator(tree, simulation_id)
+    raise ValueError(
+        T("environment.node_id_required", simulation_id=simulation_id)
+    )
 
 
 def _resolve_leaf_simulator(tree, simulation_id: str) -> tuple[Any | None, int | None]:

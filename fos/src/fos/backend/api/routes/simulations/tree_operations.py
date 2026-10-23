@@ -58,6 +58,9 @@ from fos.backend.services.simtree_advance import (
 )
 from fos.backend.services.runtime_tasks import RUNTIME_TASKS
 from fos.backend.services.simtree_gaworld import (
+    derive_branch_dir,
+    isolate_node_runtime,
+    materialize_pending_interventions,
     prepare_recovery,
     record_recovery,
     validate_checkpoint_reference,
@@ -727,6 +730,19 @@ async def simulation_tree_fork_from_checkpoint(
                         for agent_id, entry in data.agent_llm_map.items()
                     ],
                 )
+            # Fork isolation (task 2834): each fork child gets its OWN
+            # writable branch dir + kernel queue via branch_runtime_overrides
+            # (the source checkpoint stays shared/read-only), then the fork's
+            # pending interventions_text materializes into THIS child's queue
+            # only — siblings stay clean.
+            from fos.backend.services.experiment_runner import GAWORLD_RUNS_ROOT
+
+            isolate_node_runtime(
+                tree,
+                int(cid),
+                derive_branch_dir(GAWORLD_RUNS_ROOT, int(cid)),
+            )
+            materialize_pending_interventions(tree, int(cid))
             broadcast_tree_event(
                 record,
                 {
@@ -793,6 +809,17 @@ async def simulation_tree_recover(
         attempt_node = tree.nodes[cid]
         attempt_node["meta"]["recovery_of"] = int(node_id)
         attempt_node["meta"]["recovery_plan"] = plan
+        # Recovery isolation (task 2834): the attempt restores the last
+        # COMPLETED (source) checkpoint — read-only — and writes into its OWN
+        # attempt dir via branch_runtime_overrides (variant-spec ops reapply
+        # exactly once, on this fresh attempt node).
+        from fos.backend.services.experiment_runner import GAWORLD_RUNS_ROOT
+
+        isolate_node_runtime(
+            tree,
+            int(cid),
+            derive_branch_dir(GAWORLD_RUNS_ROOT, int(cid), run_id=None),
+        )
         if data.action == "substitute" and data.agent_id is not None:
             # Substitute the affected agent only, through the Phase 4
             # per-agent override contract (exact int GAWorld IDs).
