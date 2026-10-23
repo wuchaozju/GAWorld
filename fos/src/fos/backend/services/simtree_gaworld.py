@@ -182,6 +182,140 @@ def branch_runtime_overrides(
     return patch
 
 
+# ---------------------------------------------------------------------------
+# Rerun / launch runtime isolation (task 2834)
+# ---------------------------------------------------------------------------
+
+
+def derive_branch_dir(runs_root: str, node_id: int, run_id: int | None = None) -> str:
+    """Derive the unique, node-owned run root for ONE execution attempt.
+
+    Pure path derivation — no directory is created here. The pair
+    ``(node_id, run_id)`` is enough: every rerun creates a fresh node, so
+    two attempts can never share a root, and a rerun of the same run id on
+    a different node still isolates.
+    """
+    base = f"node_{int(node_id)}"
+    if run_id is not None:
+        base += f"_run_{int(run_id)}"
+    return f"{str(runs_root).rstrip('/')}/{base}"
+
+
+def isolate_node_runtime(
+    tree,
+    node_id: int,
+    branch_dir: str,
+    run_id: int | None = None,
+    status: str = "running",
+) -> dict:
+    """Give ONE GAWorld-backed execution node its own writable runtime root.
+
+    Applies the EXISTING :func:`branch_runtime_overrides` patch (no duplicate
+    override keys) as a single ``config_params_patch`` op — the same deep-merge
+    semantics the tree uses at branch time — and stamps runtime provenance on
+    the node meta:
+
+    - ``meta["branch_dir"]`` / ``meta["interventions_path"]``;
+    - ``meta["gaworld"]`` = run_dir / checkpoint_dir / state_dir /
+      interventions_path / status / run_id / node_id, so
+      ``compare_branches`` and recovery can resolve the run.
+
+    The SOURCE checkpoint stays shared/read-only; everything the attempt
+    writes (run output, state history, checkpoints, kernel intervention
+    queue, recorder records) is redirected under ``branch_dir``.
+    """
+    from fos.core.experiment.scenes.gaworld.runtime_modes import merge_nested_overrides
+
+    base = str(branch_dir).rstrip("/")
+    interventions_path = f"{base}/kernel/interventions.json"
+    patch = branch_runtime_overrides(base, interventions_path=interventions_path)
+
+    node = tree.nodes[int(node_id)]
+    sim = node.get("sim")
+    if sim is not None:
+        config = getattr(getattr(sim, "scene", None), "config", None)
+        if config is not None and hasattr(config, "parameters"):
+            config.parameters = merge_nested_overrides(dict(config.parameters), patch)
+    # Documented as one config_params_patch op (deep-merge) so the ops list
+    # stays the single definition point of what this attempt ran with.
+    node.setdefault("ops", []).append(
+        {"op": "config_params_patch", "updates": patch, "runtime_isolation": True}
+    )
+
+    meta = node.setdefault("meta", {})
+    meta["branch_dir"] = base
+    meta["interventions_path"] = interventions_path
+    gaworld_meta = dict(meta.get("gaworld") or {})
+    gaworld_meta.update(
+        {
+            "run_dir": base,
+            "checkpoint_dir": f"{base}/checkpoints",
+            "state_dir": f"{base}/state",
+            "interventions_path": interventions_path,
+            "status": status,
+            "node_id": int(node_id),
+            "run_id": int(run_id) if run_id is not None else None,
+        }
+    )
+    meta["gaworld"] = gaworld_meta
+    return {"branch_dir": base, "interventions_path": interventions_path, "patch": patch}
+
+
+def materialize_pending_interventions(tree, node_id: int) -> dict | None:
+    """Consume ``meta["pending_interventions"]`` (checkpoint-fork text) into
+    the branch's OWN kernel queue file.
+
+    The fork dialog stores intervention text on the forked node; this turns
+    it into a real entry in that node's ``kernel.interventions_path`` queue,
+    so the GAWorld kernel (the authoritative runtime mechanism) consumes and
+    audits it like any other queued intervention. Idempotent per attempt: a
+    second materialize call never re-enqueues. Siblings are untouched — only
+    the targeted node's queue file is written.
+    """
+    import json
+    from pathlib import Path
+
+    node = tree.nodes.get(int(node_id))
+    if node is None:
+        raise KeyError(f"node {node_id} not found in tree")
+    meta = node.setdefault("meta", {})
+    text = meta.get("pending_interventions")
+    if not text or meta.get("pending_interventions_materialized"):
+        return None
+    interventions_path = meta.get("interventions_path")
+    if not interventions_path:
+        raise ValueError(
+            "node has pending_interventions but no interventions_path — "
+            "apply isolate_node_runtime() first"
+        )
+    entry = {
+        "id": f"fork-{int(node_id)}-pending",
+        "op": "interventions_text",
+        "text": str(text),
+        "source": "checkpoint_fork",
+        "target_node": int(node_id),
+    }
+    path = Path(interventions_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload: dict = {"pending": [], "applied": []}
+    if path.is_file():
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            payload = {"pending": [], "applied": []}
+    payload.setdefault("pending", []).append(entry)
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    meta["pending_interventions_materialized"] = True
+    node.setdefault("logs", []).append(
+        {
+            "event": "intervention_materialized",
+            "node": int(node_id),
+            "data": {"intervention_id": entry["id"], "queue": str(path)},
+        }
+    )
+    return entry
+
+
 RECOVERY_ACTIONS = ("retry", "fix_and_retry", "substitute")
 
 

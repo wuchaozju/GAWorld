@@ -18,6 +18,23 @@ from fos.backend.services.simtree_runtime import get_runtime_agent_map
 from fos.backend.services.runtime_tasks import RUNTIME_TASKS
 from fos.backend.celery_app import celery_app
 
+#: Root under which every GAWorld-backed attempt node gets its own writable
+#: branch dir (override with FOS_GAWORLD_RUNS_ROOT). Derivation per attempt:
+#: node_{id}_run_{run_id} — see simtree_gaworld.derive_branch_dir.
+GAWORLD_RUNS_ROOT = (
+    os.environ.get("FOS_GAWORLD_RUNS_ROOT") or os.path.join("data", "gaworld_runs")
+)
+
+
+def _isolate_attempt_node(tree, node_id: int, run_id: int) -> dict:
+    """Give a fresh experiment attempt node its own branch_dir + runtime
+    patch (branch_runtime_overrides, applied as one config_params_patch op)
+    and stamp provenance on the node meta."""
+    from fos.backend.services.simtree_gaworld import derive_branch_dir, isolate_node_runtime
+
+    branch_dir = derive_branch_dir(GAWORLD_RUNS_ROOT, node_id, run_id)
+    return isolate_node_runtime(tree, node_id, branch_dir, run_id=run_id)
+
 # Import the Celery task here to avoid circular imports at module import time
 try:
     from fos.backend.services.experiment_tasks import run_experiment_task
@@ -337,6 +354,9 @@ async def start_experiment_run_background(simulation_id: str, exp_id: str, turns
                 "run_id": run_id,
                 "attempt": run_id,
             }
+            # Rerun isolation: fresh writable runtime root per attempt node
+            # (branch_runtime_overrides as one config_params_patch op).
+            _isolate_attempt_node(tree, int(node_id), run_id)
             variants.append({"id": v.id, "name": v.name, "ops": v.ops or [], "base_node": int(exp.base_node), "node_id": int(node_id)})
 
         sim.latest_state = tree.serialize()
@@ -420,6 +440,9 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                     }
                 )
                 tree.nodes[int(v.get("node_id"))]["meta"] = meta
+                # Rerun isolation: fresh writable runtime root per attempt
+                # node (branch_runtime_overrides as one config_params_patch).
+                _isolate_attempt_node(tree, int(v.get("node_id")), run_id)
                 node_ids.append(int(v.get("node_id")))
                 # we don't add the dict back to session; persist node_id to DB below if needed
 
@@ -474,6 +497,14 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
                 "sample_events": logs[-50:],
             }
 
+        # stamp runtime status provenance per attempt node
+        for nid in node_ids:
+            node = tree.nodes.get(int(nid))
+            if node is not None:
+                gaworld_meta = dict((node.get("meta") or {}).get("gaworld") or {})
+                gaworld_meta["status"] = "completed"
+                node.setdefault("meta", {})["gaworld"] = gaworld_meta
+
         results_summary = {
             "finished_nodes": finished,
             "summaries": summaries,
@@ -518,6 +549,16 @@ async def _run_experiment_worker(simulation_id: str, exp_id: str, run_id: int, t
         RUNTIME_TASKS.cancel(runtime_task_id)
         raise
     except Exception as e:
+        # best-effort: stamp failed runtime status on this run's attempt nodes
+        try:
+            rec = SIM_TREE_REGISTRY.get(simulation_id.upper())
+            if rec is not None:
+                for nid, node in rec.tree.nodes.items():
+                    meta = node.get("meta") or {}
+                    if meta.get("run_id") == run_id and meta.get("gaworld"):
+                        meta["gaworld"]["status"] = "failed"
+        except Exception:
+            pass
         async with get_session() as session:
             run = await session.get(ExperimentRun, run_id)
             if run:

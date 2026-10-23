@@ -198,7 +198,14 @@ def run_experiment_task(self, simulation_id: str, exp_id: str, run_id: int, turn
                         "variant_id": db_variants[index].id,
                         "variant_name": db_variants[index].name,
                         "experiment_name": exp.name,
+                        "run_id": run_id,
+                        "attempt": run_id,
                     }
+                    # Rerun isolation: fresh writable runtime root per attempt
+                    # node (branch_runtime_overrides as one config_params_patch).
+                    from fos.backend.services.experiment_runner import _isolate_attempt_node
+
+                    _isolate_attempt_node(tree, int(cid), run_id)
                 node_ids.append(int(cid))
 
             sim.latest_state = tree.serialize()
