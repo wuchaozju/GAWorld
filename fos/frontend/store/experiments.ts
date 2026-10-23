@@ -479,12 +479,18 @@ export const createExperimentsSlice: StateCreator<
       const result = await treeBranch(base, state.currentSimulation.id, parentNumeric, [], token);
 
       if (result?.child !== undefined) {
+        // Select the returned child node BEFORE the refresh so the
+        // selection survives the graph update (Run/Advance then act on
+        // the new branch, not the old node).
+        set({ selectedNodeId: String(result.child) } as any);
         // Refresh tree
         const graph = await getTreeGraph(base, state.currentSimulation.id, token);
         if (graph) {
           const nodesMapped = mapGraphToNodes(graph);
           set({ nodes: nodesMapped } as any);
         }
+        // Re-assert selection in case any interim update reset it.
+        set({ selectedNodeId: String(result.child) } as any);
         state.addNotification?.('success', i18n.t('store.branchCreated') || 'Branch created');
       }
     } catch (e) {
