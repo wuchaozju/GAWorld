@@ -1393,7 +1393,7 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         # The login URL carries the token in its query string; keep it out of logs.
-        message = re.sub(r"(token|code)=[^&\s]*", r"\1=***", fmt % args)
+        message = re.sub(r"(token|code|password|confirm)=[^&\s]*", r"\1=***", fmt % args, flags=re.I)
         sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
 
     def __init__(self, *args, **kwargs):

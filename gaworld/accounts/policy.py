@@ -158,16 +158,36 @@ CITY_WRITES = {
 def required(method: str, path: str) -> Level:
     path = path.rstrip("/") or "/"
     if method in ("GET", "HEAD") and (
-        path in {"/", "/explore", "/plaza", "/site/index.html", "/site/theme.js", "/site/brand.css", "/site/city-lab.css"}
+        path
+        in {
+            "/",
+            "/explore",
+            "/plaza",
+            "/site/index.html",
+            "/site/theme.js",
+            "/site/brand.css",
+            "/site/city-lab.css",
+        }
         or (path.startswith("/site/community/") and not path.endswith("workspace.html"))
         or re.fullmatch(r"/(publications|people|posts)/[A-Za-z0-9_-]+", path)
-        or path in {"/api/community/publications", "/api/community/posts", "/api/community/comments", "/api/community/attachment"}
+        or path
+        in {
+            "/api/community/publications",
+            "/api/community/posts",
+            "/api/community/comments",
+            "/api/community/attachment",
+        }
         or re.fullmatch(r"/api/community/(publications|people|posts)/[A-Za-z0-9_-]+", path)
     ):
         return "public"
     if path == "/api/auth/config" and method in ("GET", "HEAD"):
         return "public"
-    if method == "POST" and path in {"/api/auth/verify", "/api/auth/resend", "/api/auth/recover", "/api/auth/recover/reset"}:
+    if method == "POST" and path in {
+        "/api/auth/verify",
+        "/api/auth/resend",
+        "/api/auth/recover",
+        "/api/auth/recover/reset",
+    }:
         return "public"
     if path.startswith("/api/community/"):
         return "member"

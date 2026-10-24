@@ -32,7 +32,7 @@
   <img class="auth-brand" src="/site/auth/brand/gaworld-lockup-a.png" alt="GAWorld" width="240" height="80">
   <h1 id="title">登录 GAWorld</h1>
   <p class="hint" id="hint">用昵称和密码登录。</p>
-  <form id="form" autocomplete="on">
+  <form id="form" method="post" autocomplete="on">
     <div id="code-row" hidden>
       <label for="code" id="code-label">邀请码</label>
       <input id="code" name="code" autocomplete="off">
@@ -51,7 +51,7 @@
       <label for="confirm">再输一次密码</label>
       <input id="confirm" name="confirm" type="password" autocomplete="new-password">
     </div>
-    <button id="submit" type="submit">登录</button>
+    <button id="submit" type="submit" disabled>登录</button>
     <div class="error" id="error" role="alert"></div>
   </form>
   <nav>
