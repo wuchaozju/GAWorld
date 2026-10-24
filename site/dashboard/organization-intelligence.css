@@ -25,4 +25,9 @@
 .oi-record { display: block; width: 100%; text-align: left; padding: .85rem; margin-bottom: .6rem; color: inherit; background: transparent; border: 1px solid var(--line, #dce3e6); border-radius: 8px; cursor: pointer; overflow-wrap: anywhere; }
 .oi-record[aria-current="true"] { border-color: var(--accent, #39778a); }
 .oi-pane [hidden] { display: none !important; }
+.oi2-intro { border-top: 3px solid var(--accent, #39778a); }
+.oi2-runtime { overflow-wrap: anywhere; }
+.oi2-table { overflow-x: auto; }
+.oi2-table caption { text-align: left; font-weight: 600; margin: 1rem 0 .5rem; }
+.oi2-table td { font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) { .oi-form { grid-template-columns: 1fr; } .oi-pane { grid-template-columns: minmax(0, 1fr); } }

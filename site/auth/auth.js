@@ -1,8 +1,8 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); }, params = new URLSearchParams(location.search);
-  var mode = location.pathname.replace(/\/+$/, '').split('/').pop(), next = params.get('next') || '/workspace';
-  if (!/^\/(?![\/\\])/.test(next) || /[\u0000-\u0020\\]/.test(next)) next = '/workspace';
+  var mode = location.pathname.replace(/\/+$/, '').split('/').pop(), next = params.get('next') || '/console#workspace';
+  if (!/^\/(?![\/\\])/.test(next) || /[\u0000-\u0020\\]/.test(next)) next = '/console#workspace';
   if (location.hash && next.indexOf('#') < 0) next += location.hash;
   var code = params.get('code') || '', open = false;
   async function api(path, data) {

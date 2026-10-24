@@ -12,7 +12,7 @@
     var result = await C.api("GET", "/api/community/publications?" + q);
     app.innerHTML = '<section class="hero"><div><p class="eyebrow">OPEN RESEARCH / GAWorld</p><h1>让研究被看见，<br>让问题继续生长。</h1><p>发现用智能体探索社会的研究、方法与仿真案例。阅读结果，也阅读它们的条件与局限。</p></div><div class="hero-aside"><strong>从一个问题开始。</strong><p>在自己的工作台探索，在这里分享与讨论。</p><a class="button" href="/workspace">进入我的工作空间 ↗</a></div></section><form id="searchForm" class="toolbar"><input name="q" aria-label="搜索研究" placeholder="搜索问题、研究或方法" value="' + e(params.get("q") || "") + '"><select name="kind" aria-label="成果类型"><option value="">全部成果</option><option value="plan">研究方案</option><option value="study">研究报告</option><option value="simulation">仿真案例</option></select><input name="tag" aria-label="标签" placeholder="按标签筛选" value="' + e(params.get("tag") || "") + '" style="flex:0 1 170px;min-width:120px"><button class="button" type="submit">搜索</button></form><div class="section-head"><h2>公开研究</h2><span class="hint">最新发布 · 精选优先</span></div><div class="grid">' + (result.publications.map(C.card).join("") || C.empty("第一项公开研究，等你发布", "研究方案、部分结果和完整报告都可以分享，请清楚说明证据边界。")) + '</div>' + pager(result.publications.length);
     app.querySelector('[name="kind"]').value = params.get("kind") || "";
-    document.getElementById("searchForm").onsubmit = function (event) { event.preventDefault(); var values = new URLSearchParams(new FormData(event.target)); location.href = "/explore?" + values; };
+    document.getElementById("searchForm").onsubmit = function (event) { event.preventDefault(); var values = new URLSearchParams(new FormData(event.target)); C.navigate("/explore?" + values); };
   }
   async function plaza() {
     var result = await C.api("GET", "/api/community/posts?" + params);
@@ -22,7 +22,7 @@
         var share = this.value === "share"; document.getElementById("shareTarget").hidden = !share;
         if (share) { var r = await C.api("GET", "/api/community/publications"); document.getElementById("postPublication").innerHTML = r.publications.map(function (p) { return '<option value="' + e(p.id) + '">' + e(p.title) + '</option>'; }).join(""); }
       };
-      document.getElementById("postForm").onsubmit = async function (event) { event.preventDefault(); var button = this.querySelector("button"); button.disabled = true; try { var p = await C.api("POST", "/api/community/posts", Object.fromEntries(new FormData(this))); location.href = "/posts/" + encodeURIComponent(p.id); } catch (err) { C.error(err); button.disabled = false; } };
+      document.getElementById("postForm").onsubmit = async function (event) { event.preventDefault(); var button = this.querySelector("button"); button.disabled = true; try { var p = await C.api("POST", "/api/community/posts", Object.fromEntries(new FormData(this))); C.navigate("/posts/" + encodeURIComponent(p.id)); } catch (err) { C.error(err); button.disabled = false; } };
     }
   }
   async function detail() {
@@ -33,7 +33,7 @@
     var versions = isPub ? '<label for="versionSelect">成果版本</label><select class="version-select" id="versionSelect">' + current.versions.map(function (v) { return '<option value="' + Number(v) + '">v' + Number(v) + (v === current.current_version ? ' · 最新' : '') + '</option>'; }).join("") + '</select><p class="hint">讨论对应具体版本，旧版本保留原结论。</p>' : '';
     var files = isPub ? current.attachments.map(function (a) { return '<button class="link-button" data-action="attachment" data-id="' + e(a.id) + '">↓ ' + e(a.name) + '</button><br>'; }).join("") : '';
     app.innerHTML = '<a class="hint" href="' + (isPub ? '/explore' : '/plaza') + '">← ' + (isPub ? '发现研究' : '公共广场') + '</a><div class="article-layout"><article class="article"><p class="eyebrow" style="margin-top:32px">' + (isPub ? 'RESEARCH / ' + e(C.kind[current.kind]) : 'DISCUSSION / 研究交流') + '</p><h1>' + e(current.title) + '</h1><div class="article-meta">' + C.author(current.author) + '<span>' + C.date(current.published_at || current.created_at) + '</span>' + (isPub ? '<span class="status">' + e(C.status[current.result_status]) + '</span><span>v' + Number(current.version) + '</span>' : '') + '</div>' + (current.summary ? '<div class="article-summary">' + e(current.summary) + '</div>' : '') + '<div class="article-body">' + e(current.body) + '</div>' + (current.methods ? '<h2>研究方法</h2><div class="article-body small">' + e(current.methods) + '</div>' : '') + (current.limitations ? '<h2>局限与证据边界</h2><div class="article-body small">' + e(current.limitations) + '</div>' : '') + (current.references ? '<h2>来源与引用</h2><div class="article-body small">' + e(current.references) + '</div>' : '') + (isPub && current.include_template ? '<details><summary>公开的可复用方案</summary><pre class="article-body small">' + e(JSON.stringify(current.public_template || {}, null, 2)) + '</pre></details>' : '') + (!isPub && current.publication_id ? '<a class="button secondary" href="/publications/' + encodeURIComponent(current.publication_id) + '">阅读相关成果 ↗</a>' : '') + '<section id="thread" class="thread"></section></article><aside style="padding-top:38px"><div class="side-panel">' + versions + '<p>讨论' + (current.locked ? '已锁定' : '开放中') + '</p><button class="button secondary" data-action="bookmark">收藏</button>' + (isPub && current.reusable ? '<button class="button" data-action="fork">复制到我的工作台 ↗</button><p class="hint">创建私人草稿，检查配置后自行启动。</p>' : '') + '<button class="link-button" data-action="report" style="margin-top:18px">举报或申请管理处理</button></div>' + (isPub ? '<div class="side-panel"><p>复用许可 · ' + e(current.license) + '</p><p class="hint">发布内容是作者选定的版本。仿真结果应结合方法与局限解读。</p>' + files + '</div>' : '') + '</aside></div>';
-    if (isPub) { var select = document.getElementById("versionSelect"); select.value = current.version; select.onchange = function () { location.href = "/publications/" + encodeURIComponent(targetId) + "?version=" + this.value; }; }
+    if (isPub) { var select = document.getElementById("versionSelect"); select.value = current.version; select.onchange = function () { C.navigate("/publications/" + encodeURIComponent(targetId) + "?version=" + this.value); }; }
     await thread();
   }
   async function thread() {
@@ -59,10 +59,10 @@
       if (action === "delete-comment" && confirm("删除这条评论？回复关系将保留。")) { await C.api("POST", "/api/community/comments/delete", { id: id }); await thread(); }
       if (action === "report" || action === "report-comment") { var reason = prompt("请说明举报或管理请求的原因"); if (reason) { await C.api("POST", "/api/community/reports", { target_type: action === "report-comment" ? "comment" : targetType, target_id: action === "report-comment" ? id : targetId, reason: reason }); C.toast("已提交，等待社区管理者处理"); } }
       if (action === "fork") {
-        var workspace = await C.api("GET", "/api/workspace/overview"); C.world = workspace.current_world;
+        var workspace = await C.api("GET", "/api/workspace/overview"); await C.bindWorld(workspace.current_world);
         var result = await C.api("POST", "/api/community/fork", { id: targetId, version: current.version, world_id: C.world });
         C.toast("已创建私人研究草稿；请配置本人的城市、居民和模型。");
-        location.href = "/workspace?view=research&copied=" + encodeURIComponent(result.plan_id);
+        C.navigate("/workspace?view=research&copied=" + encodeURIComponent(result.plan_id));
       }
       if (action === "attachment") {
         var file = await C.api("GET", "/api/community/attachment?" + new URLSearchParams({ id: targetId, version: current.version, attachment_id: id }));

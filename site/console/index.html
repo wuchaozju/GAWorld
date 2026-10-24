@@ -26,8 +26,6 @@
       <strong class="crumb-view" id="crumbView"></strong>
     </div>
     <div class="bar-right">
-      <a class="open-new" href="/workspace">我的工作空间</a>
-      <a class="open-new" href="/explore">研究社区</a>
       <select id="themeMode" aria-label="外观" title="外观">
         <option value="system">跟随系统</option>
         <option value="light">浅色</option>
@@ -38,7 +36,7 @@
         <button type="button" class="open-new" id="worldManageBtn" data-i18n="world.manage">管理世界</button>
       </span>
       <span class="user-chip" id="userChip" hidden>
-        <span id="userName"></span>
+        <a class="open-new" id="userName" href="#account"></a>
         <button type="button" class="open-new" id="logoutBtn" data-i18n="console.logout">退出登录</button>
       </span>
       <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
@@ -54,6 +52,22 @@
          five groups, in the same order, are the landing page's 功能入口. -->
     <nav class="sidebar" id="sidebar" aria-label="views">
       <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical">
+        <section class="nav-group" id="workspaceNav" hidden>
+          <h2 class="nav-group-label"><span data-i18n="nav.group_workspace">我的工作空间</span><span class="en">Workspace</span></h2>
+          <button class="tab" role="tab" data-tab="workspace">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.workspace">空间总览</span><span class="en">Overview</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="myresearch">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.myresearch">我的研究</span><span class="en">My research</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="myworlds">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.myworlds">我的仿真世界</span><span class="en">My worlds</span></span>
+          </button>
+        </section>
+
         <section class="nav-group">
           <h2 class="nav-group-label"><span data-i18n="nav.group_build">构建</span><span class="en">Build</span></h2>
           <button class="tab" role="tab" data-tab="city">
@@ -119,6 +133,42 @@
           <button class="tab" role="tab" data-tab="research">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7.5 15h9"/></svg>
             <span class="tab-text"><span data-i18n="nav.research">研究工作台</span><span class="en">Research</span></span>
+          </button>
+        </section>
+
+        <section class="nav-group" id="communityNav" hidden>
+          <h2 class="nav-group-label"><span data-i18n="nav.group_community">研究社区</span><span class="en">Community</span></h2>
+          <button class="tab" role="tab" data-tab="explore">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.explore">发现研究</span><span class="en">Explore</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="plaza">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.plaza">公共广场</span><span class="en">Discussions</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="publish">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.publish">发布研究成果</span><span class="en">Publish</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="publications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.publications">我的发布</span><span class="en">Publications</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="bookmarks">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.bookmarks">我的收藏</span><span class="en">Bookmarks</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.notifications">消息</span><span class="en">Messages</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="account">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.account">账号设置</span><span class="en">Account</span></span>
+          </button>
+          <button class="tab" role="tab" data-tab="moderation" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="tab-text"><span data-i18n="nav.moderation">社区管理</span><span class="en">Moderation</span></span>
           </button>
         </section>
 
@@ -197,6 +247,7 @@
     <button type="button" class="open-new" id="worldCloseBtn" data-i18n="world.close">关闭</button>
   </dialog>
   <script src="/site/dashboard/i18n.js"></script>
+  <script src="/site/community/navigation.js"></script>
   <script src="/site/console/console.js"></script>
 </body>
 </html>

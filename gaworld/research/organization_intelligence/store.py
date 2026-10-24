@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import codecs
+import fcntl
 import json
 import os
 import re
@@ -80,3 +81,18 @@ def log_chunk(identifier, offset):
     text = decoder.decode(raw, final=False)
     pending = decoder.getstate()[0]
     return {"text": text, "next_offset": offset + len(raw) - len(pending), "size": size}
+
+
+def provider_limit(key, info=None):
+    """Share retry floors across OI jobs in this world, including fresh drafts."""
+    root().mkdir(parents=True, exist_ok=True)
+    with (root() / "provider-limits.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        path = root() / "provider-limits.json"
+        limits = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        existing = limits.get(key) or {}
+        if info and info["retry_at"] > existing.get("retry_at", 0):
+            limits[key] = info
+            atomic(path, json.dumps(limits, ensure_ascii=False))
+            existing = info
+        return existing

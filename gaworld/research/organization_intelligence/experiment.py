@@ -40,11 +40,29 @@ def observation(task, role):
     }
 
 
-def parse(raw):
+def parse(raw, *, repair=False):
     text = raw.strip()
     if text.startswith("```") and text.endswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-    value = json.loads(text)
+
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("回答有重复字段")
+            result[key] = value
+        return result
+
+    try:
+        value = json.loads(text, object_pairs_hook=unique)
+    except json.JSONDecodeError:
+        if not repair:
+            raise
+        from .recovery import escape_message
+
+        value = escape_message(text)
+    if repair and isinstance(value, dict) and set(value) != {"choice", "message"}:
+        raise ValueError("回答只能包含 choice 和 message")
     if not isinstance(value, dict) or type(value.get("choice")) is not int or value["choice"] not in range(4):
         raise ValueError("模型未返回有效的方案编号 0–3")
     if not isinstance(value.get("message"), str) or len(value["message"]) > 1800:
@@ -52,7 +70,7 @@ def parse(raw):
     return value
 
 
-def run(spec, llm, on_call, on_row=None, on_state=None, before_call=None):
+def run(spec, llm, on_call, on_row=None, on_state=None, before_call=None, *, replay=()):
     rows, archives, call_number = [], [], 0
 
     def ask(block, arm, phase, step, context):
@@ -71,17 +89,41 @@ def run(spec, llm, on_call, on_row=None, on_state=None, before_call=None):
             raise ValueError("请求预算已耗尽")
         call_number += 1
         event = {"number": call_number, "request": request, "prompt": prompt, "started_at": time.time()}
+        if call_number <= len(replay):
+            cached = replay[call_number - 1]
+            if (
+                cached.get("number") != call_number
+                or cached.get("prompt") != prompt
+                or cached.get("request") != request
+                or cached.get("status") != "ok"
+                or parse(cached["raw"], repair=bool(spec.get("runtime_policy"))) != cached.get("answer")
+            ):
+                raise ValueError("断点与当前请求不一致；停止恢复，不提交新请求")
+            event.update(
+                raw=cached["raw"],
+                answer=cached["answer"],
+                status="ok",
+                replayed=True,
+                format_repaired=cached.get("format_repaired", False),
+                finished_at=time.time(),
+            )
+            on_call(event)
+            return copy.deepcopy(cached["answer"])
         if before_call:
             before_call(event)
         try:
             raw = str(llm(prompt))
             event["raw"] = raw
-        except Exception:
-            event.update(status="provider_error", finished_at=time.time())
+        except Exception as exc:
+            event.update(status="provider_error", error=str(exc), finished_at=time.time())
             on_call(event)
             raise
         try:
-            answer = parse(raw)
+            answer = parse(raw, repair=bool(spec.get("runtime_policy", {}).get("json_recovery")))
+            try:
+                parse(raw)
+            except ValueError:
+                event["format_repaired"] = True
         except (ValueError, TypeError) as exc:
             event.update(status="parse_error", finished_at=time.time(), error=str(exc))
             on_call(event)

@@ -56,6 +56,7 @@ def evaluate(rows, repeats):
 
 def report(record):
     spec = record["protocol"]
+    info = record.get("rate_limit") or {}
     out = [
         f"# {spec['title']}",
         "",
@@ -70,7 +71,7 @@ def report(record):
         spec["design"],
         "",
         f"计划请求：{spec['budget']['requests']}；"
-        f"已记录响应：{record.get('calls_completed', 0)}；失败：{record.get('error') or '无'}",
+        f"已记录响应：{record.get('calls_completed', 0)}；状态说明：{info.get('message') or record.get('error') or '无'}",
         "",
         "## 留出任务结果",
         "",
@@ -85,6 +86,23 @@ def report(record):
         "token用量与金额：当前传输层未提供，不能由字符数推算。",
         "",
     ]
+    if spec.get("runtime_policy"):
+        out += [
+            f"请求开始间隔至少 {spec['runtime_policy']['min_interval_seconds']} 秒；限流暂停，需显式恢复，无自动重试或模型回退。",
+            f"有效回答：{record.get('valid_responses', 0)}；其中断点复用：{record.get('replayed_responses', 0)}；"
+            f"本地格式转义恢复：{record.get('format_repairs', 0)}（原文始终保留）。",
+            "输入/输出字符包含复用回答；HTTP统计只计当前记录的新提交。",
+        ]
+    provenance = spec.get("recovery")
+    if provenance:
+        out += [
+            f"恢复来源：{provenance['source_id']}；已冻结 {provenance['responses']} 份有效回答。"
+            "这是一次研究的延续，不作为新的独立重复，也不汇总其他失败记录的结果。"
+        ]
+    if info:
+        out += [info.get("hint", ""), f"最早可重试时间（Unix）：{info['retry_at']}；需等待服务商配额恢复。"]
+    if record.get("error"):
+        out += ["", "### 原始错误诊断", "", record["error"], ""]
     analysis = evaluate(record.get("rows", []), spec["repeats"])
     out.append(analysis["inference"])
     if analysis["complete"]:

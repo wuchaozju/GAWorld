@@ -27,11 +27,8 @@
     { id: "docs", src: "/site/dashboard/docs.html" },
   ];
 
-  // Views that moved inside another page: the old hash still opens them.
-  // Parallel Worlds is now the 平行世界 tab of the research workbench.
-  var ALIASES = {
-    worlds: { id: "research", src: "/site/dashboard/research.html?tab=worlds" },
-  };
+  var navigation = window.GAWorldNavigation;
+  TABS = TABS.concat(navigation.tabs);
 
   var COLLAPSE_KEY = "gaworld-nav-collapsed";
 
@@ -49,13 +46,6 @@
   var frames = {}; // id -> iframe element (lazily created)
   var loaded = {}; // id -> true once the iframe fired load
   var activeId = null;
-
-  function tabById(id) {
-    for (var i = 0; i < TABS.length; i++) {
-      if (TABS[i].id === id) return TABS[i];
-    }
-    return null;
-  }
 
   function buttonById(id) {
     for (var i = 0; i < tabButtons.length; i++) {
@@ -166,8 +156,13 @@
   /* -------------------------------------------------------------- activate */
 
   function activate(id) {
-    var tab = tabById(id) || TABS[0];
+    var tab = navigation.resolve(id, TABS);
     activeId = tab.id;
+    var existing = frames[tab.id];
+    // Preserve loaded views unless this hash requests a different page or query.
+    if (existing && existing.getAttribute('src') !== tab.src) {
+      loaded[tab.id] = false; existing.src = tab.src;
+    }
     ensureFrame(tab);
     Object.keys(frames).forEach(function (key) {
       frames[key].hidden = key !== tab.id;
@@ -178,24 +173,19 @@
       btn.setAttribute("aria-selected", on ? "true" : "false");
       btn.tabIndex = on ? 0 : -1; // roving tabindex: one tab stop for the list
     });
-    openNewEl.setAttribute("href", tab.src);
+    openNewEl.setAttribute("href", frames[tab.id].getAttribute("src"));
     syncLoading();
     if (phone.matches) closeDrawer(); else syncChrome();
   }
 
   function currentTabId() {
-    var id = (location.hash || "").replace(/^#/, "");
-    var alias = ALIASES[id];
-    if (alias) {
-      // Point the target view at the right sub-tab before it activates: a
-      // fresh frame loads the aliased src, an open one is navigated to it.
-      if (frames[alias.id]) frames[alias.id].src = alias.src;
-      else ensureFrame({ id: alias.id, src: alias.src });
-      history.replaceState(null, "", "#" + alias.id);
-      return alias.id;
-    }
-    return tabById(id) ? id : TABS[0].id;
+    var hash = (location.hash || "").replace(/^#/, "");
+    if (hash === 'worlds') { history.replaceState(null, '', '#research?tab=worlds'); hash = 'research?tab=worlds'; }
+    return hash;
   }
+
+  // Same-origin child views use this to navigate without nesting another shell.
+  window.GAWorldConsole = { worldReady: null };
 
   /* ---------------------------------------------------------------- wiring */
 
@@ -213,9 +203,10 @@
   // Arrow keys walk the list (it is a vertical tablist); Enter/Space activate,
   // which a <button> already does on its own.
   tabsEl.addEventListener("keydown", function (event) {
-    var index = tabButtons.indexOf(document.activeElement);
+    var visibleButtons = tabButtons.filter(function (btn) { return !btn.hidden && !btn.closest("[hidden]"); });
+    var index = visibleButtons.indexOf(document.activeElement);
     if (index < 0) return;
-    var n = tabButtons.length;
+    var n = visibleButtons.length;
     var next = null;
     if (event.key === "ArrowDown" || event.key === "ArrowRight") next = (index + 1) % n;
     else if (event.key === "ArrowUp" || event.key === "ArrowLeft") next = (index - 1 + n) % n;
@@ -223,7 +214,7 @@
     else if (event.key === "End") next = n - 1;
     if (next === null) return;
     event.preventDefault();
-    tabButtons[next].focus();
+    visibleButtons[next].focus();
   });
 
   navToggleEl.addEventListener("click", function () {
@@ -274,6 +265,15 @@
     .then(function (resp) { return resp.ok ? resp.json() : null; })
     .then(function (me) {
       if (!me || me.mode !== "accounts" || !me.user) return;
+      document.getElementById('workspaceNav').hidden = !me.user.id;
+      navigation.tabs.filter(function (tab) { return tab.personal && tab.id !== 'moderation'; }).forEach(function (tab) {
+        buttonById(tab.id).hidden = !me.user.id;
+      });
+      document.getElementById('communityNav').hidden = false;
+      document.querySelector('[data-tab="moderation"]').hidden = !(me.user.role === 'admin' || me.user.moderator);
+      // Account users start in their existing Dashboard's personal overview.
+      if (!location.hash && me.user.id) { history.replaceState(null, '', '#workspace'); activate('workspace'); }
+      document.getElementById('userName').href = me.user.id ? '#account' : '#admin';
       document.getElementById("userName").textContent = me.user.nickname;
       // The teacher console is for admins; the server checks the role again.
       var adminTab = document.querySelector('[data-tab="admin"]');
@@ -341,9 +341,10 @@
     return fetch("/api/worlds")
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (data) {
-        if (!data || data.mode !== "accounts") return;
+        if (!data || data.mode !== "accounts") return null;
         worldState = data;
         renderWorlds();
+        return (data.current || {}).id || "";
       });
   }
 
@@ -502,5 +503,6 @@
     postJson("/api/worlds/" + current.id + "/delete", {}).then(function () { location.reload(); }, worldError);
   });
   document.addEventListener("locale-changed", renderWorlds);
-  loadWorlds().catch(function () {});
+  window.GAWorldConsole.worldReady = loadWorlds();
+  window.GAWorldConsole.worldReady.catch(function () {});
 })();

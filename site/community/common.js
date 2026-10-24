@@ -1,8 +1,37 @@
 (function () {
   "use strict";
   var C = window.Community = {};
+  C.embedded = window.parent !== window && !!window.parent.GAWorldConsole;
+  if (C.embedded) {
+    document.documentElement.classList.add('is-embedded');
+    var tokens = document.createElement('link');
+    tokens.rel = 'stylesheet'; tokens.href = '/site/tokens.css';
+    document.head.appendChild(tokens);
+  }
+  C.navigate = function (path, reload) {
+    var target = (C.embedded || C.user) ? (window.GAWorldNavigation.consoleUrl(path) || path) : path;
+    var host = C.embedded ? window.parent : window;
+    if (reload) { host.history.replaceState(null, '', target); host.location.reload(); }
+    else host.location.href = target;
+  };
+  C.reload = function () { (C.embedded ? window.parent : window).location.reload(); };
+  document.addEventListener('click', function (event) {
+    var a = event.target.closest('a[href]');
+    if (!a || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || a.hasAttribute('download')) return;
+    var url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || a.getAttribute('href').startsWith('#')) return;
+    var target = window.GAWorldNavigation.consoleUrl(url.pathname + url.search + url.hash);
+    if (C.embedded && (!a.target || a.target === '_top') && (target || /^\/(login|register|recover|verify)$/.test(url.pathname))) { event.preventDefault(); C.navigate(target || url.pathname + url.search); }
+  });
   C.user = null;
   C.world = null;
+  C.bindWorld = async function (world) {
+    if (C.embedded && window.parent.GAWorldConsole.worldReady) {
+      var expected = await window.parent.GAWorldConsole.worldReady;
+      if (expected !== world) throw new Error('世界已在其他页面切换，请刷新整个 Dashboard 后继续');
+    }
+    C.world = world;
+  };
   C.esc = function (value) { return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   C.date = function (value) { if (!value) return ""; var d = new Date(typeof value === "number" ? value * 1000 : value); return isNaN(d.getTime()) ? "" : d.toLocaleDateString("zh-CN"); };
   C.api = async function (method, path, data) {
@@ -20,9 +49,14 @@
   C.kind = { plan: "研究方案", study: "研究报告", simulation: "仿真案例" };
   C.author = function (author) { return '<a href="/people/' + encodeURIComponent(author.public_id || "") + '">' + C.esc(author.display_name || "研究者") + '</a>'; };
   C.card = function (p) { return '<article class="card"><div><span class="status">' + C.esc(C.status[p.result_status] || "方案") + '</span><span class="muted hint">' + C.esc(C.kind[p.kind]) + ' · v' + Number(p.version) + '</span></div><h3><a href="/publications/' + encodeURIComponent(p.id) + '">' + C.esc(p.title) + '</a></h3><p class="summary">' + C.esc(p.summary || p.body.slice(0, 200)) + '</p><div class="tags">' + (p.tags || []).map(function (t) { return '<a class="tag" href="/explore?tag=' + encodeURIComponent(t) + '">' + C.esc(t) + '</a>'; }).join("") + '</div><div class="card-footer">' + C.author(p.author || {}) + '<span>' + C.date(p.published_at) + '</span></div></article>'; };
-  C.loginRequired = function () { if (C.user) return true; location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search); return false; };
+  C.loginRequired = function () { if (C.user) return true; C.navigate("/login?next=" + encodeURIComponent(window.GAWorldNavigation.consoleUrl(location.pathname + location.search) || location.pathname + location.search)); return false; };
   C.ready = C.api("GET", "/api/auth/me").then(function (me) {
     C.user = me.user || null;
+    // Keep old workspace/share URLs valid while giving members one Dashboard.
+    if (C.user && !C.embedded) {
+      var target = window.GAWorldNavigation.consoleUrl(location.pathname + location.search + location.hash);
+      if (target) { location.replace(target); return me; }
+    }
     var nav = document.getElementById("accountNav");
     if (C.user) {
       nav.innerHTML = '<a href="/workspace?view=notifications">消息</a><a href="/workspace?view=account">' + C.esc(C.user.display_name || C.user.nickname) + '</a>';

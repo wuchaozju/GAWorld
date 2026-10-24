@@ -7,7 +7,7 @@ import hashlib
 import json
 import random
 
-VERSION = "OI-1.1"
+VERSION = "OI-1.2"
 TITLE = "人换了，组织还会吗？"
 ARMS = {
     "incumbent_archive": "原成员 · 保留组织档案",
@@ -32,6 +32,8 @@ def integer(payload, key, default, low, high):
 
 
 def freeze(payload, people, model):
+    from .recovery import POLICY
+
     repeats = integer(payload, "repeats", 3, 1, 20)
     seed = integer(payload, "seed", 20261020, 0, 2**31 - 100)
     adults = [copy.deepcopy(p) for p in people if int(p.get("age") or 0) >= 18]
@@ -84,6 +86,7 @@ def freeze(payload, people, model):
         "arms": ARMS.copy(),
         "blocks": blocks,
         "population_hash": digest(adults),
+        "runtime_policy": POLICY.copy(),
         "budget": {
             "requests": repeats * 109,
             "max_output_tokens": repeats * 109 * 2048,

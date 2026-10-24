@@ -39,7 +39,17 @@ def test_public_pages_are_anonymous_but_private_console_is_not(host):
         patch.setattr(world_paths, "REPO_ROOT", str(Path(__file__).resolve().parents[1]))
         for path in ("/explore", "/plaza", "/publications/example", "/people/example", "/register"):
             assert host._req("GET", path)[0].status == 200, path
-        assert host._req("GET", "/workspace")[0].status == 303
+        for path in (
+            "/console",
+            "/workspace?view=publish",
+            "/site/community/workspace.html?view=notifications",
+        ):
+            for method in ("GET", "HEAD"):
+                assert host._req(method, path)[0].status == 303, (method, path)
+                assert host._req(method, path, cookie=host.ac)[0].status == 200, (method, path)
+        for path in ("/site/community/navigation.js", "/explore?q=study", "/publications/example?version=1"):
+            for method in ("GET", "HEAD"):
+                assert host._req(method, path)[0].status == 200, (method, path)
     assert host._req("GET", "/api/community/publications")[0].status == 200
     assert host._req("GET", "/api/workspace/overview")[0].status == 401
     assert host._req("POST", "/api/community/posts", {"title": "bad", "body": "bad"})[0].status == 401

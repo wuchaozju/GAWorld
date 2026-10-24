@@ -17,7 +17,7 @@ from gaworld.accounts import ownership, usage
 from gaworld.apps import research_api, world_paths
 from gaworld.llm.run_state import RunLedger, ledger_context
 from gaworld.research import workspaces
-from gaworld.research.organization_intelligence import analysis, experiment, protocol, store
+from gaworld.research.organization_intelligence import analysis, experiment, protocol, recovery, store
 from gaworld.research.progress import RunTiming
 from gaworld.research.run_logs import configured_secrets, redact
 
@@ -94,7 +94,9 @@ def model_info(name=""):
 
 
 def code_hashes():
-    paths = [Path(module.__file__) for module in (protocol, experiment, analysis)] + [Path(__file__)]
+    paths = [Path(module.__file__) for module in (protocol, experiment, analysis, recovery, store)] + [
+        Path(__file__)
+    ]
     return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 
@@ -125,10 +127,7 @@ def make_caller(spec):
     return call
 
 
-def create(payload):
-    payload = dict(payload)
-    payload["city"] = str(research_api._base_config().get("city") or "")
-    spec = protocol.freeze(payload, population(), model_info(str(payload.get("provider") or "")))
+def save_draft(spec):
     record = {
         "id": "OI" + uuid.uuid4().hex[:24],
         "status": "draft",
@@ -142,6 +141,9 @@ def create(payload):
         "calls_started": 0,
         "input_chars": 0,
         "output_chars": 0,
+        "valid_responses": 0,
+        "replayed_responses": 0,
+        "format_repairs": 0,
         **workspaces.stamp(),
     }
     store.save(record)
@@ -149,6 +151,135 @@ def create(payload):
         store.directory(record["id"]) / "protocol.json", json.dumps(spec, ensure_ascii=False, indent=2)
     )
     return record
+
+
+def create(payload):
+    payload = dict(payload)
+    payload["city"] = str(research_api._base_config().get("city") or "")
+    return save_draft(protocol.freeze(payload, population(), model_info(str(payload.get("provider") or ""))))
+
+
+def verified_protocol(record):
+    spec = record["protocol"]
+    frozen = json.loads((store.directory(record["id"]) / "protocol.json").read_text(encoding="utf-8"))
+    if protocol.digest(spec) != record["protocol_hash"] or frozen != spec:
+        raise ValueError("冻结协议校验失败")
+    if model_info(spec["model"]["name"]) != spec["model"]:
+        raise ValueError("模型配置已变化，请恢复原模型配置；不会切换模型")
+    return spec
+
+
+def limit_info(record):
+    if record.get("rate_limit"):
+        return record["rate_limit"]
+    error = record.get("error", "")
+    if record.get("status") == "failed" and "HTTP 429" in error:
+        quota = "2062" in error
+        return {
+            "kind": "token_plan_2062" if quota else "rate_limit",
+            "retry_at": record.get("finished_at", 0) + (300 if quota else 60),
+            "message": "MiniMax Token Plan 已限流（2062），请等待配额恢复或检查套餐。"
+            if quota
+            else "模型服务限流（HTTP 429），请等待后再续跑。",
+            "hint": "最早重试时间仅为本地退避下限，不代表服务商承诺的配额恢复时间。",
+        }
+    return None
+
+
+def recover(record):
+    if record["status"] not in {"failed", "stopped", "interrupted", "rate_limited"}:
+        raise ValueError("只能从失败、停止、中断或限流的记录建立恢复协议")
+    spec = copy.deepcopy(verified_protocol(record))
+    if spec["version"] not in {"OI-1.1", protocol.VERSION}:
+        raise ValueError("旧任务接口不同，不能恢复；请新建研究")
+    cached = []
+    inherited = spec.get("recovery")
+    if inherited:
+        cached = json.loads((store.directory(record["id"]) / "replay.json").read_text(encoding="utf-8"))
+        if protocol.digest(cached) != inherited["replay_hash"] or len(cached) != inherited["responses"]:
+            raise ValueError("原恢复快照校验失败")
+    path = store.directory(record["id"]) / "events.jsonl"
+    raw = path.read_bytes() if path.exists() else b""
+    lines = raw.split(b"\n")
+    for index, line in enumerate(lines):
+        if not line and index == len(lines) - 1:
+            break
+        try:
+            event = json.loads(line.decode("utf-8"))
+        except ValueError:
+            if index == len(lines) - 1 and not raw.endswith(b"\n"):
+                break  # Interrupted final append; never accept a partial response.
+            raise ValueError("审计日志损坏，不能恢复") from None
+        if event.get("kind") != "response":
+            continue
+        if event.get("status") != "ok":
+            break
+        number = event.get("number", 0)
+        if 1 <= number <= len(cached):
+            original = cached[number - 1]
+            if any(
+                event.get(k) != original.get(k)
+                for k in ("number", "prompt", "request", "raw", "answer", "status")
+            ):
+                raise ValueError("恢复审计与原快照不同")
+            continue
+        if number != len(cached) + 1:
+            raise ValueError("审计请求编号不连续，不能恢复")
+        cached.append(event)
+    spec.update(version=protocol.VERSION, runtime_policy=recovery.POLICY.copy())
+    spec["recovery"] = {
+        "source_id": record["id"],
+        "source_protocol_hash": record["protocol_hash"],
+        "responses": len(cached),
+        "replay_hash": protocol.digest(cached),
+        "not_before": (limit_info(record) or {}).get("retry_at", 0),
+    }
+
+    # Replay all cached contexts offline before creating a new immutable record.
+    class PrefixVerified(Exception):
+        pass
+
+    def tail(prompt):
+        raise PrefixVerified
+
+    try:
+        experiment.run(spec, tail, lambda event: None, replay=cached)
+    except PrefixVerified:
+        pass
+    else:
+        raise ValueError("研究已经完整，无需恢复")
+    result = save_draft(spec)
+    store.atomic(store.directory(result["id"]) / "replay.json", json.dumps(cached, ensure_ascii=False))
+    return result
+
+
+def pace(handle, record, checkpoint, persist):
+    policy = record["protocol"].get("runtime_policy") or {}
+
+    def waiting(paused):
+        handle["timing"].set_paused(paused)
+        record["waiting_for_slot"] = paused
+        persist()
+
+    handle["last_submission"] = recovery.wait_for_slot(
+        handle.get("last_submission"),
+        policy.get("min_interval_seconds", 0),
+        checkpoint,
+        waiting,
+        handle["stop"].wait,
+    )
+
+
+def timing_snapshot(record, handle):
+    planned = record["protocol"]["budget"]["requests"]
+    result = handle["timing"].snapshot(0)
+    valid = record.get("valid_responses", record.get("calls_completed", 0))
+    fresh = valid - record.get("replayed_responses", 0)
+    if record["status"] == "running" and fresh > 0:
+        interval = record["protocol"].get("runtime_policy", {}).get("min_interval_seconds", 0)
+        period = max(interval, result["elapsed_seconds"] / fresh)
+        result["remaining_seconds"] = period * max(0, planned - valid)
+    return result
 
 
 def heal(record):
@@ -174,16 +305,17 @@ def launch(record):
         record = store.load(record["id"])
         if record["status"] != "draft":
             raise ValueError("仅可启动未运行的冻结协议；重做研究请新建记录")
-        spec = record["protocol"]
-        frozen = json.loads((store.directory(record["id"]) / "protocol.json").read_text(encoding="utf-8"))
-        if protocol.digest(spec) != record["protocol_hash"] or frozen != spec:
-            raise ValueError("冻结协议校验失败")
-        if model_info(spec["model"]["name"]) != spec["model"]:
-            raise ValueError("模型配置已变化，请创建新研究")
+        spec = verified_protocol(record)
+        if (spec.get("recovery") or {}).get("not_before", 0) > time.time():
+            raise ValueError("尚在限流退避期，请等待页面显示的最早重试时间后再启动")
+        if store.provider_limit(protocol.digest(spec["model"])).get("retry_at", 0) > time.time():
+            raise ValueError("该模型尚在限流退避期；请等待配额恢复后再启动，重复新建不会解除限流")
         if code_hashes() != record["code_hashes"]:
             raise ValueError("实验代码已变化，请创建新研究")
         if len(_ACTIVE) >= 2:
             raise ValueError("最多同时执行两项组织智能研究")
+        if any(h["provider"] == spec["model"]["name"] for h in _ACTIVE.values()):
+            raise ValueError("该模型已有组织智能研究运行，请先等待或停止，避免并发触发限流")
         caller = make_caller(spec)
         lock = (store.directory(record["id"]) / "run.lock").open("a")
         try:
@@ -194,7 +326,12 @@ def launch(record):
         if store.load(record["id"])["status"] != "draft":
             lock.close()
             raise ValueError("研究已由另一个进程启动或完成")
-        handle = {"stop": threading.Event(), "timing": RunTiming(), "lock": lock}
+        handle = {
+            "stop": threading.Event(),
+            "timing": RunTiming(),
+            "lock": lock,
+            "provider": spec["model"]["name"],
+        }
         _ACTIVE[record["id"]] = handle
         record.update(status="running", runner_pid=os.getpid(), started_at=time.time())
         try:
@@ -239,19 +376,22 @@ def _execute(record, handle, caller):
             raise Stopped
 
     def persist():
-        fraction = record["calls_completed"] / record["protocol"]["budget"]["requests"]
-        record.update(handle["timing"].snapshot(fraction), progress=fraction, telemetry=ledger.snapshot())
+        fraction = record["valid_responses"] / record["protocol"]["budget"]["requests"]
+        record.update(timing_snapshot(record, handle), progress=fraction, telemetry=ledger.snapshot())
         record["updated_at"] = time.time()
         store.save(record)
 
     def before(event):
         checkpoint()
+        pace(handle, record, checkpoint, persist)
         record["calls_started"] = event["number"]
         record["current"] = {k: event["request"][k] for k in ("block", "arm", "phase", "step")}
         store.event(identifier, {"kind": "request", **event})
         persist()
 
     def after(event):
+        if event.get("replayed"):
+            checkpoint()
         # Model errors never put credentials into user-facing logs.
         if "error" in event:
             event["error"] = redact(event["error"], secrets)
@@ -260,6 +400,9 @@ def _execute(record, handle, caller):
         record["input_chars"] += len(event["prompt"])
         record["output_chars"] += len(event.get("raw", ""))
         record["last_call_status"] = event["status"]
+        record["valid_responses"] += int(event["status"] == "ok")
+        record["replayed_responses"] += int(event.get("replayed", False))
+        record["format_repairs"] += int(event.get("format_repaired", False))
         persist()
         checkpoint()
 
@@ -272,13 +415,25 @@ def _execute(record, handle, caller):
         persist()
 
     try:
+        replay = []
+        provenance = record["protocol"].get("recovery")
+        if provenance:
+            replay = json.loads((directory / "replay.json").read_text(encoding="utf-8"))
+            if protocol.digest(replay) != provenance["replay_hash"] or len(replay) != provenance["responses"]:
+                raise ValueError("恢复快照校验失败，不提交新请求")
         with ledger_context(str(directory / "providers.sqlite")):
-            experiment.run(record["protocol"], caller, after, row, state, before)
+            experiment.run(record["protocol"], caller, after, row, state, before, replay=replay)
         record["status"] = "completed"
     except Stopped:
         record["status"] = "stopped"
     except Exception as exc:
-        record.update(status="failed", error=redact(f"{type(exc).__name__}: {exc}", secrets))
+        info = recovery.rate_limit(exc) if record["protocol"].get("runtime_policy") else None
+        record.update(
+            status="rate_limited" if info else "failed", error=redact(f"{type(exc).__name__}: {exc}", secrets)
+        )
+        if info:
+            record["rate_limit"] = info
+            store.provider_limit(protocol.digest(record["protocol"]["model"]), info)
     finally:
         handle["timing"].finish()
         record["finished_at"] = time.time()
@@ -292,10 +447,15 @@ def handle_get(path, query=None):
     try:
         if not parts:
             records = workspaces.owned(store.records())
-            summaries = [
-                {k: heal(r).get(k) for k in ("id", "status", "created_at", "calls_completed", "progress")}
-                for r in records
-            ]
+            summaries = []
+            for record in records:
+                record = heal(record)
+                summary = {
+                    k: record.get(k) for k in ("id", "status", "created_at", "calls_completed", "progress")
+                }
+                if limit_info(record):
+                    summary["display_status"] = "rate_limited"
+                summaries.append(summary)
             config = research_api._base_config()
             names = (config.get("llm") or {}).get("providers") or {}
             providers = [model_info(n) for n in names]
@@ -311,10 +471,19 @@ def handle_get(path, query=None):
         if not workspaces.visible(record):
             return {"error": "找不到研究"}, 404
         record = heal(record)
+        info = limit_info(record)
+        if info:
+            record.update(rate_limit=info, display_status="rate_limited")
         if len(parts) == 1:
+            record["can_recover"] = record["status"] in {
+                "failed",
+                "stopped",
+                "interrupted",
+                "rate_limited",
+            } and record["protocol"]["version"] in {"OI-1.1", protocol.VERSION}
             handle = _ACTIVE.get(record["id"])
             if handle:
-                record.update(handle["timing"].snapshot(record.get("progress", 0)))
+                record.update(timing_snapshot(record, handle))
             return record, 200
         if parts[1:] == ["export"]:
             return {"filename": f"{record['id']}.md", "markdown": analysis.report(record)}, 200
@@ -339,6 +508,8 @@ def handle_post(path, payload):
             return {"error": "找不到研究"}, 404
         if parts[1:] == ["run"]:
             return launch(record), 202
+        if parts[1:] == ["recover"]:
+            return recover(heal(record)), 201
         if parts[1:] == ["stop"]:
             if record["status"] not in {"running", "stopping"}:
                 raise ValueError("研究没有正在运行的请求")

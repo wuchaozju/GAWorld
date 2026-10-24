@@ -964,7 +964,7 @@
     if (study.paused) badges.push("<span class=\"rw-badge rw-stage-paused\">" + esc(t("stage_paused", "已暂停")) + "</span>");
     var actions = [];
     if ((state.context || {}).workspace && state.context.workspace.mode === "multi_user") {
-      actions.push('<a class="btn tiny ghost" target="_top" href="/workspace?view=publish&kind=study&id=' + encodeURIComponent(study.id) + '">发布成果</a>');
+      actions.push('<a class="btn tiny ghost" target="_top" href="/console#publish?kind=study&id=' + encodeURIComponent(study.id) + '">发布成果</a>');
     }
     actions.push("<button class=\"btn tiny ghost\" id=\"rwCreateBatch\">" + esc(t("batch_open", "多模型 / 跨城 / 重复实验")) + "</button>");
     if (!study.live && executionMode(protocol) !== "daily_brief") actions.push("<button class=\"btn tiny ghost\" id=\"rwQuickStudy\">" + esc(t("quick_create", "创建快速试跑版本")) + "</button>");
@@ -1428,7 +1428,7 @@
     if ((state.context || {}).workspace && state.context.workspace.mode === "multi_user") {
       var publish = document.createElement("a");
       publish.className = "btn tiny ghost";
-      publish.href = "/workspace?view=publish&kind=plan&id=" + encodeURIComponent(plan.id);
+      publish.href = "/console#publish?kind=plan&id=" + encodeURIComponent(plan.id);
       publish.target = "_top";
       publish.textContent = "分享研究方案";
       host.querySelector(".rw-actions").appendChild(publish);

@@ -1387,6 +1387,29 @@ def _studies() -> dict[str, Any]:
         "/api/interview/delete": {
             "post": _op("interview", "Delete a session", body=_obj(("session_id",), session_id=STR))
         },
+        "/api/research/organization-intelligence/v2": {
+            "get": _op("research", "OI-2 runtime identity and owned zero-provider studies"),
+            "post": _op("research", "Freeze a zero-provider organization mechanism study", body=_obj(("expected_build",), expected_build=STR, seed=INT, seeds=INT), status="201", errors={"409": "Runtime build handshake mismatch"}),
+        },
+        "/api/research/organization-intelligence/v2/{study_id}": {
+            "get": _op("research", "Durable episode counts, frozen protocol and worker identity")
+        },
+        **{
+            f"/api/research/organization-intelligence/v2/{{study_id}}/{action}": {
+                "get": _op("research", summary)
+            }
+            for action, summary in (
+                ("protocol", "Download the frozen protocol and build identity"),
+                ("results", "Read validated complete cells and raw episode results"),
+                ("export", "Export the organization mechanism study report"),
+            )
+        },
+        "/api/research/organization-intelligence/v2/{study_id}/run": {
+            "post": _op("research", "Start or resume the same frozen zero-provider study", body=_obj(("expected_build",), expected_build=STR), status="202", errors={"409": "Frozen build handshake mismatch"})
+        },
+        "/api/research/organization-intelligence/v2/{study_id}/pause": {
+            "post": _op("research", "Pause after atomic episode commit and retain the task graph", body=OBJ)
+        },
         "/api/research/organization-intelligence": {
             "get": _op("research", "Organization intelligence template, models and owned studies"),
             "post": _op("research", "Freeze an exploratory organization intelligence protocol without model calls",
@@ -1400,6 +1423,9 @@ def _studies() -> dict[str, Any]:
         },
         "/api/research/organization-intelligence/{study_id}/stop": {
             "post": _op("research", "Stop at the next model request boundary", body=OBJ)
+        },
+        "/api/research/organization-intelligence/{study_id}/recover": {
+            "post": _op("research", "Freeze a linked recovery draft with verified cached responses; no model calls", body=OBJ, status="201")
         },
         "/api/research/organization-intelligence/{study_id}/logs": {
             "get": _op("research", "Read owned study audit log", query=[_q("offset", "Byte offset", INT)])

@@ -4154,5 +4154,18 @@
   "whois.sending": "[TODO:en]",
   "whois.voting": "[TODO:en]",
   "novel.running": "[TODO:en]",
-  "timeslip.running": "[TODO:en]"
+  "timeslip.running": "[TODO:en]",
+  "nav.group_workspace": "My workspace",
+  "nav.group_community": "Community",
+  "nav.workspace": "Overview",
+  "nav.myresearch": "My research",
+  "nav.myworlds": "My worlds",
+  "nav.explore": "Explore research",
+  "nav.plaza": "Discussions",
+  "nav.publish": "Publish research",
+  "nav.publications": "My publications",
+  "nav.bookmarks": "Bookmarks",
+  "nav.notifications": "Messages",
+  "nav.account": "Account",
+  "nav.moderation": "Moderation"
 }

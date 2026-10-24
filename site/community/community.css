@@ -4,3 +4,27 @@
 @media(max-width:1050px){.topbar{gap:20px;flex-wrap:wrap}.topbar nav{order:3;width:100%;margin:0}.topbar #accountNav{margin-left:auto}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.article-layout{grid-template-columns:minmax(0,1fr) 220px;gap:30px}.brand span{display:none}.hero{gap:30px}.work-layout{grid-template-columns:195px minmax(0,1fr)}.work-nav{padding:25px 14px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{border-bottom:1px solid var(--line)}.stat:nth-child(2){border-right:0}}
 @media(max-width:680px){.shell{padding:35px 20px 65px}.topbar{padding:16px 20px;gap:12px}.topbar nav{gap:20px;font-size:12px}.brand{font-size:21px}.hero,.article-layout,.split{grid-template-columns:1fr}.hero-aside{border-left:0;border-top:1px solid var(--line);padding:20px 0 0}.hero-aside strong{font-size:26px}.grid,.work-main .grid{grid-template-columns:1fr}.card{padding:22px}.site-footer{margin:0 20px;flex-direction:column}.work-layout{display:block}.work-nav{border:0;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:7px;overflow-x:auto}.work-nav a{white-space:nowrap;margin:0;font-size:12px}.work-nav .eyebrow,.sidebar-note{display:none}.work-main{padding:28px 20px 60px}.work-main h1{font-size:32px}.form .row{grid-template-columns:1fr;gap:0}.stats{margin:24px 0}.stat{padding:18px}.stat strong{font-size:30px}.section-head{align-items:start}.list-row{flex-wrap:wrap}.toolbar{gap:8px}.toolbar input{min-width:100%;width:100%}.article-body{font-size:15px}.comment.reply{margin-left:12px}.preview{padding:20px}.article-layout aside{border-top:1px solid var(--line);padding-top:20px}.article-meta{padding-bottom:18px}}
 @media(prefers-reduced-motion:no-preference){.card{transition:border-color .15s,transform .15s}.card:hover{transform:translateY(-2px)}}
+
+/* Personal and community views share the existing Dashboard navigation and tokens. */
+html.is-embedded { --body: var(--font-sans); --serif: var(--font-sans); --lime: var(--green-soft); }
+.is-embedded .topbar, .is-embedded .work-nav, .is-embedded .site-footer { display: none; }
+.is-embedded body { font-size: 14px; }
+.is-embedded .work-layout { display: block; min-height: 100vh; }
+.is-embedded .work-main, .is-embedded .shell { max-width: 1320px; padding: 28px 32px 64px; margin: 0 auto; }
+.is-embedded h1, .is-embedded .work-main h1 { font-size: 28px; line-height: 1.4; letter-spacing: 0; font-weight: 650; }
+.is-embedded h2 { font-size: 20px; font-weight: 600; }
+.is-embedded .hero { gap: 32px; padding-bottom: 28px; border-bottom-color: var(--line); }
+.is-embedded .hero h1 br { display: none; }
+.is-embedded .hero-aside strong { font: 600 24px var(--body); }
+.is-embedded .stat strong { font: 600 30px var(--body); }
+.is-embedded .card { border-radius: var(--radius); padding: 22px; }
+.is-embedded .button { color: var(--on-accent); }
+.is-embedded .button.secondary { color: var(--ink); }
+.is-embedded .eyebrow { letter-spacing: .08em; }
+.is-embedded .article h1 { font-size: 30px; }
+.is-embedded .article-body { font-size: 15px; }
+@media (max-width: 680px) {
+  .is-embedded .work-main, .is-embedded .shell { padding: 22px 18px 48px; }
+  .is-embedded .hero { grid-template-columns: 1fr; gap: 20px; }
+  .is-embedded .hero h1, .is-embedded .work-main h1 { font-size: 25px; }
+}

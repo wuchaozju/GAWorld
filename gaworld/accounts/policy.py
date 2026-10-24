@@ -84,6 +84,8 @@ def study_action(path: str) -> str | None:
 
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
+    if path.startswith("/api/research/organization-intelligence/v2/"):
+        return False  # Frozen OI-2 engine is standard-library-only and has zero provider calls.
     if path.startswith("/api/research/organization-intelligence/") and path.endswith("/run"):
         return True
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):

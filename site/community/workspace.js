@@ -8,7 +8,14 @@
   function sourceLink(kind, id, label, world) { return '<a class="button compact secondary" href="/workspace?view=publish&kind=' + encodeURIComponent(kind) + '&id=' + encodeURIComponent(id) + '&world=' + encodeURIComponent(world || "") + '">' + e(label) + '</a>'; }
   function studyRows() { return state.studies.map(function (r) { return row(r.title, (r.stage || "研究") + ' · ' + C.date(r.created_at), button("open-study", r.id, "打开研究", 'data-world="' + e(r.world_id || "") + '"') + sourceLink("study", r.id, "发布成果", r.world_id)); }).join(""); }
   function planRows() { return state.plans.map(function (r) { return row(r.title, '研究方案 · ' + C.date(r.created_at), button("open-plan", r.id, "打开方案", 'data-world="' + e(r.world_id || "") + '"') + sourceLink("plan", r.id, "分享方案", r.world_id)); }).join(""); }
-  async function selectWorld(id) { if (id !== C.world) { await C.api("POST", "/api/worlds/select", { id: id }); C.world = id; } }
+  async function selectWorld(id, target) {
+    if (id !== C.world) {
+      await C.api("POST", "/api/worlds/select", { id: id });
+      C.navigate(target || location.pathname + location.search, true);
+      return false;
+    }
+    return true;
+  }
   function overview() {
     var user = state.user;
     app.innerHTML = title((user.display_name || user.nickname) + '的工作空间', '提出问题，构建世界，在自己的节奏里开展研究。') + (!user.email_verified ? '<div class="alert">邮箱尚未验证，验证后即可发布、讨论和提交研究任务。<a href="/workspace?view=account">重新发送验证邮件 ↗</a></div>' : '') + '<div class="toolbar"><a class="button" href="/console#research">新建研究 +</a><a class="button secondary" href="/workspace?view=worlds">创建仿真世界</a><a class="button secondary" href="/explore">发现公开研究 ↗</a></div><div class="stats"><div class="stat"><strong>' + state.plans.length + '</strong><span>研究方案</span></div><div class="stat"><strong>' + state.studies.length + '</strong><span>研究记录</span></div><div class="stat"><strong>' + state.worlds.length + '</strong><span>私人世界</span></div><div class="stat"><strong>' + state.usage.today + '</strong><span>今日模型调用' + (state.usage.daily_limit ? ' / ' + state.usage.daily_limit : '') + '</span></div></div><div class="section-head"><h2>最近的研究</h2><a href="/workspace?view=research" class="hint">全部研究 ↗</a></div>' + (studyRows() || planRows() || C.empty("从第一个研究问题开始", "创建方案，或从社区复制获准复用的研究。")) + '<div class="section-head"><h2>工作台入口</h2></div><div class="grid"><a class="card" href="/console#research"><p class="eyebrow">RESEARCH</p><h3>研究工作台 ↗</h3><p class="muted">从问题、论文到方案、实验和报告。</p></a><a class="card" href="/workspace?view=worlds"><p class="eyebrow">SIMULATION</p><h3>仿真工作台 ↗</h3><p class="muted">管理自己的世界、居民、运行和回放。</p></a></div>';
@@ -18,7 +25,7 @@
     var cities = await C.api('GET', '/api/city/catalogue');
     var list = cities.cities || [];
     app.innerHTML = title('我的仿真世界', '每个世界拥有独立居民副本、配置和运行产物。') + (state.worlds.map(function (w) { return row(w.name, (w.city || '默认城市') + ' · ' + (w.visibility === 'private' ? '私有' : '已共享') + (C.world === w.id ? ' · 当前世界' : ''), button('world-run', w.id, '进入仿真工作台') + sourceLink('simulation', w.id, '分享案例', w.id)); }).join('') || C.empty('还没有仿真世界', '选择一个现有城市模板，为自己创建独立世界。')) + '<section class="thread"><h2>创建世界</h2><form id="worldForm" class="form"><label for="worldName">世界名称</label><input id="worldName" name="name" maxlength="64" required placeholder="例如：社区治理实验室"><label for="worldCity">城市模板</label><select name="city" id="worldCity"><option value="">默认城市</option>' + list.map(function (c) { return '<option value="' + e(c.slug || c.id || c.name) + '">' + e(c.name || c.slug) + '</option>'; }).join('') + '</select><p class="hint">复制居民与配置；此操作不会启动仿真。</p><button class="button">创建私人世界</button></form></section>';
-    document.getElementById('worldForm').onsubmit = async function (event) { event.preventDefault(); var btn = this.querySelector('button'); btn.disabled = true; try { await C.api('POST', '/api/worlds/create', Object.fromEntries(new FormData(this))); location.reload(); } catch (err) { C.error(err); btn.disabled = false; } };
+    document.getElementById('worldForm').onsubmit = async function (event) { event.preventDefault(); var btn = this.querySelector('button'); btn.disabled = true; try { await C.api('POST', '/api/worlds/create', Object.fromEntries(new FormData(this))); C.reload(); } catch (err) { C.error(err); btn.disabled = false; } };
   }
   function publications() {
     var published = state.publications.publications, drafts = state.publications.drafts;
@@ -49,17 +56,42 @@
     function invalidate() { previewDraft = null; document.getElementById('publishPreview').hidden = true; }
     form.addEventListener('input', invalidate);
     async function choose(source) {
-      invalidate(); await selectWorld(source.world);
+      invalidate();
+      if (source.world !== C.world) {
+        var resume = new URLSearchParams(params);
+        resume.set('view', 'publish'); resume.set('kind', source.kind); resume.set('id', source.id);
+        // Keep edits and files while reloading every world-bound panel.
+        var edits = Object.fromEntries(new FormData(form)); delete edits.files;
+        var carry = {identity:{publication:params.get('publication') || '',draft:did || '',kind:source.kind,id:source.id}, edits:edits, files:selectedFiles, include:document.getElementById('includeTemplate').checked, rights:document.getElementById('rightsCheck').checked};
+        sessionStorage.setItem('gaworld-publish-resume-' + C.user.id, JSON.stringify(carry));
+        if (!await selectWorld(source.world, '/workspace?' + resume)) return;
+      }
       selectedSource = await C.api('POST', '/api/community/source', { kind: source.kind, id: source.id }); showTemplate();
       form.elements.title.value = selectedSource.title; form.elements.body.value = selectedSource.body;
       document.getElementById('sourceHint').textContent = '已绑定来源版本 · ' + (C.status[selectedSource.result_status] || '方案') + '。你可以编辑将要公开的正文。';
+      return true;
     }
     document.getElementById('sourceSelect').onchange = async function () { try { if (this.value === '') { selectedSource = null; showTemplate(); invalidate(); } else await choose(sources[Number(this.value)]); } catch (err) { C.error(err); } };
-    if (params.get('kind') && params.get('id')) { var index = sources.findIndex(function (s) { return s.kind === params.get('kind') && s.id === params.get('id'); }); if (index >= 0) { document.getElementById('sourceSelect').value = index; await choose(sources[index]); } }
+    if (params.get('kind') && params.get('id')) { var index = sources.findIndex(function (s) { return s.kind === params.get('kind') && s.id === params.get('id'); }); if (index >= 0) { document.getElementById('sourceSelect').value = index; if (!await choose(sources[index])) return; } }
     if (selectedSource) {
       var match = sources.findIndex(function (s) { return s.id === selectedSource.id && s.kind === selectedSource.kind; });
-      if (match >= 0) { document.getElementById('sourceSelect').value = match; await selectWorld(sources[match].world); }
+      if (match >= 0) { document.getElementById('sourceSelect').value = match; if (!await selectWorld(sources[match].world)) return; }
       document.getElementById('sourceHint').textContent = '来源绑定到已保存的版本；来源修改后须重新选择并预览。';
+    }
+    var resumeKey = 'gaworld-publish-resume-' + C.user.id;
+    var carried = sessionStorage.getItem(resumeKey);
+    if (carried) {
+      var savedEdits = JSON.parse(carried);
+      var matches = Object.keys(savedEdits.identity || {}).every(function (key) { return savedEdits.identity[key] === (params.get(key) || ''); });
+      if (matches) {
+      Object.keys(savedEdits.edits).forEach(function (key) {
+        if (!['title', 'body', 'files'].includes(key) && form.elements[key]) form.elements[key].value = savedEdits.edits[key];
+      });
+      selectedFiles = savedEdits.files || [];
+      document.getElementById('includeTemplate').checked = savedEdits.include;
+      document.getElementById('rightsCheck').checked = savedEdits.rights;
+      }
+      sessionStorage.removeItem(resumeKey);
     }
     document.getElementById('fileHint').textContent = selectedFiles.length ? '已保留附件：' + selectedFiles.map(function (f) { return f.name; }).join('、') + '。重新选择文件将替换此列表。' : '未选择公开附件。';
     document.getElementById('pubFiles').onchange = async function () {
@@ -73,7 +105,7 @@
         previewDraft = await C.api('POST', '/api/community/drafts', body);
         var preview = document.getElementById('publishPreview'); preview.hidden = false;
         preview.innerHTML = '<div class="preview"><p class="eyebrow">PUBLIC PREVIEW / 尚未公开</p><h2>' + e(previewDraft.title) + '</h2><span class="status">' + e(C.status[previewDraft.result_status]) + '</span><p>' + e(previewDraft.summary) + '</p><div class="article-body small">' + e(previewDraft.body) + '</div><h3>研究方法</h3><p class="article-body small">' + e(previewDraft.methods) + '</p><h3>局限与证据边界</h3><p class="article-body small">' + e(previewDraft.limitations) + '</p><h3>来源与引用</h3><p class="article-body small">' + e(previewDraft.references) + '</p>' + (previewDraft.include_template ? '<h3>同时公开的可复用方案（完整内容）</h3><pre class="article-body small">' + e(JSON.stringify((previewDraft.source || {}).template || {}, null, 2)) + '</pre>' : '') + '<p class="hint">许可：' + e(previewDraft.license) + ' · 拟公开附件：' + e(selectedFiles.map(function (f) { return f.name; }).join('、') || '无') + '</p><p class="hint">系统不会自动附带私人日志或居民原始文件；请检查正文和附件中是否含有私密信息。</p><button class="button" id="confirmPublish">确认公开发布</button></div>';
-        document.getElementById('confirmPublish').onclick = async function () { this.disabled = true; try { var result = await C.api('POST', '/api/community/publish', { draft_id: previewDraft.id, revision: previewDraft.revision }); location.href = '/publications/' + result.id + '?version=' + result.version; } catch (err) { C.error(err); this.disabled = false; } };
+        document.getElementById('confirmPublish').onclick = async function () { this.disabled = true; try { var result = await C.api('POST', '/api/community/publish', { draft_id: previewDraft.id, revision: previewDraft.revision }); C.navigate('/publications/' + result.id + '?version=' + result.version); } catch (err) { C.error(err); this.disabled = false; } };
         preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) { C.error(err); } finally { btn.disabled = false; }
     };
@@ -103,21 +135,21 @@
     var b = event.target.closest('[data-action]'); if (!b) return; b.disabled = true;
     var action = b.dataset.action, id = b.dataset.id;
     try {
-      if (action === 'world-run') { await selectWorld(id); location.href = '/console#dashboard'; }
-      if (action === 'open-plan' || action === 'open-study') { await selectWorld(b.dataset.world || ''); location.href = '/site/dashboard/research.html?' + (action === 'open-plan' ? 'plan_id=' : 'study_id=') + encodeURIComponent(id); }
+      if (action === 'world-run') { if (await selectWorld(id, '/console#dashboard')) C.navigate('/console#dashboard'); }
+      if (action === 'open-plan' || action === 'open-study') { var target = '/site/dashboard/research.html?' + (action === 'open-plan' ? 'plan_id=' : 'study_id=') + encodeURIComponent(id); if (await selectWorld(b.dataset.world || '', target)) C.navigate(target); }
       if (action === 'delete-draft' && confirm('删除这份未发布草稿？')) { await C.api('POST','/api/community/drafts/delete',{id:id}); location.reload(); }
       if (action === 'withdraw' && confirm('撤回后游客将无法读取该成果及附件，确认撤回？')) { await C.api('POST','/api/community/withdraw',{ id:id }); location.reload(); }
       if (action === 'unbookmark') { await C.api('POST','/api/community/bookmarks',{ target_type:b.dataset.kind,target_id:id,enabled:false }); await bookmarks(); }
       if (action === 'seen') { await C.api('POST','/api/community/notifications/seen',{}); await notifications(); }
       if (action === 'resend') { await C.api('POST','/api/auth/resend',{ email:state.user.email }); C.toast('验证邮件已提交发送，请检查收件箱'); }
       if (action === 'close-sessions') { await C.api('POST','/api/auth/sessions/close-others',{}); C.toast('已退出其他设备'); }
-      if (action === 'logout') { await C.api('POST','/api/auth/logout',{}); location.href = '/explore'; }
+      if (action === 'logout') { await C.api('POST','/api/auth/logout',{}); (C.embedded ? window.parent : window).location.href = '/explore'; }
       if (action === 'moderate') { var f = document.getElementById('moderationForm'); f.elements.target_type.value = b.dataset.kind; f.elements.target_id.value = id; f.scrollIntoView({ behavior:'smooth' }); f.elements.reason.focus(); }
     } catch (err) { C.error(err); } finally { b.disabled = false; }
   });
   C.ready.then(async function (me) {
     if (!me.user) { app.innerHTML = C.empty('请以账号登录', me.mode === 'single' ? '当前部署尚未启用账号。管理员初始化后可使用个人工作空间。' : '登录后进入自己的研究与仿真工作台。') + '<a class="button" href="/login">登录</a>'; return; }
-    state = await C.api('GET','/api/workspace/overview'); C.world = state.current_world;
+    state = await C.api('GET','/api/workspace/overview'); await C.bindWorld(state.current_world);
     document.getElementById('moderationLink').hidden = !(state.user.role === 'admin' || state.user.moderator);
     document.querySelectorAll('[data-view]').forEach(function (a) { a.classList.toggle('active',a.dataset.view === view); });
     var renderers = { overview:overview,research:research,worlds:worlds,publish:publishForm,publications:publications,bookmarks:bookmarks,notifications:notifications,account:account,moderation:moderation };

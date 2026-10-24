@@ -4154,5 +4154,18 @@
   "whois.sending": "发送中…",
   "whois.voting": "提交中…",
   "novel.running": "正在写…",
-  "timeslip.running": "穿越中…"
+  "timeslip.running": "穿越中…",
+  "nav.group_workspace": "我的工作空间",
+  "nav.group_community": "研究社区",
+  "nav.workspace": "空间总览",
+  "nav.myresearch": "我的研究",
+  "nav.myworlds": "我的仿真世界",
+  "nav.explore": "发现研究",
+  "nav.plaza": "公共广场",
+  "nav.publish": "发布研究成果",
+  "nav.publications": "我的发布",
+  "nav.bookmarks": "我的收藏",
+  "nav.notifications": "消息",
+  "nav.account": "账号设置",
+  "nav.moderation": "社区管理"
 }
