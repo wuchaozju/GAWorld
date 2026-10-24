@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Home Mode panel renderer.
  *
  * Pulls `GET /api/home/<id>` and turns the response into:
@@ -83,7 +85,7 @@
   function renderHomePanel(payload, helpers = {}) {
     const root = helpers.root || document.getElementById("homeDetail");
     if (!root) return;
-    root.innerHTML = "";
+    root.innerHTML = gwHTML("");
 
     if (!payload || payload.error) {
       root.appendChild(

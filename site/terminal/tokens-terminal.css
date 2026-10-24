@@ -12,7 +12,7 @@
  * next to its terminal.html and adds only layout.
  */
 
-@import url("/site/brand.css");
+@import url("../brand.css");
 
 :root {
   --bg: #1a1d1b;

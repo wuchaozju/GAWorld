@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 const state = {
   config: null,
   agents: [],
@@ -203,7 +206,7 @@ function loadAvatar(path) {
   img.onerror = () => {
     state.avatarCache.delete(resolved);
   };
-  img.src = resolved;
+  img.src = gwURL(resolved);
   return null;
 }
 
@@ -215,7 +218,7 @@ function renderSelectedAgentAvatar() {
   }
   const selected = state.agents.find((agent) => Number(agent.id) === Number(state.selectedAgentId));
   const avatarPath = getAgentAvatarPath(state.selectedAgentId);
-  els.selectedAgentAvatar.src = avatarPath;
+  els.selectedAgentAvatar.src = gwURL(avatarPath);
   els.selectedAgentAvatar.alt = `${selected ? selected.name : `Agent ${state.selectedAgentId}`} avatar`;
 }
 
@@ -395,7 +398,7 @@ function configPayloadFromForm() {
 function renderCityChoices(cities, selected) {
   const select = els.citySelect;
   if (!select) return;
-  select.innerHTML = "";
+  select.innerHTML = gwHTML("");
 
   const blank = document.createElement("option");
   blank.value = "";
@@ -477,7 +480,7 @@ async function loadConfig() {
 }
 
 function fillProviderSelect(select, providers, selected) {
-  select.innerHTML = "";
+  select.innerHTML = gwHTML("");
   providers.forEach((provider) => {
     const option = document.createElement("option");
     option.value = provider;
@@ -540,7 +543,7 @@ function renderSimRoster() {
   if (!els.simRosterList) return;
   const ids = Array.from(configuredIdSet()).sort((a, b) => a - b);
   if (els.simRosterCount) els.simRosterCount.textContent = ids.length ? String(ids.length) : "";
-  els.simRosterList.innerHTML = "";
+  els.simRosterList.innerHTML = gwHTML("");
   ids.forEach((id) => {
     const agent = state.agents.find((item) => Number(item.id) === id);
     const name = agent ? agent.name : `Agent ${id}`;
@@ -560,7 +563,7 @@ function renderSimRoster() {
     // No avatar file for this resident yet — fall back to the initial
     // rendered underneath.
     img.addEventListener("error", () => img.remove());
-    img.src = getAgentAvatarPath(id);
+    img.src = gwURL(getAgentAvatarPath(id));
     face.appendChild(img);
 
     const label = document.createElement("span");
@@ -621,7 +624,7 @@ function toggleSelectedAgentInSim() {
 // out of loadAgents() so exiting a city-browse preview can restore the picker
 // without refetching data that is already cached.
 function renderRunningAgentOptions() {
-  els.agentSelect.innerHTML = "";
+  els.agentSelect.innerHTML = gwHTML("");
   state.agents.forEach((agent) => {
     const option = document.createElement("option");
     option.value = String(agent.id);
@@ -673,17 +676,17 @@ async function handleCitySelectionChange() {
 async function enterCityBrowse(slug) {
   state.browsing = true;
   if (els.toggleSimBtn) els.toggleSimBtn.disabled = true;
-  els.profileView.innerHTML = `<p class="muted-line">${__("sd.loading")}</p>`;
+  els.profileView.innerHTML = gwHTML(`<p class="muted-line">${__("sd.loading")}</p>`);
   const payload = await api("/api/city/agents?city=" + encodeURIComponent(slug));
   state.browsedCity = payload.city;
   state.browsedAgents = payload.agents || [];
   const firstId = state.browsedAgents.length ? state.browsedAgents[0].id : null;
-  els.agentSelect.innerHTML = cityView().agentOptions(state.browsedAgents, firstId);
+  els.agentSelect.innerHTML = gwHTML(cityView().agentOptions(state.browsedAgents, firstId));
   if (firstId == null) {
     els.selectedAgentAvatar.removeAttribute("src");
     els.selectedAgentAvatar.alt = "";
-    els.profileView.innerHTML = cityView().browseNotice(state.browsedCity) +
-      `<p class="section-note">${__("sd.browse_empty")}</p>`;
+    els.profileView.innerHTML = gwHTML(cityView().browseNotice(state.browsedCity) +
+      `<p class="section-note">${__("sd.browse_empty")}</p>`);
     bindBrowseUseCityBtn();
     return;
   }
@@ -697,14 +700,14 @@ async function browseCityAgent(slug, id) {
   const view = cityView();
   const rows = view.identityRows(detail.agent, detail.city)
     .map(([label, value]) => `<tr><th>${view.esc(label)}</th><td>${view.esc(value)}</td></tr>`).join("");
-  els.profileView.innerHTML = view.browseNotice(detail.city) +
+  els.profileView.innerHTML = gwHTML(view.browseNotice(detail.city) +
     `<table class="ca-kv">${rows}</table>` +
-    renderMarkdown(detail.agent.profile_text || "");
+    renderMarkdown(detail.agent.profile_text || ""));
   // Not getAgentAvatarPath(): that resolves through the *running* trace, which
   // would show whoever holds this number in the actual run, not this
   // resident. The plain per-id fallback file is the closest thing to a
   // city-agnostic avatar this build has.
-  els.selectedAgentAvatar.src = `/output/visualization/avatars/agent_${Number(id)}.svg`;
+  els.selectedAgentAvatar.src = gwURL(`/output/visualization/avatars/agent_${Number(id)}.svg`);
   els.selectedAgentAvatar.alt = `${detail.agent.name || `Agent ${id}`} avatar`;
   bindBrowseUseCityBtn();
 }
@@ -740,7 +743,7 @@ function selectedLifeEventTemplate() {
 }
 
 function fillLifeEventTemplates() {
-  els.lifeEventTemplateSelect.innerHTML = "";
+  els.lifeEventTemplateSelect.innerHTML = gwHTML("");
   state.lifeEventTemplates.forEach((template) => {
     const option = document.createElement("option");
     option.value = template.key;
@@ -920,7 +923,7 @@ function renderMarkdown(md) {
 
 function renderProfileView() {
   if (!els.profileView) return;
-  els.profileView.innerHTML = renderMarkdown(state.profileText);
+  els.profileView.innerHTML = gwHTML(renderMarkdown(state.profileText));
 }
 
 // ---------------------------------------------------------------------------
@@ -1000,7 +1003,7 @@ function renderFamilyOverview() {
   if (!els.familyOverview) return;
   const data = state.family;
   if (!data || !data.available) {
-    els.familyOverview.innerHTML = "";
+    els.familyOverview.innerHTML = gwHTML("");
     return;
   }
   const summary = data.summary || {};
@@ -1048,10 +1051,10 @@ function renderFamilyOverview() {
     .join("");
 
   els.familyOverview.innerHTML =
-    `<div class="family-stats">${stats}</div>` +
+    gwHTML(`<div class="family-stats">${stats}</div>` +
     (total
       ? `<div class="family-bar">${bar}</div><div class="family-legend">${legend}</div>`
-      : "");
+      : ""));
 }
 
 function familyMemberChip(member) {
@@ -1072,15 +1075,15 @@ function renderFamilyDetail() {
   if (!els.familyDetail) return;
   const data = state.family;
   if (!data || !data.available) {
-    els.familyDetail.innerHTML = "";
+    els.familyDetail.innerHTML = gwHTML("");
     return;
   }
   const agentId = Number(state.selectedAgentId);
   const row = (data.agents || []).find((item) => Number(item.agent_id) === agentId);
   if (!row) {
-    els.familyDetail.innerHTML = `<p class="family-note">${escapeHtml(
+    els.familyDetail.innerHTML = gwHTML(`<p class="family-note">${escapeHtml(
       __("family.not_in_run")
-    )}</p>`;
+    )}</p>`);
     return;
   }
 
@@ -1118,11 +1121,11 @@ function renderFamilyDetail() {
       : "";
 
   els.familyDetail.innerHTML =
-    `<div class="family-head-row"><strong>${escapeHtml(row.name || "")}</strong>${tags}</div>` +
+    gwHTML(`<div class="family-head-row"><strong>${escapeHtml(row.name || "")}</strong>${tags}</div>` +
     (row.brief ? `<p class="family-brief">${escapeHtml(row.brief)}</p>` : "") +
     group(__("family.coresident"), coresident) +
     group(__("family.elsewhere"), elsewhere) +
-    money;
+    money);
 }
 
 // The homepage shows profiles read-only; editing lives in Agent Studio.
@@ -1197,10 +1200,10 @@ function renderMemory() {
 function renderLongTermMemory(memory) {
   const items = Array.isArray(memory) ? memory : [];
   if (!items.length) {
-    els.memoryView.innerHTML = emptyHtml(__("memory.no_long_term"));
+    els.memoryView.innerHTML = gwHTML(emptyHtml(__("memory.no_long_term")));
     return;
   }
-  els.memoryView.innerHTML = items.map((entry) => {
+  els.memoryView.innerHTML = gwHTML(items.map((entry) => {
     const text = textOf(entry);
     // Entries are written as "[Day 2 12:00 MemoryReview] <text>".
     const match = text.match(/^\[([^\]]{1,80})\]\s*([\s\S]*)$/);
@@ -1208,7 +1211,7 @@ function renderLongTermMemory(memory) {
     const body = match ? match[2] : text;
     return `<div class="mem-item">${tag ? `<span class="mem-chip time">${escapeHtml(tag)}</span>` : ""}`
       + `<p>${escapeHtml(body)}</p></div>`;
-  }).join("");
+  }).join(""));
 }
 
 function scheduleEntries(schedule) {
@@ -1312,7 +1315,7 @@ function renderStateMemory(payload) {
     + memBlock(__("memory.block_schedule"), scheduleHtml)
     + memBlock(__("memory.block_habits"), habitsHtml)
     + memBlock(__("memory.block_intentions"), intentionRows);
-  els.stateMemoryView.innerHTML = html || emptyHtml(__("memory.no_state"));
+  els.stateMemoryView.innerHTML = gwHTML(html || emptyHtml(__("memory.no_state")));
 }
 
 // The episodes endpoint returns a byte tail of a JSONL file, so the first line
@@ -1364,11 +1367,11 @@ function deltaChips(delta) {
 function renderEpisodes(tailText) {
   const episodes = parseEpisodes(tailText);
   if (!episodes.length) {
-    els.episodesView.innerHTML = emptyHtml(__("memory.no_episodes"));
+    els.episodesView.innerHTML = gwHTML(emptyHtml(__("memory.no_episodes")));
     return;
   }
   // Newest first: the tail is chronological.
-  els.episodesView.innerHTML = episodes.slice().reverse().map((ep) => {
+  els.episodesView.innerHTML = gwHTML(episodes.slice().reverse().map((ep) => {
     const when = `D${textOf(ep.day) || "?"} · ${textOf(ep.time) || "--:--"}`;
     const valence = typeof ep.valence === "number" ? ep.valence : null;
     const summary = `<summary><span class="mem-chip time">${escapeHtml(when)}</span>`
@@ -1389,18 +1392,18 @@ function renderEpisodes(tailText) {
       + memRow(__("memory.ep.delta"), deltaChips(ep.delta))
       + memRow(__("memory.ep.tags"), memChips(ep.tags, "neutral"));
     return `<details class="ep-card">${summary}<div class="ep-body">${body}</div></details>`;
-  }).join("");
+  }).join(""));
 }
 
 function renderAgentLog(logText) {
   const lines = String(logText || "").split("\n").filter((line) => line.trim());
   if (!lines.length) {
-    els.agentLogView.innerHTML = emptyHtml(__("memory.no_agent_log"));
+    els.agentLogView.innerHTML = gwHTML(emptyHtml(__("memory.no_agent_log")));
     return;
   }
   const nearBottom = els.agentLogView.scrollTop + els.agentLogView.clientHeight
     >= els.agentLogView.scrollHeight - 30;
-  els.agentLogView.innerHTML = lines.map((line) => {
+  els.agentLogView.innerHTML = gwHTML(lines.map((line) => {
     // Simulator log lines are either "[Tag ...] body" or "Label: body".
     const bracket = line.match(/^\s*\[([^\]]{1,60})\]\s*([\s\S]*)$/);
     const labelled = bracket ? null : line.match(/^\s*([A-Za-z]{1,12}):\s*([\s\S]*)$/);
@@ -1408,7 +1411,7 @@ function renderAgentLog(logText) {
     if (!match) return `<div class="log-line plain"><span class="log-text">${escapeHtml(line)}</span></div>`;
     return `<div class="log-line"><span class="log-tag">${escapeHtml(match[1])}</span>`
       + `<span class="log-text">${escapeHtml(match[2])}</span></div>`;
-  }).join("");
+  }).join(""));
   if (nearBottom) els.agentLogView.scrollTop = els.agentLogView.scrollHeight;
 }
 
@@ -1472,9 +1475,9 @@ function currentRawSource() {
 
 function renderRawModal() {
   const sources = memoryRawSources();
-  els.rawModalTabs.innerHTML = sources.map((source) => `<button type="button" class="raw-modal-tab`
+  els.rawModalTabs.innerHTML = gwHTML(sources.map((source) => `<button type="button" class="raw-modal-tab`
     + `${source.key === state.rawSourceKey ? " active" : ""}" data-raw-tab="${source.key}">`
-    + `${escapeHtml(source.label)}</button>`).join("");
+    + `${escapeHtml(source.label)}</button>`).join(""));
   const active = currentRawSource();
   els.rawModalBody.textContent = active.text || __("raw.empty");
   const chars = (active.text || "").length;
@@ -1500,7 +1503,7 @@ function closeRawModal() {
 function downloadText(filename, text, mime) {
   const url = URL.createObjectURL(new Blob([text], { type: mime || "text/plain;charset=utf-8" }));
   const link = document.createElement("a");
-  link.href = url;
+  link.href = gwURL(url);
   link.download = filename;
   document.body.appendChild(link);
   link.click();
@@ -1648,7 +1651,7 @@ function exportRunLog() {
   // The server streams the untruncated log as Markdown and names the file via
   // Content-Disposition, so nothing has to be buffered in the page.
   const link = document.createElement("a");
-  link.href = "/api/run/log/export";
+  link.href = gwURL("/api/run/log/export");
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -2083,7 +2086,7 @@ function bindEvents() {
     const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
+    link.href = gwURL(url);
     const stamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace("T", "-").replace(/:/g, "");
     link.download = `fos-prompt-${stamp}.md`;
     link.click();

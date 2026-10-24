@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // Bulk import modal for Agent Studio.
 //
 // Flow:
@@ -99,7 +102,7 @@
     if (!modal) return;
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
-    $("#importBody").innerHTML = "";
+    $("#importBody").innerHTML = gwHTML("");
     if (_ctx && _ctx.jobTimer) {
       clearInterval(_ctx.jobTimer);
       _ctx.jobTimer = null;
@@ -135,7 +138,7 @@
   // ----- step 1: upload + parse -----
   function renderStepUpload() {
     const body = $("#importBody");
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.pickFile, "上传文件"))}</h4>
         <p class="hint">${esc(i18n(I18N_KEYS.dropHint, "支持 CSV、Excel (.xlsx) 与 JSONL。最大 5 MB，第一行视为表头。"))}</p>
@@ -150,7 +153,7 @@
           <button class="button primary" id="impNext" disabled>${esc(i18n(I18N_KEYS.next, "下一步 →"))}</button>
         </div>
       </section>
-    `;
+    `);
     const drop = $("#impDrop");
     const input = $("#impFile");
     drop.addEventListener("click", () => input.click());
@@ -310,7 +313,7 @@
     if (_sheetJsPromise) return _sheetJsPromise;
     _sheetJsPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.src = gwURL("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
       script.onload = () => resolve();
       script.onerror = () => reject(new Error("无法加载 SheetJS CDN"));
       document.head.appendChild(script);
@@ -380,7 +383,7 @@
         </td>
       </tr>
     `).join("");
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.mapTitle, "列映射"))}</h4>
         <p class="hint">${esc(i18n(I18N_KEYS.mapHint, "系统已按表头含义给出推荐映射；调整后会自动重新计算分布概览。"))}</p>
@@ -394,7 +397,7 @@
           <button class="button primary" id="impNext">${esc(i18n(I18N_KEYS.next, "下一步 →"))}</button>
         </div>
       </section>
-    `;
+    `);
     $$("select[data-raw]", body).forEach((sel) => {
       sel.addEventListener("change", () => {
         const raw = sel.getAttribute("data-raw");
@@ -443,14 +446,14 @@
     const counts = inferred.counts || {};
     const demo = inferred.demography || {};
     const income = inferred.income || {};
-    el.innerHTML = `
+    el.innerHTML = gwHTML(`
       <strong>${esc(i18n(I18N_KEYS.inferred, "推断出的分布"))}</strong>：
       ${esc(i18n(I18N_KEYS.rows, "记录"))} ${counts.total || 0} ·
       median_age ${(demo.median_age || 0).toFixed(1)} ·
       <18 ${((demo.share_under_18 || 0) * 100).toFixed(1)}% ·
       65+ ${((demo.share_over_65 || 0) * 100).toFixed(1)}% ·
       月薪中位数 ¥${(income.median || 0).toFixed(0)}
-    `;
+    `);
   }
 
   // ----- step 3: config (anonymise + expand + city) -----
@@ -458,7 +461,7 @@
     const body = $("#importBody");
     const inferred = (_ctx.preview && _ctx.preview.inferred) || {};
     const recommended = Math.max((inferred.counts && inferred.counts.total) || _ctx.rows.length, _ctx.rows.length);
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.cfgTitle, "导入选项"))}</h4>
         <p class="hint">${esc(i18n(I18N_KEYS.cfgAnonymiseHint, "开启后姓名替换为假名、联系方式丢弃、自由文本里的人名/地名会被替换。"))}</p>
@@ -484,7 +487,7 @@
           <button class="button primary" id="impRun">${esc(i18n(I18N_KEYS.run, "开始导入"))}</button>
         </div>
       </section>
-    `;
+    `);
     $("#impAnon").addEventListener("change", (ev) => { _ctx.anonymise = !!ev.target.checked; });
     $("#impExpand").addEventListener("input", (ev) => { _ctx.expandTo = Math.max(_ctx.rows.length, parseInt(ev.target.value, 10) || 0); });
     $("#impCity").addEventListener("input", (ev) => { _ctx.city = ev.target.value.trim(); });
@@ -499,7 +502,7 @@
       return;
     }
     const body = $("#importBody");
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.running, "正在导入…"))}</h4>
         <div class="imp-progress">
@@ -508,7 +511,7 @@
         </div>
         <p id="impMsg" class="imp-status">${esc(i18n("studio.bulk_starting", "启动中…"))}</p>
       </section>
-    `;
+    `);
     try {
       const payload = {
         city: _ctx.city,
@@ -585,7 +588,7 @@
 
   function renderStepResult(result) {
     const body = $("#importBody");
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.done, "导入完成"))}</h4>
         <div class="imp-summary">
@@ -599,7 +602,7 @@
           <button class="button primary" id="impClose">${esc(i18n(I18N_KEYS.close, "完成"))}</button>
         </div>
       </section>
-    `;
+    `);
     $("#impReimport").addEventListener("click", () => {
       _ctx = freshContext();
       open();
@@ -609,7 +612,7 @@
 
   function renderStepFailure(error) {
     const body = $("#importBody");
-    body.innerHTML = `
+    body.innerHTML = gwHTML(`
       <section class="imp-step is-active">
         <h4>${esc(i18n(I18N_KEYS.failed, "导入失败"))}</h4>
         <p class="imp-status is-error">${esc(error)}</p>
@@ -618,7 +621,7 @@
           <button class="button" id="impClose">${esc(i18n(I18N_KEYS.cancel, "取消"))}</button>
         </div>
       </section>
-    `;
+    `);
     $("#impReimport").addEventListener("click", () => {
       _ctx = freshContext();
       open();

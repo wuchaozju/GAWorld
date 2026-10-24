@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* 研究工作台 · 政策仿真与优化 — 选城市 + 写政策（可选候选政策）→ 居民逐个反应 → 评估 + 修改建议。
  *
  * POST /api/research/policy/run 开一个后台任务，轮询 /api/research/policy/jobs/<id>；
@@ -68,7 +71,7 @@
     if (runId) query.set("run", runId);
     else query.delete("run");
     var text = query.toString();
-    window.history.replaceState(null, "", window.location.pathname + (text ? "?" + text : ""));
+    window.history.replaceState(null, "", gwURL(window.location.pathname + (text ? "?" + text : "")));
   }
 
   function setProgress(text, mode) {
@@ -95,14 +98,14 @@
     var select = $("psProvider");
     var previous = select.value;
     select.innerHTML =
-      '<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
+      gwHTML('<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
       state.providers.map(function (p) {
         return (
           '<option value="' + esc(p.name) + '">' +
           esc(p.name + (p.model ? " · " + p.model : "") + (p.is_default ? " ★" : "")) +
           "</option>"
         );
-      }).join("");
+      }).join(""));
     select.value = previous;
   }
 
@@ -114,7 +117,7 @@
         esc(c.display_name || c.name || c.slug) + "</option>"
       );
     });
-    $("psCity").innerHTML = options.join("");
+    $("psCity").innerHTML = gwHTML(options.join(""));
   }
 
   function cityName(slug) {
@@ -373,7 +376,7 @@
     html += "<h4>" + esc(t("ps_groups", "分组对比")) + "</h4>" + groupsTable(run);
     html += "<h4>" + esc(t("ps_reactions", "居民反应")) + "</h4>" + reactionsBlock(run);
     html += '<p class="rw-hint">' + esc(t("ps_disclaimer", "居民反应由大模型按每位居民的档案扮演生成，是对政策反应的情景推演，不是民意调查。")) + "</p>";
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
 
     var iterate = $("psIterate");
     if (iterate) {
@@ -394,7 +397,7 @@
       .then(function (data) {
         var blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
         var link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = gwURL(URL.createObjectURL(blob));
         link.download = data.filename;
         document.body.appendChild(link);
         link.click();
@@ -424,7 +427,7 @@
 
   function renderRuns() {
     var host = $("psRuns");
-    host.innerHTML = state.runs.length
+    host.innerHTML = gwHTML(state.runs.length
       ? state.runs.map(function (r) {
           var active = state.run && state.run.id === r.id ? " is-active" : "";
           var meta = (r.city_name || t("sg_default_world", "默认世界")) + " · " +
@@ -435,7 +438,7 @@
             esc(r.title) + '</span><span class="rw-hist-meta">' + esc(meta) + "</span></button>"
           );
         }).join("")
-      : '<p class="rw-hint">' + esc(t("ps_no_runs", "还没有仿真记录")) + "</p>";
+      : '<p class="rw-hint">' + esc(t("ps_no_runs", "还没有仿真记录")) + "</p>");
   }
 
   /* ------------------------------------------------------------------ init */
@@ -444,9 +447,9 @@
     if (!$("rwPanePolicy")) return;
     var query = new URLSearchParams(window.location.search);
     if (query.get("seat")) return; // serious-game player view: nothing else on the page
-    $("psSample").innerHTML = SAMPLES.map(function (n) {
+    $("psSample").innerHTML = gwHTML(SAMPLES.map(function (n) {
       return '<option value="' + n + '"' + (n === 12 ? " selected" : "") + ">" + n + "</option>";
-    }).join("");
+    }).join(""));
     $("psRun").addEventListener("click", start);
     $("psRuns").addEventListener("click", function (event) {
       var item = event.target.closest("[data-run]");

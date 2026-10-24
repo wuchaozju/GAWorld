@@ -2,7 +2,7 @@
  * & atoms; this file only adds the hero / cards / entry layout that the
  * landing page needs. */
 
-@import url("/terminal/tokens-terminal.css");
+@import url("./tokens-terminal.css");
 
 /* ---------------------------------------------------------- hero */
 

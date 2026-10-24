@@ -7,6 +7,7 @@
   }).concat([{id:'explore',src:'/explore'}, {id:'plaza',src:'/plaza'}]);
   function query(params) { var q = params.toString(); return q ? '?' + q : ''; }
   function consoleUrl(path) {
+    if (root.GAWorldURL) path = root.GAWorldURL.path(path);
     if (!/^\/(?![\/\\])/.test(path) || /[\u0000-\u0020\\]/.test(path)) return null;
     var url = new URL(path, 'http://console.local'), params = url.searchParams, id, detail = '';
     params.delete('embedded');

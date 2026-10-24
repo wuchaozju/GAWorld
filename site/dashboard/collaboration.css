@@ -1,4 +1,4 @@
-@import url("/site/tokens.css");
+@import url("../tokens.css");
 
 :root {
   /* Deliberately darker than the house --line (#dde6de): the borders here

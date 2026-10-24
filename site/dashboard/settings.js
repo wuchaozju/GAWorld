@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* 配置中心 —— 项目里所有配置项的唯一入口。
  *
  * 四个刻意的设计：
@@ -725,7 +728,7 @@
         (count ? '<em class="set-tabcount">' + count + "</em>" : "") +
         '<span class="help-tip" data-help="' + esc(tabHelp(tab)) + '"></span></button>';
     }).join("");
-    $("setTabs").innerHTML = html;
+    $("setTabs").innerHTML = gwHTML(html);
   }
 
   function countOverridden(tab) {
@@ -760,8 +763,8 @@
     // heading of its own: the page went h1 straight to the sidebar's h3, so a
     // screen reader had nothing to jump to and no way to tell which section's
     // settings it was reading.
-    $("setBody").innerHTML = '<h2 class="set-section-title">' + esc(currentTabTitle()) + "</h2>" + body;
-    $("setSide").innerHTML = renderSide();
+    $("setBody").innerHTML = gwHTML('<h2 class="set-section-title">' + esc(currentTabTitle()) + "</h2>" + body);
+    $("setSide").innerHTML = gwHTML(renderSide());
 
     if (state.data.can_edit_config === false) {
       document.querySelectorAll('input[data-path], select[data-path], textarea[data-path], [data-revert], #setResetAll')
@@ -770,10 +773,10 @@
 
     var sources = state.data.sources || {};
     $("setTopMeta").innerHTML =
-      '<span class="set-chip">' + esc(__("set.chip_items")) +
+      gwHTML('<span class="set-chip">' + esc(__("set.chip_items")) +
         " <b>" + countLeaves(state.data.tree) + "</b></span>" +
       '<span class="set-chip">' + esc(__("set.chip_overridden")) +
-        " <b>" + Object.keys(sources).length + "</b></span>";
+        " <b>" + Object.keys(sources).length + "</b></span>");
 
     syncFooter();
     if (window.HelpTips) window.HelpTips.scan($("setBody").parentNode);
@@ -822,7 +825,7 @@
       state.invalid[path] = true;
       state.dirty[path] = el.value;
       el.closest(".set-field").classList.add("is-bad");
-      $("setSide").innerHTML = renderSide();
+      $("setSide").innerHTML = gwHTML(renderSide());
       syncFooter();
       return;
     }
@@ -847,7 +850,7 @@
       field.classList.toggle("is-dirty", has(state.dirty, path));
       field.classList.remove("is-bad");
     }
-    $("setSide").innerHTML = renderSide();
+    $("setSide").innerHTML = gwHTML(renderSide());
     if (window.HelpTips) window.HelpTips.scan($("setSide"));
     syncFooter();
   }
@@ -957,7 +960,7 @@
       });
       delete state.probes[name];
       paintProbe(name);
-      box.outerHTML = credentialHtml(row);
+      box.outerHTML = gwHTML(credentialHtml(row));
       var replacement = document.querySelector('[data-credential="' + name + '"]');
       replacement.querySelector("[data-key-result]").textContent = __(remove ? "set.key_deleted" : "set.key_saved");
       if (window.HelpTips) window.HelpTips.scan(replacement);
@@ -970,7 +973,7 @@
   /** 测试结果就地更新：整页重绘会把用户正在填的表单和滚动位置一起清掉。 */
   function paintProbe(key) {
     var slot = key === "__draft" ? $("llmDraftResult") : document.querySelector('[data-result="' + key + '"]');
-    if (slot) slot.innerHTML = probeHtml(state.probes[key]);
+    if (slot) slot.innerHTML = gwHTML(probeHtml(state.probes[key]));
   }
 
   function probe(key, payload) {
@@ -1058,7 +1061,7 @@
     state.draft.type = event.target.value;
     var box = $("llmAddBox");
     if (box) {
-      box.innerHTML = renderAddForm();
+      box.innerHTML = gwHTML(renderAddForm());
       if (window.HelpTips) window.HelpTips.scan(box);
     }
   });

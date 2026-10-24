@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Shared terrain-map renderer for GAWorld front-ends.
  *
  * One renderer, used by the Dashboard (控制台) map panel, the City tab
@@ -43,7 +46,7 @@
     return new Promise((resolve, reject) => {
       if (document.querySelector(`script[src="${src}"]`)) return resolve();
       const s = document.createElement("script");
-      s.src = src; s.async = true;
+      s.src = gwURL(src); s.async = true;
       s.onload = () => resolve();
       s.onerror = () => reject(new Error("failed to load " + src));
       document.head.appendChild(s);
@@ -53,7 +56,7 @@
     return new Promise((resolve) => {
       if (document.querySelector(`link[href="${href}"]`)) return resolve();
       const link = document.createElement("link");
-      link.rel = "stylesheet"; link.href = href; link.onload = () => resolve();
+      link.rel = "stylesheet"; link.href = gwURL(href); link.onload = () => resolve();
       document.head.appendChild(link);
     });
   }
@@ -234,7 +237,7 @@
       const fallback = typeof this.emptyText === "function" ? this.emptyText() : this.emptyText;
       this.emptyEl.textContent = text || fallback || "";
       this.emptyEl.style.display = "block";
-      this.overlay.innerHTML = "";
+      this.overlay.innerHTML = gwHTML("");
     }
     hasMap() {
       const m = this.trace && this.trace.map;
@@ -501,7 +504,7 @@
       if (!this.map || this._empty) return;
       const frame = this.framesUpTo[this.framesUpTo.length - 1];
       if (!frame) {
-        this.overlay.innerHTML = "";
+        this.overlay.innerHTML = gwHTML("");
         return;
       }
       const agents = (frame.agents || []);
@@ -584,7 +587,7 @@
           text-overflow:ellipsis;">${name}</div>`);
       }
       if (this.showThoughts) html.push(...this._thoughtBubbles(agents, selectedId));
-      this.overlay.innerHTML = html.join("");
+      this.overlay.innerHTML = gwHTML(html.join(""));
     }
     // Speech bubbles with each resident's main thought, above the avatar.
     // The selected resident goes first; a bubble that would overlap one

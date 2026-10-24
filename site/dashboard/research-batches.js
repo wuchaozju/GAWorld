@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* Research batches: model × city × independent run, using ordinary studies. */
 (function (root) {
   "use strict";
@@ -65,9 +68,9 @@
   }
   function renderForm() {
     var host = $("rwBatchForm");
-    if (!context || !source) { host.innerHTML = '<p class="rw-hint">' + esc(t("choose_study", "先打开一份研究协议，即可创建多模型、多城市和重复运行批次。")) + "</p>"; return; }
+    if (!context || !source) { host.innerHTML = gwHTML('<p class="rw-hint">' + esc(t("choose_study", "先打开一份研究协议，即可创建多模型、多城市和重复运行批次。")) + "</p>"); return; }
     var providers = (context.providers || []).filter(function (p) { return p.name; });
-    host.innerHTML = '<p class="rw-hint">' + esc(t("source", "来源研究") + ": " + source.title) + '</p><div class="rb-grid"><fieldset><legend>' + esc(t("models", "居民仿真模型（可多选）")) + '</legend><div class="rb-choices">' +
+    host.innerHTML = gwHTML('<p class="rw-hint">' + esc(t("source", "来源研究") + ": " + source.title) + '</p><div class="rb-grid"><fieldset><legend>' + esc(t("models", "居民仿真模型（可多选）")) + '</legend><div class="rb-choices">' +
       providers.map(function (p, i) { return '<label><input type="checkbox" name="rbModel" value="' + esc(p.name) + '"' + ((source.protocol.sim_provider ? source.protocol.sim_provider === p.name : i === 0) ? " checked" : "") + ' /> <span>' + esc(p.label || p.name) + "</span></label>"; }).join("") +
       '</div></fieldset><fieldset><legend>' + esc(t("cities", "城市（可多选）")) + '</legend><div class="rb-choices"><label><input type="checkbox" name="rbCity" value="" checked /> <span>' + esc(t("current", "当前世界")) + "</span></label>" +
       (context.cities || []).map(function (c) { return '<label><input type="checkbox" name="rbCity" value="' + esc(c.slug) + '" /> <span>' + esc(c.display_name || c.name || c.slug) + "</span></label>"; }).join("") + '</div></fieldset></div><div class="rb-knobs">' +
@@ -75,7 +78,7 @@
       '<label class="rw-field"><span>' + esc(t("seed", "起始种子")) + '</span><input id="rbSeed" type="number" min="0" value="42" /></label>' +
       '<label class="rw-field"><span>' + esc(t("strategy", "种子策略")) + '</span><select id="rbStrategy"><option value="vary">' + esc(t("vary", "不同种子 · 稳健性")) + '</option><option value="fixed">' + esc(t("fixed", "固定种子 · 输出波动")) + '</option></select></label>' +
       '<label class="rw-field"><span>' + esc(t("sample", "每城居民数（0 = 全体）")) + '</span><input id="rbSample" type="number" min="0" value="' + esc((source.protocol.sample.agent_ids || []).length) + '" /></label></div>' +
-      '<div class="rw-row"><strong id="rbPreview"></strong>' + button("rbCreate", t("create", "生成批次与预算"), !providers.length, false) + '</div><p class="rw-hint">' + esc(t("create_hint", "生成批次会冻结城市与人口，不调用模型；每次运行包含协议中的全部对照与处理条件。")) + "</p>";
+      '<div class="rw-row"><strong id="rbPreview"></strong>' + button("rbCreate", t("create", "生成批次与预算"), !providers.length, false) + '</div><p class="rw-hint">' + esc(t("create_hint", "生成批次会冻结城市与人口，不调用模型；每次运行包含协议中的全部对照与处理条件。")) + "</p>");
     host.querySelectorAll("input,select").forEach(function (el) { el.addEventListener("change", preview); });
     $("rbCreate").addEventListener("click", function () {
       if (busy) return;
@@ -89,7 +92,7 @@
   }
   function saveFile(filename, data, mime) {
     var url = URL.createObjectURL(new Blob([data], { type: mime })), link = document.createElement("a");
-    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    link.href = gwURL(url); link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
   function download(kind) {
     if (!current) return;
@@ -107,13 +110,13 @@
   }
   function renderViewer() {
     var host = $("rwBatchViewer");
-    if (!current) { host.innerHTML = ""; return; }
+    if (!current) { host.innerHTML = gwHTML(""); return; }
     var live = ["running", "paused", "stopping"].includes(current.status), c = current.preflight || {}, timing = current.timing || {};
     var pending = current.cells.some(function (c) { return ["pending", "cancelled", "queued"].includes(c.status); });
     var failed = current.cells.some(function (c) { return ["failed", "interrupted", "stopped"].includes(c.status); });
     var active = document.activeElement, focused = host.contains(active) ? (active.id || active.getAttribute("data-cell")) : null;
     var oldScroll = host.querySelector(".rb-tasks"), scrollLeft = oldScroll ? oldScroll.scrollLeft : 0;
-    host.innerHTML = '<div class="rb-batch-head"><div><span class="rw-badge">' + esc(current.status) + '</span><h4>' + esc(current.title) + '</h4><p class="rw-hint">' + esc(current.id) + '</p></div><div class="rw-actions">' +
+    host.innerHTML = gwHTML('<div class="rb-batch-head"><div><span class="rw-badge">' + esc(current.status) + '</span><h4>' + esc(current.title) + '</h4><p class="rw-hint">' + esc(current.id) + '</p></div><div class="rw-actions">' +
       (live ? button("rbPause", current.status === "paused" ? t("resume", "继续") : t("pause", "暂停"), current.status === "stopping", true) + button("rbStop", t("stop", "停止"), current.status === "stopping", true) :
         button("rbRun", current.status === "draft" ? t("approve", "批准并运行批次") : t("continue", "继续剩余任务"), !c.ok || !pending, false) + (failed ? button("rbRetry", t("retry", "重试失败任务"), !c.ok, true) : "")) +
       button("rbPython", t("python", "下载 Python 实验包"), false, true) + button("rbReport", t("report", "下载报告"), false, true) + button("rbJSON", "JSON", false, true) + '</div></div>' +
@@ -126,7 +129,7 @@
       '<div class="rb-tasks rw-table-scroll"><table class="rw-table"><thead><tr><th><input id="rbSelectAll" type="checkbox" aria-label="' + esc(t("select_all", "选择全部运行")) + '"' + (selected.size === current.cells.length ? " checked" : "") + ' /></th>' +
       [t("model", "模型"), t("city", "城市"), t("repeat", "重复"), t("seed", "种子"), t("status", "状态 / 实测调用"), t("record", "运行记录")].map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" +
       current.cells.map(function (cell) { var stats = (cell.result || {}).telemetry || (cell.run_status || {}).telemetry || {}; return '<tr><td><input type="checkbox" data-cell="' + esc(cell.id) + '" aria-label="' + esc(cell.id) + '"' + (selected.has(cell.id) ? " checked" : "") + ' /></td><td>' + esc(cell.provider) + '</td><td>' + esc(cell.city || t("current", "当前世界")) + '</td><td>' + cell.repeat + '</td><td>' + cell.seed + '</td><td title="' + esc(cell.error || "") + '">' + esc(cell.status) + " · " + num(stats.requests) + '</td><td>' +
-        (cell.study_id ? '<button class="btn tiny ghost" data-study="' + esc(cell.study_id) + '">' + esc(t("logs", "查看结果与日志")) + "</button>" : "—") + "</td></tr>"; }).join("") + '</tbody></table></div><h4>' + esc(t("comparison", "所选运行的比较")) + '</h4><div id="rbComparison">' + comparisonHTML(current.comparison || {}) + "</div>";
+        (cell.study_id ? '<button class="btn tiny ghost" data-study="' + esc(cell.study_id) + '">' + esc(t("logs", "查看结果与日志")) + "</button>" : "—") + "</td></tr>"; }).join("") + '</tbody></table></div><h4>' + esc(t("comparison", "所选运行的比较")) + '</h4><div id="rbComparison">' + comparisonHTML(current.comparison || {}) + "</div>");
     var bind = function (id, fn) { if ($(id)) $(id).addEventListener("click", fn); };
     bind("rbRun", function () { action("run"); }); bind("rbRetry", function () { action("run", { retry_failed: true }); });
     bind("rbPause", function () { action(current.status === "paused" ? "resume" : "pause"); }); bind("rbStop", function () { action("stop"); });
@@ -145,7 +148,7 @@
     }
     var id = current.id, ids = Array.from(selected), signature = ids.join(",");
     return api("POST", prefix + "/" + id + "/compare", { cells: ids }).then(function (data) {
-      if (current && current.id === id && Array.from(selected).join(",") === signature) { current.comparison = data; $("rbComparison").innerHTML = comparisonHTML(data); }
+      if (current && current.id === id && Array.from(selected).join(",") === signature) { current.comparison = data; $("rbComparison").innerHTML = gwHTML(comparisonHTML(data)); }
     }).catch(error);
   }
   function openBatch(id) {
@@ -161,7 +164,7 @@
   function history() {
     return api("GET", prefix).then(function (data) {
       var host = $("rwBatches");
-      host.innerHTML = (data.batches || []).map(function (b) { return '<button class="rb-history" data-batch="' + esc(b.id) + '"><strong>' + esc(b.title) + '</strong><span>' + esc(b.status + " · " + b.matrix.providers.length + " × " + b.matrix.cities.length + " × " + b.matrix.repeats) + "</span></button>"; }).join("") || '<p class="rw-hint">' + esc(t("empty", "还没有实验批次。")) + "</p>";
+      host.innerHTML = gwHTML((data.batches || []).map(function (b) { return '<button class="rb-history" data-batch="' + esc(b.id) + '"><strong>' + esc(b.title) + '</strong><span>' + esc(b.status + " · " + b.matrix.providers.length + " × " + b.matrix.cities.length + " × " + b.matrix.repeats) + "</span></button>"; }).join("") || '<p class="rw-hint">' + esc(t("empty", "还没有实验批次。")) + "</p>");
       host.querySelectorAll("[data-batch]").forEach(function (el) { el.addEventListener("click", function () { openBatch(el.getAttribute("data-batch")).then(function () { $("rwBatchViewer").scrollIntoView({ behavior: "smooth", block: "start" }); }).catch(error); }); });
     });
   }

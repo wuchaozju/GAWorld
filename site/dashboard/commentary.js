@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 新闻评论 (News Commentary) — front-end controller.
 //
 // One run is one background job on the server (`/api/games/commentary/*`):
@@ -133,7 +135,7 @@
     const el = document.createElement("div");
     el.className = "news-block is-related";
     el.setAttribute("data-news-index", String(idx));
-    el.innerHTML = `
+    el.innerHTML = gwHTML(`
       <header class="news-block-head">
         <span class="news-block-tag">${esc(t("commentary.news_related", "相关新闻"))}</span>
         <div class="news-mode-toggle">
@@ -154,7 +156,7 @@
         <span>${esc(t("commentary.url_label", "新闻网址"))}</span>
         <input type="url" data-role="url" placeholder="${esc(t("commentary.url_placeholder", "https://…"))}" />
       </label>
-    `;
+    `);
     list.appendChild(el);
     bindModeToggleOn(el);
     el.querySelector('[data-role="remove"]').addEventListener("click", () => removeRelatedBlock(el));
@@ -245,14 +247,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -271,25 +273,25 @@
   async function loadAgents() {
     const list = $("#cAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="disaster-empty">${esc(t("commentary.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("commentary.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       renderAgents();
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#cAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("commentary.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("commentary.no_agents", "这座城市暂无居民"))}</li>`);
       $("#cPicked").textContent = "0";
       return;
     }
-    list.innerHTML = state.agents
+    list.innerHTML = gwHTML(state.agents
       .map((a) => {
         const meta = [a.age ? a.age + "岁" : "", a.job || ""].filter(Boolean).join(" · ");
         const on = state.picked.has(a.id) ? " checked" : "";
@@ -299,7 +301,7 @@
           <span class="meta">${esc(meta)}</span>
         </label></li>`;
       })
-      .join("");
+      .join(""));
     Array.from(list.querySelectorAll("input[type=checkbox]")).forEach((box) => {
       box.addEventListener("change", () => {
         const id = parseInt(box.value, 10);
@@ -426,20 +428,20 @@
     // grow an empty section.
     $("#cRelatedBox").hidden = !related.length;
     if (related.length) {
-      $("#cRelatedList").innerHTML = related
+      $("#cRelatedList").innerHTML = gwHTML(related
         .map((item) => `<li>
           <span class="related-title">《${esc(item.title || "(无题)")}》</span>
           ${item.source === "url" ? `<span class="related-source"> · <a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.url)}</a></span>` : `<span class="related-source"> · 粘贴文本</span>`}
           ${item.fetch_error ? `<span class="warn"> · ⚠ ${esc(item.fetch_error)}</span>` : ""}
         </li>`)
-        .join("");
+        .join(""));
     }
 
     $("#cSummaryBox").hidden = !run.summary;
     $("#cSummary").textContent = run.summary || "";
 
     const stats = run.stats || {};
-    $("#cOverall").innerHTML = [
+    $("#cOverall").innerHTML = gwHTML([
       metric(t("commentary.m_total", "参与人数"), stats.total, ""),
       metric(t("commentary.m_spoke", "出声人数"), stats.spoke, ""),
       metric(
@@ -452,7 +454,7 @@
         stats.strongest ? `${stats.strongest.name}（${stats.strongest.stance}）` : "—",
         stats.strongest ? `× ${stats.strongest.strength}` : ""
       ),
-    ].join("");
+    ].join(""));
 
     renderStanceBars(stats.stance_counts || {}, stats.total || 1);
     renderCards(run.nodes || []);
@@ -474,25 +476,25 @@
       .filter((stance) => counts[stance])
       .map((stance) => [stance, counts[stance]]);
     if (!rows.length) {
-      $("#cStanceBars").innerHTML = `<p class="disaster-empty">${esc(t("commentary.no_stance", "这次没人发言"))}</p>`;
+      $("#cStanceBars").innerHTML = gwHTML(`<p class="disaster-empty">${esc(t("commentary.no_stance", "这次没人发言"))}</p>`);
       return;
     }
-    $("#cStanceBars").innerHTML = rows.map(([stance, n]) => `<div class="disaster-bar">
+    $("#cStanceBars").innerHTML = gwHTML(rows.map(([stance, n]) => `<div class="disaster-bar">
       <span class="bar-label">${esc(stance)}</span>
       <span class="bar-track"><i style="width:${Math.round((n / total) * 100)}%"></i></span>
       <span class="bar-n">${n}</span>
-    </div>`).join("");
+    </div>`).join(""));
   }
 
   function renderCards(nodes) {
     if (!nodes.length) {
-      $("#cCards").innerHTML = `<p class="disaster-empty">${esc(t("commentary.no_comments", "没有人评论"))}</p>`;
+      $("#cCards").innerHTML = gwHTML(`<p class="disaster-empty">${esc(t("commentary.no_comments", "没有人评论"))}</p>`);
       return;
     }
     // Strongest first: a comment you can scroll past fast is better than one
     // you have to read past slow. The "其他" bucket always sinks.
     const ranked = nodes.slice().sort((a, b) => (b.strength || 0) - (a.strength || 0));
-    $("#cCards").innerHTML = ranked.map(cardHtml).join("");
+    $("#cCards").innerHTML = gwHTML(ranked.map(cardHtml).join(""));
   }
 
   function cardHtml(node) {
@@ -535,20 +537,20 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="disaster-empty">${esc(t("commentary.no_history", "还没有评论"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("commentary.no_history", "还没有评论"))}</li>`);
         return;
       }
-      ul.innerHTML = runs.map((r) => `<li>
+      ul.innerHTML = gwHTML(runs.map((r) => `<li>
         <button type="button" data-job="${esc(r.job_id)}">
           <span class="who">${esc(r.title || "(无题)")}${r.related_count ? ` <small>· +${r.related_count} 相关</small>` : ""}</span>
           <span class="meta">${r.total || 0} ${esc(t("commentary.people", "人"))} · ${esc(r.source || "")}${r.url ? ` · ${esc(r.url.slice(0, 28))}…` : ""}</span>
         </button>
-      </li>`).join("");
+      </li>`).join(""));
       Array.from(ul.querySelectorAll("button[data-job]")).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

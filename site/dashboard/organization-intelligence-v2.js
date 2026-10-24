@@ -1,3 +1,5 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* OI-2 is an explicit zero-provider workflow; old OI-1 remains independently readable. */
 (() => {
   'use strict';
@@ -85,7 +87,7 @@
   }
   function download(name, text, type) {
     const url = URL.createObjectURL(new Blob([text],{type}));
-    const anchor = document.createElement('a'); anchor.href=url; anchor.download=name; anchor.click();
+    const anchor = document.createElement('a'); anchor.href=gwURL(url); anchor.download=name; anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   $('oi2Seeds').addEventListener('input',budget);
@@ -94,7 +96,7 @@
     try {
       const record = await request('',{seeds:Number($('oi2Seeds').value),seed:Number($('oi2Seed').value),expected_build:runtime?.build_id});
       current={id:record.id};
-      history.replaceState(null,'',`?tab=organization-intelligence&oi2=${record.id}`);
+      history.replaceState(null,'',gwURL(`?tab=organization-intelligence&oi2=${record.id}`));
       await show(record.id); await refresh();
     } catch(exc) { error(exc); }
     finally { $('oi2Create').disabled = !runtime?.workspace_matches || runtime.version !== 'OI-2.0'; }

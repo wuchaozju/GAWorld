@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // GAWorld Town Village visualizer.
 // Renders a Smallville-style top-down pixel village with character sprites,
 // speech bubbles ("NAME: emoji") and floating activity scene cards.
@@ -218,7 +221,7 @@ function bindEvents() {
     state.dataPath = els.dataPathInput.value.trim() || DEFAULT_DATA_PATH;
     const url = new URL(window.location.href);
     url.searchParams.set("data", state.dataPath);
-    window.history.replaceState({}, "", url);
+    window.history.replaceState({}, "", gwURL(url));
     state.bldgLayout = null; state.decorations = null;
     loadTrace(true);
   });
@@ -384,12 +387,12 @@ function loadAssets() {
   const tilesetP = new Promise((resolve) => {
     tilesetImg.onload = () => { imgReady.tileset = true; resolve(); };
     tilesetImg.onerror = () => resolve();
-    tilesetImg.src = TILESET.src;
+    tilesetImg.src = gwURL(TILESET.src);
   });
   const misaP = new Promise((resolve) => {
     misaImg.onload = () => { imgReady.misa = true; resolve(); };
     misaImg.onerror = () => resolve();
-    misaImg.src = "./assets/misa.png";
+    misaImg.src = gwURL("./assets/misa.png");
   });
   const jsonP = fetch("./assets/misa.json").then((r) => r.json()).then((d) => {
     misaFrames = d.frames;
@@ -538,7 +541,7 @@ function loadAvatar(path) {
     render();
   };
   img.onerror = () => state.avatarCache.delete(resolved);
-  img.src = resolved;
+  img.src = gwURL(resolved);
   return null;
 }
 
@@ -632,9 +635,9 @@ function renderEmptyState() {
   ctx.fillText("等待村落数据…", 60, 80);
   renderAgentSummary(null);
   els.envContext.textContent = "-";
-  els.eventChips.innerHTML = "";
-  els.rosterList.innerHTML = "";
-  els.sceneCardsLayer.innerHTML = "";
+  els.eventChips.innerHTML = gwHTML("");
+  els.rosterList.innerHTML = gwHTML("");
+  els.sceneCardsLayer.innerHTML = gwHTML("");
   state.renderMetrics = null;
 }
 
@@ -655,7 +658,7 @@ function renderAgentSummary(agent) {
   const resolvedNode = nodes.get(agent.resolved_location) || nodes.get(agent.target_location);
   els.agentName.textContent = agent.name;
   const avatarPath = getAgentAvatarPath(agent);
-  if (avatarPath) { els.agentAvatar.src = avatarPath; els.agentAvatar.alt = `${agent.name} avatar`; }
+  if (avatarPath) { els.agentAvatar.src = gwURL(avatarPath); els.agentAvatar.alt = `${agent.name} avatar`; }
   else { els.agentAvatar.removeAttribute("src"); els.agentAvatar.alt = ""; }
   els.agentMeta.textContent = `ID ${agent.agent_id} · ${agent.home || "未知住处"} → ${agent.workplace || "未知工作地"}`;
   els.agentLocation.textContent = agent.location || "-";
@@ -674,7 +677,7 @@ function renderAgentSummary(agent) {
 
 function renderContext(frame) {
   els.envContext.textContent = frame.env_context || "无额外环境上下文";
-  els.eventChips.innerHTML = "";
+  els.eventChips.innerHTML = gwHTML("");
   const chips = [];
   if (frame.policy && frame.policy.name) chips.push(`政策: ${frame.policy.name}`);
   if (Array.isArray(frame.env_events)) {
@@ -692,7 +695,7 @@ function renderContext(frame) {
 }
 
 function renderRoster(agentFrames) {
-  els.rosterList.innerHTML = "";
+  els.rosterList.innerHTML = gwHTML("");
   const sorted = [...agentFrames].sort((a, b) =>
     (a.target_location || "").localeCompare(b.target_location || "", "zh-Hans-CN") ||
     a.name.localeCompare(b.name, "zh-Hans-CN"));
@@ -704,7 +707,7 @@ function renderRoster(agentFrames) {
     const travelText = agent.travel && agent.travel.mode ? `${agent.travel.mode} · ${agent.travel.status || ""}` : "停留";
     const emoji = activityToEmoji(agent.activity || agent.scheduled_activity);
     const avatarPath = getAgentAvatarPath(agent);
-    button.innerHTML = `<div class="roster-head"><div class="roster-agent"><img class="roster-avatar" src="${escapeHtml(avatarPath)}" alt="${escapeHtml(agent.name)} avatar" /><span class="roster-name">${escapeHtml(agent.name)}</span><span class="roster-emoji">${emoji}</span></div><span class="badge">${escapeHtml(agent.target_location || agent.location || "未定位")}</span></div><div class="roster-meta"><div>${escapeHtml(agent.activity || agent.scheduled_activity || "无活动")}</div><div>${escapeHtml(travelText)}</div></div>`;
+    button.innerHTML = gwHTML(`<div class="roster-head"><div class="roster-agent"><img class="roster-avatar" src="${escapeHtml(avatarPath)}" alt="${escapeHtml(agent.name)} avatar" /><span class="roster-name">${escapeHtml(agent.name)}</span><span class="roster-emoji">${emoji}</span></div><span class="badge">${escapeHtml(agent.target_location || agent.location || "未定位")}</span></div><div class="roster-meta"><div>${escapeHtml(agent.activity || agent.scheduled_activity || "无活动")}</div><div>${escapeHtml(travelText)}</div></div>`);
     els.rosterList.appendChild(button);
   });
 }
@@ -2605,7 +2608,7 @@ function drawSpeechBubblesIndoor(agents) {
 
 // ───────── scene cards ─────────
 function renderSceneCards(frame) {
-  els.sceneCardsLayer.innerHTML = "";
+  els.sceneCardsLayer.innerHTML = gwHTML("");
   if (!state.showCards) return;
   // Pick up to 4 "scenes" — distinct locations with the most agents or most
   // narratively interesting activity (perception non-empty).
@@ -2629,7 +2632,7 @@ function renderSceneCards(frame) {
     const dialog = (a.perception || a.plan || a.reflection || "").slice(0, 80);
     const div = document.createElement("div");
     div.className = `scene-card scene-pos-${i}`;
-    div.innerHTML = `
+    div.innerHTML = gwHTML(`
       <div class="scene-card-head">
         <span class="scene-card-title">${escapeHtml(title)}</span>
       </div>
@@ -2638,7 +2641,7 @@ function renderSceneCards(frame) {
         <div class="scene-card-loc">${escapeHtml(s.loc)}</div>
       </div>
       ${dialog ? `<div class="scene-card-dialog">[${escapeHtml(a.name)}] ${escapeHtml(dialog)}</div>` : ""}
-    `;
+    `);
     els.sceneCardsLayer.appendChild(div);
   });
 }

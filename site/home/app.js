@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* GAWorld: an illustrated field guide, entirely local and independent of simulation. */
 (function () {
   "use strict";
@@ -22,7 +25,7 @@
   ];
   if (legacyViews.includes(legacyView)) {
     window.location.replace(
-      "/console" + window.location.search + window.location.hash,
+      gwURL("/console" + window.location.search + window.location.hash),
     );
     return;
   }
@@ -140,7 +143,7 @@
     document.getElementById("scene-tag").textContent = item[0];
     document.getElementById("scene-title").textContent = item[1];
     var link = document.getElementById("scene-link");
-    link.href = item[2];
+    link.href = gwURL(item[2]);
     link.setAttribute("aria-label", item[3]);
     viewport.setAttribute("aria-labelledby", "tab-" + scene);
     tabs.forEach(function (tab, i) {
@@ -158,7 +161,7 @@
   function setLanguage() {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
     entries.forEach(function (entry) {
-      entry.el.innerHTML = language === "zh" ? entry.zh : entry.en;
+      entry.el.innerHTML = gwHTML(language === "zh" ? entry.zh : entry.en);
     });
     var button = document.getElementById("language");
     button.textContent = language === "zh" ? "EN" : "中文";

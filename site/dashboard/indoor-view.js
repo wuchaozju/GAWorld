@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Indoor activity view for GAWorld front-ends.
  *
  * Draws the floor plan of one building — rooms, furniture, the residents who
@@ -179,7 +181,7 @@
       this.getSelectedAgentId = opts.getSelectedAgentId || (() => null);
       this.trace = null; this.frame = null; this.pinned = ""; this.zoom = 1;
       injectStyle();
-      host.classList.add("iv-host"); host.innerHTML = "";
+      host.classList.add("iv-host"); host.innerHTML = gwHTML("");
       const head = document.createElement("div"); head.className = "iv-head";
       const title = document.createElement("div"); title.className = "iv-title";
       this.titleEl = document.createElement("strong"); this.subEl = document.createElement("span");
@@ -250,7 +252,7 @@
       });
       const html = [`<option value="">${escapeHtml(t("indoor.auto", "自动跟随"))}</option>`]
         .concat(places.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} · ${p.count}</option>`)).join("");
-      if (this._selectHtml !== html) { this.select.innerHTML = html; this._selectHtml = html; }
+      if (this._selectHtml !== html) { this.select.innerHTML = gwHTML(html); this._selectHtml = html; }
       this.select.value = this.pinned;
     }
 

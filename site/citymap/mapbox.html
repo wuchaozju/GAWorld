@@ -108,6 +108,8 @@
 
 <script src="./mapbox.app.js"></script>
 <script>
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+
 (function () {
   // Read query params.
   const params = new URLSearchParams(location.search);
@@ -119,14 +121,14 @@
   if (!token) {
     const bar = document.getElementById("token-bar");
     const a = document.createElement("a");
-    a.href = "https://account.mapbox.com/access-tokens/";
+    a.href = gwURL("https://account.mapbox.com/access-tokens/");
     a.target = "_blank"; a.rel = "noopener noreferrer";
     a.textContent = "获取 Mapbox token";
     bar.appendChild(a);
   } else {
     const bar = document.getElementById("token-bar");
     const a = document.createElement("a");
-    a.href = "?" + new URLSearchParams({ city, theme }).toString();
+    a.href = gwURL("?" + new URLSearchParams({ city, theme }).toString());
     a.textContent = "切换到无 token 模式";
     bar.appendChild(a);
   }

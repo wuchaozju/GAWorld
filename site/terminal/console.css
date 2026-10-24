@@ -2,7 +2,7 @@
  * Keeps the same DOM (sidebar + views) but paints in the terminal palette.
  * See site/console/console.css for the cream variant. */
 
-@import url("/terminal/tokens-terminal.css");
+@import url("./tokens-terminal.css");
 
 body {
   background: var(--bg);

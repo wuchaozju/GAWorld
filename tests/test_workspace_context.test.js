@@ -21,3 +21,23 @@ test('failed world initialization refuses a mutation instead of dropping its wor
   await assert.rejects(window.fetch('/api/run/start',{method:'POST'}), /world|世界/);
   assert.deepEqual(calls, ['/api/worlds']);
 });
+
+test('mounted URL and Request mutations keep the initial world guard', async () => {
+  const calls = [];
+  const window = {
+    GAWorldURL: { path: value => value.replace(/^\/GAWorld(?=\/)/, '') },
+    fetch: async (input, options) => {
+      calls.push({input, options});
+      return {ok:true, json:async () => ({mode:'accounts',current:{id:'w12345678'}})};
+    },
+  };
+  vm.runInNewContext(fs.readFileSync('site/community/context.js','utf8'), {
+    window, location:{href:'http://localhost/GAWorld/console',origin:'http://localhost'}, URL, Headers,
+  });
+  await window.fetch(new URL('http://localhost/GAWorld/api/run/start'), {method:'POST'});
+  assert.equal(calls[1].options.headers.get('X-GAWorld-World'), 'w12345678');
+  await window.fetch(new Request('http://localhost/GAWorld/api/research/analyze', {method:'POST',body:'{}'}));
+  assert.equal(calls[2].options.headers.get('X-GAWorld-World'), 'w12345678');
+  await window.fetch('/GAWorld/api/auth/logout', {method:'POST'});
+  assert.equal(calls[3].options.headers, undefined);
+});

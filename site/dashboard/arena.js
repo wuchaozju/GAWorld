@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // GAWorld Agent Arena — front-end controller.
 //
 // Six panels:
@@ -84,9 +86,9 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       // Default to dashboard-config selected, fall back to first city.
       const preferred = data.selected || (cities[0] && cities[0].slug);
       if (preferred) {
@@ -94,7 +96,7 @@
         state.city = preferred;
       }
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -107,7 +109,7 @@
       state.selectedAgents = new Set(state.selectedAgents); // keep selections
       renderContestants();
     } catch (err) {
-      $("#arenaContestants").innerHTML = `<li class="arena-list-empty">${esc(String(err))}</li>`;
+      $("#arenaContestants").innerHTML = gwHTML(`<li class="arena-list-empty">${esc(String(err))}</li>`);
     }
   }
 
@@ -145,10 +147,10 @@
   function renderContestants() {
     const ul = $("#arenaContestants");
     if (!state.agents.length) {
-      ul.innerHTML = `<li class="arena-list-empty">${esc(t("arena.no_agents", "这座城市暂无居民"))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="arena-list-empty">${esc(t("arena.no_agents", "这座城市暂无居民"))}</li>`);
       return;
     }
-    ul.innerHTML = state.agents.map((a) => {
+    ul.innerHTML = gwHTML(state.agents.map((a) => {
       const checked = state.selectedAgents.has(a.id);
       const eliminated = state.eliminated.has(a.id);
       const cls = eliminated ? "is-eliminated" : "";
@@ -160,7 +162,7 @@
           ${eliminated ? `<span class="arena-tag">${esc(t("arena.eliminated_tag", "已淘汰"))}</span>` : ""}
         </label>
       </li>`;
-    }).join("");
+    }).join(""));
     $$("input[data-agent]", ul).forEach((cb) => {
       cb.addEventListener("change", () => {
         const id = parseInt(cb.getAttribute("data-agent"), 10);
@@ -192,13 +194,13 @@
       state.tasks = data.tasks || [];
       renderTasks();
     } catch (err) {
-      $("#arenaTasks").innerHTML = `<li class="arena-list-empty">${esc(String(err))}</li>`;
+      $("#arenaTasks").innerHTML = gwHTML(`<li class="arena-list-empty">${esc(String(err))}</li>`);
     }
   }
 
   function renderTasks() {
     const ul = $("#arenaTasks");
-    ul.innerHTML = state.tasks.map((task) => {
+    ul.innerHTML = gwHTML(state.tasks.map((task) => {
       const checked = state.selectedTasks.has(task.id);
       return `<li>
         <label>
@@ -207,7 +209,7 @@
           <span class="meta">${esc(task.category)}</span>
         </label>
       </li>`;
-    }).join("");
+    }).join(""));
     $$("input[data-task]", ul).forEach((cb) => {
       cb.addEventListener("change", () => {
         const id = cb.getAttribute("data-task");
@@ -218,10 +220,10 @@
 
     const custom = $("#arenaCustomTasks");
     if (!state.customTasks.length) {
-      custom.innerHTML = "";
+      custom.innerHTML = gwHTML("");
       return;
     }
-    custom.innerHTML = `
+    custom.innerHTML = gwHTML(`
       <h5>${esc(t("arena.custom_tasks", "LLM 生成的题"))}</h5>
       <ul class="arena-task-list">
         ${state.customTasks.map((task) => `
@@ -234,7 +236,7 @@
           </li>
         `).join("")}
       </ul>
-    `;
+    `);
     $$("input[data-task]", custom).forEach((cb) => {
       cb.addEventListener("change", () => {
         const id = cb.getAttribute("data-task");
@@ -378,10 +380,10 @@
     exporter.sync();
     const wrap = $("#arenaLeaderboard");
     if (!state.leaderboard.length) {
-      wrap.innerHTML = `<div class="arena-leaderboard-empty">${esc(t("arena.no_runs", "尚未运行"))}</div>`;
+      wrap.innerHTML = gwHTML(`<div class="arena-leaderboard-empty">${esc(t("arena.no_runs", "尚未运行"))}</div>`);
       return;
     }
-    wrap.innerHTML = state.leaderboard.map((row, idx) => {
+    wrap.innerHTML = gwHTML(state.leaderboard.map((row, idx) => {
       const eliminated = state.eliminated.has(row.agent_id);
       const accPct = (row.accuracy * 100).toFixed(0) + "%";
       const lat = row.median_latency_s.toFixed(2) + "s";
@@ -396,7 +398,7 @@
         <span class="latency">${lat}</span>
         <span class="row-actions">${action}</span>
       </div>`;
-    }).join("");
+    }).join(""));
     $$("button[data-eliminate]", wrap).forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.getAttribute("data-eliminate"), 10);
@@ -440,18 +442,18 @@
   function renderSurvivors() {
     const wrap = $("#arenaSurvivors");
     if (!state.leaderboard.length) {
-      wrap.innerHTML = `<span class="is-empty">${esc(t("arena.no_survivors", "尚未产生"))}</span>`;
+      wrap.innerHTML = gwHTML(`<span class="is-empty">${esc(t("arena.no_survivors", "尚未产生"))}</span>`);
       return;
     }
     const topK = Math.max(1, parseInt($("#arenaTopK").value, 10) || 1);
     const survivors = state.leaderboard.slice(0, topK).filter((r) => !state.eliminated.has(r.agent_id));
     if (!survivors.length) {
-      wrap.innerHTML = `<span class="is-empty">${esc(t("arena.all_eliminated", "已全部淘汰"))}</span>`;
+      wrap.innerHTML = gwHTML(`<span class="is-empty">${esc(t("arena.all_eliminated", "已全部淘汰"))}</span>`);
       return;
     }
-    wrap.innerHTML = survivors
+    wrap.innerHTML = gwHTML(survivors
       .map((row) => `<span class="arena-tag is-success">#${row.agent_id} ${esc(row.name)}</span>`)
-      .join("");
+      .join(""));
   }
 
   function renderEliminatedTags() {

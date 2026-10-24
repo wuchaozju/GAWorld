@@ -4,6 +4,9 @@
  * finance (read-only, populated by the simulator). */
 
 "use strict";
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+
 
 /* `en` is the machine name, rendered under the label as a fixed identifier —
    it is the state variable's name in the CSV, not a translation, so it stays a
@@ -138,9 +141,9 @@ function placeholderAvatar(name) {
 function setAvatar(id, name) {
   const img = $("#subjectAvatar");
   const ph = placeholderAvatar(name);
-  if (id == null) { img.src = ph; return; }
-  img.onerror = () => { img.onerror = null; img.src = ph; };
-  img.src = `/api/agents/${Number(id)}/avatar`;
+  if (id == null) { img.src = gwURL(ph); return; }
+  img.onerror = () => { img.onerror = null; img.src = gwURL(ph); };
+  img.src = gwURL(`/api/agents/${Number(id)}/avatar`);
 }
 
 /* ---------- radar ---------- */
@@ -174,7 +177,7 @@ async function loadAgents() {
   const payload = await api("/api/agents");
   store.agents = payload.agents || [];
   const sel = $("#agentSelect");
-  sel.innerHTML = store.agents.map((a) => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)}</option>`).join("");
+  sel.innerHTML = gwHTML(store.agents.map((a) => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)}</option>`).join(""));
   if (store.agents.length && store.currentId == null) {
     store.currentId = store.agents[0].id;
   }
@@ -258,7 +261,7 @@ async function loadCities() {
   if (!store.cities.some((c) => String(c.slug) === store.runningCity)) store.runningCity = "";
   if (!store.cityRef) store.cityRef = store.runningCity;
   const sel = $("#citySelect");
-  sel.innerHTML = cityView().cityOptions(store.cities, store.cityRef);
+  sel.innerHTML = gwHTML(cityView().cityOptions(store.cities, store.cityRef));
   sel.value = store.cityRef;
 }
 
@@ -308,7 +311,7 @@ async function browseCity(slug, wantedId) {
   store.browsedList = payload.agents || [];
   const first = store.browsedList.length ? store.browsedList[0].id : null;
   const pick = store.browsedList.some((p) => String(p.id) === String(wantedId)) ? wantedId : first;
-  $("#agentSelect").innerHTML = cityView().agentOptions(store.browsedList, pick);
+  $("#agentSelect").innerHTML = gwHTML(cityView().agentOptions(store.browsedList, pick));
   if (pick == null) {
     store.browsed = { city: payload.city, agent: null };
     renderSubject();
@@ -438,7 +441,7 @@ function renderSubject() {
       ? [city.name, `#${agent.id}`, agent.gender, agent.age ? __f("sd.age_years", { n: agent.age }) : "", agent.residence].filter(Boolean).join(" · ")
       : city.name || "";
     const state = agent ? agent.state : {};
-    $("#miniRadar").outerHTML = `<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
+    $("#miniRadar").outerHTML = gwHTML(`<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`);
     return;
   }
   const dr = store.draft;
@@ -448,7 +451,7 @@ function renderSubject() {
   $("#subjectName").textContent = idt.name || (store.creating ? __("sd.new_resident") : "—");
   const bits = [store.creating ? __("sd.no_id") : `ID ${store.currentId}`, idt.gender, idt.age ? __f("sd.age_years", { n: idt.age }) : "", idt.residence].filter(Boolean);
   $("#subjectMeta").textContent = bits.join(" · ");
-  $("#miniRadar").outerHTML = `<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(dr.state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
+  $("#miniRadar").outerHTML = gwHTML(`<svg id="miniRadar" viewBox="0 0 200 200">${radarSVG(dr.state, false).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`);
 }
 
 /* ---------- steps ---------- */
@@ -465,11 +468,11 @@ function field(label, inputHTML) {
 }
 
 function renderStep() {
-  if (store.browsing) { $("#stepBody").innerHTML = browseBody(); bindBrowseStep(); return; }
-  if (!store.draft) { $("#stepBody").innerHTML = `<p class="section-note">${esc(__("sd.pick_resident"))}</p>`; return; }
+  if (store.browsing) { $("#stepBody").innerHTML = gwHTML(browseBody()); bindBrowseStep(); return; }
+  if (!store.draft) { $("#stepBody").innerHTML = gwHTML(`<p class="section-note">${esc(__("sd.pick_resident"))}</p>`); return; }
   setActiveStepButton();
   const fn = [null, stepIdentity, stepState, stepSkills, stepMemory, stepSocial, stepBehavior, stepReview][store.step];
-  $("#stepBody").innerHTML = fn();
+  $("#stepBody").innerHTML = gwHTML(fn());
   bindStep();
 }
 
@@ -1011,17 +1014,17 @@ function openMemoryModal() {
   const box = document.createElement("div");
   box.className = "mem-modal";
   box.id = "memModal";
-  box.innerHTML = `<div class="mem-modal-box">
+  box.innerHTML = gwHTML(`<div class="mem-modal-box">
       <div class="mem-modal-head"><h3>${esc(__("sd.mem_graph"))}</h3>
         <button type="button" class="mini-btn" id="memModalClose" aria-label="${esc(__("sd.close"))}">✕</button></div>
       <div class="mem-modal-body">
         <div class="mem-modal-graph">${built.svg}</div>
         <div class="mem-modal-info" id="memModalInfo">${memoryNodeInfo(null)}</div>
-      </div></div>`;
+      </div></div>`);
   box.addEventListener("click", (ev) => {
     if (ev.target === box || ev.target.closest("#memModalClose")) { closeMemoryModal(); return; }
     const dot = ev.target.closest("[data-node]");
-    if (dot) $("#memModalInfo").innerHTML = memoryNodeInfo(built.nodes[Number(dot.dataset.node)]);
+    if (dot) $("#memModalInfo").innerHTML = gwHTML(memoryNodeInfo(built.nodes[Number(dot.dataset.node)]));
   });
   document.body.appendChild(box);
   document.addEventListener("keydown", memoryModalKeys);
@@ -1965,7 +1968,7 @@ function bindStep() {
       store.draft.state[key] = clamp01(el.value);
       const row = el.closest(".slider-row");
       if (row) row.querySelector(".val").textContent = store.draft.state[key].toFixed(2);
-      const big = $("#bigRadar"); if (big) big.innerHTML = radarSVG(store.draft.state, true);
+      const big = $("#bigRadar"); if (big) big.innerHTML = gwHTML(radarSVG(store.draft.state, true));
       renderSubject();
       markStateDirty();
     });
@@ -2016,7 +2019,7 @@ function bindMemoryStep() {
     const dot = ev.target.closest("[data-node]");
     if (!dot) return;
     store.memPick = Number(dot.dataset.node);
-    $("#memNodeInfo").innerHTML = memoryNodeInfo(store.memGraph.nodes[store.memPick]);
+    $("#memNodeInfo").innerHTML = gwHTML(memoryNodeInfo(store.memGraph.nodes[store.memPick]));
   });
 }
 
@@ -2033,7 +2036,7 @@ function bindSocialStep() {
   bindFamilyCard();
   const redrawRings = () => {
     const viz = $("#dunbarViz");
-    if (viz) viz.innerHTML = dunbarSVG(store.socialDraft || []);
+    if (viz) viz.innerHTML = gwHTML(dunbarSVG(store.socialDraft || []));
   };
   $("#stepBody").querySelectorAll("[data-rel-name]").forEach((el) => {
     el.addEventListener("input", () => { const r = relationRef(el); if (r) { r.name = el.value; redrawRings(); } });
@@ -2213,7 +2216,7 @@ async function runAutobiography() {
   if (!btn || !out) return;
   btn.disabled = true;
   out.hidden = false;
-  body.innerHTML = "";
+  body.innerHTML = gwHTML("");
 
   /* Reset stuck handlers if a previous run died before this one started. */
   if (store.autobioTimer) { clearInterval(store.autobioTimer); store.autobioTimer = null; }
@@ -2248,7 +2251,7 @@ async function runAutobiography() {
       finishAutobiography(res.result, { length: res.result.length_cjk || 0 });
     } else if (res.status === "error") {
       meta.textContent = __("sd.autobio_failed") + (res.message || "");
-      body.innerHTML = "";
+      body.innerHTML = gwHTML("");
       foot(__("sd.autobio_failed_short"), "err");
       clearInterval(store.autobioTimer); store.autobioTimer = null;
       btn.disabled = false;

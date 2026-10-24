@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 陪审团 (Jury Deliberation) — front-end controller.
 //
 // One server call carries the trial:
@@ -80,14 +82,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -104,18 +106,18 @@
       state.maxJurors = data.max_jurors || 5;
       state.defaultRounds = data.default_rounds || 3;
       state.maxRounds = data.max_rounds || 5;
-      caseSel.innerHTML = state.cases
+      caseSel.innerHTML = gwHTML(state.cases
         .map((c) => `<option value="${esc(c.id)}">${esc((c.emoji || "") + " " + c.title)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("jury.custom_option", "自己写一个…"))}</option>`;
-      questionSel.innerHTML = state.questions
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("jury.custom_option", "自己写一个…"))}</option>`);
+      questionSel.innerHTML = gwHTML(state.questions
         .map((q) => `<option value="${esc(q.key)}">${esc(q.label)}</option>`)
-        .join("");
+        .join(""));
       $("#jRounds").max = state.maxRounds;
       $("#jRounds").value = state.defaultRounds;
       renderCase();
       renderQuestion();
     } catch (err) {
-      caseSel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      caseSel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -159,7 +161,7 @@
   async function loadAgents() {
     const list = $("#jAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="jury-empty">${esc(t("jury.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="jury-empty">${esc(t("jury.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
@@ -167,17 +169,17 @@
       renderAgents();
       renderCost();
     } catch (err) {
-      list.innerHTML = `<li class="jury-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="jury-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#jAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="jury-empty">${esc(t("jury.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="jury-empty">${esc(t("jury.no_agents", "这座城市暂无居民"))}</li>`);
       return;
     }
-    list.innerHTML = state.agents.map((a) => {
+    list.innerHTML = gwHTML(state.agents.map((a) => {
       const picked = state.jurors.has(a.id);
       const meta = [a.age ? a.age + "岁" : "", a.job || ""].filter(Boolean).join(" · ");
       return `<li class="${picked ? "is-picked" : ""}">
@@ -186,7 +188,7 @@
           <span class="who">#${a.id} ${esc(a.name)}<span class="meta"> ${esc(meta)}</span></span>
         </label>
       </li>`;
-    }).join("");
+    }).join(""));
     $$("input[data-agent]", list).forEach((cb) => {
       cb.addEventListener("change", () => {
         const id = parseInt(cb.getAttribute("data-agent"), 10);
@@ -341,7 +343,7 @@
 
     const verdictClass = verdict === "有罪" ? "is-guilty" : "is-not";
     $("#jVerdict").className = "jury-verdict " + verdictClass;
-    $("#jVerdict").innerHTML = `
+    $("#jVerdict").innerHTML = gwHTML(`
       <div class="jury-tally">
         <span class="side is-not">
           <b>${esc(t("jury.not_guilty", "无罪"))}</b><i>${notGuilty}</i>
@@ -354,7 +356,7 @@
       <h4>${esc(verdict)}${esc(t("jury.verdict_tail", "  " + jurors.length + " 人陪审"))}</h4>
       <p>${esc(t("jury.spread", "意见分歧度:"))} <b>${stats.spread || 0}</b> / 100
          · ${esc(t("jury.median_conf", "中位信心:"))} <b>${stats.median_confidence || 0}</b></p>
-    `;
+    `);
   }
 
   function renderStats(run) {
@@ -368,7 +370,7 @@
       [t("jury.stat_conf_not", "坚决无罪"), stats.confident_not_guilty || 0],
       [t("jury.stat_spread", "分歧度"), (stats.spread || 0) + " / 100"],
     ];
-    $("#jStats").innerHTML = `
+    $("#jStats").innerHTML = gwHTML(`
       <div class="jury-stats-head">
         <h4>${esc(t("jury.stat_question", "第二个问题:"))} ${esc((question.label || ""))}</h4>
         <p class="jury-hint">${esc(question.text || "")}</p>
@@ -381,16 +383,16 @@
           </div>
         `).join("")}
       </div>
-    `;
+    `);
   }
 
   function renderRounds(run) {
     const logs = run.rounds_log || [];
     if (!logs.length) {
-      $("#jRounds").innerHTML = "";
+      $("#jRounds").innerHTML = gwHTML("");
       return;
     }
-    $("#jRounds").innerHTML = `
+    $("#jRounds").innerHTML = gwHTML(`
       <h4>${esc(t("jury.rounds_title", "庭审记录"))}</h4>
       ${logs.map((log) => `
         <section class="jury-round">
@@ -407,7 +409,7 @@
             </div>
           </section>
       `).join("")}
-    `;
+    `);
   }
 
   function renderBallots(run) {
@@ -416,7 +418,7 @@
     const supporting = tally.supporting || [];
     const dissenting = tally.dissenting || [];
     const verdict = tally.verdict || "无罪";
-    $("#jBallots").innerHTML = `
+    $("#jBallots").innerHTML = gwHTML(`
       <h4>${esc(t("jury.ballots_title", "匿名投票"))}</h4>
       <p class="jury-hint">${esc(t("jury.ballots_hint", "下面是每个陪审员的最终选票。陪审员 ID 故意不暴露,只看立场。" ))}</p>
       <div class="jury-ballots-grid">
@@ -456,7 +458,7 @@
           </div>
         ` : ""}
       </div>
-    `;
+    `);
   }
 
   function setProgress(p) {
@@ -479,17 +481,17 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="jury-empty">${esc(t("jury.no_history", "尚无记录"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="jury-empty">${esc(t("jury.no_history", "尚无记录"))}</li>`);
         return;
       }
-      ul.innerHTML = runs.slice(0, 5).map((row) => {
+      ul.innerHTML = gwHTML(runs.slice(0, 5).map((row) => {
         const title = `${row.emoji || ""} ${esc(row.case_title || "未命名")}`;
         const meta = `${row.guilty || 0} 有罪 / ${row.not_guilty || 0} 无罪 · 分歧 ${row.spread || 0}`;
         return `<li><button type="button" data-job="${esc(row.job_id)}">
           <span class="who">${title}</span>
           <span class="meta">${esc(row.verdict || "—")} · ${esc(meta)}</span>
         </button></li>`;
-      }).join("");
+      }).join(""));
       $$("button[data-job]", ul).forEach((btn) => {
         btn.addEventListener("click", async () => {
           const jobId = btn.getAttribute("data-job");

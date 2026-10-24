@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // 谁是真人 (Who's Human) — front-end controller.
 //
 //   GET  /api/games/whois/catalogue              topics + seat limits
@@ -59,35 +62,35 @@
     try {
       const data = await (await fetch("/api/city/catalogue")).json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
   async function loadCatalogue() {
     const data = await call("GET", "/catalogue");
     state.topics = data.topics || [];
-    $("#wTopic").innerHTML = state.topics
+    $("#wTopic").innerHTML = gwHTML(state.topics
       .map((topic) => `<option value="${esc(topic.id)}">${esc(topic.emoji + " " + topic.title)}</option>`)
-      .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("whois.custom_option", "自己写一个…"))}</option>`;
+      .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("whois.custom_option", "自己写一个…"))}</option>`);
   }
 
   async function loadRooms() {
     const list = $("#wRooms");
     try {
       const data = await call("GET", "/rooms");
-      list.innerHTML = (data.rooms || []).map((room) => `
+      list.innerHTML = gwHTML((data.rooms || []).map((room) => `
         <li><button type="button" data-room="${esc(room.id)}">
           <span class="who">${esc(room.topic)}</span>
           <span class="meta">${esc(statusText(room.status))} · ${esc(room.seats)} ${esc(t("whois.seats_suffix", "个座位"))}</span>
-        </button></li>`).join("") || `<li class="disaster-empty">${esc(t("whois.no_rooms", "还没开过"))}</li>`;
+        </button></li>`).join("") || `<li class="disaster-empty">${esc(t("whois.no_rooms", "还没开过"))}</li>`);
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err.message || err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err.message || err))}</li>`);
     }
   }
 
@@ -107,7 +110,7 @@
     try {
       const view = await call("POST", "/rooms", payload);
       state.roomId = view.id;
-      history.replaceState(null, "", "?room=" + encodeURIComponent(view.id));
+      history.replaceState(null, "", gwURL("?room=" + encodeURIComponent(view.id)));
       render(view);
       poll();
       loadRooms();
@@ -162,7 +165,7 @@
     const box = $("#wLinks");
     box.hidden = !host;
     if (!host) return;
-    $("#wSeats").innerHTML = view.seats.map((card) => {
+    $("#wSeats").innerHTML = gwHTML(view.seats.map((card) => {
       const flags = view.status === "chatting"
         ? (card.posted ? "✓ " + t("whois.posted", "已发") : "…")
         : view.status === "guessing" && card.kind === "human"
@@ -174,7 +177,7 @@
         : "";
       return `<li><b>${esc(card.alias)}</b> <span class="muted">${esc(who(card))}</span>
         <span class="whois-flag">${esc(flags)}</span>${link}</li>`;
-    }).join("");
+    }).join(""));
   }
 
   function renderChat(view) {
@@ -189,7 +192,7 @@
             <span class="whois-alias">${esc(m.alias)}</span><span class="whois-text">${esc(m.text)}</span>
           </div>`).join("")}
       </div>`).join("");
-    box.innerHTML = rounds || `<p class="disaster-hint">${esc(t("whois.no_messages", "还没有人说话。这一轮大家同时写，写完一起出现。"))}</p>`;
+    box.innerHTML = gwHTML(rounds || `<p class="disaster-hint">${esc(t("whois.no_messages", "还没有人说话。这一轮大家同时写，写完一起出现。"))}</p>`);
   }
 
   function renderCompose(view) {
@@ -218,18 +221,18 @@
     box.hidden = !(me && view.status === "guessing");
     if (box.hidden) return;
     if (me.voted) {
-      $("#wBallotRows").innerHTML = `<li class="disaster-hint">${esc(t("whois.voted_wait", "已提交，等揭晓。"))}</li>`;
+      $("#wBallotRows").innerHTML = gwHTML(`<li class="disaster-hint">${esc(t("whois.voted_wait", "已提交，等揭晓。"))}</li>`);
       $("#wReason").hidden = true;
       $("#wVote").hidden = true;
       return;
     }
     if ($("#wBallotRows").dataset.room === view.id) return; // keep the half-filled ballot
     $("#wBallotRows").dataset.room = view.id;
-    $("#wBallotRows").innerHTML = view.seats.filter((card) => card.alias !== me.alias).map((card) => `
+    $("#wBallotRows").innerHTML = gwHTML(view.seats.filter((card) => card.alias !== me.alias).map((card) => `
       <li><b>${esc(card.alias)}</b>
         <label><input type="radio" name="v-${esc(card.alias)}" value="human" /> ${esc(t("whois.is_human", "真人"))}</label>
         <label><input type="radio" name="v-${esc(card.alias)}" value="resident" /> ${esc(t("whois.is_resident", "居民"))}</label>
-      </li>`).join("");
+      </li>`).join(""));
   }
 
   function renderResults(view) {
@@ -246,13 +249,13 @@
         <span class="muted">${esc(t("whois.judged_human", "被判为真人"))} ${s.judged_human || 0}/${s.judgments || 0}</span></li>`;
     }).join("");
     const accuracy = res.accuracy == null ? "—" : Math.round(res.accuracy * 100) + "%";
-    box.innerHTML = `
+    box.innerHTML = gwHTML(`
       <h4>${esc(t("whois.reveal_title", "揭晓"))}</h4>
       ${mine ? `<p class="whois-mine">${esc(t("whois.your_score", "你猜对了"))} ${mine.correct}/${mine.total}</p>` : ""}
       <ul class="whois-reveal">${rows}</ul>
       <p class="disaster-hint">${esc(t("whois.overall", "全场判断准确率"))} ${accuracy} ·
         ${esc(t("whois.resident_rate", "居民被当成真人"))} ${res.resident_judged_human || 0}/${res.resident_judgments || 0} ·
-        ${esc(t("whois.human_rate", "真人被认出"))} ${res.human_judged_human || 0}/${res.human_judgments || 0}</p>`;
+        ${esc(t("whois.human_rate", "真人被认出"))} ${res.human_judged_human || 0}/${res.human_judgments || 0}</p>`);
   }
 
   // -- actions -------------------------------------------------------------
@@ -368,7 +371,7 @@
         const button = event.target.closest("[data-room]");
         if (!button) return;
         state.roomId = button.dataset.room;
-        history.replaceState(null, "", "?room=" + encodeURIComponent(state.roomId));
+        history.replaceState(null, "", gwURL("?room=" + encodeURIComponent(state.roomId)));
         refresh().then(poll);
       });
       await Promise.all([loadCities(), loadCatalogue().catch(showError)]);

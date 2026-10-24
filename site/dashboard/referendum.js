@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 公投局 (Referendum) — front-end controller.
 //
 //   POST /api/games/referendum/run   → {job_id}; residents × 2 model calls,
@@ -69,14 +71,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -88,12 +90,12 @@
       const data = await resp.json();
       state.motions = data.motions || [];
       state.maxAgents = data.max_agents || 14;
-      sel.innerHTML = state.motions
+      sel.innerHTML = gwHTML(state.motions
         .map((m) => `<option value="${esc(m.id)}">${esc(m.emoji + " " + m.title)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("vote.custom_option", "自己写一个议案…"))}</option>`;
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("vote.custom_option", "自己写一个议案…"))}</option>`);
       renderMotionText();
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -110,25 +112,25 @@
   async function loadAgents() {
     const list = $("#vAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="disaster-empty">${esc(t("vote.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("vote.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       renderAgents();
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#vAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("vote.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("vote.no_agents", "这座城市暂无居民"))}</li>`);
       $("#vPicked").textContent = "0";
       return;
     }
-    list.innerHTML = state.agents
+    list.innerHTML = gwHTML(state.agents
       .map((a) => {
         const meta = [a.age ? a.age + "岁" : "", a.job || "", a.residence || ""].filter(Boolean).join(" · ");
         const on = state.picked.has(a.id) ? " checked" : "";
@@ -138,7 +140,7 @@
           <span class="meta">${esc(meta)}</span>
         </label></li>`;
       })
-      .join("");
+      .join(""));
     Array.from(list.querySelectorAll("input[type=checkbox]")).forEach((box) => {
       box.addEventListener("change", () => {
         const id = parseInt(box.value, 10);
@@ -250,7 +252,7 @@
     const passed = stats.result === "通过";
     const verdict = $("#vVerdict");
     verdict.className = "vote-verdict " + (passed ? "is-pass" : stats.result === "否决" ? "is-fail" : "is-tie");
-    verdict.innerHTML = `
+    verdict.innerHTML = gwHTML(`
       <b class="headline">${esc(stats.result)}</b>
       <span class="tally">${esc(t("vote.for", "支持"))} ${pub["支持"] || 0} ·
         ${esc(t("vote.against", "反对"))} ${pub["反对"] || 0} ·
@@ -258,27 +260,27 @@
       <span class="swing">${esc(t("vote.swing", "较私下表态"))} ${stats.swing > 0 ? "+" : ""}${stats.swing} ·
         ${stats.flips} ${esc(t("vote.flipped", "人改票"))}</span>
       ${run.campaign ? `<span class="campaign">${esc(t("vote.campaign_used", "宣传口径"))}：「${esc(run.campaign)}」</span>` : ""}
-    `;
+    `);
 
-    $("#vBars").innerHTML = [
+    $("#vBars").innerHTML = gwHTML([
       stanceBar(t("vote.private", "私下"), stats.private || {}, stats.total),
       stanceBar(t("vote.public", "正式"), pub, stats.total),
-    ].join("");
+    ].join(""));
 
     const flips = run.flips || [];
     $("#vFlipsBox").hidden = !flips.length;
-    $("#vFlips").innerHTML = flips
+    $("#vFlips").innerHTML = gwHTML(flips
       .map((f) => `<li>
         <span class="who">${esc(f.name)}</span>
         <span class="move">${esc(f.from)} → <b>${esc(f.to)}</b></span>
         <span class="why">${esc(f.say)}</span>
       </li>`)
-      .join("");
+      .join(""));
 
     $("#vSummaryBox").hidden = !run.summary;
     $("#vSummary").textContent = run.summary || "";
 
-    $("#vCards").innerHTML = (run.voters || [])
+    $("#vCards").innerHTML = gwHTML((run.voters || [])
       .map((v) => {
         const pubV = v.public || {};
         const priv = v.private || {};
@@ -295,7 +297,7 @@
           </footer>
         </article>`;
       })
-      .join("");
+      .join(""));
   }
 
   function stanceClass(stance) {
@@ -338,22 +340,22 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="disaster-empty">${esc(t("vote.no_history", "还没有记录"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("vote.no_history", "还没有记录"))}</li>`);
         return;
       }
-      ul.innerHTML = runs
+      ul.innerHTML = gwHTML(runs
         .map((r) => `<li>
           <button type="button" data-job="${esc(r.job_id)}">
             <span class="who">${esc((r.emoji || "") + " " + (r.motion || ""))}</span>
             <span class="meta">${esc(r.result || "")} · ${r.voters} ${esc(t("vote.voters", "人"))} · ${r.flips} ${esc(t("vote.flipped", "人改票"))}</span>
           </button>
         </li>`)
-        .join("");
+        .join(""));
       Array.from(ul.querySelectorAll("button[data-job]")).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

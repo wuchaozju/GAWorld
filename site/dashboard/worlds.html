@@ -6,7 +6,9 @@
        Kept so old links and bookmarks still land on it. -->
   <meta http-equiv="refresh" content="0; url=/site/dashboard/research.html?tab=worlds" />
   <title>GAWorld · 平行世界</title>
-  <script>location.replace("/site/dashboard/research.html?tab=worlds" + location.hash);</script>
+  <script>
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+location.replace(gwURL("/site/dashboard/research.html?tab=worlds" + location.hash));</script>
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body>

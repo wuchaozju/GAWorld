@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 说服游戏 (Persuasion) — front-end controller.
 //
 // One game is one session on the server (`/api/games/persuasion/*`):
@@ -65,14 +67,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -80,23 +82,23 @@
   async function loadAgents() {
     const sel = $("#pAgent");
     if (state.city === null) return;
-    sel.innerHTML = `<option>${esc(t("persuade.loading", "加载中…"))}</option>`;
+    sel.innerHTML = gwHTML(`<option>${esc(t("persuade.loading", "加载中…"))}</option>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       if (!state.agents.length) {
-        sel.innerHTML = `<option value="">${esc(t("persuade.no_agents", "这座城市暂无居民"))}</option>`;
+        sel.innerHTML = gwHTML(`<option value="">${esc(t("persuade.no_agents", "这座城市暂无居民"))}</option>`);
         return;
       }
-      sel.innerHTML = state.agents
+      sel.innerHTML = gwHTML(state.agents
         .map((a) => {
           const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || ""].filter(Boolean).join(" · ");
           return `<option value="${a.id}">#${a.id} ${esc(a.name)}${meta ? " — " + esc(meta) : ""}</option>`;
         })
-        .join("");
+        .join(""));
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -200,7 +202,7 @@
       lines.push(bubble("agent", who + t("persuade.final_suffix", "（复问）"), session.final_answer, "is-final"));
     }
     const chat = $("#pChat");
-    chat.innerHTML = lines.join("");
+    chat.innerHTML = gwHTML(lines.join(""));
     chat.scrollTop = chat.scrollHeight;
 
     const settled = session.status === "settled";
@@ -217,7 +219,7 @@
       // gets a chip-headed row so the verdict leads with the takeaway, with
       // the original line tucked behind a <details> for the curious.
       const reasonText = (session.reason || "").trim();
-      verdict.innerHTML = `
+      verdict.innerHTML = gwHTML(`
         <h4>${win ? esc(t("persuade.win", "🎉 说服成功")) : esc(t("persuade.lose", "🪨 没说动他"))}</h4>
         <p><b>${esc(t("persuade.before", "最初"))}：</b>${esc(session.initial_answer)}</p>
         <p><b>${esc(t("persuade.after", "复问"))}：</b>${esc(session.final_answer)}</p>
@@ -227,7 +229,7 @@
               <span class="duel-reason-text">${esc(reasonText)}</span>
             </div>
           </div>` : ""}
-      `;
+      `);
     }
   }
 
@@ -277,10 +279,10 @@
       const data = await resp.json();
       const sessions = data.sessions || [];
       if (!sessions.length) {
-        ul.innerHTML = `<li class="persuade-empty">${esc(t("persuade.no_history", "还没有对局"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="persuade-empty">${esc(t("persuade.no_history", "还没有对局"))}</li>`);
         return;
       }
-      ul.innerHTML = sessions
+      ul.innerHTML = gwHTML(sessions
         .map((s) => {
           const mark = s.status !== "settled"
             ? t("persuade.tag_open", "进行中")
@@ -294,12 +296,12 @@
             </button>
           </li>`;
         })
-        .join("");
+        .join(""));
       Array.from(ul.querySelectorAll("button[data-session]")).forEach((btn) => {
         btn.addEventListener("click", () => openSession(btn.getAttribute("data-session")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="persuade-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="persuade-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

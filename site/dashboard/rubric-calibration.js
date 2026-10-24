@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // Track R human anchor calibration — annotation page.
 //
 //   GET  /api/bench/calibration                     → the sets
@@ -59,14 +61,14 @@
   function renderSets() {
     const select = $("cSet");
     if (!state.sets.length) {
-      select.innerHTML = "<option value=\"\">" + esc(t("calib.no_sets", "（还没有校准集）")) + "</option>";
+      select.innerHTML = gwHTML("<option value=\"\">" + esc(t("calib.no_sets", "（还没有校准集）")) + "</option>");
       return;
     }
-    select.innerHTML = state.sets.map((row) => {
+    select.innerHTML = gwHTML(state.sets.map((row) => {
       const gate = row.gate && row.gate.status ? " · " + row.gate.status : "";
       return "<option value=\"" + esc(row.set_id) + "\"" + (row.set_id === state.setId ? " selected" : "") + ">" +
         esc(row.set_id + " · " + row.n_tasks + t("calib.tasks_unit", " 题") + gate) + "</option>";
-    }).join("");
+    }).join(""));
   }
 
   function renderSetInfo() {
@@ -114,9 +116,9 @@
     const done = doneCount();
     $("cProgress").textContent = done + " / " + total;
     $("cBar").style.width = (total ? Math.round(100 * done / total) : 0) + "%";
-    $("cJump").innerHTML = tasks().map((task, i) =>
+    $("cJump").innerHTML = gwHTML(tasks().map((task, i) =>
       "<button type=\"button\" data-jump=\"" + i + "\" class=\"" + (labelled(task) ? "is-done" : "") +
-      (i === state.index ? " is-current" : "") + "\">" + (i + 1) + "</button>").join("");
+      (i === state.index ? " is-current" : "") + "\">" + (i + 1) + "</button>").join(""));
     $("cAnalyze").disabled = !(total && done === total && state.annotator);
   }
 
@@ -132,10 +134,10 @@
     $("cTaskTitle").textContent = tf("calib.task_title", "{id} · {item}（{n} / {total}）",
       { id: task.task_id, item: task.item_id, n: state.index + 1, total: list.length });
     $("cProp").textContent = task.proposition;
-    $("cScores").innerHTML = ["0", "1", "2"].map((score) =>
+    $("cScores").innerHTML = gwHTML(["0", "1", "2"].map((score) =>
       "<button type=\"button\" data-score=\"" + score + "\" class=\"" +
       (mine && String(mine.score) === score ? "is-picked" : "") + "\"><b>" + score + "</b>" +
-      esc((task.anchors || {})[score] || "") + "</button>").join("");
+      esc((task.anchors || {})[score] || "") + "</button>").join(""));
     $("cAbstain").classList.toggle("is-picked", !!mine && mine.score === null);
     $("cFailure").textContent = (task.failure_modes || []).length
       ? t("calib.failure_modes", "典型失败（命中应压低分数）：") + task.failure_modes.join("；") : "";
@@ -186,7 +188,7 @@
     }).join("");
     const queue = (a.rewrite_queue || []).map((row) =>
       "<li><b>" + esc(row.item_id) + "</b> " + esc(row.reasons.join("；")) + "</li>").join("");
-    $("cResult").innerHTML = [
+    $("cResult").innerHTML = gwHTML([
       "<p class=\"calib-result-gate " + (gate.status === "ok" ? "is-ok" : "is-bad") + "\">" +
         esc(t("calib.result_gate", "结论") + "：" + gate.status) + "</p>",
       (gate.reasons || []).length ? "<p class=\"calib-hint\">" + esc(gate.reasons.join("；")) + "</p>" : "",
@@ -208,7 +210,7 @@
         "</th><th>" + esc(t("calib.disagree", "两人分歧")) + "</th><th>" + esc(t("calib.human_mean", "人均")) +
         "</th><th>" + esc(t("calib.machine_mean", "机器均")) + "</th></tr></thead><tbody>" + rows + "</tbody></table>",
       queue ? "<h4>" + esc(t("calib.rewrite", "重写队列")) + "</h4><ul>" + queue + "</ul>" : "",
-    ].join("");
+    ].join(""));
     $("cResult").hidden = false;
     $("cTask").hidden = true;
   }
