@@ -42,7 +42,27 @@ def test_homepage_links_directly_to_feature_views(name):
     for link in page.links:
         if link.startswith("/console#"):
             view = urlsplit(link).fragment
-            assert f'id: "{view}"' in console or f"{view}: {{" in console
+            if view == "worlds":
+                result = subprocess.run(
+                    [
+                        "node",
+                        "-e",
+                        "const assert = require('node:assert/strict');"
+                        "const navigation = require('./site/community/navigation.js');"
+                        "const route = navigation.resolve('worlds',"
+                        "[{id:'dashboard',src:'/dashboard'},"
+                        "{id:'research',src:'/site/dashboard/research.html'}]);"
+                        "assert.equal(route.id, 'research');"
+                        "assert.equal(route.src, '/site/dashboard/research.html?tab=worlds');",
+                    ],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                assert result.returncode == 0, result.stdout + result.stderr
+            else:
+                assert f'id: "{view}"' in console
 
 
 @pytest.mark.parametrize("name", ["site/index.html", "site/home/index.html"])
