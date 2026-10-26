@@ -247,88 +247,105 @@ async def simulation_tree_advance_frontier(
                 detail=T("api.errors.too_many_turns", turns=turns, max=settings.max_advance_turns_per_request),
             )
 
-        # Create copies for each parent
-        allocations = {pid: tree.copy_sim(pid) for pid in parents}
-
-        for pid, cid in allocations.items():
-            tree.attach(pid, [{"op": "advance", "turns": turns}], cid)
-            node = tree.nodes[cid]
-            broadcast_tree_event(
-                record,
-                {
-                    "type": "attached",
-                    "data": {
-                        "node": int(cid),
-                        "parent": int(pid),
-                        "depth": int(node["depth"]),
-                        "edge_type": node["edge_type"],
-                        "ops": node["ops"],
-                    },
-                },
-            )
-            record.running.add(cid)
-            _start_node_advance_task(
-                simulation_id,
-                node_id=int(cid),
-                parent_id=int(pid),
-                op="advance_frontier",
-                turns=turns,
-            )
-            broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
-
-        await asyncio.sleep(0)
-
-        async def _run(
-            parent_id: int,
-        ) -> tuple[int, int, RuntimeError | FileNotFoundError | None]:
-            child_id = allocations[parent_id]
-            simulator = tree.nodes[child_id]["sim"]
-            total_turns = get_advance_turn_count(simulator, turns)
-            try:
-                with log_time("SIM", sim_id=simulation_id, node=child_id, turns=total_turns, op="advance_frontier"):
-                    run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
-            except Exception as exc:
-                RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, child_id), exc)
-                raise
-            return parent_id, child_id, run_error
-
+        # Per-parent in-flight idempotency for frontier fan-out: claim each
+        # parent BEFORE copy_sim; parents already advancing (e.g. via
+        # advance_chain) are SKIPPED (documented rule) so one busy leaf does
+        # not fail the whole frontier batch. Claims released in finally.
+        claimed_parents: list[int] = []
+        for pid in parents:
+            if await record.claim_advance_parent(int(pid)):
+                claimed_parents.append(int(pid))
         try:
-            results = await asyncio.gather(*[_run(pid) for pid in parents])
-        except Exception:
-            for cid in allocations.values():
-                if cid in record.running:
-                    record.running.remove(cid)
-                broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
-            raise
-        produced: list[int] = []
+            parents = claimed_parents
 
-        for *_pid, cid, run_error in results:
-            produced.append(cid)
-            if run_error is not None:
-                message = record_advance_runtime_failure(
-                    tree.nodes[cid],
-                    tree.nodes[cid]["sim"],
-                    run_error,
-                )
+            if not parents:
+                return {"children": []}
+
+            # Create copies for each parent
+            allocations = {pid: tree.copy_sim(pid) for pid in parents}
+
+            for pid, cid in allocations.items():
+                tree.attach(pid, [{"op": "advance", "turns": turns}], cid)
+                node = tree.nodes[cid]
                 broadcast_tree_event(
                     record,
                     {
-                        "type": "run_failed",
-                        "data": {"node": int(cid), "error": message},
+                        "type": "attached",
+                        "data": {
+                            "node": int(cid),
+                            "parent": int(pid),
+                            "depth": int(node["depth"]),
+                            "edge_type": node["edge_type"],
+                            "ops": node["ops"],
+                        },
                     },
                 )
-                RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
-            else:
-                RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
-            if cid in record.running:
-                record.running.remove(cid)
-            broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+                record.running.add(cid)
+                _start_node_advance_task(
+                    simulation_id,
+                    node_id=int(cid),
+                    parent_id=int(pid),
+                    op="advance_frontier",
+                    turns=turns,
+                )
+                broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
 
-        # Persist latest tree state
-        sim.latest_state = tree.serialize()
-        await session.commit()
+            await asyncio.sleep(0)
 
-        return {"children": [int(c) for c in produced]}
+            async def _run(
+                parent_id: int,
+            ) -> tuple[int, int, RuntimeError | FileNotFoundError | None]:
+                child_id = allocations[parent_id]
+                simulator = tree.nodes[child_id]["sim"]
+                total_turns = get_advance_turn_count(simulator, turns)
+                try:
+                    with log_time("SIM", sim_id=simulation_id, node=child_id, turns=total_turns, op="advance_frontier"):
+                        run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
+                except Exception as exc:
+                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, child_id), exc)
+                    raise
+                return parent_id, child_id, run_error
+
+            try:
+                results = await asyncio.gather(*[_run(pid) for pid in parents])
+            except Exception:
+                for cid in allocations.values():
+                    if cid in record.running:
+                        record.running.remove(cid)
+                    broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+                raise
+            produced: list[int] = []
+
+            for *_pid, cid, run_error in results:
+                produced.append(cid)
+                if run_error is not None:
+                    message = record_advance_runtime_failure(
+                        tree.nodes[cid],
+                        tree.nodes[cid]["sim"],
+                        run_error,
+                    )
+                    broadcast_tree_event(
+                        record,
+                        {
+                            "type": "run_failed",
+                            "data": {"node": int(cid), "error": message},
+                        },
+                    )
+                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
+                else:
+                    RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
+                if cid in record.running:
+                    record.running.remove(cid)
+                broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+
+            # Persist latest tree state
+            sim.latest_state = tree.serialize()
+            await session.commit()
+
+            return {"children": [int(c) for c in produced]}
+        finally:
+            for pid in claimed_parents:
+                record.release_advance_parent(pid)
 
 
 @post("/{simulation_id:str}/tree/advance_multi")
@@ -403,85 +420,97 @@ async def simulation_tree_advance_multi(
         except BranchRequestError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-        children = [tree.copy_sim(parent) for _ in range(count)]
-
-        for cid in children:
-            tree.attach(parent, [{"op": "advance", "turns": turns}], cid)
-            node = tree.nodes[cid]
-            broadcast_tree_event(
-                record,
-                {
-                    "type": "attached",
-                    "data": {
-                        "node": int(cid),
-                        "parent": int(parent),
-                        "depth": int(node["depth"]),
-                        "edge_type": node["edge_type"],
-                        "ops": node["ops"],
-                    },
-                },
+        # Per-parent in-flight idempotency: one request may create count
+        # children of the same parent, but an OVERLAPPING second request
+        # targeting the same parent is rejected with 409. Claim before any
+        # copy_sim/attach; released in finally on every exit path.
+        if not await record.claim_advance_parent(parent):
+            raise HTTPException(
+                status_code=409,
+                detail=T("api.errors.advance_in_progress", parent=parent),
             )
-            record.running.add(cid)
-            _start_node_advance_task(
-                simulation_id,
-                node_id=int(cid),
-                parent_id=int(parent),
-                op="advance_multi",
-                turns=turns,
-            )
-            broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
-
-        await asyncio.sleep(0)
-
-        async def _run(
-            child_id: int,
-        ) -> tuple[int, RuntimeError | FileNotFoundError | None]:
-            simulator = tree.nodes[child_id]["sim"]
-            total_turns = get_advance_turn_count(simulator, turns)
-            try:
-                with log_time("SIM", sim_id=simulation_id, node=child_id, turns=total_turns, op="advance_multi"):
-                    run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
-            except Exception as exc:
-                RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, child_id), exc)
-                raise
-            return child_id, run_error
-
         try:
-            finished = await asyncio.gather(*[_run(cid) for cid in children])
-        except Exception:
-            for cid in children:
-                if cid in record.running:
-                    record.running.remove(cid)
-                broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
-            raise
-        result_children: list[int] = []
+            children = [tree.copy_sim(parent) for _ in range(count)]
 
-        for cid, run_error in finished:
-            result_children.append(cid)
-            if run_error is not None:
-                message = record_advance_runtime_failure(
-                    tree.nodes[cid],
-                    tree.nodes[cid]["sim"],
-                    run_error,
-                )
+            for cid in children:
+                tree.attach(parent, [{"op": "advance", "turns": turns}], cid)
+                node = tree.nodes[cid]
                 broadcast_tree_event(
                     record,
                     {
-                        "type": "run_failed",
-                        "data": {"node": int(cid), "error": message},
+                        "type": "attached",
+                        "data": {
+                            "node": int(cid),
+                            "parent": int(parent),
+                            "depth": int(node["depth"]),
+                            "edge_type": node["edge_type"],
+                            "ops": node["ops"],
+                        },
                     },
                 )
-                RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
-            else:
-                RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
-            if cid in record.running:
-                record.running.remove(cid)
-            broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+                record.running.add(cid)
+                _start_node_advance_task(
+                    simulation_id,
+                    node_id=int(cid),
+                    parent_id=int(parent),
+                    op="advance_multi",
+                    turns=turns,
+                )
+                broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
 
-        sim.latest_state = tree.serialize()
-        await session.commit()
+            await asyncio.sleep(0)
 
-        return {"children": [int(c) for c in result_children]}
+            async def _run(
+                child_id: int,
+            ) -> tuple[int, RuntimeError | FileNotFoundError | None]:
+                simulator = tree.nodes[child_id]["sim"]
+                total_turns = get_advance_turn_count(simulator, turns)
+                try:
+                    with log_time("SIM", sim_id=simulation_id, node=child_id, turns=total_turns, op="advance_multi"):
+                        run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
+                except Exception as exc:
+                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, child_id), exc)
+                    raise
+                return child_id, run_error
+
+            try:
+                finished = await asyncio.gather(*[_run(cid) for cid in children])
+            except Exception:
+                for cid in children:
+                    if cid in record.running:
+                        record.running.remove(cid)
+                    broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+                raise
+            result_children: list[int] = []
+
+            for cid, run_error in finished:
+                result_children.append(cid)
+                if run_error is not None:
+                    message = record_advance_runtime_failure(
+                        tree.nodes[cid],
+                        tree.nodes[cid]["sim"],
+                        run_error,
+                    )
+                    broadcast_tree_event(
+                        record,
+                        {
+                            "type": "run_failed",
+                            "data": {"node": int(cid), "error": message},
+                        },
+                    )
+                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
+                else:
+                    RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
+                if cid in record.running:
+                    record.running.remove(cid)
+                broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+
+            sim.latest_state = tree.serialize()
+            await session.commit()
+
+            return {"children": [int(c) for c in result_children]}
+        finally:
+            record.release_advance_parent(parent)
 
 
 @post("/{simulation_id:str}/tree/advance_chain")
@@ -531,80 +560,93 @@ async def simulation_tree_advance_chain(
 
         last = parent
 
-        async with record._advance_lock:
-            for _ in range(steps):
-                cid = tree.copy_sim(last)
-                tree.attach(last, [{"op": "advance", "turns": 1}], cid)
-                node = tree.nodes[cid]
-                broadcast_tree_event(
-                    record,
-                    {
-                        "type": "attached",
-                        "data": {
-                            "node": int(cid),
-                            "parent": int(last),
-                            "depth": int(node["depth"]),
-                            "edge_type": node["edge_type"],
-                            "ops": node["ops"],
-                        },
-                    },
-                )
-                record.running.add(cid)
-                _start_node_advance_task(
-                    simulation_id,
-                    node_id=int(cid),
-                    parent_id=int(last),
-                    op="advance_chain",
-                    turns=1,
-                )
-                broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
-                await asyncio.sleep(0)
-
-                simulator = tree.nodes[cid]["sim"]
-                total_turns = get_advance_turn_count(simulator, 1)
-                run_error: RuntimeError | FileNotFoundError | None = None
-                task_failed = False
-                logger.info(f"[ADVANCE_CHAIN] Running simulator for node {cid}, max_turns={total_turns}")
-                try:
-                    with log_time("SIM", sim_id=simulation_id, node=cid, turns=total_turns, step=_, op="advance_chain"):
-                        run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
-                    if run_error is not None:
-                        message = record_advance_runtime_failure(node, simulator, run_error)
-                        broadcast_tree_event(
-                            record,
-                            {
-                                "type": "run_failed",
-                                "data": {"node": int(cid), "error": message},
+        # Per-parent in-flight idempotency: claim BEFORE copy_sim/attach so a
+        # duplicate same-parent request gets 409 without creating a ghost
+        # child. Released in finally on every exit path.
+        if not await record.claim_advance_parent(parent):
+            raise HTTPException(
+                status_code=409,
+                detail=T("api.errors.advance_in_progress", parent=parent),
+            )
+        try:
+            async with record._advance_lock:
+                for _ in range(steps):
+                    cid = tree.copy_sim(last)
+                    tree.attach(last, [{"op": "advance", "turns": 1}], cid)
+                    node = tree.nodes[cid]
+                    broadcast_tree_event(
+                        record,
+                        {
+                            "type": "attached",
+                            "data": {
+                                "node": int(cid),
+                                "parent": int(last),
+                                "depth": int(node["depth"]),
+                                "edge_type": node["edge_type"],
+                                "ops": node["ops"],
                             },
-                        )
-                        RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
-                        logger.warning(
-                            "[ADVANCE_CHAIN] Simulator runtime failed for node %s; returning child for log hydration",
-                            cid,
-                        )
-                        last = cid
-                        break
-                    logger.info(f"[ADVANCE_CHAIN] Simulator run complete for node {cid}")
+                        },
+                    )
+                    record.running.add(cid)
+                    _start_node_advance_task(
+                        simulation_id,
+                        node_id=int(cid),
+                        parent_id=int(last),
+                        op="advance_chain",
+                        turns=1,
+                    )
+                    broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
+                    await asyncio.sleep(0)
 
-                    from fos.backend.services.simtree_runtime import ExperimentRunnerAdapter
+                    simulator = tree.nodes[cid]["sim"]
+                    total_turns = get_advance_turn_count(simulator, 1)
+                    run_error: RuntimeError | FileNotFoundError | None = None
+                    task_failed = False
+                    logger.info(f"[ADVANCE_CHAIN] Running simulator for node {cid}, max_turns={total_turns}")
+                    try:
+                        with log_time("SIM", sim_id=simulation_id, node=cid, turns=total_turns, step=_, op="advance_chain"):
+                            run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
+                        if run_error is not None:
+                            message = record_advance_runtime_failure(node, simulator, run_error)
+                            broadcast_tree_event(
+                                record,
+                                {
+                                    "type": "run_failed",
+                                    "data": {"node": int(cid), "error": message},
+                                },
+                            )
+                            RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
+                            logger.warning(
+                                "[ADVANCE_CHAIN] Simulator runtime failed for node %s; returning child for log hydration",
+                                cid,
+                            )
+                            last = cid
+                            break
+                        logger.info(f"[ADVANCE_CHAIN] Simulator run complete for node {cid}")
 
-                    if isinstance(simulator, ExperimentRunnerAdapter):
-                        new_events = len(simulator.events)
-                        node_logs = len(node.get('logs', []))
-                        logger.info(f"[ADVANCE_CHAIN] Adapter events count: {new_events}, node logs count: {node_logs}")
-                        if new_events == 0:
-                            logger.warning(f"[ADVANCE_CHAIN] Node {cid} produced ZERO events — simulation may have failed silently")
-                except Exception as exc:
-                    task_failed = True
-                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), exc)
-                    raise
-                finally:
-                    if run_error is None and not task_failed:
-                        RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
-                    if cid in record.running:
-                        record.running.remove(cid)
-                    broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
-                last = cid
+                        from fos.backend.services.simtree_runtime import ExperimentRunnerAdapter
+
+                        if isinstance(simulator, ExperimentRunnerAdapter):
+                            new_events = len(simulator.events)
+                            node_logs = len(node.get('logs', []))
+                            logger.info(f"[ADVANCE_CHAIN] Adapter events count: {new_events}, node logs count: {node_logs}")
+                            if new_events == 0:
+                                logger.warning(f"[ADVANCE_CHAIN] Node {cid} produced ZERO events — simulation may have failed silently")
+                    except Exception as exc:
+                        task_failed = True
+                        RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), exc)
+                        raise
+                    finally:
+                        if run_error is None and not task_failed:
+                            RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
+                        if cid in record.running:
+                            record.running.remove(cid)
+                        broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
+                    last = cid
+
+
+        finally:
+            record.release_advance_parent(parent)
 
         # Phase 2: Persist updated tree state (short DB session)
         try:

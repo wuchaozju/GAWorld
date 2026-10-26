@@ -98,6 +98,9 @@ export const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({
   const toggleCompareMode = useSimulationStore((state) => state.toggleCompareMode);
   const setCompareTarget = useSimulationStore((state) => state.setCompareTarget);
   const isGenerating = useSimulationStore((state) => state.isGenerating);
+  // Disable Advance while the selected node itself is known to be running
+  // (graph.running → status 'running'), not only while a request is pending.
+  const selectedNodeRunning = selectedNode?.status === 'running';
   const llmProviders = useSimulationStore((state) => state.llmProviders);
   const selectedProviderId = useSimulationStore((state) => state.selectedProviderId);
   const currentProviderId = useSimulationStore((state) => state.currentProviderId);
@@ -147,7 +150,7 @@ export const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({
               }
               caption={t("controlRoom.advanceCopy")}
               onClick={() => void advanceSimulation()}
-              disabled={!selectedNodeId || isGenerating || isCompareMode}
+              disabled={!selectedNodeId || isGenerating || selectedNodeRunning || isCompareMode}
               primary
             />
             <ControlAction
@@ -325,7 +328,7 @@ export const SimulationControlPanel: React.FC<SimulationControlPanelProps> = ({
               }
               caption={t("controlRoom.advanceCopy")}
               onClick={() => void advanceSimulation()}
-              disabled={!selectedNodeId || isGenerating || isCompareMode}
+              disabled={!selectedNodeId || isGenerating || selectedNodeRunning || isCompareMode}
               primary
             />
             <ControlAction

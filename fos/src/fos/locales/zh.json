@@ -209,6 +209,7 @@
       "provider_model_required": "需要指定LLM模型",
       "missing_bearer_token": "缺少Bearer令牌",
       "tree_node_not_found": "树节点未找到",
+      "advance_in_progress": "节点 {parent} 正在推进中",
       "provider_not_authorized": "无权访问此提供商",
       "provider_test_failed": "Provider测试失败，请检查您的配置和凭据。",
       "template_not_found": "模板未找到",
