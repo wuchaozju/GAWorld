@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -39,6 +40,8 @@ import urllib.request
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 FOS_SRC = os.path.join(REPO_ROOT, "fos", "src")
+FOS_FRONTEND_DIR = os.path.join(REPO_ROOT, "fos", "frontend")
+FOS_DIST_DIR = os.path.join(FOS_FRONTEND_DIR, "dist")
 DEFAULT_FOS_PORT = 8000
 DEFAULT_FOS_URL = "http://127.0.0.1:%d" % DEFAULT_FOS_PORT
 POLL_INTERVAL_S = 0.25
@@ -47,6 +50,49 @@ DEFAULT_POLL_ATTEMPTS = 240  # ~60s at 0.25s
 
 class FosBackendError(RuntimeError):
     """Raised when the integrated FOS backend cannot be provided."""
+
+
+#: Local (absolute-path) script/stylesheet references in the built index.html,
+#: e.g. /fos/assets/index-abc123.js. External URLs (fonts, CDNs) don't match
+#: because they carry a scheme/host, not a bare leading slash.
+_LOCAL_ASSET_RE = re.compile(r'(?:src|href)="(/[^"/][^"]*)"')
+
+
+def validate_fos_dist(dist_dir=FOS_DIST_DIR):
+    """Validate the built FOS frontend before the console serves it.
+
+    The integrated bundle must be built with ``npm run build:integrated``
+    (FRONTEND_BASE_URL=/fos/): every local script/CSS reference in index.html
+    starts with ``/fos/assets/`` and the referenced files exist on disk.
+    Anything else would render an infinite skeleton in the browser.
+
+    Raises :class:`FosBackendError` with ONE actionable message; returns the
+    dist dir on success.
+    """
+    fix = "Run `npm run build:integrated` in fos/frontend/, then rerun `gaworld dashboard`."
+    index_path = os.path.join(dist_dir, "index.html")
+    if not os.path.isfile(index_path):
+        raise FosBackendError(
+            f"No FOS frontend build found (missing {index_path}). {fix}"
+        )
+    with open(index_path, encoding="utf-8") as handle:
+        html = handle.read()
+    refs = [ref.lstrip("/") for ref in _LOCAL_ASSET_RE.findall(html)]
+    wrong_base = [ref for ref in refs if not ref.startswith("fos/assets/")]
+    if wrong_base:
+        raise FosBackendError(
+            f"The FOS frontend build in {dist_dir} references /{wrong_base[0]} "
+            "instead of /fos/assets/* — it was built standalone, not for "
+            f"integrated hosting. {fix}"
+        )
+    for ref in refs:
+        name = ref[len("fos/assets/"):]
+        if not name or not os.path.isfile(os.path.join(dist_dir, "assets", *name.split("/"))):
+            raise FosBackendError(
+                f"The FOS frontend build in {dist_dir} is incomplete: "
+                f"index.html references /{ref} but that file is missing on disk. {fix}"
+            )
+    return dist_dir
 
 
 def backend_base_url() -> str:

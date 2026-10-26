@@ -48,3 +48,13 @@ npm run test:e2e:smoke
 ```
 
 Use `npm ci`, not `npm install`, for reproducible dependency installs from `package-lock.json`.
+
+## Which build to run
+
+- `npm run build` — standalone/root-base build (`/` base; the FOS/auth
+  standalone deployment). Asset refs come out as `/assets/…`.
+- `npm run build:integrated` — the build GAWorld's console hosts. Uses the
+  `integrated` mode (`.env.integrated` sets `FRONTEND_BASE_URL=/fos/`), so
+  asset refs come out as `/fos/assets/…`. This is what `gaworld dashboard`
+  expects in `fos/frontend/dist`; it validates that on startup and refuses to
+  serve a standalone build. Cross-platform: no POSIX-only env syntax.

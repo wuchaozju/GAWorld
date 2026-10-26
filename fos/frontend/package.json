@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build && node ./scripts/precompress-dist.mjs",
+    "build:integrated": "vite build --mode integrated && node ./scripts/precompress-dist.mjs",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
