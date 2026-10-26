@@ -16,8 +16,23 @@ _RUN_ROOT_OVERRIDES_SOURCE = "gaworld.worldrun"
 
 
 def resolve_gaworld_path(startup_path: str | None) -> str | None:
-    """Resolve GAWorld path from the startup snapshot, then the live env."""
-    return startup_path or os.environ.get("GAWORLD_PATH")
+    """Resolve GAWorld path from startup snapshot, env, then the repo layout.
+
+Integrated-launch contract (task 2875): when fos lives inside the GAWorld
+checkout (``<repo>/fos``) and neither a startup snapshot nor ``GAWORLD_PATH``
+is set, the repo root is a valid GAWorld path — the same fallback the
+experiments route uses. Returns ``None`` only when nothing resolves.
+"""
+    import pathlib
+
+    resolved = startup_path or os.environ.get("GAWORLD_PATH")
+    if resolved:
+        return resolved
+    here = pathlib.Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "gaworld").is_dir():
+            return str(parent)
+    return None
 
 
 def _looks_like_generated_placeholder_agent(agent: dict) -> bool:
@@ -94,8 +109,11 @@ def resolve_gaworld_agents(agent_config: dict) -> list[dict]:
     return live_agents
 
 
-def _live_gaworld_agent_ids() -> set[str]:
+def _live_gaworld_agent_ids(city: str = "") -> set[str]:
     """Collect every resident ID of the live GAWorld city (string form).
+
+    ``city`` selects which GAWorld city is paged (task 2875: roster
+    validation must query the simulation's city, not the server default).
 
     Raises :class:`GAWorldUnavailableError` when GAWorld cannot answer —
     callers surface that as a typed error instead of launching a run with
@@ -106,7 +124,7 @@ def _live_gaworld_agent_ids() -> set[str]:
     ids: set[str] = set()
     offset = 0
     while True:
-        page = gaworld_agents_service.get_agents(city="", offset=offset)
+        page = gaworld_agents_service.get_agents(city=city, offset=offset)
         agents = list(page.get("agents") or [])
         for agent in agents:
             raw_agent_id = agent.get("id")
@@ -123,6 +141,7 @@ def resolve_gaworld_agent_ids(
     agents: list[dict],
     *,
     known_ids: set[str] | None = None,
+    city: str = "",
 ) -> list[str]:
     """Build the GAWorld agent ID list; the explicit roster is authoritative.
 
@@ -134,6 +153,10 @@ def resolve_gaworld_agent_ids(
     - the final IDs are validated against the GAWorld agent source (or an
       explicit ``known_ids`` override for tests); an unknown explicit-roster
       ID raises :class:`ValueError` loudly BEFORE any subprocess launch.
+
+      ``city`` threads the simulation's GAWorld city into the live
+      validation source (task 2875) so IDs valid in the sim's city pass
+      even when it differs from the server default.
     """
     raw_agent_ids = params.get("agent_ids", [])
     param_ids: list[str] = []
@@ -166,7 +189,7 @@ def resolve_gaworld_agent_ids(
         resolved_ids = param_ids
 
     if resolved_ids:
-        known = known_ids if known_ids is not None else _live_gaworld_agent_ids()
+        known = known_ids if known_ids is not None else _live_gaworld_agent_ids(city)
         unknown = [agent_id for agent_id in resolved_ids if agent_id not in known]
         if unknown:
             raise ValueError(

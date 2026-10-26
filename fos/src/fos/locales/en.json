@@ -315,7 +315,10 @@
         "proposal_text_required_keys": "proposal_text parameter is required for council experiment. Got config keys: {keys}",
         "no_persisted_state": "No persisted state for simulation"
       },
-      "data_source_not_found": "Data source not found"
+      "data_source_not_found": "Data source not found",
+      "gaworld_path_not_set": "GAWorld path is not configured. Set GAWORLD_PATH on the server.",
+      "gaworld_unavailable": "GAWorld is unavailable. Make sure the GAWorld dashboard is running.",
+      "invalid_roster": "The selected resident roster contains residents unknown to GAWorld"
     },
     "compare": {
       "node_unique_events": "Node {{node}} has {{count}} unique events.",
