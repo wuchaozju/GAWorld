@@ -338,9 +338,12 @@ async def simulation_tree_advance_frontier(
                     record.running.remove(cid)
                 broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
 
-            # Persist latest tree state
-            sim.latest_state = tree.serialize()
-            await session.commit()
+            # Persist latest tree state under the record's persist lock:
+            # the whole-tree snapshot must not commit out of order against
+            # another concurrent advance on the same record.
+            async with record._persist_lock:
+                sim.latest_state = tree.serialize()
+                await session.commit()
 
             return {"children": [int(c) for c in produced]}
         finally:
@@ -505,8 +508,9 @@ async def simulation_tree_advance_multi(
                     record.running.remove(cid)
                 broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
 
-            sim.latest_state = tree.serialize()
-            await session.commit()
+            async with record._persist_lock:
+                sim.latest_state = tree.serialize()
+                await session.commit()
 
             return {"children": [int(c) for c in result_children]}
         finally:
@@ -569,8 +573,13 @@ async def simulation_tree_advance_chain(
                 detail=T("api.errors.advance_in_progress", parent=parent),
             )
         try:
-            async with record._advance_lock:
-                for _ in range(steps):
+            for _ in range(steps):
+                # Short topology critical section: copy/attach + running/task
+                # registration are synchronous event-loop steps. The lock is
+                # NOT held across the simulator run so independent parents
+                # can advance in parallel (same-parent duplicates are already
+                # excluded by the 409 claim above).
+                async with record._advance_lock:
                     cid = tree.copy_sim(last)
                     tree.attach(last, [{"op": "advance", "turns": 1}], cid)
                     node = tree.nodes[cid]
@@ -596,49 +605,49 @@ async def simulation_tree_advance_chain(
                         turns=1,
                     )
                     broadcast_tree_event(record, {"type": "run_start", "data": {"node": int(cid)}})
-                    await asyncio.sleep(0)
+                await asyncio.sleep(0)
 
-                    simulator = tree.nodes[cid]["sim"]
-                    total_turns = get_advance_turn_count(simulator, 1)
-                    run_error: RuntimeError | FileNotFoundError | None = None
-                    task_failed = False
-                    logger.info(f"[ADVANCE_CHAIN] Running simulator for node {cid}, max_turns={total_turns}")
-                    try:
-                        with log_time("SIM", sim_id=simulation_id, node=cid, turns=total_turns, step=_, op="advance_chain"):
-                            run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
-                        if run_error is not None:
-                            message = record_advance_runtime_failure(node, simulator, run_error)
-                            broadcast_tree_event(
-                                record,
-                                {
-                                    "type": "run_failed",
-                                    "data": {"node": int(cid), "error": message},
-                                },
-                            )
-                            RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
-                            logger.warning(
-                                "[ADVANCE_CHAIN] Simulator runtime failed for node %s; returning child for log hydration",
-                                cid,
-                            )
-                            last = cid
-                            break
-                        logger.info(f"[ADVANCE_CHAIN] Simulator run complete for node {cid}")
+                simulator = tree.nodes[cid]["sim"]
+                total_turns = get_advance_turn_count(simulator, 1)
+                run_error: RuntimeError | FileNotFoundError | None = None
+                task_failed = False
+                logger.info(f"[ADVANCE_CHAIN] Running simulator for node {cid}, max_turns={total_turns}")
+                try:
+                    with log_time("SIM", sim_id=simulation_id, node=cid, turns=total_turns, step=_, op="advance_chain"):
+                        run_error = await run_simulator_for_advance(simulator, max_turns=total_turns)
+                    if run_error is not None:
+                        message = record_advance_runtime_failure(node, simulator, run_error)
+                        broadcast_tree_event(
+                            record,
+                            {
+                                "type": "run_failed",
+                                "data": {"node": int(cid), "error": message},
+                            },
+                        )
+                        RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), message)
+                        logger.warning(
+                            "[ADVANCE_CHAIN] Simulator runtime failed for node %s; returning child for log hydration",
+                            cid,
+                        )
+                        last = cid
+                        break
+                    logger.info(f"[ADVANCE_CHAIN] Simulator run complete for node {cid}")
 
-                        from fos.backend.services.simtree_runtime import ExperimentRunnerAdapter
+                    from fos.backend.services.simtree_runtime import ExperimentRunnerAdapter
 
-                        if isinstance(simulator, ExperimentRunnerAdapter):
-                            new_events = len(simulator.events)
-                            node_logs = len(node.get('logs', []))
-                            logger.info(f"[ADVANCE_CHAIN] Adapter events count: {new_events}, node logs count: {node_logs}")
-                            if new_events == 0:
-                                logger.warning(f"[ADVANCE_CHAIN] Node {cid} produced ZERO events — simulation may have failed silently")
-                    except Exception as exc:
-                        task_failed = True
-                        RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), exc)
-                        raise
-                    finally:
-                        if run_error is None and not task_failed:
-                            RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
+                    if isinstance(simulator, ExperimentRunnerAdapter):
+                        new_events = len(simulator.events)
+                        node_logs = len(node.get('logs', []))
+                        logger.info(f"[ADVANCE_CHAIN] Adapter events count: {new_events}, node logs count: {node_logs}")
+                        if new_events == 0:
+                            logger.warning(f"[ADVANCE_CHAIN] Node {cid} produced ZERO events — simulation may have failed silently")
+                except Exception as exc:
+                    task_failed = True
+                    RUNTIME_TASKS.fail(_node_advance_task_id(simulation_id, cid), exc)
+                    raise
+                finally:
+                    if run_error is None and not task_failed:
+                        RUNTIME_TASKS.finish(_node_advance_task_id(simulation_id, cid))
                         if cid in record.running:
                             record.running.remove(cid)
                         broadcast_tree_event(record, {"type": "run_finish", "data": {"node": int(cid)}})
@@ -648,19 +657,22 @@ async def simulation_tree_advance_chain(
         finally:
             record.release_advance_parent(parent)
 
-        # Phase 2: Persist updated tree state (short DB session)
-        try:
-            serialized = tree.serialize()
-            logger.debug(f"[ADVANCE_CHAIN] Serialized tree with {len(serialized.get('nodes', []))} nodes")
-        except Exception as e:
-            logger.exception(f"[ADVANCE_CHAIN] Failed to serialize tree: {e}")
-            raise
+        # Phase 2: Persist updated tree state (short DB session). Serialize
+        # + commit together under the record's persist lock so an older
+        # whole-tree snapshot cannot commit after a newer one.
+        async with record._persist_lock:
+            try:
+                serialized = tree.serialize()
+                logger.debug(f"[ADVANCE_CHAIN] Serialized tree with {len(serialized.get('nodes', []))} nodes")
+            except Exception as e:
+                logger.exception(f"[ADVANCE_CHAIN] Failed to serialize tree: {e}")
+                raise
 
-        async with get_session() as session:
-            sim = await session.get(Simulation, simulation_id.upper())
-            if sim is not None:
-                sim.latest_state = serialized
-                await session.commit()
+            async with get_session() as session:
+                sim = await session.get(Simulation, simulation_id.upper())
+                if sim is not None:
+                    sim.latest_state = serialized
+                    await session.commit()
 
         return {"child": int(last)}
     except Exception as e:
