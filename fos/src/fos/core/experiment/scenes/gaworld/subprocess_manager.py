@@ -64,17 +64,17 @@ class _GaworldProcessRegistry:
     """
 
     def __init__(self) -> None:
-        self._entries: dict[int, "GAWorldSubprocessManager"] = {}
+        self._entries: dict[int, GAWorldSubprocessManager] = {}
         self._lock = threading.Lock()
 
-    def register(self, manager: "GAWorldSubprocessManager") -> None:
+    def register(self, manager: GAWorldSubprocessManager) -> None:
         process = getattr(manager, "process", None)
         if process is None or process.poll() is not None:
             return
         with self._lock:
             self._entries[process.pid] = manager
 
-    def unregister(self, manager: "GAWorldSubprocessManager") -> None:
+    def unregister(self, manager: GAWorldSubprocessManager) -> None:
         process = getattr(manager, "process", None)
         if process is None:
             return
@@ -88,7 +88,7 @@ class _GaworldProcessRegistry:
                 if process is None or process.poll() is not None:
                     self._entries.pop(pid, None)
 
-    def live_managers(self) -> list["GAWorldSubprocessManager"]:
+    def live_managers(self) -> list[GAWorldSubprocessManager]:
         self._prune()
         with self._lock:
             return list(self._entries.values())
@@ -105,7 +105,7 @@ class _GaworldProcessRegistry:
 gaworld_process_registry = _GaworldProcessRegistry()
 
 
-def request_cancel(manager: "GAWorldSubprocessManager", reason: str = "cancelled") -> None:
+def request_cancel(manager: GAWorldSubprocessManager, reason: str = "cancelled") -> None:
     """Cancel a GAWorld run.
 
     If the run has not launched yet the flag makes any later ``launch()``
@@ -134,7 +134,7 @@ class _GaworldSubprocessSlots:
         self._value = value
         self._sem = threading.BoundedSemaphore(value)
 
-    async def __aenter__(self) -> "_GaworldSubprocessSlots":
+    async def __aenter__(self) -> _GaworldSubprocessSlots:
         while not self._sem.acquire(blocking=False):
             await asyncio.sleep(0.05)
         return self
@@ -205,6 +205,7 @@ class GAWorldWaitSnapshot:
     observed_file_change: bool
     paths: dict[str, dict[str, Any]]
     log_tail: str
+    timeout_cause: str | None = None
 
 
 def _resolve_python_executable() -> str:
@@ -516,10 +517,18 @@ def _write_wait_snapshot(snapshot_path: Path, snapshot: GAWorldWaitSnapshot) -> 
         logger.exception("GAWorld: failed to write wait snapshot to %s", snapshot_path)
 
 
+_ABSOLUTE_CAP_MULTIPLIER = 3.0
+
+
 def _format_timeout_detail(snapshot: GAWorldWaitSnapshot, snapshot_path: Path) -> str:
     """Builds a timeout message that points to the saved diagnostic snapshot."""
+    cause = {
+        "stalled_no_progress": "stalled (no observable progress; inactivity window elapsed)",
+        "absolute_cap": "absolute cap reached despite observable progress",
+    }.get(snapshot.timeout_cause or "", "stalled (no observable progress)")
     detail = (
         "gaworld.error.wait_timeout\n"
+        f"Cause: {cause}\n"
         f"Snapshot: {snapshot_path}\n"
         f"Elapsed: {snapshot.elapsed_s}s\n"
         f"Last day: {snapshot.last_day}\n"
@@ -581,16 +590,13 @@ class GAWorldSubprocessManager:
 
         existing_pythonpath = env.get("PYTHONPATH", "")
         new_pythonpath = os.pathsep.join(path_entries)
-        env["PYTHONPATH"] = new_pythonpath + (
-            os.pathsep + existing_pythonpath if existing_pythonpath else ""
-        )
+        env["PYTHONPATH"] = new_pythonpath + (os.pathsep + existing_pythonpath if existing_pythonpath else "")
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         log_file = self.output_dir / "gaworld.log"
 
         logger.info(
-            "GAWorld launch: python=%s, prefix=%s, exec_prefix=%s, "
-            "CONDA_PREFIX=%s, PYTHONPATH=%s",
+            "GAWorld launch: python=%s, prefix=%s, exec_prefix=%s, " "CONDA_PREFIX=%s, PYTHONPATH=%s",
             python_exe,
             sys.prefix,
             sys.exec_prefix,
@@ -605,9 +611,7 @@ class GAWorldSubprocessManager:
             link_target = work_dir / child.name
             if link_target.exists():
                 continue
-            if child.is_dir():
-                link_target.symlink_to(child)
-            elif child.is_file() and child.name != "generative_city_sim.py":
+            if child.is_dir() or (child.is_file() and child.name != "generative_city_sim.py"):
                 link_target.symlink_to(child)
 
         with open(log_file, "w", encoding="utf-8") as file_obj:
@@ -628,9 +632,23 @@ class GAWorldSubprocessManager:
         day: int,
         timeout: float = 300,
         poll_interval: float = 3.0,
+        inactivity_timeout_s: float | None = None,
+        absolute_cap_s: float | None = None,
     ) -> dict[str, Any]:
-        """Waits for sim_state.json to report last_day at or beyond target day."""
-        deadline = time.time() + timeout
+        """Waits for sim_state.json to report last_day at or beyond target day.
+
+        Timeout semantics: *timeout* is the inactivity window (seconds without
+        any observable file change); the deadline is extended on every poll
+        that shows fresh progress. An absolute safety cap of 3× the window
+        (override with *absolute_cap_s*) backstops a run that keeps changing
+        files forever. ``FOS_GAWORLD_DAY_TIMEOUT_S`` sets the window (and so
+        anchors the cap); a day only dies when one of the two fires.
+        """
+        inactivity_s = float(timeout if inactivity_timeout_s is None else inactivity_timeout_s)
+        cap_s = float(inactivity_s * _ABSOLUTE_CAP_MULTIPLIER if absolute_cap_s is None else absolute_cap_s)
+        now = time.time()
+        stall_deadline = now + inactivity_s
+        cap_deadline = now + cap_s
         state_path = self.output_dir / "memory" / "sim_state.json"
         log_path = self.output_dir / "gaworld.log"
         snapshot_path = self.output_dir / "gaworld_wait_status.json"
@@ -644,11 +662,22 @@ class GAWorldSubprocessManager:
             if self.process is not None:
                 exit_code = self.process.poll()
                 if exit_code is not None:
-                    # The child exited before reaching the target day — that
-                    # is a process failure whatever the exit code (a healthy
-                    # GAWorld run stays alive until FOS asks it to stop).
+                    # The child exited before reaching the target day — a
+                    # healthy GAWorld run stays alive until FOS asks it to
+                    # stop, so this is always an error; the exit code picks
+                    # the diagnosis: a clean-but-early exit vs a crash.
                     log_tail = _read_log_tail(self.output_dir / "gaworld.log")
-                    detail = f"gaworld.error.exited_unexpectedly: exited unexpectedly with code {exit_code}"
+                    if exit_code == 0:
+                        detail = (
+                            "gaworld.error.exited_without_completion: "
+                            f"process exited cleanly (code 0) before reaching day {day}"
+                            f" (last completed day: {_read_last_day(state_path)})"
+                        )
+                    else:
+                        detail = (
+                            "gaworld.error.process_failed: "
+                            f"process exited unexpectedly with code {exit_code}"
+                        )
                     if log_tail:
                         detail = f"{detail}\nGAWorld log tail:\n{log_tail}"
                     raise GAWorldProcessError(detail)
@@ -676,6 +705,9 @@ class GAWorldSubprocessManager:
             )
             _write_wait_snapshot(snapshot_path, snapshot)
             saw_change_during_wait = saw_change_during_wait or snapshot.observed_file_change
+            if snapshot.observed_file_change:
+                # Fresh observable progress buys another full inactivity window.
+                stall_deadline = time.time() + inactivity_s
             self._last_wait_signature = _build_observed_signature(
                 snapshot.paths,
                 snapshot.paths.get("agent_logs", {}),
@@ -696,7 +728,9 @@ class GAWorldSubprocessManager:
                 )
                 next_progress_log_at = time.time() + max(15.0, poll_interval)
 
-            if time.time() > deadline:
+            now = time.time()
+            if now >= cap_deadline or now >= stall_deadline:
+                cause = "absolute_cap" if now >= cap_deadline else "stalled_no_progress"
                 timeout_snapshot = _build_wait_snapshot(
                     output_dir=self.output_dir,
                     log_path=log_path,
@@ -706,6 +740,7 @@ class GAWorldSubprocessManager:
                     status="timed_out",
                     previous_signature=self._last_wait_signature,
                 )
+                timeout_snapshot = replace(timeout_snapshot, timeout_cause=cause)
                 if saw_change_during_wait and not timeout_snapshot.observed_file_change:
                     timeout_snapshot = replace(timeout_snapshot, observed_file_change=True)
                 _write_wait_snapshot(snapshot_path, timeout_snapshot)
@@ -714,9 +749,10 @@ class GAWorldSubprocessManager:
                     timeout_snapshot.paths.get("agent_logs", {}),
                 )
                 logger.warning(
-                    "GAWorld wait_for_day timed out for day=%s after %.3fs with phases=%s ticks=%s schedules=%s log_age=%s agent_log_age=%s changed=%s snapshot=%s",
+                    "GAWorld wait_for_day timed out for day=%s after %.3fs cause=%s with phases=%s ticks=%s schedules=%s log_age=%s agent_log_age=%s changed=%s snapshot=%s",
                     day,
                     timeout,
+                    cause,
                     timeout_snapshot.observed_phases,
                     timeout_snapshot.schedule_tick_count,
                     timeout_snapshot.agent_schedule_count,
