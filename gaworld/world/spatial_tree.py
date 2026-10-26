@@ -1089,6 +1089,7 @@ HOME_ROOM_TYPES = {
     "living_room": "living",
     "bedroom": "bedroom",
     "bedroom_2": "bedroom",
+    "dining_room": "living",
     "kitchen": "kitchen",
     "study": "study",
     "bathroom": "bathroom",

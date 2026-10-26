@@ -60,6 +60,14 @@ class TestDesignHome(unittest.TestCase):
         rich = he.design_home(_agent(income=60000), seed=42)
         self.assertIn("balcony", rich["rooms"])
 
+    def test_room_names_are_unique(self):
+        # Two bedrooms need two names: the flat plan draws one label per room.
+        rich = he.design_home(_agent(income=90000), seed=42)
+        names = [room["name"] for room in rich["rooms"].values()]
+        self.assertEqual(len(names), len(set(names)), names)
+        if "bedroom_2" in rich["rooms"]:
+            self.assertNotEqual(rich["rooms"]["bedroom_2"]["name"], rich["rooms"]["bedroom"]["name"])
+
     def test_at_home_activities_covers_rooms(self):
         home = he.design_home(_agent(income=12000), seed=42)
         # Every room must carry a non-empty activity list — that's what the
@@ -89,6 +97,56 @@ class TestPickRoomForActivity(unittest.TestCase):
         self.assertEqual(he.pick_room_for_activity(home, "休息", "07:30")[0], "kitchen")
         # Afternoon → living room.
         self.assertEqual(he.pick_room_for_activity(home, "休息", "15:00")[0], "living_room")
+
+
+class TestRoomPerActivity(unittest.TestCase):
+    """The agent moves through their flat: the activity picks the room."""
+
+    def setUp(self):
+        self.home = he.design_home(_agent(income=20000), seed=42)
+
+    def test_dining_room_exists_and_holds_the_meals(self):
+        self.assertIn("dining_room", self.home["rooms"])
+        self.assertEqual(self.home["rooms"]["dining_room"]["name"], "餐厅")
+        meals = self.home["at_home_activities"]["dining_room"]
+        self.assertIn("晚饭", meals)
+        self.assertIn("吃早饭", meals)
+
+    def test_sleeping_eating_and_cooking_use_different_rooms(self):
+        cases = {
+            "睡觉": "bedroom",
+            "午休": "bedroom",
+            "睡前": "bedroom",
+            "晚饭": "dining_room",
+            "午饭": "dining_room",
+            "吃早饭": "dining_room",
+            "做饭": "kitchen",
+            "做晚饭": "kitchen",
+            "洗碗": "kitchen",
+        }
+        for activity, room in cases.items():
+            self.assertEqual(
+                he.pick_room_for_activity(self.home, activity, "12:00")[0],
+                room,
+                f"{activity} should be in the {room}",
+            )
+
+    def test_washing_and_studying_use_their_own_rooms(self):
+        self.assertEqual(he.pick_room_for_activity(self.home, "刷牙", "07:00")[0], "bathroom")
+        self.assertEqual(he.pick_room_for_activity(self.home, "洗澡", "21:00")[0], "bathroom")
+        self.assertEqual(he.pick_room_for_activity(self.home, "写作业", "19:00")[0], "study")
+        self.assertEqual(he.pick_room_for_activity(self.home, "看电视", "20:00")[0], "living_room")
+
+    def test_small_flat_without_a_dining_room_eats_in_the_living_room(self):
+        small = he.design_home(_agent(income=2500), seed=42)
+        self.assertNotIn("dining_room", small["rooms"])
+        self.assertEqual(he.pick_room_for_activity(small, "晚饭", "18:00")[0], "living_room")
+        # Cooking still happens in the kitchen.
+        self.assertEqual(he.pick_room_for_activity(small, "做饭", "18:00")[0], "kitchen")
+
+    def test_room_name_comes_from_the_home(self):
+        key, name = he.pick_room_for_activity(self.home, "睡觉", "23:00")
+        self.assertEqual(name, self.home["rooms"][key]["name"])
 
 
 class TestAmbianceEvolution(unittest.TestCase):

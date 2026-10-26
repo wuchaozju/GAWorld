@@ -839,6 +839,8 @@ def _simulation() -> dict[str, Any]:
                     task=_d(STR, "cooperation"),
                     leader_id=_d(INT, "cooperation"),
                     role_overrides=_d(OBJ, "cooperation: agent id → role"),
+                    organization_method_id=_d(STR, "Owned organization method ID"),
+                    organization_method_version=_d(INT, "Immutable organization version"),
                 ),
             ),
         },
@@ -853,6 +855,66 @@ def _simulation() -> dict[str, Any]:
         **{
             f"/api/collaboration/sessions/{{session_id}}/{action}": {
                 "post": _op("collaboration", f"{action.capitalize()} a session")
+            }
+            for action in ("pause", "resume", "cancel")
+        },
+        # crowdsourcing (gaworld/crowdsourcing)
+        "/api/crowdsourcing/strategies": {
+            "get": _op(
+                "crowdsourcing",
+                "Coordination mechanisms a crowd can run under, with limits and defaults",
+            )
+        },
+        "/api/crowdsourcing/sessions": {
+            "get": _op(
+                "crowdsourcing",
+                "Crowdsourcing sessions",
+                query=[_q("status", "Filter by status")],
+            ),
+            "post": _op(
+                "crowdsourcing",
+                "Start a crowd session",
+                body=_obj(
+                    ("task", "agent_ids"),
+                    task=STR,
+                    agent_ids=INT_LIST,
+                    criteria=_d(STR, "Optional rubric for the judge"),
+                    strategy={
+                        "type": "string",
+                        "enum": ["market", "vote", "elite", "debate"],
+                        "description": (
+                            "market = market-based bidding (arXiv:2610.22322), "
+                            "vote = crowd voting, elite = tournament, debate = critique"
+                        ),
+                    },
+                    rounds=_d(INT, "Rounds to run"),
+                    participants_per_round=_d(INT, "How many residents act per round"),
+                    prune=_d(
+                        OBJ,
+                        "Cross-round filtering: {enabled, keep, explore_ratio}",
+                    ),
+                ),
+            ),
+        },
+        "/api/crowdsourcing/sessions/{session_id}": {
+            "get": _op("crowdsourcing", "One crowd session")
+        },
+        "/api/crowdsourcing/sessions/{session_id}/events": {
+            "get": _op(
+                "crowdsourcing",
+                "Session events after a sequence number",
+                query=[_q("after", "Sequence number", INT)],
+            )
+        },
+        "/api/crowdsourcing/sessions/{session_id}/rounds": {
+            "get": _op(
+                "crowdsourcing",
+                "Full per-round trajectory: bids, attempts, scores, survivors",
+            )
+        },
+        **{
+            f"/api/crowdsourcing/sessions/{{session_id}}/{action}": {
+                "post": _op("crowdsourcing", f"{action.capitalize()} a crowd session")
             }
             for action in ("pause", "resume", "cancel")
         },
@@ -1387,6 +1449,41 @@ def _studies() -> dict[str, Any]:
         "/api/interview/delete": {
             "post": _op("interview", "Delete a session", body=_obj(("session_id",), session_id=STR))
         },
+        "/api/collaboration/files/{session_id}/artifacts/{filename}": {
+            "get": _op("collaboration", "Download a registered artifact from the current owned workspace")
+        },
+        "/api/collaboration/organization-methods": {
+            "get": _op("collaboration", "Owned organization method versions"),
+            "post": _op("collaboration", "Save an untested organization method", body=OBJ, status="201"),
+        },
+        "/api/collaboration/organization-methods/{method_id}": {
+            "get": _op("collaboration", "Read owned method"),
+            "post": _op("collaboration", "Create a new immutable method version", body=OBJ, status="201"),
+        },
+        "/api/research/organization-intelligence/comparisons": {
+            "get": _op("research", "Owned organization comparisons"),
+            "post": _op("research", "Save comparison settings without model calls", body=OBJ, status="201"),
+        },
+        "/api/research/organization-intelligence/comparisons/context": {
+            "get": _op("research", "Models, current-world residents and supported baselines")
+        },
+        **{f"/api/research/organization-intelligence/comparisons/{action}": {
+            "post": _op("research", summary, body=OBJ)
+        } for action, summary in (("analyze", "Extract sourced organization rules"),
+                                  ("benchmark", "Validate or generate benchmark data"))},
+        "/api/research/organization-intelligence/comparisons/{study_id}": {
+            "get": _op("research", "Comparison status and paired results")
+        },
+        **{f"/api/research/organization-intelligence/comparisons/{{study_id}}/{action}": {
+            "get": _op("research", summary)
+        } for action, summary in (("results", "Paired question scores"), ("export", "Markdown report"),
+                                  ("protocol", "Frozen settings"), ("audit", "Owned complete call audit"),
+                                  ("csv", "Per-question scores as CSV"))},
+        **{f"/api/research/organization-intelligence/comparisons/{{study_id}}/{action}": {
+            "post": _op("research", summary, body=OBJ, status="201" if action == "save-method" else "202" if action in {"run", "resume"} else "200")
+        } for action, summary in (("run", "Start comparison"), ("resume", "Resume same comparison"),
+                                  ("pause", "Pause between requests"), ("stop", "Terminate comparison"),
+                                  ("save-method", "Save tested method to cooperation library"))},
         "/api/research/organization-intelligence/v2": {
             "get": _op("research", "OI-2 runtime identity and owned zero-provider studies"),
             "post": _op("research", "Freeze a zero-provider organization mechanism study", body=_obj(("expected_build",), expected_build=STR, seed=INT, seeds=INT), status="201", errors={"409": "Runtime build handshake mismatch"}),
@@ -2103,6 +2200,7 @@ TAGS = (
     "life-events",
     "todos",
     "collaboration",
+    "crowdsourcing",
     "kernel",
     "infosources",
     "bench",

@@ -222,6 +222,11 @@
       actionPending: null,
       creating: false,
       listGeneration: 0,
+      // Which of the two panes is on screen. The page now hosts "简单协作
+      // 任务" and "群体智能众包" side by side, and the hidden one must stop
+      // polling — a crowd session costs model calls, and so does a
+      // cooperation session.
+      pane: "simple",
     };
 
     const els = {};
@@ -794,6 +799,7 @@
       clearPollTimer();
       if (
         document.hidden
+        || state.pane !== "simple"
         || state.creating
         || state.actionPending
         || !core.shouldPoll(state.session)
@@ -816,6 +822,7 @@
       if (
         !state.session
         || document.hidden
+        || state.pane !== "simple"
         || state.creating
         || state.actionPending
       ) {
@@ -951,6 +958,7 @@
         task,
         els.leaderSelect.value,
         selectedRoles(),
+        window.OrganizationMethodPicker ? window.OrganizationMethodPicker.selected() : null,
       );
       try {
         const session = await request(
@@ -1099,6 +1107,61 @@
       });
     }
 
+    /* ---------------------------------------------------------------- panes */
+
+    const PANES = ["simple", "crowd"];
+
+    function setPane(name) {
+      const next = PANES.indexOf(name) >= 0 ? name : "simple";
+      state.pane = next;
+      PANES.forEach(function (pane) {
+        const section = document.getElementById("pane" + pane.charAt(0).toUpperCase() + pane.slice(1));
+        if (section) {
+          section.hidden = pane !== next;
+        }
+      });
+      const tabButtons = document.querySelectorAll("#viewTabs .view-tab");
+      tabButtons.forEach(function (button) {
+        const on = button.dataset.pane === next;
+        button.classList.toggle("is-active", on);
+        button.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      // The masthead is shared by the two panes, so the headline and the
+      // status chip have to follow the active pane as well.
+      document.querySelectorAll("[data-pane-set]").forEach(function (block) {
+        block.hidden = block.dataset.paneSet !== next;
+      });
+      // The other pane runs its own controller; it has to know it went
+      // off-screen so it stops polling too.
+      document.dispatchEvent(
+        new CustomEvent("gaworld:pane-changed", { detail: { pane: next } }),
+      );
+      if (next === "simple") {
+        schedulePoll();
+      } else {
+        clearPollTimer();
+      }
+    }
+
+    function requestedPane() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("tab") === "crowd" ? "crowd" : "simple";
+      } catch (_) {
+        return "simple";
+      }
+    }
+
+    function bindPanes() {
+      const tabButtons = document.querySelectorAll("#viewTabs .view-tab");
+      tabButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          setPane(button.dataset.pane);
+        });
+      });
+      setPane(requestedPane());
+    }
+
     function collectElements() {
       els.taskInput = document.getElementById("taskInput");
       els.memberPicker = document.getElementById("memberPicker");
@@ -1133,6 +1196,7 @@
     function init() {
       collectElements();
       bindEvents();
+      bindPanes();
       renderWorkspace();
       renderEmptyActivity();
       Promise.all([loadAgents(), loadSessions()]);

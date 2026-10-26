@@ -35,7 +35,7 @@
     };
   }
 
-  function cooperationPayload(values, task, leaderId, roles) {
+  function cooperationPayload(values, task, leaderId, roles, organizationMethod) {
     const payload = {
       kind: "cooperation",
       agent_ids: normalizeAgentIds(values),
@@ -45,6 +45,12 @@
     const leader = Number(leaderId);
     if (Number.isInteger(leader) && leader > 0) {
       payload.leader_id = leader;
+    }
+    if (organizationMethod) {
+      payload.organization_method_id = organizationMethod.id;
+      payload.organization_method_version = organizationMethod.version;
+      delete payload.leader_id;
+      payload.role_overrides = {};
     }
     return payload;
   }

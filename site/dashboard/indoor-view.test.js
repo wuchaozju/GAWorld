@@ -105,3 +105,26 @@ test("a block of flats shows one flat: the selected resident's, else the fullest
   const plain = [{ agent_id: 5 }, { agent_id: 6 }];
   assert.deepEqual(spatial.flatView(plain, 5), { unit: "", units: 0, agents: plain });
 });
+
+test("the trace says when a resident is at home and in which room", () => {
+  assert.equal(indoor.homeRoomOf({ agent_id: 1, home_room: { key: "dining_room", name: "餐厅" } }).name, "餐厅");
+  assert.equal(indoor.homeRoomOf({ agent_id: 1 }), null);
+  assert.equal(indoor.homeRoomOf({ agent_id: 1, home_room: { key: "", name: "" } }), null);
+});
+
+test("a home shows the household, not the whole building", () => {
+  const homeFrame = {
+    agents: [
+      { agent_id: 1, location: "湖滨街道", household: "H-1", home_room: { key: "dining_room", name: "餐厅" } },
+      { agent_id: 2, location: "湖滨街道", household: "H-1" },
+      { agent_id: 3, location: "湖滨街道", household: "H-2" },
+      { agent_id: 4, location: "湖滨街道", travel: { status: "in_transit" }, household: "H-1" },
+    ],
+  };
+  const selected = homeFrame.agents[0];
+  const family = indoor.householdAtHome(homeFrame, null, selected);
+  assert.deepEqual(family.map((a) => a.agent_id), [1, 2]);
+  // Without a household (a resident who lives alone) only they are shown.
+  const alone = indoor.householdAtHome(homeFrame, null, { agent_id: 3, location: "湖滨街道" });
+  assert.deepEqual(alone.map((a) => a.agent_id), [3]);
+});

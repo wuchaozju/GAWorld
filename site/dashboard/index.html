@@ -203,20 +203,6 @@
           <div id="familyDetail" class="family-detail" data-i18n-empty="family.empty" data-empty="尚无家庭数据——完整跑过一轮仿真后，这里会显示每位居民的家庭。"></div>
         </section>
 
-        <section class="panel home-panel">
-          <div class="section-head">
-            <div>
-              <p class="kicker" data-i18n="home.kicker">Home Mode</p>
-              <h2 data-i18n="home.title">居家模式</h2>
-            </div>
-            <div class="head-actions">
-              <span class="help-tip" data-i18n-help="home.title_hint" data-help="每位居民的居家环境：户型、家具、整体气质；以及他/她每次在家时所在的房间、当时的氛围（光线/声音/气味/体感/整洁度）。点击地图上头像旁的 🏠 标记或选中头像，会自动定位到对应居家记录。"></span>
-              <button id="refreshHomeBtn" class="button ghost" data-i18n="btn.refresh">刷新</button>
-            </div>
-          </div>
-          <div id="homeDetail" class="home-overview" data-i18n-empty="home.empty" data-empty="尚无居家模式数据。运行一次仿真后，这里会显示每位居民的居家环境。"></div>
-        </section>
-
         <section class="panel collapsible is-collapsed">
           <div class="section-head">
             <div>
@@ -486,8 +472,9 @@
   <script src="/site/dashboard/citymap-view.js"></script>
   <script src="/site/simviz/spatial-tree.js?v=20261005-rooms1"></script>
   <script src="/site/vendor/phaser.min.js"></script>
-  <script src="/site/simviz/phaser-app.js?v=20261005-rooms1" data-indoor-only></script>
-  <script src="/site/dashboard/indoor-view.js?v=20261005-rooms1"></script>
+  <script src="/site/simviz/phaser-app.js?v=20261026-home1" data-indoor-only></script>
+  <script src="/site/dashboard/indoor-view.js?v=20261026-home1"></script>
+  <script src="/site/dashboard/home-layout.js?v=20261026-home1"></script>
   <script src="/site/dashboard/city-agents.js"></script>
   <script src="/site/dashboard/home.js"></script>
   <script src="/site/dashboard/app.js"></script>

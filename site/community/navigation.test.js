@@ -44,3 +44,12 @@ test('navigation never accepts foreign or arbitrary iframe destinations', () => 
 test('legacy static workspace entry uses the same integrated views', () => {
   assert.equal(N.consoleUrl('/site/community/workspace.html?view=account'), '/console#account');
 });
+
+test('replay and analytics links share one view and keep run/cursor parameters', () => {
+  const resultsTabs = [...tabs,{id:'analytics',src:'/site/dashboard/analytics.html'}];
+  assert.deepEqual(N.resolve('simviz?run=output%2Fworlds%2Fw1%2Fvisualization&frame=17&agent=2',resultsTabs), {
+    id:'analytics',src:'/site/dashboard/analytics.html?run=output%2Fworlds%2Fw1%2Fvisualization&frame=17&agent=2',personal:undefined,
+  });
+  assert.equal(N.consoleUrl('/site/simviz/index.html?run=r1'),'/console#analytics?run=r1');
+  assert.equal(N.consoleUrl('/site/dashboard/analytics.html?run=r1&view=analysis'),'/console#analytics?run=r1&view=analysis');
+});

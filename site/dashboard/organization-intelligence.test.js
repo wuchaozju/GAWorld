@@ -45,7 +45,7 @@ test("freezing a protocol does not launch model calls; start is a separate expli
   await settle();
   assert.equal(h.requests.filter(r => r.options && r.options.method === "POST").length, 1);
   assert.ok(!h.requests.some(r => r.url.endsWith("/run")));
-  assert.equal(h.element("oiStatus").textContent, "协议已冻结");
+  assert.equal(h.element("oiStatus").textContent, "设置已保存，尚未开始");
   assert.equal(h.element("oiRun").hidden, false);
   h.element("oiRun").events.click();
   await settle();

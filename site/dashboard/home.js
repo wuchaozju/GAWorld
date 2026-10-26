@@ -1,7 +1,9 @@
-/* Home Mode panel renderer.
+/* Home Mode card — the resident's home, shown inside the indoor mode.
  *
  * Pulls `GET /api/home/<id>` and turns the response into:
  *
+ *  - A header (what this is + a reload button)
+ *  - A "right now" line: the room the resident is in and what they do there
  *  - A four-cell summary strip (rooms / m² / ambiance quality / observation rows)
  *  - One card per room, with the current room highlighted (if any)
  *  - The vibe line
@@ -12,7 +14,7 @@
  * can stay in charge of i18n, error display, and panel-collapsing.
  *
  *   const payload = await api(`/api/home/${agentId}`);
- *   renderHomePanel(payload, { t, fmt });
+ *   renderHomePanel(payload, { t });
  *
  * The module is plain UMD-style: it adds `window.renderHomePanel` and the
  * helpers it needs are passed in (so it never imports another file in the
@@ -24,16 +26,28 @@
   // i18n fallbacks. Hosts normally pass `t`, but a missing translator should
   // never crash the panel — we just print the key.
   const fallback = (key) => key;
+  // `{name}` placeholders are filled in here, so the panel can be rendered
+  // with the plain `__` translator the host passes in.
+  const interpolate = (text, params) => {
+    if (!params) return text;
+    return String(text).replace(/\{(\w+)\}/g, (match, name) =>
+      params[name] == null ? match : String(params[name]));
+  };
   const t = (maybeT, key, params) => {
     const fn = typeof maybeT === "function" ? maybeT : fallback;
     const out = fn(key, params);
-    if (out && out !== key) return out;
-    return FALLBACKS[key] || key;
+    if (out && out !== key) return interpolate(out, params);
+    return interpolate(FALLBACKS[key] || key, params);
   };
 
   const FALLBACKS = {
     "home.title": "Home Mode",
     "home.subtitle": "居家模式",
+    "home.card_title": "家",
+    "home.now": "此刻",
+    "home.now_room": "在{room}",
+    "home.now_activity": "在{room} · {activity}",
+    "home.away": "此刻不在家",
     "home.empty": "尚无居家模式数据。运行一次仿真后，这里会显示每位居民的居家环境。",
     "home.not_in_run": "这位居民没有参与上一轮运行，因此没有居家记录。",
     "home.summary.rooms": "房间",
@@ -51,6 +65,7 @@
     "home.observations_title": "居家活动记录",
     "home.obs.out": "外出",
     "home.obs.unknown_room": "未知房间",
+    "btn.refresh": "刷新",
   };
 
   const QUALITY_LABEL = {
@@ -81,28 +96,61 @@
   }
 
   function renderHomePanel(payload, helpers = {}) {
-    const root = helpers.root || document.getElementById("homeDetail");
+    const root = helpers.root || document.getElementById("homeCard");
     if (!root) return;
     root.innerHTML = "";
 
-    if (!payload || payload.error) {
-      root.appendChild(
-        el("div", { cls: "home-empty", text: payload?.error || t(helpers.t, "home.empty") }),
-      );
-      return;
-    }
-    if (!payload.has_home) {
-      root.appendChild(
-        el("div", { cls: "home-empty", text: t(helpers.t, "home.not_in_run") }),
-      );
+    // The API answers with the design itself; older payloads carry an explicit
+    // `has_home` flag. Either way: do we have a home to show?
+    const design = (payload && payload.design) || null;
+    const rooms = (design && design.rooms) || {};
+    const hasHome = payload && payload.has_home !== undefined
+      ? Boolean(payload.has_home)
+      : Boolean(Object.keys(rooms).length);
+    if (!hasHome) {
+      const text = payload && payload.error && payload.has_home === undefined
+        ? payload.error
+        : t(helpers.t, "home.not_in_run");
+      root.appendChild(el("div", { cls: "home-empty", text }));
       return;
     }
 
+    root.appendChild(renderHead(payload, helpers));
+    const now = renderNow(payload, helpers);
+    if (now) root.appendChild(now);
     root.appendChild(renderSummary(payload, helpers));
     root.appendChild(renderVibe(payload, helpers));
     root.appendChild(renderRooms(payload, helpers));
     root.appendChild(renderAmbiance(payload, helpers));
     root.appendChild(renderObservations(payload, helpers));
+  }
+
+  // The card's own header: what this panel is, and a way to reload it.
+  function renderHead(payload, helpers) {
+    const head = el("div", { cls: "home-card-head" });
+    head.appendChild(el("span", { cls: "home-card-title", text: t(helpers.t, "home.card_title") }));
+    const button = el("button", {
+      cls: "button small ghost",
+      text: t(helpers.t, "btn.refresh"),
+      attrs: { type: "button", "data-action": "refresh-home" },
+    });
+    head.appendChild(button);
+    return head;
+  }
+
+  // Where the resident is right now — the room they are in and what they are
+  // doing there (`payload.now`, filled in from the current trace frame).
+  function renderNow(payload, helpers) {
+    const now = payload.now || {};
+    const box = el("div", { cls: "home-now" + (now.room ? "" : " is-away") });
+    box.appendChild(el("span", { cls: "home-now-label", text: t(helpers.t, "home.now") }));
+    const text = now.room
+      ? (now.activity
+        ? t(helpers.t, "home.now_activity", { room: now.room, activity: now.activity })
+        : t(helpers.t, "home.now_room", { room: now.room }))
+      : t(helpers.t, "home.away");
+    box.appendChild(el("span", { cls: "home-now-value", text }));
+    return box;
   }
 
   function renderSummary(payload, helpers) {

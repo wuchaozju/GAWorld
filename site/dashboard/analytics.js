@@ -76,10 +76,13 @@
     runs: [],           // every analysable run, newest first
     runId: "",          // "" = the current run
     runInfo: null,      // the selected entry of state.runs
+    runRoster: [],      // identities recorded by the selected trace, not today's city
   };
 
   var SECTION_KEYS = ["state-history", "economy", "social", "behavior", "events"];
   var exporter = window.GAWorldAnalyticsExport;
+  var managed = document.body.hasAttribute("data-results-workbench");
+  var loadRequest = 0;
 
   function $(id) { return document.getElementById(id); }
 
@@ -755,6 +758,14 @@
   // figure is already inline SVG, so this alone is the whole report body.
   function reportBody() {
     var clone = document.querySelector("main.shell").cloneNode(true);
+    // Export the statistics, including sections hidden by the workbench tabs.
+    var analysis = clone.querySelector("#resultsAnalysis");
+    if (analysis) {
+      analysis.hidden = false;
+      Array.prototype.forEach.call(analysis.querySelectorAll(".an-pickers, .help-tip, #anStatus"), function (node) { node.remove(); });
+      return '<h1>' + esc(__("results.title")) + '</h1><p>' + esc(runLabel(state.runInfo || {})) +
+        '</p>' + analysis.innerHTML.replace(/<span id="anStatus"[\s\S]*?<\/span>/, "");
+    }
     Array.prototype.forEach.call(
       clone.querySelectorAll(".hero-status, .an-pickers, .help-tip, .an-export"),
       function (node) { node.remove(); });
@@ -767,14 +778,18 @@
     var hrefs = Array.prototype.map.call(
       document.querySelectorAll('link[rel="stylesheet"]'),
       function (link) { return link.getAttribute("href"); });
+    // styles.css imports these tokens, which a downloaded file cannot fetch.
+    if (hrefs.indexOf("/site/tokens.css") < 0) hrefs.unshift("/site/tokens.css");
     var sheets = await Promise.all(hrefs.map(function (href) {
       return fetch(href).then(function (res) { return res.ok ? res.text() : ""; })
         .catch(function () { return ""; });
     }));
-    return sheets.join("\n");
+    return sheets.join("\n").replace(/@import\s+url\([^)]*\)\s*;/g, "");
   }
 
   async function runExport(kind) {
+    if (!state.overview) throw new Error(__("results.export_wait"));
+    var request = loadRequest;
     var now = new Date();
     var base = "gaworld-analytics-" + exporter.fileStamp(now);
     var stamp = exporter.timestamp(now);
@@ -793,6 +808,7 @@
         [exporter.zipStore(files, now)], { type: "application/zip" }));
     } else {
       var css = await reportCss();
+      if (request !== loadRequest) throw new Error(__("results.export_wait"));
       download(base + ".html", new Blob(
         [exporter.buildHtmlReport(state, labelTables(), stamp, reportBody(), css)],
         { type: "text/html;charset=utf-8" }));
@@ -1126,6 +1142,7 @@
       toggle(state.econSeries, button.dataset.econ);
       renderEconomy();
     });
+    if (managed) return; // The workbench owns the run and refresh controls.
     $("anRefreshBtn").addEventListener("click", function () {
       if (typeof setButtonBusy === "function") {
         var release = setButtonBusy($("anRefreshBtn"), "analytics.refresh", "刷新中…");
@@ -1140,12 +1157,15 @@
   }
 
   async function load() {
+    var request = ++loadRequest;
     var status = $("anStatus");
     status.textContent = __("an.loading");
     status.className = "an-status is-busy";
     try {
-      await loadRuns();
+      if (!managed) await loadRuns();
+      if (request !== loadRequest) return false;
       var account = await api("/api/auth/me");
+      if (request !== loadRequest) return false;
       var canReadSystem = account.mode === "single" || (account.user && account.user.role === "admin");
       var results = await Promise.all([
         section("overview"),
@@ -1158,6 +1178,7 @@
         // current world plus the cross-world tree.
         canReadSystem ? api("/api/analytics/system") : Promise.resolve(null),
       ]);
+      if (request !== loadRequest) return false;
       state.overview = results[0];
       state.history = results[1];
       state.economy = results[2];
@@ -1165,6 +1186,9 @@
       state.behavior = results[4];
       state.events = results[5];
       state.system = results[6];
+      if (managed) ["history", "economy", "social", "behavior"].forEach(function (key) {
+        state[key] = window.GAWorldResultsCore.labelAnalytics(key, state[key], state.runRoster);
+      });
       // Drop selections that no longer exist in the new payload.
       state.metrics = state.metrics.filter(function (m) { return state.history.metrics.indexOf(m) >= 0; });
       var ids = state.history.agents.map(function (a) { return String(a.id); });
@@ -1181,9 +1205,15 @@
       renderSystemPanel();
 
       showRunStatus();
+      document.querySelectorAll("[data-export]").forEach(function (button) { button.disabled = false; });
+      if ($("exportState")) $("exportState").hidden = true;
+      return true;
     } catch (error) {
+      if (request !== loadRequest) return false;
       status.textContent = __f("an.load_failed", { error: error.message });
       status.className = "an-status is-error";
+      if ($("exportState")) { $("exportState").hidden = false; $("exportState").textContent = status.textContent; }
+      return false;
     }
   }
 
@@ -1237,5 +1267,49 @@
 
   bindPickers();
   bindExport();
-  load();
+  function clear() {
+    loadRequest++;
+    ["overview", "history", "economy", "social", "behavior", "events"].forEach(function (key) { state[key] = null; });
+    state.metrics = []; state.agents = [];
+    ["anOverview", "anMovers", "anRunMeta", "anMetricPicker", "anAgentPicker", "anStateGrid",
+      "anStateDelta", "anStateRadar", "anEconSeriesPicker", "anEconGrid", "anEconWealth", "anEconMacro",
+      "anSocialGraph", "anSocialTiers", "anSocialRoles", "anPlaces", "anModes", "anHeatmap", "anHours",
+      "anHabits", "anEventTimeline", "anEventTypes", "anEventImpacts"].forEach(function (id) { if ($(id)) $(id).innerHTML = ""; });
+    $("anStatus").textContent = __("results.analysis_pending");
+    $("anRunNote").hidden = true;
+    document.querySelectorAll("[data-export]").forEach(function (button) { button.disabled = true; });
+    if ($("exportState")) { $("exportState").hidden = false; $("exportState").textContent = __("results.export_wait"); }
+  }
+  window.GAWorldAnalytics = {
+    clear: clear,
+    loadRun: async function (id, agentId, residents) {
+      clear();
+      state.runId = id;
+      state.runRoster = residents || [];
+      // Metadata does not own selection; only the workbench may select a run.
+      var request = loadRequest;
+      try {
+        var payload = await api("/api/analytics/runs");
+        if (request !== loadRequest) return false;
+        state.runs = payload.runs || [];
+        state.runInfo = state.runs.find(function (run) { return run.id === id; }) || null;
+        if (!state.runInfo) throw new Error(__("results.run_unavailable"));
+        state.agents = agentId == null ? [] : [String(agentId)];
+        renderRunNote();
+        return await load();
+      } catch (error) {
+        if (request !== loadRequest) return false;
+        $("anStatus").textContent = __f("an.load_failed", {error:error.message});
+        $("anStatus").className = "an-status is-error";
+        if ($("exportState")) $("exportState").textContent = $("anStatus").textContent;
+        return false;
+      }
+    },
+    focus: function (agentId) {
+      if (!state.history) return;
+      state.agents = agentId == null ? state.history.agents.slice(0, 4).map(function (agent) { return String(agent.id); }) : [String(agentId)];
+      renderStateControls(); renderStateCharts(); renderEconomy();
+    },
+  };
+  if (!managed) load();
 })();

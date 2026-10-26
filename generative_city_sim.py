@@ -1577,7 +1577,8 @@ def generate_daily_routine(agent, base_schedule, day=None, day_context=None):
 11) “近期社交脉动”里有强互动对象时，可在合适时段加入跟进社交（约见、电话、回信等）；如最近无社交，可适度补一次轻量联络。
 12) 若“当前人生与阶段目标”不为“无”，日程应自然服务于当前短期目标（每天推进 0-2 个即可，不要堆砌）；疲惫、突发事件或周末休整时目标推进可让位。
 13) 若“今日家庭责任”不为空，这些是高承诺事项：接送、照料、家庭聚餐要落到具体时段，且不能被兴趣或加班随意挤掉；单亲或无人分担时更要优先满足。
-14) 仅输出 JSON，不要其他文字。
+14) 时间点必须与活动相符：吃早饭在早上、午饭在中午、晚饭在傍晚、工作在白天、睡觉在夜里；不要把“收尾”“加班”排在清晨。
+15) 仅输出 JSON，不要其他文字。
 """
     response = call_llm(prompt, task="daily_routine", agent_id=agent["id"])
     schedule = _parse_schedule(response)
@@ -1649,7 +1650,8 @@ def generate_schedule(agent):
 5) 若角色为学生，优先出现“上课/学习/实验”等活动；若作息偏晚，适度延后。
 6) 若兴趣与技能成长画像不为“无”，把个人时间具体化为 0-2 个兴趣爱好或技能发展活动。
 7) 若“家庭状况”里有同住的伴侣、子女或长辈，基础日程要留出固定的家庭时段（接送、晚饭、照料），并据此约束加班与夜间活动。
-8) 仅输出 JSON，不要其他文字。
+8) 时间点必须与活动相符：吃早饭在早上、午饭在中午、晚饭在傍晚、工作在白天、睡觉在夜里。
+9) 仅输出 JSON，不要其他文字。
 """
     response = call_llm(prompt, task="schedule", agent_id=agent["id"])
     schedule = _parse_schedule(response)
@@ -2125,14 +2127,10 @@ def validate_action_space(schedules, action_space):
         for m in filler_only:
             print("  -", m)
 
-def build_schedule_map(schedules):
-    sorted_map = {}
-    for agent_id, sch in schedules.items():
-        sorted_map[agent_id] = sorted(sch, key=lambda x: x[0])
-    return sorted_map
-
-# get_activity_for_time / apply_schedule_override moved to gaworld.sim._schedule.
-from gaworld.sim._schedule import get_activity_for_time  # noqa: E402
+# get_activity_for_time / apply_schedule_override / build_schedule_map moved
+# to gaworld.sim._schedule. ``build_schedule_map`` is the funnel every day's
+# schedule passes through, so it is where the time-plausibility repair runs.
+from gaworld.sim._schedule import build_schedule_map, get_activity_for_time  # noqa: E402
 
 
 def build_master_timeline(schedules, step_minutes=None):

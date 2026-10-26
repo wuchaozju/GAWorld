@@ -28,7 +28,17 @@ class Route:
         return path.startswith(self.prefix) or (self.bare and path == self.prefix.rstrip("/"))
 
 
+@dataclass(frozen=True)
+class Download:
+    """A delegate-owned authorized download, sent using the shared handler."""
+
+    content: bytes
+    media_type: str
+    filename: str
+
+
 GET_ROUTES = (
+    Route("organization_artifacts_api", "/api/collaboration/files/"),
     Route("community_api", "/api/community/"),
     Route("workspace_api", "/api/workspace/"),
     Route("health_api", "/api/health"),
@@ -50,6 +60,8 @@ GET_ROUTES = (
     # Trailing slash on purpose: the single-agent `POST /api/interview` is a
     # different, older endpoint and must not be shadowed.
     Route("interview_api", "/api/interview/"),
+    Route("organization_methods_api", "/api/collaboration/organization-methods/", bare=True),
+    Route("organization_comparison_api", "/api/research/organization-intelligence/comparisons/", bare=True),
     Route("organization_intelligence_v2_api", "/api/research/organization-intelligence/v2/", bare=True),
     Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),
@@ -74,6 +86,8 @@ POST_ROUTES = (
     Route("games_api", "/api/games/"),
     Route("family_api", "/api/family"),
     Route("interview_api", "/api/interview/"),
+    Route("organization_methods_api", "/api/collaboration/organization-methods/", bare=True),
+    Route("organization_comparison_api", "/api/research/organization-intelligence/comparisons/", bare=True),
     Route("organization_intelligence_v2_api", "/api/research/organization-intelligence/v2/", bare=True),
     Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),

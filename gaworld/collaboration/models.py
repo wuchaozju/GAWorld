@@ -56,6 +56,7 @@ class CollaborationSession:
     plan: list[dict[str, Any]] = field(default_factory=list)
     artifacts: list[dict[str, Any]] = field(default_factory=list)
     error: str = ""
+    organization_method: dict[str, Any] | None = None
     created_at: str = field(default_factory=utc_now)
     updated_at: str = field(default_factory=utc_now)
 

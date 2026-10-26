@@ -203,6 +203,19 @@ There is no build step beyond installing Python dependencies.
   - `mypy gaworld` (strict typing on the new `gaworld/` tree, advisory elsewhere).
 - All new code goes into `gaworld/` sub-packages. No new root-level modules.
 - Import from `gaworld.*` directly; the `legacy/` shims are deprecated and excluded from the build.
+- Dashboard pages (`site/dashboard/`): the house tokens in `site/tokens.css` flip under
+  `:root[data-theme="dark"]`, so a page that paints its own light surface (a card, a band, a
+  full-bleed header) must name that surface as a token and give it a dark value too — a hard-coded
+  cream leaves near-white `--ink` text invisible on it. The i18n globals are `__("key")` for a
+  plain string and `__f("key", {name: ...})` for one with a placeholder; the placeholder name in
+  the locale string and the parameter name in the call have to be the same, and a key that carries a
+  placeholder must never be rendered through `__()`.
+- A dashboard page with more than one view (an in-page tab strip) keeps one masthead for all of
+  them: the switcher is docked at the bottom of the band and drawn with that page's own tokens
+  (the active view is a sheet of paper on the band). A `<nav>` above the header with no rules for
+  it renders the browser's default button chrome, and a masthead per view lets the headline drift
+  out of sync with the pane — keep one copy of the headline per view (`data-pane-set`) and toggle
+  them from the same switcher.
 
 ## Testing Guidelines
 - Tests live under `tests/` and use `pytest` discovery (`test_*.py`).

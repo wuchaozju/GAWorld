@@ -40,6 +40,16 @@ from gaworld.sim._schedule import (
     is_routine_impacting_event,
     is_sleep_activity,
 )
+from gaworld.sim._timefit import (
+    BAD as _TIME_BAD,
+)
+from gaworld.sim._timefit import (
+    activity_time_fit as _activity_time_fit,
+)
+from gaworld.sim._timefit import (
+    should_keep_deviation as _should_keep_deviation,
+)
+from gaworld.sim._utils import _time_str_to_minutes
 
 # ---------------------------------------------------------------------------
 # CONFIG runtime lookups — defaults and coercions as the old snapshots had them.
@@ -562,11 +572,33 @@ def maybe_adjust_activity(
         suggestion = str(thought.get("activity_suggestion", "")).strip()
         if suggestion and suggestion != scheduled_activity:
             reason = str(thought.get("reason", "")).strip() or "临时念头触发"
-            return suggestion, reason, True
+            return _accept_activity_change(suggestion, time_str, scheduled_activity, reason)
         return scheduled_activity, "", False
     if not parsed.get("change"):
         return scheduled_activity, parsed.get("reason", ""), False
     activity = parsed.get("activity", "").strip()
     if not activity or activity == scheduled_activity:
         return scheduled_activity, parsed.get("reason", ""), False
-    return activity, parsed.get("reason", ""), True
+    return _accept_activity_change(activity, time_str, scheduled_activity, parsed.get("reason", ""))
+
+
+def _accept_activity_change(
+    activity: str,
+    time_str: str | None,
+    scheduled_activity: str,
+    reason: str,
+) -> tuple[str, str, bool]:
+    """Take the new activity only if it belongs to this hour.
+
+    A change that contradicts the clock ("收尾今天的工作" at 06:00) is
+    refused. The refusal is not absolute: a small dice roll keeps it
+    possible, because people do break their own rules — just rarely, and
+    never at every hour of the day.
+    """
+    cfg = CONFIG.get("time_plausibility", {}) or {}
+    if not cfg.get("enabled", True) or not cfg.get("gate_activity_changes", True):
+        return activity, reason, True
+    verdict, fit_reason = _activity_time_fit(activity, _time_str_to_minutes(time_str))
+    if verdict == _TIME_BAD and not _should_keep_deviation(verdict):
+        return scheduled_activity, f"时段不合适，改回原计划（{fit_reason}）", False
+    return activity, reason, True

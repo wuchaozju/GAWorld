@@ -243,4 +243,29 @@ test("escapes the vibe text against HTML injection", () => {
   }
 });
 
+test("renders a card header with a reload button", () => {
+  const root = render(PAYLOAD);
+  const nodes = collect(root);
+  const head = nodes.find((n) => n.classList.contains("home-card-head"));
+  assert.ok(head, "card header missing");
+  const button = head.children.find((c) => c.attrs && c.attrs["data-action"] === "refresh-home");
+  assert.ok(button, "the reload button is missing");
+});
+
+test("the now line says which room the resident is in", () => {
+  const root = render({ ...PAYLOAD, now: { key: "living_room", room: "客厅", activity: "看电视" } });
+  const nodes = collect(root);
+  const value = nodes.find((n) => n.classList.contains("home-now-value"));
+  assert.ok(value, "the now line is missing");
+  assert.strictEqual(value.textContent, "在客厅 · 看电视");
+});
+
+test("the now line says the resident is away", () => {
+  const root = render({ ...PAYLOAD, now: null });
+  const nodes = collect(root);
+  const value = nodes.find((n) => n.classList.contains("home-now-value"));
+  assert.ok(value, "the now line is missing");
+  assert.strictEqual(value.textContent, "此刻不在家");
+});
+
 console.log("home.test.js: " + passed + " passed");

@@ -219,7 +219,7 @@ tail -5 output/environment/timeline.jsonl
 python -c "import json,glob,os; f=max(glob.glob('output/run_manifests/*.json'), key=os.path.getmtime); d=json.load(open(f)); print(d['llm'])"
 ```
 
-同一份信息在控制台面板里也能看，而且是加工过的：下面这张是记忆面板，把一个居民的**日程**、**近期 episode**（带状态增量数值）、**Agent 日志**（Loc / Env / Act / Refl / EconomyStep / DailyDiary / EconomyDayEnd）并排放在一起，家庭结构、居家模式、采访入口都在左边。
+同一份信息在控制台面板里也能看，而且是加工过的：下面这张是记忆面板，把一个居民的**日程**、**近期 episode**（带状态增量数值）、**Agent 日志**（Loc / Env / Act / Refl / EconomyStep / DailyDiary / EconomyDayEnd）并排放在一起，家庭结构、采访入口都在左边；家的信息（户型、此刻在哪个房间、在家的记录）在地图的「室内模式」里。
 
 ![控制台记忆面板：日程、近期 episode、Agent 日志与家庭结构并排显示](../images/40-console-memory.jpg)
 

@@ -18,6 +18,13 @@ const state = {
   liveFrames: new Map(),
   frameIndex: 0,
   follow: true,
+  // Which view the map shows: "auto" follows the selected resident (at home
+  // → the indoor mode of their flat, out → the city map). A click on the
+  // mode buttons switches to a fixed mode until another resident is picked.
+  sceneMode: "auto",
+  // Signature of the home card's last render (resident + room + activity),
+  // so a new frame does not rebuild the card when nothing in it changed.
+  homeCardSignature: "",
   running: false,
   pollTimer: null,
   avatarCache: new Map(),
@@ -96,8 +103,6 @@ const els = {
   familyOverview: document.getElementById("familyOverview"),
   familyDetail: document.getElementById("familyDetail"),
   refreshFamilyBtn: document.getElementById("refreshFamilyBtn"),
-  homeDetail: document.getElementById("homeDetail"),
-  refreshHomeBtn: document.getElementById("refreshHomeBtn"),
   interviewContext: document.getElementById("interviewContext"),
   interviewQuestions: document.getElementById("interviewQuestions"),
   interviewBtn: document.getElementById("interviewBtn"),
@@ -577,6 +582,8 @@ async function selectAgent(agentId) {
   const id = Number(agentId);
   if (!id || id === Number(state.selectedAgentId)) return;
   state.selectedAgentId = id;
+  // A new resident: the view follows them again (at home → their flat).
+  state.sceneMode = "auto";
   els.agentSelect.value = String(id);
   renderSelectedAgentAvatar();
   updateToggleSimBtn();
@@ -971,7 +978,7 @@ async function loadFamily() {
 
 async function loadHome(agentId) {
   const id = agentId != null ? Number(agentId) : Number(state.selectedAgentId);
-  if (!id || !els.homeDetail) return;
+  if (!id) return;
   try {
     const payload = await api(`/api/home/${id}`);
     state.home = payload;
@@ -980,15 +987,50 @@ async function loadHome(agentId) {
     // state rather than an error message.
     state.home = { has_home: false, error: error.message };
   }
-  renderHomePanel();
+  // The indoor mode draws the resident's own flat from this design.
+  if (indoorView) indoorView.setHome(state.home);
+  renderHomePanel(true);
 }
 
-function renderHomePanel() {
-  if (!els.homeDetail) return;
+// The home card lives inside the indoor mode, next to the floor plan.
+function homeCardRoot() {
+  return indoorView ? indoorView.card : null;
+}
+
+// Where the selected resident is right now, read from the current frame.
+function homeNow() {
+  const frame = currentFrame();
+  const agents = (frame && Array.isArray(frame.agents)) ? frame.agents : [];
+  const selected = agents.find((a) => Number(a.agent_id) === Number(state.selectedAgentId));
+  const room = selected && selected.home_room;
+  if (!room || !room.name) return null;
+  return { key: room.key || "", room: room.name, activity: room.activity || "" };
+}
+
+function renderHomePanel(force) {
+  const root = homeCardRoot();
+  if (!root) return;
   if (typeof window.HomePanel !== "object" || !window.HomePanel) {
     return;
   }
-  window.HomePanel.render(state.home, { root: els.homeDetail, t });
+  const now = homeNow();
+  // The card is rebuilt only when something it shows actually changed.
+  const signature = [state.selectedAgentId, now ? `${now.key}:${now.activity}` : "away",
+    state.home && state.home.agent_id].join("|");
+  if (!force && signature === state.homeCardSignature) return;
+  state.homeCardSignature = signature;
+  window.HomePanel.render({ ...(state.home || {}), now }, { root, t: translate });
+  if (now && now.key) window.HomePanel.highlightCurrentRoom(root, now.key);
+}
+
+// The translator the shared panels get: the locale string, or a readable
+// fallback when the key is not in the locale file.
+function translate(key, fallback) {
+  if (typeof window.__ === "function") {
+    const out = window.__(key, fallback);
+    if (out && out !== key) return out;
+  }
+  return fallback || key;
 }
 
 function renderFamilyCard() {
@@ -1766,26 +1808,51 @@ function renderTrace() {
     } else {
       drawEmptyMap();
     }
-    els.traceStatus.textContent = __(state.trace && state.trace.meta ? "trace.initialized" : "trace.waiting_data");
+    // A running simulation has not produced a frame yet — say so, instead of
+    // leaving the panel looking like a broken run.
+    els.traceStatus.textContent = state.running
+      ? __("trace.preparing")
+      : __(state.trace && state.trace.meta ? "trace.initialized" : "trace.waiting_data");
     return;
   }
   renderSelectedAgentAvatar();
-  els.frameTitle.textContent = `Day ${frame.day} · ${frame.time}`;
+  // The start-positions frame is a preview, not a moment in the simulation.
+  const isStartFrame = frame.phase === "init";
+  els.frameTitle.textContent = isStartFrame ? __("trace.start_positions") : `Day ${frame.day} · ${frame.time}`;
   const finished = state.trace.meta && state.trace.meta.finished;
-  const liveCount = frames.length - (Array.isArray(state.trace.frames) ? state.trace.frames.length : 0);
+  const traceFrameCount = Array.isArray(state.trace.frames) ? state.trace.frames.length : 0;
+  const liveCount = frames.length - traceFrameCount;
   // Was a hardcoded Chinese template literal, so this badge stayed Chinese in
   // English mode. trace.status / trace.frames / trace.completed / trace.writing
   // already existed in both locales — this call site simply bypassed them.
   const live = liveCount > 0 ? __f("trace.live_frames", { count: liveCount }) : "";
   els.traceStatus.textContent =
-    __f("trace.frames", { count: frames.length }) + live +
+    __f("trace.frames", { count: traceFrameCount }) + live +
     " · " + __(finished ? "trace.completed" : "trace.writing");
   els.timelineSlider.max = String(Math.max(0, frames.length - 1));
   els.timelineSlider.value = String(state.frameIndex);
-  els.timelineLabel.textContent = `${frame.date || ""} ${frameWeekday(frame)} ${frame.time || ""}`.trim();
+  els.timelineLabel.textContent = isStartFrame
+    ? __("trace.start_positions")
+    : `${frame.date || ""} ${frameWeekday(frame)} ${frame.time || ""}`.trim();
   if (els.followLatestInput) els.followLatestInput.checked = state.follow;
   els.latestFrameBox.textContent = JSON.stringify(frame, null, 2);
   drawMap(frames.slice(0, state.frameIndex + 1));
+  syncSceneMode(frame);
+  renderHomePanel();
+}
+
+/**
+ * The view follows the resident: at home the indoor mode shows their own
+ * flat (the rooms they move through), out of the house the city map does.
+ * A manual choice on the mode buttons wins until another resident is picked.
+ */
+function syncSceneMode(frame) {
+  if (!indoorView || state.sceneMode !== "auto") return;
+  const agents = (frame && Array.isArray(frame.agents)) ? frame.agents : [];
+  const selected = agents.find((a) => Number(a.agent_id) === Number(state.selectedAgentId));
+  const atHome = Boolean(selected && selected.home_room && selected.home_room.name);
+  const mode = atHome ? "indoor" : "city";
+  if (indoorView.mode !== mode) indoorView.setMode(mode);
 }
 
 /** The frame's weekday, in the reader's language.
@@ -2004,12 +2071,24 @@ function bindEvents() {
       message(__("msg.family_refreshed"));
     }, "btn.reloading", "刷新中…"));
   }
-  if (els.refreshHomeBtn) {
-    els.refreshHomeBtn.addEventListener("click", withBusy(els.refreshHomeBtn, async () => {
-      await loadHome();
-      message(__("msg.home_refreshed", "居家模式已刷新"));
-    }, "btn.reloading", "刷新中…"));
+  // The home card is rendered inside the indoor mode, so its refresh button
+  // lives in a container that is rebuilt on every render — listen on the
+  // pane and delegate.
+  if (els.indoorView) {
+    els.indoorView.addEventListener("click", (event) => {
+      const trigger = event.target.closest('[data-action="refresh-home"]');
+      if (!trigger) return;
+      event.preventDefault();
+      loadHome().then(() => message(__("msg.home_refreshed", "居家模式已刷新")));
+    });
   }
+  // A click on 城市地图 / 室内模式 overrides the automatic switch.
+  const sceneButtons = document.querySelectorAll("[data-scene-mode]");
+  sceneButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.sceneMode = button.dataset.sceneMode === "indoor" ? "indoor" : "city";
+    });
+  });
   els.reloadMemoryBtn.addEventListener("click", withBusy(els.reloadMemoryBtn, async () => {
     await loadMemory();
     if (!els.rawModal.hidden) renderRawModal();

@@ -16,6 +16,32 @@
   --steel-pale: #dce6e8;
   --danger: #9d493e;
   --shadow: 0 18px 48px rgba(25, 48, 38, 0.12);
+
+  /* The paper the cards and the workspace are printed on, plus the two
+     full-bleed bands that carry reversed type. They are spelled out here
+     instead of borrowed so the dark theme can repaint them; see the block
+     below. */
+  --card-paper: rgba(251, 250, 242, 0.94);
+  --mast-bg: #923315;
+  --signal-bg: #263f4a;
+
+  /* The active tab is a sheet of paper laid on the band. The band is the dark
+     one in both themes, so the chip stays light in both. */
+  --tab-chip: #f7f3e4;
+  --tab-chip-ink: #2a1a12;
+}
+
+/* Dark theme. The palette above is a daylight one, and the house tokens flip
+   --ink to near-white: every light surface this page paints on its own has to
+   come back dark, or its labels disappear into the paper. */
+:root[data-theme="dark"] {
+  --paper-bright: #171c16;
+  --steel-deep: #8fb1bd;
+  --danger: #f2908d;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  --card-paper: rgba(26, 31, 25, 0.94);
+  --mast-bg: #6e2a12;
+  --signal-bg: #1b262b;
 }
 
 * {
@@ -70,17 +96,35 @@ textarea:focus-visible,
   outline-offset: 3px;
 }
 
+/* The band carries the page title and the pane switcher. Its inner box takes
+   the width and the padding of the content grid below, so the headline and
+   the cards share one column instead of hugging the window edge. */
 .masthead {
+  padding: 30px 0 0;
+  color: #f7f7ee;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.04), transparent 45%),
+    var(--mast-bg);
+  border-bottom: 5px solid var(--steel);
+}
+
+.masthead-inner {
+  width: min(1780px, 100%);
+  margin: 0 auto;
+  padding: 0 clamp(16px, 2.5vw, 38px);
+}
+
+.masthead-top {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: 30px clamp(18px, 3vw, 46px) 24px;
-  color: #f7f7ee;
-  background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.04), transparent 45%),
-    var(--green-deep);
-  border-bottom: 5px solid var(--steel);
+  padding-bottom: 22px;
+}
+
+.mast-copy,
+.mast-set {
+  min-width: 0;
 }
 
 .masthead h1 {
@@ -148,6 +192,63 @@ textarea:focus-visible,
   box-shadow: 0 0 0 6px rgba(212, 165, 61, 0.14);
 }
 
+/* ---- the pane switcher ---- */
+
+/* The switcher is docked at the bottom of the band, so it reads as the
+   masthead's own navigation rather than a control floating above the page.
+   The active tab is a sheet of paper laid on the band; the idle ones are
+   hairlines, like every other control on this page. */
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 18px;
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 16px 10px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: rgba(247, 247, 238, 0.72);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.view-tab .en {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+
+.view-tab:hover {
+  border-color: rgba(247, 247, 238, 0.36);
+  color: #f7f7ee;
+}
+
+.view-tab.is-active {
+  border-color: var(--tab-chip);
+  color: var(--tab-chip-ink);
+  background: var(--tab-chip);
+}
+
+.view-tab.is-active .en {
+  color: var(--tab-chip-ink);
+  opacity: 0.58;
+}
+
+/* In English the chip already carries the English name. */
+html[lang="en"] .view-tab .en {
+  display: none;
+}
+
 .cooperation-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.86fr) minmax(420px, 1.55fr) minmax(280px, 0.88fr);
@@ -168,7 +269,7 @@ textarea:focus-visible,
 .paper-card,
 .workspace {
   border: 1px solid var(--line);
-  background: rgba(251, 250, 242, 0.94);
+  background: var(--card-paper);
   box-shadow: var(--shadow);
 }
 
@@ -181,7 +282,7 @@ textarea:focus-visible,
   color: #eff5f1;
   background:
     linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    var(--steel-deep);
+    var(--signal-bg);
   background-size: 100% 26px, auto;
   box-shadow: var(--shadow);
 }
@@ -542,6 +643,12 @@ select,
   letter-spacing: 0.05em;
 }
 
+/* A label with nothing to say should not leave an empty tinted box in the
+   header it sits in. */
+.steel-label:empty {
+  display: none;
+}
+
 .task-plan {
   display: grid;
   gap: 10px;
@@ -789,13 +896,15 @@ select,
 }
 
 @media (max-width: 899px) {
-  .masthead {
+  .masthead-top {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .mast-status {
-    width: 100%;
+    /* The band stacks now, so the status chip hugs its text instead of
+       stretching into an empty bar across the whole header. */
+    width: auto;
   }
 
   .cooperation-grid,
@@ -818,7 +927,11 @@ select,
   }
 
   .masthead {
-    padding: 22px 16px 18px;
+    padding-top: 22px;
+  }
+
+  .masthead-inner {
+    padding: 0 16px;
   }
 
   .member-picker,

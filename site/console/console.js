@@ -10,7 +10,6 @@
 
   var TABS = [
     { id: "dashboard", src: "/dashboard" },
-    { id: "simviz", src: "/site/simviz/index.html" },
     { id: "city", src: "/site/dashboard/city.html" },
     { id: "analytics", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },
@@ -180,6 +179,7 @@
 
   function currentTabId() {
     var hash = (location.hash || "").replace(/^#/, "");
+    if (/^simviz(?:\?|$)/.test(hash)) { hash = hash.replace(/^simviz/, 'analytics'); history.replaceState(null, '', '#' + hash); }
     if (hash === 'worlds') { history.replaceState(null, '', '#research?tab=worlds'); hash = 'research?tab=worlds'; }
     return hash;
   }

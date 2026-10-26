@@ -102,7 +102,7 @@ function sceneFor(category = 'residential', width = 1000, height = 700, agents =
   scene.input = { on() {}, off() {} };
   scene.add = { graphics, text(x, y, text) {
     const label = { x, y, text, setOrigin() { return this; }, setDepth() { return this; },
-      setInteractive() { return this; }, on() { return this; }, destroy() {} };
+      setStroke() { return this; }, setInteractive() { return this; }, on() { return this; }, destroy() {} };
     texts.push(label); return label;
   } };
   scene.init({ nodeId: 'home' }); scene.create();

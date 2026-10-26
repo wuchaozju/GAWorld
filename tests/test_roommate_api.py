@@ -161,10 +161,9 @@ class RoommateApiTests(unittest.TestCase):
         self.assertEqual(after2["tick_index"], after["tick_index"])
 
     def test_idle_ticks_cost_no_model_calls(self):
-        """Two residents who are always in different rooms (one in master,
-        one in study) never share a room, so no interaction fires and no
-        model call is made — only the ``mood_decay`` and ``relationship_decay``
-        housekeeping runs."""
+        """Two residents who are always in different rooms never share a
+        room, so no interaction fires and no model call is made — only the
+        ``mood_decay`` and ``relationship_decay`` housekeeping runs."""
         calls = {"n": 0}
 
         def reaction_fn(prompt: str) -> str:
@@ -174,24 +173,25 @@ class RoommateApiTests(unittest.TestCase):
         s = roommate_api.start_session(
             city="wuzhen", agent_ids=[1, 2],
             reaction_fn=reaction_fn,
+            rng=random.Random(0),
         )
-        # Pin residents to non-overlapping rooms AND non-overlapping
-        # activities so the RNG in ``_step_resident`` cannot move them
-        # into a shared room during the tick.
         sess = roommate_api._require(s["id"])
-        sess.residents[0].room = "master"
-        sess.residents[0].activity = "看书"
-        sess.residents[1].room = "study"
-        sess.residents[1].activity = "练琴"
-        # Save and force ``_step_resident`` to keep these by stubbing
-        # ``_activity_for_hour`` to return the current activity verbatim.
+        # "看窗外" is a private activity, and the room follows the activity:
+        # each resident ends the tick in their own bedroom, so the two never
+        # share a room and an interaction is impossible rather than unlikely.
+        # A shared-room activity would not do — "看书" and "练琴" both map to
+        # the study, which parked the two residents together and left the
+        # call count to an 8% coin flip (both busy → prob 0.55 x 0.15).
         with mock.patch(
             "gaworld.apps.roommate_api._activity_for_hour",
-            side_effect=lambda hour, rng: sess.residents[
-                sess.residents.index(sess.residents[hour % len(sess.residents)])
-            ].activity,
+            return_value="看窗外",
         ):
             roommate_api.tick(s["id"], steps=2)
+        self.assertNotEqual(
+            sess.residents[0].room,
+            sess.residents[1].room,
+            "the two residents must stay in different rooms",
+        )
         self.assertEqual(calls["n"], 0, "no interactions => zero LLM calls")
 
     def test_interaction_calls_model_and_updates_state(self):

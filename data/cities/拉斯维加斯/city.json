@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "slug": "拉斯维加斯",
+  "name": "拉斯维加斯;拉斯維加斯",
+  "display_name": "拉斯维加斯;拉斯維加斯, Clark County, 内华达州;內華達州, 美国;美國",
+  "created_at": "2026-10-25T10:54:30+00:00",
+  "place": {
+    "query": "拉斯维加斯",
+    "name": "拉斯维加斯;拉斯維加斯",
+    "display_name": "拉斯维加斯;拉斯維加斯, Clark County, 内华达州;內華達州, 美国;美國",
+    "lat": 36.1674263,
+    "lng": -115.1484131,
+    "bbox": [
+      36.0374263,
+      -115.2784131,
+      36.297426300000005,
+      -115.0184131
+    ],
+    "kind": "city",
+    "scale": "large",
+    "country": "美国;美國",
+    "country_code": "us",
+    "population": 653533,
+    "source": "nominatim",
+    "osm_id": 170117,
+    "osm_type": "relation"
+  },
+  "scale": "large",
+  "map": {
+    "mode": "real",
+    "virtual": "citymap.md",
+    "real": "map.geojson",
+    "origin": {
+      "lat": 36.167426,
+      "lng": -115.148413,
+      "lat_per_km": 0.009009009,
+      "lng_per_km": 0.011127408
+    },
+    "nodes": 149
+  },
+  "environment": "environment.json",
+  "population": {
+    "count": 100,
+    "state_csv": "agents.csv",
+    "profiles_md": "profiles.md"
+  },
+  "history": [
+    {
+      "at": "2026-10-25T10:54:30+00:00",
+      "action": "map.virtual",
+      "scale": "large",
+      "seed": 4160143636
+    },
+    {
+      "at": "2026-10-25T10:59:00+00:00",
+      "action": "map.real",
+      "nodes": 149,
+      "bbox": [
+        36.0374263,
+        -115.2784131,
+        36.297426300000005,
+        -115.0184131
+      ]
+    },
+    {
+      "at": "2026-10-25T10:59:00+00:00",
+      "action": "environment",
+      "climate": "temperate"
+    },
+    {
+      "at": "2026-10-25T10:59:20+00:00",
+      "action": "knowledge",
+      "source": "web",
+      "industries": [
+        "博彩业",
+        "旅游业"
+      ]
+    },
+    {
+      "at": "2026-10-25T10:59:43+00:00",
+      "action": "locale.research",
+      "code": "en-US",
+      "label": "美国内华达州拉斯维加斯都会区"
+    },
+    {
+      "at": "2026-10-25T10:59:43+00:00",
+      "action": "create",
+      "offline": false,
+      "source": "nominatim",
+      "imagined": false
+    },
+    {
+      "at": "2026-10-25T10:59:43+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_county_town",
+      "locale": "en-US",
+      "seed": 1175457236,
+      "replace": false
+    }
+  ],
+  "updated_at": "2026-10-25T10:59:43+00:00"
+}

@@ -30,6 +30,7 @@ def builtin_plugins():
     from gaworld.behavior.plugin import DynamicBehaviorPlugin
     from gaworld.cluster.plugin import ClusterSyncPlugin
     from gaworld.collaboration.plugin import CollaborationPlugin
+    from gaworld.crowdsourcing.plugin import CrowdsourcingPlugin
     from gaworld.economy.plugin import EconomyPlugin
     from gaworld.events.plugin import LifeEventsPlugin
     from gaworld.family.plugin import FamilyPlugin
@@ -105,6 +106,7 @@ def builtin_plugins():
         # snapshot when both fire.
         HomeEnvironmentPlugin(),
         CollaborationPlugin(),
+        CrowdsourcingPlugin(),
         # After every other filter of `action.selected`, so a person playing a
         # resident has the last word on what that resident does.
         MultiplayerPlugin(),

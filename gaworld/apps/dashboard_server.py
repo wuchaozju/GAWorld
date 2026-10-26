@@ -42,7 +42,11 @@ TODO_BOARD_PATH = os.path.join(paths.REPO_ROOT, "output", "dashboard", "todo_boa
 TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
+_COLLABORATION_SERVICES = {}
 _COLLABORATION_LOCK = threading.Lock()
+
+_CROWDSOURCING_SERVICE = None
+_CROWDSOURCING_LOCK = threading.Lock()
 
 #: The request's active world (a row from the account database), or None for
 #: the shared default world. Set by ``_guard`` per request; every path helper
@@ -179,25 +183,35 @@ def _repo_path(value):
     return (Path(paths.REPO_ROOT) / path).resolve()
 
 
+def _organization_method(identifier, version):
+    from gaworld.apps.organization_methods_api import resolve
+
+    return resolve(identifier, version)
+
+
 def _collaboration_config():
-    config = paths.effective_config().get("collaboration", {})
-    return config if isinstance(config, dict) else {}
+    from gaworld.apps.collaboration_workspace import config
+
+    return config()
 
 
 def _get_collaboration_service():
     global _COLLABORATION_SERVICE
+    from gaworld.apps.collaboration_workspace import key
+
+    scope = key()
     with _COLLABORATION_LOCK:
-        if _COLLABORATION_SERVICE is not None:
-            return _COLLABORATION_SERVICE
+        if _COLLABORATION_SERVICE is not None and not hasattr(_COLLABORATION_SERVICE, "_workspace_key"):
+            return _COLLABORATION_SERVICE  # Injected service used by embedding callers/tests.
+        if scope in _COLLABORATION_SERVICES:
+            return _COLLABORATION_SERVICES[scope]
 
         from gaworld.collaboration.service import CollaborationService
         from gaworld.llm.providers import call_llm
         from gaworld.memory.experience import append_agent_episode
 
         config = paths.effective_config()
-        collaboration = config.get("collaboration", {})
-        if not isinstance(collaboration, dict):
-            collaboration = {}
+        collaboration = _collaboration_config()
         service = CollaborationService(
             config=collaboration,
             sessions_dir=_repo_path(
@@ -216,6 +230,8 @@ def _get_collaboration_service():
             ),
         )
         service.start()
+        service._workspace_key = scope
+        _COLLABORATION_SERVICES[scope] = service
         _COLLABORATION_SERVICE = service
         return service
 
@@ -223,10 +239,131 @@ def _get_collaboration_service():
 def _reset_collaboration_service_for_tests():
     global _COLLABORATION_SERVICE
     with _COLLABORATION_LOCK:
-        service = _COLLABORATION_SERVICE
+        services = list(_COLLABORATION_SERVICES.values())
+        if _COLLABORATION_SERVICE is not None:
+            services.append(_COLLABORATION_SERVICE)
+        _COLLABORATION_SERVICES.clear()
         _COLLABORATION_SERVICE = None
+    for service in {id(value): value for value in services}.values():
+        service.shutdown()
+
+
+def _crowdsourcing_config():
+    config = paths.effective_config().get("crowdsourcing", {})
+    return config if isinstance(config, dict) else {}
+
+
+def _get_crowdsourcing_service():
+    global _CROWDSOURCING_SERVICE
+    with _CROWDSOURCING_LOCK:
+        if _CROWDSOURCING_SERVICE is not None:
+            return _CROWDSOURCING_SERVICE
+
+        from gaworld.crowdsourcing.service import CrowdsourcingService
+        from gaworld.llm.providers import call_llm
+        from gaworld.memory.experience import append_agent_episode
+
+        config = paths.effective_config()
+        crowdsourcing = config.get("crowdsourcing", {})
+        if not isinstance(crowdsourcing, dict):
+            crowdsourcing = {}
+        service = CrowdsourcingService(
+            config=crowdsourcing,
+            sessions_dir=_repo_path(
+                crowdsourcing.get(
+                    "sessions_dir",
+                    "output/crowdsourcing/sessions",
+                )
+            ),
+            agent_loader=lambda agent_id: residents.agent_detail(int(agent_id)),
+            llm=call_llm,
+            episode_writer=lambda agent_id, episode: append_agent_episode(
+                agent_id,
+                episode,
+                cfg=config,
+            ),
+        )
+        service.start()
+        _CROWDSOURCING_SERVICE = service
+        return service
+
+
+def _reset_crowdsourcing_service_for_tests():
+    global _CROWDSOURCING_SERVICE
+    with _CROWDSOURCING_LOCK:
+        service = _CROWDSOURCING_SERVICE
+        _CROWDSOURCING_SERVICE = None
     if service is not None:
         service.shutdown()
+
+
+def _public_crowdsourcing_session(payload):
+    """Strip the on-disk paths off a session and add browser-usable URLs."""
+    result = deepcopy(payload)
+    result.pop("artifact_base_url", None)
+
+    repo_root = Path(paths.REPO_ROOT).resolve()
+    sessions_dir = _repo_path(
+        _crowdsourcing_config().get(
+            "sessions_dir",
+            "output/crowdsourcing/sessions",
+        )
+    )
+    session_id = str(result.get("id") or "")
+    safe_session_id = bool(
+        session_id
+        and session_id not in {".", ".."}
+        and "/" not in session_id
+        and "\\" not in session_id
+        and all(ord(character) >= 32 and ord(character) != 127 for character in session_id)
+    )
+    session_root = sessions_dir
+    session_root_is_safe = False
+    if safe_session_id:
+        session_root = (sessions_dir / session_id).resolve()
+        try:
+            session_root.relative_to(sessions_dir)
+        except ValueError:
+            pass
+        else:
+            session_root_is_safe = True
+
+    if session_root_is_safe:
+        try:
+            public_artifacts_root = (session_root / "artifacts").resolve().relative_to(repo_root)
+        except ValueError:
+            pass
+        else:
+            result["artifact_base_url"] = "/" + public_artifacts_root.as_posix().rstrip("/") + "/"
+
+    artifacts = result.get("artifacts")
+    if not isinstance(artifacts, list):
+        return result
+
+    public_artifacts = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            continue
+        public_artifacts.append(artifact)
+        artifact.pop("url", None)
+        raw_path = str(artifact.get("path") or "")
+        relative = Path(raw_path)
+        if not raw_path or relative.is_absolute() or not session_root_is_safe:
+            artifact.pop("path", None)
+            continue
+        resolved = (session_root / relative).resolve()
+        try:
+            resolved.relative_to(session_root)
+        except ValueError:
+            artifact.pop("path", None)
+            continue
+        try:
+            public_path = resolved.relative_to(repo_root)
+        except ValueError:
+            continue
+        artifact["url"] = "/" + public_path.as_posix()
+    result["artifacts"] = public_artifacts
+    return result
 
 
 def _public_collaboration_session(payload):
@@ -296,6 +433,10 @@ def _public_collaboration_session(payload):
             continue
         artifact["url"] = "/" + public_path.as_posix()
     result["artifacts"] = public_artifacts
+    if result.get("organization_method"):
+        from gaworld.apps.organization_artifacts_api import public_links
+
+        return public_links(result)
     return result
 
 
@@ -357,7 +498,38 @@ def _collaboration_text(payload, field, *, default=""):
     return value
 
 
+def _crowdsourcing_prune(value):
+    """Parse the optional pruning block of a crowd session."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("prune must be an object")
+    enabled = value.get("enabled", True)
+    if isinstance(enabled, bool):
+        pass
+    elif isinstance(enabled, (int, str)) and str(enabled).lower() in {
+        "true",
+        "false",
+        "1",
+        "0",
+    }:
+        enabled = str(enabled).lower() in {"true", "1"}
+    else:
+        raise ValueError("prune.enabled must be a boolean")
+    try:
+        keep = int(value.get("keep", 0) or 0)
+        explore_ratio = float(value.get("explore_ratio", 0.25) or 0.0)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("prune.keep and prune.explore_ratio must be numbers") from exc
+    return {
+        "enabled": bool(enabled),
+        "keep": keep,
+        "explore_ratio": explore_ratio,
+    }
+
+
 atexit.register(_reset_collaboration_service_for_tests)
+atexit.register(_reset_crowdsourcing_service_for_tests)
 
 
 def _provider_names(cfg):
@@ -1406,6 +1578,8 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
         super().end_headers()
 
     def _json_response(self, payload, status=200, headers=None):
+        if isinstance(payload, routes.Download):
+            return self._download_response(payload.content, payload.media_type, payload.filename)
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1732,6 +1906,30 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
                 after=after,
             )
             return self._json_response({"events": events})
+
+        if path == "/api/crowdsourcing/strategies":
+            return self._json_response(_get_crowdsourcing_service().strategies())
+        if path == "/api/crowdsourcing/sessions":
+            service = _get_crowdsourcing_service()
+            status = (query.get("status") or [""])[0]
+            sessions = service.list_sessions(status=status)
+            return self._json_response(
+                {
+                    "sessions": [_public_crowdsourcing_session(item) for item in sessions],
+                    "health": service.health(),
+                }
+            )
+        parts = path.strip("/").split("/")
+        if len(parts) == 4 and parts[:3] == ["api", "crowdsourcing", "sessions"]:
+            session = _get_crowdsourcing_service().get_session(parts[3])
+            return self._json_response(_public_crowdsourcing_session(session))
+        if len(parts) == 5 and parts[:3] == ["api", "crowdsourcing", "sessions"] and parts[4] == "events":
+            after = int((query.get("after") or [0])[0])
+            events = _get_crowdsourcing_service().events(parts[3], after=after)
+            return self._json_response({"events": events})
+        if len(parts) == 5 and parts[:3] == ["api", "crowdsourcing", "sessions"] and parts[4] == "rounds":
+            rounds = _get_crowdsourcing_service().rounds(parts[3])
+            return self._json_response({"rounds": rounds})
         return self._json_response({"error": "Unknown endpoint"}, status=404)
 
     def _handle_api_post(self, path):
@@ -1871,6 +2069,16 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
                         allow_none=True,
                     ),
                     role_overrides=_collaboration_roles(payload),
+                    **(
+                        {
+                            "organization_method": _organization_method(
+                                _collaboration_text(payload, "organization_method_id"),
+                                _collaboration_integer(payload, "organization_method_version", default=1),
+                            )
+                        }
+                        if payload.get("organization_method_id")
+                        else {}
+                    ),
                 )
             else:
                 raise ValueError("kind must be discussion or cooperation")
@@ -1884,6 +2092,32 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
             service = _get_collaboration_service()
             result = getattr(service, parts[4])(parts[3])
             return self._json_response(_public_collaboration_session(result))
+
+        if path == "/api/crowdsourcing/sessions":
+            service = _get_crowdsourcing_service()
+            session = service.create_crowd(
+                _collaboration_agent_ids(payload),
+                task=_collaboration_text(payload, "task"),
+                strategy=_collaboration_text(payload, "strategy") or "market",
+                rounds=_collaboration_integer(payload, "rounds", default=3),
+                participants_per_round=_collaboration_integer(
+                    payload,
+                    "participants_per_round",
+                    default=5,
+                ),
+                criteria=_collaboration_text(payload, "criteria"),
+                prune=_crowdsourcing_prune(payload.get("prune")),
+            )
+            return self._json_response(_public_crowdsourcing_session(session.to_dict()))
+        parts = path.strip("/").split("/")
+        if (
+            len(parts) == 5
+            and parts[:3] == ["api", "crowdsourcing", "sessions"]
+            and parts[4] in {"pause", "resume", "cancel"}
+        ):
+            service = _get_crowdsourcing_service()
+            result = getattr(service, parts[4])(parts[3])
+            return self._json_response(_public_crowdsourcing_session(result))
         return self._json_response({"error": "Unknown endpoint"}, status=404)
 
     def do_GET(self):

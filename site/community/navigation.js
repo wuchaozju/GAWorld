@@ -16,6 +16,7 @@
     else if (/^\/(publications|people|posts)\/[A-Za-z0-9_-]+$/.test(url.pathname)) {
       id = url.pathname.startsWith('/posts/') ? 'plaza' : 'explore'; detail = url.pathname;
     } else if (url.pathname === '/site/dashboard/research.html') id = 'research';
+    else if (url.pathname === '/site/dashboard/analytics.html' || url.pathname === '/site/simviz/index.html') id = 'analytics';
     else return null;
     if (url.hash) params.set('anchor', url.hash.slice(1));
     return '/console#' + id + detail + query(params);
@@ -23,6 +24,7 @@
   function resolve(hash, allTabs) {
     var split = String(hash || '').replace(/^#/, '').split('?'), route = split.shift(), params = new URLSearchParams(split.join('?'));
     if (route === 'worlds') { route = 'research'; params.set('tab', 'worlds'); }
+    if (route === 'simviz') route = 'analytics';
     var parts = route.split('/'), id = parts.shift(), tab = allTabs.find(function (t) { return t.id === id; });
     if (!tab || (parts.length && !((id === 'explore' && /^(publications|people)\/[A-Za-z0-9_-]+$/.test(parts.join('/'))) || (id === 'plaza' && /^posts\/[A-Za-z0-9_-]+$/.test(parts.join('/')))))) return allTabs[0];
     var src = new URL(parts.length ? '/' + parts.join('/') : tab.src, 'http://console.local');

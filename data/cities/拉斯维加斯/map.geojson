@@ -1,0 +1,2250 @@
+{
+ "type": "FeatureCollection",
+ "meta": {
+  "city": "拉斯维加斯;拉斯維加斯",
+  "source": "OpenStreetMap",
+  "origin": {
+   "lat": 36.167426,
+   "lng": -115.148413,
+   "lat_per_km": 0.009009009,
+   "lng_per_km": 0.011127408
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1907876,
+     36.1919667
+    ]
+   },
+   "properties": {
+    "name": "Eastland Heights",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.165279,
+     36.1830254
+    ]
+   },
+   "properties": {
+    "name": "Bonanza Village",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.04194,
+     36.0944186
+    ]
+   },
+   "properties": {
+    "name": "East Las Vegas",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1368845,
+     36.137006
+    ]
+   },
+   "properties": {
+    "name": "Winchester",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1901616,
+     36.0405716
+    ]
+   },
+   "properties": {
+    "name": "Enterprise",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0460304,
+     36.0968906
+    ]
+   },
+   "properties": {
+    "name": "Whitney",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2430264,
+     36.1069622
+    ]
+   },
+   "properties": {
+    "name": "Spring Valley",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0822389,
+     36.0419624
+    ]
+   },
+   "properties": {
+    "name": "Green Valley",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1369723,
+     36.1052222
+    ]
+   },
+   "properties": {
+    "name": "Midtown UNLV",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1862364,
+     36.179195
+    ]
+   },
+   "properties": {
+    "name": "Twin Lakes",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2476636,
+     36.1897351
+    ]
+   },
+   "properties": {
+    "name": "Inner Northwest",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2695035,
+     36.2078191
+    ]
+   },
+   "properties": {
+    "name": "Desert Shores",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2644426,
+     36.2716641
+    ]
+   },
+   "properties": {
+    "name": "Centennial Hills",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1960999,
+     36.1258908
+    ]
+   },
+   "properties": {
+    "name": "Chinatown",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2697081,
+     36.1936505
+    ]
+   },
+   "properties": {
+    "name": "The Pueblo",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1205998,
+     36.1812036
+    ]
+   },
+   "properties": {
+    "name": "Cultural Corridor",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1430883,
+     36.1553519
+    ]
+   },
+   "properties": {
+    "name": "John S. Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1512789,
+     36.1595296
+    ]
+   },
+   "properties": {
+    "name": "18b: The Las Vegas Arts District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0452917,
+     36.1972977
+    ]
+   },
+   "properties": {
+    "name": "Sunrise Manor",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1499047,
+     36.1010292
+    ]
+   },
+   "properties": {
+    "name": "Paradise",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0461628,
+     36.063689
+    ]
+   },
+   "properties": {
+    "name": "Whitney Ranch",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.266553,
+     36.1054989
+    ]
+   },
+   "properties": {
+    "name": "Buffalo Ranch",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2164835,
+     36.1149843
+    ]
+   },
+   "properties": {
+    "name": "Flamingo Heights",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1837827,
+     36.2926637
+    ]
+   },
+   "properties": {
+    "name": "Aliante",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.064393,
+     36.1456594
+    ]
+   },
+   "properties": {
+    "name": "Winterwood",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1619941,
+     36.2394201
+    ]
+   },
+   "properties": {
+    "name": "Craig Ranch",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1530706,
+     36.2968763
+    ]
+   },
+   "properties": {
+    "name": "The Villages at Tule Springs",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2330336,
+     36.1664044
+    ]
+   },
+   "properties": {
+    "name": "Charleston Heights",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1608583,
+     36.188474
+    ]
+   },
+   "properties": {
+    "name": "West Las Vegas",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1406688,
+     36.1692406
+    ]
+   },
+   "properties": {
+    "name": "Downtown Las Vegas",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1998137,
+     36.1517325
+    ]
+   },
+   "properties": {
+    "name": "Rancho Charleston",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2433288,
+     36.1516212
+    ]
+   },
+   "properties": {
+    "name": "Buffalo",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.223854,
+     36.1986672
+    ]
+   },
+   "properties": {
+    "name": "Michael Way",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.259977,
+     36.1813866
+    ]
+   },
+   "properties": {
+    "name": "Pioneer Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.273433,
+     36.1663994
+    ]
+   },
+   "properties": {
+    "name": "Angel Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0713265,
+     36.1737689
+    ]
+   },
+   "properties": {
+    "name": "Sunrise",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1233265,
+     36.1517228
+    ]
+   },
+   "properties": {
+    "name": "Huntridge",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1158173,
+     36.1645472
+    ]
+   },
+   "properties": {
+    "name": "Downtown East",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1679021,
+     36.1598971
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas Medical District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1593271,
+     36.1524256
+    ]
+   },
+   "properties": {
+    "name": "Meadows Village",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2513626,
+     36.1625833
+    ]
+   },
+   "properties": {
+    "name": "Charleston Heights Southwest",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.225575,
+     36.2464191
+    ]
+   },
+   "properties": {
+    "name": "Rancho",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0429691,
+     36.2424115
+    ]
+   },
+   "properties": {
+    "name": "Nellis Air Force Base",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1389583,
+     36.1685037
+    ]
+   },
+   "properties": {
+    "name": "Fremont East Entertainment District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1373916,
+     36.1221685
+    ]
+   },
+   "properties": {
+    "name": "Filipino Town",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1395075,
+     36.1642668
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas High School Historic District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.140386,
+     36.1632552
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas High School Neighborhood Historic District",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.151648,
+     36.1695313
+    ]
+   },
+   "properties": {
+    "name": "Symphony Park",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0824173,
+     36.049012
+    ]
+   },
+   "properties": {
+    "name": "Green Valley North",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0512688,
+     36.1050727
+    ]
+   },
+   "properties": {
+    "name": "Nevada Ranch",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2611385,
+     36.0961468
+    ]
+   },
+   "properties": {
+    "name": "Spanish Trail",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1340417,
+     36.19636
+    ]
+   },
+   "properties": {
+    "name": "Downtown North Las Vegas",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1730218,
+     36.1515771
+    ]
+   },
+   "properties": {
+    "name": "Rancho Oakey",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0378217,
+     36.0466923
+    ]
+   },
+   "properties": {
+    "name": "Gibson Springs",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0203136,
+     36.0638582
+    ]
+   },
+   "properties": {
+    "name": "Midway",
+    "category": "residential",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1380373,
+     36.0820311
+    ]
+   },
+   "properties": {
+    "name": "D Gates - Blue Line",
+    "category": "transit",
+    "kind": "hub"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1133333,
+     36.1486111
+    ]
+   },
+   "properties": {
+    "name": "Adult Education Programs School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1369444,
+     36.18
+    ]
+   },
+   "properties": {
+    "name": "Biltmore Special School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0905523,
+     36.0913623
+    ]
+   },
+   "properties": {
+    "name": "Captain Kidds Sixth Grade",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1455568,
+     36.1833034
+    ]
+   },
+   "properties": {
+    "name": "Divine Providence Variety Day Home",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1378764,
+     36.1745615
+    ]
+   },
+   "properties": {
+    "name": "First Christian Church Child Development Center",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1394443,
+     36.1480267
+    ]
+   },
+   "properties": {
+    "name": "Trinity Christian Schools",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1238897,
+     36.1813595
+    ]
+   },
+   "properties": {
+    "name": "Echoes Christian Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1247229,
+     36.1777485
+    ]
+   },
+   "properties": {
+    "name": "Carousel Christian Child Development Center",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2326196,
+     36.2552484
+    ]
+   },
+   "properties": {
+    "name": "Ernest May Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1027789,
+     36.2041371
+    ]
+   },
+   "properties": {
+    "name": "Fay Herron Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1225006,
+     36.1760818
+    ]
+   },
+   "properties": {
+    "name": "Halle Hewetson Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.112224,
+     36.2144144
+    ]
+   },
+   "properties": {
+    "name": "Lincoln Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1563904,
+     36.1827477
+    ]
+   },
+   "properties": {
+    "name": "Madison Sixth Grade Center School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2191699,
+     36.1969128
+    ]
+   },
+   "properties": {
+    "name": "Bertha Ronzone Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1328466,
+     36.1621151
+    ]
+   },
+   "properties": {
+    "name": "Saint Joseph Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1327792,
+     36.1949701
+    ]
+   },
+   "properties": {
+    "name": "Washington Continuation School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0658335,
+     36.196638
+    ]
+   },
+   "properties": {
+    "name": "Ann Lynch Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.261117,
+     36.2424665
+    ]
+   },
+   "properties": {
+    "name": "Dorothy Eisenberg Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1761111,
+     36.2566667
+    ]
+   },
+   "properties": {
+    "name": "Steve Cozine Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.185,
+     36.2816667
+    ]
+   },
+   "properties": {
+    "name": "Theron H and Naomi D Goynes Elementary School",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0922222,
+     36.1019444
+    ]
+   },
+   "properties": {
+    "name": "Explore Knowledge Academy",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0530556,
+     36.0566667
+    ]
+   },
+   "properties": {
+    "name": "College of Southern Nevada Green Valley Center",
+    "category": "education",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2220444,
+     36.1118745
+    ]
+   },
+   "properties": {
+    "name": "Montevista Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2718767,
+     36.0574062
+    ]
+   },
+   "properties": {
+    "name": "St. Rose Dominican San Martín Campus",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1250142,
+     36.1132789
+    ]
+   },
+   "properties": {
+    "name": "Desert Springs Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1214621,
+     36.115662
+    ]
+   },
+   "properties": {
+    "name": "Kindred Hospital Las Vegas - Flamingo",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1221421,
+     36.1948576
+    ]
+   },
+   "properties": {
+    "name": "North Vista Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1677432,
+     36.1602891
+    ]
+   },
+   "properties": {
+    "name": "University Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1350314,
+     36.132926
+    ]
+   },
+   "properties": {
+    "name": "Sunrise Hospital & Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2406483,
+     36.0906246
+    ]
+   },
+   "properties": {
+    "name": "Spring Valley Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2463355,
+     36.1263487
+    ]
+   },
+   "properties": {
+    "name": "Spring Mountain Treatment Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2489408,
+     36.2154003
+    ]
+   },
+   "properties": {
+    "name": "MountainView Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2504321,
+     36.2055486
+    ]
+   },
+   "properties": {
+    "name": "PAM Health Specialty Hospital of Las Vegas",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.168208,
+     36.1612717
+    ]
+   },
+   "properties": {
+    "name": "UMC Trauma Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0940412,
+     36.2856324
+    ]
+   },
+   "properties": {
+    "name": "North Las Vegas VA Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0491152,
+     36.2459807
+    ]
+   },
+   "properties": {
+    "name": "Mike O'Callaghan Military Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0299313,
+     36.0727387
+    ]
+   },
+   "properties": {
+    "name": "Henderson Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1225392,
+     36.107898
+    ]
+   },
+   "properties": {
+    "name": "Harmon Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1666208,
+     36.1634529
+    ]
+   },
+   "properties": {
+    "name": "Valley Hospital Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2280435,
+     36.1563395
+    ]
+   },
+   "properties": {
+    "name": "Desert Regional Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2280587,
+     36.1527789
+    ]
+   },
+   "properties": {
+    "name": "Rawson–Neal Psychiatric Hospital",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2157901,
+     36.1460133
+    ]
+   },
+   "properties": {
+    "name": "Spring Mountain Sahara",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2118061,
+     36.1456328
+    ]
+   },
+   "properties": {
+    "name": "Kindred Hospital Las Vegas - Sahara",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2428081,
+     36.1606602
+    ]
+   },
+   "properties": {
+    "name": "Rainbow Medical Center",
+    "category": "medical",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1760743,
+     36.0938373
+    ]
+   },
+   "properties": {
+    "name": "The Shoppes at Mandalay Place",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1694413,
+     36.1239402
+    ]
+   },
+   "properties": {
+    "name": "The Atrium at the Palazzo",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1273458,
+     36.1575154
+    ]
+   },
+   "properties": {
+    "name": "Bonanza Swapmeet",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1377585,
+     36.1595732
+    ]
+   },
+   "properties": {
+    "name": "Yafa Market",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1966257,
+     36.1722624
+    ]
+   },
+   "properties": {
+    "name": "Meadows Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0421804,
+     36.067346
+    ]
+   },
+   "properties": {
+    "name": "Galleria Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1704711,
+     36.1124619
+    ]
+   },
+   "properties": {
+    "name": "Le Boulevard At Paris",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1723463,
+     36.1031022
+    ]
+   },
+   "properties": {
+    "name": "Showcase",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1758152,
+     36.1189178
+    ]
+   },
+   "properties": {
+    "name": "The Forum Shops at Caesars",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1691447,
+     36.0536002
+    ]
+   },
+   "properties": {
+    "name": "南奥",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1710563,
+     36.0502558
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas Outlet Center Annex",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1745011,
+     36.1077467
+    ]
+   },
+   "properties": {
+    "name": "The Shops at Crystals",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1719241,
+     36.1141138
+    ]
+   },
+   "properties": {
+    "name": "Grand Bazaar Shops",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1576797,
+     36.1635061
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas North Premium Outlets",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1351101,
+     36.1245291
+    ]
+   },
+   "properties": {
+    "name": "The Boulevard Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1715977,
+     36.1272369
+    ]
+   },
+   "properties": {
+    "name": "Fashion Show Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1384751,
+     36.1675311
+    ]
+   },
+   "properties": {
+    "name": "Downtown Container Park",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2417806,
+     36.2020489
+    ]
+   },
+   "properties": {
+    "name": "Alano Plaza",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1702941,
+     36.1222018
+    ]
+   },
+   "properties": {
+    "name": "Grand Canal Shoppes",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2097591,
+     36.1148997
+    ]
+   },
+   "properties": {
+    "name": "Flamingo Decatur Plaza",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2071359,
+     36.1463015
+    ]
+   },
+   "properties": {
+    "name": "Ely’s restaurant",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.24166,
+     36.112329
+    ]
+   },
+   "properties": {
+    "name": "Spring Valley Town Center",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2087746,
+     36.1649468
+    ]
+   },
+   "properties": {
+    "name": "Charleston Antique Mall",
+    "category": "commerce",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1727735,
+     36.0820593
+    ]
+   },
+   "properties": {
+    "name": "Welcome to Fabulous Las Vegas Sign",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1541438,
+     36.1526396
+    ]
+   },
+   "properties": {
+    "name": "Salon De Belleza",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.2523763,
+     36.2066135
+    ]
+   },
+   "properties": {
+    "name": "Gravady",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1641762,
+     36.1329842
+    ]
+   },
+   "properties": {
+    "name": "Big Bus Las Vegas Hop-on Hop-off",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.168615,
+     36.1227839
+    ]
+   },
+   "properties": {
+    "name": "Saint Mark's Square",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.178313,
+     36.1191219
+    ]
+   },
+   "properties": {
+    "name": "Fall of Atlantis Show",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1555276,
+     36.1474091
+    ]
+   },
+   "properties": {
+    "name": "Big Shot",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.155601,
+     36.1476086
+    ]
+   },
+   "properties": {
+    "name": "X-Scream",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.170869,
+     36.1015996
+    ]
+   },
+   "properties": {
+    "name": "CSI: The Experience",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1405469,
+     36.1702311
+    ]
+   },
+   "properties": {
+    "name": "Axehole Vegas",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1740622,
+     36.1329966
+    ]
+   },
+   "properties": {
+    "name": "WelderUp",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1712851,
+     36.116713
+    ]
+   },
+   "properties": {
+    "name": "Flamingos",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1878211,
+     36.1711523
+    ]
+   },
+   "properties": {
+    "name": "Cinega Rim Overlook",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0959164,
+     36.0399449
+    ]
+   },
+   "properties": {
+    "name": "Rock Circle Art",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0953955,
+     36.0402442
+    ]
+   },
+   "properties": {
+    "name": "Rock Cross",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1118162,
+     36.0618092
+    ]
+   },
+   "properties": {
+    "name": "Homeless Village",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0520334,
+     36.0467257
+    ]
+   },
+   "properties": {
+    "name": "Tabletop Jump",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0515746,
+     36.0485505
+    ]
+   },
+   "properties": {
+    "name": "Rock Art \"Yin & Yang\"",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.0624124,
+     36.075846
+    ]
+   },
+   "properties": {
+    "name": "Rock Art",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.061796,
+     36.0687732
+    ]
+   },
+   "properties": {
+    "name": "Bike Jump",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.168985,
+     36.123545
+    ]
+   },
+   "properties": {
+    "name": "Gondola Rides at the Venetian",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1741329,
+     36.1026579
+    ]
+   },
+   "properties": {
+    "name": "Big Apple Coaster",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1541549,
+     36.1489803
+    ]
+   },
+   "properties": {
+    "name": "Las Vegas Showgirl Sign",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1896677,
+     36.1686283
+    ]
+   },
+   "properties": {
+    "name": "Historic Well Derrick",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1760346,
+     36.095774
+    ]
+   },
+   "properties": {
+    "name": "King Tut",
+    "category": "leisure",
+    "kind": "place"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -115.1758525,
+     36.0957702
+    ]
+   },
+   "properties": {
+    "name": "Titanic",
+    "category": "leisure",
+    "kind": "place"
+   }
+  }
+ ]
+}

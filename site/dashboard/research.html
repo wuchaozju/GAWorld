@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/site/dashboard/page-shell.css" />
   <link rel="stylesheet" href="/site/dashboard/research.css" />
   <link rel="stylesheet" href="/site/dashboard/organization-intelligence.css" />
+  <link rel="stylesheet" href="/site/dashboard/organization-comparison.css" />
   <link rel="stylesheet" href="/site/dashboard/worlds.css" />
   <link rel="stylesheet" href="/site/brand.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
@@ -22,11 +23,13 @@
         <span class="brand-mark brand-logo" aria-hidden="true"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="46" height="46" /></span>
         <div class="brand-copy">
           <p class="kicker" data-i18n="research.kicker">GAWorld 研究工作台</p>
-          <h1 data-i18n="research.headline">把研究想法变成可执行的仿真方案</h1>
-          <p class="sub" data-i18n="research.sub">
+          <h1 class="rw-default-intro" data-i18n="research.headline">把研究想法变成可执行的仿真方案</h1>
+          <p class="sub rw-default-intro" data-i18n="research.sub">
             写下一个研究想法，或上传一篇社会科学论文（先解读论文，你审阅修改后再设计实验）→ 选一个模型 →
             它对照 GAWorld 的功能目录做分析，给出研究问题、功能映射、几种可选的实验设计、实施步骤与局限 → 下载成 Markdown。
           </p>
+          <h1 class="rw-organization-intro" data-i18n="oi3.headline">哪种组织方式，更适合解决这类问题？</h1>
+          <p class="sub rw-organization-intro" data-i18n="oi3.sub">从论文或组织描述出发，与基本组织方式做对照实验，再将规则用于合作任务。</p>
         </div>
       </div>
       <div class="rw-topmeta" id="rwTopMeta"></div>
@@ -38,85 +41,100 @@
       <button type="button" class="rw-tab" role="tab" id="rwTabPolicy" data-tab="policy" aria-selected="false" aria-controls="rwPanePolicy" data-i18n="research.tab_policy">政策仿真与优化</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabReplication" data-tab="replication" aria-selected="false" aria-controls="rwPaneReplication" data-i18n="research.tab_replication">社会调查/实验拟合度</button>
       <button type="button" class="rw-tab" role="tab" id="rwTabWorlds" data-tab="worlds" aria-selected="false" aria-controls="rwPaneWorlds" data-i18n="research.tab_worlds">平行世界 · 反事实推断</button>
-      <button type="button" class="rw-tab" role="tab" id="rwTabOrganizationIntelligence" data-tab="organization-intelligence" aria-selected="false" aria-controls="rwPaneOrganizationIntelligence">组织智能</button>
+      <button type="button" class="rw-tab" role="tab" id="rwTabOrganizationIntelligence" data-tab="organization-intelligence" aria-selected="false" aria-controls="rwPaneOrganizationIntelligence" data-i18n="oi3.tab">组织智能</button>
     </nav>
 
     <section class="studio-main rw-main oi-pane" id="rwPaneOrganizationIntelligence" role="tabpanel" aria-labelledby="rwTabOrganizationIntelligence" hidden>
+      <div id="organizationComparison"></div>
+      <details class="oc-legacy"><summary data-i18n="oi3.history">专题与历史实验：团队换人和经验保留</summary><div class="oc-legacy-layout">
       <div class="rw-column">
         <article class="rw-card oi2-intro">
-          <p class="oi-kicker">组织智能 · OI-2 · 团队协作实验</p>
-          <h2>组织如何保存决策能力？</h2>
+          <p class="oi-kicker">组织智能 · 团队协作实验</p>
+          <h2>团队换了人，还能做好同样的事吗？</h2>
           <p>如果把一个团队的人全部换掉，只留下做事的方法和经验记录，新人还能把事情做好吗？这个实验就研究这件事。</p>
-          <p>三名虚拟成员一起选择救援地点，每人只知道一部分情况。我们比较直接投票和先汇集、核实信息两种做法，再看有没有留下经验记录、成员有没有换新，会怎样影响结果。这里的经验记录，是过去哪些消息来源更可信。</p>
-          <div class="oi-phases"><span>01 · 先做练习</span><span>02 · 比较换人与保留记录</span><span>03 · 再做新任务</span></div>
+          <h3>实验怎么做？</h3>
+          <ol class="oi2-steps">
+            <li><strong>三人各看一部分信息。</strong>三名虚拟成员分别了解需求、道路和物资，每次一起从四个地点中选一个去救援。每个人看到的信息都可能有误。</li>
+            <li><strong>用两种做法先练习。</strong>一种是各自判断后投票，另一种是先把信息放到一起、遇到疑点再查证。每支团队先做10道练习题，得知所选地点的实际情况，积累经验。</li>
+            <li><strong>比较换人和保留记录。</strong>有的团队保留“哪些消息来源更可信”的记录，有的不保留。练习后，再分别由原成员或全部新人继续。把两种做法、有无记录、是否换人搭配起来，共八种情况；新人不会继承原成员的私人经验。</li>
+            <li><strong>做相同的新题，看谁表现更好。</strong>同一组的八种情况各做20道相同的新题，这时不再更新经验。按选择的好坏打分，再扣掉沟通、查证和等待的成本，重点看换人后保留记录有没有帮助。</li>
+          </ol>
           <p class="oi-note">这是按固定规则运行的程序实验，不调用大模型，也不使用真实居民。结果用于检验研究思路，不能直接当作现实团队的结论。</p>
-          <form id="oi2Form" class="oi-form">
-            <label>独立组织种子数<input id="oi2Seeds" type="number" min="1" max="100" value="10" required /></label>
-            <label>起始随机种子<input id="oi2Seed" type="number" min="0" max="2147483647" value="20261024" required /></label>
-            <p id="oi2Budget" class="oi-note">10 个种子 ×（40 道训练任务 + 160 道测试任务）= 2,000 个任务；80 个测试单元；0 次外部请求。</p>
-            <button type="submit" class="btn primary" id="oi2Create" disabled>生成并冻结 OI-2 协议</button>
+        </article>
+        <article class="rw-card">
+          <h3>1 · 设置实验</h3>
+          <form id="oi2Form" class="oi-form oi2-setup">
+            <label>重复做几组？<input id="oi2Seeds" type="number" min="1" max="100" value="10" required /><span class="oi-note">每组换一批题，避免只凭一次表现下结论。建议先用默认的10组。</span></label>
+            <details><summary>更多设置（可以不改）</summary><label>题目编号<input id="oi2Seed" type="number" min="0" max="2147483647" value="20261024" required /><span class="oi-note">用相同的编号和组数，可以重新生成同一批题目。</span></label></details>
+            <p id="oi2Budget" class="oi-note">将做10组，共2,000题：400题练习，1,600题正式比较。不调用大模型。</p>
+            <button type="submit" class="btn primary" id="oi2Create" disabled>保存实验设置</button>
+            <p class="oi-note">保存后还不会运行。题目和规则会为这次实验固定下来；确认后，再点击「开始实验」。想换设置时，可以另建一次实验。</p>
           </form>
-          <p id="oi2Runtime" class="oi-note oi2-runtime" aria-live="polite">正在核对执行引擎…</p>
+          <p id="oi2Ready" class="oi-note" aria-live="polite">正在检查是否可以开始…</p>
           <p id="oi2Error" class="rw-warn" role="alert"></p>
+          <details id="oi2ErrorDetails" hidden><summary>查看具体原因</summary><pre id="oi2ErrorDiagnostic" class="oi-log"></pre></details>
+          <details><summary>查看服务信息</summary><pre id="oi2Runtime" class="oi-log oi2-runtime"></pre></details>
         </article>
         <article class="rw-card" id="oi2Study" hidden>
-          <div class="oi-heading"><h3>OI-2 研究记录</h3><strong id="oi2Status"></strong></div>
+          <div class="oi-heading"><h3 id="oi2StudyTitle">2 · 运行实验</h3><strong id="oi2Status"></strong></div>
           <p id="oi2Identity" class="oi-note oi2-runtime"></p>
-          <progress id="oi2Progress" max="1" value="0" aria-label="OI-2任务进度"></progress>
+          <progress id="oi2Progress" max="1" value="0" aria-label="实验做题进度"></progress>
           <pre id="oi2Metrics" class="oi-metrics" aria-live="polite"></pre>
           <p id="oi2Notice" class="oi-note" role="status"></p>
           <div class="oi-actions">
-            <button type="button" class="btn primary" id="oi2Run">启动冻结研究</button>
+            <button type="button" class="btn primary" id="oi2Run">开始实验</button>
             <button type="button" class="btn" id="oi2Pause" hidden>暂停</button>
-            <button type="button" class="btn" id="oi2Export">下载研究报告</button>
-            <button type="button" class="btn" id="oi2ProtocolDownload">下载冻结协议</button>
-            <button type="button" class="btn" id="oi2ResultsDownload">下载任务与动作证据</button>
+            <button type="button" class="btn" id="oi2Export">下载结果报告</button>
+            <button type="button" class="btn" id="oi2ProtocolDownload">下载实验设置</button>
+            <button type="button" class="btn" id="oi2ResultsDownload">下载每道题的详细记录</button>
           </div>
           <div id="oi2Results" class="oi2-table"></div>
-          <details><summary>查看预注册设计与机制</summary><pre id="oi2Protocol" class="oi-log"></pre></details>
+          <details><summary>查看这次实验的设置与运行信息</summary><pre id="oi2Technical" class="oi-log"></pre><pre id="oi2Protocol" class="oi-log"></pre></details>
         </article>
-        <details id="oiLegacy"><summary>历史 OI-1 在线模型实验与原始证据</summary>
+        <details id="oiLegacy"><summary>以前的大模型实验（会调用模型）</summary>
         <article class="rw-card">
           <p class="oi-kicker">组织智能 · 实验模板 01</p>
           <h2>人换了，组织还会吗？</h2>
-          <p>在同一组救援任务中，比较分散信息的汇集、组织档案与成员更替。先学习，再冻结经验，最后用新任务检验能力保留。</p>
-          <div class="oi-phases"><span>01 · 三轮训练</span><span>02 · 档案 / 换人</span><span>03 · 三轮新任务</span></div>
-          <p class="oi-note">探索性研究。程序按真实任务状态评分；每个测试条件每题均为四次模型请求。组织档案另用一次归纳调用。不据此推断真人组织或一般智能。</p>
+          <p>这是以前使用大模型做决策的版本：先让成员完成练习并总结经验，再比较换人、保留经验记录后，团队做新题的表现。</p>
+          <div class="oi-phases"><span>01 · 先做练习</span><span>02 · 总结经验、比较换人</span><span>03 · 做新题看表现</span></div>
+          <p class="oi-note">这个版本每道题需要调用模型多次，可能受网络和服务额度影响。已有失败记录保留在这里，可以查看原始回答；它们不会算入上面的程序实验。</p>
           <form id="oiForm" class="oi-form">
             <label>实验模型<select id="oiProvider" required></select></label>
-            <label>独立运行组数<input id="oiRepeats" type="number" min="1" max="20" value="3" required /></label>
-            <label>随机种子<input id="oiSeed" type="number" min="0" max="2147483548" value="20261020" required /></label>
+            <label>重复做几组？<input id="oiRepeats" type="number" min="1" max="20" value="3" required /></label>
+            <label>题目生成编号<input id="oiSeed" type="number" min="0" max="2147483548" value="20261020" required /></label>
             <p id="oiBudget" class="oi-note"></p>
-            <button type="submit" class="btn primary" id="oiCreate">生成并冻结实验协议</button>
+            <button type="submit" class="btn primary" id="oiCreate">保存实验设置</button>
           </form>
+          <p class="oi-note">这一步只保存设置，不会调用模型。确认后点击「开始大模型实验」才会运行，费用按模型服务计收。</p>
           <p id="oiError" class="rw-warn" role="alert"></p>
         </article>
         <article class="rw-card" id="oiStudy" hidden>
           <div class="oi-heading"><h3 id="oiStudyTitle">研究记录</h3><strong id="oiStatus"></strong></div>
           <p id="oiIdentity" class="oi-note"></p>
           <progress id="oiProgress" max="1" value="0" aria-label="研究进度"></progress>
-          <pre id="oiMetrics" class="oi-metrics" aria-live="polite"></pre>
+          <details><summary>查看调用次数和耗时</summary><pre id="oiMetrics" class="oi-metrics" aria-live="polite"></pre></details>
           <p id="oiNotice" class="oi-note" role="status"></p>
           <div class="oi-actions">
-            <button type="button" class="btn primary" id="oiRun">按冻结协议启动研究</button>
+            <button type="button" class="btn primary" id="oiRun">开始大模型实验</button>
             <button type="button" class="btn" id="oiStop" hidden>停止研究</button>
-            <button type="button" class="btn" id="oiRecover" hidden>从断点生成恢复协议</button>
+            <button type="button" class="btn" id="oiRecover" hidden>准备接着运行</button>
             <button type="button" class="btn" id="oiExport">下载研究报告</button>
-            <button type="button" class="btn" id="oiProtocolDownload">下载冻结协议</button>
-            <button type="button" class="btn" id="oiAuditDownload">下载完整审计日志</button>
+            <button type="button" class="btn" id="oiProtocolDownload">下载实验设置</button>
+            <button type="button" class="btn" id="oiAuditDownload">下载所有调用记录</button>
           </div>
           <div id="oiResults"></div>
           <details id="oiDiagnosticDetails" hidden><summary>查看原始错误诊断</summary><pre id="oiDiagnostic" class="oi-log"></pre></details>
-          <details><summary>查看协议、居民与任务设置</summary><pre id="oiProtocol" class="oi-log"></pre></details>
+          <details><summary>查看实验设置、参与成员和题目</summary><pre id="oiProtocol" class="oi-log"></pre></details>
           <details id="oiLogDetails"><summary>查看实际请求与原始回答</summary><p class="oi-note">窗口保留最近读入的 60,000 字符；完整证据可用上方按钮下载。</p><pre id="oiLogs" class="oi-log"></pre></details>
         </article>
         </details>
       </div>
       <aside class="rw-column">
-        <article class="rw-card"><h3>OI-2 研究</h3><p class="oi-note">比较两种做事方式、是否保留团队经验、是否更换成员，共八种情况。暂停后可以接着运行，已完成的任务不会重做。</p><div id="oi2Studies"></div></article>
+        <article class="rw-card"><h3>以前的实验</h3><p class="oi-note">点击记录可以查看进度和结果。暂停后可以接着运行，已完成的题不会重做。</p><div id="oi2Studies"></div></article>
         <article class="rw-card"><h3>怎样判断做得更好？</h3><p class="oi-note">先看团队选得好不好，再扣掉沟通、查证和等待的成本。重点看：成员全部换新后，保留团队经验是否还有帮助。所有任务完成后才给出比较结果。</p></article>
-        <details><summary>OI-1 历史记录</summary><article class="rw-card"><p class="oi-note">保留失败证据与原协议。旧记录不并入 OI-2。</p><div id="oiStudies"></div></article></details>
+        <details><summary>以前的大模型实验记录</summary><article class="rw-card"><p class="oi-note">设置和回答都已保留，不会算入上面的程序实验。</p><div id="oiStudies"></div></article></details>
       </aside>
+      </div></details>
     </section>
 
     <section class="studio-main rw-main" id="rwPanePlan" role="tabpanel" aria-labelledby="rwTabPlan">
@@ -537,6 +555,8 @@
   <script src="/site/dashboard/research-batches.js"></script>
   <script src="/site/dashboard/organization-intelligence.js"></script>
   <script src="/site/dashboard/organization-intelligence-v2.js"></script>
+  <script src="/site/dashboard/organization-comparison-core.js"></script>
+  <script src="/site/dashboard/organization-comparison.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
   <script src="/site/dashboard/replication.js"></script>

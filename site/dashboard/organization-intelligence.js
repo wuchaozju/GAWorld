@@ -2,7 +2,7 @@
   "use strict";
   var base = "/api/research/organization-intelligence";
   var state = { record: null, studies: [], timer: null, offset: 0, log: "", busy: false, loading: false };
-  var labels = { draft: "协议已冻结", running: "正在运行", stopping: "正在停止", stopped: "已停止", completed: "已完成", failed: "失败 · 证据已保留", interrupted: "已中断", rate_limited: "等待配额恢复 · 断点已保存" };
+  var labels = { draft: "设置已保存，尚未开始", running: "正在运行", stopping: "正在停止", stopped: "已停止", completed: "已完成", failed: "未完成，已有回答已保存", interrupted: "已中断", rate_limited: "等待配额恢复，已有回答已保存" };
   function $(id) { return document.getElementById(id); }
   function esc(value) { return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) { return {"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]; }); }
   function seconds(value) { return value == null ? "待估计" : Math.round(value) + " 秒"; }
@@ -13,7 +13,7 @@
     return data;
   }
   function fail(error) { $("oiError").textContent = error.message || String(error); }
-  function budget() { $("oiBudget").textContent = "当前城市：" + ($("oiForm").dataset.city || "加载中") + "。预计 " + (Number($("oiRepeats").value) * 109) + " 次请求；请求开始间隔至少 10 秒，每次最多 2048 输出 token。限流保存断点，恢复需显式启动，无自动重试或模型回退。实际费用取决于模型服务。"; }
+  function budget() { $("oiBudget").textContent = "当前城市：" + ($("oiForm").dataset.city || "加载中") + "。预计调用模型 " + (Number($("oiRepeats").value) * 109) + " 次，费用取决于模型服务。每两次调用至少间隔10秒。遇到服务限制时会保存进度；接着运行需要你点击开始，不会自动重试或更换模型。"; }
   function download(name, text, type) {
     var url = URL.createObjectURL(new Blob([text], { type: type || "text/plain;charset=utf-8" }));
     var a = document.createElement("a"); a.href = url; a.download = name; a.click();
@@ -22,7 +22,7 @@
   function results(record) {
     var analysis = record.analysis;
     if (!analysis || !analysis.complete) { $("oiResults").textContent = "待全部条件完成后生成比较。已有部分结果不用于判断组织收益。"; return; }
-    var html = '<p class="oi-note">' + esc(analysis.inference) + '</p><table><thead><tr><th>预注册比较</th><th>平均效用差</th></tr></thead><tbody>';
+    var html = '<p class="oi-note">' + esc(analysis.inference) + '</p><table><thead><tr><th>要比较的情况</th><th>平均成绩差</th></tr></thead><tbody>';
     analysis.contrasts.forEach(function (c) { html += "<tr><td>" + esc(c.label) + "</td><td>" + (c.mean > 0 ? "+" : "") + Number(c.mean).toFixed(3) + "</td></tr>"; });
     $("oiResults").innerHTML = html + "</tbody></table>";
   }
@@ -46,7 +46,7 @@
       (record.waiting_for_slot ? "\n等待下一请求时段（计入等待时间）" : "");
     var info = record.rate_limit, provenance = p.recovery;
     $("oiNotice").textContent = info ? info.message + " 最早可重试：" + new Date(info.retry_at * 1000).toLocaleString() + "。" + info.hint :
-      (proxyLost ? "请求经代理连接模型服务时中断。请检查代理服务和网络连接，恢复稳定后从断点生成恢复协议；已完成回答将校验复用，原始错误保留在下方。" :
+      (proxyLost ? "请求经代理连接模型服务时中断。请检查代理服务和网络连接。恢复稳定后，点击「准备接着运行」保存断点设置，再点击「开始大模型实验」。会继续使用已完成的回答，具体错误保留在下方。" :
       (record.error ? "回答或运行异常；证据和已完成回答已保存，请查看原始错误诊断。" :
       (provenance ? "恢复来源 " + provenance.source_id + "；将复用 " + provenance.responses + " 份已校验回答，启动后只请求后续步骤。这是原研究的延续。" : "")));
     $("oiDiagnosticDetails").hidden = !record.error;
@@ -93,7 +93,7 @@
     renderList();
   }
   function renderList() {
-    $("oiStudies").innerHTML = state.studies.length ? state.studies.map(function (r) { return '<button type="button" class="oi-record" data-oi="' + esc(r.id) + '" aria-current="' + Boolean(state.record && state.record.id === r.id) + '">' + esc(labels[r.display_status || r.status] || r.status) + " · " + (r.calls_completed || 0) + " 次响应<br>" + esc(r.id) + '</button>'; }).join("") : '<p class="oi-note">尚无研究，先生成一份实验协议。</p>';
+    $("oiStudies").innerHTML = state.studies.length ? state.studies.map(function (r) { return '<button type="button" class="oi-record" data-oi="' + esc(r.id) + '" aria-current="' + Boolean(state.record && state.record.id === r.id) + '">' + esc(labels[r.display_status || r.status] || r.status) + " · " + (r.calls_completed || 0) + " 次响应<br>" + esc(r.id) + '</button>'; }).join("") : '<p class="oi-note">还没有记录，先保存实验设置。</p>';
   }
   async function action(fn) {
     if (state.busy) return;

@@ -91,6 +91,11 @@ EPOCHS: tuple[Epoch, ...] = (
           "交付成功后把用上的技能挂到居民身上，工作记忆里记下运用了哪些技能",
           ("work", "skills", "memory", "cognition"),
           "gaworld/work/skill_lookup.py; tests/test_skill_search.py"),
+    Epoch(12, "2026-10-26",
+          "时间合理性层（默认开）：日程里时间与活动对不上的项被挪回合理窗口，"
+          "不合时机的动作被降权，模型临时改程提出的新活动要过时间这一关",
+          ("schedule", "action", "routine_change"),
+          "gaworld/sim/_timefit.py; docs/proposals/2026-10-26-time-plausibility.md"),
 )
 
 #: The epoch of the code that is running now.

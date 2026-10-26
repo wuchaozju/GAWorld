@@ -29,6 +29,25 @@ def integration_settings() -> dict[str, Any]:
                 "max_rounds": 20,
             },
         },
+        # Swarm crowdsourcing (gaworld/crowdsourcing/*): one task handed to a
+        # large pool of residents, answered independently, scored, and the
+        # pool narrowed towards whoever did well over several rounds.
+        "crowdsourcing": {
+            "enabled": True,
+            "sessions_dir": "output/crowdsourcing/sessions",
+            "max_concurrent_sessions": 1,
+            "max_pool_size": 200,
+            "max_rounds": 8,
+            "max_participants_per_round": 32,
+            "max_parallel_calls": 6,
+            "step_retries": 1,
+            "default_strategy": "market",
+            # How strongly a round's credit moves an agent's own bid. This is
+            # the "learned self-orchestration" step of market-based
+            # post-training: the crowd's outcome feeds back into who is
+            # willing to take the next job.
+            "learning_rate": 0.35,
+        },
         # Real Work Execution (gaworld/work/*).
         # When enabled, "工作"-class activities can be dispatched to local adapters
         # that produce real artifacts under artifacts_dir, and agents can browse a

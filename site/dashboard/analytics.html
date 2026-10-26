@@ -4,55 +4,81 @@
   <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title data-i18n="analytics.page_title">GAWorld · 结果分析</title>
+  <title data-i18n="results.page_title">GAWorld · 回放与分析</title>
   <meta name="description" data-i18n-content="analytics.meta_description" content="GAWorld 仿真结果可视化：状态变化、经济轨迹、社交网络、行为分布与事件时间线" />
   <link rel="stylesheet" href="/site/dashboard/styles.css" />
   <link rel="stylesheet" href="/site/dashboard/analytics.css" />
   <link rel="stylesheet" href="/site/brand.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
+  <link rel="stylesheet" href="/site/dashboard/results-workbench.css" />
 </head>
-<body>
-  <main class="shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="kicker gaworld-page-brand"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="30" height="30" />GAWorld Analytics</p>
-        <h1 data-i18n="analytics.headline">仿真结果分析</h1>
-        <p class="hero-sub" data-i18n="analytics.hero_sub">状态变化 · 经济轨迹 · 社交网络 · 行为分布 · 事件时间线</p>
-      </div>
-      <div class="hero-status">
-        <label class="an-run-picker">
-          <span data-i18n="analytics.run">运行</span>
-          <select id="anRunSelect"></select>
-        </label>
-        <span id="anStatus" class="an-status is-busy" data-i18n="analytics.loading">加载中…</span>
-        <button id="anRefreshBtn" class="button small" data-i18n="analytics.refresh">刷新数据</button>
-        <details class="an-export" id="anExport">
+<body data-results-workbench>
+  <main class="shell results-shell">
+    <header class="results-masthead">
+      <div class="results-heading">
+        <div><p class="results-kicker">GAWORLD / RUN OBSERVATORY</p>
+          <h1 data-i18n="results.title">回放与分析</h1>
+          <p class="results-sub" data-i18n="results.subtitle">沿着时间，观察居民与城市的变化。</p>
+        </div>
+        <div class="results-header-actions">
+          <button id="anRefreshBtn" type="button" data-i18n="analytics.refresh">刷新数据</button>
+          <details class="an-export" id="anExport">
           <summary class="button small" data-i18n="analytics.export">导出结果</summary>
           <div class="an-export-menu">
+            <p id="exportState" class="results-export-state" role="status" data-i18n="results.export_wait">正在读取所选运行的专题数据，请稍后导出。</p>
             <button type="button" data-export="html"><span data-i18n="analytics.export_html">HTML 报告</span><em data-i18n="analytics.export_html_note">含全部图表，可离线打开 / 打印成 PDF</em></button>
-            <button type="button" data-export="json"><span data-i18n="analytics.export_json">原始数据 JSON</span><em data-i18n="analytics.export_json_note">接口原样返回，便于二次分析</em></button>
+            <button type="button" data-export="json"><span data-i18n="analytics.export_json">原始数据 JSON</span><em data-i18n="analytics.export_json_note">统计数据与本次轨迹居民名称，便于二次分析</em></button>
             <button type="button" data-export="csv"><span data-i18n="analytics.export_csv">CSV 数据包（.zip）</span><em data-i18n="analytics.export_csv_note">逐表拆分，可导入 Excel / pandas</em></button>
             <button type="button" data-export="md"><span data-i18n="analytics.export_md">Markdown 摘要</span><em data-i18n="analytics.export_md_note">文字版结论，可贴进论文 / 周报</em></button>
           </div>
         </details>
-      </div>
-    </header>
-
-    <p id="anRunNote" class="an-run-note" hidden></p>
-
-    <section class="panel" id="anSystemPanel" hidden>
-      <div class="section-head">
-        <div>
-          <p class="kicker">System</p>
-          <h2 data-i18n="analytics.system_heading">系统分析 · 综合面板</h2>
         </div>
-        <span class="help-tip" data-i18n-help="analytics.system_hint" data-help="整个 GAWorld 系统的整体观察：当前世界、本世界内的运行 KPI，以及跨世界汇总（城市 / 平行世界研究 / 研究工作台 / 群体采访 / 人物画像 / 实验 / 立法会成员等）。每张卡片可点击展开查看详细列表。"></span>
       </div>
-      <div id="anSystemKpis" class="an-kpis"></div>
-      <div id="anSystemHealth" class="an-system-health"></div>
-      <div id="anSystemGrid" class="an-system-grid"></div>
+      <nav class="results-tabs" role="tablist" data-i18n-aria="results.views" aria-label="结果视图">
+        <button id="replayTab" role="tab" aria-selected="true" aria-controls="resultsReplay" data-results-view="replay" data-i18n="results.replay">联动回放</button>
+        <button id="analysisTab" role="tab" aria-selected="false" aria-controls="resultsAnalysis" data-results-view="analysis" tabindex="-1" data-i18n="results.analysis">专题分析</button>
+        <button id="systemTab" role="tab" aria-selected="false" aria-controls="resultsSystem" data-results-view="system" tabindex="-1" data-i18n="results.system" hidden>系统概览</button>
+      </nav>
+    </header>
+    <section class="results-runbar" data-i18n-aria="results.run_controls" aria-label="运行选择">
+      <label class="results-search"><span data-i18n="results.search">查找运行</span><input id="runSearch" type="search" data-i18n-placeholder="results.search_placeholder" placeholder="城市、场景或日期" /></label>
+      <label><span data-i18n="results.source">来源</span><select id="runKind"><option value="" data-i18n="results.all_runs">全部运行</option><option value="live" data-i18n="results.current_source">当前数据源</option><option value="archive" data-i18n="results.archives">历史存档</option><option value="scenario" data-i18n="results.scenarios">场景运行</option></select></label>
+      <label class="results-run-select"><span id="runCount" data-i18n="analytics.run">运行</span><select id="anRunSelect"></select></label>
+      <div id="runHealth" class="results-health" role="status"></div>
     </section>
+    <p id="resultsMessage" class="results-message" role="status" hidden></p>
+    <section id="resultsReplay" role="tabpanel" aria-labelledby="replayTab" data-results-pane="replay">
+      <div class="results-summary" id="runSummary"></div>
+      <div class="results-stage" data-scene-workspace>
+        <section class="results-scene">
+          <header class="results-panel-head"><div><span class="results-eyebrow" data-i18n="results.scene">城市现场</span><strong id="frameStamp">—</strong></div>
+            <div class="scene-modes" role="group" data-i18n-aria="results.scene_mode" aria-label="场景模式"><button type="button" data-scene-mode="city" aria-pressed="true" data-i18n="results.city">地图</button><button type="button" data-scene-mode="indoor" aria-pressed="false" data-i18n="results.indoor">室内</button></div>
+          </header>
+          <div class="results-map" data-city-view><canvas id="mapCanvas" width="1200" height="650" aria-label="Simulation map"></canvas></div>
+          <div id="indoorView" class="results-indoor" hidden></div>
+          <div class="results-scene-caption"><span id="sceneCaption">—</span><label><input id="thoughtsToggle" type="checkbox" checked /><span data-i18n="results.thought_bubbles">显示想法</span></label></div>
+        </section>
+        <aside class="results-inspector">
+          <header class="results-panel-head"><span class="results-eyebrow" data-i18n="results.resident">观察居民</span><span id="residentCount"></span></header>
+          <label class="results-agent-picker"><span class="sr-only" data-i18n="results.pick_resident">选择居民</span><select id="residentSelect"></select></label>
+          <div id="residentDetail" class="results-resident-detail"></div>
+        </aside>
+      </div>
+      <section class="results-signals">
+        <header class="results-panel-head"><div><span class="results-eyebrow" data-i18n="results.signals">状态轨迹</span><span id="signalScope" class="results-muted"></span></div><span class="results-muted" data-i18n="results.chart_hint">点击曲线定位时刻</span></header>
+        <div class="results-metrics" id="metricPicker" role="group" data-i18n-aria="results.metrics" aria-label="显示指标"></div>
+        <div id="signalCharts" class="results-charts"></div>
+      </section>
+      <section class="results-events">
+        <header class="results-panel-head"><div><span class="results-eyebrow" data-i18n="results.events">事件与环境</span><span id="eventCount" class="results-muted"></span></div><label><span class="sr-only" data-i18n="results.search_events">搜索事件</span><input type="search" id="eventSearch" data-i18n-placeholder="results.search_events" placeholder="搜索事件" /></label></header>
+        <div id="eventList" class="results-event-list"></div>
+        <details class="results-context"><summary data-i18n="results.context">查看当前环境记录</summary><p id="frameContext"></p></details>
+      </section>
+    </section>
+    <section id="resultsAnalysis" role="tabpanel" aria-labelledby="analysisTab" data-results-pane="analysis" hidden>
+      <div class="results-analysis-note"><p data-i18n="results.analysis_note">以下为所选运行的全程统计或最后保存的快照，不随回放游标变化。</p><span id="anStatus" class="an-status" role="status" data-i18n="results.analysis_pending">专题数据待加载</span></div>
+    <p id="anRunNote" class="an-run-note" hidden></p>
 
     <section class="panel">
       <div class="section-head">
@@ -208,11 +234,46 @@
         </article>
       </div>
     </section>
+    </section>
+    <section id="resultsSystem" role="tabpanel" aria-labelledby="systemTab" data-results-pane="system" hidden>
+    <section class="panel" id="anSystemPanel" hidden>
+      <div class="section-head">
+        <div>
+          <p class="kicker">System</p>
+          <h2 data-i18n="analytics.system_heading">系统分析 · 综合面板</h2>
+        </div>
+        <span class="help-tip" data-i18n-help="analytics.system_hint" data-help="整个 GAWorld 系统的整体观察：当前世界、本世界内的运行 KPI，以及跨世界汇总（城市 / 平行世界研究 / 研究工作台 / 群体采访 / 人物画像 / 实验 / 立法会成员等）。每张卡片可点击展开查看详细列表。"></span>
+      </div>
+      <div id="anSystemKpis" class="an-kpis"></div>
+      <div id="anSystemHealth" class="an-system-health"></div>
+      <div id="anSystemGrid" class="an-system-grid"></div>
+    </section>
+    </section>
+    <footer class="results-transport" id="resultsTransport">
+      <div class="results-playback">
+        <button type="button" id="firstFrame" data-i18n-title="results.first" title="第一帧" data-i18n-aria="results.first" aria-label="第一帧">|‹</button>
+        <button type="button" id="previousFrame" data-i18n-title="results.previous" title="上一帧" data-i18n-aria="results.previous" aria-label="上一帧">‹</button>
+        <button type="button" id="playBtn" class="results-play" data-i18n="results.play">播放</button>
+        <button type="button" id="nextFrame" data-i18n-title="results.next" title="下一帧" data-i18n-aria="results.next" aria-label="下一帧">›</button>
+        <button type="button" id="lastFrame" data-i18n-title="results.last" title="最后一帧" data-i18n-aria="results.last" aria-label="最后一帧">›|</button>
+      </div>
+      <div class="results-timeline"><label for="timeline"><span id="timeLabel">—</span><span id="framePosition">0 / 0</span></label><input id="timeline" type="range" min="0" max="0" value="0" data-i18n-aria="results.timeline" aria-label="回放时间轴" /></div>
+      <label class="results-speed"><span class="sr-only" data-i18n="results.speed">播放速度</span><select id="speedSelect"><option value="2000">0.5×</option><option value="1000" selected>1×</option><option value="500">2×</option><option value="250">4×</option></select></label>
+      <label class="results-jump"><span class="sr-only" data-i18n="results.jump">跳转时间</span><select id="timeJump" data-i18n-aria="results.jump" aria-label="跳转时间"></select></label>
+    </footer>
   </main>
   <script src="/site/dashboard/i18n.js"></script>
   
   <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/help.js"></script>
   <script src="/site/dashboard/analytics-export.js"></script>
+  <script src="/site/dashboard/agent-thought.js"></script>
+  <script src="/site/dashboard/citymap-view.js"></script>
+  <script src="/site/simviz/spatial-tree.js"></script>
+  <script src="/site/vendor/phaser.min.js"></script>
+  <script src="/site/simviz/phaser-app.js" data-indoor-only></script>
+  <script src="/site/dashboard/indoor-view.js"></script>
+  <script src="/site/dashboard/results-core.js"></script>
   <script src="/site/dashboard/analytics.js"></script>
+  <script src="/site/dashboard/results-workbench.js"></script>
 </body>
 </html>
