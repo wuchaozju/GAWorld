@@ -44,6 +44,9 @@ export const NodeWorkspacePanel: React.FC<NodeWorkspacePanelProps> = ({
     () => nodes.find((node) => node.id === selectedNodeId) || nodes[0] || null,
     [nodes, selectedNodeId],
   );
+  // Disable Advance while the selected node itself is known to be running
+  // (graph.running → status 'running'), not only while a request is pending.
+  const selectedNodeRunning = selectedNode?.status === 'running';
 
   const nodeLookup = React.useMemo(
     () => new globalThis.Map(nodes.map((node) => [node.id, node])),
@@ -174,7 +177,7 @@ export const NodeWorkspacePanel: React.FC<NodeWorkspacePanelProps> = ({
         <div className="ss-node-workspace__action-row">
           <button
             onClick={() => void advanceSimulation()}
-            disabled={!selectedNodeId || isGenerating || isCompareMode}
+            disabled={!selectedNodeId || isGenerating || selectedNodeRunning || isCompareMode}
             className="ss-button"
           >
             <Play size={15} />

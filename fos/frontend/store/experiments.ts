@@ -17,6 +17,15 @@ import { buildSummaryPrompt } from '../utils/summaryPrompt';
 import { extractApiErrorMessage, getBackendErrorDetail } from '../utils/apiError';
 import i18n from '../i18n';
 
+// Module-level single-flight guard for advanceSimulation: a rapid double-click
+// must send exactly ONE advance request, even before isGenerating is observed
+// by a second invocation (task 2913 duplicate-submit guard).
+let advanceInFlight = false;
+
+/** True when an API error carries an HTTP 409 status (client.ts throws
+ * `Error("<status> <statusText>")` for non-2xx responses). */
+const isConflictError = (e: unknown): boolean => /^409\b/.test(String((e as Error)?.message ?? ''));
+
 export interface ExperimentsSlice {
   // Comparison state
   compareTargetNodeId: string | null;
@@ -232,6 +241,7 @@ export const createExperimentsSlice: StateCreator<
   advanceSimulation: async () => {
     const state = get() as any;
     if (!state.currentSimulation || !state.selectedNodeId || state.isGenerating) return;
+    if (advanceInFlight) return;
 
     const parentNode = state.nodes?.find((n: any) => n.id === state.selectedNodeId);
     if (!parentNode) {
@@ -240,6 +250,7 @@ export const createExperimentsSlice: StateCreator<
       return;
     }
 
+    advanceInFlight = true;
     set({ isGenerating: true } as any);
 
     try {
@@ -283,6 +294,15 @@ export const createExperimentsSlice: StateCreator<
         try {
           res = await treeAdvanceChain(base, simId, parentNumeric, 1, token);
         } catch (advanceError: any) {
+          // Duplicate submit while the same parent is already advancing —
+          // the backend answered 409 immediately. Informational only: no
+          // error toast, no graph polling for a new child, running state kept.
+          if (isConflictError(advanceError)) {
+            console.warn('[advanceSimulation] Duplicate advance rejected (409): node already advancing');
+            state.addNotification?.('info', i18n.t('store.nodeAlreadyAdvancing') || 'This node is already running.');
+            set({ isGenerating: false } as any);
+            return;
+          }
           // Proxy timeout (504) — backend likely already created the child node.
           // Poll the tree graph to find the newly created child.
           console.warn('[advanceSimulation] advance_chain failed, polling graph for new child...', advanceError?.message || advanceError);
@@ -455,6 +475,8 @@ export const createExperimentsSlice: StateCreator<
       const detail = getBackendErrorDetail(e);
       const base = i18n.t('store.simulationAdvanceFailed') || 'Simulation advance failed';
       state.addNotification?.('error', detail !== null ? `${base}: ${detail}` : base);
+    } finally {
+      advanceInFlight = false;
     }
   },
 

@@ -2691,6 +2691,7 @@
     "batchExperimentStarted": "批量实验「{{name}}」已启动",
     "comparisonAnalysisFailed": "比较分析失败",
     "selectedNodeNotFound": "在仿真树中未找到所选节点，请尝试刷新仿真。",
+    "nodeAlreadyAdvancing": "该节点已在推进中。",
     "branchCreated": "分支已创建",
     "simulationReport": "仿真实验分析报告",
     "generatedAt": "生成时间",

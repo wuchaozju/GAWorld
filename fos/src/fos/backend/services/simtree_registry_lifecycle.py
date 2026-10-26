@@ -19,6 +19,31 @@ class SimTreeRecord:
         self.running: set[int] = set()
         self._suggestions_viewed_intervals: set[int] = set()
         self._advance_lock: asyncio.Lock = asyncio.Lock()
+        # Per-parent in-flight advance claims (request-level idempotency):
+        # a duplicate Advance on the same parent gets an immediate 409
+        # instead of silently queueing on _advance_lock and creating a
+        # duplicate sibling child. Independent parents advance in parallel.
+        self.advancing_parents: set[int] = set()
+        self.advance_claim_lock: asyncio.Lock = asyncio.Lock()
+
+    async def claim_advance_parent(self, parent_id: int) -> bool:
+        """Atomically claim an in-flight advance on ``parent_id``.
+
+        The lock is held ONLY for the bookkeeping check-and-set — never
+        during the simulation run itself. Returns False when the parent is
+        already advancing (caller answers 409).
+        """
+        async with self.advance_claim_lock:
+            if parent_id in self.advancing_parents:
+                return False
+            self.advancing_parents.add(parent_id)
+            return True
+
+    def release_advance_parent(self, parent_id: int) -> None:
+        """Release a per-parent advance claim (idempotent). Must be called
+        on every exit path: success, provider/subprocess failure, timeout,
+        cancel, unexpected exception."""
+        self.advancing_parents.discard(parent_id)
 
     def replace_tree(self, tree: SimTree) -> None:
         self.cleanup_runtime_resources()

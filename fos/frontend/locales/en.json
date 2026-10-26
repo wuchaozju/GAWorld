@@ -2697,6 +2697,7 @@
     "batchExperimentStarted": "Batch experiment \"{{name}}\" started",
     "comparisonAnalysisFailed": "Comparison analysis failed",
     "selectedNodeNotFound": "Selected node not found in the simulation tree. Please try refreshing the simulation.",
+    "nodeAlreadyAdvancing": "This node is already running.",
     "localDemoComparison": "Local demo comparison",
     "timeAdvancedTo": "Time advanced to round {{round}}",
     "offlineModeNoAction": "Cannot perform this action in offline mode",

@@ -111,7 +111,7 @@ export const TopologyStructureModal: React.FC<TopologyStructureModalProps> = ({
                 type="button"
                 className="ss-topology-modal__primary"
                 onClick={() => void advanceSimulation()}
-                disabled={!selectedNodeId || isGenerating}
+                disabled={!selectedNodeId || isGenerating || selectedNode?.status === 'running'}
               >
                 <Play size={16} />
                 <span>

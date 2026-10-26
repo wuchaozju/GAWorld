@@ -209,6 +209,7 @@
       "provider_model_required": "LLM model required",
       "missing_bearer_token": "Missing bearer token",
       "tree_node_not_found": "Tree node not found",
+      "advance_in_progress": "Node {parent} is already advancing",
       "provider_not_authorized": "Not authorized to access this provider",
       "provider_test_failed": "Provider test failed. Check your configuration and credentials.",
       "template_not_found": "Template not found",
