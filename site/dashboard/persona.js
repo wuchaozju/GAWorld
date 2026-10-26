@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* 真人蒸馏 — 从一个姓名或一个网址造出对应的智能体。
  *
  * 面板做三件事：起任务、看进度、复核结果。三步之间刻意隔开：
@@ -99,7 +101,7 @@
     if (!box) return;
     var running = !!(state.job && state.job.status === "running");
     box.innerHTML =
-      '<div class="pd-box" role="dialog" aria-modal="true" aria-label="' + esc(t("title", "从真人蒸馏")) + '">' +
+      gwHTML('<div class="pd-box" role="dialog" aria-modal="true" aria-label="' + esc(t("title", "从真人蒸馏")) + '">' +
         '<div class="pd-head-bar">' +
           "<h3>" + esc(t("title", "从真人蒸馏")) + "</h3>" +
           '<button type="button" class="mini-btn" id="pdClose" aria-label="' + esc(t("close", "关闭")) + '">✕</button>' +
@@ -124,7 +126,7 @@
           "</aside>" +
         "</div>" +
         actionBar() +
-      "</div>";
+      "</div>");
     bind();
   }
 

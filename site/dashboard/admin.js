@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /*
  * 教师控制台 (Teacher Console): limits, invite codes, roster and usage, every
  * world, class-wide events, audit. Admins only -- the console shows the tab to
@@ -71,7 +74,7 @@
 
   function download(name, text) {
     var link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+    link.href = gwURL(URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" })));
     link.download = name;
     document.body.appendChild(link);
     link.click();
@@ -101,7 +104,7 @@
   function loadInvites() {
     return api("GET", "/api/auth/invites").then(function (data) {
       var body = $("aInviteRows");
-      body.innerHTML = "";
+      body.innerHTML = gwHTML("");
       data.invites.forEach(function (inv) {
         var row = document.createElement("tr");
         cell(row, inv.label || "—");
@@ -123,7 +126,7 @@
       expires_days: Number($("aExpires").value),
       can_create_city: $("aCanCity").checked,
     }).then(function (data) {
-      var base = location.origin + "/join?code=";
+      var base = location.origin + gwURL("/join?code=");
       $("aCodes").textContent = data.codes.map(function (code) { return base + code; }).join("\n");
       $("aCodes").hidden = false;
       return loadInvites();
@@ -135,7 +138,7 @@
   function loadUsers() {
     return api("GET", "/api/auth/usage").then(function (data) {
       var body = $("aUsers");
-      body.innerHTML = "";
+      body.innerHTML = gwHTML("");
       var now = Date.now() / 1000;
       data.users.forEach(function (u) {
         var row = document.createElement("tr");
@@ -157,7 +160,7 @@
         cell(row, box);
         cell(row, button(t("admin.reset", "重置密码"), function () {
           api("POST", "/api/auth/users/" + u.id + "/reset", {}).then(function (res) {
-            $("aCodes").textContent = u.nickname + " · " + location.origin + "/reset?code=" + res.code;
+            $("aCodes").textContent = u.nickname + " · " + location.origin + gwURL("/reset?code=" + res.code);
             $("aCodes").hidden = false;
             say(t("admin.reset_note", "重置链接 24 小时内有效，只显示这一次。"));
           }, fail);
@@ -175,7 +178,7 @@
     return api("GET", "/api/worlds").then(function (data) {
       worldList = data.worlds || [];
       var body = $("aWorlds");
-      body.innerHTML = "";
+      body.innerHTML = gwHTML("");
       worldList.forEach(function (w) {
         var row = document.createElement("tr");
         cell(row, w.name);
@@ -205,7 +208,7 @@
     var box = $("aTargets");
     var checked = {};
     box.querySelectorAll("input:checked").forEach(function (el) { checked[el.value] = true; });
-    box.innerHTML = "";
+    box.innerHTML = gwHTML("");
     [{ id: "", name: t("world.shared", "共享世界（默认）") }].concat(worldList).forEach(function (w) {
       var label = document.createElement("label");
       var input = document.createElement("input");
@@ -241,7 +244,7 @@
   function loadAudit() {
     return api("GET", "/api/auth/audit").then(function (data) {
       var body = $("aAudit");
-      body.innerHTML = "";
+      body.innerHTML = gwHTML("");
       data.audit.slice(0, 50).forEach(function (a) {
         var row = document.createElement("tr");
         cell(row, day(a.at));

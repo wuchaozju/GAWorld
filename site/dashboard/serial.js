@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // Serial Drama — pick residents, pick a theme, get a multi-episode shot-card script.
 //
 //   GET  /api/games/serial/catalogue     -> theme presets, style presets, limits
@@ -45,7 +48,7 @@ async function boot() {
 
   // Theme options
   const themeSel = $("#sTheme");
-  themeSel.innerHTML = "";
+  themeSel.innerHTML = gwHTML("");
   for (const t of cat.body.themes) {
     const opt = document.createElement("option");
     opt.value = t.id;
@@ -60,7 +63,7 @@ async function boot() {
 
   // Style options
   const styleSel = $("#sStyle");
-  styleSel.innerHTML = "";
+  styleSel.innerHTML = gwHTML("");
   for (const s of cat.body.styles) {
     const opt = document.createElement("option");
     opt.value = s.id;
@@ -108,7 +111,7 @@ function syncStyleHint() {
 
 async function loadCities() {
   const citySel = $("#sCity");
-  citySel.innerHTML = "";
+  citySel.innerHTML = gwHTML("");
   try {
     const resp = await fetch("/api/city/catalogue");
     if (resp.ok) {
@@ -151,7 +154,7 @@ async function loadAgents() {
 
 function renderAgents() {
   const list = $("#sAgents");
-  list.innerHTML = "";
+  list.innerHTML = gwHTML("");
   if (!state.agents.length) {
     const empty = document.createElement("li");
     empty.className = "disaster-empty";
@@ -175,7 +178,7 @@ function renderAgents() {
       li.classList.toggle("is-picked", cb.checked);
     });
     const text = document.createElement("span");
-    text.innerHTML = `<b>#${agent.id} ${escapeHtml(agent.name || "")}</b> · ${escapeHtml(agent.age || "")} · ${escapeHtml(agent.job || "")}`;
+    text.innerHTML = gwHTML(`<b>#${agent.id} ${escapeHtml(agent.name || "")}</b> · ${escapeHtml(agent.age || "")} · ${escapeHtml(agent.job || "")}`);
     head.appendChild(cb);
     head.appendChild(text);
     li.appendChild(head);
@@ -293,29 +296,29 @@ function renderResult(result) {
   $("#sShowTitle").textContent = result.title || "未命名";
   $("#sPremise").textContent = result.premise || "";
   $("#sLogline").textContent = result.logline || "";
-  $("#sMeta").innerHTML = `
+  $("#sMeta").innerHTML = gwHTML(`
     <span class="novel-pill">${escapeHtml(result.theme_title || "")}</span>
     <span class="novel-pill">${escapeHtml(result.style_title || "")}</span>
     <span class="novel-pill">${(result.episodes || []).length} 集</span>
     <span class="novel-pill">约 ${Math.round((result.stats || {}).total_seconds || 0)} 秒</span>
-  `;
+  `);
 
   const castEl = $("#sCast");
-  castEl.innerHTML = "";
+  castEl.innerHTML = gwHTML("");
   for (const c of result.cast || []) {
     const tag = document.createElement("span");
     tag.className = "novel-cast-item";
-    tag.innerHTML = `<b>${escapeHtml(c.name || "")}</b> · ${escapeHtml(c.role || "")}`;
+    tag.innerHTML = gwHTML(`<b>${escapeHtml(c.name || "")}</b> · ${escapeHtml(c.role || "")}`);
     castEl.appendChild(tag);
   }
 
   const stats = result.stats || {};
-  $("#sStats").innerHTML = `
+  $("#sStats").innerHTML = gwHTML(`
     <span><b>${stats.episodes || 0}</b> 集</span>
     <span><b>${stats.shots || 0}</b> 镜头</span>
     <span><b>${stats.total_seconds || 0}</b> 秒总时长</span>
     <span>平均镜头 <b>${stats.avg_shot_seconds || 0}</b> 秒</span>
-  `;
+  `);
 
   renderEpisodeToc(result.episodes || []);
   renderEpisodes(result.episodes || []);
@@ -325,12 +328,12 @@ function renderResult(result) {
 
 function renderEpisodeToc(episodes) {
   const ol = $("#sEpToc");
-  ol.innerHTML = "";
+  ol.innerHTML = gwHTML("");
   for (const ep of episodes) {
     const li = document.createElement("li");
     const a = document.createElement("a");
-    a.href = `#sEp-${ep.episode}`;
-    a.innerHTML = `第${ep.episode}集 《${escapeHtml(ep.title || "")}》 <span class="muted">(${ep.total_seconds || 0}s)</span>`;
+    a.href = gwURL(`#sEp-${ep.episode}`);
+    a.innerHTML = gwHTML(`第${ep.episode}集 《${escapeHtml(ep.title || "")}》 <span class="muted">(${ep.total_seconds || 0}s)</span>`);
     li.appendChild(a);
     ol.appendChild(li);
   }
@@ -338,18 +341,18 @@ function renderEpisodeToc(episodes) {
 
 function renderEpisodes(episodes) {
   const host = $("#sEpisodes");
-  host.innerHTML = "";
+  host.innerHTML = gwHTML("");
   for (const ep of episodes) {
     const block = document.createElement("section");
     block.className = "novel-chapter";
     block.id = `sEp-${ep.episode}`;
 
     const head = document.createElement("header");
-    head.innerHTML = `
+    head.innerHTML = gwHTML(`
       <h3>第${ep.episode}集 《${escapeHtml(ep.title || "")}》</h3>
       <p class="novel-summary">${escapeHtml(ep.logline || "")}</p>
       <p class="muted">${ep.total_seconds || 0} 秒 · ${(ep.shots || []).length} 个镜头 · 下一集:${escapeHtml(ep.hook_to_next || "—")}</p>
-    `;
+    `);
     block.appendChild(head);
 
     for (const shot of ep.shots || []) {
@@ -365,23 +368,23 @@ function renderShot(shot) {
   card.className = "serial-shot";
 
   const head = document.createElement("header");
-  head.innerHTML = `
+  head.innerHTML = gwHTML(`
     <span class="serial-shot-no">#${shot.shot}</span>
     <span class="serial-shot-loc">${escapeHtml(shot.location || "")}</span>
     <span class="serial-shot-time">${escapeHtml(shot.time || "")}</span>
     <span class="serial-shot-type">${escapeHtml(shot.shot_type || "")}</span>
     <span class="serial-shot-dur">${shot.duration || 0}s</span>
     <span class="serial-shot-tr">${escapeHtml(shot.transition || "cut")}</span>
-  `;
+  `);
   card.appendChild(head);
 
   const promptRow = document.createElement("div");
   promptRow.className = "serial-shot-prompt";
-  promptRow.innerHTML = `
+  promptRow.innerHTML = gwHTML(`
     <span class="serial-shot-label">画面提示</span>
     <p>${escapeHtml(shot.visual_prompt || "（模型未给出画面描述）")}</p>
     <button class="button small" type="button" data-copy="${encodeURIComponent(shot.visual_prompt || "")}">复制</button>
-  `;
+  `);
   card.appendChild(promptRow);
 
   if (shot.dialogue) {
@@ -389,12 +392,12 @@ function renderShot(shot) {
     if (lines.length) {
       const dlg = document.createElement("div");
       dlg.className = "serial-shot-dialogue";
-      dlg.innerHTML = `<span class="serial-shot-label">台词</span>`;
+      dlg.innerHTML = gwHTML(`<span class="serial-shot-label">台词</span>`);
       for (const line of lines) {
         const row = document.createElement("div");
         row.className = "serial-shot-line";
         const who = line.character != null ? `#${line.character}` : (line.character || "角色");
-        row.innerHTML = `<b>${escapeHtml(who)}:</b> ${escapeHtml(line.line || line.text || "")}`;
+        row.innerHTML = gwHTML(`<b>${escapeHtml(who)}:</b> ${escapeHtml(line.line || line.text || "")}`);
         dlg.appendChild(row);
       }
       card.appendChild(dlg);
@@ -404,7 +407,7 @@ function renderShot(shot) {
   if (shot.sound) {
     const snd = document.createElement("div");
     snd.className = "serial-shot-sound";
-    snd.innerHTML = `<span class="serial-shot-label">声音</span><span>${escapeHtml(shot.sound)}</span>`;
+    snd.innerHTML = gwHTML(`<span class="serial-shot-label">声音</span><span>${escapeHtml(shot.sound)}</span>`);
     card.appendChild(snd);
   }
 
@@ -432,22 +435,22 @@ function renderShotsJson(result) {
 
 function renderPromptsList(result) {
   const ol = $("#sPromptsList");
-  ol.innerHTML = "";
+  ol.innerHTML = gwHTML("");
   let n = 0;
   for (const ep of result.episodes || []) {
     const head = document.createElement("li");
     head.className = "serial-prompts-ep";
-    head.innerHTML = `第${ep.episode}集 《${escapeHtml(ep.title || "")}》`;
+    head.innerHTML = gwHTML(`第${ep.episode}集 《${escapeHtml(ep.title || "")}》`);
     ol.appendChild(head);
     for (const shot of ep.shots || []) {
       n += 1;
       const li = document.createElement("li");
       li.className = "serial-prompts-item";
-      li.innerHTML = `
+      li.innerHTML = gwHTML(`
         <span class="serial-prompts-no">${n}</span>
         <code>${escapeHtml(shot.visual_prompt || "")}</code>
         <button class="button small" type="button" data-copy="${encodeURIComponent(shot.visual_prompt || "")}">复制</button>
-      `;
+      `);
       ol.appendChild(li);
     }
   }
@@ -501,7 +504,7 @@ function downloadShotsJson() {
   const blob = new Blob([txt], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = gwURL(url);
   a.download = (state.result && state.result.title ? state.result.title.replace(/[\\/:*?"<>|]/g, "_") : "serial") + ".shots.json";
   document.body.appendChild(a);
   a.click();
@@ -516,11 +519,11 @@ function downloadShotsJson() {
 async function loadHistory() {
   const resp = await api("/api/games/serial/runs");
   const list = $("#sHistory");
-  list.innerHTML = "";
+  list.innerHTML = gwHTML("");
   if (!resp.ok || !resp.body) return;
   for (const row of (resp.body.runs || []).slice(0, 8)) {
     const li = document.createElement("li");
-    li.innerHTML = `<a href="#" data-jid="${row.job_id}">${escapeHtml(row.title || "未命名")} <span class="muted">${row.episodes || 0} 集 · ${row.total_seconds || 0}s</span></a>`;
+    li.innerHTML = gwHTML(`<a href="#" data-jid="${row.job_id}">${escapeHtml(row.title || "未命名")} <span class="muted">${row.episodes || 0} 集 · ${row.total_seconds || 0}s</span></a>`);
     list.appendChild(li);
   }
   for (const a of list.querySelectorAll("a[data-jid]")) {
@@ -569,7 +572,7 @@ function exportMarkdown() {
   const blob = new Blob([md], { type: "text/markdown" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = gwURL(url);
   a.download = (r.title || "serial").replace(/[\\/:*?"<>|]/g, "_") + ".md";
   document.body.appendChild(a);
   a.click();

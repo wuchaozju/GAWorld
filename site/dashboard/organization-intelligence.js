@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 (function () {
   "use strict";
   var base = "/api/research/organization-intelligence";
@@ -16,7 +19,7 @@
   function budget() { $("oiBudget").textContent = "当前城市：" + ($("oiForm").dataset.city || "加载中") + "。预计调用模型 " + (Number($("oiRepeats").value) * 109) + " 次，费用取决于模型服务。每两次调用至少间隔10秒。遇到服务限制时会保存进度；接着运行需要你点击开始，不会自动重试或更换模型。"; }
   function download(name, text, type) {
     var url = URL.createObjectURL(new Blob([text], { type: type || "text/plain;charset=utf-8" }));
-    var a = document.createElement("a"); a.href = url; a.download = name; a.click();
+    var a = document.createElement("a"); a.href = gwURL(url); a.download = name; a.click();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
   function results(record) {
@@ -24,7 +27,7 @@
     if (!analysis || !analysis.complete) { $("oiResults").textContent = "待全部条件完成后生成比较。已有部分结果不用于判断组织收益。"; return; }
     var html = '<p class="oi-note">' + esc(analysis.inference) + '</p><table><thead><tr><th>要比较的情况</th><th>平均成绩差</th></tr></thead><tbody>';
     analysis.contrasts.forEach(function (c) { html += "<tr><td>" + esc(c.label) + "</td><td>" + (c.mean > 0 ? "+" : "") + Number(c.mean).toFixed(3) + "</td></tr>"; });
-    $("oiResults").innerHTML = html + "</tbody></table>";
+    $("oiResults").innerHTML = gwHTML(html + "</tbody></table>");
   }
   function render(record) {
     state.record = record;
@@ -78,14 +81,14 @@
       var record = await api("/" + identifier);
       if (!state.record || state.record.id !== identifier) { state.offset = 0; state.log = ""; $("oiLogs").textContent = ""; }
       render(record);
-      if (updateUrl) { var url = new URL(location.href); url.searchParams.set("oi", identifier); url.searchParams.set("tab", "organization-intelligence"); history.replaceState(null, "", url); }
+      if (updateUrl) { var url = new URL(location.href); url.searchParams.set("oi", identifier); url.searchParams.set("tab", "organization-intelligence"); history.replaceState(null, "", gwURL(url)); }
       await logs();
     } finally { state.loading = false; }
   }
   async function refresh() {
     var data = await api("");
     var old = $("oiProvider").value;
-    $("oiProvider").innerHTML = data.providers.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name + " · " + p.model) + '</option>'; }).join("");
+    $("oiProvider").innerHTML = gwHTML(data.providers.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name + " · " + p.model) + '</option>'; }).join(""));
     $("oiProvider").value = old || data.default_provider;
     $("oiForm").dataset.city = data.city;
     budget();
@@ -93,7 +96,7 @@
     renderList();
   }
   function renderList() {
-    $("oiStudies").innerHTML = state.studies.length ? state.studies.map(function (r) { return '<button type="button" class="oi-record" data-oi="' + esc(r.id) + '" aria-current="' + Boolean(state.record && state.record.id === r.id) + '">' + esc(labels[r.display_status || r.status] || r.status) + " · " + (r.calls_completed || 0) + " 次响应<br>" + esc(r.id) + '</button>'; }).join("") : '<p class="oi-note">还没有记录，先保存实验设置。</p>';
+    $("oiStudies").innerHTML = gwHTML(state.studies.length ? state.studies.map(function (r) { return '<button type="button" class="oi-record" data-oi="' + esc(r.id) + '" aria-current="' + Boolean(state.record && state.record.id === r.id) + '">' + esc(labels[r.display_status || r.status] || r.status) + " · " + (r.calls_completed || 0) + " 次响应<br>" + esc(r.id) + '</button>'; }).join("") : '<p class="oi-note">还没有记录，先保存实验设置。</p>');
   }
   async function action(fn) {
     if (state.busy) return;

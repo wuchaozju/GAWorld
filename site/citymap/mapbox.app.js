@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Mapbox / MapLibre renderer for GAWorld city maps.
  *
  * Pure-browser single-page app — no build step.
@@ -75,7 +78,7 @@
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement("script");
-      s.src = src; s.async = true;
+      s.src = gwURL(src); s.async = true;
       s.onload = () => resolve();
       s.onerror = () => reject(new Error("failed to load " + src));
       document.head.appendChild(s);
@@ -84,7 +87,7 @@
   function loadCss(href) {
     return new Promise((resolve) => {
       const link = document.createElement("link");
-      link.rel = "stylesheet"; link.href = href;
+      link.rel = "stylesheet"; link.href = gwURL(href);
       link.onload = () => resolve();
       link.onerror = () => resolve(); // not fatal; map still works visually
       document.head.appendChild(link);
@@ -521,7 +524,7 @@
       const tokenNote = this.token
         ? `<span class="engine-badge mapbox">Mapbox</span>`
         : `<span class="engine-badge maplibre">MapLibre · 无 token</span>`;
-      this.sideEl.innerHTML = `
+      this.sideEl.innerHTML = gwHTML(`
         <div class="side-head">
           <h1>${escapeHtml(city)}</h1>
           <div class="sub">${tokenNote} · 底图 ${meta.mode === "real" ? "OSM 派生" : "程序生成"}</div>
@@ -563,7 +566,7 @@
             </div>
           </div>
         </div>
-      `;
+      `);
       this.sideEl.querySelectorAll("input[data-layer]").forEach((el) => {
         el.addEventListener("change", () => this.setLayerVisible(el.dataset.layer, el.checked));
       });
@@ -588,7 +591,7 @@
       // hot-swap style URLs across vector tile providers.
       const url = new URL(window.location.href);
       url.searchParams.set("theme", this.opts.theme);
-      window.location.href = url.toString();
+      window.location.href = gwURL(url.toString());
     }
   }
 

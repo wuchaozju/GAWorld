@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* GAWorld CityMap viewer — Phaser 3 edition.
  *
  * Two scenes share a module-level `state`:
@@ -719,7 +721,7 @@
     if (n.popularity != null) add("热度", n.popularity);
     if (n.density != null) add("密度", n.density);
     if (n.lat != null && n.lng != null) add("坐标", `${(+n.lat).toFixed(4)}, ${(+n.lng).toFixed(4)}`);
-    tt.innerHTML = `<div class="t-name">${n.label || n.name || n.id}</div>${rows.join("")}`;
+    tt.innerHTML = gwHTML(`<div class="t-name">${n.label || n.name || n.id}</div>${rows.join("")}`);
     const r = $("stage").getBoundingClientRect();
     let x = sx + 14, y = sy + 14;
     if (x + 260 > r.width) x = sx - 260; if (y + 170 > r.height) y = sy - 170;
@@ -728,19 +730,19 @@
   function hideTooltip() { $("tooltip").style.opacity = 0; }
 
   function buildLegend() {
-    const el = $("legend-items"); el.innerHTML = "";
+    const el = $("legend-items"); el.innerHTML = gwHTML("");
     Object.entries(CAT_HEX).forEach(([cat, color]) => {
       const li = document.createElement("div"); li.className = "li";
-      li.innerHTML = `<span class="swatch" style="background:${color}"></span>${cat}`;
+      li.innerHTML = gwHTML(`<span class="swatch" style="background:${color}"></span>${cat}`);
       el.appendChild(li);
     });
   }
   function buildCatFilter() {
-    const el = $("cat-filter"); el.innerHTML = "";
+    const el = $("cat-filter"); el.innerHTML = gwHTML("");
     const cats = [...new Set(state.map.nodes.map((n) => n.category))].sort();
     cats.forEach((cat) => {
       const chip = document.createElement("label"); chip.className = "chip";
-      chip.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${CAT_HEX[cat] || "#a8a8a8"}"></span>${cat}`;
+      chip.innerHTML = gwHTML(`<input type="checkbox" checked><span class="swatch" style="background:${CAT_HEX[cat] || "#a8a8a8"}"></span>${cat}`);
       chip.querySelector("input").addEventListener("change", (e) => {
         if (e.target.checked) state.catFilter.delete(cat); else state.catFilter.add(cat);
         if (App.map) App.map.redrawNodes();
@@ -752,11 +754,11 @@
     const el = $("agent-list");
     const agents = state.trace && state.trace.agents ? state.trace.agents : [];
     if (!agents.length) { el.className = "empty-hint small"; el.textContent = "该轨迹无 agent"; return; }
-    el.className = ""; el.innerHTML = "";
+    el.className = ""; el.innerHTML = gwHTML("");
     agents.forEach((a, i) => {
       const color = AGENT_HEX[(a.id ?? i) % AGENT_HEX.length];
       const pill = document.createElement("div"); pill.className = "agent-pill";
-      pill.innerHTML = `<span class="dot" style="background:${color}"></span><div><div>${a.name || "#" + a.id}</div><div class="small">家 ${a.home || "?"} · 班 ${a.workplace || "?"}</div></div>`;
+      pill.innerHTML = gwHTML(`<span class="dot" style="background:${color}"></span><div><div>${a.name || "#" + a.id}</div><div class="small">家 ${a.home || "?"} · 班 ${a.workplace || "?"}</div></div>`);
       pill.addEventListener("click", () => {
         state.selAgent = state.selAgent === a.id ? null : a.id;
         [...el.children].forEach((c) => c.classList.remove("sel"));
@@ -789,7 +791,7 @@
     state.frameIdx = Math.max(0, Math.min(state.frames.length - 1, i));
     $("scrub").value = state.frameIdx;
     const f = state.frames[state.frameIdx];
-    if (f) $("clock").innerHTML = `Day ${f.day ?? "—"} · <b>${f.time || "--:--"}</b> ${f.weekday || ""}`;
+    if (f) $("clock").innerHTML = gwHTML(`Day ${f.day ?? "—"} · <b>${f.time || "--:--"}</b> ${f.weekday || ""}`);
     if (App.map) App.map.refreshHud();
   }
   function togglePlay() {

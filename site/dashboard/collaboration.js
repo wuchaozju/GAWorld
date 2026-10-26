@@ -1,3 +1,5 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 (function (root, factory) {
   "use strict";
 
@@ -725,7 +727,7 @@
         let label;
         if (safeUrl) {
           label = document.createElement("a");
-          label.href = safeUrl;
+          label.href = gwURL(safeUrl);
           label.target = "_blank";
           label.rel = "noopener";
         } else {
@@ -738,7 +740,7 @@
           // usually wanted on disk, so keep a second action that saves them.
           const save = document.createElement("a");
           save.className = "artifact-download";
-          save.href = safeUrl;
+          save.href = gwURL(safeUrl);
           save.download = name;
           save.rel = "noopener";
           save.textContent = t("cl.artifact_download");

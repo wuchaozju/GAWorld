@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 灾害模式 (Disaster Mode) — front-end controller.
 //
 // One run is one background job on the server (`/api/games/disaster/*`):
@@ -73,14 +75,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -92,14 +94,14 @@
       const data = await resp.json();
       state.disasters = data.disasters || [];
       state.maxAgents = data.max_agents || 12;
-      sel.innerHTML = state.disasters
+      sel.innerHTML = gwHTML(state.disasters
         .map((d) => `<option value="${esc(d.id)}">${esc(d.emoji + " " + d.name)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("disaster.custom_option", "自定义灾难…"))}</option>`;
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("disaster.custom_option", "自定义灾难…"))}</option>`);
       $("#dStageCount").max = data.max_stages || 3;
       $("#dStageCount").value = data.default_stages || 2;
       renderDisasterHint();
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -116,25 +118,25 @@
   async function loadAgents() {
     const list = $("#dAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="disaster-empty">${esc(t("disaster.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("disaster.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       renderAgents();
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#dAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("disaster.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("disaster.no_agents", "这座城市暂无居民"))}</li>`);
       $("#dPicked").textContent = "0";
       return;
     }
-    list.innerHTML = state.agents
+    list.innerHTML = gwHTML(state.agents
       .map((a) => {
         const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || ""].filter(Boolean).join(" · ");
         const on = state.picked.has(a.id) ? " checked" : "";
@@ -144,7 +146,7 @@
           <span class="meta">${esc(meta)}</span>
         </label></li>`;
       })
-      .join("");
+      .join(""));
     Array.from(list.querySelectorAll("input[type=checkbox]")).forEach((box) => {
       box.addEventListener("change", () => {
         const id = parseInt(box.value, 10);
@@ -198,8 +200,8 @@
     $("#dIdle").hidden = false;
     $("#dSummaryBox").hidden = true;
     $("#dSummary").textContent = "";
-    $("#dOverall").innerHTML = "";
-    $("#dTimeline").innerHTML = "";
+    $("#dOverall").innerHTML = gwHTML("");
+    $("#dTimeline").innerHTML = gwHTML("");
     $("#dTitle").textContent = t("disaster.section_board", "推演");
     exporter.sync();
     setProgress(0);
@@ -270,15 +272,15 @@
     $("#dSummary").textContent = run.summary || "";
 
     const overall = (run.stats || {}).overall || {};
-    $("#dOverall").innerHTML = [
+    $("#dOverall").innerHTML = gwHTML([
       metric(t("disaster.m_panic", "平均恐慌"), overall.avg_panic, "/ 5"),
       metric(t("disaster.m_help", "互助率"), Math.round((overall.help_rate || 0) * 100) + "%", ""),
       metric(t("disaster.m_reactions", "反应数"), overall.n, ""),
       metric(t("disaster.m_top", "最多的选择"), topAction(overall.actions), ""),
-    ].join("");
+    ].join(""));
 
     const stages = (run.stats || {}).per_stage || [];
-    $("#dTimeline").innerHTML = stages.map((stage, index) => stageBlock(run, stage, index)).join("");
+    $("#dTimeline").innerHTML = gwHTML(stages.map((stage, index) => stageBlock(run, stage, index)).join(""));
   }
 
   function metric(label, value, suffix) {
@@ -352,22 +354,22 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="disaster-empty">${esc(t("disaster.no_history", "还没有推演"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("disaster.no_history", "还没有推演"))}</li>`);
         return;
       }
-      ul.innerHTML = runs
+      ul.innerHTML = gwHTML(runs
         .map((r) => `<li>
           <button type="button" data-job="${esc(r.job_id)}">
             <span class="who">${esc((r.emoji || "") + " " + (r.disaster || ""))}</span>
             <span class="meta">${r.agents} ${esc(t("disaster.people", "人"))} · ${r.stages} ${esc(t("disaster.stage_suffix", "幕"))} · ${esc(t("disaster.m_panic", "平均恐慌"))} ${r.avg_panic}</span>
           </button>
         </li>`)
-        .join("");
+        .join(""));
       Array.from(ul.querySelectorAll("button[data-job]")).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

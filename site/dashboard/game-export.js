@@ -1,3 +1,5 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 (function (root, factory) {
   "use strict";
 
@@ -541,7 +543,7 @@
     const blob = new Blob(["﻿" + markdown], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = gwURL(url);
     a.download = filename;
     document.body.appendChild(a);
     a.click();

@@ -168,6 +168,7 @@ def required(method: str, path: str) -> Level:
             "/plaza",
             "/site/index.html",
             "/site/theme.js",
+            "/site/url.js",
             "/site/brand.css",
             "/site/city-lab.css",
         }

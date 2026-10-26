@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // Unified console shell: hosts the GAWorld apps as views in a grouped sidebar.
 // Each app is an independent same-origin page loaded in its own iframe. Frames
 // are created on first visit and kept alive (hidden, not destroyed) so each app
@@ -81,7 +84,7 @@
   function ensureFrame(tab) {
     if (frames[tab.id]) return frames[tab.id];
     var iframe = document.createElement("iframe");
-    iframe.src = tab.src;
+    iframe.src = gwURL(tab.src);
     iframe.title = tab.id;
     iframe.hidden = true;
     iframe.addEventListener("load", function () {
@@ -159,8 +162,8 @@
     activeId = tab.id;
     var existing = frames[tab.id];
     // Preserve loaded views unless this hash requests a different page or query.
-    if (existing && existing.getAttribute('src') !== tab.src) {
-      loaded[tab.id] = false; existing.src = tab.src;
+    if (existing && existing.getAttribute('src') !== gwURL(tab.src)) {
+      loaded[tab.id] = false; existing.src = gwURL(tab.src);
     }
     ensureFrame(tab);
     Object.keys(frames).forEach(function (key) {
@@ -172,15 +175,15 @@
       btn.setAttribute("aria-selected", on ? "true" : "false");
       btn.tabIndex = on ? 0 : -1; // roving tabindex: one tab stop for the list
     });
-    openNewEl.setAttribute("href", frames[tab.id].getAttribute("src"));
+    openNewEl.setAttribute("href", gwURL(frames[tab.id].getAttribute("src")));
     syncLoading();
     if (phone.matches) closeDrawer(); else syncChrome();
   }
 
   function currentTabId() {
     var hash = (location.hash || "").replace(/^#/, "");
-    if (/^simviz(?:\?|$)/.test(hash)) { hash = hash.replace(/^simviz/, 'analytics'); history.replaceState(null, '', '#' + hash); }
-    if (hash === 'worlds') { history.replaceState(null, '', '#research?tab=worlds'); hash = 'research?tab=worlds'; }
+    if (/^simviz(?:\?|$)/.test(hash)) { hash = hash.replace(/^simviz/, 'analytics'); history.replaceState(null, '', gwURL('#' + hash)); }
+    if (hash === 'worlds') { history.replaceState(null, '', gwURL('#research?tab=worlds')); hash = 'research?tab=worlds'; }
     return hash;
   }
 
@@ -272,8 +275,8 @@
       document.getElementById('communityNav').hidden = false;
       document.querySelector('[data-tab="moderation"]').hidden = !(me.user.role === 'admin' || me.user.moderator);
       // Account users start in their existing Dashboard's personal overview.
-      if (!location.hash && me.user.id) { history.replaceState(null, '', '#workspace'); activate('workspace'); }
-      document.getElementById('userName').href = me.user.id ? '#account' : '#admin';
+      if (!location.hash && me.user.id) { history.replaceState(null, '', gwURL('#workspace')); activate('workspace'); }
+      document.getElementById('userName').href = gwURL(me.user.id ? '#account' : '#admin');
       document.getElementById("userName").textContent = me.user.nickname;
       // The teacher console is for admins; the server checks the role again.
       var adminTab = document.querySelector('[data-tab="admin"]');
@@ -281,7 +284,7 @@
       document.getElementById("userChip").hidden = false;
       document.getElementById("logoutBtn").hidden = !me.user.id;  // the token admin has no session
       document.getElementById("logoutBtn").addEventListener("click", function () {
-        fetch("/api/auth/logout", { method: "POST" }).then(function () { location.href = "/login"; });
+        fetch("/api/auth/logout", { method: "POST" }).then(function () { location.href = gwURL("/login"); });
       });
     })
     .catch(function () {});
@@ -311,7 +314,7 @@
   function renderWorlds() {
     if (!worldState) return;
     var select = document.getElementById("worldSelect");
-    select.innerHTML = "";
+    select.innerHTML = gwHTML("");
     var shared = document.createElement("option");
     shared.value = "";
     shared.textContent = text("world.shared");
@@ -353,7 +356,7 @@
       .then(function (resp) { return resp.ok ? resp.json() : { cities: [] }; })
       .then(function (cfg) {
         var select = document.getElementById("worldCity");
-        select.innerHTML = "";
+        select.innerHTML = gwHTML("");
         var base = document.createElement("option");
         base.value = "";
         base.textContent = text("world.default_city");
@@ -411,7 +414,7 @@
   function loadCluster() {
     var current = worldState && worldState.current;
     if (!current || !current.can_write) return Promise.resolve();
-    document.getElementById("worldShareLink").value = location.origin + "/play/" + current.id;
+    document.getElementById("worldShareLink").value = location.origin + gwURL("/play/" + current.id);
     return fetch("/api/cluster")
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (data) {
@@ -422,7 +425,7 @@
           ? fmt("world.hub_line", { ids: data.hub.agent_ids.join(", ") || "—" })
           : "";
         var list = document.getElementById("worldNodes");
-        list.innerHTML = "";
+        list.innerHTML = gwHTML("");
         data.nodes.forEach(function (node) { list.appendChild(nodeLine(node)); });
       });
   }
@@ -467,7 +470,7 @@
       document.getElementById("worldNodeName").value = "";
       document.getElementById("worldNodeAgents").value = "";
       document.getElementById("worldNodeCommandText").textContent =
-        "python -m gaworld.cluster join " + location.origin + " --token " + data.token;
+        "python -m gaworld.cluster join " + location.origin + (window.GAWorldURL ? window.GAWorldURL.prefix : "") + " --token " + data.token;
       document.getElementById("worldNodeCommand").hidden = false;
       return loadCluster();
     }, function (err) {

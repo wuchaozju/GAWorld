@@ -24,6 +24,7 @@ from gaworld.accounts import policy as access_policy
 from gaworld.apps import accounts_api, analytics, community_pages, replay_runs, residents, routes, runs
 from gaworld.apps import world_paths as paths
 from gaworld.apps.public_media import PublicMediaMixin
+from gaworld.apps.subpath import SubpathMixin, configured_prefix
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
@@ -1366,7 +1367,7 @@ def _static_path_allowed(path):
     return len(parts) > 2 and parts[0] == "output" and "visualization" in parts[1:-1]
 
 
-class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
+class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler):
     server_version = "GAWorldDashboard/0.1"
 
     # -- access control ---------------------------------------------------
@@ -2243,6 +2244,7 @@ class DashboardHandler(PublicMediaMixin, SimpleHTTPRequestHandler):
 def run_server(host="127.0.0.1", port=8766, multi_user=False):
     from gaworld.accounts.mode import dashboard_mode
 
+    configured_prefix()  # Invalid mounts must fail before binding a public socket.
     with dashboard_mode(multi_user, paths.REPO_ROOT):
         server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
         url = f"http://{host}:{int(port)}/"

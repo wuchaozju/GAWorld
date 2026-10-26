@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 双队竞赛 (Team Duel) — front-end controller.
 //
 // One server call carries the game:
@@ -80,14 +82,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -102,14 +104,14 @@
       state.maxPerTeam = data.max_per_team || 5;
       state.maxMembers = data.max_members || 10;
       state.maxScore = data.max_score || 40;
-      sel.innerHTML = state.tasks
+      sel.innerHTML = gwHTML(state.tasks
         .map((task) => `<option value="${esc(task.id)}">${esc(task.emoji + " " + task.title)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("duel.custom_option", "自己出一个…"))}</option>`;
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("duel.custom_option", "自己出一个…"))}</option>`);
       $("#dRounds").max = data.max_rounds || 3;
       $("#dRounds").value = data.default_rounds || 2;
       renderTask();
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -143,7 +145,7 @@
   async function loadAgents() {
     const list = $("#dAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="disaster-empty">${esc(t("duel.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("duel.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
@@ -151,17 +153,17 @@
       renderAgents();
       afterPick();
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#dAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("duel.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("duel.no_agents", "这座城市暂无居民"))}</li>`);
       return;
     }
-    list.innerHTML = state.agents.map((a) => {
+    list.innerHTML = gwHTML(state.agents.map((a) => {
       const side = state.sides.get(a.id) || "";
       const meta = [a.age ? a.age + "岁" : "", a.job || ""].filter(Boolean).join(" · ");
       return `<li class="${side ? "is-picked" : ""}">
@@ -171,7 +173,7 @@
           <button type="button" class="duel-pick is-b ${side === "B" ? "is-on" : ""}" data-agent="${a.id}" data-side="B">乙</button>
         </span>
       </li>`;
-    }).join("");
+    }).join(""));
     $$("button[data-agent]", list).forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.getAttribute("data-agent"), 10);
@@ -389,7 +391,7 @@
       : "";
 
     $("#dVerdict").className = "duel-verdict is-" + (winner === "tie" ? "tie" : winner.toLowerCase());
-    $("#dVerdict").innerHTML = `
+    $("#dVerdict").innerHTML = gwHTML(`
       <div class="duel-score">
         <span class="side is-a">
           <b>${esc(teamA.name)}</b><span class="method">${esc((teamA.method || {}).title || "")}</span>
@@ -407,7 +409,7 @@
       <p class="duel-blind">${esc(t("duel.blind", "评审看到的是「方案一 / 方案二」，不知道谁是谁。这一场的顺序："))}
         ${esc((verdict.order || []).map((k) => (k === "A" ? teamA.name : teamB.name)).join(" → "))}
         ${disagreed ? `<b class="duel-flag">${esc(t("duel.disagreed", "评审自己说的赢家是 ") + saidLabel + t("duel.disagreed_tail", "，和分数对不上——两份方案很接近。"))}</b>` : ""}
-      </p>`;
+      </p>`);
   }
 
   function renderSheet(run) {
@@ -426,11 +428,11 @@
         <span class="n is-b">${b}</span>
       </div>`;
     }).join("");
-    $("#dSheet").innerHTML = `<h4>${esc(t("duel.scoresheet", "评分表"))}</h4>${rows}`;
+    $("#dSheet").innerHTML = gwHTML(`<h4>${esc(t("duel.scoresheet", "评分表"))}</h4>${rows}`);
   }
 
   function renderBoards(run) {
-    $("#dBoards").innerHTML = ["A", "B"].map((key) => {
+    $("#dBoards").innerHTML = gwHTML(["A", "B"].map((key) => {
       const team = teamByKey(run, key);
       const plans = team.plans || [];
       const last = plans[plans.length - 1] || {};
@@ -463,7 +465,7 @@
         ${history}
         <div class="duel-members">${members}</div>
       </section>`;
-    }).join("");
+    }).join(""));
   }
 
   function setStatus(message, isError) {
@@ -484,10 +486,10 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        list.innerHTML = `<li class="persuade-empty">${esc(t("duel.no_history", "还没有比过"))}</li>`;
+        list.innerHTML = gwHTML(`<li class="persuade-empty">${esc(t("duel.no_history", "还没有比过"))}</li>`);
         return;
       }
-      list.innerHTML = runs.map((r) => {
+      list.innerHTML = gwHTML(runs.map((r) => {
         const mark = r.winner === "tie"
           ? t("duel.tie", "打平")
           : (r.winner === "A" ? t("duel.team_a", "甲队") : t("duel.team_b", "乙队")) + t("duel.wins", " 赢");
@@ -497,12 +499,12 @@
             <span class="meta">${esc(mark)} · ${r.score_a || 0} : ${r.score_b || 0}</span>
           </button>
         </li>`;
-      }).join("");
+      }).join(""));
       $$("button[data-job]", list).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      list.innerHTML = `<li class="persuade-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="persuade-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

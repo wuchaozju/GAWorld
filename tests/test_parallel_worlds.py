@@ -652,10 +652,16 @@ class PanelPlacementTests(unittest.TestCase):
         self.assertEqual(wanted - present, set(), "worlds.js looks up ids research.html does not have")
 
     def test_the_old_page_and_the_old_console_hash_redirect(self):
+        import subprocess
+
         self.assertIn("research.html?tab=worlds", self._read("site", "dashboard", "worlds.html"))
         console = self._read("site", "console", "console.js")
         self.assertNotIn('src: "/site/dashboard/worlds.html"', console)
-        self.assertIn('worlds: { id: "research", src: "/site/dashboard/research.html?tab=worlds" }', console)
+        result = subprocess.run(
+            ["node", "--test", "site/community/navigation.test.js"],
+            cwd=self.ROOT, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn('data-tab="worlds"', self._read("site", "console", "index.html"))
 
     def test_headless_render(self):

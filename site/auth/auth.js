@@ -1,3 +1,5 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); }, params = new URLSearchParams(location.search);
@@ -34,8 +36,8 @@
     $('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
     $('confirm-row').hidden = !(registration || mode === 'join' || mode === 'reset' || (mode === 'recover' && code));
     $('confirm').required = !$('confirm-row').hidden;
-    $('to-join').hidden = mode !== 'login'; $('to-join').href = open ? '/register' : '/join'; $('to-join').textContent = open ? '创建账号' : '有邀请码？注册';
-    $('to-reset').hidden = mode !== 'login'; $('to-reset').href = open ? '/recover' : '/reset'; $('to-reset').textContent = open ? '忘记密码？' : '有重置码？重设密码';
+    $('to-join').hidden = mode !== 'login'; $('to-join').href = gwURL(open ? '/register' : '/join'); $('to-join').textContent = open ? '创建账号' : '有邀请码？注册';
+    $('to-reset').hidden = mode !== 'login'; $('to-reset').href = gwURL(open ? '/recover' : '/reset'); $('to-reset').textContent = open ? '忘记密码？' : '有重置码？重设密码';
     $('to-login').hidden = mode === 'login';
     $('form').onsubmit = async function (event) {
       event.preventDefault(); $('submit').disabled = true; $('error').textContent = '';
@@ -44,7 +46,7 @@
         var body = { nickname:$('nickname').value.trim(),password:$('password').value,code:$('code').value.trim() || code,email:$('email').value.trim(),display_name:$('display_name').value.trim() };
         await api(cfg[3], body);
         if (mode === 'recover') { $('hint').textContent = code ? '密码已修改，请登录。' : '若邮箱符合条件，重设邮件已发送，请检查收件箱。'; $('form').hidden = true; $('to-login').hidden = false; return; }
-        location.replace(next);
+        location.replace(gwURL(next));
       } catch (err) { $('error').textContent = err.message; $('submit').disabled = false; }
     };
     $('submit').disabled = false;

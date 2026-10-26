@@ -2,7 +2,7 @@
  * + transport in the terminal palette. Behaviour comes from replay.js,
  * unchanged. */
 
-@import url("/terminal/tokens-terminal.css");
+@import url("./tokens-terminal.css");
 
 .page {
   min-height: 100vh;

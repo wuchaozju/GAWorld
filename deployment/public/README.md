@@ -1,5 +1,9 @@
 # GAWorld public gateway
 
+For the new `/GAWorld/` mount on Mo, use [SUBPATH.md](SUBPATH.md) and
+`mo-subpath.locations.conf`. The root-route examples below document the older
+gateway integration and are not the configuration for the new mount.
+
 The gateway on port 8780 is separate from the Mo ingress. Installing it does not
 change `mo.zju.edu.cn`; the domain administrator must apply the Nginx fragment.
 

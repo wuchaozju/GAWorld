@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 《这是我的战争》 (Warzone) — front-end controller.
 //
 // One run is one background job on the server (`/api/games/warzone/*`):
@@ -65,14 +67,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -85,14 +87,14 @@
       state.scenarios = data.scenarios || [];
       state.maxAgents = data.max_agents || 8;
       state.resources = data.resources || ["食物", "药品", "燃料", "守卫时间"];
-      sel.innerHTML = state.scenarios
+      sel.innerHTML = gwHTML(state.scenarios
         .map((s) => `<option value="${esc(s.id)}">${esc(s.emoji + " " + s.name)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("warzone.custom_option", "自定义剧本…"))}</option>`;
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("warzone.custom_option", "自定义剧本…"))}</option>`);
       $("#wDays").max = data.default_days || 7;
       $("#wDays").value = data.default_days || 7;
       renderScenarioHint();
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -109,25 +111,25 @@
   async function loadAgents() {
     const list = $("#wAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="warzone-empty">${esc(t("warzone.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="warzone-empty">${esc(t("warzone.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       renderAgents();
     } catch (err) {
-      list.innerHTML = `<li class="warzone-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="warzone-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#wAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="warzone-empty">${esc(t("warzone.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="warzone-empty">${esc(t("warzone.no_agents", "这座城市暂无居民"))}</li>`);
       $("#wPicked").textContent = "0";
       return;
     }
-    list.innerHTML = state.agents
+    list.innerHTML = gwHTML(state.agents
       .map((a) => {
         const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || ""].filter(Boolean).join(" · ");
         const on = state.picked.has(a.id) ? " checked" : "";
@@ -137,7 +139,7 @@
           <span class="meta">${esc(meta)}</span>
         </label></li>`;
       })
-      .join("");
+      .join(""));
     Array.from(list.querySelectorAll("input[type=checkbox]")).forEach((box) => {
       box.addEventListener("change", () => {
         const id = parseInt(box.value, 10);
@@ -257,7 +259,7 @@
     $("#wEssay").textContent = run.essay || "";
 
     const stats = run.stats || {};
-    $("#wOverall").innerHTML = [
+    $("#wOverall").innerHTML = gwHTML([
       metric(t("warzone.m_mortality", "死亡率"), pct(stats.mortality), ""),
       metric(t("warzone.m_dissent", "投票分歧"), pct(stats.dissent_rate), ""),
       metric(t("warzone.m_gini", "食物基尼"), stats.food_gini == null ? "—" : stats.food_gini, ""),
@@ -265,10 +267,10 @@
       metric(t("warzone.m_depleted", "最先耗尽"), stats.depleted_first || t("warzone.depleted_none", "（未耗尽）"), ""),
       metric(t("warzone.m_strongest", "最坚定建议者"), personRef(stats.strongest_id, run.residents), ""),
       metric(t("warzone.m_excluded", "最被排斥居民"), personRef(stats.most_excluded_id, run.residents), ""),
-    ].join("");
+    ].join(""));
 
-    $("#wStock").innerHTML = stockTrail(run);
-    $("#wLog").innerHTML = (run.log || []).map(dayBlock).join("");
+    $("#wStock").innerHTML = gwHTML(stockTrail(run));
+    $("#wLog").innerHTML = gwHTML((run.log || []).map(dayBlock).join(""));
   }
 
   function pct(x) {
@@ -429,20 +431,20 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="warzone-empty">${esc(t("warzone.no_history", "还没有围困记录"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="warzone-empty">${esc(t("warzone.no_history", "还没有围困记录"))}</li>`);
         return;
       }
-      ul.innerHTML = runs.map((r) => `<li>
+      ul.innerHTML = gwHTML(runs.map((r) => `<li>
         <button type="button" data-job="${esc(r.job_id)}">
           <span class="who">${esc((r.emoji || "") + " " + (r.scenario || ""))}</span>
           <span class="meta">${r.agents} ${esc(t("warzone.people", "人"))} · ${r.days} ${esc(t("warzone.day_suffix", "天"))} · 死亡率 ${pct(r.mortality)}</span>
         </button>
-      </li>`).join("");
+      </li>`).join(""));
       Array.from(ul.querySelectorAll("button[data-job]")).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="warzone-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="warzone-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

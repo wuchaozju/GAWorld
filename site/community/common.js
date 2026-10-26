@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 (function () {
   "use strict";
   var C = window.Community = {};
@@ -5,14 +8,14 @@
   if (C.embedded) {
     document.documentElement.classList.add('is-embedded');
     var tokens = document.createElement('link');
-    tokens.rel = 'stylesheet'; tokens.href = '/site/tokens.css';
+    tokens.rel = 'stylesheet'; tokens.href = gwURL('/site/tokens.css');
     document.head.appendChild(tokens);
   }
   C.navigate = function (path, reload) {
     var target = (C.embedded || C.user) ? (window.GAWorldNavigation.consoleUrl(path) || path) : path;
     var host = C.embedded ? window.parent : window;
-    if (reload) { host.history.replaceState(null, '', target); host.location.reload(); }
-    else host.location.href = target;
+    if (reload) { host.history.replaceState(null, '', gwURL(target)); host.location.reload(); }
+    else host.location.href = gwURL(target);
   };
   C.reload = function () { (C.embedded ? window.parent : window).location.reload(); };
   document.addEventListener('click', function (event) {
@@ -20,6 +23,7 @@
     if (!a || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || a.hasAttribute('download')) return;
     var url = new URL(a.href, location.href);
     if (url.origin !== location.origin || a.getAttribute('href').startsWith('#')) return;
+    if (window.GAWorldURL) url.pathname = window.GAWorldURL.path(url.pathname);
     var target = window.GAWorldNavigation.consoleUrl(url.pathname + url.search + url.hash);
     if (C.embedded && (!a.target || a.target === '_top') && (target || /^\/(login|register|recover|verify)$/.test(url.pathname))) { event.preventDefault(); C.navigate(target || url.pathname + url.search); }
   });
@@ -55,13 +59,13 @@
     // Keep old workspace/share URLs valid while giving members one Dashboard.
     if (C.user && !C.embedded) {
       var target = window.GAWorldNavigation.consoleUrl(location.pathname + location.search + location.hash);
-      if (target) { location.replace(target); return me; }
+      if (target) { location.replace(gwURL(target)); return me; }
     }
     var nav = document.getElementById("accountNav");
     if (C.user) {
-      nav.innerHTML = '<a href="/workspace?view=notifications">消息</a><a href="/workspace?view=account">' + C.esc(C.user.display_name || C.user.nickname) + '</a>';
+      nav.innerHTML = gwHTML('<a href="/workspace?view=notifications">消息</a><a href="/workspace?view=account">' + C.esc(C.user.display_name || C.user.nickname) + '</a>');
     } else {
-      nav.innerHTML = '<a href="/login">登录</a><a class="button compact" href="/register">注册</a>';
+      nav.innerHTML = gwHTML('<a href="/login">登录</a><a class="button compact" href="/register">注册</a>');
     }
     return me;
   }).catch(function (error) { C.error(error); return {}; });

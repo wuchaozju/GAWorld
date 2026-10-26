@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 (function () {
   "use strict";
 
@@ -156,7 +159,7 @@
       var url = URL.createObjectURL(new Blob([data.content], {type: "application/json"}));
       var link = document.createElement("a");
       try {
-        link.href = url;
+        link.href = gwURL(url);
         link.download = data.filename;
         document.body.appendChild(link);
         link.click();
@@ -173,7 +176,7 @@
   }
   function updateTemplate() {
     var kind = el("orgKind").value;
-    el("orgCreateRule").innerHTML = ruleOptions(kind);
+    el("orgCreateRule").innerHTML = gwHTML(ruleOptions(kind));
     el("orgFunding").value = kind === "company" ? "firms" : "government";
     el("orgCapField").hidden = kind === "company";
   }
@@ -194,7 +197,7 @@
     else if (type === "set_rule") html = '<label class="field"><span>新决策规则</span><select name="rule">' + ruleOptions(selectedOrg.kind) + "</select></label>" + (selectedOrg.kind === "community" ? field("cap", "单人资助上限（元）", 'inputmode="decimal" value="100" required') : "");
     else if (type === "close") html = reason;
     else html = resident + (type === "apply_aid" ? field("amount", "申请金额（元）", 'inputmode="decimal" required') : "") + (type === "apply_job" ? field("job_id", "岗位 ID", "required") : "") + reason;
-    el("orgCommandInputs").innerHTML = html;
+    el("orgCommandInputs").innerHTML = gwHTML(html);
   }
   async function loadDetail() {
     if (!selected) return;
@@ -208,14 +211,14 @@
     var rebuildForm = operationKey !== nextOperationKey;
     operationKey = nextOperationKey;
     selectedOrg = results[0];
-    el("orgDetail").innerHTML = renderDetail(selectedOrg);
+    el("orgDetail").innerHTML = gwHTML(renderDetail(selectedOrg));
     el("orgHistoryPanel").hidden = false;
-    el("orgHistory").innerHTML = results[1].history.length ? results[1].history.map(function (row) { return "<details><summary>" + esc(row.kind || row.type || row.event || "记录") + " · " + esc(row.day == null ? row.created_at || "" : "Day " + row.day) + "</summary><pre>" + esc(JSON.stringify(row, null, 2)) + "</pre></details>"; }).join("") : empty("尚无已执行的决策或交易");
+    el("orgHistory").innerHTML = gwHTML(results[1].history.length ? results[1].history.map(function (row) { return "<details><summary>" + esc(row.kind || row.type || row.event || "记录") + " · " + esc(row.day == null ? row.created_at || "" : "Day " + row.day) + "</summary><pre>" + esc(JSON.stringify(row, null, 2)) + "</pre></details>"; }).join("") : empty("尚无已执行的决策或交易"));
     el("orgOperations").hidden = false;
     el("orgCommandFields").disabled = !canWrite;
     if (rebuildForm) {
       var current = el("orgCommandType").value;
-      el("orgCommandType").innerHTML = operations.map(function (type) { return '<option value="' + type + '">' + TYPES[type] + "</option>"; }).join("");
+      el("orgCommandType").innerHTML = gwHTML(operations.map(function (type) { return '<option value="' + type + '">' + TYPES[type] + "</option>"; }).join(""));
       if (operations.indexOf(current) >= 0) el("orgCommandType").value = current;
       commandInputs();
     }
@@ -234,8 +237,8 @@
       el("orgCreateFields").disabled = !canWrite;
       el("orgCommandFields").disabled = !canWrite || !selectedOrg || selectedOrg.organization_id !== selected;
       el("orgCount").textContent = overview.organizations.length + " 个";
-      el("orgList").innerHTML = overview.organizations.length ? overview.organizations.map(function (org) { return '<button type="button" data-org-id="' + esc(org.organization_id) + '" class="' + (org.organization_id === selected ? "is-active" : "") + '"><strong>' + esc(org.name) + '</strong><small>' + (org.kind === "company" ? "企业" : "社区") + " · " + esc(STATUSES[org.status] || org.status) + " · " + money(org.balance_cents) + "</small></button>"; }).join("") : empty("还没有组织。可从下方选择一个模板。");
-      el("orgCommands").innerHTML = commands.length ? commands.slice().reverse().map(renderCommand).join("") : empty("没有排队或完成的管理命令");
+      el("orgList").innerHTML = gwHTML(overview.organizations.length ? overview.organizations.map(function (org) { return '<button type="button" data-org-id="' + esc(org.organization_id) + '" class="' + (org.organization_id === selected ? "is-active" : "") + '"><strong>' + esc(org.name) + '</strong><small>' + (org.kind === "company" ? "企业" : "社区") + " · " + esc(STATUSES[org.status] || org.status) + " · " + money(org.balance_cents) + "</small></button>"; }).join("") : empty("还没有组织。可从下方选择一个模板。"));
+      el("orgCommands").innerHTML = gwHTML(commands.length ? commands.slice().reverse().map(renderCommand).join("") : empty("没有排队或完成的管理命令"));
       status((overview.enabled ? "组织已启用：命令在仿真日边界执行。" : "组织尚未启用：命令等待下一次启用组织的运行。") + (canWrite ? "" : " 当前世界只读，需世界拥有者或管理员提交命令。"));
       if (overview.meta && overview.meta.recovery_required) status("组织状态需要核对恢复：新的组织支付已停止。请查看运行错误与持久记录。", true);
       if (selected) await loadDetail();

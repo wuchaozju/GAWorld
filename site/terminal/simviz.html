@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <title>GAWorld Simulation</title>
   <meta http-equiv="refresh" content="0;url=/site/simviz/index.html">
-  <script>location.replace("/site/simviz/index.html" + location.search + location.hash);</script>
+  <script>
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+location.replace(gwURL("/site/simviz/index.html" + location.search + location.hash));</script>
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body><a href="/site/simviz/index.html">GAWorld Simulation</a></body>

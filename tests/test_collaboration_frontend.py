@@ -236,7 +236,7 @@ def test_cooperation_artifacts_offer_a_download_action():
     source = (DASHBOARD / "collaboration.js").read_text(encoding="utf-8")
 
     assert re.search(r"save\.download\s*=\s*name", source)
-    assert 'save.href = safeUrl' in source
+    assert 'save.href = gwURL(safeUrl)' in source
     assert 't("cl.artifact_download")' in source
 
     for locale in ("zh-CN.json", "en.json"):

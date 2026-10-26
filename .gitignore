@@ -152,6 +152,8 @@ celerybeat.pid
 !/site/index.html
 !/site/theme.js
 !/site/theme.test.js
+!/site/url.js
+!/site/url.test.js
 !/site/city-lab.css
 !/site/vendor/
 !/site/vendor/**

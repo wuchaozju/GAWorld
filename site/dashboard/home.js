@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Home Mode card — the resident's home, shown inside the indoor mode.
  *
  * Pulls `GET /api/home/<id>` and turns the response into:
@@ -98,7 +100,7 @@
   function renderHomePanel(payload, helpers = {}) {
     const root = helpers.root || document.getElementById("homeCard");
     if (!root) return;
-    root.innerHTML = "";
+    root.innerHTML = gwHTML("");
 
     // The API answers with the design itself; older payloads carry an explicit
     // `has_home` flag. Either way: do we have a home to show?
