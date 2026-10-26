@@ -2107,6 +2107,14 @@
         "round": "Round",
         "status": "Status",
         "node": "Node",
+        "gaworldProgressLabel": "GAWorld progress",
+        "gaworldProgress": {
+          "day": "Day {{value}}",
+          "ticks": "Ticks {{value}}",
+          "schedules": "Agent schedules {{value}}",
+          "elapsed": "Elapsed {{value}} s",
+          "lastProgress": "Last progress {{value}} s ago"
+        },
         "currentPath": "Current path",
         "parentBranch": "Parent branch",
         "noParentBranch": "No parent branch",
@@ -2677,6 +2685,7 @@
     "experimentSubmitted": "Experiment \"{{name}}\" submitted to backend (run_id={{runId}})",
     "experimentCompleted": "Experiment {{name}} completed (run {{status}})",
     "failedToStartExperiment": "Failed to start experiment",
+    "experimentCreatedRunFailed": "Experiment \"{{name}}\" created but failed to start",
     "advanceHydrationFailed": "Simulation advanced, but loading the new node details failed",
     "agentAnalysis": "Agent Analysis",
     "experimentBranchCreated": "Experiment branch created: {{experimentName}} — {{variantName}}",

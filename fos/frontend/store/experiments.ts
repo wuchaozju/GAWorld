@@ -610,6 +610,22 @@ export const createExperimentsSlice: StateCreator<
           }
           const expIdStr = String(expId);
 
+          // Step 2: run the experiment (exactly once; no automatic retry loop).
+          // The backend splits create (branches variant nodes) from run (starts
+          // the simulation), so "Confirm and start" must issue the run call too.
+          let runRes: { run_id?: string } | null = null;
+          try {
+            runRes = await experimentsApi.runExperiment(simId, expIdStr);
+          } catch (runError: any) {
+            // Run failed after a successful create: keep the experiment visible
+            // (the branch nodes already exist) but never fake a running state.
+            console.warn('[runExperiment] experiment created but failed to start', runError?.message || runError);
+            state.addNotification?.('error', i18n.t('store.experimentCreatedRunFailed', { name: experimentName }) || `Experiment "${experimentName}" created but failed to start`);
+          }
+          if (runRes) {
+            state.addNotification?.('success', i18n.t('store.experimentSubmitted', { name: experimentName, runId: (runRes as any)?.run_id ?? '' }) || `Experiment "${experimentName}" submitted to backend`);
+          }
+
           // Make parent non-leaf immediately so UI shows branching intent
           set((s: any) => ({ nodes: (s.nodes || []).map((n: any) => (n.id === baseNodeId ? { ...n, isLeaf: false } : n)) }));
 
@@ -652,8 +668,6 @@ export const createExperimentsSlice: StateCreator<
               };
             });
           };
-
-          state.addNotification?.('success', i18n.t('store.experimentCreatedNoRun', { name: experimentName }) || `Experiment "${experimentName}" created`);
 
           const { getTreeGraph, getSimEvents, getSimState } = await import('../services/simulationTree');
           const { mapGraphToNodes, mapBackendEventsToLogs } = await import('./helpers');

@@ -2296,6 +2296,14 @@
         "round": "轮次",
         "status": "状态",
         "node": "节点",
+        "gaworldProgressLabel": "GAWorld 进度",
+        "gaworldProgress": {
+          "day": "第 {{value}} 天",
+          "ticks": "已完成 {{value}} 个 tick",
+          "schedules": "智能体日程 {{value}}",
+          "elapsed": "已运行 {{value}} 秒",
+          "lastProgress": "最近进度 {{value}} 秒前"
+        },
         "currentPath": "当前路径",
         "parentBranch": "父分支",
         "noParentBranch": "无父分支",
@@ -2671,6 +2679,7 @@
     "experimentSubmitted": "实验「{{name}}」已提交到后端运行（run_id={{runId}}）",
     "experimentCompleted": "实验 {{name}} 已完成（run {{status}}）",
     "failedToStartExperiment": "启动实验失败",
+    "experimentCreatedRunFailed": "实验「{{name}}」已创建，但启动失败",
     "advanceHydrationFailed": "仿真已推进，但加载新节点详情失败",
     "agentAnalysis": "智能体分析",
     "experimentBranchCreated": "实验分支已创建：{{experimentName}} — {{variantName}}",
