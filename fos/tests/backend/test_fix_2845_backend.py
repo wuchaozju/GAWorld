@@ -118,10 +118,10 @@ class TestLStaleRunningReconciliation:
         try:
             # simC has a live in-memory record; simA has nothing → stale.
             with patch.object(
-                SIM_TREE_REGISTRY, "is_live", create=True, side_effect=lambda sid: sid == "SIMC"
+                SIM_TREE_REGISTRY, "is_live", create=True, side_effect=lambda sid: sid == "simC"
             ):
                 reconciled = await reconcile_stale_running_simulations(session)
-            await session.expire_all()
+            session.expire_all()
             from fos.backend.models.simulation import Simulation
 
             sima = (
@@ -171,6 +171,11 @@ def gaworld_service_mock(monkeypatch):
     )
     monkeypatch.setattr(
         svc, "to_fos_agent", lambda agent: {"name": "a", "properties": {}}
+    )
+    monkeypatch.setattr(
+        svc,
+        "list_populations",
+        lambda: {"populations": [{"city": "hangzhou", "total": 1}]},
     )
     return svc
 

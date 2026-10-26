@@ -973,6 +973,77 @@ async def simulation_tree_events(
         return all_logs
 
 
+@get("/{simulation_id:str}/tree/sim/{node_id:int}/gaworld-wait-status")
+async def simulation_tree_gaworld_wait_status(
+    simulation_id: str,
+    node_id: int,
+    sim_record=None,
+    record=None,
+) -> dict:
+    """Expose the GAWorld wait-progress snapshot for one node (task 2845, D).
+
+    Read-only: reads ``gaworld_wait_status.json`` from the node's GAWorld run
+    output dir (written by the scene's subprocess manager while waiting for a
+    day). No new background monitor. When the file is missing the response
+    carries ``available=false`` and a null snapshot.
+
+    Response shape::
+
+        {"simulation_id": str, "node_id": int,
+         "available": bool,
+         "age_seconds": float | null,          # file age (s since last write)
+         "wait_status": null | {...snapshot...}}
+
+    The snapshot dict contains, among others: status, target_day, elapsed_s,
+    last_day, observed_phases, log_age_s, schedule_tick_count,
+    agent_schedule_count, observed_file_change.
+    """
+    import json
+    import time
+    from pathlib import Path
+
+    node = record.tree.nodes.get(int(node_id)) if record is not None else None
+    if node is None:
+        raise HTTPException(status_code=404, detail=T("api.errors.tree_node_not_found"))
+
+    sim = node.get("sim")
+    scene = getattr(sim, "scene", None)
+    managers = []
+    manager = getattr(scene, "_subprocess_manager", None)
+    if manager is not None:
+        managers.append(manager)
+    comparative = getattr(scene, "_comparative_managers", None)
+    if comparative:
+        managers.extend(list(comparative))
+
+    snapshot_path: Path | None = None
+    for item in managers:
+        output_dir = getattr(item, "output_dir", None)
+        if output_dir is None:
+            continue
+        candidate = Path(output_dir) / "gaworld_wait_status.json"
+        if candidate.exists():
+            snapshot_path = candidate
+            break
+
+    result: dict = {
+        "simulation_id": simulation_id,
+        "node_id": int(node_id),
+        "available": False,
+        "age_seconds": None,
+        "wait_status": None,
+    }
+    if snapshot_path is None:
+        return result
+    try:
+        result["wait_status"] = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        result["available"] = True
+        result["age_seconds"] = max(0.0, time.time() - snapshot_path.stat().st_mtime)
+    except (OSError, ValueError):
+        logger.exception("Failed to read GAWorld wait status from %s", snapshot_path)
+    return result
+
+
 @get("/{simulation_id:str}/tree/sim/{node_id:int}/state")
 async def simulation_tree_state(
     request: Request,

@@ -181,6 +181,13 @@ def _stop_simtree_cleanup() -> None:
     _simtree_cleanup_task = None
 
 
+async def _reconcile_stale_running() -> None:
+    """Reconcile DB simulations stuck in 'running' (task 2845 defect L)."""
+    from .services.simulation_reconcile import reconcile_stale_running_on_startup
+
+    await reconcile_stale_running_on_startup()
+
+
 def internal_error_handler(request: Request, exc: Exception) -> Response:
     # Let HTTPExceptions (4xx auth errors, etc.) pass through with their own status code.
     if isinstance(exc, HTTPException):
@@ -391,6 +398,7 @@ def create_app() -> Litestar:
         _prepare_database,
         _provision_single_user,
         _initialize_vector_store,
+        _reconcile_stale_running,
         _start_polling_service,
         _start_simtree_cleanup,
         _log_routes,

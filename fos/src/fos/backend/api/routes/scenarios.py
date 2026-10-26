@@ -103,6 +103,25 @@ async def get_scenario_default_agents(
         return _unavailable_response()
 
 
+@get("/gaworld")
+async def get_gaworld_scenario() -> dict:
+    """Exact-route descriptor for the gaworld scenario (task 2845 defect I).
+
+    Without this static route an exact GET /scenarios/gaworld fell through to
+    the dynamic ``/{scenario_id}`` handler and was indistinguishable from any
+    unknown scenario. Statics take precedence over the dynamic segment.
+    """
+    scenario = get_scenario("gaworld")
+    if not scenario:
+        raise NotFoundException("Scenario 'gaworld' not found")
+    scenario = dict(scenario)
+    try:
+        scenario["default_agents"] = _live_default_agents()
+    except GAWorldUnavailableError:
+        scenario["default_agents"] = []
+    return scenario
+
+
 @get("/gaworld/default-agents")
 async def get_gaworld_default_agents(agent_ids: str | None = None) -> list[dict] | Response:
     """Get editable GAWorld agents from the live GAWorld dashboard."""
@@ -191,6 +210,7 @@ router = Router(
     path="/scenarios",
     route_handlers=[
         list_scenarios,
+        get_gaworld_scenario,
         get_gaworld_default_agents,
         get_gaworld_default_agents_fallback,
         get_scenario_actions_endpoint,

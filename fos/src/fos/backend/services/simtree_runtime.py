@@ -1071,6 +1071,31 @@ class SimTreeRegistry:
             record.touch()
         return record
 
+    def is_live(self, simulation_id: str) -> bool:
+        """True when the registry holds a live entry for this simulation:
+        either nodes are actively running in memory or a GAWorld subprocess
+        of the tree is still alive (task 2845 defect L)."""
+        record = self._records.get(simulation_id.upper())
+        if record is None:
+            return False
+        if getattr(record, "running", None):
+            return True
+        for node in getattr(record.tree, "nodes", {}).values():
+            sim = node.get("sim") if isinstance(node, dict) else None
+            scene = getattr(sim, "scene", None)
+            managers = []
+            manager = getattr(scene, "_subprocess_manager", None)
+            if manager is not None:
+                managers.append(manager)
+            comparative = getattr(scene, "_comparative_managers", None)
+            if comparative:
+                managers.extend(list(comparative))
+            for item in managers:
+                is_alive = getattr(item, "is_alive", None)
+                if is_alive is not None and is_alive():
+                    return True
+        return False
+
     def evict_idle_records(
         self,
         idle_ttl_seconds: float,
