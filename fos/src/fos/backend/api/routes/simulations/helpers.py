@@ -32,6 +32,8 @@ from fos.backend.models.simulation import Simulation
 from fos.backend.models.user import ProviderConfig, SearchProviderConfig, User
 from fos.backend.services.default_providers import get_default_ollama_base_url
 from fos.backend.services.provider_dialect import normalize_provider_runtime
+from fos.backend.services.gaworld_agents import GAWorldUnavailableError
+from fos.backend.services.readable_errors import make_readable_error
 from fos.backend.services.simtree_broadcast import broadcast_tree_event  # noqa: F401
 from fos.backend.services.simtree_runtime import SIM_TREE_REGISTRY, SimTreeRecord
 from fos.i18n import T
@@ -192,7 +194,19 @@ async def get_tree_record(
 
     clients = {"chat": llm_client, "default": llm_client, "search": search_client, "providers": provider_clients}
 
-    return await SIM_TREE_REGISTRY.get_or_create_from_sim(sim, clients)
+    try:
+        return await SIM_TREE_REGISTRY.get_or_create_from_sim(sim, clients)
+    except GAWorldUnavailableError as exc:
+        # GAWorld down / empty city → 503, not 500 (task 2875).
+        raise HTTPException(status_code=503, detail=str(exc) or T("api.errors.gaworld_unavailable")) from exc
+    except ValueError as exc:
+        message = str(exc)
+        if "gaworld.error.path_not_set" in message:
+            readable = make_readable_error(message)
+            raise HTTPException(status_code=503, detail=readable["message"]) from exc
+        if message.startswith("GAWorld: unknown agent IDs"):
+            raise HTTPException(status_code=409, detail=T("api.errors.invalid_roster") + f": {message}") from exc
+        raise
 
 
 async def get_simulation_and_tree(

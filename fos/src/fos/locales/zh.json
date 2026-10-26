@@ -315,7 +315,10 @@
         "proposal_text_required_keys": "议会实验需要proposal_text参数。当前配置键：{keys}",
         "no_persisted_state": "模拟没有已持久化的状态"
       },
-      "data_source_not_found": "数据源未找到"
+      "data_source_not_found": "数据源未找到",
+      "gaworld_path_not_set": "GAWorld 路径未配置，请在服务器设置 GAWORLD_PATH。",
+      "gaworld_unavailable": "GAWorld 不可用，请确认 GAWorld 控制台正在运行。",
+      "invalid_roster": "所选居民名单包含 GAWorld 未知的居民"
     },
     "compare": {
       "node_unique_events": "节点 {{node}} 有 {{count}} 条独有事件。",

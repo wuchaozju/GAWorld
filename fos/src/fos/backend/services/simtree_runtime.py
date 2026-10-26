@@ -95,8 +95,10 @@ def _resolve_gaworld_agents(agent_config: dict) -> list[dict]:
     return resolve_gaworld_agents(agent_config)
 
 
-def _resolve_gaworld_agent_ids(params: dict, agents: list[dict]) -> list[str]:
-    return resolve_gaworld_agent_ids(params, agents)
+def _resolve_gaworld_agent_ids(
+    params: dict, agents: list[dict], city: str = ""
+) -> list[str]:
+    return resolve_gaworld_agent_ids(params, agents, city=city)
 
 
 def _quiet_logger(event_type: str, data: dict) -> None:
@@ -785,6 +787,11 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
 
         inner_cfg = cfg.get("generic_config") or cfg
         gaworld_params = inner_cfg.get("parameters", {})
+        # A path persisted at creation time wins over the derived one
+        # (cross-machine deployments); never mandatory (task 2875).
+        gaworld_path = (
+            str(gaworld_params.get("gaworld_path") or "").strip() or gaworld_path
+        )
         gaworld_params["gaworld_path"] = gaworld_path
         logger.info(
             "GAWorld tree build: gaworld_path=%s, params_keys=%s",
@@ -792,8 +799,9 @@ def _build_tree_for_sim(sim_record, clients: dict | None = None) -> SimTree:
             list(gaworld_params.keys()),
         )
         gaworld_agents = _resolve_gaworld_agents(agent_config)
+        gaworld_city = str(agent_config.get("city") or "").strip()
         gaworld_params["agent_ids"] = _resolve_gaworld_agent_ids(
-            gaworld_params, gaworld_agents
+            gaworld_params, gaworld_agents, city=gaworld_city
         )
         config = ExperimentConfig(
             agents=gaworld_agents,
