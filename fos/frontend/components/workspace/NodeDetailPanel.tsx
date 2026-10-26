@@ -6,6 +6,11 @@ import { ComparisonView } from "../ComparisonView";
 import { LogViewer } from "../LogViewer";
 import { useSimulationStore } from "../../store";
 import { resolveAgentDisplayName } from "../../store/helpers";
+import {
+  extractGaworldProgress,
+  gaworldProgressLines,
+  GaworldProgressLine,
+} from "../../utils/gaworldProgress";
 import { buildWorkspacePath, getWorkspaceNodeLabel } from "./workspaceLabels";
 
 export type NodeDetailTab = "events" | "branches" | "logs" | "raw";
@@ -103,6 +108,9 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({
     ? t("components.workspace.nodeDetail.roundN", { n: selectedNode.depth })
     : t("components.workspace.nodeDetail.start");
 
+  // GAWorld run progress (defensive: hidden entirely when no snapshot exists).
+  const gaworldProgress: GaworldProgressLine[] = gaworldProgressLines(extractGaworldProgress(selectedNode));
+
   return (
     <section className="ss-node-detail" id="workspace-detail">
       <div className="ss-node-detail__header">
@@ -136,6 +144,20 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({
             <span>{t("components.workspace.nodeDetail.node")}</span>
             <strong>{getWorkspaceNodeLabel(selectedNode, t)}</strong>
           </div>
+          {gaworldProgress.length ? (
+            <div className="ss-node-detail__meta-item">
+              <span>{t("components.workspace.nodeDetail.gaworldProgressLabel")}</span>
+              <strong>
+                {gaworldProgress
+                  .map((line) =>
+                    t(`components.workspace.nodeDetail.gaworldProgress.${line.key}`, {
+                      value: line.value,
+                    }),
+                  )
+                  .join(" \u00b7 ")}
+              </strong>
+            </div>
+          ) : null}
         </div>
       </div>
 

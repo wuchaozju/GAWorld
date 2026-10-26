@@ -223,11 +223,9 @@ export const ExperimentDesignPanel: React.FC<ExperimentDesignPanelProps> = ({
   const currentSimulation = useSimulationStore((state) => state.currentSimulation);
   const addNotification = useSimulationStore((state) => state.addNotification);
   const baseNode = nodes.find((node) => node.id === selectedNodeId);
-  const expectedVariantParentId = baseNode
-    ? baseNode.parentId == null
-      ? baseNode.id
-      : baseNode.parentId
-    : null;
+  // Variant nodes branch FROM the base node (not alongside it), so the
+  // expected parent of a variant is the base node itself at any depth.
+  const expectedVariantParentId = baseNode ? String(baseNode.id) : null;
   const currentSceneType =
     currentSimulation?.scene_type ||
     (currentSimulation as { sceneType?: string } | null)?.sceneType ||
