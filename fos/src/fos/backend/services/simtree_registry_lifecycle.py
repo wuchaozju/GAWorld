@@ -18,7 +18,15 @@ class SimTreeRecord:
         self.subs: list[asyncio.Queue] = []
         self.running: set[int] = set()
         self._suggestions_viewed_intervals: set[int] = set()
+        # Topology lock: guards short synchronous critical sections —
+        # copy_sim/attach and running/task registration — never the
+        # simulator run itself (independent parents must run in parallel).
         self._advance_lock: asyncio.Lock = asyncio.Lock()
+        # Persist lock: shared by advance_chain / advance_multi /
+        # advance_frontier across tree.serialize() + DB commit, so an
+        # out-of-order whole-tree snapshot cannot overwrite a newer one
+        # (lost-update race).
+        self._persist_lock: asyncio.Lock = asyncio.Lock()
         # Per-parent in-flight advance claims (request-level idempotency):
         # a duplicate Advance on the same parent gets an immediate 409
         # instead of silently queueing on _advance_lock and creating a
