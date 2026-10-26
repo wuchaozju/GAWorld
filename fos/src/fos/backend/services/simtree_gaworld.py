@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 
 from fos.backend.services.gaworld_agents import GAWorldUnavailableError
+
+logger = logging.getLogger(__name__)
 
 #: Phase 9 single-implementation audit marker: branch_runtime_overrides
 #: takes its run-path key set from the authoritative worldrun definition.
@@ -91,28 +94,86 @@ def resolve_gaworld_agents(agent_config: dict) -> list[dict]:
     return live_agents
 
 
-def resolve_gaworld_agent_ids(params: dict, agents: list[dict]) -> list[str]:
-    """Build the GAWorld agent ID list from params first, then explicit agents."""
+def _live_gaworld_agent_ids() -> set[str]:
+    """Collect every resident ID of the live GAWorld city (string form).
+
+    Raises :class:`GAWorldUnavailableError` when GAWorld cannot answer —
+    callers surface that as a typed error instead of launching a run with
+    an unvalidated population.
+    """
+    from fos.backend.services import gaworld_agents as gaworld_agents_service
+
+    ids: set[str] = set()
+    offset = 0
+    while True:
+        page = gaworld_agents_service.get_agents(city="", offset=offset)
+        agents = list(page.get("agents") or [])
+        for agent in agents:
+            raw_agent_id = agent.get("id")
+            if raw_agent_id is not None and str(raw_agent_id).strip():
+                ids.add(str(raw_agent_id).strip())
+        offset += len(agents)
+        if not agents or offset >= int(page.get("total") or offset):
+            break
+    return ids
+
+
+def resolve_gaworld_agent_ids(
+    params: dict,
+    agents: list[dict],
+    *,
+    known_ids: set[str] | None = None,
+) -> list[str]:
+    """Build the GAWorld agent ID list; the explicit roster is authoritative.
+
+    Priority (task 2845 defect E):
+    - a non-empty explicitly selected roster (the ``agents`` list) wins;
+    - ``params.agent_ids`` is used ONLY as a fallback when the roster is empty;
+    - when both are present and conflict, the roster wins and a warning is
+      logged that ``params.agent_ids`` were ignored;
+    - the final IDs are validated against the GAWorld agent source (or an
+      explicit ``known_ids`` override for tests); an unknown explicit-roster
+      ID raises :class:`ValueError` loudly BEFORE any subprocess launch.
+    """
     raw_agent_ids = params.get("agent_ids", [])
+    param_ids: list[str] = []
     if isinstance(raw_agent_ids, str):
-        ids = [part.strip() for part in raw_agent_ids.split(",") if part.strip()]
-        if ids:
-            return ids
+        param_ids = [part.strip() for part in raw_agent_ids.split(",") if part.strip()]
     elif isinstance(raw_agent_ids, list):
-        ids = [
+        param_ids = [
             str(agent_id).strip() for agent_id in raw_agent_ids if str(agent_id).strip()
         ]
-        if ids:
-            return ids
 
-    resolved_ids: list[str] = []
+    roster_ids: list[str] = []
     for agent in agents:
         raw_agent_id = agent.get("id")
         if raw_agent_id is None:
             continue
         agent_id = str(raw_agent_id).strip()
         if agent_id:
-            resolved_ids.append(agent_id)
+            roster_ids.append(agent_id)
+
+    if roster_ids:
+        if param_ids and set(param_ids) != set(roster_ids):
+            logger.warning(
+                "GAWorld: both an explicit roster (%s) and params.agent_ids (%s) "
+                "are present; the selected roster wins and params.agent_ids are ignored",
+                roster_ids,
+                param_ids,
+            )
+        resolved_ids = roster_ids
+    else:
+        resolved_ids = param_ids
+
+    if resolved_ids:
+        known = known_ids if known_ids is not None else _live_gaworld_agent_ids()
+        unknown = [agent_id for agent_id in resolved_ids if agent_id not in known]
+        if unknown:
+            raise ValueError(
+                "GAWorld: unknown agent IDs in the selected roster: "
+                f"{unknown}; refusing to launch with a wrong population"
+            )
+
     return resolved_ids
 
 
