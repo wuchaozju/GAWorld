@@ -2128,9 +2128,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 def _ensure_fos_backend():
-    """Start/reuse the managed integrated FOS backend (None = external)."""
+    """Validate the built FOS frontend, then start/reuse the backend (None = external)."""
     from gaworld.apps import fos_supervisor
 
+    # Refuse to serve a bundle that would infinite-skeleton (missing dist, a
+    # standalone build referencing /assets/*, or dangling asset files).
+    fos_supervisor.validate_fos_dist()
     return fos_supervisor.ensure_backend()
 
 
