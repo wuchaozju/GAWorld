@@ -31,6 +31,28 @@ export interface GaworldProgressLine {
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
+/** Node statuses during which the wait-status endpoint should be polled. */
+export const GAWORLD_ACTIVE_STATUSES: readonly string[] = ["queued", "running"];
+
+export const isGaworldActiveStatus = (status: string | null | undefined): boolean =>
+  typeof status === "string" && GAWORLD_ACTIVE_STATUSES.includes(status);
+
+/**
+ * Picks the snapshot to render: the polled endpoint snapshot wins when it is
+ * a usable object; otherwise fall back to whatever the node meta carries.
+ * An unavailable/absent polled snapshot yields null (nothing is rendered,
+ * never fabricated numbers).
+ */
+export function pickGaworldProgressSnapshot(
+  node: { meta?: Record<string, any> | null } | null | undefined,
+  polled: unknown,
+): GaworldProgressSnapshot | null {
+  if (polled && typeof polled === "object" && !Array.isArray(polled)) {
+    return polled as GaworldProgressSnapshot;
+  }
+  return extractGaworldProgress(node);
+}
+
 /**
  * Extracts the progress snapshot from a node, tolerating several meta keys
  * and any absent/invalid shape. Returns null when there is nothing to show.

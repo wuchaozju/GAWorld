@@ -41,6 +41,23 @@ export const RUNTIME_STATUSES: readonly string[] = [
   "attention_required",
 ];
 
+/** GAWorld run-progress snapshot served by the backend for a running node. */
+export type GaworldWaitStatusResponse = {
+  simulation_id?: string;
+  node_id?: number;
+  available: boolean;
+  age_seconds?: number | null;
+  wait_status?: Record<string, unknown> | null;
+};
+
+/**
+ * Read-only GAWorld wait-progress snapshot for one node.
+ * Returns available=false / null wait_status when nothing is running.
+ */
+export async function getGaworldWaitStatus(base: string, id: string, node: number, token?: string): Promise<GaworldWaitStatusResponse> {
+  return await httpGet<GaworldWaitStatusResponse>(base, `/simulations/${id}/tree/sim/${node}/gaworld-wait-status`, token);
+}
+
 /** Cancel a queued or running branch (terminal outcome, never launches afterwards). */
 export async function treeCancelNode(base: string, id: string, node: number, token?: string): Promise<{ ok: boolean }> {
   return await httpPost<{ ok: boolean }>(base, `/simulations/${id}/tree/node/${node}/cancel`, {}, token);

@@ -6,11 +6,16 @@ import { ComparisonView } from "../ComparisonView";
 import { LogViewer } from "../LogViewer";
 import { useSimulationStore } from "../../store";
 import { resolveAgentDisplayName } from "../../store/helpers";
+import { getGaworldWaitStatus } from "../../services/simulationTree";
 import {
-  extractGaworldProgress,
   gaworldProgressLines,
+  isGaworldActiveStatus,
+  pickGaworldProgressSnapshot,
   GaworldProgressLine,
+  GaworldProgressSnapshot,
 } from "../../utils/gaworldProgress";
+
+const GAWORLD_WAIT_STATUS_POLL_MS = 5000;
 import { buildWorkspacePath, getWorkspaceNodeLabel } from "./workspaceLabels";
 
 export type NodeDetailTab = "events" | "branches" | "logs" | "raw";
@@ -46,6 +51,9 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({
   const selectNode = useSimulationStore((state) => state.selectNode);
   const setCompareTarget = useSimulationStore((state) => state.setCompareTarget);
   const agents = useSimulationStore((state) => state.agents);
+  const simulationId = useSimulationStore((state) => state.currentSimulation?.id);
+  const engineEndpoint = useSimulationStore((state) => state.engineConfig?.endpoint);
+  const engineToken = useSimulationStore((state) => (state.engineConfig as any)?.token as string | undefined);
 
   const selectedNode = React.useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || nodes[0] || null,
@@ -108,8 +116,42 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({
     ? t("components.workspace.nodeDetail.roundN", { n: selectedNode.depth })
     : t("components.workspace.nodeDetail.start");
 
-  // GAWorld run progress (defensive: hidden entirely when no snapshot exists).
-  const gaworldProgress: GaworldProgressLine[] = gaworldProgressLines(extractGaworldProgress(selectedNode));
+  // GAWorld run progress: while the node is queued/running we poll the
+  // backend wait-status endpoint and render its live snapshot; the node's
+  // meta stays as a fallback. Absent/unavailable data renders nothing.
+  const nodeStatus = selectedNode?.status ?? null;
+  const isActiveNode = isGaworldActiveStatus(nodeStatus);
+  const activeNodeId = isActiveNode ? Number(selectedNode?.id) : NaN;
+  const [gaworldSnapshot, setGaworldSnapshot] = React.useState<GaworldProgressSnapshot | null>(null);
+
+  React.useEffect(() => {
+    if (!isActiveNode || !Number.isFinite(activeNodeId) || !simulationId || !engineEndpoint) {
+      setGaworldSnapshot(null);
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await getGaworldWaitStatus(engineEndpoint, String(simulationId), activeNodeId, engineToken);
+        const snapshot = response?.available ? response.wait_status : null;
+        setGaworldSnapshot(snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : null);
+      } catch {
+        if (!cancelled) setGaworldSnapshot(null);
+      }
+    };
+    void poll();
+    const intervalId = window.setInterval(() => {
+      void poll();
+    }, GAWORLD_WAIT_STATUS_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [isActiveNode, activeNodeId, simulationId, engineEndpoint, engineToken]);
+
+  const gaworldProgress: GaworldProgressLine[] = gaworldProgressLines(
+    pickGaworldProgressSnapshot(selectedNode, gaworldSnapshot),
+  );
 
   return (
     <section className="ss-node-detail" id="workspace-detail">
