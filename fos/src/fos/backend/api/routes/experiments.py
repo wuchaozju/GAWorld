@@ -523,16 +523,28 @@ def _completed_branch_nodes(tree, node_ids: list[int]) -> dict[int, dict]:
     for raw_id in node_ids:
         node = nodes.get(int(raw_id))
         if node is None:
-            raise HTTPException(status_code=400, detail=f"node not found in this simulation: {raw_id}")
+            raise HTTPException(
+                status_code=400,
+                detail=T("api.errors.gaworld_node_not_in_simulation", node_id=raw_id),
+            )
         meta = node.get("meta") or {}
         gw = meta.get("gaworld")
         if not isinstance(gw, dict) or not gw.get("run_dir"):
-            raise HTTPException(status_code=400, detail=f"node {raw_id} is not a GAWorld branch node")
+            raise HTTPException(
+                status_code=400,
+                detail=T("api.errors.gaworld_node_not_branch", node_id=raw_id),
+            )
         if str(gw.get("status") or "") != "completed":
-            raise HTTPException(status_code=400, detail=f"node {raw_id} has not completed its run")
+            raise HTTPException(
+                status_code=400,
+                detail=T("api.errors.gaworld_node_not_completed", node_id=raw_id),
+            )
         state_csv = os.path.join(str(gw["run_dir"]), "state", "agent_state_history.csv")
         if not os.path.isfile(state_csv):
-            raise HTTPException(status_code=400, detail=f"node {raw_id}: state history not found at {state_csv}")
+            raise HTTPException(
+                status_code=400,
+                detail=T("api.errors.gaworld_state_history_missing", path=state_csv),
+            )
         resolved[int(raw_id)] = node
     return resolved
 
@@ -576,15 +588,18 @@ async def compare_branches(simulation_id: str, data: dict, run_record=None) -> d
     baseline_raw = data.get("baseline_node")
     branches_raw = data.get("branch_nodes")
     if baseline_raw is None or branches_raw is None or not isinstance(branches_raw, list) or not branches_raw:
-        raise HTTPException(status_code=400, detail="baseline_node and a non-empty branch_nodes list are required")
+        raise HTTPException(
+            status_code=400,
+            detail=T("api.errors.baseline_and_branch_nodes_required"),
+        )
     try:
         baseline_id = int(baseline_raw)
         branch_ids = [int(raw) for raw in branches_raw]
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="node ids must be integers")
+        raise HTTPException(status_code=400, detail=T("api.errors.invalid_node_ids"))
 
     if run_record is None:
-        raise HTTPException(status_code=401, detail="authentication required")
+        raise HTTPException(status_code=401, detail=T("api.errors.authentication_required"))
     tree = run_record.tree
 
     resolved = _completed_branch_nodes(tree, [baseline_id, *branch_ids])
@@ -610,7 +625,9 @@ async def compare_branches(simulation_id: str, data: dict, run_record=None) -> d
 
     gaworld_path = resolve_gaworld_path()
     if not gaworld_path:
-        raise HTTPException(status_code=503, detail="GAWorld is not configured on this server; set GAWORLD_PATH")
+        raise HTTPException(
+            status_code=503, detail=T("api.errors.gaworld_path_not_set")
+        )
 
     report, artifacts_dir, error = _analyze_manifest_with_gaworld(gaworld_path, manifest)
 

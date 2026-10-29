@@ -319,7 +319,15 @@
       "data_source_not_found": "数据源未找到",
       "gaworld_path_not_set": "GAWorld 路径未配置，请在服务器设置 GAWORLD_PATH。",
       "gaworld_unavailable": "GAWorld 不可用，请确认 GAWorld 控制台正在运行。",
-      "invalid_roster": "所选居民名单包含 GAWorld 未知的居民"
+      "invalid_roster": "所选居民名单包含 GAWorld 未知的居民",
+      "gaworld_node_not_in_simulation": "本仿真中找不到节点 {node_id}",
+      "gaworld_node_not_branch": "节点 {node_id} 不是 GAWorld 分支节点",
+      "gaworld_node_not_completed": "节点 {node_id} 尚未完成运行",
+      "gaworld_state_history_missing": "在 {path} 找不到节点状态历史",
+      "baseline_and_branch_nodes_required": "需要 baseline_node 和非空的 branch_nodes 列表",
+      "authentication_required": "需要登录",
+      "gaworld_unknown_roster_agents": "GAWorld：所选居民名单中有未知居民 ID：{ids}；拒绝以错误的人口启动",
+      "gaworld_pending_interventions_no_path": "节点有 pending_interventions 但没有 interventions_path——请先执行 isolate_node_runtime()"
     },
     "compare": {
       "node_unique_events": "节点 {{node}} 有 {{count}} 条独有事件。",

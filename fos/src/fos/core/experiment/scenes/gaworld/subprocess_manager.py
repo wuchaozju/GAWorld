@@ -71,15 +71,22 @@ class _GaworldProcessRegistry:
         process = getattr(manager, "process", None)
         if process is None or process.poll() is not None:
             return
+        pid = getattr(process, "pid", None)
+        if pid is None:
+            # Test doubles (and exotic wrappers) may expose no pid; there is
+            # nothing to liveness-track, so skip the registry entry.
+            return
         with self._lock:
-            self._entries[process.pid] = manager
+            self._entries[pid] = manager
 
     def unregister(self, manager: GAWorldSubprocessManager) -> None:
         process = getattr(manager, "process", None)
         if process is None:
             return
-        with self._lock:
-            self._entries.pop(process.pid, None)
+        pid = getattr(process, "pid", None)
+        if pid is not None:
+            with self._lock:
+                self._entries.pop(pid, None)
 
     def _prune(self) -> None:
         with self._lock:

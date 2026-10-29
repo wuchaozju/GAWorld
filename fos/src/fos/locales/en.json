@@ -319,7 +319,15 @@
       "data_source_not_found": "Data source not found",
       "gaworld_path_not_set": "GAWorld path is not configured. Set GAWORLD_PATH on the server.",
       "gaworld_unavailable": "GAWorld is unavailable. Make sure the GAWorld dashboard is running.",
-      "invalid_roster": "The selected resident roster contains residents unknown to GAWorld"
+      "invalid_roster": "The selected resident roster contains residents unknown to GAWorld",
+      "gaworld_node_not_in_simulation": "Node {node_id} not found in this simulation",
+      "gaworld_node_not_branch": "Node {node_id} is not a GAWorld branch node",
+      "gaworld_node_not_completed": "Node {node_id} has not completed its run",
+      "gaworld_state_history_missing": "Node state history not found at {path}",
+      "baseline_and_branch_nodes_required": "baseline_node and a non-empty branch_nodes list are required",
+      "authentication_required": "Authentication required",
+      "gaworld_unknown_roster_agents": "GAWorld: unknown agent IDs in the selected roster: {ids}; refusing to launch with a wrong population",
+      "gaworld_pending_interventions_no_path": "Node has pending_interventions but no interventions_path — apply isolate_node_runtime() first"
     },
     "compare": {
       "node_unique_events": "Node {{node}} has {{count}} unique events.",

@@ -7,6 +7,7 @@ import os
 import re
 
 from fos.backend.services.gaworld_agents import GAWorldUnavailableError
+from fos.i18n import T
 
 logger = logging.getLogger(__name__)
 
@@ -193,8 +194,10 @@ def resolve_gaworld_agent_ids(
         unknown = [agent_id for agent_id in resolved_ids if agent_id not in known]
         if unknown:
             raise ValueError(
-                "GAWorld: unknown agent IDs in the selected roster: "
-                f"{unknown}; refusing to launch with a wrong population"
+                T(
+                    "api.errors.gaworld_unknown_roster_agents",
+                    ids=", ".join(map(str, unknown)),
+                )
             )
 
     return resolved_ids
@@ -372,7 +375,7 @@ def materialize_pending_interventions(tree, node_id: int) -> dict | None:
 
     node = tree.nodes.get(int(node_id))
     if node is None:
-        raise KeyError(f"node {node_id} not found in tree")
+        raise KeyError(T("api.errors.tree_node_not_found", node_id=node_id))
     meta = node.setdefault("meta", {})
     text = meta.get("pending_interventions")
     if not text or meta.get("pending_interventions_materialized"):
@@ -380,8 +383,7 @@ def materialize_pending_interventions(tree, node_id: int) -> dict | None:
     interventions_path = meta.get("interventions_path")
     if not interventions_path:
         raise ValueError(
-            "node has pending_interventions but no interventions_path — "
-            "apply isolate_node_runtime() first"
+            T("api.errors.gaworld_pending_interventions_no_path")
         )
     entry = {
         "id": f"fork-{int(node_id)}-pending",
