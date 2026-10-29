@@ -28,12 +28,12 @@ import uuid
 from typing import Any
 
 from gaworld.worldrun import lifecycle
-from gaworld.worldrun.lifecycle import STATUSES
 from gaworld.worldrun.config import (
     RESERVED_CONFIG_KEYS,
     validate_world_overrides,
 )
 from gaworld.worldrun.history import HistoryAppender, _existing_steps, copy_history
+from gaworld.worldrun.lifecycle import STATUSES
 from gaworld.worldrun.manifest import load_manifest, write_manifest
 
 WORLDRUN_VERSION = 1

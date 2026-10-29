@@ -85,7 +85,7 @@ jobs:
           python -m pip install --upgrade pip
           # fos/tests also import gaworld (rerun-isolation, SimTree fork tests),
           # so the GAWorld runtime deps (numpy/pandas/matplotlib) are needed too.
-          pip install -r requirements.txt -r fos/requirements-test.txt
+          pip install -r requirements.txt -r fos/requirements-test.txt scipy
           pip install -e . --no-deps -e ./fos --no-deps
       - name: Run FOS backend tests
         working-directory: fos
