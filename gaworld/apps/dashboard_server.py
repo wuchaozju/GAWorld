@@ -2412,6 +2412,7 @@ def _shutdown_fos_backend(handle):
 
 def run_server(host="127.0.0.1", port=8766, multi_user=False):
     from gaworld.accounts.mode import dashboard_mode
+    from gaworld.apps.fos_supervisor import FosBackendError as _FosBackendError
 
     configured_prefix()  # Invalid mounts must fail before binding a public socket.
     with dashboard_mode(multi_user, paths.REPO_ROOT):
@@ -2429,7 +2430,12 @@ def run_server(host="127.0.0.1", port=8766, multi_user=False):
         if not multi_user or os.environ.get("GAWORLD_FOS_BACKEND") == "1":
             try:
                 fos_handle = _ensure_fos_backend()
-            except Exception as exc:  # actionable FosBackendError or unexpected failure
+            except _FosBackendError as exc:
+                # A plain GAWorld install must still boot without the optional
+                # integrated FOS frontend; only a missing/misbuilt dist lands here.
+                print(f"warning: integrated FOS backend not started: {exc}")
+                print("The console will serve without FOS (/fos/* will be unavailable).")
+            except Exception as exc:  # unexpected supervisor failure
                 print(f"error: integrated FOS backend could not be started: {exc}")
                 server.server_close()
                 raise SystemExit(1) from exc
