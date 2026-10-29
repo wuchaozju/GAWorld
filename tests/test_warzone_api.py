@@ -66,12 +66,8 @@ def _scripted(*items: str) -> Iterator[str]:
 
 
 def _proposal(author_id: int, plan: list[tuple[str, str, int]], rationale: str = "") -> str:
-    rows = ",".join(
-        f'{{"resource": "{r}", "recipient_id": "{rid}", "amount": {a}}}' for r, rid, a in plan
-    )
-    return (
-        f'{{"rationale": "{rationale or "我给病的孩子。"}", "plan": [{rows}]}}'
-    )
+    rows = ",".join(f'{{"resource": "{r}", "recipient_id": "{rid}", "amount": {a}}}' for r, rid, a in plan)
+    return f'{{"rationale": "{rationale or "我给病的孩子。"}", "plan": [{rows}]}}'
 
 
 def _vote(choice: str, for_: int = 0, reason: str = "好.") -> str:
@@ -196,8 +192,8 @@ class RunTest(unittest.TestCase):
         # voter 1 votes "yes" without "for"; the runner must count it for
         # their own proposal (index 0). voter 2 backs proposal 1 (theirs).
         votes = [
-            _vote("yes"),                # voter 1 — bare yes → counts for #0
-            _vote("yes", for_=1),        # voter 2 — backs proposal 2 = index 1
+            _vote("yes"),  # voter 1 — bare yes → counts for #0
+            _vote("yes", for_=1),  # voter 2 — backs proposal 2 = index 1
         ]
         idx = {"i": 0}
 
@@ -387,16 +383,21 @@ class StatsTest(unittest.TestCase):
             essay_fn=lambda p: "",
         )
         stats = run["stats"]
-        for key in ("mortality", "dissent_rate", "food_gini", "avg_moral_distress",
-                    "depleted_first", "strongest_id", "most_excluded_id"):
+        for key in (
+            "mortality",
+            "dissent_rate",
+            "food_gini",
+            "avg_moral_distress",
+            "depleted_first",
+            "strongest_id",
+            "most_excluded_id",
+        ):
             self.assertIn(key, stats)
 
 
 class ParseTest(unittest.TestCase):
     def test_proposal_clean_json(self) -> None:
-        got = warzone_api.parse_proposal(
-            _proposal(1, [("食物", "#1", 2), ("药品", "#2", 1)], "先给病人")
-        )
+        got = warzone_api.parse_proposal(_proposal(1, [("食物", "#1", 2), ("药品", "#2", 1)], "先给病人"))
         self.assertEqual(got["rationale"], "先给病人")
         self.assertEqual(len(got["plan"]), 2)
         self.assertEqual(got["plan"][0]["resource"], "食物")
@@ -413,7 +414,9 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(len(got["plan"]), 1)
 
     def test_proposal_wrapped_in_prose(self) -> None:
-        got = warzone_api.parse_proposal('好的。\n{"plan": [{"resource": "药品", "recipient_id": "#2", "amount": 1}]}\n就这样')
+        got = warzone_api.parse_proposal(
+            '好的。\n{"plan": [{"resource": "药品", "recipient_id": "#2", "amount": 1}]}\n就这样'
+        )
         self.assertEqual(len(got["plan"]), 1)
 
     def test_garbage_proposal_yields_empty_plan_with_fallback(self) -> None:
@@ -457,7 +460,8 @@ class CatalogueTest(unittest.TestCase):
 
     def test_custom_stock_with_zero_values_falls_back(self) -> None:
         got = warzone_api.resolve_scenario(
-            "", {"name": "化工厂", "days": "第一天", "stock": {"食物": 0, "药品": 0, "燃料": 0, "守卫时间": 0}}
+            "",
+            {"name": "化工厂", "days": "第一天", "stock": {"食物": 0, "药品": 0, "燃料": 0, "守卫时间": 0}},
         )
         self.assertTrue(any(got["stock"].values()))
 

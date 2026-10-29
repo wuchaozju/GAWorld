@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 const state = {
   config: null,
   agents: [],
@@ -18,6 +21,13 @@ const state = {
   liveFrames: new Map(),
   frameIndex: 0,
   follow: true,
+  // Which view the map shows: "auto" follows the selected resident (at home
+  // → the indoor mode of their flat, out → the city map). A click on the
+  // mode buttons switches to a fixed mode until another resident is picked.
+  sceneMode: "auto",
+  // Signature of the home card's last render (resident + room + activity),
+  // so a new frame does not rebuild the card when nothing in it changed.
+  homeCardSignature: "",
   running: false,
   pollTimer: null,
   avatarCache: new Map(),
@@ -96,8 +106,6 @@ const els = {
   familyOverview: document.getElementById("familyOverview"),
   familyDetail: document.getElementById("familyDetail"),
   refreshFamilyBtn: document.getElementById("refreshFamilyBtn"),
-  homeDetail: document.getElementById("homeDetail"),
-  refreshHomeBtn: document.getElementById("refreshHomeBtn"),
   interviewContext: document.getElementById("interviewContext"),
   interviewQuestions: document.getElementById("interviewQuestions"),
   interviewBtn: document.getElementById("interviewBtn"),
@@ -203,7 +211,7 @@ function loadAvatar(path) {
   img.onerror = () => {
     state.avatarCache.delete(resolved);
   };
-  img.src = resolved;
+  img.src = gwURL(resolved);
   return null;
 }
 
@@ -215,7 +223,7 @@ function renderSelectedAgentAvatar() {
   }
   const selected = state.agents.find((agent) => Number(agent.id) === Number(state.selectedAgentId));
   const avatarPath = getAgentAvatarPath(state.selectedAgentId);
-  els.selectedAgentAvatar.src = avatarPath;
+  els.selectedAgentAvatar.src = gwURL(avatarPath);
   els.selectedAgentAvatar.alt = `${selected ? selected.name : `Agent ${state.selectedAgentId}`} avatar`;
 }
 
@@ -395,7 +403,7 @@ function configPayloadFromForm() {
 function renderCityChoices(cities, selected) {
   const select = els.citySelect;
   if (!select) return;
-  select.innerHTML = "";
+  select.innerHTML = gwHTML("");
 
   const blank = document.createElement("option");
   blank.value = "";
@@ -477,7 +485,7 @@ async function loadConfig() {
 }
 
 function fillProviderSelect(select, providers, selected) {
-  select.innerHTML = "";
+  select.innerHTML = gwHTML("");
   providers.forEach((provider) => {
     const option = document.createElement("option");
     option.value = provider;
@@ -540,7 +548,7 @@ function renderSimRoster() {
   if (!els.simRosterList) return;
   const ids = Array.from(configuredIdSet()).sort((a, b) => a - b);
   if (els.simRosterCount) els.simRosterCount.textContent = ids.length ? String(ids.length) : "";
-  els.simRosterList.innerHTML = "";
+  els.simRosterList.innerHTML = gwHTML("");
   ids.forEach((id) => {
     const agent = state.agents.find((item) => Number(item.id) === id);
     const name = agent ? agent.name : `Agent ${id}`;
@@ -560,7 +568,7 @@ function renderSimRoster() {
     // No avatar file for this resident yet — fall back to the initial
     // rendered underneath.
     img.addEventListener("error", () => img.remove());
-    img.src = getAgentAvatarPath(id);
+    img.src = gwURL(getAgentAvatarPath(id));
     face.appendChild(img);
 
     const label = document.createElement("span");
@@ -577,6 +585,8 @@ async function selectAgent(agentId) {
   const id = Number(agentId);
   if (!id || id === Number(state.selectedAgentId)) return;
   state.selectedAgentId = id;
+  // A new resident: the view follows them again (at home → their flat).
+  state.sceneMode = "auto";
   els.agentSelect.value = String(id);
   renderSelectedAgentAvatar();
   updateToggleSimBtn();
@@ -621,7 +631,7 @@ function toggleSelectedAgentInSim() {
 // out of loadAgents() so exiting a city-browse preview can restore the picker
 // without refetching data that is already cached.
 function renderRunningAgentOptions() {
-  els.agentSelect.innerHTML = "";
+  els.agentSelect.innerHTML = gwHTML("");
   state.agents.forEach((agent) => {
     const option = document.createElement("option");
     option.value = String(agent.id);
@@ -673,17 +683,17 @@ async function handleCitySelectionChange() {
 async function enterCityBrowse(slug) {
   state.browsing = true;
   if (els.toggleSimBtn) els.toggleSimBtn.disabled = true;
-  els.profileView.innerHTML = `<p class="muted-line">${__("sd.loading")}</p>`;
+  els.profileView.innerHTML = gwHTML(`<p class="muted-line">${__("sd.loading")}</p>`);
   const payload = await api("/api/city/agents?city=" + encodeURIComponent(slug));
   state.browsedCity = payload.city;
   state.browsedAgents = payload.agents || [];
   const firstId = state.browsedAgents.length ? state.browsedAgents[0].id : null;
-  els.agentSelect.innerHTML = cityView().agentOptions(state.browsedAgents, firstId);
+  els.agentSelect.innerHTML = gwHTML(cityView().agentOptions(state.browsedAgents, firstId));
   if (firstId == null) {
     els.selectedAgentAvatar.removeAttribute("src");
     els.selectedAgentAvatar.alt = "";
-    els.profileView.innerHTML = cityView().browseNotice(state.browsedCity) +
-      `<p class="section-note">${__("sd.browse_empty")}</p>`;
+    els.profileView.innerHTML = gwHTML(cityView().browseNotice(state.browsedCity) +
+      `<p class="section-note">${__("sd.browse_empty")}</p>`);
     bindBrowseUseCityBtn();
     return;
   }
@@ -697,14 +707,14 @@ async function browseCityAgent(slug, id) {
   const view = cityView();
   const rows = view.identityRows(detail.agent, detail.city)
     .map(([label, value]) => `<tr><th>${view.esc(label)}</th><td>${view.esc(value)}</td></tr>`).join("");
-  els.profileView.innerHTML = view.browseNotice(detail.city) +
+  els.profileView.innerHTML = gwHTML(view.browseNotice(detail.city) +
     `<table class="ca-kv">${rows}</table>` +
-    renderMarkdown(detail.agent.profile_text || "");
+    renderMarkdown(detail.agent.profile_text || ""));
   // Not getAgentAvatarPath(): that resolves through the *running* trace, which
   // would show whoever holds this number in the actual run, not this
   // resident. The plain per-id fallback file is the closest thing to a
   // city-agnostic avatar this build has.
-  els.selectedAgentAvatar.src = `/output/visualization/avatars/agent_${Number(id)}.svg`;
+  els.selectedAgentAvatar.src = gwURL(`/output/visualization/avatars/agent_${Number(id)}.svg`);
   els.selectedAgentAvatar.alt = `${detail.agent.name || `Agent ${id}`} avatar`;
   bindBrowseUseCityBtn();
 }
@@ -740,7 +750,7 @@ function selectedLifeEventTemplate() {
 }
 
 function fillLifeEventTemplates() {
-  els.lifeEventTemplateSelect.innerHTML = "";
+  els.lifeEventTemplateSelect.innerHTML = gwHTML("");
   state.lifeEventTemplates.forEach((template) => {
     const option = document.createElement("option");
     option.value = template.key;
@@ -920,7 +930,7 @@ function renderMarkdown(md) {
 
 function renderProfileView() {
   if (!els.profileView) return;
-  els.profileView.innerHTML = renderMarkdown(state.profileText);
+  els.profileView.innerHTML = gwHTML(renderMarkdown(state.profileText));
 }
 
 // ---------------------------------------------------------------------------
@@ -971,7 +981,7 @@ async function loadFamily() {
 
 async function loadHome(agentId) {
   const id = agentId != null ? Number(agentId) : Number(state.selectedAgentId);
-  if (!id || !els.homeDetail) return;
+  if (!id) return;
   try {
     const payload = await api(`/api/home/${id}`);
     state.home = payload;
@@ -980,15 +990,50 @@ async function loadHome(agentId) {
     // state rather than an error message.
     state.home = { has_home: false, error: error.message };
   }
-  renderHomePanel();
+  // The indoor mode draws the resident's own flat from this design.
+  if (indoorView) indoorView.setHome(state.home);
+  renderHomePanel(true);
 }
 
-function renderHomePanel() {
-  if (!els.homeDetail) return;
+// The home card lives inside the indoor mode, next to the floor plan.
+function homeCardRoot() {
+  return indoorView ? indoorView.card : null;
+}
+
+// Where the selected resident is right now, read from the current frame.
+function homeNow() {
+  const frame = currentFrame();
+  const agents = (frame && Array.isArray(frame.agents)) ? frame.agents : [];
+  const selected = agents.find((a) => Number(a.agent_id) === Number(state.selectedAgentId));
+  const room = selected && selected.home_room;
+  if (!room || !room.name) return null;
+  return { key: room.key || "", room: room.name, activity: room.activity || "" };
+}
+
+function renderHomePanel(force) {
+  const root = homeCardRoot();
+  if (!root) return;
   if (typeof window.HomePanel !== "object" || !window.HomePanel) {
     return;
   }
-  window.HomePanel.render(state.home, { root: els.homeDetail, t });
+  const now = homeNow();
+  // The card is rebuilt only when something it shows actually changed.
+  const signature = [state.selectedAgentId, now ? `${now.key}:${now.activity}` : "away",
+    state.home && state.home.agent_id].join("|");
+  if (!force && signature === state.homeCardSignature) return;
+  state.homeCardSignature = signature;
+  window.HomePanel.render({ ...(state.home || {}), now }, { root, t: translate });
+  if (now && now.key) window.HomePanel.highlightCurrentRoom(root, now.key);
+}
+
+// The translator the shared panels get: the locale string, or a readable
+// fallback when the key is not in the locale file.
+function translate(key, fallback) {
+  if (typeof window.__ === "function") {
+    const out = window.__(key, fallback);
+    if (out && out !== key) return out;
+  }
+  return fallback || key;
 }
 
 function renderFamilyCard() {
@@ -1000,7 +1045,7 @@ function renderFamilyOverview() {
   if (!els.familyOverview) return;
   const data = state.family;
   if (!data || !data.available) {
-    els.familyOverview.innerHTML = "";
+    els.familyOverview.innerHTML = gwHTML("");
     return;
   }
   const summary = data.summary || {};
@@ -1048,10 +1093,10 @@ function renderFamilyOverview() {
     .join("");
 
   els.familyOverview.innerHTML =
-    `<div class="family-stats">${stats}</div>` +
+    gwHTML(`<div class="family-stats">${stats}</div>` +
     (total
       ? `<div class="family-bar">${bar}</div><div class="family-legend">${legend}</div>`
-      : "");
+      : ""));
 }
 
 function familyMemberChip(member) {
@@ -1072,15 +1117,15 @@ function renderFamilyDetail() {
   if (!els.familyDetail) return;
   const data = state.family;
   if (!data || !data.available) {
-    els.familyDetail.innerHTML = "";
+    els.familyDetail.innerHTML = gwHTML("");
     return;
   }
   const agentId = Number(state.selectedAgentId);
   const row = (data.agents || []).find((item) => Number(item.agent_id) === agentId);
   if (!row) {
-    els.familyDetail.innerHTML = `<p class="family-note">${escapeHtml(
+    els.familyDetail.innerHTML = gwHTML(`<p class="family-note">${escapeHtml(
       __("family.not_in_run")
-    )}</p>`;
+    )}</p>`);
     return;
   }
 
@@ -1118,11 +1163,11 @@ function renderFamilyDetail() {
       : "";
 
   els.familyDetail.innerHTML =
-    `<div class="family-head-row"><strong>${escapeHtml(row.name || "")}</strong>${tags}</div>` +
+    gwHTML(`<div class="family-head-row"><strong>${escapeHtml(row.name || "")}</strong>${tags}</div>` +
     (row.brief ? `<p class="family-brief">${escapeHtml(row.brief)}</p>` : "") +
     group(__("family.coresident"), coresident) +
     group(__("family.elsewhere"), elsewhere) +
-    money;
+    money);
 }
 
 // The homepage shows profiles read-only; editing lives in Agent Studio.
@@ -1197,10 +1242,10 @@ function renderMemory() {
 function renderLongTermMemory(memory) {
   const items = Array.isArray(memory) ? memory : [];
   if (!items.length) {
-    els.memoryView.innerHTML = emptyHtml(__("memory.no_long_term"));
+    els.memoryView.innerHTML = gwHTML(emptyHtml(__("memory.no_long_term")));
     return;
   }
-  els.memoryView.innerHTML = items.map((entry) => {
+  els.memoryView.innerHTML = gwHTML(items.map((entry) => {
     const text = textOf(entry);
     // Entries are written as "[Day 2 12:00 MemoryReview] <text>".
     const match = text.match(/^\[([^\]]{1,80})\]\s*([\s\S]*)$/);
@@ -1208,7 +1253,7 @@ function renderLongTermMemory(memory) {
     const body = match ? match[2] : text;
     return `<div class="mem-item">${tag ? `<span class="mem-chip time">${escapeHtml(tag)}</span>` : ""}`
       + `<p>${escapeHtml(body)}</p></div>`;
-  }).join("");
+  }).join(""));
 }
 
 function scheduleEntries(schedule) {
@@ -1312,7 +1357,7 @@ function renderStateMemory(payload) {
     + memBlock(__("memory.block_schedule"), scheduleHtml)
     + memBlock(__("memory.block_habits"), habitsHtml)
     + memBlock(__("memory.block_intentions"), intentionRows);
-  els.stateMemoryView.innerHTML = html || emptyHtml(__("memory.no_state"));
+  els.stateMemoryView.innerHTML = gwHTML(html || emptyHtml(__("memory.no_state")));
 }
 
 // The episodes endpoint returns a byte tail of a JSONL file, so the first line
@@ -1364,11 +1409,11 @@ function deltaChips(delta) {
 function renderEpisodes(tailText) {
   const episodes = parseEpisodes(tailText);
   if (!episodes.length) {
-    els.episodesView.innerHTML = emptyHtml(__("memory.no_episodes"));
+    els.episodesView.innerHTML = gwHTML(emptyHtml(__("memory.no_episodes")));
     return;
   }
   // Newest first: the tail is chronological.
-  els.episodesView.innerHTML = episodes.slice().reverse().map((ep) => {
+  els.episodesView.innerHTML = gwHTML(episodes.slice().reverse().map((ep) => {
     const when = `D${textOf(ep.day) || "?"} · ${textOf(ep.time) || "--:--"}`;
     const valence = typeof ep.valence === "number" ? ep.valence : null;
     const summary = `<summary><span class="mem-chip time">${escapeHtml(when)}</span>`
@@ -1389,18 +1434,18 @@ function renderEpisodes(tailText) {
       + memRow(__("memory.ep.delta"), deltaChips(ep.delta))
       + memRow(__("memory.ep.tags"), memChips(ep.tags, "neutral"));
     return `<details class="ep-card">${summary}<div class="ep-body">${body}</div></details>`;
-  }).join("");
+  }).join(""));
 }
 
 function renderAgentLog(logText) {
   const lines = String(logText || "").split("\n").filter((line) => line.trim());
   if (!lines.length) {
-    els.agentLogView.innerHTML = emptyHtml(__("memory.no_agent_log"));
+    els.agentLogView.innerHTML = gwHTML(emptyHtml(__("memory.no_agent_log")));
     return;
   }
   const nearBottom = els.agentLogView.scrollTop + els.agentLogView.clientHeight
     >= els.agentLogView.scrollHeight - 30;
-  els.agentLogView.innerHTML = lines.map((line) => {
+  els.agentLogView.innerHTML = gwHTML(lines.map((line) => {
     // Simulator log lines are either "[Tag ...] body" or "Label: body".
     const bracket = line.match(/^\s*\[([^\]]{1,60})\]\s*([\s\S]*)$/);
     const labelled = bracket ? null : line.match(/^\s*([A-Za-z]{1,12}):\s*([\s\S]*)$/);
@@ -1408,7 +1453,7 @@ function renderAgentLog(logText) {
     if (!match) return `<div class="log-line plain"><span class="log-text">${escapeHtml(line)}</span></div>`;
     return `<div class="log-line"><span class="log-tag">${escapeHtml(match[1])}</span>`
       + `<span class="log-text">${escapeHtml(match[2])}</span></div>`;
-  }).join("");
+  }).join(""));
   if (nearBottom) els.agentLogView.scrollTop = els.agentLogView.scrollHeight;
 }
 
@@ -1472,9 +1517,9 @@ function currentRawSource() {
 
 function renderRawModal() {
   const sources = memoryRawSources();
-  els.rawModalTabs.innerHTML = sources.map((source) => `<button type="button" class="raw-modal-tab`
+  els.rawModalTabs.innerHTML = gwHTML(sources.map((source) => `<button type="button" class="raw-modal-tab`
     + `${source.key === state.rawSourceKey ? " active" : ""}" data-raw-tab="${source.key}">`
-    + `${escapeHtml(source.label)}</button>`).join("");
+    + `${escapeHtml(source.label)}</button>`).join(""));
   const active = currentRawSource();
   els.rawModalBody.textContent = active.text || __("raw.empty");
   const chars = (active.text || "").length;
@@ -1500,7 +1545,7 @@ function closeRawModal() {
 function downloadText(filename, text, mime) {
   const url = URL.createObjectURL(new Blob([text], { type: mime || "text/plain;charset=utf-8" }));
   const link = document.createElement("a");
-  link.href = url;
+  link.href = gwURL(url);
   link.download = filename;
   document.body.appendChild(link);
   link.click();
@@ -1648,7 +1693,7 @@ function exportRunLog() {
   // The server streams the untruncated log as Markdown and names the file via
   // Content-Disposition, so nothing has to be buffered in the page.
   const link = document.createElement("a");
-  link.href = "/api/run/log/export";
+  link.href = gwURL("/api/run/log/export");
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1766,26 +1811,51 @@ function renderTrace() {
     } else {
       drawEmptyMap();
     }
-    els.traceStatus.textContent = __(state.trace && state.trace.meta ? "trace.initialized" : "trace.waiting_data");
+    // A running simulation has not produced a frame yet — say so, instead of
+    // leaving the panel looking like a broken run.
+    els.traceStatus.textContent = state.running
+      ? __("trace.preparing")
+      : __(state.trace && state.trace.meta ? "trace.initialized" : "trace.waiting_data");
     return;
   }
   renderSelectedAgentAvatar();
-  els.frameTitle.textContent = `Day ${frame.day} · ${frame.time}`;
+  // The start-positions frame is a preview, not a moment in the simulation.
+  const isStartFrame = frame.phase === "init";
+  els.frameTitle.textContent = isStartFrame ? __("trace.start_positions") : `Day ${frame.day} · ${frame.time}`;
   const finished = state.trace.meta && state.trace.meta.finished;
-  const liveCount = frames.length - (Array.isArray(state.trace.frames) ? state.trace.frames.length : 0);
+  const traceFrameCount = Array.isArray(state.trace.frames) ? state.trace.frames.length : 0;
+  const liveCount = frames.length - traceFrameCount;
   // Was a hardcoded Chinese template literal, so this badge stayed Chinese in
   // English mode. trace.status / trace.frames / trace.completed / trace.writing
   // already existed in both locales — this call site simply bypassed them.
   const live = liveCount > 0 ? __f("trace.live_frames", { count: liveCount }) : "";
   els.traceStatus.textContent =
-    __f("trace.frames", { count: frames.length }) + live +
+    __f("trace.frames", { count: traceFrameCount }) + live +
     " · " + __(finished ? "trace.completed" : "trace.writing");
   els.timelineSlider.max = String(Math.max(0, frames.length - 1));
   els.timelineSlider.value = String(state.frameIndex);
-  els.timelineLabel.textContent = `${frame.date || ""} ${frameWeekday(frame)} ${frame.time || ""}`.trim();
+  els.timelineLabel.textContent = isStartFrame
+    ? __("trace.start_positions")
+    : `${frame.date || ""} ${frameWeekday(frame)} ${frame.time || ""}`.trim();
   if (els.followLatestInput) els.followLatestInput.checked = state.follow;
   els.latestFrameBox.textContent = JSON.stringify(frame, null, 2);
   drawMap(frames.slice(0, state.frameIndex + 1));
+  syncSceneMode(frame);
+  renderHomePanel();
+}
+
+/**
+ * The view follows the resident: at home the indoor mode shows their own
+ * flat (the rooms they move through), out of the house the city map does.
+ * A manual choice on the mode buttons wins until another resident is picked.
+ */
+function syncSceneMode(frame) {
+  if (!indoorView || state.sceneMode !== "auto") return;
+  const agents = (frame && Array.isArray(frame.agents)) ? frame.agents : [];
+  const selected = agents.find((a) => Number(a.agent_id) === Number(state.selectedAgentId));
+  const atHome = Boolean(selected && selected.home_room && selected.home_room.name);
+  const mode = atHome ? "indoor" : "city";
+  if (indoorView.mode !== mode) indoorView.setMode(mode);
 }
 
 /** The frame's weekday, in the reader's language.
@@ -2004,12 +2074,24 @@ function bindEvents() {
       message(__("msg.family_refreshed"));
     }, "btn.reloading", "刷新中…"));
   }
-  if (els.refreshHomeBtn) {
-    els.refreshHomeBtn.addEventListener("click", withBusy(els.refreshHomeBtn, async () => {
-      await loadHome();
-      message(__("msg.home_refreshed", "居家模式已刷新"));
-    }, "btn.reloading", "刷新中…"));
+  // The home card is rendered inside the indoor mode, so its refresh button
+  // lives in a container that is rebuilt on every render — listen on the
+  // pane and delegate.
+  if (els.indoorView) {
+    els.indoorView.addEventListener("click", (event) => {
+      const trigger = event.target.closest('[data-action="refresh-home"]');
+      if (!trigger) return;
+      event.preventDefault();
+      loadHome().then(() => message(__("msg.home_refreshed", "居家模式已刷新")));
+    });
   }
+  // A click on 城市地图 / 室内模式 overrides the automatic switch.
+  const sceneButtons = document.querySelectorAll("[data-scene-mode]");
+  sceneButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.sceneMode = button.dataset.sceneMode === "indoor" ? "indoor" : "city";
+    });
+  });
   els.reloadMemoryBtn.addEventListener("click", withBusy(els.reloadMemoryBtn, async () => {
     await loadMemory();
     if (!els.rawModal.hidden) renderRawModal();
@@ -2083,7 +2165,7 @@ function bindEvents() {
     const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
+    link.href = gwURL(url);
     const stamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace("T", "-").replace(/:/g, "");
     link.download = `fos-prompt-${stamp}.md`;
     link.click();

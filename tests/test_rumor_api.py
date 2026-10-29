@@ -318,8 +318,12 @@ class SpreadTest(unittest.TestCase):
         # 40 distinct surnames so the kin heuristic doesn't collapse the graph.
         surnames = "甲乙丙丁戊己庚辛壬癸" + "子丑寅卯辰巳午未申酉戌亥"
         people = [
-            _person(i, f"{surnames[i % len(surnames)]}{i}", age=30 + (i % 30),
-                    residence="A小区" if i <= 20 else "B小区")
+            _person(
+                i,
+                f"{surnames[i % len(surnames)]}{i}",
+                age=30 + (i % 30),
+                residence="A小区" if i <= 20 else "B小区",
+            )
             for i in range(1, 41)
         ]
         answered = _always(_say("转发"))
@@ -383,9 +387,7 @@ class ConfigCapTest(unittest.TestCase):
             CONFIG["games"] = {"rumor": {"max_agents": 8}}
             # The HTTP layer truncates the picked ids before reaching the
             # roster. The catalogue returns the cap so the picker can match.
-            body, status = rumor_api.handle_get(
-                "/api/games/rumor/catalogue"
-            )
+            body, status = rumor_api.handle_get("/api/games/rumor/catalogue")
             self.assertEqual(status, 200)
             self.assertEqual(body["max_agents"], 8)
             truncated = list(range(1, 41))[:8]

@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Shared terrain-map renderer for GAWorld front-ends.
  *
  * One renderer, used by the Dashboard (控制台) map panel, the City tab
@@ -43,7 +46,7 @@
     return new Promise((resolve, reject) => {
       if (document.querySelector(`script[src="${src}"]`)) return resolve();
       const s = document.createElement("script");
-      s.src = src; s.async = true;
+      s.src = gwURL(src); s.async = true;
       s.onload = () => resolve();
       s.onerror = () => reject(new Error("failed to load " + src));
       document.head.appendChild(s);
@@ -53,7 +56,7 @@
     return new Promise((resolve) => {
       if (document.querySelector(`link[href="${href}"]`)) return resolve();
       const link = document.createElement("link");
-      link.rel = "stylesheet"; link.href = href; link.onload = () => resolve();
+      link.rel = "stylesheet"; link.href = gwURL(href); link.onload = () => resolve();
       document.head.appendChild(link);
     });
   }
@@ -120,6 +123,7 @@
       this.emptyText = opts.emptyText || (() => t("map.waiting_data"));
       this.trailFrames = opts.trailFrames || 96;
       this.showThoughts = opts.showThoughts !== false;
+      this.onSelectAgent = opts.onSelectAgent || null;
       this.token = this._resolveToken();
       this.theme = "dark";
       this.engine = null;
@@ -234,7 +238,7 @@
       const fallback = typeof this.emptyText === "function" ? this.emptyText() : this.emptyText;
       this.emptyEl.textContent = text || fallback || "";
       this.emptyEl.style.display = "block";
-      this.overlay.innerHTML = "";
+      this.overlay.innerHTML = gwHTML("");
     }
     hasMap() {
       const m = this.trace && this.trace.map;
@@ -268,6 +272,18 @@
       // controls. The legacy renderer's resetView dblclick is replaced by
       // Mapbox's own dblclick-zoom-in; we wire resetView to a button.
       this._buildControls();
+      if (this.onSelectAgent && this.host) {
+        const select = event => {
+          const target = event.target.closest('[data-map-agent]');
+          if (!target) return;
+          event.preventDefault(); event.stopPropagation();
+          this.onSelectAgent(Number(target.dataset.mapAgent));
+        };
+        this.host.addEventListener('click', select);
+        this.host.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') select(event);
+        });
+      }
     }
     _buildControls() {
       const parent = this.host ? this.host.parentElement : null;
@@ -501,7 +517,7 @@
       if (!this.map || this._empty) return;
       const frame = this.framesUpTo[this.framesUpTo.length - 1];
       if (!frame) {
-        this.overlay.innerHTML = "";
+        this.overlay.innerHTML = gwHTML("");
         return;
       }
       const agents = (frame.agents || []);
@@ -566,7 +582,8 @@
           ? `<span style="position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;
               background:#fffef9;border:1.5px solid #13795b;display:flex;align-items:center;justify-content:center;
               font-size:11px;line-height:1;">🏠</span>` : "";
-        html.push(`<div style="position:absolute;left:${pt[0] - r - 3}px;top:${pt[1] - r - 3}px;
+        const selectAttrs = this.onSelectAgent ? `data-map-agent="${Number(a.agent_id)}" role="button" tabindex="0" aria-label="${escapeHtml(name)}" aria-pressed="${isSelected}"` : '';
+        html.push(`<div ${selectAttrs} style="${this.onSelectAgent ? 'pointer-events:auto;cursor:pointer;' : ''}position:absolute;left:${pt[0] - r - 3}px;top:${pt[1] - r - 3}px;
           width:${(r + 3) * 2}px;height:${(r + 3) * 2}px;border-radius:50%;
           background:#fffef9;box-shadow:0 4px 12px rgba(0,0,0,.35);">
           <div style="position:relative;width:${r * 2}px;height:${r * 2}px;margin:3px auto;
@@ -584,7 +601,7 @@
           text-overflow:ellipsis;">${name}</div>`);
       }
       if (this.showThoughts) html.push(...this._thoughtBubbles(agents, selectedId));
-      this.overlay.innerHTML = html.join("");
+      this.overlay.innerHTML = gwHTML(html.join(""));
     }
     // Speech bubbles with each resident's main thought, above the avatar.
     // The selected resident goes first; a bubble that would overlap one

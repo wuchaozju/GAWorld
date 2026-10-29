@@ -1,3 +1,5 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 (function () {
   "use strict";
   var key = "gaworld.theme";
@@ -34,4 +36,16 @@
     var control = document.getElementById("themeMode");
     if (control) control.addEventListener("change", function () { set(control.value); });
   });
+})();
+
+// Keep each private workbench page bound to its initial world across browser tabs.
+(function () {
+  if (typeof location === "undefined") return;
+  var path = window.GAWorldURL ? window.GAWorldURL.path(location.pathname) : location.pathname;
+  if (path === "/console" || path.startsWith("/site/dashboard/") || path.startsWith("/site/simviz/") || path === "/dashboard") {
+    var script = document.createElement("script");
+    script.src = gwURL("/site/community/context.js");
+    script.async = false;
+    document.head.appendChild(script);
+  }
 })();

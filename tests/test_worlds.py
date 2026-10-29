@@ -510,6 +510,7 @@ class ModuleEntryPointTest(unittest.TestCase):
             store = AccountStore(db)
             store.init_schema()
             user = store.create_user("小王", PASSWORD)
+            store.create_user("启动管理员", PASSWORD, role="admin")
             world = store.create_world(user["id"], "甲")
             with socket.socket() as sock:
                 sock.bind(("127.0.0.1", 0))
@@ -517,7 +518,7 @@ class ModuleEntryPointTest(unittest.TestCase):
             env = dict(os.environ, GAWORLD_ACCOUNTS_DB=db)
             env.pop("GAWORLD_DASHBOARD_TOKEN", None)
             proc = subprocess.Popen(
-                [sys.executable, "-m", "gaworld.apps.dashboard_server", "--port", str(port)],
+                [sys.executable, "-m", "gaworld.apps.dashboard_server", "--port", str(port), "--multi-user", "True"],
                 cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                 env=env,
                 stdout=subprocess.DEVNULL,

@@ -32,7 +32,10 @@ _PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
 def usage_path() -> str | None:
     """The log beside the account database, or None when accounts are off."""
     from . import db_path
+    from .mode import explicit_mode
 
+    if explicit_mode() is False:
+        return None
     db = db_path(_PROJECT_ROOT)
     return os.path.join(os.path.dirname(db), "usage.jsonl") if os.path.exists(db) else None
 

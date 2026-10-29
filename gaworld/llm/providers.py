@@ -37,7 +37,6 @@ def _post(*args: Any, **kwargs: Any) -> Any:
     return response
 
 
-
 # ---------------------------------------------------------------------
 # Image input
 # ---------------------------------------------------------------------
@@ -113,8 +112,7 @@ def _empty_completion(
     max_tokens: Any = None,
 ) -> EmptyCompletionError:
     detail = (
-        f"provider={provider} stop_reason={stop_reason!r} "
-        f"blocks={block_types!r} max_tokens={max_tokens!r}"
+        f"provider={provider} stop_reason={stop_reason!r} blocks={block_types!r} max_tokens={max_tokens!r}"
     )
     if stop_reason == "max_tokens":
         return EmptyCompletionError(
@@ -169,7 +167,9 @@ def _note_truncated(provider: str, reason: Any, max_tokens: Any) -> None:
             "LLM output was truncated by max_tokens=%s (%s, %s time(s) so far). "
             "Downstream parsers see this as malformed input; raise max_tokens "
             "for this provider, or ask for less per call.",
-            max_tokens, provider, count,
+            max_tokens,
+            provider,
+            count,
         )
 
 
@@ -799,7 +799,10 @@ def probe_provider(cfg: dict[str, Any], *, timeout: int = 30) -> dict[str, Any]:
         from gaworld.llm.credentials import enabled
 
         if enabled():
-            return {"ok": False, "error": "当前账号尚未配置此模型的 API Key。请在「配置 → 模型」中保存你自己的密钥后再测试。"}
+            return {
+                "ok": False,
+                "error": "当前账号尚未配置此模型的 API Key。请在「配置 → 模型」中保存你自己的密钥后再测试。",
+            }
         envs = getattr(provider, "api_key_envs", None) or [getattr(provider, "api_key_env", "")]
         return {
             "ok": False,
@@ -1338,6 +1341,9 @@ def call_llm(
     document has to say so, or the provider truncates it mid-JSON and every
     parser downstream sees malformed input rather than a budget problem.
     """
+    from gaworld.accounts.community import begin_model_call, settle_call
+
+    reservation = begin_model_call()
     try:
         return LLM_ROUTER.call(
             prompt,
@@ -1351,6 +1357,8 @@ def call_llm(
             max_tokens=max_tokens,
         )
     finally:
+        if reservation is not None:
+            settle_call(*reservation)
         # A shared deployment's per-user quota (gaworld.accounts.usage);
         # writes nothing when accounts are off.
         from gaworld.accounts import usage

@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* 研究工作台 · 严肃游戏 — 一段描述 → 一个可以开玩的回合制情景推演。
  *
  * 也管页面顶部的 Tab（实施方案 / 严肃游戏 / 政策仿真与优化 / 社会调查/实验拟合度 / 平行世界），当前 Tab 记在 ?tab= 里。
@@ -93,7 +96,7 @@
       else query.delete(key);
     });
     var text = query.toString();
-    window.history.replaceState(null, "", window.location.pathname + (text ? "?" + text : ""));
+    window.history.replaceState(null, "", gwURL(window.location.pathname + (text ? "?" + text : "")));
   }
 
   /* Each tab names its pane through aria-controls, so a new tab needs no
@@ -117,24 +120,24 @@
 
   function fillSelect(select, values, autoLabel) {
     select.innerHTML =
-      '<option value="0">' + esc(autoLabel) + "</option>" +
+      gwHTML('<option value="0">' + esc(autoLabel) + "</option>" +
       values.map(function (n) {
         return '<option value="' + n + '">' + n + "</option>";
-      }).join("");
+      }).join(""));
   }
 
   function fillProviders() {
     var select = $("sgProvider");
     var previous = select.value;
     select.innerHTML =
-      '<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
+      gwHTML('<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
       state.providers.map(function (p) {
         return (
           '<option value="' + esc(p.name) + '">' +
           esc(p.name + (p.model ? " · " + p.model : "") + (p.is_default ? " ★" : "")) +
           "</option>"
         );
-      }).join("");
+      }).join(""));
     select.value = previous;
   }
 
@@ -306,7 +309,7 @@
     }).join("");
 
     host.innerHTML =
-      '<div class="rw-result-head"><div><h3>' + esc(spec.title) + "</h3>" +
+      gwHTML('<div class="rw-result-head"><div><h3>' + esc(spec.title) + "</h3>" +
       '<div class="rw-badges"><span class="rw-badge">' + esc(tf("sg_n_roles", "{n} 个角色", { n: spec.roles.length })) +
       '</span><span class="rw-badge">' + esc(tf("sg_n_rounds", "{n} 轮", { n: spec.rounds.length })) + "</span></div></div>" +
       '<div class="rw-actions"><button class="btn ghost tiny" id="sgDeleteGame">' + esc(t("delete", "删除")) + "</button></div></div>" +
@@ -328,7 +331,7 @@
       '</span><select id="sgCity">' + cityOptions(state.defaultCity || "") + "</select></label></div>" +
       '<div class="sg-seats">' + seats + "</div>" +
       '<div class="rw-row"><button class="btn" id="sgStart">' + esc(t("sg_start", "开始对局")) + "</button></div>" +
-      '<p class="rw-progress" id="sgStartProgress"></p></div>';
+      '<p class="rw-progress" id="sgStartProgress"></p></div>');
     host.hidden = false;
 
     $("sgDeleteGame").addEventListener("click", deleteGame);
@@ -354,7 +357,7 @@
           return '<option value="' + p.id + '">#' + p.id + " " + esc(p.name) + " · " + esc(p.age) + " · " + esc(p.job || "") + "</option>";
         }).join("");
       document.querySelectorAll(".sg-seat-agent").forEach(function (select) {
-        select.innerHTML = options;
+        select.innerHTML = gwHTML(options);
       });
     });
   }
@@ -441,7 +444,7 @@
       .catch(function (err) {
         var host = $("sgSession");
         host.hidden = false;
-        host.innerHTML = '<p class="rw-progress is-error">' + esc(err.message) + "</p>";
+        host.innerHTML = gwHTML('<p class="rw-progress is-error">' + esc(err.message) + "</p>");
       });
   }
 
@@ -629,7 +632,7 @@
     var live = session.status !== "finished" && session.status !== "failed";
 
     host.innerHTML =
-      '<div class="rw-result-head"><div><h3>' + esc(session.title) + "</h3>" +
+      gwHTML('<div class="rw-result-head"><div><h3>' + esc(session.title) + "</h3>" +
       '<div class="rw-badges"><span class="rw-badge ' + (live ? "is-live" : "") + '">' + esc(statusLabel(session)) + "</span></div></div>" +
       '<div class="rw-actions">' + (session.host
         ? '<button class="btn ghost tiny" id="sgExport">' + esc(t("download", "下载 Markdown")) + '</button><button class="btn ghost tiny danger" id="sgDeleteSession">' + esc(t("delete", "删除")) + "</button>"
@@ -645,7 +648,7 @@
       seatsBlock(session) +
       currentBlock(session) +
       debriefBlock(session) +
-      (session.rounds.length ? "<h4>" + esc(t("sg_history", "回合记录")) + "</h4>" + historyBlock(session) : "");
+      (session.rounds.length ? "<h4>" + esc(t("sg_history", "回合记录")) + "</h4>" + historyBlock(session) : ""));
     host.hidden = false;
 
     if ($("sgAction")) $("sgAction").value = draft;
@@ -708,7 +711,7 @@
       .then(function (data) {
         var blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
         var link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = gwURL(URL.createObjectURL(blob));
         link.download = data.filename;
         document.body.appendChild(link);
         link.click();
@@ -741,7 +744,7 @@
 
   function renderLists() {
     var games = $("sgGames");
-    games.innerHTML = state.games.length
+    games.innerHTML = gwHTML(state.games.length
       ? state.games.map(function (g) {
           var active = state.game && state.game.id === g.id ? " is-active" : "";
           return (
@@ -749,9 +752,9 @@
             esc(g.title) + '</span><span class="rw-hist-meta">' + esc(tf("sg_game_meta", "{roles} 个角色 · {rounds} 轮", g)) + "</span></button>"
           );
         }).join("")
-      : '<p class="rw-hint">' + esc(t("sg_no_games", "还没有游戏")) + "</p>";
+      : '<p class="rw-hint">' + esc(t("sg_no_games", "还没有游戏")) + "</p>");
     var sessions = $("sgSessions");
-    sessions.innerHTML = state.sessions.length
+    sessions.innerHTML = gwHTML(state.sessions.length
       ? state.sessions.map(function (s) {
           var active = state.session && state.session.id === s.id ? " is-active" : "";
           var progress = s.status === "finished" ? t("sg_st_finished", "对局结束") : tf("sg_progress", "第 {i}/{n} 轮", { i: Math.min(s.round_index + 1, s.round_count), n: s.round_count });
@@ -761,7 +764,7 @@
             esc(tf("sg_seat_meta", "{agents} 居民 / {humans} 真人", s)) + "</span></button>"
           );
         }).join("")
-      : '<p class="rw-hint">' + esc(t("sg_no_sessions", "还没有对局")) + "</p>";
+      : '<p class="rw-hint">' + esc(t("sg_no_sessions", "还没有对局")) + "</p>");
   }
 
   /* ------------------------------------------------------------------ init */
@@ -796,7 +799,7 @@
     var seat = query.get("seat") || "";
     var sessionId = query.get("session") || "";
     if (query.get("tab") === "game" || sessionId) showTab("game");
-    else if (["policy", "replication", "worlds"].indexOf(query.get("tab")) >= 0) showTab(query.get("tab"));
+    else if (["policy", "replication", "worlds", "organization-intelligence"].indexOf(query.get("tab")) >= 0) showTab(query.get("tab"));
 
     if (sessionId && seat) {
       // Player view: one role, nothing else on the page.

@@ -1,0 +1,487 @@
+/* Styles for the swarm-crowdsourcing pane (#paneCrowd).
+ *
+ * The page already loads collaboration.css, so the editorial language (paper
+ * background, hairline borders, serif headings, small-caps eyebrows) comes
+ * from there. Everything below is scoped to the crowdsourcing pane: the
+ * generic class names that the markup uses (.strategy-grid, .pool-grid, ...)
+ * are pinned under #paneCrowd so they can never reach the sibling tab, and
+ * every new class carries a `crowd-` prefix.
+ */
+
+/* One card per row: each mechanism carries a paragraph of explanation, and
+   the rail is too narrow to hold two of them side by side without clipping
+   the text. The pool grid below stays two-up — a resident chip is a name
+   and a number, nothing more. */
+#paneCrowd .crowd-strategy-grid,
+#paneCrowd .strategy-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+#paneCrowd .crowd-strategy-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+#paneCrowd .crowd-strategy-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--steel);
+}
+
+#paneCrowd .crowd-strategy-card.is-active {
+  border-left: 4px solid var(--green);
+  background: var(--green-pale);
+}
+
+#paneCrowd .crowd-strategy-name {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+#paneCrowd .crowd-strategy-en {
+  color: var(--steel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#paneCrowd .crowd-strategy-desc {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+  /* The rail is narrow and a mixed CJK/Latin sentence has no natural break
+     points, so the text has to be allowed to break anywhere. */
+  overflow-wrap: anywhere;
+}
+
+#paneCrowd .crowd-strategy-source {
+  justify-self: start;
+  margin-top: 2px;
+  color: var(--green-deep);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+#paneCrowd .crowd-strategy-source:hover {
+  text-decoration: underline;
+}
+
+#paneCrowd .pool-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+#paneCrowd .pool-toolbar input[type="search"] {
+  flex: 1 1 140px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--surface);
+}
+
+#paneCrowd .pool-toolbar input[type="number"] {
+  flex: 0 0 74px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--surface);
+}
+
+#paneCrowd .pool-toolbar button {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  color: var(--steel);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+#paneCrowd .pool-toolbar button:hover {
+  border-color: var(--steel);
+  color: var(--ink);
+}
+
+#paneCrowd .pool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  max-height: 300px;
+  margin-top: 10px;
+  padding: 2px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--paper-bright);
+}
+
+#paneCrowd .crowd-pool-chip {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  background: var(--surface);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+#paneCrowd .crowd-pool-chip:hover {
+  border-color: var(--steel);
+}
+
+#paneCrowd .crowd-pool-chip.is-selected {
+  border-color: var(--green);
+  background: var(--green-pale);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+#paneCrowd .crowd-pool-id {
+  color: var(--muted);
+  font: 10px ui-monospace, monospace;
+  letter-spacing: 0.06em;
+}
+
+#paneCrowd .crowd-pool-name {
+  overflow: hidden;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#paneCrowd .crowd-pool-job {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#paneCrowd .field-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#paneCrowd .field-inline input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--green);
+}
+
+/* The scale inputs sit outside .pool-toolbar, so they would otherwise keep
+   the browser's own number-field chrome instead of the page's hairline box. */
+#paneCrowd .field input[type="number"] {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+#paneCrowd .cost-estimate {
+  margin: 16px 0 0;
+  padding: 9px 11px;
+  border: 1px dashed var(--steel);
+  color: var(--steel-deep);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+#paneCrowd .round-strip {
+  display: flex;
+  gap: 9px;
+  padding: 16px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+#paneCrowd .crowd-round-chip {
+  display: grid;
+  gap: 3px;
+  flex: 0 0 auto;
+  min-width: 116px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+#paneCrowd .crowd-round-chip strong {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#paneCrowd .crowd-round-chip.is-current {
+  border-left: 4px solid var(--green);
+  background: var(--green-pale);
+}
+
+#paneCrowd .crowd-round-chip.is-done {
+  border-bottom: 3px solid var(--steel-pale);
+}
+
+#paneCrowd .crowd-round-method {
+  color: var(--steel);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#paneCrowd .crowd-round-winner {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#paneCrowd .crowd-panel {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+#paneCrowd .crowd-panel .section-head {
+  margin-bottom: 12px;
+}
+
+#paneCrowd .crowd-panel h3 {
+  margin: 4px 0 0;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+#paneCrowd .crowd-bid-grid,
+#paneCrowd .crowd-leaderboard-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+#paneCrowd .crowd-bid-grid th,
+#paneCrowd .crowd-leaderboard-grid th {
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line);
+  color: var(--steel);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+#paneCrowd .crowd-bid-grid td,
+#paneCrowd .crowd-leaderboard-grid td {
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+#paneCrowd .crowd-bid-grid tr.is-winner td {
+  background: var(--green-pale);
+}
+
+#paneCrowd .crowd-num {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#paneCrowd .crowd-reason {
+  max-width: 32ch;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+#paneCrowd .attempt-list {
+  display: grid;
+  gap: 10px;
+}
+
+#paneCrowd .crowd-attempt-card {
+  display: grid;
+  gap: 7px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+#paneCrowd .crowd-attempt-card.is-winner {
+  border-left: 4px solid var(--green);
+  background: var(--green-pale);
+}
+
+#paneCrowd .crowd-attempt-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+#paneCrowd .crowd-attempt-head strong {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+#paneCrowd .crowd-attempt-job {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#paneCrowd .crowd-attempt-score {
+  margin-left: auto;
+  color: var(--steel-deep);
+  font: 11px ui-monospace, monospace;
+}
+
+#paneCrowd .crowd-attempt-votes {
+  color: var(--muted);
+  font: 11px ui-monospace, monospace;
+}
+
+#paneCrowd .crowd-winner-badge {
+  padding: 2px 7px;
+  color: var(--on-accent);
+  background: var(--green-deep);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#paneCrowd .crowd-attempt-answer {
+  margin: 0;
+  max-height: 7.6em;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+#paneCrowd .crowd-attempt-card.is-expanded .crowd-attempt-answer {
+  max-height: none;
+}
+
+#paneCrowd .crowd-attempt-toggle {
+  justify-self: start;
+  padding: 3px 0;
+  border: 0;
+  color: var(--steel);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#paneCrowd .crowd-attempt-toggle:hover {
+  color: var(--green-deep);
+}
+
+#paneCrowd .crowd-attempt-rationale {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+#paneCrowd .crowd-leaderboard-grid tr.is-eliminated td {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line);
+}
+
+#paneCrowd .final-answer {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+#paneCrowd .crowd-final-text {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#paneCrowd .crowd-final-from {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+#paneCrowd .crowd-bid-table,
+#paneCrowd .bid-table {
+  min-width: 0;
+}
+
+/* The breakpoints mirror collaboration.css rather than inventing their own:
+   the console embeds this page in an iframe about 1050px wide, and the
+   observatory next door keeps two columns at that size. A crowd pane that
+   collapsed to one column there would look like a different product. */
+@media (max-width: 1180px) {
+  #paneCrowd .cooperation-grid {
+    grid-template-columns: minmax(270px, 0.9fr) minmax(430px, 1.45fr);
+  }
+
+  #paneCrowd .signal-rail {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  }
+}
+
+@media (max-width: 899px) {
+  #paneCrowd .cooperation-grid,
+  #paneCrowd .signal-rail {
+    grid-template-columns: 1fr;
+  }
+
+  #paneCrowd .signal-rail {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  #paneCrowd .pool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #paneCrowd .crowd-reason {
+    max-width: none;
+  }
+}

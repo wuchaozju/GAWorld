@@ -1,6 +1,57 @@
-/* Home Mode panel — at-a-glance home design + per-tick activity observation. */
+/* Home Mode panel — at-a-glance home design + per-tick activity observation.
+   The panel lives inside the indoor mode now: the flat's floor plan and the
+   resident's home sit side by side. */
 
 .home-panel .home-overview { margin-top: 6px; }
+
+/* The card inside the indoor mode. */
+.iv-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--ink);
+}
+
+.iv-card:empty { display: none; }
+
+.home-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.home-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.home-now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.home-now.is-away { color: var(--muted); }
+
+.home-now-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.home-now-value { font-weight: 600; color: var(--ink); }
 
 .home-summary-grid {
   display: grid;
@@ -10,15 +61,15 @@
 }
 
 .home-summary-item {
-  background: var(--surface-alt, rgba(245, 244, 232, 0.55));
-  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  background: var(--surface-alt);
+  border: 1px solid var(--line-soft);
   border-radius: 10px;
   padding: 10px 12px;
 }
 
 .home-summary-item .home-summary-label {
   font-size: 11px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -26,7 +77,7 @@
 .home-summary-item .home-summary-value {
   font-size: 16px;
   font-weight: 600;
-  color: var(--ink, #111827);
+  color: var(--ink);
   margin-top: 2px;
 }
 
@@ -39,7 +90,7 @@
 
 .home-room {
   background: var(--surface);
-  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
   padding: 12px 14px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -60,17 +111,17 @@
 
 .home-room .home-room-name {
   font-weight: 650;
-  color: var(--ink, #111827);
+  color: var(--ink);
 }
 
 .home-room .home-room-size {
   font-size: 11px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
 }
 
 .home-room-furniture {
   font-size: 12px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   line-height: 1.5;
 }
 
@@ -97,12 +148,12 @@
   border-left: 3px solid rgba(20, 121, 91, 0.6);
   border-radius: 0 8px 8px 0;
   font-size: 13px;
-  color: var(--ink, #111827);
+  color: var(--ink);
 }
 
 .home-vibe .home-vibe-label {
   font-size: 11px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-right: 4px;
@@ -119,23 +170,23 @@
   background: var(--surface);
   border-radius: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--line-soft);
 }
 
 .home-ambiance-item .home-ambiance-label {
   font-size: 11px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   margin-bottom: 2px;
 }
 
 .home-ambiance-item .home-ambiance-value {
   font-size: 13px;
-  color: var(--ink, #111827);
+  color: var(--ink);
 }
 
 .home-observations {
   margin-top: 14px;
-  border-top: 1px dashed var(--line-soft, rgba(0, 0, 0, 0.1));
+  border-top: 1px dashed var(--line-soft);
   padding-top: 12px;
 }
 
@@ -150,7 +201,7 @@
   font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
 }
 
 .home-observations-list {
@@ -159,7 +210,7 @@
   padding: 0;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--line-soft, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
 }
 
@@ -170,7 +221,7 @@
   gap: 10px;
   align-items: center;
   font-size: 12px;
-  border-bottom: 1px solid var(--line-soft, rgba(0, 0, 0, 0.05));
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .home-observation-row:last-child {
@@ -178,25 +229,25 @@
 }
 
 .home-observation-row.is-out {
-  color: var(--muted, #6b7280);
-  background: rgba(0, 0, 0, 0.02);
+  color: var(--muted);
+  background: var(--sunken);
 }
 
 .home-observation-row .home-obs-day,
 .home-observation-row .home-obs-time {
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 11px;
 }
 
 .home-observation-row .home-obs-room {
   font-weight: 600;
-  color: var(--green-deep, #13795b);
+  color: var(--green-deep);
 }
 
 .home-empty {
   padding: 12px;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   font-size: 13px;
   text-align: center;
 }

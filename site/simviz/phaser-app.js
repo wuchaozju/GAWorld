@@ -313,6 +313,7 @@
     classroom: { floor: 0xd8c89a, plank: true }, library: { floor: 0xe6dcb4, plank: true },
     shop: { floor: 0xe8d8b8, tiled: true }, storeroom: { floor: 0xded0b0, plank: true },
     checkout: { floor: 0xe8d8b8, tiled: true }, seating: { floor: 0xe6d3a8, plank: true },
+    dining: { floor: 0xe6d3a8, plank: true },
     counter: { floor: 0xe6d3a8, plank: true }, park: { floor: 0x7da35d, outdoor: true },
     guestroom: { floor: 0xdcc6a6, plank: true }, lounge: { floor: 0xdfd7bd, plank: true },
     waiting: { floor: 0xd9e5e4, tiled: true }, treatment: { floor: 0xe8eef0, tiled: true },
@@ -429,7 +430,7 @@
         // subtle inner pattern
         if (style.tiled) isoTile(gBg, a.x, a.y, a.w, a.h, offset);
         else isoPlank(gBg, a.x, a.y, a.w, a.h, offset);
-        if (["living", "bedroom", "study", "seating"].includes(a.meta.type)) {
+        if (["living", "bedroom", "study", "seating", "dining"].includes(a.meta.type)) {
           const rx = a.x + a.w * 0.06, ry = a.y + a.h * 0.56, ww = a.w * 0.38, hh = a.h * 0.38;
           isoRug(gBg, rx, ry, ww, hh, offset, a.meta.type === "living" ? 0xb39d73 : 0x9ba079);
         }
@@ -487,13 +488,24 @@
         const wanted = slot ? [slot, ...(aliases[slot] || [])] : [];
         // the room (and object) the simulation put them in, when the trace has it
         const given = a.room && a.room.arena && arenaByName[a.room.arena] ? a.room : null;
-        const spot = given
-          ? objSpots.find(o => o.rec.arena === given.arena && o.rec.object === given.object
-            && !usedObj.has(o.rec.address) && !usedChairs.has(o.rec.address))
-          : wanted.map(s => objSpots.find(o => o.rec.slot === s && !usedObj.has(o.rec.address)
-            && !usedChairs.has(o.rec.address))).find(Boolean);
+        // the room inside their own home (home plugin): the flat of the
+        // resident's home design, drawn instead of the building's layout.
+        const homeArena = a.home_room && a.home_room.name && arenaByName[a.home_room.name]
+          ? a.home_room.name : null;
+        const free = (rec) => !usedObj.has(rec.address) && !usedChairs.has(rec.address);
+        let spot = null;
+        if (given) {
+          spot = objSpots.find(o => o.rec.arena === given.arena && o.rec.object === given.object && free(o.rec));
+        }
+        if (!spot && homeArena) {
+          spot = wanted.map(s => objSpots.find(o => o.rec.arena === homeArena && o.rec.slot === s && free(o.rec))).find(Boolean)
+            || objSpots.find(o => o.rec.arena === homeArena && free(o.rec));
+        }
+        if (!spot) {
+          spot = wanted.map(s => objSpots.find(o => o.rec.slot === s && free(o.rec))).find(Boolean);
+        }
         if (spot) usedObj.add(spot.rec.address);
-        const roomName = spot ? spot.rec.arena : given ? given.arena : slot ? tree.arenaForActivity(sector, slot) :
+        const roomName = spot ? spot.rec.arena : homeArena ? homeArena : given ? given.arena : slot ? tree.arenaForActivity(sector, slot) :
           (arenas.find(name => ["living", "seating", "reception", "shop", "park", "lounge", "waiting"].includes(arenaByName[name].meta.type)) || arenas[0]);
         const room = arenaByName[roomName] || arenaMeta[0];
         const n = crowds.get(room.name) || 0; crowds.set(room.name, n + 1);
@@ -557,13 +569,18 @@
         if (scale < 0.18) return;
         const p = offset.sx + iso(a.x, a.y).sx;
         const py = offset.sy + iso(a.x, a.y).sy;
-        this.labels.push(this.add.text(p + 4, py - 6, ({ bedroom: "卧室", bathroom: "卫生间", kitchen: "厨房", living: "客厅", study: "书房",
+        // A home plan names its own rooms (客厅 / 餐厅 / 阳台 …); the shared
+        // layouts use the generic type label.
+        const typeLabel = ({ bedroom: "卧室", bathroom: "卫生间", kitchen: "厨房", living: "客厅", study: "书房",
           seating: "就餐区", counter: "吧台", ward: "病房", reception: "前台", office: "办公室", meeting: "会议室",
           consult: "诊室", pharmacy: "药房", classroom: "教室", library: "图书室", shop: "卖场", storeroom: "库房",
           checkout: "收银台", park: "公园", guestroom: "客房", lounge: "休息区", waiting: "等候区", treatment: "治疗室",
           reading: "阅览室", workshop: "生产车间", warehouse: "仓储区", ticket: "售票厅", concourse: "进站通道",
-          fitness: "器械区", studio: "训练室", locker: "更衣室" }[a.meta.type] || a.name) + ((a.name.match(/\d+$/) || [""])[0]),
-          { fontFamily: "VT323, PingFang SC, monospace", fontSize: "10px", color: outdoor ? "#2c4a2c" : "#706a4d" }).setOrigin(0, 1).setDepth(3));
+          fitness: "器械区", studio: "训练室", locker: "更衣室", dining: "餐厅", balcony: "阳台" })[a.meta.type];
+        const roomName = tree.layoutType === "home" ? (a.meta.label || a.name) : (typeLabel || a.name);
+        this.labels.push(this.add.text(p + 4, py - 6, roomName + ((a.name.match(/\d+$/) || [""])[0]),
+          { fontFamily: "VT323, PingFang SC, monospace", fontSize: "10px", color: outdoor ? "#2c4a2c" : "#706a4d" })
+          .setOrigin(0, 1).setDepth(10).setStroke("#f6f1e3", 2));
       });
     }
 
@@ -1097,19 +1114,29 @@
       render: { pixelArt: true, antialias: false }, scene: [scene],
     });
     let sourceTrace = null;
+    let customTree = null;
     return {
-      render(trace, frame, node, selectedId) {
+      render(trace, frame, node, selectedId, options) {
+        const opts2 = options || {};
         const id = node ? node.id : null;
-        if (sourceTrace !== trace || scene.nodeId !== id) {
+        const nextTree = opts2.tree || null;
+        if (sourceTrace !== trace || scene.nodeId !== id || customTree !== nextTree) {
           scene.tree = null; scene.node = null; scene.wander = {};
           if (scene.nodeId !== id) { scene.zoom = 1; scene.pan = { x: 0, y: 0 }; }
         }
         sourceTrace = trace;
+        customTree = nextTree;
         const nodes = (trace && trace.map && trace.map.nodes) || [];
         viewState.trace = node && !nodes.some(n => n.id === id)
           ? { ...trace, map: { ...trace && trace.map, nodes: [...nodes, node] } } : trace;
         viewState.frames = frame ? [frame] : []; viewState.selectedId = selectedId;
         scene.nodeId = id;
+        // A custom floor plan (the resident's own home) replaces the building's
+        // layout; the node still decides which residents are drawn.
+        if (customTree) {
+          scene.tree = customTree;
+          scene.node = node || { id: customTree.sector, label: customTree.sector };
+        }
         if (scene.g) scene.draw();
         if (opts.onZoom) opts.onZoom(scene.zoom || 1);
       },

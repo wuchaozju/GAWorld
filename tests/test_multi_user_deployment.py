@@ -150,11 +150,30 @@ def test_health_rejects_wrong_upstream(monkeypatch, body, content_type):
 def test_gateway_routes_include_multi_user_entries():
     root = Path(__file__).resolve().parents[1]
     caddy = (root / "deployment/public/Caddyfile").read_text()
-    for route in ("/login", "/join", "/reset", "/play/*", "/site/*", "/api/*"):
+    for route in (
+        "/login",
+        "/join",
+        "/reset",
+        "/register",
+        "/verify",
+        "/recover",
+        "/workspace",
+        "/explore",
+        "/plaza",
+        "/publications/*",
+        "/people/*",
+        "/posts/*",
+        "/play/*",
+        "/site/*",
+        "/api/*",
+        "/read.doc",
+    ):
         assert route in caddy
     dropin = (root / "deployment/multi-user/gaworld-dashboard.conf").read_text()
     assert "GAWORLD_REQUIRE_ACCOUNTS=1" in dropin
     assert "GAWORLD_ACCOUNTS_DB=%h/.local/share/gaworld/accounts.sqlite" in dropin
+    assert "ExecStart=\n" in dropin
+    assert "--multi-user True" in dropin
 
 
 def test_members_can_collaborate_on_board_but_not_clear_it():

@@ -413,6 +413,14 @@ LABELS_EN: dict[str, str] = {
     "policy_boost": "Policy boost",
     "max_chance": "Chance cap",
     "severity_pivot": "Severity pivot",
+    "time_plausibility": "Time plausibility",
+    "repair_schedule": "Repair schedule",
+    "gate_actions": "Action time gate",
+    "gate_activity_changes": "Routine-change time gate",
+    "max_shift_minutes": "Max shift (min)",
+    "soft_penalty": "Soft penalty",
+    "hard_penalty": "Hard penalty",
+    "deviation_chance": "Deviation chance",
     "event_trigger_scale": "Event trigger scale",
     "event_trigger_cap": "Event trigger cap",
     "daily_planning": "Daily planning",
@@ -643,6 +651,12 @@ LABELS_EN: dict[str, str] = {
     "default_rounds": "Default rounds",
     "min_rounds": "Min rounds",
     "max_rounds": "Max rounds",
+    "crowdsourcing": "Swarm crowdsourcing",
+    "max_pool_size": "Crowd pool cap",
+    "max_participants_per_round": "Participants per round cap",
+    "max_parallel_calls": "Parallel model calls",
+    "default_strategy": "Default crowd strategy",
+    "learning_rate": "Bid learning rate",
     "real_work": "Real work execution",
     "queue_path": "Task queue",
     "artifacts_dir": "Artifacts directory",
@@ -1196,6 +1210,37 @@ MANUAL_HELP_EN: dict[str, str] = {
         "An event only starts pushing toward a change of plans once its severity passes this. "
         "Anything below counts as 0."
     ),
+    "time_plausibility": "Whether a resident's behaviour belongs to the hour it happens in.",
+    "time_plausibility.enabled": (
+        "Off returns the simulator to its old behaviour: the model may put anything at any "
+        "hour."
+    ),
+    "time_plausibility.repair_schedule": (
+        "Move a schedule item whose hour contradicts its activity back into that activity's "
+        "window (“work lunch” at 08:30 becomes 10:30)."
+    ),
+    "time_plausibility.gate_actions": (
+        "De-weight actions that make no sense at this hour instead of deleting them, so they "
+        "stay possible — just unlikely."
+    ),
+    "time_plausibility.gate_activity_changes": (
+        "Refuse a new activity a routine change proposes when it contradicts the clock."
+    ),
+    "time_plausibility.max_shift_minutes": (
+        "How far one schedule item may be moved. An item that cannot be placed within this "
+        "distance stays where it is — a resident's activity is never dropped."
+    ),
+    "time_plausibility.min_gap_minutes": "Minimum gap between two schedule items.",
+    "time_plausibility.soft_penalty": (
+        "Weight penalty for an action just outside its window (a little early or late)."
+    ),
+    "time_plausibility.hard_penalty": (
+        "Weight penalty for an action clearly out of place (a work wrap-up at 06:00)."
+    ),
+    "time_plausibility.deviation_chance": (
+        "The chance that an implausible hour survives anyway. The randomness is bounded, not "
+        "removed: odd hours are rare, not impossible."
+    ),
     "daily_planning": "How each morning's schedule is drawn up.",
     "daily_planning.autoregressive": (
         "Draft today from what actually happened yesterday, so changes accumulate day by day; "
@@ -1579,6 +1624,32 @@ MANUAL_HELP_EN: dict[str, str] = {
     "collaboration.discussion.default_rounds": (
         "How many rounds a discussion runs by default. Rounds × participants is the total "
         "call count."
+    ),
+    "crowdsourcing": (
+        "Swarm crowdsourcing: one task handed to a large pool of residents who answer it "
+        "independently, get scored, and — over several rounds — the pool narrows towards "
+        "whoever did well."
+    ),
+    "crowdsourcing.max_pool_size": (
+        "How many residents one crowd session may draw from. The pool is what makes this "
+        "‘crowdsourcing’ rather than a small group."
+    ),
+    "crowdsourcing.max_participants_per_round": (
+        "How many residents may act in a single round. Every acting resident costs at least "
+        "one model call, so this is the main cost dial."
+    ),
+    "crowdsourcing.max_parallel_calls": (
+        "How many model calls a crowd session makes at once. Raising it shortens the wall "
+        "clock but does not change the total."
+    ),
+    "crowdsourcing.default_strategy": (
+        "Which mechanism a new crowd session uses when the caller does not pick one: "
+        "market (bid-driven, arXiv:2610.22322), vote, elite or debate."
+    ),
+    "crowdsourcing.learning_rate": (
+        "How strongly a round's local credit moves an agent's own next bid. This is the "
+        "self-orchestration feedback of market-based post-training: 0 freezes the bids, "
+        "1 lets one round rewrite them."
     ),
     "real_work": (
         "Real work execution: hand “work” activities to a local adapter so they actually "
@@ -2248,6 +2319,16 @@ MANUAL_HELP: dict[str, str] = {
     "routine_change.max_chance": "改计划概率的上限，防止叠加到「几乎必然乱套」。",
     "routine_change.randomness": "总的「日程有多松」旋钮，0–1。越高越随性：高承诺活动更容易被放弃、无端的躁动更多。0 = 严格按调好的默认值走。睡觉时段不受影响。",
     "routine_change.severity_pivot": "事件严重度超过这个值才开始推动改计划。低于它的小事按 0 计。",
+    "time_plausibility": "居民的行为对不对得上它发生的那个钟点。",
+    "time_plausibility.enabled": "关掉即回到旧行为：模型几点想做什么就做什么。",
+    "time_plausibility.repair_schedule": "把日程里「时间与活动对不上」的项挪回该活动的合理窗口（08:30 的工作餐挪到 10:30）。",
+    "time_plausibility.gate_actions": "不合时机的动作降权而不是删除——仍有可能发生，只是几乎不发生。",
+    "time_plausibility.gate_activity_changes": "模型临时改程提出的新活动若与钟点矛盾，退回原计划。",
+    "time_plausibility.max_shift_minutes": "一个日程项最多能被挪多远。挪不动就留在原处——绝不丢掉居民的一项活动。",
+    "time_plausibility.min_gap_minutes": "相邻日程项之间的最小间隔。",
+    "time_plausibility.soft_penalty": "略微提前/延后的动作，权重罚多少。",
+    "time_plausibility.hard_penalty": "明显不合时机的动作，权重罚多少。",
+    "time_plausibility.deviation_chance": "不合理时刻仍然放行的概率。随机性被关在笼子里，不是被取消：离谱的时刻很少，但并非不可能。",
     "daily_planning": "每天早上怎么排当天的日程。",
     "daily_planning.autoregressive": "以昨天的实际安排为底稿排今天，变化会一天天累积；关掉则每天回到固定模板，等于每天重置人生。",
     "daily_planning.flexible.min_anchor_match": "新排的日程至少要有多大比例贴着基准锚点才被接受，否则打回基准。调低 = 日子更自由但也更飘。",
@@ -2360,6 +2441,12 @@ MANUAL_HELP: dict[str, str] = {
     "collaboration": "多人协作会话（讨论、合作任务）的并发数、上下文长度和重试次数。",
     "collaboration.max_concurrent_sessions": "同时进行的协作会话数。每个会话都在烧模型调用，这是成本闸门。",
     "collaboration.discussion.default_rounds": "一场讨论默认几轮。轮数直接乘上参与人数等于总调用数。",
+    "crowdsourcing": "群体智能众包：一个任务交给一大群居民各自独立作答，评分后多轮收敛，把参与池筛向表现好的那一批。",
+    "crowdsourcing.max_pool_size": "一场众包最多能动用多少位居民。参与池的规模正是「众包」区别于小规模合作的要点。",
+    "crowdsourcing.max_participants_per_round": "每轮最多允许多少位居民真正动手。每位动手的居民至少一次模型调用，这是主要的成本旋钮。",
+    "crowdsourcing.max_parallel_calls": "一场众包同时发起多少个模型调用。调大只缩短墙钟时间，不改变总调用数。",
+    "crowdsourcing.default_strategy": "调用方没有指定时，新众包用哪种机制：market（竞价驱动，arXiv:2610.22322）、vote、elite 或 debate。",
+    "crowdsourcing.learning_rate": "一轮的局部信用对智能体下一轮报价的推动强度。这是市场式后训练里的自组织反馈：0 表示报价冻结，1 表示一轮就能改写报价。",
     "real_work": "真实工作执行：把「工作」类活动派给本地适配器，真的产出代码/文案/设计文件到 artifacts_dir。",
     "real_work.enabled": "关掉后「工作」只是日程上的一个词，不会产出任何文件。",
     "real_work.max_concurrent_tasks": "同时执行的真实任务数。",
@@ -2557,6 +2644,10 @@ LABELS: dict[str, str] = {
     "routine_change": "日程偏离", "base_chance": "基础概率", "event_boost": "事件加成",
     "policy_boost": "政策加成", "max_chance": "概率上限", "severity_pivot": "严重度支点",
     "event_trigger_scale": "事件触发系数", "event_trigger_cap": "事件触发上限",
+    "time_plausibility": "时间合理性", "repair_schedule": "修复日程",
+    "gate_actions": "动作时段闸门", "gate_activity_changes": "改程时段闸门",
+    "max_shift_minutes": "最大挪动(分钟)", "soft_penalty": "灰区惩罚",
+    "hard_penalty": "离谱惩罚", "deviation_chance": "例外概率",
     "daily_planning": "每日排程", "anchor_minutes": "锚点粒度(分钟)",
     "random_delay_max_minutes": "随机延迟上限(分钟)", "autoregressive": "以昨天为底稿",
     "flexible": "弹性日程", "min_items": "最少条目", "max_items_": "最多条目",
@@ -2670,6 +2761,9 @@ LABELS: dict[str, str] = {
     "max_concurrent_sessions": "并发会话上限", "max_context_events": "上下文事件上限",
     "step_retries": "步骤重试次数", "discussion": "讨论", "default_rounds": "默认轮数",
     "min_rounds": "最少轮数", "max_rounds": "最多轮数",
+    "crowdsourcing": "群体智能众包", "max_pool_size": "参与池上限",
+    "max_participants_per_round": "每轮参与人数上限", "max_parallel_calls": "并发模型调用数",
+    "default_strategy": "默认众包策略", "learning_rate": "报价学习率",
     "real_work": "真实工作执行", "queue_path": "任务队列", "artifacts_dir": "产物目录",
     "capabilities_cache": "能力缓存", "max_concurrent_tasks": "并发任务上限",
     "task_timeout_seconds": "任务超时(秒)", "tick_ingest_limit": "每 tick 摄入上限",

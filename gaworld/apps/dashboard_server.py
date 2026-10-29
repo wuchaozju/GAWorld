@@ -25,8 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from gaworld import accounts, worlds
 from gaworld.accounts import context as request_context
 from gaworld.accounts import policy as access_policy
-from gaworld.apps import accounts_api, analytics, replay_runs, residents, routes, runs
+from gaworld.apps import accounts_api, analytics, community_pages, replay_runs, residents, routes, runs
 from gaworld.apps import world_paths as paths
+from gaworld.apps.public_media import PublicMediaMixin
+from gaworld.apps.subpath import SubpathMixin, configured_prefix
 from gaworld.events import candidates as candidate_events
 from gaworld.events.life import add_life_event, list_life_event_templates, list_life_events
 from gaworld.family.lifecycle import family_facts
@@ -45,7 +47,11 @@ TODO_BOARD_PATH = os.path.join(paths.REPO_ROOT, "output", "dashboard", "todo_boa
 TODO_LOCK = threading.RLock()
 
 _COLLABORATION_SERVICE = None
+_COLLABORATION_SERVICES = {}
 _COLLABORATION_LOCK = threading.Lock()
+
+_CROWDSOURCING_SERVICE = None
+_CROWDSOURCING_LOCK = threading.Lock()
 
 #: The request's active world (a row from the account database), or None for
 #: the shared default world. Set by ``_guard`` per request; every path helper
@@ -182,25 +188,35 @@ def _repo_path(value):
     return (Path(paths.REPO_ROOT) / path).resolve()
 
 
+def _organization_method(identifier, version):
+    from gaworld.apps.organization_methods_api import resolve
+
+    return resolve(identifier, version)
+
+
 def _collaboration_config():
-    config = paths.effective_config().get("collaboration", {})
-    return config if isinstance(config, dict) else {}
+    from gaworld.apps.collaboration_workspace import config
+
+    return config()
 
 
 def _get_collaboration_service():
     global _COLLABORATION_SERVICE
+    from gaworld.apps.collaboration_workspace import key
+
+    scope = key()
     with _COLLABORATION_LOCK:
-        if _COLLABORATION_SERVICE is not None:
-            return _COLLABORATION_SERVICE
+        if _COLLABORATION_SERVICE is not None and not hasattr(_COLLABORATION_SERVICE, "_workspace_key"):
+            return _COLLABORATION_SERVICE  # Injected service used by embedding callers/tests.
+        if scope in _COLLABORATION_SERVICES:
+            return _COLLABORATION_SERVICES[scope]
 
         from gaworld.collaboration.service import CollaborationService
         from gaworld.llm.providers import call_llm
         from gaworld.memory.experience import append_agent_episode
 
         config = paths.effective_config()
-        collaboration = config.get("collaboration", {})
-        if not isinstance(collaboration, dict):
-            collaboration = {}
+        collaboration = _collaboration_config()
         service = CollaborationService(
             config=collaboration,
             sessions_dir=_repo_path(
@@ -219,6 +235,8 @@ def _get_collaboration_service():
             ),
         )
         service.start()
+        service._workspace_key = scope
+        _COLLABORATION_SERVICES[scope] = service
         _COLLABORATION_SERVICE = service
         return service
 
@@ -226,10 +244,131 @@ def _get_collaboration_service():
 def _reset_collaboration_service_for_tests():
     global _COLLABORATION_SERVICE
     with _COLLABORATION_LOCK:
-        service = _COLLABORATION_SERVICE
+        services = list(_COLLABORATION_SERVICES.values())
+        if _COLLABORATION_SERVICE is not None:
+            services.append(_COLLABORATION_SERVICE)
+        _COLLABORATION_SERVICES.clear()
         _COLLABORATION_SERVICE = None
+    for service in {id(value): value for value in services}.values():
+        service.shutdown()
+
+
+def _crowdsourcing_config():
+    config = paths.effective_config().get("crowdsourcing", {})
+    return config if isinstance(config, dict) else {}
+
+
+def _get_crowdsourcing_service():
+    global _CROWDSOURCING_SERVICE
+    with _CROWDSOURCING_LOCK:
+        if _CROWDSOURCING_SERVICE is not None:
+            return _CROWDSOURCING_SERVICE
+
+        from gaworld.crowdsourcing.service import CrowdsourcingService
+        from gaworld.llm.providers import call_llm
+        from gaworld.memory.experience import append_agent_episode
+
+        config = paths.effective_config()
+        crowdsourcing = config.get("crowdsourcing", {})
+        if not isinstance(crowdsourcing, dict):
+            crowdsourcing = {}
+        service = CrowdsourcingService(
+            config=crowdsourcing,
+            sessions_dir=_repo_path(
+                crowdsourcing.get(
+                    "sessions_dir",
+                    "output/crowdsourcing/sessions",
+                )
+            ),
+            agent_loader=lambda agent_id: residents.agent_detail(int(agent_id)),
+            llm=call_llm,
+            episode_writer=lambda agent_id, episode: append_agent_episode(
+                agent_id,
+                episode,
+                cfg=config,
+            ),
+        )
+        service.start()
+        _CROWDSOURCING_SERVICE = service
+        return service
+
+
+def _reset_crowdsourcing_service_for_tests():
+    global _CROWDSOURCING_SERVICE
+    with _CROWDSOURCING_LOCK:
+        service = _CROWDSOURCING_SERVICE
+        _CROWDSOURCING_SERVICE = None
     if service is not None:
         service.shutdown()
+
+
+def _public_crowdsourcing_session(payload):
+    """Strip the on-disk paths off a session and add browser-usable URLs."""
+    result = deepcopy(payload)
+    result.pop("artifact_base_url", None)
+
+    repo_root = Path(paths.REPO_ROOT).resolve()
+    sessions_dir = _repo_path(
+        _crowdsourcing_config().get(
+            "sessions_dir",
+            "output/crowdsourcing/sessions",
+        )
+    )
+    session_id = str(result.get("id") or "")
+    safe_session_id = bool(
+        session_id
+        and session_id not in {".", ".."}
+        and "/" not in session_id
+        and "\\" not in session_id
+        and all(ord(character) >= 32 and ord(character) != 127 for character in session_id)
+    )
+    session_root = sessions_dir
+    session_root_is_safe = False
+    if safe_session_id:
+        session_root = (sessions_dir / session_id).resolve()
+        try:
+            session_root.relative_to(sessions_dir)
+        except ValueError:
+            pass
+        else:
+            session_root_is_safe = True
+
+    if session_root_is_safe:
+        try:
+            public_artifacts_root = (session_root / "artifacts").resolve().relative_to(repo_root)
+        except ValueError:
+            pass
+        else:
+            result["artifact_base_url"] = "/" + public_artifacts_root.as_posix().rstrip("/") + "/"
+
+    artifacts = result.get("artifacts")
+    if not isinstance(artifacts, list):
+        return result
+
+    public_artifacts = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            continue
+        public_artifacts.append(artifact)
+        artifact.pop("url", None)
+        raw_path = str(artifact.get("path") or "")
+        relative = Path(raw_path)
+        if not raw_path or relative.is_absolute() or not session_root_is_safe:
+            artifact.pop("path", None)
+            continue
+        resolved = (session_root / relative).resolve()
+        try:
+            resolved.relative_to(session_root)
+        except ValueError:
+            artifact.pop("path", None)
+            continue
+        try:
+            public_path = resolved.relative_to(repo_root)
+        except ValueError:
+            continue
+        artifact["url"] = "/" + public_path.as_posix()
+    result["artifacts"] = public_artifacts
+    return result
 
 
 def _public_collaboration_session(payload):
@@ -299,6 +438,10 @@ def _public_collaboration_session(payload):
             continue
         artifact["url"] = "/" + public_path.as_posix()
     result["artifacts"] = public_artifacts
+    if result.get("organization_method"):
+        from gaworld.apps.organization_artifacts_api import public_links
+
+        return public_links(result)
     return result
 
 
@@ -360,7 +503,38 @@ def _collaboration_text(payload, field, *, default=""):
     return value
 
 
+def _crowdsourcing_prune(value):
+    """Parse the optional pruning block of a crowd session."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("prune must be an object")
+    enabled = value.get("enabled", True)
+    if isinstance(enabled, bool):
+        pass
+    elif isinstance(enabled, (int, str)) and str(enabled).lower() in {
+        "true",
+        "false",
+        "1",
+        "0",
+    }:
+        enabled = str(enabled).lower() in {"true", "1"}
+    else:
+        raise ValueError("prune.enabled must be a boolean")
+    try:
+        keep = int(value.get("keep", 0) or 0)
+        explore_ratio = float(value.get("explore_ratio", 0.25) or 0.0)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("prune.keep and prune.explore_ratio must be numbers") from exc
+    return {
+        "enabled": bool(enabled),
+        "keep": keep,
+        "explore_ratio": explore_ratio,
+    }
+
+
 atexit.register(_reset_collaboration_service_for_tests)
+atexit.register(_reset_crowdsourcing_service_for_tests)
 
 
 def _provider_names(cfg):
@@ -1214,7 +1388,7 @@ TOKEN_ADMIN = {"id": 0, "nickname": "token-admin", "role": "admin", "can_create_
 STATIC_PREFIXES = ("/site/", "/docs/", "/video/public/", "/output/population/")
 
 #: Root-level documents the 文档 panel lists (site/dashboard/docs.js).
-STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md"))
+STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md", "/read.doc"))
 
 
 #: ``/play/<world id>``: the short link a teacher shows the class (a phone
@@ -1244,7 +1418,7 @@ def _static_path_allowed(path):
     return len(parts) > 2 and parts[0] == "output" and "visualization" in parts[1:-1]
 
 
-class DashboardHandler(SimpleHTTPRequestHandler):
+class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler):
     server_version = "GAWorldDashboard/0.1"
 
     # -- access control ---------------------------------------------------
@@ -1370,7 +1544,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             # Classify static permissions by the served file, so an auth-page
             # prefix cannot hide ../ or a symlink into private output.
             root = os.path.realpath(paths.REPO_ROOT)
-            target = os.path.realpath(self.translate_path(path))
+            target = os.path.realpath(self.translate_path(community_pages.page_target(path) or path))
             if os.path.commonpath([root, target]) != root:
                 self._deny(404, "Not found")
                 return True
@@ -1380,6 +1554,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.accounts = accounts.enabled_store(paths.REPO_ROOT)
         except accounts.AccountConfigurationError:
             self._deny(503, "Account service unavailable; contact the administrator")
+            return True
+        from gaworld.accounts.request_security import check_request
+
+        refusal = check_request(self, path)
+        if refusal:
+            self._deny(refusal[1], refusal[0])
             return True
         from gaworld.apps import cluster_api
 
@@ -1420,6 +1600,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.user is not None:
             LAST_SEEN[self.user["id"]] = time.time()
         if self.user is not None and self._enter_world(path):
+            return True
+        if (
+            self.user
+            and not self.user.get("email_verified", True)
+            and self.command == "POST"
+            and not path.startswith("/api/auth/")
+        ):
+            self._deny(403, "请先验证邮箱")
             return True
         level = access_policy.required(self.command, path)
         if access_policy.allows(self.user, level, paths.current_world()):
@@ -1463,6 +1651,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if not artifact_visible(path, paths.REPO_ROOT):
             self._deny(404, "Not found")
             return True
+        from gaworld.accounts.request_security import check_world
+
+        refusal = check_world(self)
+        if refusal:
+            self._deny(refusal[1], refusal[0])
+            return True
         return False
 
     def _token_ok(self, path, query, token):
@@ -1494,7 +1688,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         # The login URL carries the token in its query string; keep it out of logs.
-        message = re.sub(r"token=[^&\s]*", "token=***", fmt % args)
+        message = re.sub(r"(token|code|password|confirm)=[^&\s]*", r"\1=***", fmt % args, flags=re.I)
         sys.stderr.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {message}\n")
 
     def __init__(self, *args, **kwargs):
@@ -1507,6 +1701,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def _json_response(self, payload, status=200, headers=None):
+        if isinstance(payload, routes.Download):
+            return self._download_response(payload.content, payload.media_type, payload.filename)
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1536,6 +1732,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         user = self.user
         if not access_policy.quota_gated(path) or not user or user.get("role") == "admin":
             return None
+        from gaworld.accounts.resources import check_private_storage
+
+        try:
+            check_private_storage(self.accounts, user["id"], paths.REPO_ROOT)
+        except accounts.AccountError as exc:
+            return str(exc)
         quota = self.accounts.get_setting("daily_llm_calls_per_user", 0)
         if quota <= 0:
             return None
@@ -1827,6 +2029,30 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 after=after,
             )
             return self._json_response({"events": events})
+
+        if path == "/api/crowdsourcing/strategies":
+            return self._json_response(_get_crowdsourcing_service().strategies())
+        if path == "/api/crowdsourcing/sessions":
+            service = _get_crowdsourcing_service()
+            status = (query.get("status") or [""])[0]
+            sessions = service.list_sessions(status=status)
+            return self._json_response(
+                {
+                    "sessions": [_public_crowdsourcing_session(item) for item in sessions],
+                    "health": service.health(),
+                }
+            )
+        parts = path.strip("/").split("/")
+        if len(parts) == 4 and parts[:3] == ["api", "crowdsourcing", "sessions"]:
+            session = _get_crowdsourcing_service().get_session(parts[3])
+            return self._json_response(_public_crowdsourcing_session(session))
+        if len(parts) == 5 and parts[:3] == ["api", "crowdsourcing", "sessions"] and parts[4] == "events":
+            after = int((query.get("after") or [0])[0])
+            events = _get_crowdsourcing_service().events(parts[3], after=after)
+            return self._json_response({"events": events})
+        if len(parts) == 5 and parts[:3] == ["api", "crowdsourcing", "sessions"] and parts[4] == "rounds":
+            rounds = _get_crowdsourcing_service().rounds(parts[3])
+            return self._json_response({"rounds": rounds})
         return self._json_response({"error": "Unknown endpoint"}, status=404)
 
     def _handle_api_post(self, path):
@@ -1966,6 +2192,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                         allow_none=True,
                     ),
                     role_overrides=_collaboration_roles(payload),
+                    **(
+                        {
+                            "organization_method": _organization_method(
+                                _collaboration_text(payload, "organization_method_id"),
+                                _collaboration_integer(payload, "organization_method_version", default=1),
+                            )
+                        }
+                        if payload.get("organization_method_id")
+                        else {}
+                    ),
                 )
             else:
                 raise ValueError("kind must be discussion or cooperation")
@@ -1979,6 +2215,32 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             service = _get_collaboration_service()
             result = getattr(service, parts[4])(parts[3])
             return self._json_response(_public_collaboration_session(result))
+
+        if path == "/api/crowdsourcing/sessions":
+            service = _get_crowdsourcing_service()
+            session = service.create_crowd(
+                _collaboration_agent_ids(payload),
+                task=_collaboration_text(payload, "task"),
+                strategy=_collaboration_text(payload, "strategy") or "market",
+                rounds=_collaboration_integer(payload, "rounds", default=3),
+                participants_per_round=_collaboration_integer(
+                    payload,
+                    "participants_per_round",
+                    default=5,
+                ),
+                criteria=_collaboration_text(payload, "criteria"),
+                prune=_crowdsourcing_prune(payload.get("prune")),
+            )
+            return self._json_response(_public_crowdsourcing_session(session.to_dict()))
+        parts = path.strip("/").split("/")
+        if (
+            len(parts) == 5
+            and parts[:3] == ["api", "crowdsourcing", "sessions"]
+            and parts[4] in {"pause", "resume", "cancel"}
+        ):
+            service = _get_crowdsourcing_service()
+            result = getattr(service, parts[4])(parts[3])
+            return self._json_response(_public_crowdsourcing_session(result))
         return self._json_response({"error": "Unknown endpoint"}, status=404)
 
     def do_GET(self):
@@ -2013,7 +2275,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
         # console at the root, point "/" at /site/console/index.html again.
-        if path in ("/", ""):
+        if community_pages.page_target(path):
+            self.path = community_pages.page_target(path)
+        elif path in ("/", ""):
             self.path = "/site/index.html"
         elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
@@ -2040,7 +2304,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
         # console at the root, point "/" at /site/console/index.html again.
-        if path in ("/", ""):
+        if community_pages.page_target(path):
+            self.path = community_pages.page_target(path)
+        elif path in ("/", ""):
             self.path = "/site/index.html"
         elif path in ("/console", "/console/"):
             self.path = "/site/console/index.html"
@@ -2144,38 +2410,51 @@ def _shutdown_fos_backend(handle):
     fos_supervisor.shutdown_backend(handle)
 
 
-def run_server(host="127.0.0.1", port=8766):
-    try:
-        server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
-    except OSError as exc:
-        print(f"error: GAWorld console cannot bind {host}:{port} ({exc}).")
-        print("Is another GAWorld dashboard already running on that port?")
-        raise SystemExit(1) from exc
-    url = f"http://{host}:{int(port)}/"
-    try:
-        fos_handle = _ensure_fos_backend()
-    except Exception as exc:  # actionable FosBackendError or unexpected failure
-        print(f"error: integrated FOS backend could not be started: {exc}")
-        server.server_close()
-        raise SystemExit(1) from exc
-    print(f"GAWorld console: {url}")
-    print("Press Ctrl+C to stop.")
+def run_server(host="127.0.0.1", port=8766, multi_user=False):
+    from gaworld.accounts.mode import dashboard_mode
 
-    def _on_sigterm(signum, frame):
-        raise KeyboardInterrupt
+    configured_prefix()  # Invalid mounts must fail before binding a public socket.
+    with dashboard_mode(multi_user, paths.REPO_ROOT):
+        try:
+            server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+        except OSError as exc:
+            print(f"error: GAWorld console cannot bind {host}:{port} ({exc}).")
+            print("Is another GAWorld dashboard already running on that port?")
+            raise SystemExit(1) from exc
+        # The FOS backend is loginless (single-user by design): it must never be
+        # exposed to other users, so it only starts in single-user mode, or in
+        # multi-user mode with an explicit operator opt-in (GAWORLD_FOS_BACKEND=1;
+        # /fos/* is then expected to sit behind Caddy Basic Auth).
+        fos_handle = None
+        if not multi_user or os.environ.get("GAWORLD_FOS_BACKEND") == "1":
+            try:
+                fos_handle = _ensure_fos_backend()
+            except Exception as exc:  # actionable FosBackendError or unexpected failure
+                print(f"error: integrated FOS backend could not be started: {exc}")
+                server.server_close()
+                raise SystemExit(1) from exc
+        elif multi_user:
+            print("FOS backend disabled in multi-user mode (loginless single-user auth).")
+        url = f"http://{host}:{int(port)}/"
+        print(f"GAWorld console: {url}")
+        print("Access mode: multi-user (login required)" if multi_user else "Access mode: single-user")
+        print("Press Ctrl+C to stop.")
 
-    import signal
+        def _on_sigterm(signum, frame):
+            raise KeyboardInterrupt
 
-    signal.signal(signal.SIGTERM, _on_sigterm)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        runs.stop_all_simulations()
-        _reset_collaboration_service_for_tests()
-        server.server_close()
-        _shutdown_fos_backend(fos_handle)
+        import signal
+
+        signal.signal(signal.SIGTERM, _on_sigterm)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            runs.stop_all_simulations()
+            _reset_collaboration_service_for_tests()
+            server.server_close()
+            _shutdown_fos_backend(fos_handle)
 
 
 #: Names that used to live here -> ``(module they moved to, name there)``.
@@ -2219,16 +2498,7 @@ sys.modules[__name__].__class__ = _MovedNamesGuard
 
 
 if __name__ == "__main__":
-    import argparse
+    # Import the canonical server through the shared CLI; never serve from a second __main__ copy.
+    from gaworld.apps.dashboard_cli import main
 
-    parser = argparse.ArgumentParser(description="Serve the GAWorld local dashboard")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8766)
-    args = parser.parse_args()
-    # Under `python -m` this file runs as `__main__`, while the API modules
-    # import `gaworld.apps.dashboard_server` -- a second copy with its own
-    # per-request world, run table and queue. Serve from that canonical copy so
-    # there is exactly one of each.
-    from gaworld.apps import dashboard_server as canonical
-
-    canonical.run_server(host=args.host, port=args.port)
+    main()

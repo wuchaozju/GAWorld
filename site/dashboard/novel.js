@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 小说局 (Novel Writer) — front-end controller.
 //
 // Three server calls drive the page:
@@ -82,10 +84,10 @@
     state.maxAgents = data.max_agents || 6;
 
     const sel = $("#nStyle");
-    sel.innerHTML = state.styles
+    sel.innerHTML = gwHTML(state.styles
       .map((s) => `<option value="${esc(s.id)}">${esc(s.title)}</option>`)
       .concat([`<option value="${CUSTOM_STYLE}">${esc(t("novel.custom_option", "自己写一段…"))}</option>`])
-      .join("");
+      .join(""));
     sel.value = state.styles[0] ? state.styles[0].id : CUSTOM_STYLE;
     state.style = state.styles[0] || null;
     renderStyleText();
@@ -112,21 +114,21 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       sel.value = preferred || "";
       state.city = sel.value;
     } catch (e) {
-      sel.innerHTML = `<option value="">默认世界</option>`;
+      sel.innerHTML = gwHTML(`<option value="">默认世界</option>`);
       state.city = "";
     }
   }
 
   async function loadAgents() {
     const list = $("#nAgents");
-    list.innerHTML = `<li class="disaster-empty">加载中…</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">加载中…</li>`);
     try {
       const resp = await fetch(`/api/games/novel/agents?city=${encodeURIComponent(state.city || "")}`);
       const data = await resp.json();
@@ -140,9 +142,9 @@
   function renderAgents() {
     const list = $("#nAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("novel.agents_empty", "没有可挑选的居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("novel.agents_empty", "没有可挑选的居民"))}</li>`);
     } else {
-      list.innerHTML = state.agents
+      list.innerHTML = gwHTML(state.agents
         .map((a) => {
           const picked = state.picked.has(a.id);
           const disabled = !picked && state.picked.size >= state.maxAgents;
@@ -155,7 +157,7 @@
               </label>
             </li>`;
         })
-        .join("");
+        .join(""));
       list.querySelectorAll("input[type=checkbox]").forEach((cb) => {
         cb.addEventListener("change", () => {
           const id = parseInt(cb.getAttribute("data-id"), 10);
@@ -348,30 +350,30 @@
     if (premiseEdit) premiseEdit.value = novel.premise || "";
     const regenBtn = $("#nRegenBtn");
     if (regenBtn && state.regenRelease) { state.regenRelease(); state.regenRelease = null; }
-    $("#nCast").innerHTML = (novel.cast || [])
+    $("#nCast").innerHTML = gwHTML((novel.cast || [])
       .map((c) => `<span class="novel-cast-tag"><b>${esc(c.name)}</b><i>${esc(c.role || "")}</i></span>`)
-      .join("");
+      .join(""));
     const stats = novel.stats || {};
-    $("#nStats").innerHTML = `
+    $("#nStats").innerHTML = gwHTML(`
       <span>${esc(t("novel.stat_chapters", "章数"))}：${stats.chapters || (novel.chapters || []).length}</span>
       <span>${esc(t("novel.stat_total_words", "总字数"))}：${stats.total_words || 0}</span>
       <span>${esc(t("novel.stat_target_words", "目标"))}：${stats.target_words || novel.target_words || 0}</span>
       <span>${esc(t("novel.stat_actual_words", "实写/目标"))}：${stats.on_target ? "✓" : "≈"}</span>
-    `;
+    `);
 
     const toc = $("#nToc");
-    toc.innerHTML = (novel.chapters || []).map((c) => {
+    toc.innerHTML = gwHTML((novel.chapters || []).map((c) => {
       return `<li><a href="#chapter-${c.chapter}">第${c.chapter}章《${esc(c.title)}》<span class="muted">${esc(c.word_count || 0)}字</span></a></li>`;
-    }).join("");
+    }).join(""));
 
     const reader = $("#nChapters");
-    reader.innerHTML = (novel.chapters || []).map((c) => `
+    reader.innerHTML = gwHTML((novel.chapters || []).map((c) => `
       <article class="novel-chapter" id="chapter-${c.chapter}">
         <h2>第${c.chapter}章　${esc(c.title)}</h2>
         <p class="muted novel-chapter-meta">${esc(c.word_count || 0)}字 · ${esc((c.characters || []).map((id) => "#" + id).join(" "))}</p>
         <div class="novel-chapter-body">${nl2br(c.text || "")}</div>
       </article>
-    `).join("");
+    `).join(""));
     reader.scrollTop = 0;
 
     // Default to the reader pane after a fresh render.
@@ -411,7 +413,7 @@
   function renderFlowChart(novel) {
     const host = $("#nFlowChart");
     const chapters = novel.chapters || [];
-    if (!chapters.length) { host.innerHTML = ""; return; }
+    if (!chapters.length) { host.innerHTML = gwHTML(""); return; }
     const castCount = Math.max(1, (novel.cast || []).length);
     const maxWords = Math.max(1, ...chapters.map((c) => c.word_count || 0));
     const nodeW = 90;
@@ -453,12 +455,12 @@
         stroke="var(--line, #dde6de)" stroke-width="2" marker-end="url(#nFlowArrow)"></line>`);
     }
 
-    host.innerHTML = `<svg viewBox="0 0 ${width} ${height + 60}" class="novel-flow-svg" role="img">
+    host.innerHTML = gwHTML(`<svg viewBox="0 0 ${width} ${height + 60}" class="novel-flow-svg" role="img">
       <defs><marker id="nFlowArrow" viewBox="0 0 8 8" refX="7" refY="4"
         markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--line, #dde6de)"></path></marker></defs>
       <g class="novel-flow-arrows">${arrows.join("")}</g>
       <g class="novel-flow-nodes">${nodes}</g>
-    </svg>`;
+    </svg>`);
   }
 
   // -- viz: character arcs ------------------------------------------------
@@ -469,7 +471,7 @@
     const host = $("#nArcChart");
     const chapters = novel.chapters || [];
     const cast = novel.cast || [];
-    if (!chapters.length || !cast.length) { host.innerHTML = ""; renderArcLegend([]); return; }
+    if (!chapters.length || !cast.length) { host.innerHTML = gwHTML(""); renderArcLegend([]); return; }
 
     const W = 720;
     const H = 220;
@@ -522,23 +524,23 @@
       </g>`;
     }).join("");
 
-    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="novel-arc-svg" role="img">
+    host.innerHTML = gwHTML(`<svg viewBox="0 0 ${W} ${H}" class="novel-arc-svg" role="img">
       <g class="novel-arc-guides">${yGuides}${ticks}</g>
       <g class="novel-arc-lines">${lines}</g>
-    </svg>`;
+    </svg>`);
     renderArcLegend(cast.map((m, i) => ({ name: m.name, role: m.role, color: colorPalette[i % colorPalette.length] })));
   }
 
   function renderArcLegend(items) {
     const host = $("#nArcLegend");
-    if (!items.length) { host.innerHTML = ""; return; }
-    host.innerHTML = items.map((it) => `
+    if (!items.length) { host.innerHTML = gwHTML(""); return; }
+    host.innerHTML = gwHTML(items.map((it) => `
       <li>
         <i class="novel-arc-dot" style="background:${it.color}"></i>
         <b>${esc(it.name)}</b>
         <span class="muted">${esc(it.role || "")}</span>
       </li>
-    `).join("");
+    `).join(""));
   }
 
   // -- viz: co-presence network ------------------------------------------
@@ -546,7 +548,7 @@
     const host = $("#nNetChart");
     const cast = novel.cast || [];
     const co = novel.co_occurrences || [];
-    if (!cast.length) { host.innerHTML = ""; return; }
+    if (!cast.length) { host.innerHTML = gwHTML(""); return; }
 
     const SIZE = 360;
     const R = 120;
@@ -582,12 +584,12 @@
       </g>`;
     }).join("");
 
-    host.innerHTML = `<svg viewBox="0 0 ${SIZE} ${SIZE}" class="novel-net-svg" role="img">
+    host.innerHTML = gwHTML(`<svg viewBox="0 0 ${SIZE} ${SIZE}" class="novel-net-svg" role="img">
       <g class="novel-net-ties">${ties}</g>
       <g class="novel-net-nodes">${nodes}</g>
-    </svg>`;
+    </svg>`);
     if (isolated.length) {
-      host.insertAdjacentHTML("afterend", `<p class="muted novel-net-note">${esc(t("novel.viz_net_isolated", "孤立角色（未与其他人同章）："))}${esc(isolated.join("、"))}</p>`);
+      host.insertAdjacentHTML("afterend", gwHTML(`<p class="muted novel-net-note">${esc(t("novel.viz_net_isolated", "孤立角色（未与其他人同章）："))}${esc(isolated.join("、"))}</p>`));
     } else {
       const note = host.parentNode.querySelector(".novel-net-note");
       if (note) note.remove();
@@ -602,17 +604,17 @@
       const runs = data.runs || [];
       const list = $("#nHistory");
       if (!runs.length) {
-        list.innerHTML = `<li class="muted">${esc(t("novel.no_history", "暂无"))}</li>`;
+        list.innerHTML = gwHTML(`<li class="muted">${esc(t("novel.no_history", "暂无"))}</li>`);
         return;
       }
-      list.innerHTML = runs.map((r) => `
+      list.innerHTML = gwHTML(runs.map((r) => `
         <li>
           <button data-job="${esc(r.job_id)}">
             <span class="who">${esc(r.title || "未命名")}</span>
             <span class="meta">${r.actual_words || 0}字 · ${r.chapters || 0}章 · ${esc(r.city || "默认世界")}</span>
           </button>
         </li>
-      `).join("");
+      `).join(""));
       list.querySelectorAll("button[data-job]").forEach((btn) => {
         btn.addEventListener("click", () => loadJobResult(btn.getAttribute("data-job")));
       });

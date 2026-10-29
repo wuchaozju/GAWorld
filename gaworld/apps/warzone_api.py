@@ -147,8 +147,7 @@ WARZONE_BANK: tuple[dict[str, Any], ...] = (
             "船老大点了头,但船上其他人并不全同意。",
             "第 4 天: 水面出现了一段浮木,船长决定沿木改变航线,会多走一天。"
             "船上几个家长开始悄悄讲:要不要把腌菜私藏点,路上可能还有小孩饿死。",
-            "第 5 天: 一个孩子得了痢疾,船员越来越害怕。船长的亲生孙女也病了。"
-            "绑带不到 5 米,够谁先用?",
+            "第 5 天: 一个孩子得了痢疾,船员越来越害怕。船长的亲生孙女也病了。绑带不到 5 米,够谁先用?",
             "第 6 天: 夜里有人落水,救上来时膝盖磕穿了。剩下的柴油勉强够再撑一天。"
             "舱底有人在讨论:明天还有没有理由继续走下去。",
             "第 7 天: 远处已经能看见远处的河岸。船上有人提议把最后这点柴油留给返航的船夫,"
@@ -601,7 +600,8 @@ def _parse_resident_id(token: str, residents_by_id: dict[int, Resident]) -> int 
 
 
 def _tick_end_of_day(
-    residents: list[Resident], stock: dict[str, int],
+    residents: list[Resident],
+    stock: dict[str, int],
 ) -> dict[str, Any]:
     """Hunger burns health when no food lands; morale decays if no fuel."""
     deaths: list[str] = []
@@ -775,10 +775,7 @@ def run_warzone(
         # take the whole stockpile.
         days_left = max(1, len(day_texts) - day_index)
         ceiling_denom = max(1, days_left - 1) if days_left > 1 else 1
-        daily_cap = {
-            resource: max(1, stock.get(resource, 0) // ceiling_denom)
-            for resource in RESOURCES
-        }
+        daily_cap = {resource: max(1, stock.get(resource, 0) // ceiling_denom) for resource in RESOURCES}
         day_proposals: list[dict[str, Any]] = []
         for person in people:
             if not person.alive:
@@ -798,7 +795,12 @@ def run_warzone(
                 for p in people
             ]
             prompt = _proposal_prompt(
-                person, scenario, day_index, day_text, stock, alive_others,
+                person,
+                scenario,
+                day_index,
+                day_text,
+                stock,
+                alive_others,
                 winner_history[-1] if winner_history else None,
                 days_left=days_left,
             )
@@ -823,9 +825,7 @@ def run_warzone(
             if not person.alive:
                 continue
             step += 1
-            prompt = _vote_prompt(
-                person, scenario, day_index, day_text, stock, day_proposals
-            )
+            prompt = _vote_prompt(person, scenario, day_index, day_text, stock, day_proposals)
             try:
                 raw = vote(prompt)
             except Exception as exc:  # pragma: no cover - provider failure
@@ -846,7 +846,9 @@ def run_warzone(
         if day_proposals and best_idx is not None:
             winning_proposal = day_proposals[best_idx]
             new_stock, distributed = _apply_plan(
-                winning_proposal["plan"], residents_by_id, stock,
+                winning_proposal["plan"],
+                residents_by_id,
+                stock,
                 daily_cap=daily_cap,
             )
         else:
@@ -891,9 +893,7 @@ def run_warzone(
     alive_count = sum(1 for p in people if p.alive)
     mortality = 1 - (alive_count / max(1, len(people)))
     all_votes = [v for day in flat for v in day["votes"]]
-    dissent_rate = (
-        sum(1 for v in all_votes if v["choice"] != "yes") / max(1, len(all_votes))
-    )
+    dissent_rate = sum(1 for v in all_votes if v["choice"] != "yes") / max(1, len(all_votes))
     all_food_values: dict[int, int] = {}
     for day in flat:
         for person_id, amount in (day["aggregate"].get("food_values") or {}).items():
@@ -918,9 +918,7 @@ def run_warzone(
         if author_id is not None:
             win_count[author_id] = win_count.get(author_id, 0) + 1
     strongest_id = max(win_count, default=0) or 0
-    most_excluded_id = (
-        min(all_food_values, key=lambda k: all_food_values[k], default=0) or 0
-    )
+    most_excluded_id = min(all_food_values, key=lambda k: all_food_values[k], default=0) or 0
 
     overall = {
         "mortality": round(mortality, 2),
@@ -959,9 +957,7 @@ def run_warzone(
     return run
 
 
-def _tally_votes(
-    votes: list[dict[str, Any]], proposal_count: int
-) -> tuple[dict[int, int], int | None, bool]:
+def _tally_votes(votes: list[dict[str, Any]], proposal_count: int) -> tuple[dict[int, int], int | None, bool]:
     """Count ``yes`` votes per proposal index. A bare ``yes`` (no ``for``)
     lands on the voter's own proposal via caller-set convention.
 

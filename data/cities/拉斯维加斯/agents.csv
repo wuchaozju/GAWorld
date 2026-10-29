@@ -1,0 +1,101 @@
+﻿id,name,gender,age,hukou,residence,employment,industry,monthly_income,emotion,stress,econ_security,city_identity,policy_sensitivity,platform_dependence,risk_preference,voice_propensity,mobility_intent
+1,Martin Gray,男,15,外州,Winchester·合租住宅,not_in_labor_force,none,0,0.76,0.65,0.52,0.26,0.42,0.53,0.70,0.25,0.74
+2,Ward Ethan,男,11,本市,Nevada Ranch·联排住宅,not_in_labor_force,none,0,0.58,0.46,0.35,0.78,0.57,0.80,0.52,0.50,0.57
+3,Bennett Mark,男,7,本市,Pioneer Park·郊区住宅,not_in_labor_force,none,0,0.56,0.65,0.15,0.35,0.36,0.61,0.74,0.36,0.78
+4,Allen Bryan,男,12,外州,Rancho·独栋住宅,not_in_labor_force,none,0,0.62,0.75,0.51,0.43,0.47,0.47,0.38,0.66,0.77
+5,Sanders Paul,男,22,本州,Nevada Ranch·联排住宅,not_in_labor_force,none,0,0.57,0.38,0.42,0.16,0.47,0.72,0.60,0.52,0.89
+6,Mitchell Kelly,女,16,外州,Spanish Trail·合租住宅,not_in_labor_force,none,0,0.58,0.54,0.46,0.42,0.59,0.69,0.54,0.30,0.73
+7,Gray Alice,女,72,本市,Las Vegas Medical District·联排住宅,not_in_labor_force,none,1820,0.52,0.79,0.47,0.32,0.33,0.31,0.25,0.18,0.42
+8,Ross Avery,女,10,本市,Charleston Heights Southwest·出租公寓,not_in_labor_force,none,0,0.61,0.42,0.65,0.38,0.54,0.53,0.43,0.38,0.50
+9,Williams Alex,男,27,外州,Rancho·独栋住宅,employed,trade,3298,0.64,0.42,0.43,0.00,0.46,0.73,0.36,0.53,0.68
+10,Sanders Roy,男,23,本州,Whitney Ranch·郊区住宅,employed,service,2964,0.37,0.60,0.27,0.56,0.31,0.63,0.55,0.53,0.66
+11,Perez Melissa,女,31,本市,Buffalo Ranch·出租公寓,employed,service,3468,0.52,0.69,0.25,0.57,0.64,0.47,0.53,0.43,0.29
+12,Parker Joshua,男,46,外州,Midtown UNLV·独栋住宅,employed,tech,17798,0.52,0.55,0.71,0.65,0.60,0.37,0.23,0.66,0.49
+13,Allen Tory,男,37,本市,Whitney·独栋住宅,not_in_labor_force,none,0,0.48,0.57,0.27,0.65,0.50,0.48,0.53,0.44,0.33
+14,Foster Morgan,女,36,本州,Spanish Trail·合租住宅,employed,trade,11795,0.59,0.60,0.62,0.58,0.40,0.58,0.61,0.61,0.61
+15,Kim Brandon,男,22,外州,Pioneer Park·郊区住宅,employed,tech,12776,0.62,0.48,0.85,0.23,0.47,0.45,0.57,0.25,0.70
+16,Campbell Randy,男,18,外州,Sunrise Manor·合租住宅,employed,service,4182,0.33,0.51,0.44,0.29,0.65,1.00,0.44,0.30,0.61
+17,Wright Riley,女,42,外州,Symphony Park·合租住宅,not_in_labor_force,none,0,0.49,0.70,0.47,0.37,0.34,0.50,0.66,0.42,0.63
+18,Walker Danielle,女,8,本市,West Las Vegas·联排住宅,not_in_labor_force,none,0,0.56,0.69,0.65,0.53,0.40,0.47,0.64,0.33,0.61
+19,Phillips Kendall,女,64,外国,Huntridge·独栋住宅,employed,trade,1737,0.66,0.67,0.39,0.66,0.45,0.62,0.47,0.56,0.40
+20,Cruz Ryan,男,28,本市,Craig Ranch·退休社区住宅,employed,trade,1933,0.52,0.59,0.40,0.57,0.38,0.34,0.46,0.30,0.60
+21,Mitchell Cameron,男,52,外州,Aliante·郊区住宅,not_in_labor_force,none,0,0.31,0.35,0.60,0.33,0.16,0.50,0.41,0.28,0.56
+22,Harris Roger,男,55,外州,The Pueblo·独栋住宅,employed,trade,2798,0.63,0.45,0.35,0.09,0.61,0.31,0.45,0.77,0.53
+23,Reed Shiloh,男,31,外州,Desert Shores·合租住宅,employed,tech,13991,0.57,0.62,0.53,0.52,0.45,0.41,0.51,0.41,0.60
+24,Allen Andrea,女,74,本市,Flamingo Heights·联排住宅,not_in_labor_force,none,1820,0.28,0.58,0.53,0.43,0.60,0.35,0.61,0.52,0.33
+25,Johnson Noel,男,52,本市,West Las Vegas·联排住宅,employed,trade,10276,0.22,0.49,0.56,0.67,0.59,0.36,0.47,0.58,0.41
+26,Rivera Brian,男,12,本市,Desert Shores·合租住宅,not_in_labor_force,none,0,0.58,0.53,0.48,0.45,0.56,0.61,0.50,0.49,0.50
+27,Brooks Christopher,男,41,本市,Symphony Park·合租住宅,employed,service,9123,0.62,0.69,0.56,0.40,0.08,0.46,0.37,0.42,0.59
+28,Brooks Bruce,男,71,外州,Rancho·独栋住宅,not_in_labor_force,none,1820,0.61,0.65,0.40,0.35,0.37,0.30,0.46,0.25,0.61
+29,Williams Teresa,女,64,本市,Charleston Heights Southwest·酒店式公寓,not_in_labor_force,none,0,0.18,0.71,0.62,0.37,0.66,0.41,0.35,0.23,0.31
+30,Morales Bryan,男,55,本市,The Pueblo·独栋住宅,not_in_labor_force,none,0,0.50,0.43,0.48,0.60,0.53,0.31,0.33,0.35,0.33
+31,Cox Brian,男,21,外州,Whitney Ranch·郊区住宅,employed,trade,1262,0.68,0.68,0.16,0.39,0.54,0.69,0.53,0.65,0.64
+32,Scott Emery,女,23,本州,Charleston Heights Southwest·出租公寓,not_in_labor_force,none,0,0.70,0.58,0.27,0.42,0.53,0.49,0.51,0.28,0.78
+33,Watson Martha,女,53,本市,Buffalo Ranch·合租住宅,employed,service,6765,0.63,0.67,0.58,0.37,0.58,0.51,0.30,0.72,0.41
+34,Adams Nancy,女,14,本市,Rancho Oakey·独栋住宅,not_in_labor_force,none,0,0.43,0.48,0.40,0.49,0.76,0.61,0.60,0.54,0.50
+35,Reed Quinn,男,57,本市,Flamingo Heights·联排住宅,employed,service,3641,0.51,0.59,0.36,0.56,0.48,0.69,0.47,0.41,0.53
+36,Cooper Teresa,女,10,外州,Flamingo Heights·联排住宅,not_in_labor_force,none,0,0.75,0.65,0.33,0.43,0.53,0.50,0.64,0.46,0.82
+37,Gutierrez Joshua,男,86,本市,Pioneer Park·郊区住宅,not_in_labor_force,none,1820,0.77,0.63,0.64,0.65,0.67,0.39,0.35,0.41,0.37
+38,Stewart Maria,女,47,外州,Huntridge·合租住宅,not_in_labor_force,none,0,0.48,0.58,0.58,0.28,0.28,0.30,0.52,0.18,0.66
+39,Gutierrez Riley,男,62,本市,Winchester·合租住宅,employed,service,889,0.54,0.58,0.37,0.42,0.48,0.57,0.46,0.36,0.50
+40,Ramirez Marley,女,19,外州,Downtown Las Vegas·活动 Adult 55+ 社区,employed,education,2631,0.70,0.69,0.73,0.56,0.59,0.54,0.65,0.67,0.69
+41,Rogers David,男,14,外州,Nevada Ranch·酒店式公寓,not_in_labor_force,none,0,0.43,0.65,0.49,0.40,0.40,0.83,0.59,0.47,0.67
+42,Adams Frankie,男,36,外州,Filipino Town·联排住宅,employed,tech,7084,0.72,0.39,0.78,0.45,0.91,0.35,0.66,0.16,0.50
+43,Hill Gregory,男,15,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,0,0.59,0.48,0.59,0.50,0.24,0.58,0.54,0.55,0.58
+44,Thomas Stevie,女,15,本市,Inner Northwest·合租住宅,not_in_labor_force,none,0,0.55,0.71,0.57,0.65,0.33,0.58,0.42,0.40,0.55
+45,Morales Gray,女,21,本州,Downtown Las Vegas·活动 Adult 55+ 社区,employed,trade,2292,0.63,0.47,0.27,0.40,0.50,0.33,0.60,0.44,0.55
+46,Parker Barbara,女,34,外州,Las Vegas Medical District·联排住宅,employed,service,4981,0.73,0.57,0.49,0.39,0.37,0.66,0.46,0.64,0.59
+47,Brooks Robin,女,49,本市,Huntridge·合租住宅,not_in_labor_force,none,0,0.44,0.62,0.67,0.57,0.43,0.59,0.43,0.63,0.50
+48,Miller Shiloh,男,11,本州,Desert Shores·合租住宅,not_in_labor_force,none,0,0.59,0.45,0.56,0.33,0.47,0.51,0.55,0.43,0.68
+49,Hughes Noah,男,41,外州,Nevada Ranch·酒店式公寓,not_in_labor_force,none,0,0.44,0.70,0.40,0.26,0.47,0.43,0.39,0.49,0.40
+50,Peterson Steven,男,32,本市,Buffalo Ranch·出租公寓,not_in_labor_force,none,0,0.66,0.66,0.39,0.37,0.56,0.56,0.44,0.20,0.53
+51,Ross Amber,女,43,本州,Centennial Hills·出租公寓,employed,service,2116,0.49,0.80,0.48,0.41,0.54,0.37,0.40,0.49,0.74
+52,Reyes Morgan,女,14,本州,Nevada Ranch·酒店式公寓,not_in_labor_force,none,0,0.53,0.53,0.40,0.26,0.44,0.58,0.42,0.34,0.65
+53,Baker Amanda,女,67,本市,Rancho·独栋住宅,not_in_labor_force,none,1820,0.56,0.70,0.62,0.55,0.47,0.54,0.30,0.16,0.30
+54,Thomas Judith,女,29,外州,Desert Shores·合租住宅,not_in_labor_force,none,0,0.41,0.58,0.54,0.61,0.28,0.78,0.45,0.36,0.92
+55,Parker Douglas,男,11,外州,Winterwood·退休社区住宅,not_in_labor_force,none,0,0.44,0.76,0.42,0.28,0.53,0.52,0.36,0.51,0.80
+56,Brooks Dennis,男,36,外州,The Pueblo·联排住宅,employed,service,7796,0.69,0.62,0.60,0.19,0.39,0.50,0.67,0.42,0.80
+57,Baker Lauren,女,87,本市,Charleston Heights Southwest·酒店式公寓,not_in_labor_force,none,1820,0.52,0.57,0.60,0.74,0.45,0.37,0.32,0.30,0.16
+58,Ward Pamela,女,33,本市,Green Valley·联排住宅,employed,service,5920,0.63,0.46,0.25,0.52,0.60,0.48,0.58,0.59,0.41
+59,Bailey Paisley,女,8,外州,West Las Vegas·联排住宅,not_in_labor_force,none,0,0.37,0.72,0.28,0.51,0.33,0.49,0.71,0.35,0.63
+60,Parker Reese,女,34,本州,Filipino Town·联排住宅,not_in_labor_force,none,0,0.58,0.67,0.53,0.39,0.57,0.68,0.57,0.68,0.70
+61,Castillo Marley,男,66,本州,Nevada Ranch·联排住宅,not_in_labor_force,none,1820,0.55,0.43,0.29,0.62,0.11,0.38,0.47,0.44,0.61
+62,Jones Julia,女,48,外州,Winterwood·退休社区住宅,employed,trade,6185,0.47,0.42,0.60,0.28,0.55,0.43,0.27,0.27,0.59
+63,Castillo Gray,男,81,本市,Flamingo Heights·联排住宅,not_in_labor_force,none,1820,0.57,0.74,0.48,0.39,0.37,0.44,0.40,0.39,0.30
+64,Phillips Rylan,男,30,本市,Craig Ranch·退休社区住宅,employed,finance,15571,0.70,0.23,0.69,0.86,0.69,0.61,0.31,0.46,0.39
+65,Morgan Alex,男,64,本市,Winchester·合租住宅,not_in_labor_force,none,0,0.72,0.60,0.49,0.70,0.39,0.51,0.76,0.41,0.19
+66,Hill Paisley,女,11,外州,Winterwood·退休社区住宅,not_in_labor_force,none,0,0.59,0.41,0.58,0.48,0.64,0.57,0.44,0.32,0.79
+67,Martinez Shiloh,女,33,本州,Las Vegas Medical District·联排住宅,employed,tech,5668,0.40,0.76,0.51,0.45,0.47,0.73,0.34,0.41,0.63
+68,Peterson Bruce,男,11,外州,Winterwood·退休社区住宅,not_in_labor_force,none,0,0.71,0.43,0.30,0.33,0.48,0.85,0.46,0.34,0.85
+69,Robinson Melissa,女,56,本市,Paradise·出租公寓,employed,trade,6466,0.44,0.63,0.52,0.54,0.52,0.37,0.32,0.39,0.40
+70,Nelson Bobby,男,56,本市,Paradise·出租公寓,employed,service,5429,0.41,0.50,0.53,0.53,0.50,0.58,0.32,0.51,0.43
+71,Kim Edward,男,14,本州,Huntridge·合租住宅,not_in_labor_force,none,0,0.60,0.33,0.49,0.24,0.56,0.46,0.68,0.44,0.74
+72,Gomez Drew,女,16,本州,Winchester·合租住宅,not_in_labor_force,none,0,0.58,0.69,0.43,0.55,0.34,0.48,0.46,0.27,0.66
+73,Bennett Thomas,男,43,外州,Nevada Ranch·酒店式公寓,not_in_labor_force,none,0,0.49,0.60,0.41,0.64,0.74,0.54,0.21,0.43,0.46
+74,Lopez Cynthia,女,30,外州,Craig Ranch·退休社区住宅,employed,finance,36694,0.77,0.34,0.73,0.39,0.67,0.57,0.35,0.37,0.69
+75,Thompson Rylee,女,77,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,1820,0.37,0.52,0.39,0.62,0.65,0.28,0.49,0.35,0.41
+76,Campbell Diane,女,56,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,0,0.37,0.72,0.33,0.36,0.62,0.13,0.36,0.31,0.64
+77,Young Jules,女,38,外州,Aliante·合租住宅,employed,tech,7427,0.55,0.44,0.73,0.52,0.63,0.41,0.47,0.40,0.65
+78,Kim Bobby,男,82,本市,Midtown UNLV·新建商品房,not_in_labor_force,none,1820,0.68,0.37,0.45,0.34,0.43,0.27,0.45,0.17,0.06
+79,Thompson Paul,男,53,本市,Midtown UNLV·新建商品房,employed,service,8198,0.51,0.47,0.61,0.70,0.55,0.40,0.35,0.63,0.54
+80,Young Julia,女,20,外州,Pioneer Park·郊区住宅,employed,tech,3130,0.64,0.44,0.45,0.35,0.49,0.30,0.39,0.64,0.79
+81,Martinez Jules,女,58,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,0,0.67,0.44,0.56,0.34,0.48,0.17,0.23,0.40,0.27
+82,Gray Brenda,女,34,外州,Spanish Trail·合租住宅,employed,service,2463,0.61,0.65,0.45,0.23,0.38,0.54,0.39,0.43,0.58
+83,Hall Benjamin,男,26,本州,Nevada Ranch·联排住宅,not_in_labor_force,none,0,0.45,0.57,0.53,0.10,0.44,0.69,0.61,0.46,0.79
+84,Martin Heather,女,46,本市,Winterwood·退休社区住宅,employed,tech,22270,0.56,0.49,0.73,0.21,0.43,0.54,0.39,0.50,0.49
+85,Reyes Phoenix,女,43,外州,The Villages at Tule Springs·酒店式公寓,not_in_labor_force,none,0,0.57,0.75,0.46,0.56,0.49,0.66,0.31,0.41,0.46
+86,Perez Noah,男,31,外州,Buffalo Ranch·出租公寓,not_in_labor_force,none,0,0.53,0.57,0.43,0.55,0.53,0.69,0.54,0.61,0.54
+87,Mitchell Shay,男,25,外州,Charleston Heights Southwest·出租公寓,employed,service,3817,0.43,0.42,0.53,0.38,0.67,0.47,0.38,0.49,0.65
+88,Watson Vincent,男,14,外州,Las Vegas Medical District·联排住宅,not_in_labor_force,none,0,0.79,0.67,0.29,0.48,0.48,0.41,0.60,0.24,0.69
+89,Thomas Quinn,男,23,外州,Whitney Ranch·郊区住宅,employed,education,8638,0.60,0.42,0.65,0.31,0.51,0.80,0.48,0.60,0.54
+90,Rodriguez Sloane,男,32,外州,Green Valley·联排住宅,employed,service,4568,0.62,0.48,0.29,0.38,0.54,0.93,0.46,0.60,0.66
+91,Thompson Bruce,男,50,外州,West Las Vegas·联排住宅,employed,trade,10977,0.61,0.52,0.50,0.44,0.34,0.50,0.41,0.41,0.64
+92,Gray Roy,男,63,外州,Huntridge·独栋住宅,not_in_labor_force,none,0,0.62,0.63,0.53,0.35,0.61,0.30,0.36,0.44,0.34
+93,Alvarez Chloe,女,10,外州,Flamingo Heights·联排住宅,not_in_labor_force,none,0,0.52,0.53,0.43,0.39,0.44,0.62,0.67,0.46,0.66
+94,White Brooklyn,女,21,本市,Sunrise Manor·合租住宅,employed,trade,1519,0.60,0.67,0.39,0.46,0.48,0.59,0.49,0.48,0.58
+95,Ramos George,男,57,本市,Rancho Oakey·独栋住宅,employed,trade,5200,0.64,0.59,0.42,0.80,0.35,0.37,0.57,0.36,0.37
+96,Taylor Peyton,女,56,本市,Midtown UNLV·新建商品房,employed,service,9665,0.54,0.73,0.75,0.46,0.40,0.42,0.49,0.24,0.51
+97,Gutierrez Karen,女,26,本州,Rancho·独栋住宅,not_in_labor_force,none,0,0.52,0.86,0.46,0.47,0.50,0.67,0.39,0.31,0.93
+98,Green Amy,女,56,本市,Rancho Oakey·独栋住宅,employed,service,4770,0.62,0.38,0.64,0.55,0.34,0.41,0.22,0.73,0.26
+99,Allen Taylor,女,38,外州,Inner Northwest·合租住宅,employed,service,4372,0.56,0.67,0.50,0.28,0.39,0.48,0.45,0.20,0.35
+100,Baker Marilyn,女,55,本市,Flamingo Heights·联排住宅,employed,service,3997,0.61,0.79,0.38,0.50,0.74,0.45,0.08,0.39,0.27

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import copy
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -11,6 +12,8 @@ from typing import Any
 from gaworld.collaboration.cooperation import CooperationRunner
 from gaworld.collaboration.discussion import DiscussionRunner
 from gaworld.collaboration.models import CollaborationSession, SessionStatus
+from gaworld.collaboration.organization_methods import method_hash, normalize_method
+from gaworld.collaboration.organization_runner import OrganizationRunner
 from gaworld.collaboration.relationships import RelationshipService
 from gaworld.collaboration.store import SessionStore
 
@@ -54,6 +57,7 @@ class CollaborationService:
             interaction_writer=self.relationships.touch_interaction,
         )
         self.cooperation = CooperationRunner(**runner_args)
+        self.organized_cooperation = OrganizationRunner(**runner_args)
         self._executor: ThreadPoolExecutor | None = None
         self._futures: dict[str, Future[None]] = {}
         self._guard = threading.RLock()
@@ -111,9 +115,9 @@ class CollaborationService:
             if executor is not None:
                 executor.shutdown(wait=True, cancel_futures=True)
             if cancellation_errors:
-                raise RuntimeError(
-                    "failed to persist queued session cancellation"
-                ) from cancellation_errors[0]
+                raise RuntimeError("failed to persist queued session cancellation") from cancellation_errors[
+                    0
+                ]
         finally:
             with self._guard:
                 self._closing = False
@@ -150,8 +154,7 @@ class CollaborationService:
             if session.status is SessionStatus.FAILED:
                 self.store.save(session)
                 if not any(
-                    event.type == "error"
-                    and event.content == session.error
+                    event.type == "error" and event.content == session.error
                     for event in self.store.events(session_id)
                 ):
                     self.store.append_event(
@@ -203,11 +206,7 @@ class CollaborationService:
                 members.append(agent_id)
         if len(members) < 2:
             raise ValueError("at least two agents are required")
-        missing = [
-            agent_id
-            for agent_id in members
-            if self.agent_loader(agent_id) is None
-        ]
+        missing = [agent_id for agent_id in members if self.agent_loader(agent_id) is None]
         if missing:
             raise ValueError(f"agents not found: {missing}")
         return members
@@ -230,9 +229,7 @@ class CollaborationService:
         maximum = int(limits.get("max_rounds", 20))
         rounds = int(max_rounds)
         if rounds < minimum or rounds > maximum:
-            raise ValueError(
-                f"max_rounds must be between {minimum} and {maximum}"
-            )
+            raise ValueError(f"max_rounds must be between {minimum} and {maximum}")
         title = str(topic).strip()
         session = CollaborationSession.new(
             kind="discussion",
@@ -253,8 +250,18 @@ class CollaborationService:
         task: str,
         leader_id: int | None = None,
         role_overrides: dict[str, str] | None = None,
+        organization_method: dict[str, Any] | None = None,
     ) -> CollaborationSession:
         members = self._members(agent_ids)
+        if organization_method is not None:
+            organization_method = copy.deepcopy(organization_method)
+            method = normalize_method(organization_method["method"])
+            if len(method["roles"]) != len(members):
+                raise ValueError("所选人数与组织方式的角色数量不符")
+            if method_hash(method) != organization_method["method_hash"]:
+                raise ValueError("组织方式内容校验失败")
+            if role_overrides or leader_id is not None:
+                raise ValueError("组织方式已确定分工和汇总者；请清除角色覆盖和负责人后开始")
         clean_task = str(task).strip()
         if not clean_task:
             raise ValueError("task is required")
@@ -273,6 +280,7 @@ class CollaborationService:
             title=clean_task[:80],
             leader_id=clean_leader,
             role_overrides=clean_roles,
+            organization_method=organization_method,
         )
         self.store.create(session)
         self.store.append_event(session.id, "created", session.title)
@@ -288,10 +296,7 @@ class CollaborationService:
         kind: str = "",
         status: str = "",
     ) -> list[dict[str, Any]]:
-        return [
-            session.to_dict()
-            for session in self.store.list(kind=kind, status=status)
-        ]
+        return [session.to_dict() for session in self.store.list(kind=kind, status=status)]
 
     def health(self) -> dict[str, Any]:
         return self.store.health()
@@ -302,10 +307,7 @@ class CollaborationService:
         *,
         after: int = 0,
     ) -> list[dict[str, Any]]:
-        return [
-            asdict(event)
-            for event in self.store.events(session_id, after=after)
-        ]
+        return [asdict(event) for event in self.store.events(session_id, after=after)]
 
     def pause(self, session_id: str) -> dict[str, Any]:
         with self.store.session_guard(session_id):
@@ -340,10 +342,11 @@ class CollaborationService:
             if session.kind == "discussion":
                 self.discussion.run(session_id)
             elif session.kind == "cooperation":
-                self.cooperation.run(session_id)
+                if session.organization_method:
+                    self.organized_cooperation.run(session_id)
+                else:
+                    self.cooperation.run(session_id)
             else:
-                raise ValueError(
-                    f"unsupported session kind: {session.kind}"
-                )
+                raise ValueError(f"unsupported session kind: {session.kind}")
         except Exception as exc:
             self._fail_session(session_id, exc)

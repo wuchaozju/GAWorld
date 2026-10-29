@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 猜人局 (Read the Room) — front-end controller.
 //
 //   POST /api/games/guess/deal   → a resident, a dilemma and their file.
@@ -86,14 +88,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -177,16 +179,16 @@
       .filter(Boolean)
       .join(" · ");
 
-    $("#gFile").innerHTML = `
+    $("#gFile").innerHTML = gwHTML(`
       <h4>#${agent.agent_id} ${esc(agent.name)}</h4>
       <p class="meta">${esc(meta)}</p>
       <div class="file-body md-body">${agent.file ? renderMarkdown(agent.file) : `<p class="muted-line">${esc(t("guess.no_file", "（这个人没有档案，只有一行身份信息——猜起来全靠运气）"))}</p>`}</div>
-    `;
+    `);
 
     $("#gDilemma").textContent = round.dilemma.text;
 
     const settled = round.settled;
-    $("#gOptions").innerHTML = (round.dilemma.options || [])
+    $("#gOptions").innerHTML = gwHTML((round.dilemma.options || [])
       .map((o) => {
         const classes = ["guess-option"];
         if (settled && o.key === round.choice) classes.push("is-theirs");
@@ -197,7 +199,7 @@
           ${settled && o.key === round.choice ? `<span class="pill is-theirs">${esc(t("guess.they_said", "他选"))}</span>` : ""}
         </button>`;
       })
-      .join("");
+      .join(""));
     Array.from($("#gOptions").querySelectorAll("button[data-key]")).forEach((btn) => {
       btn.addEventListener("click", () => guess(btn.getAttribute("data-key")));
     });
@@ -210,7 +212,7 @@
       const spread = new Set(samples.map((s) => s.choice));
       reveal.className = "guess-reveal " + (round.correct ? "is-hit" : "is-miss");
       const why = (round.why || "").trim();
-      reveal.innerHTML = `
+      reveal.innerHTML = gwHTML(`
         <h4>${round.correct ? esc(t("guess.win", "🎯 猜中了")) : esc(t("guess.lose", "🙈 没猜中"))}</h4>
         <div class="duel-reason-panel">
           <div class="duel-reason-row ${round.correct ? "is-strength" : "is-risk"}">
@@ -225,7 +227,7 @@
                ? esc(t("guess.stable", "每次都一样，这份档案很稳"))
                : esc(t("guess.unstable", "答案不一致，这份档案撑不住这道题"))}</p>`
           : ""}
-      `;
+      `);
       $("#gAgainBtn").disabled = exhausted();
     }
   }
@@ -278,28 +280,28 @@
       const resp = await fetch("/api/games/guess/scoreboard");
       const board = await resp.json();
       state.board = board;
-      $("#gScore").innerHTML = [
+      $("#gScore").innerHTML = gwHTML([
         metric(t("guess.m_accuracy", "命中率"), board.played ? Math.round(board.accuracy * 100) + "%" : "—",
           board.played ? `${board.correct}/${board.played}` : ""),
         metric(t("guess.m_streak", "连胜"), board.streak, `${t("guess.m_best", "最佳")} ${board.best_streak}`),
         metric(t("guess.m_stable", "档案稳定"), board.resampled ? `${board.stable}/${board.resampled}` : "—",
           t("guess.m_stable_suffix", "复问一致")),
-      ].join("");
+      ].join(""));
 
       const ul = $("#gHistory");
       if (!board.history.length) {
-        ul.innerHTML = `<li class="disaster-empty">${esc(t("guess.no_history", "还没玩过"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("guess.no_history", "还没玩过"))}</li>`);
         return;
       }
-      ul.innerHTML = board.history
+      ul.innerHTML = gwHTML(board.history
         .map((h) => `<li class="${h.correct ? "is-hit" : "is-miss"}">
           <span class="mark">${h.correct ? "✅" : "❌"}</span>
           <span class="who">${esc(h.name)}</span>
           <span class="meta">${esc(h.dilemma)} · ${esc(t("guess.you_said", "你猜"))} ${esc(h.guess)} · ${esc(t("guess.they_said", "他选"))} ${esc(h.choice || "?")}</span>
         </li>`)
-        .join("");
+        .join(""));
     } catch (err) {
-      $("#gScore").innerHTML = `<p class="disaster-empty is-error">${esc(String(err))}</p>`;
+      $("#gScore").innerHTML = gwHTML(`<p class="disaster-empty is-error">${esc(String(err))}</p>`);
     }
   }
 

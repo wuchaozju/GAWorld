@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Indoor activity view for GAWorld front-ends.
  *
  * Draws the floor plan of one building — rooms, furniture, the residents who
@@ -146,6 +148,34 @@
   }
 
   /* ============================================================
+   * The resident's own home
+   * ============================================================ */
+
+  // Is this resident at home in this frame? The trace says so: the home
+  // plugin writes the room they are in (`home_room`) when they are home.
+  function homeRoomOf(agent) {
+    if (!agent || !agent.home_room) return null;
+    const room = agent.home_room;
+    if (!room.name && !room.key) return null;
+    return room;
+  }
+
+  // The residents of the same household who are in this building right now:
+  // a home shows the family, not the whole block of flats.
+  function householdAtHome(frame, node, selected) {
+    const agents = (frame && Array.isArray(frame.agents)) ? frame.agents : [];
+    const location = agentLocation(selected);
+    const household = (selected && selected.household) || "";
+    return agents.filter((a) => {
+      if (isTravelling(a)) return false;
+      const loc = agentLocation(a);
+      if (location && loc !== location) return false;
+      if (!household) return Number(a.agent_id) === Number(selected.agent_id);
+      return String(a.household || "") === household;
+    });
+  }
+
+  /* ============================================================
    * Shared pixel renderer adapter
    * ============================================================ */
   function injectStyle() {
@@ -153,21 +183,27 @@
     const style = document.createElement("style");
     style.id = "indoor-view-style";
     style.textContent = `
-      .iv-host { display:flex; flex-direction:column; gap:8px; min-width:0; }
-      .iv-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+      .iv-host { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-items:start; min-width:0; }
+      .iv-head { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
       .iv-title { display:flex; flex-direction:column; min-width:0; }
       .iv-title strong { font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .iv-title span { font-size:12px; opacity:.7; }
       .iv-head select { max-width:220px; min-height:30px; font-size:12px; }
-      .iv-viewport { width:100%; height:clamp(360px,62vh,640px); min-width:0; overflow:hidden;
+      .iv-viewport { grid-column:1; width:100%; height:clamp(360px,62vh,640px); min-width:0; overflow:hidden;
         border-radius:10px; background:#30463d; touch-action:none; }
       .iv-viewport canvas { display:block; image-rendering:pixelated; }
-      .iv-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+      .iv-controls { grid-column:1; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
       .iv-controls button { min-width:36px; min-height:32px; padding:0 8px; }
       .iv-controls span { font-size:12px; opacity:.75; }
+      .iv-card { grid-column:1; min-width:0; }
       .scene-modes { display:flex; flex-wrap:wrap; gap:6px; }
       [data-scene-workspace] .scene-modes button.is-active { background:#126a54; color:#fffef9; border-color:#126a54; }
       [data-scene-workspace] [hidden] { display:none !important; }
+      @media(min-width:920px) {
+        .iv-host { grid-template-columns:minmax(0,1.55fr) minmax(250px,0.85fr); }
+        .iv-card { grid-column:2; grid-row:2 / span 2; align-self:stretch;
+          max-height:clamp(360px,62vh,640px); overflow:auto; }
+      }
       @media(max-width:600px) { .iv-viewport { height:360px; } .iv-head select { max-width:100%; } }
     `;
     document.head.appendChild(style);
@@ -178,8 +214,11 @@
       this.host = host;
       this.getSelectedAgentId = opts.getSelectedAgentId || (() => null);
       this.trace = null; this.frame = null; this.pinned = ""; this.zoom = 1;
+      this.mode = "city";
+      this.home = null;          // the selected resident's home design
+      this._plan = null; this._planKey = "";
       injectStyle();
-      host.classList.add("iv-host"); host.innerHTML = "";
+      host.classList.add("iv-host"); host.innerHTML = gwHTML("");
       const head = document.createElement("div"); head.className = "iv-head";
       const title = document.createElement("div"); title.className = "iv-title";
       this.titleEl = document.createElement("strong"); this.subEl = document.createElement("span");
@@ -201,7 +240,11 @@
       }
       controls.append(this.zoomEl);
       const hint = document.createElement("span"); hint.textContent = t("indoor.drag", "拖动查看细节"); controls.append(hint);
-      host.append(head, this.viewport, controls);
+      // The home panel lives inside the indoor mode: the flat, the rooms, the
+      // atmosphere of the resident's home — shown next to their floor plan.
+      this.card = document.createElement("div"); this.card.className = "iv-card";
+      this.card.id = "homeCard";
+      host.append(head, this.viewport, controls, this.card);
       this.workspace = host.closest("[data-scene-workspace]");
       if (this.workspace) {
         this.modeButtons = [...this.workspace.querySelectorAll("[data-scene-mode]")];
@@ -216,8 +259,16 @@
       }
     }
 
+    /** The selected resident's home design (from /api/home/<id>). */
+    setHome(home) {
+      this.home = home || null;
+      this._planKey = "";
+      this.draw();
+    }
+
     setMode(mode) {
       const indoor = mode === "indoor";
+      this.mode = indoor ? "indoor" : "city";
       this.host.hidden = !indoor;
       const city = this.workspace.querySelector("[data-city-view]");
       if (city) city.hidden = indoor;
@@ -250,7 +301,7 @@
       });
       const html = [`<option value="">${escapeHtml(t("indoor.auto", "自动跟随"))}</option>`]
         .concat(places.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} · ${p.count}</option>`)).join("");
-      if (this._selectHtml !== html) { this.select.innerHTML = html; this._selectHtml = html; }
+      if (this._selectHtml !== html) { this.select.innerHTML = gwHTML(html); this._selectHtml = html; }
       this.select.value = this.pinned;
     }
 
@@ -259,28 +310,62 @@
       return nodes.find(node => node.label === location || node.id === location) || {id: location, label: location};
     }
 
+    // The resident's own home, compiled into a floor plan (null when they are
+    // not at home, or when no home design was loaded yet).
+    _homePlan(homeRoom) {
+      if (!homeRoom) return null;
+      const payload = this.home || {};
+      const design = payload.design || (payload.rooms ? payload : null);
+      if (!design || !design.rooms || !Object.keys(design.rooms).length) return null;
+      if (!global.GAWorldHome || !global.GAWorldHome.buildHomePlan) return null;
+      const key = JSON.stringify(design.rooms);
+      if (this._planKey !== key) {
+        this._planKey = key;
+        this._plan = global.GAWorldHome.buildHomePlan(design, { sector: design.home_node || "home" });
+      }
+      return this._plan ? { plan: this._plan, design } : null;
+    }
+
     draw() {
       const selectedId = this.getSelectedAgentId();
-      const location = pickLocation(this.frame, selectedId, this.frame ? this.pinned : "");
+      const agents = (this.frame && Array.isArray(this.frame.agents)) ? this.frame.agents : [];
+      const selected = agents.find(a => Number(a.agent_id) === Number(selectedId)) || null;
+      const homeRoom = homeRoomOf(selected);
+      const home = this._homePlan(homeRoom);
+      const location = home
+        ? agentLocation(selected)
+        : pickLocation(this.frame, selectedId, this.frame ? this.pinned : "");
       const node = location ? this._node(location) : null;
-      const layout = node && global.GAWorldSpatial && global.GAWorldSpatial.layoutFor(node);
-      this.titleEl.textContent = location ? `${layout && layout.blueprint.outdoor ? "🌳" : "🏠"} ${node.label || location}` : t("indoor.title", "室内活动");
-      const selected = this.frame && (this.frame.agents || []).find(a => Number(a.agent_id) === Number(selectedId));
-      const flat = global.GAWorldSpatial && global.GAWorldSpatial.flatView
-        ? global.GAWorldSpatial.flatView(location ? agentsAt(this.frame, location, node) : [], selectedId)
-        : { unit: "", units: 0, agents: location ? agentsAt(this.frame, location, node) : [] };
-      this.subEl.textContent = location ? `${layout ? layout.label + " · " : ""}`
-        + `${flat.unit ? `${t("indoor.flat", "户")} ${flat.unit} · ` : ""}`
-        + `${flat.agents.length} ${t("indoor.present", "人在场")}` :
-        selected && isTravelling(selected) ? t("indoor.travelling", "选中的居民正在路上") : t("indoor.empty", "当前帧没有居民在室内");
+      const layout = !home && node && global.GAWorldSpatial && global.GAWorldSpatial.layoutFor(node);
+      this.select.hidden = !!home;
+      if (home) {
+        const who = (selected && selected.name) || "";
+        const roomName = homeRoom.name || t("indoor.home", "家");
+        this.titleEl.textContent = `🏠 ${who}${t("indoor.possessive", "的家")} · ${roomName}`;
+        const family = householdAtHome(this.frame, node, selected);
+        const rooms = Object.keys((home.design && home.design.rooms) || {}).length;
+        this.subEl.textContent = `${rooms} ${t("indoor.rooms", "个房间")} · ${family.length} ${t("indoor.at_home", "人在家")}`;
+      } else {
+        this.titleEl.textContent = location ? `${layout && layout.blueprint.outdoor ? "🌳" : "🏠"} ${node.label || location}` : t("indoor.title", "室内活动");
+        const flat = global.GAWorldSpatial && global.GAWorldSpatial.flatView
+          ? global.GAWorldSpatial.flatView(location ? agentsAt(this.frame, location, node) : [], selectedId)
+          : { unit: "", units: 0, agents: location ? agentsAt(this.frame, location, node) : [] };
+        this.subEl.textContent = location ? `${layout ? layout.label + " · " : ""}`
+          + `${flat.unit ? `${t("indoor.flat", "户")} ${flat.unit} · ` : ""}`
+          + `${flat.agents.length} ${t("indoor.present", "人在场")}` :
+          selected && isTravelling(selected) ? t("indoor.travelling", "选中的居民正在路上") : t("indoor.empty", "当前帧没有居民在室内");
+      }
       if (this.host.hidden) return;
       if (!this.renderer && global.createIndoorRenderer) {
         this.renderer = global.createIndoorRenderer(this.viewport, {onZoom: value => {
           this.zoom = value; this.zoomEl.textContent = Math.round(value * 100) + "%";
         }});
       }
-      if (this.renderer) this.renderer.render(this.trace, this.frame, node, selectedId);
-      else this.subEl.textContent = t("indoor.unavailable", "室内视图未加载，请刷新页面");
+      if (!this.renderer) { this.subEl.textContent = t("indoor.unavailable", "室内视图未加载，请刷新页面"); return; }
+      const frame = home
+        ? { ...this.frame, agents: householdAtHome(this.frame, node, selected) }
+        : this.frame;
+      this.renderer.render(this.trace, frame, node, selectedId, home ? { tree: home.plan } : null);
     }
 
     destroy() {
@@ -295,7 +380,8 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  const api = { activitySlot, agentsAt, occupiedLocations, pickLocation, placeAgents, isTravelling, IndoorView };
+  const api = { activitySlot, agentsAt, occupiedLocations, pickLocation, placeAgents, isTravelling,
+    homeRoomOf, householdAtHome, IndoorView };
   global.IndoorView = IndoorView;
   global.GAWorldIndoor = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

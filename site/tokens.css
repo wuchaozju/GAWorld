@@ -14,6 +14,9 @@
   --sunken: #eeeadf;
   --line: #d7d4c8;
   --line-strong: #b6baaa;
+  /* soft fills: a tinted panel inside a card (home panel, chips) */
+  --surface-alt: #f1ecdf;
+  --line-soft: #e3ded0;
 
   /* brand / accent */
   --green: #b9431d;
@@ -69,6 +72,8 @@
   --sunken: #30382c;
   --line: #424b3c;
   --line-strong: #69775c;
+  --surface-alt: #2b3329;
+  --line-soft: #3a4237;
   --green: #e9a075;
   --green-deep: #f5b18a;
   --green-soft: #493728;

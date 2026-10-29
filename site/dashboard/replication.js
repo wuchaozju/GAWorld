@@ -1,3 +1,6 @@
+
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* 研究工作台 · 社会调查/实验拟合度 — 上传文献 → 抽取研究设计与真人结果 → 核对 → 居民重做 → 代码比较。
  *
  * POST /api/research/replication/extract 和 /run 各开一个后台任务，轮询 /api/research/replication/jobs/<id>；
@@ -82,7 +85,7 @@
     if (runId) query.set("rep", runId);
     else query.delete("rep");
     var text = query.toString();
-    window.history.replaceState(null, "", window.location.pathname + (text ? "?" + text : ""));
+    window.history.replaceState(null, "", gwURL(window.location.pathname + (text ? "?" + text : "")));
   }
 
   function setProgress(id, text, mode) {
@@ -134,14 +137,14 @@
     var select = $("rpProvider");
     var previous = select.value;
     select.innerHTML =
-      '<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
+      gwHTML('<option value="">' + esc(t("route_by_config", "按配置路由（默认模型）")) + "</option>" +
       state.providers.map(function (p) {
         return (
           '<option value="' + esc(p.name) + '">' +
           esc(p.name + (p.model ? " · " + p.model : "") + (p.is_default ? " ★" : "")) +
           "</option>"
         );
-      }).join("");
+      }).join(""));
     select.value = previous;
   }
 
@@ -153,16 +156,16 @@
         esc(c.display_name || c.name || c.slug) + "</option>"
       );
     });
-    $("rpCity").innerHTML = options.join("");
+    $("rpCity").innerHTML = gwHTML(options.join(""));
   }
 
   function fillSamples() {
     var sizes = SAMPLES.filter(function (n) {
       return n <= state.maxSample;
     });
-    $("rpSample").innerHTML = sizes.map(function (n) {
+    $("rpSample").innerHTML = gwHTML(sizes.map(function (n) {
       return '<option value="' + n + '"' + (n === 50 ? " selected" : "") + ">" + n + "</option>";
-    }).join("");
+    }).join(""));
   }
 
   function cityName(slug) {
@@ -369,7 +372,7 @@
     var spec = state.spec;
     var host = $("rpSpec");
     if (!spec) {
-      host.innerHTML = "";
+      host.innerHTML = gwHTML("");
       return;
     }
     var html = "";
@@ -441,7 +444,7 @@
         esc(item.kind === "choice" ? t("rp_human_dist", "真人各选项比例（%）") : t("rp_human_mean", "真人均值 / SD")) +
         " · n · " + esc(t("rp_source", "出处")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
     });
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
   }
 
   function setPath(path, raw, isNumber) {
@@ -760,7 +763,7 @@
     html += "<h4>" + esc(t("rp_cells", "逐题对照")) + "</h4>" + cellsTable(run);
     html += answersBlock(run);
     html += '<p class="rw-hint">' + esc(t("rp_disclaimer", "居民回答由大模型按每位居民的档案扮演生成。拟合度衡量这批居民与文献中真人的接近程度——文献人群和城市居民不同（国家、年龄、职业），差异一部分来自人群本身。")) + "</p>";
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
 
     $("rpReuse").addEventListener("click", function () {
       setSpec(JSON.parse(JSON.stringify(run.spec)));
@@ -776,7 +779,7 @@
       .then(function (data) {
         var blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
         var link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = gwURL(URL.createObjectURL(blob));
         link.download = data.filename;
         document.body.appendChild(link);
         link.click();
@@ -806,7 +809,7 @@
 
   function renderRuns() {
     var host = $("rpRuns");
-    host.innerHTML = state.runs.length
+    host.innerHTML = gwHTML(state.runs.length
       ? state.runs.map(function (r) {
           var active = state.run && state.run.id === r.id ? " is-active" : "";
           var meta = (r.city_name || t("sg_default_world", "默认世界")) + " · " +
@@ -816,7 +819,7 @@
             esc(r.title) + '</span><span class="rw-hist-meta">' + esc(meta) + "</span></button>"
           );
         }).join("")
-      : '<p class="rw-hint">' + esc(t("rp_no_runs", "还没有拟合记录")) + "</p>";
+      : '<p class="rw-hint">' + esc(t("rp_no_runs", "还没有拟合记录")) + "</p>");
   }
 
   /* ----------------------------------------------------------------- init */

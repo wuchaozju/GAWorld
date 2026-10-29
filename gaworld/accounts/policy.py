@@ -21,8 +21,8 @@ from typing import Any, Literal
 Level = Literal["public", "member", "city", "world", "admin"]
 
 #: Pages and endpoints a visitor without a session must reach to sign in.
-PUBLIC_PAGES = ("/login", "/join", "/reset")
-PUBLIC_PREFIXES = ("/site/auth/",)
+PUBLIC_PAGES = ("/login", "/join", "/reset", "/register", "/verify", "/recover")
+PUBLIC_PREFIXES = ("/site/auth/", "/site/home/")
 PUBLIC_API = {
     ("GET", "/api/health"),
     ("HEAD", "/api/health"),
@@ -32,7 +32,13 @@ PUBLIC_API = {
     ("GET", "/api/auth/me"),
 }
 
-ADMIN_READS = ("/api/auth/users", "/api/auth/invites", "/api/auth/audit", "/api/auth/usage")
+ADMIN_READS = (
+    "/api/auth/users",
+    "/api/auth/invites",
+    "/api/auth/audit",
+    "/api/auth/usage",
+    "/api/analytics/system",
+)
 
 #: Requests that start model calls: refused once a member's daily quota is used
 #: up (the dashboard checks; admins are exempt). Saving config, stopping a run
@@ -62,7 +68,9 @@ QUOTA_GATED_EXACT = {
 QUOTA_GATED_PREFIX = ("/api/games/",)
 
 
-STUDY_ACTIONS = frozenset({"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"})
+STUDY_ACTIONS = frozenset(
+    {"update", "approve", "run", "stop", "pause", "resume", "reset", "delete", "quick", "provider", "revise"}
+)
 
 
 def study_action(path: str) -> str | None:
@@ -76,12 +84,19 @@ def study_action(path: str) -> str | None:
 
 def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
+    if path.startswith("/api/research/organization-intelligence/comparisons/"):
+        return path.rsplit("/", 1)[-1] in {"analyze", "run", "resume"}
+    if path.startswith("/api/research/organization-intelligence/v2/"):
+        return False  # Frozen OI-2 engine is standard-library-only and has zero provider calls.
+    if path.startswith("/api/research/organization-intelligence/") and path.endswith("/run"):
+        return True
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
         return True
     if path.startswith("/api/research/batches/") and path.rsplit("/", 1)[-1] in {"run", "resume"}:
         return True
     return (
-        path in QUOTA_GATED_EXACT or path.startswith(QUOTA_GATED_PREFIX)
+        path in QUOTA_GATED_EXACT
+        or path.startswith(QUOTA_GATED_PREFIX)
         or study_action(path) in {"create", "approve", "run", "resume", "reset"}
     )
 
@@ -104,6 +119,8 @@ MEMBER_WRITES_EXACT = {
     "/api/persona/distill",
 }
 MEMBER_WRITES_PREFIX = (
+    "/api/collaboration/organization-methods",
+    "/api/research/organization-intelligence",
     "/api/games/",
     "/api/arena/",
     "/api/research/games",
@@ -143,6 +160,43 @@ CITY_WRITES = {
 
 def required(method: str, path: str) -> Level:
     path = path.rstrip("/") or "/"
+    if method in ("GET", "HEAD") and (
+        path
+        in {
+            "/",
+            "/explore",
+            "/plaza",
+            "/site/index.html",
+            "/site/theme.js",
+            "/site/url.js",
+            "/site/brand.css",
+            "/site/city-lab.css",
+        }
+        or (path.startswith("/site/community/") and not path.endswith("workspace.html"))
+        or re.fullmatch(r"/(publications|people|posts)/[A-Za-z0-9_-]+", path)
+        or path
+        in {
+            "/api/community/publications",
+            "/api/community/posts",
+            "/api/community/comments",
+            "/api/community/attachment",
+        }
+        or re.fullmatch(r"/api/community/(publications|people|posts)/[A-Za-z0-9_-]+", path)
+    ):
+        return "public"
+    if path == "/api/auth/config" and method in ("GET", "HEAD"):
+        return "public"
+    if method == "POST" and path in {
+        "/api/auth/verify",
+        "/api/auth/resend",
+        "/api/auth/recover",
+        "/api/auth/recover/reset",
+    }:
+        return "public"
+    if path.startswith("/api/community/"):
+        return "member"
+    if path in {"/api/auth/profile", "/api/auth/sessions/close-others"}:
+        return "member"
     if (method, path) in PUBLIC_API or path in PUBLIC_PAGES or path.startswith(PUBLIC_PREFIXES):
         return "public"
     if method in ("GET", "HEAD"):
@@ -165,7 +219,8 @@ def required(method: str, path: str) -> Level:
     if study_action(path) is not None:
         return "member"  # every study handler checks ownership before reading or writing
     if path in {"/api/research/batches", "/api/research/batches/import"} or (
-        len(parts) == 6 and parts[2:4] == ["research", "batches"]
+        len(parts) == 6
+        and parts[2:4] == ["research", "batches"]
         and parts[5] in {"run", "pause", "resume", "stop", "compare"}
     ):
         return "member"  # batch handlers enforce the same user/world ownership boundary

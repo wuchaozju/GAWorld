@@ -28,9 +28,9 @@ from __future__ import annotations
 
 import random
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Freedom bank: a small, opinionated set of life activities the user can
@@ -98,7 +98,7 @@ LATE_SLEEP_WINDOW = (23 * 60, 24 * 60 - 1)  # 23:00 .. 23:59
 # loop-most-of-the-day bench notes that skipped meals cascade into ill
 # state, so the freedom bank keeps obvious gaps around them.
 MEAL_WINDOWS = (
-    (7 * 60, 9 * 60),    # breakfast band
+    (7 * 60, 9 * 60),  # breakfast band
     (11 * 60, 13 * 60),  # lunch band
     (17 * 60, 19 * 60),  # dinner band
 )
@@ -292,10 +292,7 @@ def _is_protected_minute(minute):
         return True
     if LATE_SLEEP_WINDOW[0] <= minute <= LATE_SLEEP_WINDOW[1]:
         return True
-    for start, end in MEAL_WINDOWS:
-        if start <= minute <= end:
-            return True
-    return False
+    return any(start <= minute <= end for start, end in MEAL_WINDOWS)
 
 
 def _activity_in_minutes_range(activity, band_minutes):
@@ -355,25 +352,19 @@ def pick_replacement_activity(agent, *, time_str, original_activity, rng=None):
     plan_key = state.get("plan_key") if isinstance(state, dict) else None
     primary = _bank_entry(plan_key)
     candidates = [primary] if primary else []
-    candidates.extend(
-        entry for entry in FREEDOM_BANK if entry["key"] != (plan_key or "")
-    )
+    candidates.extend(entry for entry in FREEDOM_BANK if entry["key"] != (plan_key or ""))
     hour = minute // 60
     for entry in candidates:
         for start, end in entry["bands"]:
             if start <= hour <= end:
                 # Skip a candidate whose label collides with the routine
-                if str(original_activity or "") and _collides(
-                    str(original_activity), entry["label"]
-                ):
+                if str(original_activity or "") and _collides(str(original_activity), entry["label"]):
                     continue
                 return _wrap_reason(entry["label"], entry["reason"], plan_key)
 
     # Graceful fallback: weave the agent's own daily_life snippet so
     # the action space still gets a meaningful, persona-shaped label.
-    fallback = (
-        agent.get("daily_life") if isinstance(agent, dict) else None
-    ) or (
+    fallback = (agent.get("daily_life") if isinstance(agent, dict) else None) or (
         agent.get("hobby") if isinstance(agent, dict) else None
     )
     if fallback:
@@ -475,15 +466,15 @@ def summarize_replacement_log(replacement):
 __all__ = [
     "FREEDOM_BANK",
     "SLEEP_ACTIVITY_KEYWORDS",
+    "Any",
     "HolidayState",
-    "start_holiday",
-    "end_holiday",
+    "Iterable",
     "cancel_holiday",
+    "end_holiday",
+    "format_holiday_plan_block",
     "holiday_overall_status",
     "holiday_status_for_agent",
     "pick_replacement_activity",
-    "format_holiday_plan_block",
+    "start_holiday",
     "summarize_replacement_log",
-    "Any",
-    "Iterable",
 ]

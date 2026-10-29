@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 谣言扩散局 (Rumor Spread) — front-end controller.
 //
 // Two server calls carry the page:
@@ -78,14 +80,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
       state.city = "";
     }
   }
@@ -97,14 +99,14 @@
       const data = await resp.json();
       state.rumors = data.rumors || [];
       state.maxAgents = data.max_agents || 0;
-      sel.innerHTML = state.rumors
+      sel.innerHTML = gwHTML(state.rumors
         .map((r) => `<option value="${esc(r.id)}">${esc(r.emoji + " " + r.title)}</option>`)
-        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("rumor.custom_option", "自己写一条…"))}</option>`;
+        .join("") + `<option value="${CUSTOM}">✍️ ${esc(t("rumor.custom_option", "自己写一条…"))}</option>`);
       $("#rRounds").max = data.max_rounds || 5;
       $("#rRounds").value = data.default_rounds || 3;
       renderRumorText();
     } catch (err) {
-      sel.innerHTML = `<option value="">${esc(String(err))}</option>`;
+      sel.innerHTML = gwHTML(`<option value="">${esc(String(err))}</option>`);
     }
   }
 
@@ -121,7 +123,7 @@
   async function loadAgents() {
     const list = $("#rAgents");
     if (state.city === null) return;
-    list.innerHTML = `<li class="disaster-empty">${esc(t("rumor.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("rumor.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
@@ -129,14 +131,14 @@
       renderAgents();
       afterPick();
     } catch (err) {
-      list.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 
   function renderAgents() {
     const list = $("#rAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("rumor.no_agents", "这座城市暂无居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("rumor.no_agents", "这座城市暂无居民"))}</li>`);
       return;
     }
     // Group by 小区: ties travel through addresses, so the picker is ordered
@@ -147,7 +149,7 @@
       if (!blocks.has(key)) blocks.set(key, []);
       blocks.get(key).push(a);
     });
-    list.innerHTML = Array.from(blocks.entries())
+    list.innerHTML = gwHTML(Array.from(blocks.entries())
       .map(([block, people]) => {
         const rows = people
           .map((a) => {
@@ -162,7 +164,7 @@
           .join("");
         return `<li class="rumor-block"><button type="button" data-block="${esc(block)}">${esc(block)} · ${people.length}</button></li>` + rows;
       })
-      .join("");
+      .join(""));
 
     Array.from(list.querySelectorAll("input[type=checkbox]")).forEach((box) => {
       box.addEventListener("change", () => {
@@ -232,10 +234,10 @@
     $("#rPicked").textContent = String(state.picked.size);
     const seeds = $("#rSeeds");
     const chosen = new Set(Array.from(seeds.selectedOptions || []).map((o) => parseInt(o.value, 10)));
-    seeds.innerHTML = state.agents
+    seeds.innerHTML = gwHTML(state.agents
       .filter((a) => state.picked.has(a.id))
       .map((a) => `<option value="${a.id}"${chosen.has(a.id) ? " selected" : ""}>#${a.id} ${esc(a.name)}</option>`)
-      .join("");
+      .join(""));
     loadGraph();
   }
 
@@ -350,7 +352,7 @@
     $("#rSummary").textContent = run.summary || "";
 
     const spread = stats.total ? Math.round((stats.reached / stats.total) * 100) : 0;
-    $("#rOverall").innerHTML = [
+    $("#rOverall").innerHTML = gwHTML([
       metric(t("rumor.m_reach", "触达"), stats.reached + "/" + stats.total, "· " + spread + "%"),
       metric(t("rumor.m_believers", "相信"), stats.believers, ""),
       metric(t("rumor.m_belief", "平均信任度"), stats.avg_belief, "%"),
@@ -359,7 +361,7 @@
         stats.superspreader ? stats.superspreader.name : "—",
         stats.superspreader ? "×" + stats.superspreader.n : ""
       ),
-    ].join("");
+    ].join(""));
 
     renderRoundTabs();
     drawGraph();
@@ -377,14 +379,14 @@
   function renderRoundTabs() {
     const rounds = (state.run && state.run.rounds) || [];
     const tabs = $("#rRoundTabs");
-    if (!rounds.length) return (tabs.innerHTML = "");
+    if (!rounds.length) return (tabs.innerHTML = gwHTML(""));
     const make = (value, label) => {
       const on = String(state.roundFilter) === String(value) ? " is-on" : "";
       return `<button type="button" class="rumor-tab${on}" data-round="${value}">${esc(label)}</button>`;
     };
-    tabs.innerHTML = [make("null", t("rumor.all_rounds", "全部"))]
+    tabs.innerHTML = gwHTML([make("null", t("rumor.all_rounds", "全部"))]
       .concat(rounds.map((r) => make(r.round, t("rumor.round", "第") + (r.round + 1) + t("rumor.round_suffix", "轮"))))
-      .join("");
+      .join(""));
     Array.from(tabs.querySelectorAll("button[data-round]")).forEach((btn) => {
       btn.addEventListener("click", () => {
         const raw = btn.getAttribute("data-round");
@@ -401,7 +403,7 @@
     const run = state.run;
     const source = run || state.graph;
     if (!source || !(source.nodes || []).length) {
-      box.innerHTML = `<p class="disaster-empty">${esc(t("rumor.no_graph", "选两个以上的居民，这里会画出他们的关系网。"))}</p>`;
+      box.innerHTML = gwHTML(`<p class="disaster-empty">${esc(t("rumor.no_graph", "选两个以上的居民，这里会画出他们的关系网。"))}</p>`);
       return;
     }
     const nodes = source.nodes;
@@ -459,7 +461,7 @@
       })
       .join("");
 
-    box.innerHTML = `<svg viewBox="0 0 ${SIZE} ${SIZE}" class="rumor-svg" role="img">
+    box.innerHTML = gwHTML(`<svg viewBox="0 0 ${SIZE} ${SIZE}" class="rumor-svg" role="img">
       <defs>
         ${arrowMarker("rumor", "rumor-arrow-rumor")}
         ${arrowMarker("question", "rumor-arrow-question")}
@@ -468,7 +470,7 @@
       <g class="ties">${ties}</g>
       <g class="hops">${arrows}</g>
       <g class="nodes">${dots}</g>
-    </svg>`;
+    </svg>`);
   }
 
   function arrowMarker(kind, id) {
@@ -479,7 +481,7 @@
   function renderRounds() {
     const rounds = (state.run && state.run.rounds) || [];
     const total = (state.run.stats || {}).total || 1;
-    $("#rRoundBars").innerHTML = rounds
+    $("#rRoundBars").innerHTML = gwHTML(rounds
       .map((r) => `<div class="rumor-round">
         <span class="label">${esc(t("rumor.round", "第"))}${r.round + 1}${esc(t("rumor.round_suffix", "轮"))}</span>
         <span class="bar-track">
@@ -488,14 +490,14 @@
         </span>
         <span class="n">${r.reached} ${esc(t("rumor.heard", "人听说"))} · ${r.believers} ${esc(t("rumor.believing", "人信"))}</span>
       </div>`)
-      .join("");
+      .join(""));
   }
 
   function renderCards() {
     const run = state.run;
     const names = {};
     (run.nodes || []).forEach((n) => { names[n.agent_id] = n.name; });
-    $("#rCards").innerHTML = (run.nodes || [])
+    $("#rCards").innerHTML = gwHTML((run.nodes || [])
       .slice()
       .sort((a, b) => (a.heard_round == null ? 99 : a.heard_round) - (b.heard_round == null ? 99 : b.heard_round))
       .map((node) => {
@@ -520,7 +522,7 @@
           </footer>
         </article>`;
       })
-      .join("");
+      .join(""));
   }
 
   function setStatus(message, isError) {
@@ -541,22 +543,22 @@
       const data = await resp.json();
       const runs = data.runs || [];
       if (!runs.length) {
-        ul.innerHTML = `<li class="disaster-empty">${esc(t("rumor.no_history", "还没有记录"))}</li>`;
+        ul.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("rumor.no_history", "还没有记录"))}</li>`);
         return;
       }
-      ul.innerHTML = runs
+      ul.innerHTML = gwHTML(runs
         .map((r) => `<li>
           <button type="button" data-job="${esc(r.job_id)}">
             <span class="who">${esc((r.emoji || "") + " " + (r.rumor || ""))}</span>
             <span class="meta">${r.reached}/${r.total} ${esc(t("rumor.heard", "人听说"))} · ${r.believers} ${esc(t("rumor.believing", "人信"))}</span>
           </button>
         </li>`)
-        .join("");
+        .join(""));
       Array.from(ul.querySelectorAll("button[data-job]")).forEach((btn) => {
         btn.addEventListener("click", () => openRun(btn.getAttribute("data-job")));
       });
     } catch (err) {
-      ul.innerHTML = `<li class="disaster-empty is-error">${esc(String(err))}</li>`;
+      ul.innerHTML = gwHTML(`<li class="disaster-empty is-error">${esc(String(err))}</li>`);
     }
   }
 

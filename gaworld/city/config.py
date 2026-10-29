@@ -47,6 +47,7 @@ RUN_PATHS = {
     "life_events.event_dir": "life_events",
     "visualization.output_dir": "visualization",
     "collaboration.sessions_dir": "collaboration/sessions",
+    "crowdsourcing.sessions_dir": "crowdsourcing/sessions",
     "real_work.artifacts_dir": "work",
     "real_work.queue_path": "work/queue.jsonl",
     "real_work.capabilities_cache": "work/capabilities.json",

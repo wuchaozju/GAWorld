@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // 同居模式 (Roommate Mode) — front-end controller (v2: pixel canvas + auto-play).
 //
 // Long-lived game. Server keeps the session in memory; front-end polls and
@@ -296,14 +299,14 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => '<option value="' + esc(c.slug) + '">' + esc(c.display_name || c.name || c.slug) + '</option>')
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (err) {
-      sel.innerHTML = '<option value="">' + esc(String(err)) + '</option>';
+      sel.innerHTML = gwHTML('<option value="">' + esc(String(err)) + '</option>');
       state.city = "";
     }
   }
@@ -320,14 +323,14 @@
   async function loadAgents() {
     const list = $("#rAgents");
     if (state.city === null) return;
-    list.innerHTML = '<li class="roommate-empty">加载中...</li>';
+    list.innerHTML = gwHTML('<li class="roommate-empty">加载中...</li>');
     try {
       const resp = await fetch("/api/games/agents?city=" + encodeURIComponent(state.city));
       const data = await resp.json();
       state.agents = data.agents || [];
       renderAgents();
     } catch (err) {
-      list.innerHTML = '<li class="roommate-empty is-error">' + esc(String(err)) + '</li>';
+      list.innerHTML = gwHTML('<li class="roommate-empty is-error">' + esc(String(err)) + '</li>');
     }
   }
 
@@ -341,11 +344,11 @@
       return hay.indexOf(filter) >= 0;
     });
     if (!filtered.length) {
-      list.innerHTML = '<li class="roommate-empty">' + esc(filter ? "没有匹配的居民" : "这座城市暂无居民") + '</li>';
+      list.innerHTML = gwHTML('<li class="roommate-empty">' + esc(filter ? "没有匹配的居民" : "这座城市暂无居民") + '</li>');
       $("#rPicked").textContent = String(state.picked.size);
       return;
     }
-    list.innerHTML = filtered
+    list.innerHTML = gwHTML(filtered
       .map((a) => {
         const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || ""].filter(Boolean).join(" · ");
         const picked = state.picked.has(a.id);
@@ -357,7 +360,7 @@
           + '<span class="meta">' + esc(meta) + '</span>'
           + '</label></li>';
       })
-      .join("");
+      .join(""));
     Array.from(list.querySelectorAll("li > label")).forEach((label) => {
       const box = label.querySelector("input[type=checkbox]");
       label.addEventListener("click", (ev) => {
@@ -780,11 +783,11 @@ function play() {
     ).join("");
 
     node.innerHTML =
-      '<header>' + esc(d.label) + '<button type="button" class="furniture-close" aria-label="关闭">×</button></header>'
+      gwHTML('<header>' + esc(d.label) + '<button type="button" class="furniture-close" aria-label="关闭">×</button></header>'
       + '<p class="furniture-room">在 <b>' + esc(roomLabelById(state.session, d.roomId) || d.roomId) + '</b> 房间里</p>'
       + '<div class="furniture-acts">' + actsHtml + '</div>'
       + '<p class="furniture-pick-label">让谁过去?</p>'
-      + '<div class="furniture-picks">' + residentsHtml + '</div>';
+      + '<div class="furniture-picks">' + residentsHtml + '</div>');
     // Clamp the entire menu inside the dollhouse at every screen size.
     _maybeRefreshGeometry();
     const w=node.offsetWidth, h=node.offsetHeight;
@@ -909,8 +912,8 @@ function play() {
       const layer = $("#rBubbles");
       if (layer && layer.parentElement) layer.parentElement.appendChild(overlay);
     }
-    overlay.innerHTML = '<div class="rel-detail-modal">' + header
-      + '<div class="rel-detail-body">' + body + historyHtml + '</div></div>';
+    overlay.innerHTML = gwHTML('<div class="rel-detail-modal">' + header
+      + '<div class="rel-detail-body">' + body + historyHtml + '</div></div>');
     overlay.classList.add("rel-detail-overlay-show");
     overlay.addEventListener("click", (ev) => {
       if (ev.target === overlay) closeRelDetail();
@@ -2492,11 +2495,11 @@ function play() {
           node.className = "speech-bubble" + (isActive ? "" : " speech-bubble-queued");
           node.dataset.who = whoName;
           node.innerHTML =
-            '<header><b>' + esc(whoName) + '</b>'
+            gwHTML('<header><b>' + esc(whoName) + '</b>'
             + (turnCount > 1 ? ' <span class="bubble-turn-idx">' + (state.bubbleTurnIdx + 1) + '/' + turnCount + '</span>' : '')
             + '</header>'
             + (t.text ? '<p class="bubble-say">「' + esc(t.text) + '」</p>' : "")
-            + (thoughtText ? '<p class="bubble-think">💭 ' + esc(thoughtText) + '</p>' : "");
+            + (thoughtText ? '<p class="bubble-think">💭 ' + esc(thoughtText) + '</p>' : ""));
           layer.appendChild(node);
           positionBubble(node, anchor);
           state.bubbleSlots.push({ node, who: whoName, baseY: anchor.y });
@@ -2515,9 +2518,9 @@ function play() {
           node.className = "speech-bubble";
           node.dataset.who = name;
           node.innerHTML =
-            '<header><b>' + esc(name) + '</b></header>'
+            gwHTML('<header><b>' + esc(name) + '</b></header>'
             + (text ? '<p class="bubble-say">「' + esc(text) + '」</p>' : "")
-            + (thoughtText ? '<p class="bubble-think">💭 ' + esc(thoughtText) + '</p>' : "");
+            + (thoughtText ? '<p class="bubble-think">💭 ' + esc(thoughtText) + '</p>' : ""));
           layer.appendChild(node);
           positionBubble(node, anchor);
           state.bubbleSlots.push({ node, who: name, baseY: anchor.y });
@@ -2556,21 +2559,21 @@ function play() {
     const box = $("#rConversation");
     if (!box) return;
     if (!state.session) {
-      box.innerHTML = '<p class="conv-empty">还没开始同居 — 选两位居民开始。</p>';
+      box.innerHTML = gwHTML('<p class="conv-empty">还没开始同居 — 选两位居民开始。</p>');
       return;
     }
     const events = (state.session.events || []).filter(
       (e) => e && (e.kind === "interact" || e.kind === "direct")
     );
     if (!events.length) {
-      box.innerHTML = '<p class="conv-empty">还没人开口 — 时间走起来,他们碰到一起就会开聊。</p>';
+      box.innerHTML = gwHTML('<p class="conv-empty">还没人开口 — 时间走起来,他们碰到一起就会开聊。</p>');
       return;
     }
     // Take the latest exchange's turns in reverse-order (newest first).
     const last = events[events.length - 1];
     const turns = Array.isArray(last.turns) ? last.turns.slice().reverse() : [];
     if (!turns.length) {
-      box.innerHTML = '<p class="conv-empty">这段对话没有内容。</p>';
+      box.innerHTML = gwHTML('<p class="conv-empty">这段对话没有内容。</p>');
       return;
     }
     const roomLabel = roomLabelById(state.session, last.room) || "";
@@ -2586,7 +2589,7 @@ function play() {
         + '<span class="conv-text">' + esc(t.text || "") + '</span>'
         + '</div>';
     }).join("");
-    box.innerHTML = head + rows;
+    box.innerHTML = gwHTML(head + rows);
     // Pin scroll to top so newest turn is visible.
     box.scrollTop = 0;
   }
@@ -2596,10 +2599,10 @@ function play() {
     if (!state.session) return;
     const events = (state.session.events || []).slice().reverse();
     if (!events.length) {
-      ul.innerHTML = '<li class="event-empty">还没有事件 — 时间走起来就会有。</li>';
+      ul.innerHTML = gwHTML('<li class="event-empty">还没有事件 — 时间走起来就会有。</li>');
       return;
     }
-    ul.innerHTML = events.map(eventItemHtml).join("");
+    ul.innerHTML = gwHTML(events.map(eventItemHtml).join(""));
   }
 
   function eventItemHtml(e) {
@@ -2637,19 +2640,19 @@ function play() {
   function renderDashboard() {
     const mood = $("#rMood");
     if (!mood || !state.session) return;
-    mood.innerHTML = state.session.residents.map((r) => {
+    mood.innerHTML = gwHTML(state.session.residents.map((r) => {
       const pct = Math.round((r.mood + 1) * 50);
       return '<li>'
         + '<span class="mood-name">' + esc(r.name) + '</span>'
         + '<span class="mood-bar"><i style="width:' + pct + '%; background:' + moodColor(r.mood) + '"></i></span>'
         + '<span class="mood-label">' + esc(r.mood_label) + '</span>'
         + '</li>';
-    }).join("");
+    }).join(""));
 
     const rel = $("#rRelations");
     const residents = state.session.residents;
     if (residents.length < 2) {
-      rel.innerHTML = '<p class="muted">至少 2 位居民才能看关系。</p>';
+      rel.innerHTML = gwHTML('<p class="muted">至少 2 位居民才能看关系。</p>');
     } else {
       // Three-dimension relationship matrix: each cell shows
       //   affinity / trust / closeness as small bars (the dimension that
@@ -2704,7 +2707,7 @@ function play() {
         html += '</tr>';
       });
       html += '</tbody></table>';
-      rel.innerHTML = html;
+      rel.innerHTML = gwHTML(html);
       // Click a cell to open a detail modal (history + raw scores).
       rel.querySelectorAll(".rel-cell").forEach((td) => {
         td.addEventListener("click", () => {
@@ -2743,7 +2746,7 @@ function play() {
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = ev.currentTarget;
-    a.href = url;
+    a.href = gwURL(url);
     a.download = "同居模式-" + state.session.id + ".md";
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }

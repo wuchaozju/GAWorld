@@ -22,7 +22,7 @@
 		basic_auth {
 			gaworld {$GAWORLD_PUBLIC_PASSWORD_HASH}
 		}
-		@app path / /console /console/ /dashboard /dashboard/ /board /board/ /login /join /reset /play/* /site/* /api/* /output/* /video/public/* /docs/* /README.zh-CN.md /AGENTS.md /CHANGELOG.md /fos /fos/*
+		@app path / /console /console/ /dashboard /dashboard/ /board /board/ /login /join /reset /register /verify /recover /workspace /workspace/ /explore /explore/ /plaza /plaza/ /publications/* /people/* /posts/* /play/* /site/* /api/* /output/* /video/public/* /docs/* /README.zh-CN.md /AGENTS.md /CHANGELOG.md /read.doc /fos /fos/*
 		handle @app {
 			reverse_proxy 127.0.0.1:8766
 		}

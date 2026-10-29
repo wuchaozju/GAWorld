@@ -63,6 +63,13 @@ from gaworld.sim._schedule import (
     repair_inner_quotes,
     is_sleep_activity,
 )
+from gaworld.sim._timefit import (
+    BAD as _TIME_BAD,
+    SOFT as _TIME_SOFT,
+    action_time_fit as _action_time_fit,
+    time_fit_config as _time_fit_config,
+)
+from gaworld.sim._utils import _time_str_to_minutes
 
 _LOG = get_logger("gaworld.sim.action")
 
@@ -529,6 +536,15 @@ def choose_action(
     weights: list[float] = []
     score_map: dict[str, dict[str, Any]] = {}
     s = agent["state"]
+    # Time plausibility: an action that makes no sense at this hour (a work
+    # wrap-up at 06:00) is de-weighted rather than deleted, so it stays
+    # possible — just unlikely. A jog at dawn is inside its window and is
+    # left alone.
+    timefit_cfg = _time_fit_config()
+    time_gate = bool(timefit_cfg.get("enabled", True)) and bool(timefit_cfg.get("gate_actions", True))
+    current_minutes = _time_str_to_minutes(time_str) if time_str else None
+    soft_penalty = float(timefit_cfg.get("soft_penalty", 0.35))
+    hard_penalty = float(timefit_cfg.get("hard_penalty", 2.0))
     recent_actions: list[str] = []
     memory_hits: list[Any] = []
     if _stateful():
@@ -640,6 +656,7 @@ def choose_action(
         "growth_skill": "技能成长",
         "growth_career": "职业成长牵引",
         "trait_style_fit": "性格倾向",
+        "time_fit": "时段不合",
     }
     growth_profile = agent.get("growth_profile") if _interests_enabled() else {}
     activity_growth_matches = match_growth_items(growth_profile, activity) if growth_profile else []
@@ -785,6 +802,13 @@ def choose_action(
             if relation_snapshot["friction"] > 0.65 and any(k in act for k in ["见面", "拜访", "聚会"]):
                 components["relation_friction"] = -(relation_snapshot["friction"] - 0.65) * 1.8
 
+        if time_gate:
+            verdict, _reason = _action_time_fit(act, current_minutes)
+            if verdict == _TIME_BAD:
+                components["time_fit"] = -hard_penalty
+            elif verdict == _TIME_SOFT:
+                components["time_fit"] = -soft_penalty
+
         total_weight = 1.0 + sum(components.values())
         if realism_enabled and decision_noise > 0:
             total_weight *= random.uniform(max(0.5, 1.0 - decision_noise), 1.0 + decision_noise)
@@ -818,7 +842,17 @@ def choose_action(
                     impulse_pool.append(option)
                 elif thought_source in {"external_event", "policy", "task"} and option_styles & {"quick", "progress", "maintain"}:
                     impulse_pool.append(option)
-            choice = random.choice(impulse_pool or options)
+            pool = impulse_pool or options
+            if time_gate:
+                # The impulse branch picks at random and would otherwise
+                # ignore the time penalty. Drop the options that make no
+                # sense at this hour — unless every one of them does, in
+                # which case the draw stands: an odd hour is rare, not
+                # impossible.
+                fitting = [option for option in pool if _action_time_fit(option, current_minutes)[0] != _TIME_BAD]
+                if fitting:
+                    pool = fitting
+            choice = random.choice(pool)
             impulse_choice = True
         else:
             choice = random.choices(options, weights=weights, k=1)[0]

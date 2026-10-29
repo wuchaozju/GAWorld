@@ -415,4 +415,26 @@ def simulation_settings() -> dict[str, Any]:
             # every fallback (those decisions used heuristic defaults).
             "degraded_failure_share": 0.05,
         },
+        # 时间合理性：居民的行为要对得上钟点。日程里时间与活动对不上的项会被挪回
+        # 合理窗口，动作层面不合时机的动作会被降权（不是删除，所以仍有可能发生），
+        # 模型临时改程时提出的新活动也要过这一关。默认开启；关掉即回到旧行为。
+        "time_plausibility": {
+            "enabled": True,
+            # 把日程里越界的时间点挪回合理窗口。
+            "repair_schedule": True,
+            # 动作层面：不合时机的动作降权。
+            "gate_actions": True,
+            # 改程层面：拒绝时间上不成立的新活动。
+            "gate_activity_changes": True,
+            # 一个日程项最多能被挪动多少分钟（挪不动就留在原处，不丢内容）。
+            "max_shift_minutes": 180,
+            # 相邻日程项之间的最小间隔（分钟）。
+            "min_gap_minutes": 15,
+            # 灰区（略微提前/延后）的动作权重惩罚。
+            "soft_penalty": 0.35,
+            # 明显不合时机的动作权重惩罚。
+            "hard_penalty": 2.0,
+            # 允许「不合理但偶尔发生」的概率——随机性要在合理范围内。
+            "deviation_chance": 0.04,
+        },
     }

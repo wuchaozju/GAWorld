@@ -1,10 +1,14 @@
 """Home environment design (P5 layer of the world/physical stack).
 
 Every agent gets a deterministic procedural home: rooms (living room, bedroom,
-kitchen, study, bathroom, balcony), furniture per room, an ambiance (lighting
-+ sound + smell + temperature + tidiness) that drifts with day/weather and the
-agent's own habits, and a small ``at_home_activities`` table that the home
-mode projects onto the perception prompt when the agent is actually at home.
+dining room, kitchen, study, bathroom, balcony), furniture per room, an
+ambiance (lighting + sound + smell + temperature + tidiness) that drifts with
+day/weather and the agent's own habits, and a small ``at_home_activities``
+table that the home mode projects onto the perception prompt when the agent is
+actually at home. The same table decides **which room the agent is in**: the
+activity they are doing picks the room (sleeping → bedroom, eating → dining
+room, cooking → kitchen), so the agent really moves around inside their flat
+instead of standing in one place.
 
 Two design goals drive the shape of this module:
 
@@ -49,35 +53,75 @@ ROOM_TEMPLATES: list[dict[str, Any]] = [
         "key": "living_room",
         "name": "客厅",
         "furniture": ["沙发", "茶几", "电视柜", "电视", "地毯", "落地灯", "书架", "抱枕"],
-        "activities": ["看电视", "刷手机", "接待客人", "看书", "喝茶", "听音乐", "做拉伸", "发呆"],
+        "activities": ["看电视", "刷手机", "接待客人", "看书", "喝茶", "听音乐", "做拉伸", "发呆", "吃零食"],
         "ambiance_bias": "social",
     },
     {
         "key": "bedroom",
         "name": "卧室",
         "furniture": ["床", "床头柜", "衣柜", "梳妆台", "台灯", "窗帘", "床头灯"],
-        "activities": ["睡觉", "换衣服", "整理床铺", "敷面膜", "看手机", "发呆", "听白噪音"],
+        "activities": ["睡觉", "午休", "换衣服", "整理床铺", "敷面膜", "看手机", "听白噪音"],
         "ambiance_bias": "private",
+    },
+    {
+        "key": "dining_room",
+        "name": "餐厅",
+        "furniture": ["餐桌", "餐椅", "碗柜", "餐边柜", "电饭煲", "花瓶"],
+        "activities": [
+            "吃早饭",
+            "吃午饭",
+            "吃晚饭",
+            "吃饭",
+            "早饭",
+            "午饭",
+            "晚饭",
+            "吃夜宵",
+            "家庭聚餐",
+            "收拾餐桌",
+        ],
+        "ambiance_bias": "social",
     },
     {
         "key": "kitchen",
         "name": "厨房",
-        "furniture": ["灶台", "抽油烟机", "冰箱", "微波炉", "电饭煲", "砧板", "调料架", "餐桌"],
-        "activities": ["做饭", "烧水", "泡茶", "泡咖啡", "洗菜", "洗碗", "吃早餐", "热剩饭"],
+        "furniture": ["灶台", "抽油烟机", "冰箱", "微波炉", "电饭煲", "砧板", "调料架"],
+        "activities": [
+            "做饭",
+            "做早餐",
+            "做午餐",
+            "做晚餐",
+            "烧水",
+            "泡茶",
+            "泡咖啡",
+            "洗菜",
+            "洗碗",
+            "热剩饭",
+            "收拾厨房",
+        ],
         "ambiance_bias": "active",
     },
     {
         "key": "study",
         "name": "书房",
         "furniture": ["书桌", "椅子", "电脑", "台灯", "书柜", "打印机", "显示器", "耳机"],
-        "activities": ["加班", "写文档", "上网课", "看资料", "视频会议", "整理桌面", "剪视频"],
+        "activities": [
+            "加班",
+            "写文档",
+            "上网课",
+            "看资料",
+            "视频会议",
+            "整理桌面",
+            "剪视频",
+            "学习",
+            "写作业",
+        ],
         "ambiance_bias": "focus",
     },
     {
         "key": "bathroom",
         "name": "卫生间",
         "furniture": ["马桶", "淋浴", "洗手台", "镜子", "洗衣机", "毛巾架", "吹风机"],
-        "activities": ["洗澡", "刷牙", "洗脸", "上厕所", "吹头发", "洗衣服", "晾衣服"],
+        "activities": ["洗澡", "刷牙", "洗脸", "上厕所", "吹头发", "洗衣服"],
         "ambiance_bias": "private",
     },
     {
@@ -112,12 +156,31 @@ DEFAULT_AMBIANCE: dict[str, str] = {
 _INCOME_TIER = [
     # (max monthly income CNY, room_keys, room_size_range, ambiance_quality)
     (3000, ["bedroom", "kitchen", "bathroom", "living_room"], (4, 7), "minimal"),
-    (7000, ["bedroom", "kitchen", "bathroom", "living_room"], (6, 10), "basic"),
-    (15000, ["bedroom", "kitchen", "bathroom", "living_room", "study"], (8, 14), "comfortable"),
-    (40000, ["bedroom", "kitchen", "bathroom", "living_room", "study", "balcony"], (12, 22), "comfortable"),
+    (7000, ["bedroom", "kitchen", "bathroom", "living_room", "dining_room"], (6, 10), "basic"),
+    (
+        15000,
+        ["bedroom", "kitchen", "bathroom", "living_room", "dining_room", "study"],
+        (8, 14),
+        "comfortable",
+    ),
+    (
+        40000,
+        ["bedroom", "kitchen", "bathroom", "living_room", "dining_room", "study", "balcony"],
+        (12, 22),
+        "comfortable",
+    ),
     (
         float("inf"),
-        ["bedroom", "kitchen", "bathroom", "living_room", "study", "balcony", "bedroom_2"],
+        [
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "living_room",
+            "dining_room",
+            "study",
+            "balcony",
+            "bedroom_2",
+        ],
         (18, 40),
         "premium",
     ),
@@ -217,7 +280,7 @@ def design_home(agent: dict[str, Any], seed: Any = None) -> dict[str, Any]:
             )
         )
         rooms[key] = {
-            "name": template["name"],
+            "name": _room_name(key, template),
             "size_sqm": size,
             "furniture": furniture,
             "ambiance_bias": template["ambiance_bias"],
@@ -261,6 +324,14 @@ def _lookup_template(key: str) -> dict[str, Any]:
     return next(t for t in ROOM_TEMPLATES if t["key"] == key)
 
 
+def _room_name(key: str, template: dict[str, Any]) -> str:
+    """The room's name. Two bedrooms need two names (the flat plan draws them
+    as separate rooms, and one label per room has to stay unique)."""
+    if key == "bedroom_2":
+        return "次卧"
+    return str(template["name"])
+
+
 # ---------------------------------------------------------------------------
 # Ambient state evolution.
 # ---------------------------------------------------------------------------
@@ -295,10 +366,12 @@ def _lighting_for(time_str: str, weather_state: str) -> str:
 
 def _sound_for(activity: str, home: dict[str, Any]) -> str:
     """A short sound line reflecting the current activity + ambient baseline."""
-    if activity in {"睡觉", "敷面膜", "听白噪音"}:
+    if activity in {"睡觉", "午休", "敷面膜", "听白噪音"}:
         return "很安静"
-    if activity in {"做饭", "洗碗", "洗菜", "热剩饭"}:
+    if activity in {"做饭", "做早餐", "做午餐", "做晚餐", "洗碗", "洗菜", "热剩饭", "收拾厨房"}:
         return "厨房传来锅碗声"
+    if activity in {"吃早饭", "吃午饭", "吃晚饭", "吃饭", "家庭聚餐"}:
+        return "碗筷轻碰的声音"
     if activity in {"看电视", "刷手机"}:
         return "电视/手机的低语"
     if activity in {"看资料", "加班", "写文档", "视频会议", "剪视频"}:
@@ -332,15 +405,15 @@ def _tidiness_for(activity: str, current_tidiness: str) -> str:
         "有点乱": 1,
         "比较乱": 0,
     }.get(current_tidiness, 2)
-    if activity in {"做饭", "洗碗", "洗菜"}:
+    if activity in {"做饭", "做早餐", "做午餐", "做晚餐", "洗碗", "洗菜"}:
         score = max(0, score - 1)
-    if activity in {"整理床铺", "整理桌面"}:
+    if activity in {"整理床铺", "整理桌面", "收拾餐桌", "收拾厨房"}:
         score = min(2, score + 1)
     return ["比较乱", "有点乱", "基本整洁"][score]
 
 
 def _smell_for(activity: str) -> str:
-    if activity in {"做饭", "吃早餐", "热剩饭"}:
+    if activity in {"做饭", "做早餐", "做午餐", "做晚餐", "吃早饭", "吃午饭", "吃晚饭", "热剩饭"}:
         return "饭菜香"
     if activity in {"泡茶", "泡咖啡"}:
         return "茶香/咖啡香"
@@ -377,6 +450,69 @@ def update_ambiance(
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Activity → room.
+# ---------------------------------------------------------------------------
+
+#: Keyword rules for the room an activity belongs to. The order matters — the
+#: first match wins — so the specific ones come first (cooking before eating:
+#: "做饭" contains "饭"; sleeping before resting: "睡前" is a bedroom thing).
+ACTIVITY_ROOM_RULES: list[tuple[re.Pattern[str], str]] = [
+    (
+        re.compile(
+            r"做[^，。！？\s]{0,3}(饭|菜|餐|夜宵)|烹饪|下厨|备菜|烧水|泡(茶|咖啡)|洗菜|洗碗|热剩饭|收拾厨房"
+        ),
+        "kitchen",
+    ),
+    (re.compile(r"睡|午休|午睡|躺|起床|换衣服|整理床铺|敷面膜|白噪音"), "bedroom"),
+    (
+        re.compile(
+            r"学习|上课|作业|看书|阅读|办公|加班|工作|写文档|电脑|网课|视频会议|整理桌面|剪视频|论文|复习|备课|待办"
+        ),
+        "study",
+    ),
+    (re.compile(r"吃|用餐|早餐|午餐|晚餐|夜宵|聚餐|早饭|午饭|晚饭|饭"), "dining_room"),
+    (re.compile(r"洗澡|淋浴|刷牙|洗脸|上厕所|如厕|卫生间|洗衣|吹头发"), "bathroom"),
+    (
+        re.compile(r"电视|手机|客人|聊天|喝茶|听音乐|拉伸|发呆|零食|接待|追剧|游戏|个人时间|刷|逗孩子"),
+        "living_room",
+    ),
+    (re.compile(r"浇花|晾衣|晒太阳|看风景|抽烟|做操|通风|乘凉|看楼下|晨练"), "balcony"),
+]
+
+
+#: Where an activity lands when the home has no room of that kind (a small
+#: flat has no dining room: the meal happens in the living room).
+ROOM_FALLBACKS: dict[str, tuple[str, ...]] = {
+    "dining_room": ("living_room", "kitchen"),
+    "kitchen": ("dining_room", "living_room"),
+    "study": ("living_room",),
+    "bathroom": ("bedroom",),
+    "balcony": ("living_room",),
+}
+
+
+def _room_key_for_activity(home: dict[str, Any], activity: str, time_str: str = "") -> str:
+    """The room key an activity belongs to (without checking the home has it)."""
+    activities = home.get("at_home_activities") or {}
+    for room_key, options in activities.items():
+        if activity and activity in options:
+            return room_key
+    for pattern, room_key in ACTIVITY_ROOM_RULES:
+        if activity and pattern.search(activity):
+            return room_key
+    # Time-of-day fallback when the activity is too generic ("休息", "居家")
+    try:
+        hour = int((time_str or "12:00").split(":")[0])
+    except (ValueError, AttributeError):
+        hour = 12
+    if hour >= 22 or hour < 6:
+        return "bedroom"
+    if hour < 9:
+        return "kitchen"
+    return "living_room"
+
+
 def pick_room_for_activity(
     home: dict[str, Any],
     activity: str,
@@ -384,22 +520,24 @@ def pick_room_for_activity(
 ) -> tuple[str, str]:
     """Map the agent's current activity to a (room_key, room_name) inside the home.
 
-    Falls back to ``living_room`` when no rule matches — the agent is most
-    often somewhere visible to the family."""
-    activities = home.get("at_home_activities") or {}
-    for room_key, options in activities.items():
-        if activity in options:
-            return room_key, home["rooms"][room_key]["name"]
-    # Time-of-day fallback when the activity is too generic ("休息", "居家")
-    try:
-        hour = int((time_str or "12:00").split(":")[0])
-    except (ValueError, AttributeError):
-        hour = 12
-    if hour >= 22 or hour < 6:
-        return "bedroom", home["rooms"].get("bedroom", {}).get("name", "卧室")
-    if hour < 9:
-        return "kitchen", home["rooms"].get("kitchen", {}).get("name", "厨房")
-    return "living_room", home["rooms"].get("living_room", {}).get("name", "客厅")
+    Three passes: the room's own activity list (an exact hit wins), then the
+    keyword rules (so the daily routine's vocabulary — 午饭、睡前、个人时间 —
+    lands in the right room), then the time of day. A room the home does not
+    have falls back to the closest one it does have."""
+    rooms = home.get("rooms") or {}
+    key = _room_key_for_activity(home, activity, time_str)
+    if key in rooms:
+        return key, rooms[key].get("name", key)
+    for alt in ROOM_FALLBACKS.get(key, ()):
+        if alt in rooms:
+            return alt, rooms[alt].get("name", alt)
+    for alt in ("living_room", "bedroom", "kitchen"):
+        if alt in rooms:
+            return alt, rooms[alt].get("name", alt)
+    if rooms:
+        first = next(iter(rooms))
+        return first, rooms[first].get("name", first)
+    return "living_room", "客厅"
 
 
 def home_observation(
@@ -586,7 +724,7 @@ def append_observation(
 _POLISH_PROMPT = """你是一位住宅软装编辑。请基于下面的家庭结构与房间清单，把每个房间的家具改写成更生活化的中文短语（保留语义，不要添加家电），并写一句整体气质。
 要求：
 1) 仅输出 JSON。
-2) 键为房间 key（living_room/bedroom/kitchen/study/bathroom/balcony/bedroom_2）。
+2) 键为房间 key（living_room/bedroom/dining_room/kitchen/study/bathroom/balcony/bedroom_2）。
 3) 每个房间输出 `furniture`（4-7 个短语）和可选 `note`（一句该房间的描述，不超过 25 字）。
 4) 最后输出 `vibe`：一句整体气质（不超过 25 字）。
 """

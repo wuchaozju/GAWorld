@@ -1,7 +1,7 @@
 /* Docs terminal variant — a clean reader-style layout, mono everywhere,
  * gold/amber callouts. Mirrors the reading rhythm of the cream docs page. */
 
-@import url("/terminal/tokens-terminal.css");
+@import url("./tokens-terminal.css");
 
 .layout {
   display: grid;

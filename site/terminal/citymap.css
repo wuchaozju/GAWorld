@@ -2,7 +2,7 @@
  * palette and chrome change. Phaser canvas is left alone; we just paint
  * the chrome around it in terminal colours. */
 
-@import url("/terminal/tokens-terminal.css");
+@import url("./tokens-terminal.css");
 
 :root {
   /* Override terminal tokens with CityMap's own (darker bg) */

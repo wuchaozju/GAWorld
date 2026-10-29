@@ -23,6 +23,11 @@ from gaworld.world.city_map import TERRAIN_LEGEND, project_to_tile
 # killed long run is still replayable.
 ARCHIVE_INTERVAL_SECONDS = 15.0
 
+#: How often the live frame (the tick in progress) is flushed to disk. One
+#: write per resident would be heavy on a big cast; the tick's own write
+#: publishes the finished frame regardless.
+LIVE_FRAME_WRITE_INTERVAL = 0.5
+
 
 def _utc_timestamp():
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -64,25 +69,27 @@ def build_map_layout(city_map):
             tile_width,
             tile_height,
         )
-        nodes.append({
-            "id": node.get("id", node.get("name", "")),
-            "label": node.get("label", node.get("name", "")),
-            "kind": node.get("kind", "place"),
-            "district": node.get("district", ""),
-            "category": node.get("category", "mixed"),
-            "grid_x": node.get("grid_x", 0.0),
-            "grid_y": node.get("grid_y", 0.0),
-            "lat": node.get("lat", 0.0),
-            "lng": node.get("lng", 0.0),
-            "x_km": node.get("x_km", 0.0),
-            "y_km": node.get("y_km", 0.0),
-            "tile_x": int(tile_x),
-            "tile_y": int(tile_y),
-            "style": node.get("style", {}),
-            "capacity": node.get("capacity"),
-            "popularity": node.get("popularity"),
-            "density": node.get("density"),
-        })
+        nodes.append(
+            {
+                "id": node.get("id", node.get("name", "")),
+                "label": node.get("label", node.get("name", "")),
+                "kind": node.get("kind", "place"),
+                "district": node.get("district", ""),
+                "category": node.get("category", "mixed"),
+                "grid_x": node.get("grid_x", 0.0),
+                "grid_y": node.get("grid_y", 0.0),
+                "lat": node.get("lat", 0.0),
+                "lng": node.get("lng", 0.0),
+                "x_km": node.get("x_km", 0.0),
+                "y_km": node.get("y_km", 0.0),
+                "tile_x": int(tile_x),
+                "tile_y": int(tile_y),
+                "style": node.get("style", {}),
+                "capacity": node.get("capacity"),
+                "popularity": node.get("popularity"),
+                "density": node.get("density"),
+            }
+        )
 
     return {
         "nodes": nodes,
@@ -139,9 +146,128 @@ class SimulationVisualizer:
             "agents": trace_agents,
             "frames": [],
         }
+        # A frame the dashboard may read before it lands in the trace: the
+        # residents' start positions, then the tick that is still running.
+        self._live_frame = None
+        self._last_live_write = 0.0
+        self.live_write_interval = LIVE_FRAME_WRITE_INTERVAL
         self._write_trace()
-        self._archive_trace(force=True)   # list the run before it has any frames
+        self._archive_trace(force=True)  # list the run before it has any frames
+        self._publish_initial_frame(agents)
         self._write_latest_frame()
+
+    def _publish_initial_frame(self, agents):
+        """Publish where everyone stands before the first tick runs.
+
+        The first *recorded* frame only lands once a whole tick finished --
+        one model call per resident, so minutes. Until then the dashboard's
+        map showed an empty city and the indoor view was blank, which read
+        as a broken run. The residents' start positions are known here, so
+        publish them right away: the map fills with avatars immediately.
+
+        The frame is deliberately *not* part of ``trace["frames"]`` — it is a
+        live preview, and the archive keeps only real frames.
+        """
+        steps = []
+        for agent in agents:
+            locations = agent.get("locations") or {}
+            current = locations.get("current") or locations.get("home") or ""
+            steps.append(
+                build_agent_step_payload(
+                    agent,
+                    time_str="",
+                    location=current,
+                    resolved_location=current,
+                    target_location=current,
+                    scheduled_activity="",
+                    activity="",
+                    action="",
+                    outcome="",
+                    perception="",
+                    plan="",
+                    reflection="",
+                )
+            )
+        self._live_frame = {
+            "index": len(self.trace["frames"]),
+            "day": 0,
+            "time": "",
+            "date": "",
+            "weekday": "",
+            "day_type": "",
+            "env_context": "",
+            "env_events": [],
+            "policy": {},
+            "phase": "init",
+            "agents": steps,
+        }
+
+    def note_agent_step(self, day, time_str, payload, env_context="", env_events=None, policy=None):
+        """Publish the tick in progress, one resident at a time.
+
+        A tick costs one model call per resident, so with a handful of
+        residents it takes minutes and the dashboard showed nothing until all
+        of them were done. Report each resident as it lands: the map fills
+        in progressively, and residents that have not reported yet keep the
+        place they had in the previous frame.
+
+        The live frame occupies the slot the finished tick will take, so the
+        dashboard's "latest frame" and the trace agree on the index.
+        """
+        slot = len(self.trace["frames"])
+        day = int(day or 0)
+        time_str = str(time_str or "")
+        live = self._live_frame
+        seed = []
+        if live is not None and int(live.get("index", -1)) == slot:
+            if live.get("phase") == "init":
+                # The start-positions preview becomes the seed of this tick.
+                seed = [dict(step) for step in live.get("agents") or []]
+                live = None
+            elif (int(live.get("day", 0)), str(live.get("time", ""))) == (day, time_str):
+                seed = live.get("agents") or []  # same tick, keep accumulating
+        if live is None:
+            if not seed:
+                previous = self.trace["frames"][-1].get("agents") if self.trace["frames"] else []
+                seed = [dict(step) for step in (previous or [])]
+            live = {
+                "index": slot,
+                "day": day,
+                "time": time_str,
+                "date": "",
+                "weekday": "",
+                "day_type": "",
+                "env_context": "",
+                "env_events": [],
+                "policy": {},
+                "phase": "live",
+                # Seed with the previous frame: a resident that has not
+                # reported yet stays where they were instead of vanishing.
+                "agents": seed,
+            }
+            self._live_frame = live
+            # A new tick starts: publish its first resident right away
+            # instead of waiting out the write interval.
+            self._last_live_write = 0.0
+        live["day"] = day
+        live["time"] = time_str
+        live["env_context"] = str(env_context or "")
+        live["env_events"] = list(env_events or [])
+        live["policy"] = policy or {}
+        steps = live["agents"]
+        agent_id = int(payload.get("agent_id", 0) or 0)
+        for index, step in enumerate(steps):
+            if int(step.get("agent_id", 0) or 0) == agent_id:
+                steps[index] = payload
+                break
+        else:
+            steps.append(payload)
+        # One write per resident would be a lot of I/O on a big cast; the
+        # tick's own write at the end publishes the complete frame anyway.
+        now = time.monotonic()
+        if now - self._last_live_write >= self.live_write_interval:
+            self._last_live_write = now
+            self._write_latest_frame()
 
     def _refresh_meta(self):
         self.trace["meta"]["last_updated"] = _utc_timestamp()
@@ -170,7 +296,14 @@ class SimulationVisualizer:
 
     def _write_latest_frame(self):
         self._refresh_meta()
-        last_frame = self.trace["frames"][-1] if self.trace.get("frames") else {}
+        # The live frame wins over the last recorded one: it is what the
+        # dashboard should show right now (the start positions, or the tick
+        # that is still running).
+        live = self._live_frame
+        if live is not None:
+            last_frame = live
+        else:
+            last_frame = self.trace["frames"][-1] if self.trace.get("frames") else {}
         _atomic_write_json(
             self.latest_frame_path,
             {
@@ -193,6 +326,9 @@ class SimulationVisualizer:
             "agents": agent_steps,
         }
         self.trace["frames"].append(frame)
+        # The tick is complete: the live preview hands over to the real frame.
+        self._live_frame = None
+        self._last_live_write = 0.0
         self._write_latest_frame()
         # Flush the full trace on the frame cadence OR every few wall-clock
         # seconds, so live dashboards (and killed runs) still see frames.
@@ -208,10 +344,23 @@ class SimulationVisualizer:
         self._write_latest_frame()
 
 
-
-def build_agent_step_payload(agent, time_str, location, resolved_location, target_location, scheduled_activity,
-                             activity, action, outcome, perception, plan, reflection, changed=False,
-                             change_reason="", travel=None):
+def build_agent_step_payload(
+    agent,
+    time_str,
+    location,
+    resolved_location,
+    target_location,
+    scheduled_activity,
+    activity,
+    action,
+    outcome,
+    perception,
+    plan,
+    reflection,
+    changed=False,
+    change_reason="",
+    travel=None,
+):
     state = {}
     for key, value in (agent.get("state", {}) or {}).items():
         if isinstance(value, (int, float)):
@@ -242,6 +391,27 @@ def build_agent_step_payload(agent, time_str, location, resolved_location, targe
     # views seat them there instead of guessing from the activity.
     locations = agent.get("locations") or {}
     room = locations.get("room")
-    if isinstance(room, dict) and not locations.get("in_transit") and room.get("node") == locations.get("current"):
+    if (
+        isinstance(room, dict)
+        and not locations.get("in_transit")
+        and room.get("node") == locations.get("current")
+    ):
         payload["room"] = {k: room.get(k) or "" for k in ("node", "unit", "arena", "object")}
+    # The room inside their own home (``home`` plugin): which room they are
+    # in and what they are doing there. The console's indoor mode draws the
+    # resident's own flat from it.
+    home_obs = agent.get("_home_observation") or {}
+    if home_obs.get("is_at_home"):
+        home_room = home_obs.get("current_room") or {}
+        payload["home_room"] = {
+            "key": home_room.get("key") or "",
+            "name": home_room.get("name") or "",
+            "activity": str(activity or scheduled_activity or ""),
+        }
+    # The household id (``family`` plugin): co-residents share one flat, so the
+    # indoor view can show the family at home instead of the whole block.
+    family = (agent.get("ext") or {}).get("family") or {}
+    household_id = family.get("household_id") if isinstance(family, dict) else ""
+    if household_id:
+        payload["household"] = str(household_id)
     return payload

@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* 外部系统观测台 —— 看住世界本身：货币系统 / 外部环境 / 对外服务 / 公共部门。
  *
  * 三个刻意的设计：
@@ -894,15 +897,15 @@
     if (!data) {
       // Loaded, yet no payload for this tab: the dashboard process predates
       // the tab. Saying "loading" here would spin forever.
-      $("extObserve").innerHTML = '<div class="ext-card"><p class="ext-hint' +
+      $("extObserve").innerHTML = gwHTML('<div class="ext-card"><p class="ext-hint' +
         (state.data ? ' ext-warn">' + esc(__("ext.tab_missing")) : '">' + esc(__("ext.loading"))) +
-        "</p></div>";
-      $("extEdit").innerHTML = "";
+        "</p></div>");
+      $("extEdit").innerHTML = gwHTML("");
       return;
     }
     var renderer = RENDERERS[state.tab];
-    $("extObserve").innerHTML = renderer.observe(data);
-    $("extEdit").innerHTML = renderer.edit(data);
+    $("extObserve").innerHTML = gwHTML(renderer.observe(data));
+    $("extEdit").innerHTML = gwHTML(renderer.edit(data));
 
     Array.prototype.forEach.call(document.querySelectorAll("#extTabs .step"), function (btn) {
       btn.classList.toggle("is-active", btn.dataset.tab === state.tab);
@@ -910,8 +913,8 @@
 
     var meta = $("extTopMeta");
     if (meta) {
-      meta.innerHTML = esc(__f("ext.observed_at", { at: state.data.generated_at })) +
-        (dirtyCount() ? "<br/>" + __f("ext.unsaved_n", { count: dirtyCount() }) : "");
+      meta.innerHTML = gwHTML(esc(__f("ext.observed_at", { at: state.data.generated_at })) +
+        (dirtyCount() ? "<br/>" + __f("ext.unsaved_n", { count: dirtyCount() }) : ""));
     }
 
     // 每次渲染都重建了 innerHTML，之前绑好的「?」全没了，要重新扫一遍。
@@ -934,8 +937,8 @@
   function load() {
     return api("GET", "/api/external-systems/overview").then(function (payload) {
       if (payload.error) {
-        $("extObserve").innerHTML = '<div class="ext-card"><h2>' + esc(__("ext.load_failed")) +
-          '</h2><p class="ext-warn">' + esc(payload.error) + "</p></div>";
+        $("extObserve").innerHTML = gwHTML('<div class="ext-card"><h2>' + esc(__("ext.load_failed")) +
+          '</h2><p class="ext-warn">' + esc(payload.error) + "</p></div>");
         status(payload.error, "err");
         return;
       }
@@ -983,8 +986,8 @@
     if (reset) reset.disabled = !count;
     var meta = $("extTopMeta");
     if (meta && state.data) {
-      meta.innerHTML = esc(__f("ext.observed_at", { at: state.data.generated_at })) +
-        (count ? "<br/>" + __f("ext.unsaved_n", { count: count }) : "");
+      meta.innerHTML = gwHTML(esc(__f("ext.observed_at", { at: state.data.generated_at })) +
+        (count ? "<br/>" + __f("ext.unsaved_n", { count: count }) : ""));
     }
   }
 

@@ -4,151 +4,351 @@
   <script src="/site/theme.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title data-i18n="collab.page_title">GAWorld · Cooperation Observatory</title>
-  <meta name="description" data-i18n-content="collab.meta_description" content="GAWorld 多智能体协作任务观测台" />
+  <title data-i18n="collab.page_title">GAWorld · Cooperation</title>
+  <meta name="description" data-i18n-content="collab.meta_description" content="GAWorld 简单协作任务与群体智能众包" />
   <link rel="stylesheet" href="/site/dashboard/collaboration.css" />
+  <link rel="stylesheet" href="/site/dashboard/crowdsourcing.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
+  <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body>
+  <!-- One header for both panes: the headline follows the active pane, and the
+       pane switcher is docked at the bottom of the band so it reads as part
+       of the masthead instead of floating above it. -->
   <header class="masthead">
-    <div>
-      <p class="eyebrow">GAWORLD / COOPERATION PROTOCOL</p>
-      <h1 data-i18n="collab.headline">协作任务观测台</h1>
-      <p class="deck" data-i18n="collab.deck">编组居民、委派角色，并沿着计划、活动与产物轨道观察一项真实合作。</p>
-    </div>
-    <div class="mast-status">
-      <span class="signal" aria-hidden="true"></span>
-      <div>
-        <small data-i18n="collab.link">当前链路</small>
-        <strong id="taskStatus" role="status" aria-live="polite" data-i18n="collab.awaiting">等待任务</strong>
+    <div class="masthead-inner">
+      <div class="masthead-top">
+        <div class="mast-copy">
+          <div class="mast-set" data-pane-set="simple">
+            <p class="eyebrow">GAWORLD / COOPERATION PROTOCOL</p>
+            <h1 data-i18n="collab.headline">简单协作任务</h1>
+            <p class="deck" data-i18n="collab.deck">编组居民、委派角色，并沿着计划、活动与产物轨道观察一项真实合作。</p>
+          </div>
+          <div class="mast-set" data-pane-set="crowd" hidden>
+            <p class="eyebrow">GAWORLD / SWARM CROWDSOURCING</p>
+            <h1 data-i18n="crowd.headline">群体智能众包</h1>
+            <p class="deck" data-i18n="crowd.deck">把一个任务交给一大群居民并行作答，按效果多轮筛选精英，并可切换不同的协作机制。</p>
+          </div>
+        </div>
+        <div class="mast-status">
+          <span class="signal" aria-hidden="true"></span>
+          <div class="mast-set" data-pane-set="simple">
+            <small data-i18n="collab.link">当前链路</small>
+            <strong id="taskStatus" role="status" aria-live="polite" data-i18n="collab.awaiting">等待任务</strong>
+          </div>
+          <div class="mast-set" data-pane-set="crowd" hidden>
+            <small data-i18n="crowd.link">当前链路</small>
+            <strong id="crowdStatus" role="status" aria-live="polite" data-i18n="crowd.awaiting">等待任务</strong>
+          </div>
+        </div>
       </div>
+
+      <nav class="view-tabs" id="viewTabs" role="tablist" data-i18n-aria="collab.tabs_label" aria-label="协作任务分区">
+        <button type="button" class="view-tab is-active" role="tab" id="simpleTabBtn" data-pane="simple" aria-selected="true" aria-controls="paneSimple">
+          <span class="view-tab-label" data-i18n="collab.tab_simple">简单协作任务</span><span class="en">Simple task</span>
+        </button>
+        <button type="button" class="view-tab" role="tab" id="crowdTabBtn" data-pane="crowd" aria-selected="false" aria-controls="paneCrowd">
+          <span class="view-tab-label" data-i18n="collab.tab_crowd">群体智能众包</span><span class="en">Swarm crowdsourcing</span>
+        </button>
+      </nav>
     </div>
   </header>
 
-  <main class="cooperation-grid">
-    <aside class="rail team-rail" data-i18n-aria="collab.rail_label" aria-label="团队编组与任务历史">
-      <section class="paper-card composer-card">
-        <div class="section-index" data-i18n="collab.idx_compose">01 / 编组</div>
-        <h2 data-i18n="collab.build_team">组建任务团队</h2>
-        <label class="field" for="taskInput">
-          <span data-i18n="collab.task_desc">任务说明</span>
-          <textarea id="taskInput" rows="4" data-i18n-placeholder="collab.task_placeholder" placeholder="例如：调研社区公共空间并形成可执行建议"></textarea>
-        </label>
+  <main class="collab-main">
+    <section class="view-pane" id="paneSimple" role="tabpanel" aria-labelledby="simpleTabBtn">
+      <div class="cooperation-grid">
+        <aside class="rail team-rail" data-i18n-aria="collab.rail_label" aria-label="团队编组与任务历史">
+          <section class="paper-card composer-card">
+            <div class="section-index" data-i18n="collab.idx_compose">01 / 编组</div>
+            <h2 data-i18n="collab.build_team">组建任务团队</h2>
+            <label class="field" for="taskInput">
+              <span data-i18n="collab.task_desc">任务说明</span>
+              <textarea id="taskInput" rows="4" data-i18n-placeholder="collab.task_placeholder" placeholder="例如：调研社区公共空间并形成可执行建议"></textarea>
+            </label>
 
-        <div class="field">
-          <span id="memberPickerLabel"><span data-i18n="collab.pick_members">选择成员</span> <small data-i18n="collab.at_least_two">至少 2 位</small></span>
-          <div id="memberPicker" class="member-picker" role="group" aria-labelledby="memberPickerLabel"></div>
-        </div>
+            <div class="field">
+              <span id="memberPickerLabel"><span data-i18n="collab.pick_members">选择成员</span> <small data-i18n="collab.at_least_two">至少 2 位</small></span>
+              <div id="memberPicker" class="member-picker" role="group" aria-labelledby="memberPickerLabel"></div>
+            </div>
 
-        <label class="field" for="leaderSelect">
-          <span><span data-i18n="collab.leader">任务负责人</span> <small data-i18n="collab.optional">可选</small></span>
-          <select id="leaderSelect">
-            <option value="" data-i18n="collab.auto_pick">自动推选</option>
-          </select>
-        </label>
+            <label class="field" for="organizationMethodSelect">
+              <span data-i18n="oi3.picker">组织方式</span>
+              <select id="organizationMethodSelect"><option value="" data-i18n="oi3.default">默认协作方式</option></select>
+            </label>
+            <p id="organizationMethodNote" class="field-note" role="status"></p>
+            <button id="organizationMethodRefresh" type="button" data-i18n="oi3.refresh">刷新组织方式</button>
 
-        <fieldset id="roleOverrides" class="role-overrides">
-          <legend><span data-i18n="collab.role_override">角色覆盖</span> <small data-i18n="collab.optional">可选</small></legend>
-          <p class="field-note" data-i18n="collab.role_note">选中成员后可指定研究、撰写或审阅职责。</p>
-        </fieldset>
+            <label class="field" for="leaderSelect">
+              <span><span data-i18n="collab.leader">任务负责人</span> <small data-i18n="collab.optional">可选</small></span>
+              <select id="leaderSelect">
+                <option value="" data-i18n="collab.auto_pick">自动推选</option>
+              </select>
+            </label>
 
-        <button id="startTaskBtn" class="primary-action" type="button" disabled>
-          <span data-i18n="collab.start">启动协作任务</span>
-          <small>Start cooperation</small>
-        </button>
-        <p id="formStatus" class="form-status" role="status" aria-live="polite" data-i18n="collab.loading_roster">正在读取居民名录…</p>
-      </section>
+            <fieldset id="roleOverrides" class="role-overrides">
+              <legend><span data-i18n="collab.role_override">角色覆盖</span> <small data-i18n="collab.optional">可选</small></legend>
+              <p class="field-note" data-i18n="collab.role_note">选中成员后可指定研究、撰写或审阅职责。</p>
+            </fieldset>
 
-      <section class="paper-card history-card">
-        <div class="section-head">
-          <div>
-            <div class="section-index" data-i18n="collab.idx_archive">02 / 档案</div>
-            <h2 data-i18n="collab.history">任务历史</h2>
-          </div>
-          <button id="refreshSessionsBtn" class="icon-action" type="button" data-i18n-aria="collab.refresh_history" aria-label="刷新任务历史">↻</button>
-        </div>
-        <div id="sessionList" class="session-list" aria-live="polite"></div>
-      </section>
-    </aside>
+            <button id="startTaskBtn" class="primary-action" type="button" disabled>
+              <span data-i18n="collab.start">启动协作任务</span>
+              <small>Start cooperation</small>
+            </button>
+            <p id="formStatus" class="form-status" role="status" aria-live="polite" data-i18n="collab.loading_roster">正在读取居民名录…</p>
+          </section>
 
-    <section class="workspace" data-i18n-aria="collab.workspace_label" aria-label="协作任务工作区">
-      <header class="workspace-head">
-        <div>
-          <p class="workspace-code" id="sessionCode">NO ACTIVE SESSION</p>
-          <h2 id="activeTaskTitle" data-i18n="collab.pick_or_start">选择历史任务或启动新的协作</h2>
-        </div>
-        <div class="session-actions" data-i18n-aria="collab.controls_label" aria-label="任务控制">
-          <button id="pauseTaskBtn" type="button" data-i18n="collab.pause" hidden>暂停</button>
-          <button id="resumeTaskBtn" type="button" data-i18n="collab.resume" hidden>继续</button>
-          <button id="cancelTaskBtn" class="danger-action" type="button" data-i18n="collab.cancel" hidden>终止</button>
-        </div>
-      </header>
+          <section class="paper-card history-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="collab.idx_archive">02 / 档案</div>
+                <h2 data-i18n="collab.history">任务历史</h2>
+              </div>
+              <button id="refreshSessionsBtn" class="icon-action" type="button" data-i18n-aria="collab.refresh_history" aria-label="刷新任务历史">↻</button>
+            </div>
+            <div id="sessionList" class="session-list" aria-live="polite"></div>
+          </section>
+        </aside>
 
-      <section class="progress-board" aria-labelledby="progressTitle">
-        <div class="progress-copy">
-          <div>
-            <p class="eyebrow">LIVE EXECUTION</p>
-            <h3 id="progressTitle" data-i18n="collab.progress">执行进度</h3>
-          </div>
-          <strong id="progressText">0 / 0</strong>
-        </div>
-        <div id="taskProgress" class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <span id="taskProgressBar"></span>
-        </div>
-      </section>
+        <section class="workspace" data-i18n-aria="collab.workspace_label" aria-label="协作任务工作区">
+          <header class="workspace-head">
+            <div>
+              <p class="workspace-code" id="sessionCode">NO ACTIVE SESSION</p>
+              <h2 id="activeTaskTitle" data-i18n="collab.pick_or_start">选择历史任务或启动新的协作</h2>
+            </div>
+            <div class="session-actions" data-i18n-aria="collab.controls_label" aria-label="任务控制">
+              <button id="pauseTaskBtn" type="button" data-i18n="collab.pause" hidden>暂停</button>
+              <button id="resumeTaskBtn" type="button" data-i18n="collab.resume" hidden>继续</button>
+              <button id="cancelTaskBtn" class="danger-action" type="button" data-i18n="collab.cancel" hidden>终止</button>
+            </div>
+          </header>
 
-      <section class="workspace-team" aria-labelledby="workspaceTeamTitle">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">ACTIVE ROSTER</p>
-            <h3 id="workspaceTeamTitle" data-i18n="collab.team_roles">团队与角色</h3>
-          </div>
-          <span id="leaderBadge" class="leader-badge" data-i18n="collab.no_leader">未指定负责人</span>
-        </div>
-        <div id="activeTeam" class="active-team"></div>
-      </section>
+          <section class="progress-board" aria-labelledby="progressTitle">
+            <div class="progress-copy">
+              <div>
+                <p class="eyebrow">LIVE EXECUTION</p>
+                <h3 id="progressTitle" data-i18n="collab.progress">执行进度</h3>
+              </div>
+              <strong id="progressText">0 / 0</strong>
+            </div>
+            <div id="taskProgress" class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="taskProgressBar"></span>
+            </div>
+          </section>
 
-      <section class="plan-board" aria-labelledby="planTitle">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">TASK TOPOLOGY</p>
-            <h3 id="planTitle" data-i18n="collab.plan">任务计划</h3>
-          </div>
-          <span id="currentStepText" class="steel-label" data-i18n="collab.awaiting_plan">等待计划生成</span>
-        </div>
-        <ol id="taskPlan" class="task-plan"></ol>
-      </section>
+          <section class="workspace-team" aria-labelledby="workspaceTeamTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">ACTIVE ROSTER</p>
+                <h3 id="workspaceTeamTitle" data-i18n="collab.team_roles">团队与角色</h3>
+              </div>
+              <span id="leaderBadge" class="leader-badge" data-i18n="collab.no_leader">未指定负责人</span>
+            </div>
+            <div id="activeTeam" class="active-team"></div>
+          </section>
+
+          <section class="plan-board" aria-labelledby="planTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">TASK TOPOLOGY</p>
+                <h3 id="planTitle" data-i18n="collab.plan">任务计划</h3>
+              </div>
+              <span id="currentStepText" class="steel-label" data-i18n="collab.awaiting_plan">等待计划生成</span>
+            </div>
+            <ol id="taskPlan" class="task-plan"></ol>
+          </section>
+        </section>
+
+        <aside class="rail signal-rail" data-i18n-aria="collab.signal_label" aria-label="实时活动与任务产物">
+          <section class="signal-card activity-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="collab.idx_signal">03 / 信号</div>
+                <h2 data-i18n="collab.live_activity">实时活动</h2>
+              </div>
+              <span id="eventCursor" class="event-cursor">SEQ 0000</span>
+            </div>
+            <div id="activityFeed" class="activity-feed" role="log" aria-live="polite" aria-relevant="additions text"></div>
+          </section>
+
+          <section class="paper-card artifacts-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="collab.idx_artifacts">04 / 产物</div>
+                <h2 data-i18n="collab.deliverables">交付成果</h2>
+              </div>
+              <span id="artifactCount" class="artifact-count">0 files</span>
+            </div>
+            <div id="artifactList" class="artifact-list"></div>
+          </section>
+        </aside>
+      </div>
     </section>
 
-    <aside class="rail signal-rail" data-i18n-aria="collab.signal_label" aria-label="实时活动与任务产物">
-      <section class="signal-card activity-card">
-        <div class="section-head">
-          <div>
-            <div class="section-index" data-i18n="collab.idx_signal">03 / 信号</div>
-            <h2 data-i18n="collab.live_activity">实时活动</h2>
-          </div>
-          <span id="eventCursor" class="event-cursor">SEQ 0000</span>
-        </div>
-        <div id="activityFeed" class="activity-feed" role="log" aria-live="polite" aria-relevant="additions text"></div>
-      </section>
+    <section class="view-pane" id="paneCrowd" role="tabpanel" aria-labelledby="crowdTabBtn" hidden>
+      <div class="cooperation-grid">
+        <aside class="rail" data-i18n-aria="crowd.rail_label" aria-label="众包任务设定与历史">
+          <section class="paper-card">
+            <div class="section-index" data-i18n="crowd.idx_task">01 / 任务</div>
+            <h2 data-i18n="crowd.task_title">定义众包任务</h2>
+            <label class="field" for="crowdTaskInput">
+              <span data-i18n="crowd.task_desc">任务说明</span>
+              <textarea id="crowdTaskInput" rows="4" data-i18n-placeholder="crowd.task_placeholder" placeholder="例如：为社区商业街设计一条夜间照明改造方案"></textarea>
+            </label>
+            <label class="field" for="crowdCriteriaInput">
+              <span><span data-i18n="crowd.criteria_desc">评分标准</span> <small data-i18n="crowd.optional">可选</small></span>
+              <textarea id="crowdCriteriaInput" rows="2" data-i18n-placeholder="crowd.criteria_placeholder" placeholder="例如：可行性、成本、与居民日常动线的关系"></textarea>
+            </label>
+          </section>
 
-      <section class="paper-card artifacts-card">
-        <div class="section-head">
-          <div>
-            <div class="section-index" data-i18n="collab.idx_artifacts">04 / 产物</div>
-            <h2 data-i18n="collab.deliverables">交付成果</h2>
-          </div>
-          <span id="artifactCount" class="artifact-count">0 files</span>
-        </div>
-        <div id="artifactList" class="artifact-list"></div>
-      </section>
-    </aside>
+          <section class="paper-card">
+            <div class="section-index" data-i18n="crowd.idx_strategy">02 / 策略</div>
+            <h2 id="crowdStrategyTitle" data-i18n="crowd.strategy_title">选择协作机制</h2>
+            <div id="crowdStrategyGrid" class="strategy-grid" role="radiogroup" aria-labelledby="crowdStrategyTitle"></div>
+          </section>
+
+          <section class="paper-card">
+            <div class="section-index" data-i18n="crowd.idx_scale">03 / 规模</div>
+            <h2 data-i18n="crowd.scale_title">圈定参与者</h2>
+            <div class="pool-toolbar">
+              <input id="crowdPoolSearch" type="search" data-i18n-placeholder="crowd.pool_search" placeholder="搜索居民…" />
+              <input id="crowdPoolCount" type="number" min="1" max="200" value="20" data-i18n-aria="crowd.pool_random_count" aria-label="随机抽取人数" />
+              <button type="button" id="crowdPoolAll" data-i18n="crowd.pool_all">全选</button>
+              <button type="button" id="crowdPoolRandom" data-i18n="crowd.pool_random">随机抽取</button>
+              <button type="button" id="crowdPoolClear" data-i18n="crowd.pool_clear">清空</button>
+            </div>
+            <p class="field-note" id="crowdPoolNote" data-i18n="crowd.pool_selected">已选 0 位</p>
+            <div id="crowdPoolGrid" class="pool-grid" role="group" aria-labelledby="crowdPoolNote"></div>
+
+            <label class="field" for="crowdRounds">
+              <span data-i18n="crowd.rounds_desc">轮数</span>
+              <input id="crowdRounds" type="number" min="1" max="8" value="3" />
+            </label>
+            <label class="field" for="crowdParticipants">
+              <span data-i18n="crowd.participants_desc">每轮参与者</span>
+              <input id="crowdParticipants" type="number" min="1" max="32" value="5" />
+            </label>
+            <label class="field" for="crowdKeep">
+              <span data-i18n="crowd.keep_desc">筛选保留人数</span>
+              <input id="crowdKeep" type="number" min="1" max="200" value="8" />
+            </label>
+            <label class="field-inline" for="crowdPruneEnabled">
+              <input id="crowdPruneEnabled" type="checkbox" checked />
+              <span data-i18n="crowd.prune_enable">跨轮筛选优秀智能体</span>
+            </label>
+
+            <p class="cost-estimate" id="crowdCostEstimate"></p>
+            <button id="crowdStartBtn" class="primary-action" type="button" disabled>
+              <span data-i18n="crowd.start">发起众包</span>
+              <small>Start swarm</small>
+            </button>
+            <p id="crowdFormStatus" class="form-status" role="status" aria-live="polite" data-i18n="crowd.loading_roster">正在读取居民名录…</p>
+          </section>
+
+          <section class="paper-card history-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="crowd.idx_archive">04 / 档案</div>
+                <h2 data-i18n="crowd.history">众包历史</h2>
+              </div>
+              <button id="crowdRefreshSessionsBtn" class="icon-action" type="button" data-i18n-aria="crowd.refresh_history" aria-label="刷新众包历史">↻</button>
+            </div>
+            <div id="crowdSessionList" class="session-list" aria-live="polite"></div>
+          </section>
+        </aside>
+
+        <section class="workspace" data-i18n-aria="crowd.workspace_label" aria-label="众包工作区">
+          <header class="workspace-head">
+            <div>
+              <p class="workspace-code" id="crowdSessionCode">NO ACTIVE SESSION</p>
+              <h2 id="crowdActiveTitle" data-i18n="crowd.pick_or_start">选择历史任务或发起新的众包</h2>
+            </div>
+            <div class="session-actions" data-i18n-aria="collab.controls_label" aria-label="任务控制">
+              <button id="crowdPauseBtn" type="button" data-i18n="crowd.pause" hidden>暂停</button>
+              <button id="crowdResumeBtn" type="button" data-i18n="crowd.resume" hidden>继续</button>
+              <button id="crowdCancelBtn" class="danger-action" type="button" data-i18n="crowd.cancel" hidden>终止</button>
+            </div>
+          </header>
+
+          <section class="progress-board" aria-labelledby="crowdProgressTitle">
+            <div class="progress-copy">
+              <div>
+                <p class="eyebrow">SWARM EXECUTION</p>
+                <h3 id="crowdProgressTitle" data-i18n="crowd.progress">众包进度</h3>
+              </div>
+              <strong id="crowdProgressText">0 / 0</strong>
+            </div>
+            <div id="crowdProgress" class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="crowdProgressBar"></span>
+            </div>
+          </section>
+
+          <section class="round-strip" id="crowdRoundStrip" data-i18n-aria="crowd.rounds_aria" aria-label="轮次概览"></section>
+
+          <section class="crowd-panel" aria-labelledby="crowdBidsTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">BID MARKET</p>
+                <h3 id="crowdBidsTitle" data-i18n="crowd.bids_title">投标市场</h3>
+              </div>
+              <span id="crowdClearingPrice" class="steel-label"></span>
+            </div>
+            <div id="crowdBidTable" class="bid-table"></div>
+          </section>
+
+          <section class="crowd-panel" aria-labelledby="crowdAttemptsTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">CANDIDATES</p>
+                <h3 id="crowdAttemptsTitle" data-i18n="crowd.attempts_title">本轮作答</h3>
+              </div>
+              <span id="crowdAgreement" class="steel-label"></span>
+            </div>
+            <div id="crowdAttemptList" class="attempt-list"></div>
+          </section>
+
+          <section class="crowd-panel" aria-labelledby="crowdLeaderboardTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">CREDIT BOARD</p>
+                <h3 id="crowdLeaderboardTitle" data-i18n="crowd.leaderboard_title">信用榜</h3>
+              </div>
+              <span id="crowdSurvivorCount" class="steel-label"></span>
+            </div>
+            <div id="crowdLeaderboard" class="leaderboard"></div>
+          </section>
+        </section>
+
+        <aside class="rail signal-rail" data-i18n-aria="crowd.signal_label" aria-label="实时活动与众包成果">
+          <section class="signal-card activity-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="crowd.idx_signal">05 / 信号</div>
+                <h2 data-i18n="crowd.live_activity">实时活动</h2>
+              </div>
+              <span id="crowdEventCursor" class="event-cursor">SEQ 0000</span>
+            </div>
+            <div id="crowdActivityFeed" class="activity-feed" role="log" aria-live="polite" aria-relevant="additions text"></div>
+          </section>
+
+          <section class="paper-card artifacts-card">
+            <div class="section-head">
+              <div>
+                <div class="section-index" data-i18n="crowd.idx_result">06 / 成果</div>
+                <h2 data-i18n="crowd.final_title">最终成果</h2>
+              </div>
+              <span id="crowdCallCount" class="artifact-count">0 calls</span>
+            </div>
+            <div id="crowdFinalAnswer" class="final-answer"></div>
+            <div id="crowdArtifactList" class="artifact-list"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
   </main>
 
   <script src="/site/dashboard/i18n.js"></script>
 
-  
-  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/collaboration-core.js"></script>
-  <script src="/site/dashboard/collaboration.js"></script>
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/collaboration-core.js"></script><script src="/site/dashboard/organization-picker.js"></script><script src="/site/dashboard/collaboration.js"></script>
+  <script src="/site/dashboard/crowdsourcing-core.js"></script><script src="/site/dashboard/crowdsourcing.js"></script>
 </body>
 </html>

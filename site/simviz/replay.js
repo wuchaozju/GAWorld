@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 (function (global) {
   "use strict";
 
@@ -51,10 +53,10 @@
     if (!container) return;
     const agents = frame && Array.isArray(frame.agents) ? frame.agents : [];
     if (!agents.length) {
-      container.innerHTML = '<div class="agent-card"><p>当前帧没有 agent 记录。</p></div>';
+      container.innerHTML = gwHTML('<div class="agent-card"><p>当前帧没有 agent 记录。</p></div>');
       return;
     }
-    container.innerHTML = agents.map((agent) => {
+    container.innerHTML = gwHTML(agents.map((agent) => {
       const name = agent.name || `Agent ${agent.agent_id || ""}`;
       const activity = agent.activity || agent.final_activity || agent.scheduled_activity || "无活动记录";
       const location = agent.resolved_location || agent.location || agent.target_location || "未知位置";
@@ -66,7 +68,7 @@
         (thought ? `<p>${escapeHtml(thought)}</p>` : "") +
         "</article>"
       );
-    }).join("");
+    }).join(""));
   }
 
   function escapeHtml(value) {
@@ -166,9 +168,9 @@
       setStatus("读取运行列表...");
       const payload = await fetchJson("/api/replay/runs");
       state.runs = normalizeRuns(payload);
-      els.runSelect.innerHTML = state.runs.map((run) => {
+      els.runSelect.innerHTML = gwHTML(state.runs.map((run) => {
         return `<option value="${escapeHtml(run.id)}">${escapeHtml(optionLabel(run))}</option>`;
-      }).join("");
+      }).join(""));
       const run = selectRun(state.runs, queryRunId());
       if (run) els.runSelect.value = run.id;
       await loadRun(run);

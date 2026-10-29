@@ -138,6 +138,13 @@ entry = "`/site/dashboard/research.html?tab=replication`"
 features = ["社会调查/实验拟合度（研究工作台页签）"]
 
 [[axis.group.feature]]
+name = "组织智能"
+desc = "冻结救援任务与人口，对照组织档案保留、移除和全员更替"
+entry = "`/site/dashboard/research.html?tab=organization-intelligence`"
+features = ["组织智能（研究工作台页签）"]
+doc = "docs/ORGANIZATION_INTELLIGENCE_TUTORIAL.md"
+
+[[axis.group.feature]]
 name = "代码判定与报告"
 desc = "supported/contradicted/inconclusive/unmeasured，附判定依据"
 entry = "`GET /api/research/studies/<id>/report`"
@@ -401,6 +408,12 @@ desc = "承诺度感知中断、情绪即兴行为、社交偶遇链"
 features = ["动态行为系统"]
 
 [[axis.group.feature]]
+name = "时间合理性"
+desc = "行为要对得上钟点：日程修复、动作降权、改程闸门"
+entry = "`CONFIG[\"time_plausibility\"][\"enabled\"]`"
+features = ["时间合理性（默认开）"]
+
+[[axis.group.feature]]
 name = "兴趣爱好与技能成长"
 desc = "成长画像幂律学习/里程碑/遗忘"
 entry = "`CONFIG[\"interests\"][\"enabled\"]`"
@@ -588,6 +601,24 @@ name = "合作产物导出"
 desc = "Markdown 产物落到"
 entry = "`<sessions_dir>/<session_id>/artifacts/`"
 features = ["Dashboard 合作任务"]
+
+[[axis.group.feature]]
+name = "Dashboard 群体智能众包"
+desc = "一个大任务交给大规模居民池独立作答，多轮筛选出表现好的那一批"
+entry = "`/site/dashboard/collaboration.html?tab=crowd`"
+features = ["Dashboard 群体智能众包"]
+
+[[axis.group.feature]]
+name = "四种协作机制"
+desc = "市场竞价（报价出清决定谁动手，arXiv:2610.22322）· 众包投票 · 精英进化 · 辩论评审"
+entry = "「群体智能众包」页签的机制卡片"
+features = ["Dashboard 群体智能众包"]
+
+[[axis.group.feature]]
+name = "众包过程可观测"
+desc = "投标市场、本轮作答、评审理由、信用榜与存活人数逐轮可见"
+entry = "`GET /api/crowdsourcing/sessions/<id>/rounds`"
+features = ["Dashboard 群体智能众包"]
 
 [[axis.group]]
 name = "观察与回放"

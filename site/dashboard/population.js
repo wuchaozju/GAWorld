@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* Population Studio — 造一座小镇，然后按群体模拟它。
  *
  * 五步：群体定义 → 人口结构 → 状态分布 → 群体模拟 → 验证与复核。
@@ -503,9 +506,9 @@
     });
     var shown = matched.slice(0, state.roster.limit);
 
-    body.innerHTML = shown.length
+    body.innerHTML = gwHTML(shown.length
       ? shown.map(rosterRow).join("")
-      : '<tr><td colspan="9" class="pop-hint">' + esc(__("pop.roster_empty")) + "</td></tr>";
+      : '<tr><td colspan="9" class="pop-hint">' + esc(__("pop.roster_empty")) + "</td></tr>");
 
     var count = $("popRosterCount");
     if (count) {
@@ -516,11 +519,11 @@
 
     var more = $("popRosterMore");
     if (more) {
-      more.innerHTML = matched.length > shown.length
+      more.innerHTML = gwHTML(matched.length > shown.length
         ? '<button class="btn small ghost" id="popRosterMoreBtn">' +
           esc(__f("pop.roster_more", { page: ROSTER_PAGE, rest: matched.length - shown.length })) +
           "</button>"
-        : "";
+        : "");
       bind("popRosterMoreBtn", function () {
         state.roster.limit += ROSTER_PAGE;
         renderRoster();
@@ -554,7 +557,7 @@
     var blob = new Blob(bom ? ["\ufeff", text] : [text], { type: contentType });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
-    link.href = url;
+    link.href = gwURL(url);
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -908,7 +911,7 @@
     var el = $("popIssues");
     if (!el) return;
     if (!state.preview) {
-      el.innerHTML = '<p class="pop-hint">' + esc(__("pop.checking")) + "</p>";
+      el.innerHTML = gwHTML('<p class="pop-hint">' + esc(__("pop.checking")) + "</p>");
       return;
     }
     var issues = state.preview.issues || [];
@@ -928,18 +931,18 @@
         age: b.median_age.min.toFixed(0) + "–" + b.median_age.max.toFixed(0),
       })) +
       '<div class="pop-suggest">' + esc(__("pop.reachable_note")) + "</div></div>";
-    el.innerHTML = html;
+    el.innerHTML = gwHTML(html);
   }
 
   function renderSummary() {
     var el = $("popSummary");
     if (!el) return;
     if (!state.population) {
-      el.innerHTML = '<p class="pop-hint">' + __("pop.not_generated") + "</p>";
+      el.innerHTML = gwHTML('<p class="pop-hint">' + __("pop.not_generated") + "</p>");
       return;
     }
     var a = state.population.report.achieved;
-    el.innerHTML = "<dl>" +
+    el.innerHTML = gwHTML("<dl>" +
       "<dt>" + esc(__("pop.dt_count")) + "</dt><dd>" + state.population.report.size + "</dd>" +
       "<dt>" + esc(__("pop.dt_median_age")) + "</dt><dd>" + a.median_age.achieved + "</dd>" +
       "<dt>" + esc(__("pop.dt_employment")) + "</dt><dd>" + pct(a.employment_rate.achieved) + "</dd>" +
@@ -947,12 +950,12 @@
       "<dt>" + esc(__("pop.dt_gini")) + "</dt><dd>" + a.income_gini.achieved.toFixed(2) + "</dd>" +
       "<dt>" + esc(__("pop.dt_household")) + "</dt><dd>" + a.household_mean_size.achieved.toFixed(1) + "</dd>" +
       "<dt>" + esc(__("pop.dt_ties")) + "</dt><dd>" + a.mean_degree.achieved.toFixed(0) + "</dd>" +
-      "</dl>";
+      "</dl>");
   }
 
   function render() {
     var renderers = { 1: renderStep1, 2: renderStep2, 3: renderStep3, 4: renderStep4, 5: renderStep5 };
-    $("popPanel").innerHTML = (renderers[state.step] || renderStep1)();
+    $("popPanel").innerHTML = gwHTML((renderers[state.step] || renderStep1)());
     Array.prototype.forEach.call(document.querySelectorAll("#popSteps .step"), function (btn) {
       btn.classList.toggle("is-active", Number(btn.dataset.step) === state.step);
     });
@@ -968,10 +971,10 @@
   function setProgress(text, fraction, isError) {
     var el = $("popProgress");
     if (!el) return;
-    el.innerHTML = text
+    el.innerHTML = gwHTML(text
       ? '<span class="' + (isError ? "pop-progress-err" : "") + '">' + esc(text) + "</span>" +
         (isError ? "" : '<div class="pop-bar"><i style="width:' + Math.round((fraction || 0) * 100) + '%"></i></div>')
-      : "";
+      : "");
   }
 
   /* --------------------------------------------------------------- events */
@@ -983,8 +986,8 @@
       api("POST", "/api/population/preview", { spec: state.spec }).then(function (res) {
         if (res.error) {
           var el = $("popIssues");
-          if (el) el.innerHTML = '<div class="pop-issue error">' + __("pop.precheck_failed") +
-            esc(res.error) + "</div>";
+          if (el) el.innerHTML = gwHTML('<div class="pop-issue error">' + __("pop.precheck_failed") +
+            esc(res.error) + "</div>");
           return;
         }
         state.preview = res;
@@ -1295,9 +1298,9 @@
   function boot() {
     api("GET", "/api/population/schema").then(function (schema) {
       if (schema.error) {
-        $("popPanel").innerHTML = '<div class="pop-card"><h2>' + esc(__("pop.load_failed_title")) +
+        $("popPanel").innerHTML = gwHTML('<div class="pop-card"><h2>' + esc(__("pop.load_failed_title")) +
           '</h2><p class="pop-warn">' + esc(schema.error) + "</p><p>" +
-          esc(__("pop.load_failed_hint")) + "</p></div>";
+          esc(__("pop.load_failed_hint")) + "</p></div>");
         return;
       }
       state.schema = schema;
@@ -1305,11 +1308,11 @@
       var meta = $("popTopMeta");
       if (meta) {
         meta.innerHTML =
-          esc(__f("pop.models_available", { count: (schema.providers || []).length })) +
+          gwHTML(esc(__f("pop.models_available", { count: (schema.providers || []).length })) +
           "<br/>" + esc(__("pop.cohort_axes")) +
           esc((schema.cohort_axes || []).map(function (a) {
             return (schema.cohort_axis_labels || {})[a] || a;
-          }).join("、"));
+          }).join("、")));
       }
       render();
       schedulePreview();
@@ -1346,11 +1349,11 @@
       var meta = $("popTopMeta");
       if (meta) {
         meta.innerHTML =
-          esc(__f("pop.models_available", { count: (state.schema.providers || []).length })) +
+          gwHTML(esc(__f("pop.models_available", { count: (state.schema.providers || []).length })) +
           "<br/>" + esc(__("pop.cohort_axes")) +
           esc((state.schema.cohort_axes || []).map(function (a) {
             return (state.schema.cohort_axis_labels || {})[a] || a;
-          }).join("、"));
+          }).join("、")));
       }
       render();
       renderIssues();

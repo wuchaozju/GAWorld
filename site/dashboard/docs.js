@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // 文档面板：把仓库里的 Markdown 文档直接读出来渲染。
 //
 // 文档就是 docs/ 下那些 .md 文件本身 —— dashboard_server 已经把仓库根目录当静态
@@ -164,6 +167,16 @@
       summary: "把研究想法或一篇论文变成能在 GAWorld 里执行的实验方案，编译成预注册协议，按种子跑平行世界，由代码判定每条假设。",
       en_summary: "Turn a research idea or a paper into an experiment GAWorld can run, compile it into a pre-registered protocol, run parallel worlds across seeds and let code judge each hypothesis.",
       tags: ["research", "研究工作台", "预注册", "论文", "hypothesis", "AI 社会科学家"],
+    },
+    {
+      id: "organization-intelligence",
+      path: "/docs/ORGANIZATION_INTELLIGENCE_TUTORIAL.md",
+      title: "组织智能教程",
+      en: "Organization Intelligence",
+      group: "专题教程",
+      summary: "冻结救援任务、人口与模型，对照组织档案保留、移除和全员更替，按请求审计并导出结果。",
+      en_summary: "Freeze the rescue task, population and model, compare archive retention, removal and member turnover, and audit and export results.",
+      tags: ["organization intelligence", "组织智能", "研究", "救援"],
     },
     {
       id: "organizations",
@@ -566,10 +579,10 @@
   // ------------------------------------------------------------ 渲染
 
   function renderMeta() {
-    metaEl.innerHTML = "";
+    metaEl.innerHTML = gwHTML("");
     var chip = document.createElement("span");
     chip.className = "doc-chip";
-    chip.innerHTML = __f("docs.count", { count: DOCS.length });
+    chip.innerHTML = gwHTML(__f("docs.count", { count: DOCS.length }));
     metaEl.appendChild(chip);
     var source = document.createElement("span");
     source.className = "doc-chip";
@@ -582,7 +595,7 @@
     var shown = {};
     hits.forEach(function (hit) { shown[hit.doc.id] = hit.snippet; });
 
-    sideEl.innerHTML = "";
+    sideEl.innerHTML = gwHTML("");
     GROUPS.forEach(function (group) {
       var docs = DOCS.filter(function (doc) {
         return doc.group === group && Object.prototype.hasOwnProperty.call(shown, doc.id);
@@ -598,21 +611,21 @@
       docs.forEach(function (doc) {
         var item = document.createElement("a");
         item.className = "doc-item" + (current && current.id === doc.id ? " is-active" : "");
-        item.href = "#" + doc.id;
+        item.href = gwURL("#" + doc.id);
         // Highlight query matches in the title and English subtitle too; users
         // typing a Chinese keyword get the Chinese title highlighted, an English
         // keyword the subtitle. textContent is built from already-trusted DOCS
         // metadata, but we run the strings through escapeHtml() so the
         // highlight machinery's escaping is the only path into innerHTML.
-        item.innerHTML = "<strong>" + highlight(doc.title, query)
-          + "</strong><em>" + highlight(doc.en, query) + "</em>";
+        item.innerHTML = gwHTML("<strong>" + highlight(doc.title, query)
+          + "</strong><em>" + highlight(doc.en, query) + "</em>");
         var note = document.createElement("span");
         note.className = "doc-item-note";
         // Prefer the matched snippet from the body when one was captured; fall
         // back to the static summary otherwise. Both are run through
         // highlight() so a keyword in the summary also shows up.
         var noteText = shown[doc.id] || summaryOf(doc);
-        note.innerHTML = highlight(noteText, query);
+        note.innerHTML = gwHTML(highlight(noteText, query));
         item.appendChild(note);
         section.appendChild(item);
       });
@@ -636,7 +649,7 @@
   }
 
   function renderToc() {
-    tocEl.innerHTML = "";
+    tocEl.innerHTML = gwHTML("");
     var items = headings.filter(function (item) {
       return item.level >= 2 && item.level <= 3;
     });
@@ -648,7 +661,7 @@
     items.forEach(function (item) {
       var link = document.createElement("a");
       link.className = "doc-tocitem level-" + item.level;
-      link.href = "#" + current.id + "/" + item.slug;
+      link.href = gwURL("#" + current.id + "/" + item.slug);
       link.textContent = item.text;
       link.dataset.slug = item.slug;
       tocEl.appendChild(link);
@@ -681,7 +694,7 @@
   function renderDoc(doc, slug) {
     current = doc;
     document.title = __f("docs.doc_title", { title: doc.title });
-    articleEl.innerHTML = '<p class="doc-loading">' + __f("docs.loading_doc", { path: doc.path }) + "</p>";
+    articleEl.innerHTML = gwHTML('<p class="doc-loading">' + __f("docs.loading_doc", { path: doc.path }) + "</p>");
     renderSide();
 
     fetchDoc(doc).then(function (text) {
@@ -689,13 +702,13 @@
       var result = window.GAWorldMarkdown.render(text, { resolveLink: makeResolver(doc) });
       headings = result.headings;
       articleEl.innerHTML =
-        '<header class="doc-head">'
+        gwHTML('<header class="doc-head">'
         + '<p class="doc-kicker">' + groupLabel(doc.group) + " · " + doc.en + "</p>"
         + "<h1>" + doc.title + "</h1>"
         + '<p class="doc-source">' + __("docs.source_file") + ' <a href="' + doc.path + '" target="_blank" rel="noopener">'
         + doc.path + "</a></p>"
         + "</header>"
-        + '<div class="doc-body">' + result.html + "</div>";
+        + '<div class="doc-body">' + result.html + "</div>");
       var firstHitId = highlightArticle();
       renderToc();
       // A direct #id/anchor in the URL wins over a search hit, but if the user
@@ -708,9 +721,9 @@
       headings = [];
       renderToc();
       articleEl.innerHTML =
-        '<p class="doc-error">'
+        gwHTML('<p class="doc-error">'
         + __f("docs.read_failed", { path: doc.path, error: error.message })
-        + "</p>";
+        + "</p>");
     });
   }
 

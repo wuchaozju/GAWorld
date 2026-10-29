@@ -37,8 +37,15 @@ curl -fsS http://127.0.0.1:8766/api/health
 `GAWORLD_REQUIRE_ACCOUNTS=1` 是部署保护开关：数据库丢失、损坏或没有管理员时返回 503，
 不会退回匿名可操作的单人模式。不开此开关的本机开发环境仍保留原有行为。
 
-非 systemd 启动时，在同一进程环境设置上述数据库路径和
-`GAWORLD_REQUIRE_ACCOUNTS=1`，再运行原来的 dashboard 命令。
+本配置明确以 `--multi-user True` 启动；若 Python 路径、监听地址或端口与示例不同，安装前修改 drop-in 的 `ExecStart`。
+
+非 systemd 启动时，设置上述数据库路径，再执行：
+
+```bash
+python generative_city_sim.py dashboard --multi-user True
+```
+
+默认省略该参数或传 `--multi-user False` 时为单用户模式，即使账号库已经存在也不会自动开启登录限制。`GAWORLD_REQUIRE_ACCOUNTS` 和注册策略不再代替 dashboard 启动参数。
 
 ## 教师和成员使用
 

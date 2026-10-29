@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 // 穿越历史 (Timeslip) — front-end controller.
 //
 // One server call drives the game:
@@ -91,10 +93,10 @@
       state.defaultStages = data.default_stages || 4;
 
       const sel = $("#tDynasty");
-      sel.innerHTML = state.dynasties
+      sel.innerHTML = gwHTML(state.dynasties
         .map((d) => `<option value="${esc(d.id)}">${esc((d.emoji || "") + " " + d.dynasty)}</option>`)
         .concat([`<option value="${CUSTOM}">${esc(t("timeslip.custom_option", "自己写一个朝代…"))}</option>`])
-        .join("");
+        .join(""));
       sel.value = state.dynasties[0] ? state.dynasties[0].id : CUSTOM;
       state.dynasty = state.dynasties[0] || null;
       $("#tStages").value = state.defaultStages;
@@ -102,7 +104,7 @@
       $("#tStages").max = state.maxStages;
       renderDynasty();
     } catch (e) {
-      $("#tDynasty").innerHTML = `<option>${esc(t("timeslip.catalogue_failed", "加载朝代失败"))}</option>`;
+      $("#tDynasty").innerHTML = gwHTML(`<option>${esc(t("timeslip.catalogue_failed", "加载朝代失败"))}</option>`);
     }
   }
 
@@ -116,7 +118,7 @@
       hint.textContent = t("timeslip.custom_hint", "自己写一个朝代：交代时代、写出几幕场景。后端会用最近的几幕。");
     } else if (state.dynasty) {
       const stages = Array.isArray(state.dynasty.stages) ? state.dynasty.stages : [];
-      hint.innerHTML = `${esc(state.dynasty.frame)}<br/><span class="muted">${esc(tf("timeslip.stages_hint", {n: stages.length}, `内置 ${stages.length} 幕`))}</span>`;
+      hint.innerHTML = gwHTML(`${esc(state.dynasty.frame)}<br/><span class="muted">${esc(tf("timeslip.stages_hint", {n: stages.length}, `内置 ${stages.length} 幕`))}</span>`);
     } else {
       hint.textContent = "";
     }
@@ -132,21 +134,21 @@
       const resp = await fetch("/api/city/catalogue");
       const data = await resp.json();
       const cities = data.cities || [];
-      sel.innerHTML = cities
+      sel.innerHTML = gwHTML(cities
         .map((c) => `<option value="${esc(c.slug)}">${esc(c.display_name || c.name || c.slug)}</option>`)
-        .join("");
+        .join(""));
       const preferred = data.selected != null ? data.selected : (cities[0] && cities[0].slug);
       if (preferred != null) sel.value = preferred;
       state.city = sel.value;
     } catch (e) {
-      sel.innerHTML = `<option value="">默认世界</option>`;
+      sel.innerHTML = gwHTML(`<option value="">默认世界</option>`);
       state.city = "";
     }
   }
 
   async function loadAgents() {
     const list = $("#tAgents");
-    list.innerHTML = `<li class="disaster-empty">${esc(t("timeslip.loading", "加载中…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("timeslip.loading", "加载中…"))}</li>`);
     try {
       const resp = await fetch(`/api/games/timeslip/agents?city=${encodeURIComponent(state.city || "")}`);
       const data = await resp.json();
@@ -160,11 +162,11 @@
   function renderAgents() {
     const list = $("#tAgents");
     if (!state.agents.length) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("timeslip.agents_empty", "这座城里没有可挑选的居民"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("timeslip.agents_empty", "这座城里没有可挑选的居民"))}</li>`);
       return;
     }
     const byId = new Map(state.agents.map((a) => [a.id, a]));
-    list.innerHTML = state.agents
+    list.innerHTML = gwHTML(state.agents
       .map((person) => {
         const selected = state.picked.has(person.id);
         return `
@@ -178,7 +180,7 @@
             </button>
           </li>`;
       })
-      .join("");
+      .join(""));
     list.querySelectorAll(".t-pick").forEach((btn) => {
       btn.addEventListener("click", () => togglePick(parseInt(btn.dataset.id, 10)));
     });
@@ -333,7 +335,7 @@
     const most = stats.most_in_period || {};
     const least = stats.least_in_period || {};
     const torn = stats.most_torn || {};
-    box.innerHTML = `
+    box.innerHTML = gwHTML(`
       <header class="timeslip-head">
         <span class="timeslip-emoji">${esc(dyn.emoji || "🏺")}</span>
         <div>
@@ -359,7 +361,7 @@
         </div>
       </div>
       <p class="timeslip-moods muted">${esc(stats.moods || "")}</p>
-    `;
+    `);
   }
 
   function renderStages(run) {
@@ -370,7 +372,7 @@
     for (const person of run.cards || []) nameLookup.set(person.agent_id, person);
     for (const person of (run.stats && run.stats.residents) || []) nameLookup.set(person.agent_id, person);
 
-    container.innerHTML = `
+    container.innerHTML = gwHTML(`
       <h3>${esc(t("timeslip.stages_title", "一幕一幕"))}</h3>
       ${stages.map((stage) => {
         const lines = (stage.reactions || []).map((r) => {
@@ -400,17 +402,17 @@
             <div class="timeslip-grid">${lines}</div>
           </section>`;
       }).join("")}
-    `;
+    `);
   }
 
   function renderRoster(run) {
     const residents = (run.stats && run.stats.residents) || [];
     const container = $("#tRoster");
     if (!residents.length) {
-      container.innerHTML = "";
+      container.innerHTML = gwHTML("");
       return;
     }
-    container.innerHTML = `
+    container.innerHTML = gwHTML(`
       <h3>${esc(t("timeslip.roster_card_title", "穿越者速写"))}</h3>
       <table class="timeslip-table">
         <thead>
@@ -437,20 +439,20 @@
         </tbody>
       </table>
       <p class="muted timeslip-note">${esc(run.scoring_note || "")}</p>
-    `;
+    `);
   }
 
   function renderEssay(run) {
     const container = $("#tEssay");
     const text = (run.essay || "").trim();
     if (!text) {
-      container.innerHTML = "";
+      container.innerHTML = gwHTML("");
       return;
     }
-    container.innerHTML = `
+    container.innerHTML = gwHTML(`
       <h3>${esc(t("timeslip.essay_title", "穿越纪实"))}</h3>
       <p>${esc(text).replace(/\n+/g, "<br/>")}</p>
-    `;
+    `);
   }
 
   // ----------------------------------------------------------------------
@@ -458,16 +460,16 @@
   // ----------------------------------------------------------------------
   async function loadHistory() {
     const list = $("#tHistory");
-    list.innerHTML = `<li class="disaster-empty">${esc(t("timeslip.loading_short", "加载…"))}</li>`;
+    list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("timeslip.loading_short", "加载…"))}</li>`);
     try {
       const resp = await fetch("/api/games/timeslip/runs");
       const data = await resp.json();
       const rows = data.runs || [];
       if (!rows.length) {
-        list.innerHTML = `<li class="disaster-empty">${esc(t("timeslip.no_history", "还没有穿越记录"))}</li>`;
+        list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("timeslip.no_history", "还没有穿越记录"))}</li>`);
         return;
       }
-      list.innerHTML = rows.slice(0, 8).map((row) => {
+      list.innerHTML = gwHTML(rows.slice(0, 8).map((row) => {
         const dyn = row.dynasty || row.dynasty_id || "穿越历史";
         const emo = row.emoji || "";
         return `
@@ -476,12 +478,12 @@
               ${esc(emo + " " + dyn)} · ${esc(row.agents || "?")}人 · ${esc(row.stages || "?")}幕
             </button>
           </li>`;
-      }).join("");
+      }).join(""));
       list.querySelectorAll("button[data-id]").forEach((btn) => {
         btn.addEventListener("click", () => loadOneRun(btn.dataset.id));
       });
     } catch (e) {
-      list.innerHTML = `<li class="disaster-empty">${esc(t("timeslip.history_failed", "加载历史失败"))}</li>`;
+      list.innerHTML = gwHTML(`<li class="disaster-empty">${esc(t("timeslip.history_failed", "加载历史失败"))}</li>`);
     }
   }
 

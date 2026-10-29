@@ -91,3 +91,9 @@ figure.guide-shot figcaption,figure.guide-diagram figcaption {text-align:left;fo
 .figure-viewer-canvas {min-height:0;flex:1;overflow:auto;padding:16px;box-sizing:border-box;overscroll-behavior:contain}
 .figure-viewer-canvas img {display:block;margin:0 auto;max-width:none;max-height:none;background:#fff;border-radius:6px}
 @media(max-width:40em){.figure-viewer{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border-radius:0;border:0}.figure-viewer-bar{padding:12px}.figure-viewer-tools{padding:8px 12px}.figure-viewer-help{display:none}}
+
+/* Selected A lockup stays legible in both documentation themes. */
+.sidebar-logo.gaworld-doc-lockup {
+  width: 100%; height: auto; max-width: 240px;
+  padding: 10px; border-radius: 4px; background: #f3f3e9;
+}

@@ -11,7 +11,7 @@
  * the same tokens as the console it introduces.
  */
 
-@import url("/site/tokens.css");
+@import url("./tokens.css");
 
 * {
   box-sizing: border-box;

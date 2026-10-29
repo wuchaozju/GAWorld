@@ -22,13 +22,21 @@
         "include_x_api_key": true,
         "max_tokens": 4096,
         "timeout": 180
+      },
+      "M31Flash": {
+        "type": "anthropic",
+        "base_url": "https://api.minimaxi.com/anthropic",
+        "model": "M3.1-Flash",
+        "api_key_env": "MINIMAX_API_KEY"
       }
     }
   },
   "sim_days": 5,
   "seconds_per_day": 10,
   "agent_ids": [
-    1
+    1,
+    2,
+    3
   ],
   "simulate_realtime": true,
   "time_step_minutes": null,
@@ -40,5 +48,5 @@
   "routine_change": {
     "randomness": 1.0
   },
-  "city": "wuzhen"
+  "city": "伦敦"
 }

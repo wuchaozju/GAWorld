@@ -31,7 +31,6 @@ from unittest import mock
 
 from gaworld.apps import games_api, timeslip_api
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -70,16 +69,9 @@ def _stage_reply(*, dynasty_words: list[str], inner_resist: bool = True, missing
             continue
         line = "、".join(dynasty_words) + "，今日之事如此。"
         inner = "我心里其实不能接受。" if inner_resist else "也罢。"
-        bodies.append(
-            f'{{"agent_id": {aid}, "line": "{line}", "inner": "{inner}"}}'
-        )
+        bodies.append(f'{{"agent_id": {aid}, "line": "{line}", "inner": "{inner}"}}')
     inner_block = ",\n      ".join(bodies)
-    return (
-        '{\n'
-        '  "stage_mood": "气氛很紧",\n'
-        f'  "reactions": [\n      {inner_block}\n    ]\n'
-        '}'
-    )
+    return f'{{\n  "stage_mood": "气氛很紧",\n  "reactions": [\n      {inner_block}\n    ]\n}}'
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +96,9 @@ class DynastyResolutionTest(unittest.TestCase):
             timeslip_api.resolve_dynasty("", {"name": "x", "stages": ["a", "b"]})
         with self.assertRaises(ValueError):
             timeslip_api.resolve_dynasty("", {"name": "x", "frame": "y", "stages": []})
-        out = timeslip_api.resolve_dynasty("", {"name": "我的朝代", "frame": "一句话", "stages": ["一幕", "二幕"]})
+        out = timeslip_api.resolve_dynasty(
+            "", {"name": "我的朝代", "frame": "一句话", "stages": ["一幕", "二幕"]}
+        )
         self.assertEqual(out["dynasty"], "我的朝代")
         self.assertEqual(len(out["stages"]), 2)
 
@@ -155,19 +149,25 @@ class ParseTest(unittest.TestCase):
 
 class ScoringTest(unittest.TestCase):
     def test_era_fit_penalises_modern_words(self) -> None:
-        era = timeslip_api._score_one_reaction("臣不敢，已领命。", "我心里其实不能接受。", {"must": ("臣",), "banned": ("微信",)})
-        no_era = timeslip_api._score_one_reaction("臣不敢，已领命。微信。", "我心里其实不能接受。", {"must": ("臣",), "banned": ("微信",)})
+        era = timeslip_api._score_one_reaction(
+            "臣不敢，已领命。", "我心里其实不能接受。", {"must": ("臣",), "banned": ("微信",)}
+        )
+        no_era = timeslip_api._score_one_reaction(
+            "臣不敢，已领命。微信。", "我心里其实不能接受。", {"must": ("臣",), "banned": ("微信",)}
+        )
         self.assertGreater(era["era_fit"], no_era["era_fit"])
 
     def test_inner_conflict_rises_when_speech_defers_and_inner_resists(self) -> None:
-        one = timeslip_api._score_one_reaction("不敢，已听凭。", "我心里其实不能接受。",
-                                              {"must": (), "banned": ()})
-        both_defer = timeslip_api._score_one_reaction("不敢，已听凭。", "也罢。",
-                                                     {"must": (), "banned": ()})
+        one = timeslip_api._score_one_reaction(
+            "不敢，已听凭。", "我心里其实不能接受。", {"must": (), "banned": ()}
+        )
+        both_defer = timeslip_api._score_one_reaction("不敢，已听凭。", "也罢。", {"must": (), "banned": ()})
         self.assertGreater(one["inner_conflict"], both_defer["inner_conflict"])
 
     def test_scores_are_clamped(self) -> None:
-        score = timeslip_api._score_one_reaction("微信微信微信微信微信", "微信微信", {"must": (), "banned": ("微信",)})
+        score = timeslip_api._score_one_reaction(
+            "微信微信微信微信微信", "微信微信", {"must": (), "banned": ("微信",)}
+        )
         self.assertGreaterEqual(score["era_fit"], 0)
         self.assertLessEqual(score["era_fit"], 100)
         self.assertGreaterEqual(score["inner_conflict"], 0)
@@ -272,8 +272,12 @@ class RunTest(unittest.TestCase):
         stage_fn = _scripted([reply] * timeslip_api.MAX_STAGES)
         essay_fn = _scripted(["essay"])
         run = timeslip_api.run_timeslip(
-            city="wuzhen", agent_ids=[1, 2], dynasty_id="tang_revolt",
-            cards=cards, stage_fn=stage_fn, essay_fn=essay_fn,
+            city="wuzhen",
+            agent_ids=[1, 2],
+            dynasty_id="tang_revolt",
+            cards=cards,
+            stage_fn=stage_fn,
+            essay_fn=essay_fn,
         )
         # The default is the dynasty's built-in bank length, not a hard-coded 4.
         self.assertEqual(len(run["stages"]), len(dynasty["stages"]))
@@ -285,8 +289,13 @@ class RunTest(unittest.TestCase):
         stage_fn = _scripted([reply] * timeslip_api.MAX_STAGES)
         essay_fn = _scripted(["essay"])
         run = timeslip_api.run_timeslip(
-            city="wuzhen", agent_ids=[1, 2], dynasty_id="tang_revolt",
-            cards=cards, stages=99, stage_fn=stage_fn, essay_fn=essay_fn,
+            city="wuzhen",
+            agent_ids=[1, 2],
+            dynasty_id="tang_revolt",
+            cards=cards,
+            stages=99,
+            stage_fn=stage_fn,
+            essay_fn=essay_fn,
         )
         self.assertEqual(len(run["stages"]), timeslip_api.MAX_STAGES)
 

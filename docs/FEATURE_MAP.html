@@ -166,7 +166,7 @@
 
 <h1>GAWorld 功能地图</h1>
 <p class="meta">
-  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 103 个具体功能点。
+  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 108 个具体功能点。
   每个功能点都在 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 中有详细的作用与访问方法。
   本页由 <code>docs/features.toml</code> 生成（<code>python scripts/build_feature_map.py</code>），不要手改。
 </p>
@@ -222,6 +222,7 @@ mindmap
       论文解读
       多设计与推荐
       社会调查_实验拟合度
+      组织智能
       代码判定与报告
       经典实验库_居民当被试
     副作用_仿真加速器
@@ -285,6 +286,7 @@ mindmap
       Moltbook_开关
     行为与决策
       动态行为系统
+      时间合理性
       兴趣爱好与技能成长
       经验_→_Skill_自动提炼
       可复用_Skill_库
@@ -328,6 +330,9 @@ mindmap
       Dashboard_智能体互动
       Dashboard_合作任务
       合作产物导出
+      Dashboard_群体智能众包
+      四种协作机制
+      众包过程可观测
     观察与回放
       轨迹回放查看器
       平行世界实验台
@@ -369,7 +374,7 @@ mindmap
 </div>
 
 <!-- 研究者 -->
-<div class="axis research"><span>研究者</span><span class="cnt">6 子轴 · 27 功能</span></div>
+<div class="axis research"><span>研究者</span><span class="cnt">6 子轴 · 28 功能</span></div>
 
 <details class="group"><summary><span>调研与提问</span><span class="count">4 项</span></summary>
 <ul>
@@ -400,12 +405,13 @@ mindmap
 </ul>
 </details>
 
-<details class="group"><summary><span>研究设计</span><span class="count">6 项</span></summary>
+<details class="group"><summary><span>研究设计</span><span class="count">7 项</span></summary>
 <ul>
   <li><strong>研究工作台</strong> — 想法/论文 → 多种实验设计 → 预注册 <code>/site/dashboard/research.html</code></li>
   <li><strong>论文解读</strong> — 从 .txt/.md/.pdf 解读出理论/方法/变量/发现/假设 <code>POST /api/research/digest</code></li>
   <li><strong>多设计与推荐</strong> — 2–3 种不同思路的设计，城市/人口/时间/条件/事件/指标全标</li>
   <li><strong>社会调查/实验拟合度</strong> — 文献里的真人调查/实验 → 居民重做 → 代码比对拟合度 <code>/site/dashboard/research.html?tab=replication</code></li>
+  <li><strong>组织智能</strong> — 冻结救援任务与人口，对照组织档案保留、移除和全员更替 <code>/site/dashboard/research.html?tab=organization-intelligence</code></li>
   <li><strong>代码判定与报告</strong> — supported/contradicted/inconclusive/unmeasured，附判定依据 <code>GET /api/research/studies/&lt;id&gt;/report</code></li>
   <li><strong>经典实验库（居民当被试）</strong> — 六个教科书范式按人配对，只读方向 <code>python -m gaworld.experiments.classics run</code></li>
 </ul>
@@ -469,7 +475,7 @@ mindmap
 </details>
 
 <!-- 居民设计者 -->
-<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 28 功能</span></div>
+<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 29 功能</span></div>
 
 <details class="group"><summary><span>画像与状态</span><span class="count">6 项</span></summary>
 <ul>
@@ -492,9 +498,10 @@ mindmap
 </ul>
 </details>
 
-<details class="group"><summary><span>行为与决策</span><span class="count">4 项</span></summary>
+<details class="group"><summary><span>行为与决策</span><span class="count">5 项</span></summary>
 <ul>
   <li><strong>动态行为系统</strong> — 承诺度感知中断、情绪即兴行为、社交偶遇链</li>
+  <li><strong>时间合理性</strong> — 行为要对得上钟点：日程修复、动作降权、改程闸门 <code>CONFIG[&quot;time_plausibility&quot;][&quot;enabled&quot;]</code></li>
   <li><strong>兴趣爱好与技能成长</strong> — 成长画像幂律学习/里程碑/遗忘 <code>CONFIG[&quot;interests&quot;][&quot;enabled&quot;]</code></li>
   <li><strong>经验 → Skill 自动提炼</strong> — agent 从最近经历自总结私有技能</li>
   <li><strong>可复用 Skill 库</strong> — 全局/私有 Markdown 技能注入认知 <code>CONFIG[&quot;skills&quot;]</code></li>
@@ -525,7 +532,7 @@ mindmap
 </details>
 
 <!-- 玩家 -->
-<div class="axis player"><span>玩家</span><span class="cnt">4 子轴 · 16 功能</span></div>
+<div class="axis player"><span>玩家</span><span class="cnt">4 子轴 · 19 功能</span></div>
 
 <details class="group"><summary><span>多人共玩</span><span class="count">3 项</span></summary>
 <ul>
@@ -548,11 +555,14 @@ mindmap
 </ul>
 </details>
 
-<details class="group"><summary><span>协作与创作</span><span class="count">3 项</span></summary>
+<details class="group"><summary><span>协作与创作</span><span class="count">6 项</span></summary>
 <ul>
   <li><strong>Dashboard 智能体互动</strong> — 两位以上居民建立双向好友，多轮讨论 <code>/dashboard</code> 互动面板</li>
   <li><strong>Dashboard 合作任务</strong> — 规划→分工→汇总 <code>/site/dashboard/collaboration.html</code></li>
   <li><strong>合作产物导出</strong> — Markdown 产物落到 <code>&lt;sessions_dir&gt;/&lt;session_id&gt;/artifacts/</code></li>
+  <li><strong>Dashboard 群体智能众包</strong> — 一个大任务交给大规模居民池独立作答，多轮筛选出表现好的那一批 <code>/site/dashboard/collaboration.html?tab=crowd</code></li>
+  <li><strong>四种协作机制</strong> — 市场竞价（报价出清决定谁动手，arXiv:2610.22322）· 众包投票 · 精英进化 · 辩论评审 「群体智能众包」页签的机制卡片</li>
+  <li><strong>众包过程可观测</strong> — 投标市场、本轮作答、评审理由、信用榜与存活人数逐轮可见 <code>GET /api/crowdsourcing/sessions/&lt;id&gt;/rounds</code></li>
 </ul>
 </details>
 
@@ -597,7 +607,7 @@ mindmap
 </details>
 
 <footer>
-  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（103 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
+  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（108 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
   <p>跨主轴共用的能力（如<em>本地 Dashboard</em>同时服务世界构建者与研究者）按其主要服务对象归位，详细仍见 FEATURES.md。</p>
   <p>维护约定：新增 / 移除 / 重组功能时改 <code>docs/features.toml</code>，再运行 <code>python scripts/build_feature_map.py</code>；<code>tests/test_feature_registry.py</code> 检查两边对得上。</p>
   <p>图形：<a href="https://mermaid.js.org/">Mermaid</a> 思维导图（CDN 加载 <code>mermaid@10</code>）。</p>

@@ -1131,25 +1131,37 @@ def _stage_record(agent, step, sim, *, scope):
             },
         )
     if scope.visualizer is not None:
-        scope.frame_steps.append(
-            build_agent_step_payload(
-                agent,
-                time_str=scope.time_str,
-                location=location,
-                resolved_location=resolved_location,
-                target_location=movement.get("target_location", ""),
-                scheduled_activity=scheduled_activity,
-                activity=effective_activity,
-                action=act,
-                outcome=outcome,
-                perception=perc,
-                plan=plan_text,
-                reflection=refl_text,
-                changed=changed,
-                change_reason=change_reason,
-                travel=travel,
-            )
+        payload = build_agent_step_payload(
+            agent,
+            time_str=scope.time_str,
+            location=location,
+            resolved_location=resolved_location,
+            target_location=movement.get("target_location", ""),
+            scheduled_activity=scheduled_activity,
+            activity=effective_activity,
+            action=act,
+            outcome=outcome,
+            perception=perc,
+            plan=plan_text,
+            reflection=refl_text,
+            changed=changed,
+            change_reason=change_reason,
+            travel=travel,
         )
+        scope.frame_steps.append(payload)
+        # Publish this resident right away. A tick costs one model call per
+        # resident, so the dashboard's map used to stay empty until all of
+        # them were done; now it fills in while the tick is still running.
+        note_agent_step = getattr(scope.visualizer, "note_agent_step", None)
+        if note_agent_step is not None:
+            note_agent_step(
+                scope.day,
+                scope.time_str,
+                payload,
+                env_context=scope.env_context,
+                env_events=scope.env_events,
+                policy=scope.policy,
+            )
 
 
 def builtin_stages(scope: StepScope) -> dict[str, Callable]:

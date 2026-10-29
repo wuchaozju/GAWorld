@@ -76,9 +76,10 @@ function boot(family, selectedAgentId) {
     "__",
     "__f",
     "api",
+    "gwHTML",
     `${familyBlock()}\n return { renderFamilyCard, renderFamilyOverview, renderFamilyDetail };`
   );
-  return { els, api: factory(els, state, escapeHtml, __, __f, api) };
+  return { els, api: factory(els, state, escapeHtml, __, __f, api, value => value) };
 }
 
 const PAYLOAD = {

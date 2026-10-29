@@ -62,6 +62,7 @@ tests/test_life_events.py
 # C-15 运行时干预与动作校验门
 tests/test_interventions.py
 tests/test_action_gate.py
+tests/test_time_plausibility.py
 
 # C-16 长时段快进与大跨度（月 / 年）
 tests/test_fast_forward.py

@@ -50,6 +50,7 @@
   .legend .li{display:flex;align-items:center;gap:6px;margin:3px 0;}
   .legend .sw{width:14px;height:8px;border-radius:2px;flex:none;}
 </style>
+  <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
 <body>
 <div id="app">
@@ -103,6 +104,8 @@
 
 <!-- Right pane: Mapbox / MapLibre view via iframe (fully isolated globals). -->
 <script>
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
+
 (function () {
   const citySel = document.getElementById("city");
   const tokenInput = document.getElementById("token");
@@ -233,7 +236,7 @@
     const params = new URLSearchParams({ city });
     if (token) params.set("token", token);
     const iframe = document.createElement("iframe");
-    iframe.src = "/site/citymap/mapbox.html?" + params.toString();
+    iframe.src = gwURL("/site/citymap/mapbox.html?" + params.toString());
     iframe.style.cssText = "width:100%;height:100%;border:0;display:block;background:#0c1118;";
     iframe.onload = () => stageNew.querySelector(".loading").remove();
     iframe.onerror = () => stageNew.querySelector(".loading").textContent = "iframe 加载失败";
@@ -247,8 +250,8 @@
     renderNew(city, token);
     const p = new URLSearchParams({ city });
     if (token) p.set("token", token);
-    openNew.href = "/site/citymap/mapbox.html?" + p.toString();
-    openOld.href = "/site/citymap/index.html";
+    openNew.href = gwURL("/site/citymap/mapbox.html?" + p.toString());
+    openOld.href = gwURL("/site/citymap/index.html");
   }
 
   citySel.addEventListener("change", refresh);

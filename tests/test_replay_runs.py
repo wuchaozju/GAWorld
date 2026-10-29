@@ -143,7 +143,7 @@ class ReplayPageTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
     def test_pages_load_the_indoor_view_after_its_dependencies(self):
-        for page in ("site/simviz/index.html", "site/dashboard/index.html"):
+        for page in ("site/dashboard/analytics.html", "site/dashboard/index.html"):
             html = (ROOT / page).read_text(encoding="utf-8")
             self.assertIn('id="indoorView"', html, page)
             order = [html.index(src) for src in (
@@ -153,6 +153,24 @@ class ReplayPageTests(unittest.TestCase):
                 "/site/dashboard/indoor-view.js",
             )]
             self.assertEqual(sorted(order), order, page)
+
+    def test_old_replay_entry_preserves_run_and_cursor_in_the_unified_workbench(self):
+        html = (ROOT / "site/simviz/index.html").read_text(encoding="utf-8")
+        self.assertIn("location.replace('/site/dashboard/analytics.html' + location.search + location.hash)", html)
+        console = (ROOT / "site/console/index.html").read_text(encoding="utf-8")
+        self.assertNotIn('data-tab="simviz"', console)
+        self.assertIn('data-tab="analytics"', console)
+
+    def test_results_workbench_node_suites(self):
+        result = subprocess.run(
+            ["node", "--test", str(ROOT / "site/dashboard/results-core.test.js"),
+             str(ROOT / "site/dashboard/results-map.test.js"),
+             str(ROOT / "site/dashboard/results-loading.test.js"),
+             str(ROOT / "site/dashboard/results-workbench.test.js"),
+             str(ROOT / "site/community/navigation.test.js")],
+            cwd=ROOT, capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
     def test_terminal_alias_redirects_to_the_maintained_replay(self):
         html = (ROOT / "site/terminal/simviz.html").read_text(encoding="utf-8")

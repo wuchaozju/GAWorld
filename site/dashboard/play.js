@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /*
  * 多人共玩 (Play Together): claim a resident of the open world this browser is
  * in, send what it does next / says to someone, watch everybody's moves live.
@@ -63,7 +66,7 @@
     play.claims.forEach(function (c) { taken[c.agent_id] = c; });
     var query = $("pSearch").value.trim();
     var list = $("pResidents");
-    list.innerHTML = "";
+    list.innerHTML = gwHTML("");
     residents
       .filter(function (r) { return !query || String(r.name).indexOf(query) >= 0 || String(r.id) === query; })
       .forEach(function (r) {
@@ -98,7 +101,7 @@
     $("pMine").textContent = mine == null ? t("play.none", "还没有认领居民：在居民列表里挑一位。") : nameOf(mine) + " · #" + mine;
     var select = $("pSayTo");
     var keep = select.value;
-    select.innerHTML = "";
+    select.innerHTML = gwHTML("");
     residents.forEach(function (r) {
       if (Number(r.id) === Number(mine)) return;
       var option = document.createElement("option");
@@ -154,7 +157,7 @@
     if (!play || play.mine == null || Number(row.agent_id) !== Number(play.mine)) return;
     lastStep = row;
     var box = $("pNow");
-    box.innerHTML = "";
+    box.innerHTML = gwHTML("");
     var when = document.createElement("time");
     when.textContent = "D" + row._day + " " + (row._time || "");
     box.appendChild(when);
@@ -182,7 +185,7 @@
       refresh();
     }
     var feed = $("pFeed");
-    if (feedEmpty) { feed.innerHTML = ""; feedEmpty = false; }
+    if (feedEmpty) { feed.innerHTML = gwHTML(""); feedEmpty = false; }
     var line = document.createElement("p");
     var when = document.createElement("time");
     when.textContent = row._day != null ? "D" + row._day + " " + (row._time || "") : new Date().toLocaleTimeString();
@@ -192,7 +195,7 @@
   }
 
   function listen() {
-    var source = new EventSource("/api/events/stream?tables=" + encodeURIComponent(TABLES));
+    var source = new EventSource(gwURL("/api/events/stream?tables=" + encodeURIComponent(TABLES)));
     TABLES.split(",").forEach(function (table) {
       source.addEventListener(table, function (event) {
         try { addFeed(JSON.parse(event.data), table); } catch (e) { /* a malformed row is skipped */ }
@@ -221,7 +224,7 @@
   // Closing the tab lets go at once instead of after the lease runs out.
   window.addEventListener("pagehide", function () {
     if (play && play.mine != null && navigator.sendBeacon) {
-      navigator.sendBeacon("/api/play/release", new Blob(["{}"], { type: "application/json" }));
+      navigator.sendBeacon(gwURL("/api/play/release"), new Blob(["{}"], { type: "application/json" }));
     }
   });
   // A phone pauses timers while the browser is in the background: renew the

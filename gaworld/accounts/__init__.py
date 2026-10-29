@@ -1,7 +1,7 @@
 """Accounts for a shared deployment (proposal 2026-10-01-multi-user, P1).
 
-The account database is opt-in: until ``python -m gaworld.accounts init`` has
-created it, the dashboard behaves exactly as the single-user console.
+Dashboard startup explicitly selects single-user mode by default.
+``--multi-user True`` enables accounts and requires an initialized administrator.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import sqlite3
 
+from .mode import explicit_mode
 from .store import AccountError, AccountStore
 
 DEFAULT_DB = os.path.join("output", "accounts", "accounts.sqlite")
@@ -19,7 +20,12 @@ class AccountConfigurationError(RuntimeError):
 
 
 def required() -> bool:
-    return os.environ.get("GAWORLD_REQUIRE_ACCOUNTS", "").strip().lower() in {"1", "true", "yes", "on"}
+    mode = explicit_mode()
+    if mode is not None:
+        return mode
+    return os.environ.get("GAWORLD_REGISTRATION") == "open" or os.environ.get(
+        "GAWORLD_REQUIRE_ACCOUNTS", ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def db_path(repo_root: str) -> str:
@@ -32,7 +38,9 @@ _SCHEMA_CHECKED: set[str] = set()
 
 
 def enabled_store(repo_root: str) -> AccountStore | None:
-    """The store when accounts are switched on (the database exists), else None."""
+    """Respect the dashboard startup mode; legacy library consumers may auto-detect."""
+    if explicit_mode() is False:
+        return None
     path = db_path(repo_root)
     if not os.path.exists(path):
         if required():

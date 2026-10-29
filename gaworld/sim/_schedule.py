@@ -34,6 +34,7 @@ import re
 from typing import Any
 
 from gaworld.settings import CONFIG
+from gaworld.sim._timefit import repair_schedule
 from gaworld.sim._utils import _minutes_to_time_str, _time_str_to_minutes
 
 # ---------------------------------------------------------------------------
@@ -923,8 +924,25 @@ def apply_schedule_override(schedule, time_str, activity):
     return updated
 
 
+def build_schedule_map(schedules):
+    """Per-agent schedules, sorted by time and checked against the clock.
+
+    This is the funnel every day's schedule passes through (the day-1
+    archetype and each generated day alike), so it is where the time
+    plausibility repair runs: an item whose hour contradicts its activity
+    ("吃工作餐" at 08:30, "上班" at 03:00) is moved into the window the
+    activity belongs to, as long as the move stays local.
+    """
+    sorted_map = {}
+    for agent_id, sch in (schedules or {}).items():
+        repaired, _changes = repair_schedule(list(sch or []))
+        sorted_map[agent_id] = sorted(repaired, key=lambda x: _time_str_to_minutes(x[0]) or 0)
+    return sorted_map
+
+
 __all__ = [
     "apply_schedule_override",
+    "build_schedule_map",
     "get_activity_for_time",
     "SLEEP_KEYWORDS",
     "_action_style_tags",

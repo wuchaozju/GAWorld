@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* 研究工作台 — 把一个研究想法或一篇论文交给模型，对照 GAWorld 的功能目录产出实施方案。
  *
  * 一次分析 = 一次后台任务（POST /api/research/analyze → 轮询 /api/research/jobs/<id>）。
@@ -78,11 +81,11 @@
     var sources = data.sources || [];
     var signature = JSON.stringify(sources.map(function (s) { return [s.seed, s.world, s.kind]; }));
     if (picker.dataset.sources !== signature) {
-      picker.innerHTML = sources.map(function (s) {
+      picker.innerHTML = gwHTML(sources.map(function (s) {
         var value = JSON.stringify({ seed: s.seed, world: s.world, kind: s.kind });
         var label = s.kind === "events" ? t("log_events", "阶段记录") : "s" + s.seed + " · " + s.world + " · " + s.kind;
         return "<option value=\"" + esc(value) + "\">" + esc(label) + "</option>";
-      }).join("");
+      }).join(""));
       picker.dataset.sources = signature;
       if (state.logSource && Array.from(picker.options).some(function (o) { return o.value === state.logSource; })) picker.value = state.logSource;
     }
@@ -230,7 +233,7 @@
   function fillProviders() {
     var select = $("rwProvider");
     var previous = select.value;
-    select.innerHTML = "";
+    select.innerHTML = gwHTML("");
     var routed = document.createElement("option");
     routed.value = "";
     routed.textContent = t("route_by_config", "按配置路由（默认模型）");
@@ -470,7 +473,7 @@
     var digest = state.digest;
     if (!digest) {
       host.hidden = true;
-      host.innerHTML = "";
+      host.innerHTML = gwHTML("");
       return;
     }
     var paper = digest.paper_digest || {};
@@ -485,7 +488,7 @@
     html += digestField("rwDgHypotheses", t("hypotheses", "假设"), (digest.hypotheses || []).join("\n"), 4);
     html += "<div class=\"rw-row\"><button class=\"btn ghost\" id=\"rwRedigest\">" + esc(t("redigest", "重新解读")) + "</button>" +
       "<button class=\"btn\" id=\"rwDesignFromDigest\">" + esc(t("design_from_digest", "③ 据此设计实验")) + "</button></div>";
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
     host.hidden = false;
     $("rwRedigest").addEventListener("click", runDigest);
     $("rwDesignFromDigest").addEventListener("click", function () {
@@ -588,7 +591,7 @@
     var blob = new Blob([data.markdown], { type: "text/markdown;charset=utf-8" });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
-    link.href = url;
+    link.href = gwURL(url);
     link.download = data.filename;
     document.body.appendChild(link);
     link.click();
@@ -676,6 +679,13 @@
     el.classList.toggle("is-error", mode === "error");
   }
 
+  function progressLabel(progress) {
+    var percent = Math.max(0, Math.min(1, Number(progress) || 0)) * 100;
+    if (percent > 0 && percent < 0.01) return "<0.01%";
+    if (percent >= 99.995 && percent < 100) return ">99.99%";
+    return percent.toFixed(2).replace(/\.?0+$/, "") + "%";
+  }
+
   function duration(seconds) {
     var minutes = Math.max(1, Math.ceil(Number(seconds) / 60));
     if (Number(seconds) < 60) return tf("duration_seconds", "{n} 秒", { n: Math.max(0, Math.round(seconds)) });
@@ -691,10 +701,11 @@
     if (!job) return;
     var paused = !!job.paused;
     var stopping = !!job.stopping;
-    var percent = Math.max(0, Math.min(100, Math.round((job.progress || 0) * 100)));
-    $("rwRunPercent").textContent = percent + "%";
+    var percent = Math.max(0, Math.min(1, Number(job.progress) || 0)) * 100;
+    var label = progressLabel(job.progress);
+    $("rwRunPercent").textContent = label;
     $("rwRunBar").value = percent;
-    $("rwRunBar").setAttribute("aria-valuetext", percent + "%");
+    $("rwRunBar").setAttribute("aria-valuetext", label);
     $("rwRunLabel").textContent = stopping ? t("stage_stopping", "正在停止…")
       : paused ? t("stage_paused", "已暂停")
       : job.status === "done" ? t("run_complete", "运行完成")
@@ -935,7 +946,7 @@
     if (!study) {
       logStream.stop();
       host.hidden = true;
-      host.innerHTML = "";
+      host.innerHTML = gwHTML("");
       return;
     }
     var protocol = study.protocol || {};
@@ -955,6 +966,9 @@
     if (study.autopilot) badges.push("<span class=\"rw-badge\">" + esc(t("autopilot_short", "自动执行")) + "</span>");
     if (study.paused) badges.push("<span class=\"rw-badge rw-stage-paused\">" + esc(t("stage_paused", "已暂停")) + "</span>");
     var actions = [];
+    if ((state.context || {}).workspace && state.context.workspace.mode === "multi_user") {
+      actions.push('<a class="btn tiny ghost" target="_top" href="/console#publish?kind=study&id=' + encodeURIComponent(study.id) + '">发布成果</a>');
+    }
     actions.push("<button class=\"btn tiny ghost\" id=\"rwCreateBatch\">" + esc(t("batch_open", "多模型 / 跨城 / 重复实验")) + "</button>");
     if (!study.live && executionMode(protocol) !== "daily_brief") actions.push("<button class=\"btn tiny ghost\" id=\"rwQuickStudy\">" + esc(t("quick_create", "创建快速试跑版本")) + "</button>");
     if (canEdit) actions.push("<button class=\"btn tiny ghost\" id=\"rwEditProtocol\">" + esc(t("edit_protocol", "编辑运行方案")) + "</button>");
@@ -1169,7 +1183,7 @@
     }
     if (protocol.notes) html += section(t("notes", "备注"), "<p class=\"rw-rationale\">" + esc(protocol.notes) + "</p>");
 
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
     host.hidden = false;
     host.querySelectorAll("table.rw-table").forEach(function (table) {
       var scroll = document.createElement("div");
@@ -1220,10 +1234,10 @@
     var host = $("rwStudies");
     if (!host) return;
     if (!state.studies.length) {
-      host.innerHTML = "<p class=\"rw-hint\">" + esc(t("no_studies", "还没有研究。")) + "</p>";
+      host.innerHTML = gwHTML("<p class=\"rw-hint\">" + esc(t("no_studies", "还没有研究。")) + "</p>");
       return;
     }
-    host.innerHTML = state.studies.map(function (item) {
+    host.innerHTML = gwHTML(state.studies.map(function (item) {
       var active = state.study && state.study.id === item.id;
       var summary = item.summary || {};
       var meta = [item.paused ? t("stage_paused", "已暂停") : stageLabel(item.stage), fmtTime(item.created_at)];
@@ -1234,7 +1248,7 @@
         "<span class=\"rw-hist-title\">" + esc(item.title || item.id) + "</span>" +
         "<span class=\"rw-hist-meta\">" + esc(meta.filter(Boolean).join(" · ")) + "</span></button>" +
         (!item.live && item.stage !== "running" ? "<button type=\"button\" class=\"btn tiny ghost danger rw-history-delete\" data-delete-study=\"" + esc(item.id) + "\" aria-label=\"删除研究：" + esc(item.title) + "\">" + esc(t("delete", "删除")) + "</button>" : "") + "</div>";
-    }).join("");
+    }).join(""));
     Array.prototype.forEach.call(host.querySelectorAll(".rw-history-item"), function (button) {
       button.addEventListener("click", function () {
         openStudy(button.dataset.id);
@@ -1266,7 +1280,7 @@
       .then(function () {
         state.plan = null;
         $("rwResult").hidden = true;
-        $("rwResult").innerHTML = "";
+        $("rwResult").innerHTML = gwHTML("");
         setProgress(t("deleted", "方案已删除。"), "");
         return refreshHistory();
       })
@@ -1312,7 +1326,7 @@
     var host = $("rwResult");
     if (!plan) {
       host.hidden = true;
-      host.innerHTML = "";
+      host.innerHTML = gwHTML("");
       return;
     }
     var feas = plan.feasibility || {};
@@ -1407,13 +1421,21 @@
         (plan.material_truncated ? " " + esc(t("truncated", "（已截断）")) : "") + "</summary><pre>" + esc(plan.material) + "</pre></details>";
     }
 
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
     host.hidden = false;
     $("rwToStudy").addEventListener("click", createStudy);
     $("rwEditPlan").addEventListener("click", editPlan);
     $("rwDownload").addEventListener("click", downloadPlan);
     $("rwCopy").addEventListener("click", copyPlan);
     $("rwDelete").addEventListener("click", deletePlan);
+    if ((state.context || {}).workspace && state.context.workspace.mode === "multi_user") {
+      var publish = document.createElement("a");
+      publish.className = "btn tiny ghost";
+      publish.href = gwURL("/console#publish?kind=plan&id=" + encodeURIComponent(plan.id));
+      publish.target = "_top";
+      publish.textContent = "分享研究方案";
+      host.querySelector(".rw-actions").appendChild(publish);
+    }
     Array.prototype.forEach.call(host.querySelectorAll(".rw-design-tab"), function (tab) {
       tab.addEventListener("click", function () {
         state.designIndex = Number(tab.dataset.index) || 0;
@@ -1469,16 +1491,16 @@
   function renderHistory() {
     var host = $("rwHistory");
     if (!state.plans.length) {
-      host.innerHTML = "<p class=\"rw-hint\">" + esc(t("no_history", "还没有生成过方案。")) + "</p>";
+      host.innerHTML = gwHTML("<p class=\"rw-hint\">" + esc(t("no_history", "还没有生成过方案。")) + "</p>");
       return;
     }
-    host.innerHTML = state.plans.map(function (item) {
+    host.innerHTML = gwHTML(state.plans.map(function (item) {
       var active = state.plan && state.plan.id === item.id;
       var meta = [kindLabel(item.kind), verdictLabel(item.verdict), fmtTime(item.created_at)].filter(Boolean).join(" · ");
       return "<div class=\"rw-history-row\"><button type=\"button\" class=\"rw-history-item" + (active ? " is-active" : "") + "\" data-id=\"" + esc(item.id) + "\">" +
         "<span class=\"rw-hist-title\">" + esc(item.title || item.id) + "</span>" +
         "<span class=\"rw-hist-meta\">" + esc(meta) + "</span></button><button type=\"button\" class=\"btn tiny ghost danger rw-history-delete\" data-delete-plan=\"" + esc(item.id) + "\" aria-label=\"删除实施方案：" + esc(item.title) + "\">" + esc(t("delete", "删除")) + "</button></div>";
-    }).join("");
+    }).join(""));
     Array.prototype.forEach.call(host.querySelectorAll(".rw-history-item"), function (button) {
       button.addEventListener("click", function () {
         openPlan(button.dataset.id);
@@ -1563,6 +1585,9 @@
         syncRunLabel();
         syncCount();
         setTimeout(pollHistory, 5000);
+        var initial = new URLSearchParams(location.search);
+        if (initial.get("study_id")) return openStudy(initial.get("study_id"));
+        if (initial.get("plan_id")) return openPlan(initial.get("plan_id"));
       })
       .catch(function (err) {
         setProgress(err.message, "error");

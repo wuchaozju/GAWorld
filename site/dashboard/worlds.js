@@ -1,3 +1,5 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
 /* Parallel Worlds panel — the 平行世界 tab of the research workbench.
  *
  * Two halves that talk to each other through one piece of state: the left
@@ -196,7 +198,7 @@
   function renderShared() {
     var providers = (state.overview && state.overview.providers) || [];
     var spec = state.spec;
-    el("pwShared").innerHTML = [
+    el("pwShared").innerHTML = gwHTML([
       field("pw-wide", __("pw.field_name"), "<input type=\"text\" data-spec=\"name\" value=\"" + esc(spec.name) + "\" />"),
       field("", __("pw.field_sim_days"), "<input type=\"number\" min=\"1\" data-spec=\"sim_days\" value=\"" + esc(spec.sim_days) + "\" />"),
       field("", __("pw.field_seed"), "<input type=\"number\" data-spec=\"seed\" value=\"" + esc(spec.seed) + "\" />"),
@@ -213,7 +215,7 @@
         }).join("") + "</select>"),
       "<label class=\"pw-check pw-wide\"><input type=\"checkbox\" data-spec=\"fast\"" +
       (spec.fast ? " checked" : "") + " /> " + esc(__("pw.fast_mode")) + "</label>",
-    ].join("");
+    ].join(""));
   }
 
   function field(extra, label, control) {
@@ -222,15 +224,15 @@
 
   function renderPresets() {
     var presets = (state.overview && state.overview.presets) || [];
-    el("pwPresets").innerHTML = presets.map(function (preset) {
+    el("pwPresets").innerHTML = gwHTML(presets.map(function (preset) {
       return "<button type=\"button\" class=\"pw-preset\" data-preset=\"" + esc(preset.id) +
         "\" title=\"" + esc(preset.note || "") + "\">" + esc(preset.name) + "</button>";
-    }).join("");
+    }).join(""));
   }
 
   function renderWorlds() {
     var spec = state.spec;
-    el("pwWorldList").innerHTML = spec.worlds.map(function (world, index) {
+    el("pwWorldList").innerHTML = gwHTML(spec.worlds.map(function (world, index) {
       var isBaseline = world.key === spec.baseline;
       var events = world.events.length
         ? world.events.map(function (event, eventIndex) {
@@ -255,7 +257,7 @@
         "  <button type=\"button\" class=\"pw-addevent\" data-addevent=\"" + world.key + "\">" + esc(__("pw.add_event")) + "</button>",
         "</div>",
       ].join("");
-    }).join("");
+    }).join(""));
   }
 
   /* Role and dose only mean something for a branch: the baseline is the
@@ -340,7 +342,7 @@
 
   function renderSweep() {
     var tunables = (state.overview && state.overview.tunables) || [];
-    el("pwSweep").innerHTML = [
+    el("pwSweep").innerHTML = gwHTML([
       "<datalist id=\"pwTunables\">" + tunables.map(function (item) {
         return "<option value=\"" + esc(item.path) + "\">" + esc(item.label + " · " + item.value) + "</option>";
       }).join("") + "</datalist>",
@@ -355,7 +357,7 @@
       sweepForm.message
         ? "<p class=\"pw-sweep-msg pw-wide" + (sweepForm.error ? " is-error" : "") + "\">" + esc(sweepForm.message) + "</p>"
         : "",
-    ].join("");
+    ].join(""));
   }
 
   function applySweep(result) {
@@ -476,7 +478,7 @@
   }
 
   function emptyChart(target, message) {
-    el(target).innerHTML = "<p class=\"pw-hint\">" + esc(message) + "</p>";
+    el(target).innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(message) + "</p>");
   }
 
   // ------------------------------------------------------- branch diagram
@@ -569,8 +571,8 @@
       "\" x2=\"" + (width - PLOT.right) + "\" y2=\"" + trunkY + "\" stroke-dasharray=\"2 4\" />");
 
     el("pwBranch").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_branch")) + "\">" +
-      parts.join("") + "</svg>" + replayLinks();
+      gwHTML("<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_branch")) + "\">" +
+      parts.join("") + "</svg>" + replayLinks());
   }
 
   /* Every world is a complete simulation, so its trace is replayable by the
@@ -650,8 +652,8 @@
       (height - PLOT.top - PLOT.bottom) + "\" />");
 
     el("pwTrajectory").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_trajectory")) + "\">" +
-      parts.join("") + "</svg>";
+      gwHTML("<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_trajectory")) + "\">" +
+      parts.join("") + "</svg>");
     bindHover(el("pwTrajectory"), width, scale, series, metric);
   }
 
@@ -718,12 +720,12 @@
           "</b> " + (value == null ? "—" : fmt(value, 3));
       });
       el("pwReadout").innerHTML =
-        esc(__f("pw.readout", {
+        gwHTML(esc(__f("pw.readout", {
           step: step,
           day: day,
           metric: label,
           relative: state.relative ? __("pw.relative_suffix") : "",
-        })) + bits.join("｜");
+        })) + bits.join("｜"));
     });
     svg.addEventListener("mouseleave", function () {
       if (cursor) cursor.setAttribute("opacity", "0");
@@ -771,30 +773,30 @@
       }
     });
     el("pwDivergence").innerHTML =
-      "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_divergence")) + "\">" +
-      parts.join("") + "</svg>";
+      gwHTML("<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" + esc(__("pw.chart_divergence")) + "\">" +
+      parts.join("") + "</svg>");
   }
 
   // -------------------------------------------------------------- tables
 
   function renderLegend() {
     var report = state.report;
-    if (!report) { el("pwLegend").innerHTML = ""; return; }
+    if (!report) { el("pwLegend").innerHTML = gwHTML(""); return; }
     var colors = worldColors();
-    el("pwLegend").innerHTML = report.worlds.map(function (world) {
+    el("pwLegend").innerHTML = gwHTML(report.worlds.map(function (world) {
       return "<button type=\"button\" class=\"pw-legend-item" +
         (state.hidden[world.id] ? " is-off" : "") + "\" data-toggle=\"" + esc(world.id) + "\">" +
         "<span class=\"pw-legend-dot\" style=\"background:" + colors[world.id] + "\"></span>" +
         esc(world.label) + (world.is_baseline ? esc(__("pw.legend_baseline")) : "") +
         (world.status && world.status !== "done" ? " (" + esc(world.status) + ")" : "") +
         "</button>";
-    }).join("");
+    }).join(""));
   }
 
   function renderDeltas() {
     var report = state.report;
     var rows = (report && report.deltas) || [];
-    if (!rows.length) { el("pwDeltas").innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_deltas")) + "</p>"; return; }
+    if (!rows.length) { el("pwDeltas").innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_deltas")) + "</p>"); return; }
     var labels = {};
     var colors = worldColors();
     report.worlds.forEach(function (world) { labels[world.id] = world.label; });
@@ -812,11 +814,11 @@
           signed(row.delta_mean, 3) + "</td></tr>";
       }).join("");
     el("pwDeltas").innerHTML =
-      "<table><thead><tr>" +
+      gwHTML("<table><thead><tr>" +
       [ "pw.th_world", "pw.th_metric", "pw.th_baseline_final",
         "pw.th_this_world", "pw.th_delta_final", "pw.th_delta_mean",
       ].map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
-      "</tr></thead><tbody>" + body + "</tbody></table>";
+      "</tr></thead><tbody>" + body + "</tbody></table>");
   }
 
   function renderMovers() {
@@ -825,17 +827,17 @@
     var options = Object.keys(movers);
     var select = el("pwMoverWorld");
     if (!options.length) {
-      select.innerHTML = "";
-      el("pwMovers").innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_movers")) + "</p>";
+      select.innerHTML = gwHTML("");
+      el("pwMovers").innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_movers")) + "</p>");
       return;
     }
     if (options.indexOf(state.moverWorld) < 0) state.moverWorld = options[0];
     var labels = {};
     report.worlds.forEach(function (world) { labels[world.id] = world.label; });
-    select.innerHTML = options.map(function (id) {
+    select.innerHTML = gwHTML(options.map(function (id) {
       return "<option value=\"" + esc(id) + "\"" + (id === state.moverWorld ? " selected" : "") +
         ">" + esc(labels[id] || id) + "</option>";
-    }).join("");
+    }).join(""));
 
     var rows = movers[state.moverWorld] || [];
     var peak = rows.reduce(function (acc, row) { return Math.max(acc, row.distance); }, 0) || 1;
@@ -845,7 +847,7 @@
       names[String(agent.id)] = agent.name;
     });
     el("pwMovers").innerHTML =
-      "<table><thead><tr>" +
+      gwHTML("<table><thead><tr>" +
       [ "pw.th_resident", "pw.th_distance", "pw.th_top_metric",
       ].map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
       "</tr></thead><tbody>" +
@@ -857,29 +859,29 @@
           "</small></td><td>" + esc(row.top_label) + " <span class=\"" +
           (row.top_delta > 0 ? "pw-up" : "pw-down") + "\">" + signed(row.top_delta, 3) +
           "</span></td></tr>";
-      }).join("") + "</tbody></table>";
+      }).join("") + "</tbody></table>");
   }
 
   function renderMetricSelect() {
     var report = state.report;
     var select = el("pwMetricSelect");
-    if (!report || !report.metrics.length) { select.innerHTML = ""; return; }
+    if (!report || !report.metrics.length) { select.innerHTML = gwHTML(""); return; }
     if (report.metrics.indexOf(state.metric) < 0) state.metric = report.metrics[0];
-    select.innerHTML = report.metrics.map(function (metric) {
+    select.innerHTML = gwHTML(report.metrics.map(function (metric) {
       return "<option value=\"" + esc(metric) + "\"" + (metric === state.metric ? " selected" : "") +
         ">" + esc(report.metric_labels[metric] || metric) + "</option>";
-    }).join("");
+    }).join(""));
   }
 
   function renderTopMeta() {
     var report = state.report;
-    if (!report) { el("pwTopMeta").innerHTML = esc(__("pw.no_experiment")); return; }
+    if (!report) { el("pwTopMeta").innerHTML = gwHTML(esc(__("pw.no_experiment"))); return; }
     var lines = (report.summary || []).map(esc);
     el("pwTopMeta").innerHTML =
-      "<div><b>" + esc(report.name || report.experiment_id || "") + "</b>" +
+      gwHTML("<div><b>" + esc(report.name || report.experiment_id || "") + "</b>" +
       (report.legacy ? esc(__("pw.legacy_suffix")) : "") + "</div>" +
       "<div>" + esc(report.created_at || "") + "</div>" +
-      (lines.length ? "<div style=\"margin-top:4px\">" + lines.join("<br/>") + "</div>" : "");
+      (lines.length ? "<div style=\"margin-top:4px\">" + lines.join("<br/>") + "</div>" : ""));
   }
 
   function renderObserve() {
@@ -956,11 +958,11 @@
   function renderCompare() {
     var report = state.report;
     var select = el("pwCompare");
-    if (!report || !report.worlds) { select.innerHTML = ""; return; }
-    select.innerHTML = report.worlds.map(function (world) {
+    if (!report || !report.worlds) { select.innerHTML = gwHTML(""); return; }
+    select.innerHTML = gwHTML(report.worlds.map(function (world) {
       return "<option value=\"" + esc(world.id) + "\"" + (world.id === report.baseline_id ? " selected" : "") +
         ">" + esc(world.label) + "</option>";
-    }).join("");
+    }).join(""));
   }
 
   function renderCausalWorld() {
@@ -972,18 +974,18 @@
       if (ids.indexOf(row.world_id) < 0) ids.push(row.world_id);
     });
     if (ids.indexOf(state.causalWorld) < 0) state.causalWorld = "";
-    select.innerHTML = "<option value=\"\">" + esc(__("pw.all_worlds")) + "</option>" +
+    select.innerHTML = gwHTML("<option value=\"\">" + esc(__("pw.all_worlds")) + "</option>" +
       ids.map(function (id) {
         return "<option value=\"" + esc(id) + "\"" + (id === state.causalWorld ? " selected" : "") + ">" +
           esc(labels[id] || id) + "</option>";
-      }).join("");
+      }).join(""));
   }
 
   function renderVerdicts() {
     var data = causal();
     var host = el("pwVerdicts");
     if (!data || !(data.estimates || []).length) {
-      host.innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_causal")) + "</p>";
+      host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_causal")) + "</p>");
       return;
     }
     var labels = worldLabels();
@@ -1010,8 +1012,8 @@
           metric: (state.report.metric_labels || {})[item.metric] || item.metric,
         })) + "</div>";
       }).join("");
-    host.innerHTML = "<div class=\"pw-verdict-row\">" + chips + "</div>" +
-      "<p class=\"pw-hint\">" + notes.map(esc).join(" ") + "</p>" + warnings;
+    host.innerHTML = gwHTML("<div class=\"pw-verdict-row\">" + chips + "</div>" +
+      "<p class=\"pw-hint\">" + notes.map(esc).join(" ") + "</p>" + warnings);
   }
 
   /* Forest plot: one row per (world, metric), the bootstrap interval as a
@@ -1064,18 +1066,18 @@
       parts.push("<text class=\"pw-axis pw-forest-verdict v-" + esc(row.verdict) + "\" x=\"" + (width - right + 8) +
         "\" y=\"" + (y + 4) + "\">" + esc(__("pw.verdict_" + row.verdict)) + "</text>");
     });
-    el("pwForest").innerHTML = "<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" +
-      esc(__("pw.chart_forest")) + "\">" + parts.join("") + "</svg>";
+    el("pwForest").innerHTML = gwHTML("<svg viewBox=\"0 0 " + width + " " + height + "\" role=\"img\" aria-label=\"" +
+      esc(__("pw.chart_forest")) + "\">" + parts.join("") + "</svg>");
   }
 
   function renderEstimates() {
     var rows = causalRows();
-    if (!rows.length) { el("pwEstimates").innerHTML = ""; return; }
+    if (!rows.length) { el("pwEstimates").innerHTML = gwHTML(""); return; }
     var labels = worldLabels();
     var colors = worldColors();
     var head = ["pw.th_world", "pw.th_metric", "pw.th_ate", "pw.th_ci", "pw.th_p", "pw.th_q", "pw.th_dz",
       "pw.th_did", "pw.th_pre_gap", "pw.th_n", "pw.th_verdict"];
-    el("pwEstimates").innerHTML = "<table><thead><tr>" + head.map(function (key) {
+    el("pwEstimates").innerHTML = gwHTML("<table><thead><tr>" + head.map(function (key) {
       return "<th title=\"" + esc(__(key + "_tip")) + "\">" + esc(__(key)) + "</th>";
     }).join("") + "</tr></thead><tbody>" + rows.slice(0, 80).map(function (row) {
       var cls = row.ate > 0 ? "pw-up" : row.ate < 0 ? "pw-down" : "";
@@ -1089,7 +1091,7 @@
         (row.d_z == null ? "—" : fmt(row.d_z, 2)) + "</td><td>" + (row.did == null ? "—" : signed(row.did, 4)) +
         "</td><td>" + (row.pre_gap == null ? "—" : signed(row.pre_gap, 4)) + "</td><td>" + esc(row.n) +
         "</td><td>" + verdictChip(row.verdict) + "</td></tr>";
-    }).join("") + "</tbody></table>";
+    }).join("") + "</tbody></table>");
   }
 
   /* Which metric moved first. Onset is the first step the paired effect
@@ -1101,13 +1103,13 @@
     var world = targetWorld();
     var entry = data && data.dynamics && data.dynamics[world];
     var host = el("pwDynamics");
-    if (!entry) { host.innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_dynamics")) + "</p>"; return; }
+    if (!entry) { host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_dynamics")) + "</p>"); return; }
     var labels = state.report.metric_labels || {};
     var ordered = entry.order.concat(Object.keys(entry.metrics).filter(function (metric) {
       return entry.order.indexOf(metric) < 0;
     }));
     el("pwDynamicsWorld").textContent = worldLabels()[world] || world;
-    host.innerHTML = "<table><thead><tr>" + ["pw.th_rank", "pw.th_metric", "pw.th_onset", "pw.th_peak",
+    host.innerHTML = gwHTML("<table><thead><tr>" + ["pw.th_rank", "pw.th_metric", "pw.th_onset", "pw.th_peak",
       "pw.th_persistence", "pw.th_half_life"].map(function (key) {
       return "<th title=\"" + esc(__(key + "_tip")) + "\">" + esc(__(key)) + "</th>";
     }).join("") + "</tr></thead><tbody>" + ordered.slice(0, 20).map(function (metric) {
@@ -1120,7 +1122,7 @@
         esc(stepLabel(item.peak_step)) + "</small>") + "</td><td>" +
         (item.persistence == null ? "—" : (item.persistence * 100).toFixed(0) + "%") + "</td><td>" +
         (item.half_life == null ? "—" : esc(__f("pw.steps_n", { count: item.half_life }))) + "</td></tr>";
-    }).join("") + "</tbody></table>";
+    }).join("") + "</tbody></table>");
   }
 
   function attrLabel(id) {
@@ -1162,24 +1164,24 @@
       return row.world_id === world && row.ate != null;
     }).map(function (row) { return row.metric; });
     if (!world || !metrics.length) {
-      select.innerHTML = "";
-      host.innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_hte")) + "</p>";
+      select.innerHTML = gwHTML("");
+      host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_hte")) + "</p>");
       return;
     }
     if (metrics.indexOf(state.hteMetric) < 0) state.hteMetric = metrics[0];
     var labels = state.report.metric_labels || {};
-    select.innerHTML = metrics.map(function (metric) {
+    select.innerHTML = gwHTML(metrics.map(function (metric) {
       return "<option value=\"" + esc(metric) + "\"" + (metric === state.hteMetric ? " selected" : "") + ">" +
         esc(labels[metric] || metric) + "</option>";
-    }).join("");
+    }).join(""));
     el("pwHteWorld").textContent = worldLabels()[world] || world;
     var key = hteKey(world, state.hteMetric);
     var result = state.hte[key];
     if (!result) { loadHte(world, state.hteMetric); result = state.hte[key]; }
-    if (!result || result.loading) { host.innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.loading")) + "</p>"; return; }
-    if (result.error) { host.innerHTML = "<div class=\"pw-error\">" + esc(result.error) + "</div>"; return; }
+    if (!result || result.loading) { host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.loading")) + "</p>"); return; }
+    if (result.error) { host.innerHTML = gwHTML("<div class=\"pw-error\">" + esc(result.error) + "</div>"); return; }
     var attrs = result.attributes || [];
-    if (!attrs.length) { host.innerHTML = "<p class=\"pw-hint\">" + esc(__("pw.empty_hte_attrs")) + "</p>"; return; }
+    if (!attrs.length) { host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__("pw.empty_hte_attrs")) + "</p>"); return; }
     var peak = 0;
     attrs.forEach(function (attr) {
       (attr.groups || []).forEach(function (group) {
@@ -1189,7 +1191,7 @@
     peak = peak || 0.01;
     function pos(value) { return (50 + (value / peak) * 50).toFixed(1); }
     var color = worldColors()[world] || "#5c6b73";
-    host.innerHTML = "<p class=\"pw-hint\">" + esc(__f("pw.hte_overall", { ate: signed(result.ate, 4), n: result.n })) + "</p>" +
+    host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__f("pw.hte_overall", { ate: signed(result.ate, 4), n: result.n })) + "</p>" +
       attrs.map(function (attr) {
         var significant = attr.p_value != null && attr.p_value < 0.05;
         return "<div class=\"pw-hte-attr\"><div class=\"pw-hte-head\"><b>" + esc(attrLabel(attr.id)) + "</b><span class=\"" +
@@ -1205,7 +1207,7 @@
               bar + "</td><td class=\"" + (group.cate > 0 ? "pw-up" : group.cate < 0 ? "pw-down" : "") + "\">" +
               (group.cate == null ? "—" : signed(group.cate, 3)) + "</td></tr>";
           }).join("") + "</tbody></table></div>";
-      }).join("");
+      }).join(""));
   }
 
   function renderReplication() {
@@ -1218,7 +1220,7 @@
       seeds: excluded.map(function (item) { return item.seed; }).join(", ")
     })) + "</p>" : "";
     if (!pooled || !(pooled.rows || []).length) {
-      host.innerHTML = note || "<p class=\"pw-hint\">" + esc(__("pw.empty_replication")) + "</p>";
+      host.innerHTML = gwHTML(note || "<p class=\"pw-hint\">" + esc(__("pw.empty_replication")) + "</p>");
       el("pwReplicationSeeds").textContent = "";
       return;
     }
@@ -1227,7 +1229,7 @@
     var rows = pooled.rows.filter(function (row) {
       return !state.causalWorld || row.world_id === state.causalWorld;
     });
-    host.innerHTML = note + "<table><thead><tr>" + ["pw.th_world", "pw.th_metric", "pw.th_per_seed", "pw.th_mean",
+    host.innerHTML = gwHTML(note + "<table><thead><tr>" + ["pw.th_world", "pw.th_metric", "pw.th_per_seed", "pw.th_mean",
       "pw.th_ci", "pw.th_agree", "pw.th_verdict"].map(function (key) {
       return "<th title=\"" + esc(__(key + "_tip")) + "\">" + esc(__(key)) + "</th>";
     }).join("") + "</tr></thead><tbody>" + rows.slice(0, 60).map(function (row) {
@@ -1238,7 +1240,7 @@
         }).join(" ") + "</td><td>" + signed(row.mean, 4) + "</td><td>" +
         (row.ci_low == null ? "—" : "[" + signed(row.ci_low, 3) + ", " + signed(row.ci_high, 3) + "]") +
         "</td><td>" + esc(row.agree + "/" + row.seeds) + "</td><td>" + verdictChip(row.verdict, "pw.rep_") + "</td></tr>";
-    }).join("") + "</tbody></table>";
+    }).join("") + "</tbody></table>");
   }
 
   function renderDose() {
@@ -1246,9 +1248,9 @@
     var rows = (data && data.dose_response) || [];
     var card = el("pwDoseCard");
     card.hidden = !rows.length;
-    if (!rows.length) { el("pwDose").innerHTML = ""; return; }
+    if (!rows.length) { el("pwDose").innerHTML = gwHTML(""); return; }
     var labels = worldLabels();
-    el("pwDose").innerHTML = "<table><thead><tr>" + ["pw.th_metric", "pw.th_slope", "pw.th_r2", "pw.th_monotonic",
+    el("pwDose").innerHTML = gwHTML("<table><thead><tr>" + ["pw.th_metric", "pw.th_slope", "pw.th_r2", "pw.th_monotonic",
       "pw.th_points"].map(function (key) {
       return "<th>" + esc(__(key)) + "</th>";
     }).join("") + "</tr></thead><tbody>" + rows.slice(0, 20).map(function (row) {
@@ -1257,7 +1259,7 @@
         esc(__(row.monotonic ? "pw.yes" : "pw.no")) + "</td><td>" + row.points.map(function (point) {
           return esc((labels[point.world_id] || point.world_id) + " (" + point.dose + "): " + signed(point.ate, 3));
         }).join("<br/>") + "</td></tr>";
-    }).join("") + "</tbody></table>";
+    }).join("") + "</tbody></table>");
   }
 
   /* The model's reading of the tables above. It is cached server-side per
@@ -1265,20 +1267,20 @@
      and the button only spends a call when asked. */
   function renderInterpretation() {
     var providers = (state.overview && state.overview.providers) || [];
-    el("pwInterpretProvider").innerHTML = "<option value=\"\">" + esc(__("pw.provider_default")) + "</option>" +
+    el("pwInterpretProvider").innerHTML = gwHTML("<option value=\"\">" + esc(__("pw.provider_default")) + "</option>" +
       providers.map(function (name) {
         return "<option value=\"" + esc(name) + "\"" + (name === state.interpretProvider ? " selected" : "") + ">" +
           esc(name) + "</option>";
-      }).join("");
+      }).join(""));
     var hasEstimates = !!((causal() || {}).estimates || []).length;
     var button = el("pwInterpretRun");
     button.disabled = state.interpreting || !hasEstimates;
     button.textContent = __(state.interpreting ? "pw.interpret_busy" : (state.interpretation ? "pw.interpret_again" : "pw.interpret_run"));
     var host = el("pwInterpret");
-    if (state.interpretError) { host.innerHTML = "<div class=\"pw-error\">" + esc(state.interpretError) + "</div>"; return; }
+    if (state.interpretError) { host.innerHTML = gwHTML("<div class=\"pw-error\">" + esc(state.interpretError) + "</div>"); return; }
     var data = state.interpretation;
     if (!data) {
-      host.innerHTML = "<p class=\"pw-hint\">" + esc(__(hasEstimates ? "pw.interpret_empty" : "pw.empty_causal")) + "</p>";
+      host.innerHTML = gwHTML("<p class=\"pw-hint\">" + esc(__(hasEstimates ? "pw.interpret_empty" : "pw.empty_causal")) + "</p>");
       return;
     }
     var labels = worldLabels();
@@ -1312,7 +1314,7 @@
             (item.design ? "<div class=\"pw-muted\">" + esc(item.design) + "</div>" : "") + "</li>";
         }).join("") + "</ul>";
     }
-    host.innerHTML = html;
+    host.innerHTML = gwHTML(html);
   }
 
   async function loadInterpretation() {
@@ -1390,8 +1392,8 @@
 
     if (!job) {
       el("pwRunState").textContent = __("pw.not_running");
-      el("pwProgress").innerHTML = state.error
-        ? "<div class=\"pw-error\">" + esc(state.error) + "</div>" : "";
+      el("pwProgress").innerHTML = gwHTML(state.error
+        ? "<div class=\"pw-error\">" + esc(state.error) + "</div>" : "");
       return;
     }
     el("pwRunState").textContent =
@@ -1411,14 +1413,14 @@
       "<span class=\"pw-pstate\" style=\"text-align:left;grid-column:2/4\">" + esc(job.message) +
       "</span></div>" : "";
     var error = job.error ? "<div class=\"pw-error\">" + esc(job.error) + "</div>" : "";
-    el("pwProgress").innerHTML = rows + message + error +
-      (state.error ? "<div class=\"pw-error\">" + esc(state.error) + "</div>" : "");
+    el("pwProgress").innerHTML = gwHTML(rows + message + error +
+      (state.error ? "<div class=\"pw-error\">" + esc(state.error) + "</div>" : ""));
   }
 
   function renderHistory() {
     var items = (state.overview && state.overview.experiments) || [];
     el("pwHistory").innerHTML =
-      "<option value=\"\">" + esc(__("pw.load_history")) + "</option>" +
+      gwHTML("<option value=\"\">" + esc(__("pw.load_history")) + "</option>" +
       items.map(function (item) {
         return "<option value=\"" + esc(item.root) + "\"" +
           (item.root === state.experiment ? " selected" : "") + ">" +
@@ -1426,7 +1428,7 @@
           (item.group ? esc(__f("pw.seed_tag", { seed: item.seed })) : "") +
           (item.legacy ? esc(__("pw.legacy_tag")) : "") +
           (item.has_data ? "" : esc(__("pw.no_data_tag"))) + "</option>";
-      }).join("");
+      }).join(""));
   }
 
   // ------------------------------------------------------------- actions

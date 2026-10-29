@@ -1,0 +1,65 @@
+{
+  "name": "拉斯维加斯;拉斯維加斯",
+  "summary": "拉斯维加斯以博彩业和旅游业为核心，经济规模较大",
+  "industries": [
+    {
+      "name": "博彩业",
+      "weight": 0.7,
+      "trend": "stable",
+      "note": "作为赌城，博彩业是城市经济的主导产业"
+    },
+    {
+      "name": "旅游业",
+      "weight": 0.3,
+      "trend": "growing",
+      "note": "众多景点和娱乐活动构成重要的旅游产业"
+    }
+  ],
+  "priorities": [
+    "巩固博彩业优势",
+    "提升旅游业吸引力",
+    "拓展景点与娱乐体验"
+  ],
+  "labor_demand": [
+    "酒店与旅游服务人员",
+    "娱乐表演人员",
+    "景点及商业设施服务人员"
+  ],
+  "sources": [
+    {
+      "title": "拉斯维加斯 的主要 产业 是什么? - 百度知道",
+      "url": "http://www.baidu.com/link?url=iG_nTDlxq2m4qn-mruCdddfgQ0-GESD0Z7CAbfp7pKMZVlr3Vgpt_woOowzhHqwkKGwG1RH_OXDSle6l_Sa8jRq7r9i-Csz8xcO_lTxl_PG"
+    },
+    {
+      "title": "赌城 拉斯维加斯 GDP超1700亿美元,放在中国什么水平?",
+      "url": "http://www.baidu.com/link?url=nhsfyQrBKVHMMhd7OZeqJjzhUZa4DTOgvoFB-lvmD1l-pJQUhosV8yOsQr_WV8UcG5Ecw8qsSntBpuUPfy13BtE5IqpaFlauECxumea0Ppu"
+    },
+    {
+      "title": "拉斯维加斯 - 百度百科",
+      "url": "http://www.baidu.com/link?url=arpjG3mD2BaKU_nKe-V_lCVoW2VagnBFPCWmUh4APSxPjnIBdXCn-vJmpE6KSX069cJ82TMJ89puw6vB7b93o0J-C1BKToN7Ioo2n9XyokxKwCxJGRFfenY_hsWVkrAC"
+    },
+    {
+      "title": "拉斯维加斯 :从荒芜沙漠到繁华赌城",
+      "url": "http://www.baidu.com/link?url=bhGAAsEv7pjywe8vOMaWynBvURgAC8hyMEfmwqvnIKxbBHyGLqS1Zupn3HE2dubX"
+    },
+    {
+      "title": "拉斯维加斯 （美国内华达州的最大城市）_百度百科",
+      "url": "https://baike.baidu.com/item/拉斯维加斯/212726"
+    },
+    {
+      "title": "盘点 拉斯维加斯 必游十大景点：感觉经历了一次环球旅行",
+      "url": "https://zhuanlan.zhihu.com/p/36678685"
+    },
+    {
+      "title": "拉斯维加斯 (官方认证网站)·made in las vegas",
+      "url": "https://www.zhoubianer.com/"
+    },
+    {
+      "title": "拉斯维加斯 10 大景点玩乐 - Tripadvisor",
+      "url": "https://cn.tripadvisor.com/Attractions-g45963-Activities-Las_Vegas_Nevada.html"
+    }
+  ],
+  "source": "web",
+  "built_at": "2026-10-25T10:59:20+00:00",
+  "schema_version": "1.0"
+}

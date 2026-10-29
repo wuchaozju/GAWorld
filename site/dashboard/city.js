@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 /* City panel.
  *
  * Create a whole simulation world from a place name, then put agents in it.
@@ -92,7 +95,7 @@
   function fillOptions(select, values, placeholderText, preferred) {
     if (!select) return;
     var current = select.value;
-    select.innerHTML = "";
+    select.innerHTML = gwHTML("");
     if (placeholderText != null) {
       var blank = document.createElement("option");
       blank.value = "";
@@ -131,10 +134,10 @@
     var total = state.overview.cities.length;
     var selected = state.overview.selected;
     node.innerHTML =
-      '<div class="city-meta-item"><span>' + esc(__("city.meta_cities")) + "</span><b>" +
+      gwHTML('<div class="city-meta-item"><span>' + esc(__("city.meta_cities")) + "</span><b>" +
         total + "</b></div>" +
       '<div class="city-meta-item"><span>' + esc(__("city.meta_in_use")) + "</span><b>" +
-        esc(selected || __("city.default_world")) + "</b></div>";
+        esc(selected || __("city.default_world")) + "</b></div>");
   }
 
   function renderList() {
@@ -142,10 +145,10 @@
     if (!node || !state.overview) return;
     var cities = state.overview.cities;
     if (!cities.length) {
-      node.innerHTML = '<p class="city-hint">' + esc(__("city.empty")) + "</p>";
+      node.innerHTML = gwHTML('<p class="city-hint">' + esc(__("city.empty")) + "</p>");
       return;
     }
-    node.innerHTML = cities.map(function (city) {
+    node.innerHTML = gwHTML(cities.map(function (city) {
       var active = city.slug === state.selected ? " is-active" : "";
       var inUse = city.slug === state.overview.selected
         ? '<span class="city-badge is-use">' + esc(__("city.badge_running")) + "</span>" : "";
@@ -166,7 +169,7 @@
           "</div>" +
         "</button>"
       );
-    }).join("");
+    }).join(""));
   }
 
   function renderDetail() {
@@ -199,7 +202,7 @@
       [__("city.kv_districts"), (detail.districts || []).slice(0, 6).join("、")],
     ];
     node.innerHTML =
-      '<dl class="city-kv">' +
+      gwHTML('<dl class="city-kv">' +
         rows.map(function (row) {
           return "<dt>" + esc(row[0]) + "</dt><dd>" + esc(row[1] == null ? "—" : row[1]) + "</dd>";
         }).join("") +
@@ -215,7 +218,7 @@
           ? '<button type="button" class="btn danger" id="cityDeleteBtn">' +
             esc(__("city.delete")) + "</button>"
           : "") +
-      "</div>";
+      "</div>");
 
     el("cityUseBtn").addEventListener("click", function () {
       onSelectForRun(inUse ? { clear: true } : { city: detail.slug });
@@ -326,7 +329,7 @@
       : __("city.knowledge_source_" + (profile.source || "stub"));
 
     if (!payload || payload.empty) {
-      node.innerHTML = '<p class="city-hint">' + esc(__("city.knowledge_empty")) + "</p>";
+      node.innerHTML = gwHTML('<p class="city-hint">' + esc(__("city.knowledge_empty")) + "</p>");
       return;
     }
 
@@ -365,7 +368,7 @@
     }).join(" · ");
     if (sources) meta.push('<p class="city-knowledge-sources">' + sources + "</p>");
 
-    node.innerHTML = (rows ? '<ul class="city-industries">' + rows + "</ul>" : "") + meta.join("");
+    node.innerHTML = gwHTML((rows ? '<ul class="city-industries">' + rows + "</ul>" : "") + meta.join(""));
   }
 
   async function loadKnowledge(slug) {
@@ -378,7 +381,7 @@
       renderKnowledge(await api("/api/city/knowledge?city=" + encodeURIComponent(slug)));
     } catch (err) {
       if (card) card.hidden = false;
-      el("cityKnowledge").innerHTML = '<p class="city-hint">' + esc(err.message) + "</p>";
+      el("cityKnowledge").innerHTML = gwHTML('<p class="city-hint">' + esc(err.message) + "</p>");
     }
   }
 
@@ -421,7 +424,7 @@
     }
     card.hidden = false;
     if (!state.agents) {
-      node.innerHTML = '<p class="city-hint">' + esc(__("city.loading")) + "</p>";
+      node.innerHTML = gwHTML('<p class="city-hint">' + esc(__("city.loading")) + "</p>");
       if (count) count.textContent = "";
       return;
     }
@@ -429,14 +432,14 @@
     // a statement about the city, and we do not know it.
     if (state.agents.error) {
       if (count) count.textContent = "";
-      node.innerHTML = '<p class="city-status is-error">' + esc(state.agents.error) + "</p>";
+      node.innerHTML = gwHTML('<p class="city-status is-error">' + esc(state.agents.error) + "</p>");
       return;
     }
     if (count) count.textContent = agentsView.countLabel(state.agents);
-    node.innerHTML = agentsView.agentTable(state.agents, function (person) {
+    node.innerHTML = gwHTML(agentsView.agentTable(state.agents, function (person) {
       return "/site/dashboard/studio.html?city=" +
         encodeURIComponent(state.agents.city.slug) + "&agent=" + encodeURIComponent(person.id);
-    });
+    }));
   }
 
   async function loadAgents(slug) {
@@ -542,7 +545,7 @@
     if (!file) { clearSketch(); return; }
     try {
       state.sketch = await readSketch(file);
-      el("citySketchImage").src = state.sketch;
+      el("citySketchImage").src = gwURL(state.sketch);
       el("citySketchPreview").hidden = false;
     } catch (error) {
       clearSketch();

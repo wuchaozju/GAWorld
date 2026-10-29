@@ -1,3 +1,6 @@
+
+var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (value) { return value; };
+var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
 // Analytics view: renders the artifacts of a finished (or running) simulation
 // as SVG. No chart library — every figure below is a string of SVG built from
 // the /api/analytics/* payloads, so the page works fully offline.
@@ -76,10 +79,13 @@
     runs: [],           // every analysable run, newest first
     runId: "",          // "" = the current run
     runInfo: null,      // the selected entry of state.runs
+    runRoster: [],      // identities recorded by the selected trace, not today's city
   };
 
   var SECTION_KEYS = ["state-history", "economy", "social", "behavior", "events"];
   var exporter = window.GAWorldAnalyticsExport;
+  var managed = document.body.hasAttribute("data-results-workbench");
+  var loadRequest = 0;
 
   function $(id) { return document.getElementById(id); }
 
@@ -321,21 +327,21 @@
       { label: __("an.kpi_diary"), value: data.diary_count, hint: __("an.kpi_diary_hint") },
       { label: __("an.kpi_relations"), value: data.relationship_total, hint: __("an.kpi_relations_hint") },
     ];
-    $("anOverview").innerHTML = cards.map(function (card) {
+    $("anOverview").innerHTML = gwHTML(cards.map(function (card) {
       return '<article class="an-kpi"><span class="an-kpi-label">' + esc(card.label) +
         '</span><strong class="an-kpi-value">' + esc(card.value == null ? "—" : card.value) +
         '</strong><span class="an-kpi-hint">' + esc(card.hint) + "</span></article>";
-    }).join("");
+    }).join(""));
 
     var movers = (data.top_movers || []).map(function (item) {
       return { label: metricLabel(item.metric), value: item.mean_delta, display: (item.mean_delta > 0 ? "+" : "") + num(item.mean_delta, 3) };
     });
-    $("anMovers").innerHTML = movers.length
+    $("anMovers").innerHTML = gwHTML(movers.length
       ? barChart(movers, { diverging: true })
-      : note(__("an.no_movers"));
+      : note(__("an.no_movers")));
 
     var meta = data.sim_meta || {};
-    $("anRunMeta").innerHTML = [
+    $("anRunMeta").innerHTML = gwHTML([
       [__("an.meta_sim_days"), meta.sim_days],
       [__("an.meta_seconds"), meta.seconds_per_day],
       [__("an.meta_time_step"), meta.time_step_minutes == null ? __("an.meta_default") : meta.time_step_minutes],
@@ -344,7 +350,7 @@
       [__("an.meta_updated"), data.last_updated],
     ].map(function (pair) {
       return '<div><dt>' + esc(pair[0]) + "</dt><dd>" + esc(pair[1] == null || pair[1] === "" ? "—" : pair[1]) + "</dd></div>";
-    }).join("");
+    }).join(""));
   }
 
   function agentColor(agentId) {
@@ -359,39 +365,39 @@
     if (!data || !data.available) {
       // Switching to a run without state artifacts must not leave the previous
       // run's chips behind.
-      $("anMetricPicker").innerHTML = "";
-      $("anAgentPicker").innerHTML = "";
+      $("anMetricPicker").innerHTML = gwHTML("");
+      $("anAgentPicker").innerHTML = gwHTML("");
       return;
     }
-    $("anMetricPicker").innerHTML = data.metrics.map(function (key) {
+    $("anMetricPicker").innerHTML = gwHTML(data.metrics.map(function (key) {
       var on = state.metrics.indexOf(key) >= 0;
       return '<button type="button" class="an-chip' + (on ? " is-on" : "") +
         '" data-metric="' + esc(key) + '">' + esc(metricLabel(key)) + "</button>";
-    }).join("");
-    $("anAgentPicker").innerHTML = data.agents.map(function (agent) {
+    }).join(""));
+    $("anAgentPicker").innerHTML = gwHTML(data.agents.map(function (agent) {
       var on = state.agents.indexOf(String(agent.id)) >= 0;
       return '<button type="button" class="an-chip' + (on ? " is-on" : "") +
         '" data-agent="' + esc(agent.id) + '" style="--chip:' + agentColor(agent.id) + '">' +
         '<i class="an-swatch"></i>' + esc(agent.name) + "</button>";
-    }).join("");
+    }).join(""));
   }
 
   function renderStateCharts() {
     var data = state.history;
     if (!data || !data.available) {
-      $("anStateGrid").innerHTML = note(__("an.empty_history"));
-      $("anStateDelta").innerHTML = "";
-      $("anStateRadar").innerHTML = "";
+      $("anStateGrid").innerHTML = gwHTML(note(__("an.empty_history")));
+      $("anStateDelta").innerHTML = gwHTML("");
+      $("anStateRadar").innerHTML = gwHTML("");
       return;
     }
     if (!state.metrics.length || !state.agents.length) {
-      $("anStateGrid").innerHTML = note(__("an.pick_metric_agent"));
-      $("anStateDelta").innerHTML = "";
-      $("anStateRadar").innerHTML = "";
+      $("anStateGrid").innerHTML = gwHTML(note(__("an.pick_metric_agent")));
+      $("anStateDelta").innerHTML = gwHTML("");
+      $("anStateRadar").innerHTML = gwHTML("");
       return;
     }
 
-    $("anStateGrid").innerHTML = state.metrics.map(function (metric) {
+    $("anStateGrid").innerHTML = gwHTML(state.metrics.map(function (metric) {
       var perAgent = data.series[metric] || {};
       var series = state.agents.map(function (agentId) {
         return { label: agentId, color: agentColor(agentId), points: perAgent[agentId] || [] };
@@ -405,7 +411,7 @@
       return '<article class="an-card"><header class="an-card-head"><h4>' + esc(metricLabel(metric)) +
         '</h4><span class="an-badge ' + (mean >= 0 ? "is-up" : "is-down") + '">Δ ' + esc(badge) +
         "</span></header>" + lineChart(series, { yMin: 0, yMax: 1 }) + "</article>";
-    }).join("");
+    }).join(""));
 
     // Start → end movement, one bar per metric per selected agent.
     var bars = [];
@@ -421,9 +427,9 @@
         });
       });
     });
-    $("anStateDelta").innerHTML = bars.length
+    $("anStateDelta").innerHTML = gwHTML(bars.length
       ? barChart(bars, { diverging: true, labelWidth: 118 })
-      : note(__("an.no_change_data"));
+      : note(__("an.no_change_data")));
 
     var axes = state.metrics.slice(0, 9);
     var entries = state.agents.map(function (agentId) {
@@ -434,16 +440,16 @@
       });
       return { label: agentId, color: agentColor(agentId), values: values };
     });
-    $("anStateRadar").innerHTML = radarChart(axes, entries);
+    $("anStateRadar").innerHTML = gwHTML(radarChart(axes, entries));
   }
 
   function renderEconomy() {
     var data = state.economy;
     if (!data || !data.available) {
-      $("anEconGrid").innerHTML = note(__("an.empty_economy"));
-      $("anEconSeriesPicker").innerHTML = "";
-      $("anEconWealth").innerHTML = "";
-      $("anEconMacro").innerHTML = "";
+      $("anEconGrid").innerHTML = gwHTML(note(__("an.empty_economy")));
+      $("anEconSeriesPicker").innerHTML = gwHTML("");
+      $("anEconWealth").innerHTML = gwHTML("");
+      $("anEconMacro").innerHTML = gwHTML("");
       return;
     }
 
@@ -452,13 +458,13 @@
     });
     if (!ledgers.length) ledgers = data.ledger;
 
-    $("anEconSeriesPicker").innerHTML = data.series_keys.map(function (key) {
+    $("anEconSeriesPicker").innerHTML = gwHTML(data.series_keys.map(function (key) {
       var on = state.econSeries.indexOf(key) >= 0;
       return '<button type="button" class="an-chip' + (on ? " is-on" : "") +
         '" data-econ="' + esc(key) + '">' + esc(econLabel(key)) + "</button>";
-    }).join("");
+    }).join(""));
 
-    $("anEconGrid").innerHTML = state.econSeries.map(function (key) {
+    $("anEconGrid").innerHTML = gwHTML(state.econSeries.map(function (key) {
       var series = ledgers.map(function (item) {
         return { label: item.name, color: agentColor(item.id), points: item[key] || [] };
       });
@@ -468,12 +474,12 @@
         esc(econLabel(key)) + "</h4></header>" +
         lineChart(series, bounded ? { yMin: 0, yMax: 1, xLabels: labels } : { xLabels: labels }) +
         "</article>";
-    }).join("");
+    }).join(""));
 
     var wealth = data.wealth.slice(0, 12).map(function (item) {
       return { label: item.name, value: item.balance, display: compact(item.balance) };
     });
-    $("anEconWealth").innerHTML = barChart(wealth, { labelWidth: 84 });
+    $("anEconWealth").innerHTML = gwHTML(barChart(wealth, { labelWidth: 84 }));
 
     var macro = data.macro || {};
     var chips = [
@@ -487,9 +493,9 @@
       chips.push([__("an.money_drift"), num(data.conservation.drift, 4)]);
       chips.push([__("an.money_total"), compact(data.conservation.system_total)]);
     }
-    $("anEconMacro").innerHTML = chips.map(function (pair) {
+    $("anEconMacro").innerHTML = gwHTML(chips.map(function (pair) {
       return '<div><dt>' + esc(pair[0]) + "</dt><dd>" + esc(pair[1]) + "</dd></div>";
-    }).join("");
+    }).join(""));
   }
 
   // Deterministic spring layout: agents seeded on a circle, ghost ties pushed
@@ -552,9 +558,9 @@
   function renderSocial() {
     var data = state.social;
     if (!data || !data.available) {
-      $("anSocialGraph").innerHTML = note(__("an.empty_social"));
-      $("anSocialTiers").innerHTML = "";
-      $("anSocialRoles").innerHTML = "";
+      $("anSocialGraph").innerHTML = gwHTML(note(__("an.empty_social")));
+      $("anSocialTiers").innerHTML = gwHTML("");
+      $("anSocialRoles").innerHTML = gwHTML("");
       return;
     }
     var W = 640, H = 420;
@@ -591,56 +597,56 @@
     }).join("");
 
     $("anSocialGraph").innerHTML =
-      '<svg class="an-graph" viewBox="0 0 ' + W + " " + H + '" role="img">' + edges + dots + "</svg>";
+      gwHTML('<svg class="an-graph" viewBox="0 0 ' + W + " " + H + '" role="img">' + edges + dots + "</svg>");
 
     var TIERS = ["inner", "close", "acquaintance", "weak", "unknown"];
-    $("anSocialTiers").innerHTML = barChart(
+    $("anSocialTiers").innerHTML = gwHTML(barChart(
       Object.keys(data.tier_counts).map(function (tier) {
         return { label: lookup(TIERS, "an.tier_", tier), value: data.tier_counts[tier], display: String(data.tier_counts[tier]) };
-      }), { labelWidth: 70 });
-    $("anSocialRoles").innerHTML = barChart(
+      }), { labelWidth: 70 }));
+    $("anSocialRoles").innerHTML = gwHTML(barChart(
       Object.keys(data.role_counts).map(function (role) {
         return { label: role, value: data.role_counts[role], display: String(data.role_counts[role]) };
-      }), { labelWidth: 110 });
+      }), { labelWidth: 110 }));
   }
 
   function renderBehavior() {
     var data = state.behavior;
     if (!data || !data.available) {
-      $("anPlaces").innerHTML = note(__("an.empty_behavior"));
-      $("anModes").innerHTML = "";
-      $("anHeatmap").innerHTML = "";
-      $("anHours").innerHTML = "";
-      $("anHabits").innerHTML = "";
+      $("anPlaces").innerHTML = gwHTML(note(__("an.empty_behavior")));
+      $("anModes").innerHTML = gwHTML("");
+      $("anHeatmap").innerHTML = gwHTML("");
+      $("anHours").innerHTML = gwHTML("");
+      $("anHabits").innerHTML = gwHTML("");
       return;
     }
 
-    $("anPlaces").innerHTML = barChart(
+    $("anPlaces").innerHTML = gwHTML(barChart(
       data.places.slice(0, 14).map(function (item) {
         return { label: item.name, value: item.visits, display: String(item.visits) };
-      }), { labelWidth: 140 });
+      }), { labelWidth: 140 }));
 
-    $("anModes").innerHTML = barChart(
+    $("anModes").innerHTML = gwHTML(barChart(
       data.modes.map(function (item) {
         return { label: item.mode, value: item.trips, display: String(item.trips) };
-      }), { labelWidth: 64 });
+      }), { labelWidth: 64 }));
 
     var cells = {};
     (data.heatmap.cells || []).forEach(function (cell) {
       cells[cell.period + "||" + cell.context] = cell.value;
     });
-    $("anHeatmap").innerHTML = heatmap(
+    $("anHeatmap").innerHTML = gwHTML(heatmap(
       data.heatmap.periods, data.heatmap.contexts,
       function (period, context) { return cells[period + "||" + context]; },
-      periodLabel);
+      periodLabel));
 
     var hours = data.schedule_hours || [];
-    $("anHours").innerHTML = hours.some(function (h) { return h.count > 0; })
+    $("anHours").innerHTML = gwHTML(hours.some(function (h) { return h.count > 0; })
       ? lineChart([{ label: __("an.series_schedule"), color: "#0e7a58", points: hours.map(function (h) { return h.count; }) }],
           { yMin: 0, xLabels: hours.map(function (h) { return __f("an.hour_suffix", { hour: h.hour }); }) })
-      : note(__("an.no_schedule"));
+      : note(__("an.no_schedule")));
 
-    $("anHabits").innerHTML = data.habits.length
+    $("anHabits").innerHTML = gwHTML(data.habits.length
       ? '<table class="an-table"><thead><tr>' +
         ["an.th_resident", "an.th_period", "an.th_context", "an.th_activity", "an.th_strength"]
           .map(function (key) { return "<th>" + esc(__(key)) + "</th>"; }).join("") +
@@ -651,15 +657,15 @@
             '</td><td class="an-cell-wide">' + esc(habit.activity) + "</td><td>" +
             num(habit.strength, 3) + "</td></tr>";
         }).join("") + "</tbody></table>"
-      : note(__("an.no_habits"));
+      : note(__("an.no_habits")));
   }
 
   function renderEvents() {
     var data = state.events;
     if (!data || !data.available) {
-      $("anEventTimeline").innerHTML = note(__("an.empty_events"));
-      $("anEventTypes").innerHTML = "";
-      $("anEventImpacts").innerHTML = "";
+      $("anEventTimeline").innerHTML = gwHTML(note(__("an.empty_events")));
+      $("anEventTypes").innerHTML = gwHTML("");
+      $("anEventImpacts").innerHTML = gwHTML("");
       return;
     }
 
@@ -710,7 +716,7 @@
       '" font-size="8" fill="var(--faint)" text-anchor="end">Day ' + maxDay + "</text>";
 
     $("anEventTimeline").innerHTML =
-      '<svg class="an-chart is-wide" viewBox="0 0 ' + W + " " + H + '" role="img">' +
+      gwHTML('<svg class="an-chart is-wide" viewBox="0 0 ' + W + " " + H + '" role="img">' +
       lanes + dots + axis + "</svg>" +
       '<div class="an-event-list">' + data.timeline.slice(-30).reverse().map(function (frame) {
         return frame.events.map(function (event) {
@@ -720,15 +726,15 @@
             esc(event.name) + '</span><span class="an-event-meta">' + esc(event.scope) +
             esc(__f("an.severity_suffix", { value: num(event.severity, 2) })) + "</span></div>";
         }).join("");
-      }).join("") + "</div>";
+      }).join("") + "</div>");
 
-    $("anEventTypes").innerHTML = barChart(types.map(function (type) {
+    $("anEventTypes").innerHTML = gwHTML(barChart(types.map(function (type) {
       return { label: type, value: data.type_counts[type], display: String(data.type_counts[type]), color: EVENT_COLORS[type] };
-    }), { labelWidth: 80 });
+    }), { labelWidth: 80 }));
 
-    $("anEventImpacts").innerHTML = barChart(Object.keys(data.impact_counts).map(function (tag) {
+    $("anEventImpacts").innerHTML = gwHTML(barChart(Object.keys(data.impact_counts).map(function (tag) {
       return { label: tag, value: data.impact_counts[tag], display: String(data.impact_counts[tag]) };
-    }), { labelWidth: 120 });
+    }), { labelWidth: 120 }));
   }
 
   /* ----------------------------------------------------------------- export */
@@ -743,7 +749,7 @@
   function download(filename, blob) {
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
-    link.href = url;
+    link.href = gwURL(url);
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -755,6 +761,14 @@
   // figure is already inline SVG, so this alone is the whole report body.
   function reportBody() {
     var clone = document.querySelector("main.shell").cloneNode(true);
+    // Export the statistics, including sections hidden by the workbench tabs.
+    var analysis = clone.querySelector("#resultsAnalysis");
+    if (analysis) {
+      analysis.hidden = false;
+      Array.prototype.forEach.call(analysis.querySelectorAll(".an-pickers, .help-tip, #anStatus"), function (node) { node.remove(); });
+      return '<h1>' + esc(__("results.title")) + '</h1><p>' + esc(runLabel(state.runInfo || {})) +
+        '</p>' + analysis.innerHTML.replace(/<span id="anStatus"[\s\S]*?<\/span>/, "");
+    }
     Array.prototype.forEach.call(
       clone.querySelectorAll(".hero-status, .an-pickers, .help-tip, .an-export"),
       function (node) { node.remove(); });
@@ -767,14 +781,18 @@
     var hrefs = Array.prototype.map.call(
       document.querySelectorAll('link[rel="stylesheet"]'),
       function (link) { return link.getAttribute("href"); });
+    // styles.css imports these tokens, which a downloaded file cannot fetch.
+    if (hrefs.indexOf("/site/tokens.css") < 0) hrefs.unshift("/site/tokens.css");
     var sheets = await Promise.all(hrefs.map(function (href) {
       return fetch(href).then(function (res) { return res.ok ? res.text() : ""; })
         .catch(function () { return ""; });
     }));
-    return sheets.join("\n");
+    return sheets.join("\n").replace(/@import\s+url\([^)]*\)\s*;/g, "");
   }
 
   async function runExport(kind) {
+    if (!state.overview) throw new Error(__("results.export_wait"));
+    var request = loadRequest;
     var now = new Date();
     var base = "gaworld-analytics-" + exporter.fileStamp(now);
     var stamp = exporter.timestamp(now);
@@ -793,6 +811,7 @@
         [exporter.zipStore(files, now)], { type: "application/zip" }));
     } else {
       var css = await reportCss();
+      if (request !== loadRequest) throw new Error(__("results.export_wait"));
       download(base + ".html", new Blob(
         [exporter.buildHtmlReport(state, labelTables(), stamp, reportBody(), css)],
         { type: "text/html;charset=utf-8" }));
@@ -810,11 +829,12 @@
   */
   function renderSystemPanel() {
     var data = state.system;
+    if ($("anSystemPanel")) $("anSystemPanel").hidden = !data;
     var kpisEl = $("anSystemKpis");
     var healthEl = $("anSystemHealth");
     var gridEl = $("anSystemGrid");
     if (!kpisEl || !healthEl || !gridEl) return;
-    if (!data) { kpisEl.innerHTML = ""; healthEl.innerHTML = ""; gridEl.innerHTML = ""; return; }
+    if (!data) { kpisEl.innerHTML = gwHTML(""); healthEl.innerHTML = gwHTML(""); gridEl.innerHTML = gwHTML(""); return; }
 
     var kpis = data.kpis || {};
     var cards = [
@@ -850,20 +870,20 @@
           quarantine: kpis.quarantine_snapshots || 0,
         }) },
     ];
-    kpisEl.innerHTML = cards.map(function (card) {
+    kpisEl.innerHTML = gwHTML(cards.map(function (card) {
       return '<article class="an-kpi"><span class="an-kpi-label">' + esc(card.label) +
         '</span><strong class="an-kpi-value">' + esc(card.value) +
         '</strong><span class="an-kpi-hint">' + esc(card.hint) + "</span></article>";
-    }).join("");
+    }).join(""));
 
     var warnings = (data.health && data.health.warnings) || [];
-    healthEl.innerHTML = warnings.length
+    healthEl.innerHTML = gwHTML(warnings.length
       ? '<div class="an-system-warnings">' + warnings.map(function (w) {
           return '<span class="an-badge is-down">' + esc(w) + '</span>';
         }).join(" ") + "</div>"
-      : '<span class="an-badge">' + esc(__("an.sys_health_ok")) + "</span>";
+      : '<span class="an-badge">' + esc(__("an.sys_health_ok")) + "</span>");
 
-    gridEl.innerHTML = [
+    gridEl.innerHTML = gwHTML([
       systemCard("an.sys_card_cities", data.cities, function (city) {
         var lines = [
           __f("an.sys_city_agents", { count: city.agent_count || 0 }),
@@ -940,7 +960,7 @@
       systemCard("an.sys_card_debug", data.stale_debug_runs || [], function (t) {
         return t.path + " (" + t.files + " files)";
       }),
-    ].join("");
+    ].join(""));
   }
 
   function systemCard(labelKey, items, render, multi) {
@@ -1010,7 +1030,7 @@
 
   function renderRunOptions() {
     var select = $("anRunSelect");
-    select.innerHTML = "";
+    select.innerHTML = gwHTML("");
     [["live", __("an.current_run")], ["archive", __("an.runs_history")], ["scenario", __("an.runs_scenario")]]
       .forEach(function (pair) {
         var runs = state.runs.filter(function (run) { return run.kind === pair[0]; });
@@ -1056,7 +1076,7 @@
     var url = new URL(window.location.href);
     if (state.runId) url.searchParams.set("run", state.runId);
     else url.searchParams.delete("run");
-    window.history.replaceState(null, "", url);
+    window.history.replaceState(null, "", gwURL(url));
   }
 
   async function loadRuns() {
@@ -1125,6 +1145,7 @@
       toggle(state.econSeries, button.dataset.econ);
       renderEconomy();
     });
+    if (managed) return; // The workbench owns the run and refresh controls.
     $("anRefreshBtn").addEventListener("click", function () {
       if (typeof setButtonBusy === "function") {
         var release = setButtonBusy($("anRefreshBtn"), "analytics.refresh", "刷新中…");
@@ -1139,11 +1160,16 @@
   }
 
   async function load() {
+    var request = ++loadRequest;
     var status = $("anStatus");
     status.textContent = __("an.loading");
     status.className = "an-status is-busy";
     try {
-      await loadRuns();
+      if (!managed) await loadRuns();
+      if (request !== loadRequest) return false;
+      var account = await api("/api/auth/me");
+      if (request !== loadRequest) return false;
+      var canReadSystem = account.mode === "single" || (account.user && account.user.role === "admin");
       var results = await Promise.all([
         section("overview"),
         section("state-history"),
@@ -1153,8 +1179,9 @@
         section("events"),
         // ``system`` is independent of the run picker — it always describes the
         // current world plus the cross-world tree.
-        api("/api/analytics/system"),
+        canReadSystem ? api("/api/analytics/system") : Promise.resolve(null),
       ]);
+      if (request !== loadRequest) return false;
       state.overview = results[0];
       state.history = results[1];
       state.economy = results[2];
@@ -1162,6 +1189,9 @@
       state.behavior = results[4];
       state.events = results[5];
       state.system = results[6];
+      if (managed) ["history", "economy", "social", "behavior"].forEach(function (key) {
+        state[key] = window.GAWorldResultsCore.labelAnalytics(key, state[key], state.runRoster);
+      });
       // Drop selections that no longer exist in the new payload.
       state.metrics = state.metrics.filter(function (m) { return state.history.metrics.indexOf(m) >= 0; });
       var ids = state.history.agents.map(function (a) { return String(a.id); });
@@ -1178,9 +1208,15 @@
       renderSystemPanel();
 
       showRunStatus();
+      document.querySelectorAll("[data-export]").forEach(function (button) { button.disabled = false; });
+      if ($("exportState")) $("exportState").hidden = true;
+      return true;
     } catch (error) {
+      if (request !== loadRequest) return false;
       status.textContent = __f("an.load_failed", { error: error.message });
       status.className = "an-status is-error";
+      if ($("exportState")) { $("exportState").hidden = false; $("exportState").textContent = status.textContent; }
+      return false;
     }
   }
 
@@ -1234,5 +1270,49 @@
 
   bindPickers();
   bindExport();
-  load();
+  function clear() {
+    loadRequest++;
+    ["overview", "history", "economy", "social", "behavior", "events"].forEach(function (key) { state[key] = null; });
+    state.metrics = []; state.agents = [];
+    ["anOverview", "anMovers", "anRunMeta", "anMetricPicker", "anAgentPicker", "anStateGrid",
+      "anStateDelta", "anStateRadar", "anEconSeriesPicker", "anEconGrid", "anEconWealth", "anEconMacro",
+      "anSocialGraph", "anSocialTiers", "anSocialRoles", "anPlaces", "anModes", "anHeatmap", "anHours",
+      "anHabits", "anEventTimeline", "anEventTypes", "anEventImpacts"].forEach(function (id) { if ($(id)) $(id).innerHTML = ""; });
+    $("anStatus").textContent = __("results.analysis_pending");
+    $("anRunNote").hidden = true;
+    document.querySelectorAll("[data-export]").forEach(function (button) { button.disabled = true; });
+    if ($("exportState")) { $("exportState").hidden = false; $("exportState").textContent = __("results.export_wait"); }
+  }
+  window.GAWorldAnalytics = {
+    clear: clear,
+    loadRun: async function (id, agentId, residents) {
+      clear();
+      state.runId = id;
+      state.runRoster = residents || [];
+      // Metadata does not own selection; only the workbench may select a run.
+      var request = loadRequest;
+      try {
+        var payload = await api("/api/analytics/runs");
+        if (request !== loadRequest) return false;
+        state.runs = payload.runs || [];
+        state.runInfo = state.runs.find(function (run) { return run.id === id; }) || null;
+        if (!state.runInfo) throw new Error(__("results.run_unavailable"));
+        state.agents = agentId == null ? [] : [String(agentId)];
+        renderRunNote();
+        return await load();
+      } catch (error) {
+        if (request !== loadRequest) return false;
+        $("anStatus").textContent = __f("an.load_failed", {error:error.message});
+        $("anStatus").className = "an-status is-error";
+        if ($("exportState")) $("exportState").textContent = $("anStatus").textContent;
+        return false;
+      }
+    },
+    focus: function (agentId) {
+      if (!state.history) return;
+      state.agents = agentId == null ? state.history.agents.slice(0, 4).map(function (agent) { return String(agent.id); }) : [String(agentId)];
+      renderStateControls(); renderStateCharts(); renderEconomy();
+    },
+  };
+  if (!managed) load();
 })();
