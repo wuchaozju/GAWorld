@@ -358,6 +358,9 @@ def _llm_generate_actions_batch(
             agent.get("id"),
             "、".join(still_missing),
         )
+        from gaworld.sim import _fallback
+
+        _fallback.record_action_fallback(agent.get("id"), still_missing, attempts=2)
     balanced: dict[str, list[str]] = {}
     for activity in activities:
         balanced[activity] = _ensure_behavioral_action_balance(activity, action_space.get(activity, []))

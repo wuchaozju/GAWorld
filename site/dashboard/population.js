@@ -1074,6 +1074,110 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     bind("popRunGroup", runGroup);
     bind("popValidate", runValidation);
     bind("popWrite", writePopulation);
+    bind("enrichStartBtn", startEnrichment);
+    bind("enrichRetryBtn", retryFailedEnrichment);
+    var enrichScope = $("enrichScope");
+    if (enrichScope) {
+      enrichScope.addEventListener("change", function () {
+        var isFocal = enrichScope.value === "focal_n";
+        $("enrichN").style.display = isFocal ? "" : "none";
+        $("enrichIds").style.display = enrichScope.value === "selected" ? "" : "none";
+      });
+    }
+  }
+
+  /* ------------------------------------------------- LLM 丰富画像 -------- */
+  /* Calls /api/persona-generate: the LLM writes only narrative; the state
+   * CSV's structural facts are locked server-side and every failure is
+   * reported per agent, so retrying means re-posting exactly the failed
+   * ids. */
+  var enrichJob = null;
+
+  function enrichOptions() {
+    var scope = ($("enrichScope") || {}).value || "selected";
+    var body = { scope: scope };
+    var provider = ($("enrichProvider").value || "").trim();
+    if (provider) body.provider = provider;
+    if (scope === "selected") {
+      body.ids = ($("enrichIds").value || "").split(/[，,\s]+/).filter(Boolean).map(Number);
+      if (!body.ids.length) return null;
+    } else if (scope === "focal_n") {
+      body.n = Math.max(1, Number($("enrichN").value) || 1);
+    }
+    return body;
+  }
+
+  function pollEnrichJob(jobId, onDone) {
+    api("GET", "/api/persona-generate/jobs/" + jobId).then(function (job) {
+      if (job.error || !job.status) {
+        return setEnrichStatus($("enrichStatus"), job.error || "任务丢失");
+      }
+      setEnrichStatus($("enrichStatus"), job.message || job.status, false, job.progress);
+      if (job.status === "running") {
+        setTimeout(function () { pollEnrichJob(jobId, onDone); }, 800);
+        return;
+      }
+      if (job.status === "failed") {
+        renderEnrichAgents(job.result || {});
+        return setEnrichStatus($("enrichStatus"), job.message || "任务失败", true);
+      }
+      onDone(job.result || {});
+    });
+  }
+
+  function startEnrichmentRun(body) {
+    api("POST", "/api/persona-generate", body).then(function (res) {
+      if (res.error) return setEnrichStatus($("enrichStatus"), res.error, true);
+      setEnrichStatus($("enrichStatus"), "已启动，正在调用模型…", false, 0.05);
+      pollEnrichJob(res.job_id, function (result) {
+        enrichJob = result;
+        renderEnrichAgents(result);
+        var failed = result.failed || [];
+        $("enrichRetryBtn").style.display = failed.length ? "" : "none";
+        setEnrichStatus(
+          $("enrichStatus"),
+          failed.length
+            ? "完成：" + (result.enriched || []).length + " 人成功，" + failed.length + " 人失败。"
+            : "完成：" + (result.enriched || []).length + " 人已丰富。",
+          failed.length > 0
+        );
+      });
+    });
+  }
+
+  function startEnrichment() {
+    var body = enrichOptions();
+    if (!body) return setEnrichStatus($("enrichStatus"), "请先填写居民编号", true);
+    if (body.scope === "all") {
+      // 成本警告：all 按居民人数逐个调用模型，不确认就不发。
+      if (!window.confirm("将对全部居民逐个调用模型（每人一次）。继续？")) return;
+    }
+    startEnrichmentRun(body);
+  }
+
+  function retryFailedEnrichment() {
+    var failed = ((enrichJob || {}).failed || []).map(function (f) { return f.id; });
+    if (!failed.length) return;
+    startEnrichmentRun({ scope: "selected", ids: failed, provider: ($("enrichProvider").value || "").trim() || undefined });
+  }
+
+  function setEnrichStatus(el, text, isErr, progress) {
+    if (!el) return;
+    el.textContent = text + (typeof progress === "number" ? "（" + Math.round(progress * 100) + "%）" : "");
+    el.style.color = isErr ? "#b91c1c" : "";
+  }
+
+  function renderEnrichAgents(result) {
+    var el = $("enrichAgents");
+    if (!el) return;
+    var rows = [];
+    (result.enriched || []).forEach(function (e) {
+      rows.push("<div>#" + e.id + " ✓ 已丰富（" + (e.fields || []).join("、") + "）</div>");
+    });
+    (result.failed || []).forEach(function (f) {
+      rows.push("<div style=\"color:#b91c1c\">#" + f.id + " ✗ " + esc(f.error) + "</div>");
+    });
+    el.innerHTML = rows.join("");
   }
 
   function bind(id, fn) {

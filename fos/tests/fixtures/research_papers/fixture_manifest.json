@@ -1,0 +1,102 @@
+[
+  {
+    "id": "fehr_gaechter_public_goods_2000",
+    "title": "Cooperation and Punishment in Public Goods Experiments",
+    "citation": "Fehr, E., & Gachter, S. (2000). American Economic Review, 90(4), 980-994.",
+    "doi": "10.1257/aer.90.4.980",
+    "eval_split": "development",
+    "expected_scenario_id": "public_goods",
+    "source_type": "abstract_method_digest",
+    "text": "Abstract\nWe study repeated public goods experiments in groups of four participants. In each round every participant receives 20 tokens and decides how many tokens to contribute to a shared public account and how many to keep in a private account. The sum of contributions is multiplied by 1.6 and distributed equally across the group, regardless of individual contribution. In some treatments, after the contribution decision participants can spend punishment points to reduce another member's payoff.\n\nMethods\nSubjects were randomly assigned to four-person groups and played multiple rounds under anonymous matching. The main behavioral choice in each round was whether to contribute more to the common pool or keep more of the endowment in the private account. Key outcomes include contribution levels, punishment behavior, and the stability of cooperation over time."
+  },
+  {
+    "id": "rapoport_chammah_prisoners_dilemma_1965",
+    "title": "Prisoner's Dilemma: A Study in Conflict and Cooperation",
+    "citation": "Rapoport, A., & Chammah, A. M. (1965). University of Michigan Press.",
+    "doi": "",
+    "eval_split": "blind",
+    "expected_scenario_id": "prisoners_dilemma",
+    "source_type": "abstract_method_digest",
+    "text": "Abstract\nThis repeated prisoner's dilemma study examines how pairs of participants choose between cooperation and defection when each player's payoff depends on the joint decision. Participants interact over many rounds, knowing that mutual cooperation benefits both players more than mutual defection, but each player also has an incentive to defect when the partner cooperates.\n\nMethods\nTwo players were matched for a repeated series of binary choices. In each round each participant selected either cooperate or defect without knowing the partner's current move. The analysis focuses on rates of cooperation, retaliation after defection, and whether stable cooperation can emerge under strategic uncertainty."
+  },
+  {
+    "id": "van_huyck_coordination_1990",
+    "title": "Tacit Coordination Games, Strategic Uncertainty, and Coordination Failure",
+    "citation": "Van Huyck, J. B., Battalio, R. C., & Beil, R. O. (1990). American Economic Review, 80(1), 234-248.",
+    "doi": "10.1257/aer.80.1.234",
+    "eval_split": "validation",
+    "expected_scenario_id": "coordination_game",
+    "source_type": "abstract_method_digest",
+    "text": "Abstract\nWe report coordination experiments in which participants repeatedly choose one effort level from a common menu of options. Payoffs increase when players match on the same effort, but strategic uncertainty can trap the group at inefficient outcomes. The experiment studies tacit coordination failure under repeated play.\n\nMethods\nSubjects made repeated choices from a shared list of effort levels in small groups. The relevant decision each round was which effort level to select, with higher payoffs when choices matched at the same level. The main variables are coordination success, whether participants converge on the same option, and how quickly behavior settles into a stable pattern."
+  },
+  {
+    "id": "centola_behavior_spread_2010",
+    "title": "The Spread of Behavior in an Online Social Network Experiment",
+    "citation": "Centola, D. (2010). Science, 329(5996), 1194-1197.",
+    "doi": "10.1126/science.1185231",
+    "eval_split": "blind",
+    "expected_scenario_id": "contagion",
+    "source_type": "abstract_method_digest",
+    "text": "Abstract\nThis online social network experiment studies social contagion by observing how health behavior spreads through structured local networks. Participants were exposed to adoption messages from neighbors, and the behavioral outcome was whether a participant adopted the target behavior after repeated local exposure.\n\nMethods\nParticipants were embedded in experimentally controlled network neighborhoods and repeatedly observed whether nearby contacts had adopted the behavior. Key variables include neighborhood exposure, contagion through social ties, cumulative adoption, and how the spread changes as more participants become effectively infected with the behavior."
+  },
+  {
+    "id": "synthetic_proposal_response",
+    "title": "Sequential Allocation Exercise",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "development",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis sequential allocation exercise asks one participant to propose how a fixed budget should be divided, after which another participant approves or rejects the proposal. If the proposal is rejected, the allocation is canceled.\n\nMethods\nPairs of participants were assigned initiator and reviewer roles. The initiator made one proposal about how to divide the available credits, and the reviewer publicly chose whether to approve the split or reject it."
+  },
+  {
+    "id": "synthetic_competitive_pressure",
+    "title": "Competitive Restraint Choice",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "validation",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis study examines how players choose between a forceful strategy and a yielding strategy while competing over the same contested resource. Outcomes depend on whether conflict costs exceed the value of the resource.\n\nMethods\nPlayers interacted repeatedly with local neighbors. In each encounter a player selected either the more competitive option or the more yielding option, and the analysis tracked how conflict cost and network structure shaped the population mix."
+  },
+  {
+    "id": "synthetic_shared_target_threshold",
+    "title": "Shared Target Threshold Study",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "blind",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis shared-target study asks whether participants contribute enough to reach a group threshold and avoid a shared loss. Some treatments allow participants to delegate the contribution choice to an automated process.\n\nMethods\nParticipants decided each round whether to contribute toward the shared target, keep resources for private use, or delegate the decision. The main outcome was whether the group reached the threshold needed to avoid the loss."
+  },
+  {
+    "id": "synthetic_majority_visibility",
+    "title": "Public Judgment Under Group Visibility",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "development",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis group-visibility study examines how public judgment changes when a focal participant sees a unanimous majority answer before responding. The participant can align with the visible majority or state an independent answer.\n\nMethods\nEach round the participant observed the visible group response first and then publicly chose whether to align with the group or state an independent answer. The key outcome was the rate of public alignment under group visibility."
+  },
+  {
+    "id": "synthetic_threshold_adoption",
+    "title": "Threshold Adoption Process",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "validation",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis threshold-adoption study assumes that each individual joins collective action only after enough others have already joined. Different thresholds generate cascades as participation spreads through the group.\n\nMethods\nThe analysis compares different threshold distributions and asks when individuals adopt the behavior or wait for more adoption first. The main outcomes are cascade size, participation timing, and how small threshold changes reshape aggregate behavior."
+  },
+  {
+    "id": "synthetic_escalating_bidding",
+    "title": "Escalating Bidding Exercise",
+    "citation": "Synthetic evaluation fixture.",
+    "doi": "",
+    "eval_split": "blind",
+    "expected_scenario_id": "custom",
+    "source_type": "synthetic_digest",
+    "text": "Abstract\nThis bidding exercise studies how escalation emerges when the highest bidder and the second-highest bidder both pay. Bids must be made in increments of 5 cents, and participants must decide whether to increase the bid or exit the contest.\n\nMethods\nFor the purposes of analysis, the setup uses an auctioneer and two bidders. Once both bidders have already invested, they may continue raising the bid to reduce losses even when the prize value no longer justifies the next payment."
+  }
+]

@@ -2117,6 +2117,85 @@ function applyPersona(persona) {
   foot(__f("sd.persona_filled", { name: filled.identity.name }), "ok");
 }
 
+/* ---------- LLM 生成画像 ---------- */
+/* The draft's identity fields are the structural seed. Two background jobs:
+ * `fast` creates the resident (templated prose, zero model calls), then
+ * `selected` enriches it — the model writes only narrative, the structural
+ * facts stay locked server-side. While a run is in flight the button is
+ * 取消：cancelling stops the *waiting*, not the job — the resident exists
+ * either way, which is the honest outcome to show. Pressing the button again
+ * after a run regenerates the same resident's narrative instead of spawning
+ * a duplicate. */
+let generateToken = 0;
+let generateRun = null;
+let generateAgentId = null;
+
+function setGenerateBtn(running) {
+  const btn = $("#generatePersonaBtn");
+  if (btn) btn.textContent = __(running ? "studio.cancel" : "studio.generate");
+}
+
+async function pollGenerateJob(jobId, token) {
+  for (;;) {
+    if (token !== generateToken) throw new Error("cancelled");
+    const job = await api(`/api/persona-generate/jobs/${jobId}`);
+    if (job.error) throw new Error(job.error);
+    if (job.status === "failed") throw new Error(job.message || "job failed");
+    if (job.status === "completed") return job.result || {};
+    await new Promise((resolve) => setTimeout(resolve, 600));
+  }
+}
+
+async function generateWithLLM() {
+  if (!store.draft) return;
+  if (generateRun !== null) {
+    generateToken++;
+    generateRun = null;
+    setGenerateBtn(false);
+    foot(__("sd.gen_cancelled"));
+    return;
+  }
+  const token = ++generateToken;
+  generateRun = token;
+  setGenerateBtn(true);
+  try {
+    let agentId = generateAgentId;
+    if (!agentId) {
+      foot(__("sd.gen_creating"));
+      const i = store.draft.identity;
+      const started = await api("/api/persona-generate", { method: "POST", body: JSON.stringify({
+        scope: "fast",
+        seed: { name: i.name, gender: i.gender, age: i.age, hukou: i.hukou,
+          residence: i.residence, job: (store.draft.narrative || {}).job } }) });
+      if (started.error) throw new Error(started.error);
+      const created = await pollGenerateJob(started.job_id, token);
+      agentId = generateAgentId = created.agent_id;
+    }
+    foot(__("sd.gen_enriching"));
+    const enrich = await api("/api/persona-generate", { method: "POST", body: JSON.stringify({
+      scope: "selected", ids: [agentId] }) });
+    if (enrich.error) throw new Error(enrich.error);
+    const result = await pollGenerateJob(enrich.job_id, token);
+    const failed = result.failed || [];
+    foot(failed.length
+      ? __f("sd.gen_partial", { id: agentId }) + " " + failed.map((f) => f.error).join("；")
+      : __f("sd.gen_done", { id: agentId }), failed.length ? "err" : "ok");
+    generateAgentId = null; // done — the next press authors a fresh resident
+    store.creating = false;
+    store.personaSlug = null;
+    await loadAgents();
+    $("#agentSelect").value = String(agentId);
+    await selectAgent(agentId);
+  } catch (err) {
+    if (err.message !== "cancelled") foot(__("sd.gen_failed") + err.message, "err");
+  } finally {
+    if (generateRun === token) {
+      generateRun = null;
+      setGenerateBtn(false);
+    }
+  }
+}
+
 /* ---------- actions ---------- */
 /** Persist identity + state (and profile text). Returns true when it stuck. */
 async function save() {
@@ -2311,6 +2390,9 @@ function init() {
   withBusy($("#saveBtn"), save, "sd.saving", "保存中…");
   withBusy($("#runBtn"), runSim, "studio.run", "运行中…");
   document.addEventListener("persona:fill", (ev) => applyPersona(ev.detail));
+  $("#generatePersonaBtn").addEventListener("click", () => {
+    generateWithLLM().catch((err) => foot(err.message, "err"));
+  });
   // Deploying straight from the panel skips the form, so the list it was
   // opened over is now one resident short of the truth.
   document.addEventListener("persona:deployed", (ev) => {

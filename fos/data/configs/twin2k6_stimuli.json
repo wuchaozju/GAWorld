@@ -1,0 +1,382 @@
+{
+  "generated": "2026-09-18 23:29:33.142871",
+  "n_qids": 16,
+  "stimuli": [
+    {
+      "qid": "QID157",
+      "experiment": "disease",
+      "arm": "gain",
+      "question_text": "Imagine that the U.S. is preparing for the outbreak of an unusual disease, which is expected to kill 600 people. Two alternative programs to combat the disease have been proposed. Assume that the exact scientific estimate of the consequences of the programs are as follows: If Program A is adopted, 200 people will be saved. If Program B is adopted, there is 1/3 probability that 600 people will be saved, and 2/3 probability that no people will be saved. Which of the two programs would you favor?",
+      "options": [
+        "I strongly favor program A",
+        "I favor program A",
+        "I slightly favor program A",
+        "I slightly favor program B",
+        "I favor program B",
+        "I strongly favor program B"
+      ],
+      "question_type": "MC",
+      "block_name": "Disease - gain ",
+      "csv_column": "QID157",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID158",
+      "experiment": "disease",
+      "arm": "loss",
+      "question_text": "Imagine that the U.S. is preparing for the outbreak of an unusual disease, which is expected to kill 600 people. Two alternative programs to combat the disease have been proposed. Assume that the exact scientific estimate of the consequences of the programs are as follows: If Program A is adopted, 400 people will die. If Program B is adopted, there is 1/3 probability that nobody people will die, and 2/3 probability that 600 people be die. Which of the two programs would you favor?",
+      "options": [
+        "I strongly favor program A",
+        "I favor program A",
+        "I slightly favor program A",
+        "I slightly favor program B",
+        "I favor program B",
+        "I strongly favor program B"
+      ],
+      "question_type": "MC",
+      "block_name": "Disease-loss",
+      "csv_column": "QID158",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID171",
+      "experiment": "less_is_more",
+      "arm": "A",
+      "question_text": "Please rate your level of disagreement or agreement with the following statement: \"I would find a game that had a 7/36 chance of winning $9 and a 29/36 chance of winning nothing extremely attractive.\"",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Less is More Gamble A ",
+      "csv_column": "QID171",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID172",
+      "experiment": "less_is_more",
+      "arm": "B",
+      "question_text": "Please rate your level of disagreement or agreement with the following statement: \"I would find a game that had a 7/36 chance of winning $9 and a 29/36 chance of losing $0.05 extremely attractive.\"",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Less is More Gamble B ",
+      "csv_column": "QID172",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID173",
+      "experiment": "less_is_more",
+      "arm": "C",
+      "question_text": "Please rate your level of disagreement or agreement with the following statement: \"I would find a game that had a 7/36 chance of winning $9 and a 29/36 chance of losing $0.25 extremely attractive.\"",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Less is More Gamble C ",
+      "csv_column": "QID173",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID174",
+      "experiment": "fire_extinguisher",
+      "arm": "all",
+      "question_text": "Imagine that highway safety experts have determined that a substantial number of people are at risk of dying in a type of automobile fire. A requirement that every car have a built-in fire extinguisher (estimated cost, $300) would save the 150 people who would otherwise die every year in this type of automobile fire. Rate the following statement about yourself: I would be supportive of this requirement.",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 1A ",
+      "csv_column": "QID174",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID175",
+      "experiment": "fire_extinguisher",
+      "arm": "98pct",
+      "question_text": "Imagine that highway safety experts have determined that a substantial number of people are at risk of dying in a type of automobile fire. A requirement that every car have a built-in fire extinguisher (estimated cost, $300) would save 98% of the 150 people who would otherwise die every year in this type of automobile fire. Rate the following statement about yourself: I would be supportive of this requirement.",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 1B",
+      "csv_column": "QID175",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID176",
+      "experiment": "fire_extinguisher",
+      "arm": "95pct",
+      "question_text": "Imagine that highway safety experts have determined that a substantial number of people are at risk of dying in a type of automobile fire. A requirement that every car have a built-in fire extinguisher (estimated cost, $300) would save 95% of the 150 people who would otherwise die every year in this type of automobile fire. Rate the following statement about yourself: I would be supportive of this requirement.",
+      "options": [
+        "Disagree strongly",
+        "Disagree a little",
+        "Neither agree nor disagree",
+        "Agree a little",
+        "Agree strongly"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 1C",
+      "csv_column": "QID176",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID177",
+      "experiment": "seatbelt",
+      "arm": "all",
+      "question_text": "You have recently graduated from university, obtained a good job, and are buying a new car. A newly designed seatbelt has just become available that would save the lives of the 500 drivers a year who are involved in a type of head-on-collision. (Approximately half of these fatalities involve drivers who were not at fault.) The newly designed seatbelt is not yet standard on most car models. However, it is available as a $500 option for the car model that you are ordering. How likely is it that you would order your new car with this optional seatbelt?",
+      "options": [
+        "very unlikely",
+        "unlikely",
+        "somewhat unlikely",
+        "somewhat likely",
+        "likely",
+        "very likely"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 2A",
+      "csv_column": "QID177",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID178",
+      "experiment": "seatbelt",
+      "arm": "98pct",
+      "question_text": "You have recently graduated from university, obtained a good job, and are buying a new car. A newly designed seatbelt has just become available that would save the lives of 98% of the 500 drivers a year who are involved in a type of head-on-collision. (Approximately half of these fatalities involve drivers who were not at fault.) The newly designed seatbelt is not yet standard on most car models. However, it is available as a $500 option for the car model that you are ordering. How likely is it that you would order your new car with this optional seatbelt?",
+      "options": [
+        "very unlikely",
+        "unlikely",
+        "somewhat unlikely",
+        "somewhat likely",
+        "likely",
+        "very likely"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 2B ",
+      "csv_column": "QID178",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID179",
+      "experiment": "seatbelt",
+      "arm": "95pct",
+      "question_text": "You have recently graduated from university, obtained a good job, and are buying a new car. A newly designed seatbelt has just become available that would save the lives of 95% of the 500 drivers a year who are involved in a type of head-on-collision. (Approximately half of these fatalities involve drivers who were not at fault.) The newly designed seatbelt is not yet standard on most car models. However, it is available as a $500 option for the car model that you are ordering. How likely is it that you would order your new car with this optional seatbelt?",
+      "options": [
+        "very unlikely",
+        "unlikely",
+        "somewhat unlikely",
+        "somewhat likely",
+        "likely",
+        "very likely"
+      ],
+      "question_type": "MC",
+      "block_name": "Proportion dominance 2C",
+      "csv_column": "QID179",
+      "settings": {
+        "Selector": "SAHR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID181",
+      "experiment": "sunk_cost",
+      "arm": "no_card",
+      "question_text": "Imagine that Coffee Connection sells coffee for $1.50 per cup. Java Coffee, a competitor, sells coffee for just $2.00 per cup. Although the Coffee Connection store is ten minutes away by car, Java Coffee is only about 1/2 block from your apartment. Assuming that you only buy coffee from these two places and that you like the coffee sold in both places the same, how many of your next 20 coffee purchases would be from Java Coffee? Enter a number between 0 and 20.",
+      "options": null,
+      "question_type": "TE",
+      "block_name": "Sunk cost - no",
+      "csv_column": "QID181_TEXT",
+      "settings": {
+        "Selector": "SL",
+        "ForceResponse": "ON",
+        "ContentType": "ValidNumber"
+      },
+      "source": "wave4_Q_wave1_3_A",
+      "validation": {
+        "ContentType": "ValidNumber",
+        "ForceResponse": "ON",
+        "note": "Text-entry (TE) numeric response; Qualtrics ContentType=ValidNumber enforces numeric entry; task states allowed range 0-20 which matches the question wording \"Enter a number between 0 and 20\". No explicit min/max validator found in catalog Settings."
+      }
+    },
+    {
+      "qid": "QID182",
+      "experiment": "sunk_cost",
+      "arm": "card",
+      "question_text": "Imagine that you just paid $50 for a Coffee Connection discount card that allows you to buy coffee for 50% off the regular price of $3.00 (i.e., you pay $1.50). Soon after you purchased the Coffee Connection discount card, Java Coffee, a competitor, opened a new store that sells coffee for just $2.00 per cup. Although the Coffee Connection store is ten minutes away by car, Java Coffee is only about 1/2 block from your apartment. Assuming that you only buy coffee from these two places and that you like the coffee sold in both places the same, how many of your next 20 coffee purchases would be from Java Coffee? Enter a number between 0 and 20.",
+      "options": null,
+      "question_type": "TE",
+      "block_name": "Sunk cost - yes",
+      "csv_column": "QID182_TEXT",
+      "settings": {
+        "Selector": "SL",
+        "ForceResponse": "ON",
+        "ContentType": "ValidNumber"
+      },
+      "source": "wave4_Q_wave1_3_A",
+      "validation": {
+        "ContentType": "ValidNumber",
+        "ForceResponse": "ON",
+        "note": "Text-entry (TE) numeric response; Qualtrics ContentType=ValidNumber enforces numeric entry; task states allowed range 0-20 which matches the question wording \"Enter a number between 0 and 20\". No explicit min/max validator found in catalog Settings."
+      }
+    },
+    {
+      "qid": "QID189",
+      "experiment": "wta_wtp",
+      "arm": "wtp_certainty",
+      "question_text": "Imagine that when you went to the movies last week, you were inadvertently exposed to a rare and fatal virus. The possibility of actually contracting the disease is 1 in 1,000, but once you have the illness there is no known cure. On the other hand, you can, readily and now, be given an injection that stops the development of the illness. Unfortunately, these injections are only available in very small quantities and are sold to the highest bidder. What is the highest price you would be prepared to pay for such an injection? [You can get a long-term, low-interest loan if needed.]:",
+      "options": [
+        "$10",
+        "$100",
+        "$1,000",
+        "$10,000",
+        "$50,000",
+        "$100,000",
+        "$250,000",
+        "$500,000",
+        "$1,000,000",
+        "$5,000,000 or more"
+      ],
+      "question_type": "MC",
+      "block_name": "WTA/WTP Thaler problem - WTP certainty",
+      "csv_column": "QID189",
+      "settings": {
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID190",
+      "experiment": "wta_wtp",
+      "arm": "wta_certainty",
+      "question_text": "Imagine that a group of research scientists in the School of Medicine are running a laboratory experiment on a vaccine for a rare and fatal virus. The possibility of actually contracting the disease from the vaccine is 1 in 1,000, but once you have the disease there is no known cure. The scientists are seeking volunteers to test the vaccine on. What is the lowest amount that you would have to be paid before you would take part in this experiment?",
+      "options": [
+        "$10",
+        "$100",
+        "$1,000",
+        "$10,000",
+        "$50,000",
+        "$100,000",
+        "$250,000",
+        "$500,000",
+        "$1,000,000",
+        "$5,000,000 or more"
+      ],
+      "question_type": "MC",
+      "block_name": "WTA/WTP Thaler problem - WTA certainty",
+      "csv_column": "QID190",
+      "settings": {
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    },
+    {
+      "qid": "QID191",
+      "experiment": "wta_wtp",
+      "arm": "wtp_noncertainty",
+      "question_text": "Imagine that when you went to the movies last week, you were inadvertently exposed to a rare and fatal virus. The possibility of actually contracting the disease is 4 in 1,000, but once you have the illness there is no known cure. On the other hand, you can, readily and now, be given an injection that reduces the possibility of contracting the disease to 3 in 1,000. Unfortunately, these injections are only available in very small quantities and are sold to the highest bidder. What is the highest price you would be prepared to pay for such an injection?",
+      "options": [
+        "$10",
+        "$100",
+        "$1,000",
+        "$10,000",
+        "$50,000",
+        "$100,000",
+        "$250,000",
+        "$500,000",
+        "$1,000,000",
+        "$5,000,000 or more"
+      ],
+      "question_type": "MC",
+      "block_name": "WTA/WTP Thaler - WTP noncertainty",
+      "csv_column": "QID191",
+      "settings": {
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "ForceResponse": "ON"
+      },
+      "source": "wave4_Q_wave1_3_A"
+    }
+  ],
+  "_provenance": {
+    "source": "/home/justin/work/research/TWIN2K-UNBLIND-6TASKS/human_benchmark/stimuli.json",
+    "copied": "2026-09-18",
+    "task": "TASK-2058",
+    "note": "Verbatim copy of the research-delivered file (TASK-2058); only this _provenance key was added."
+  }
+}

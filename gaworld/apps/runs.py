@@ -17,7 +17,6 @@ import contextvars
 import datetime
 import json
 import os
-import signal
 import subprocess
 import sys
 import threading
@@ -345,13 +344,9 @@ def coerce_int_list(values):
 def is_simulator_process(pid):
     """Whether *pid* is a live ``generative_city_sim.py`` process. A pid alone
     is not enough: after a crash the manifest can name a pid since reused."""
-    try:
-        result = subprocess.run(
-            ["ps", "-p", str(int(pid)), "-o", "command="], capture_output=True, text=True, timeout=5
-        )
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return False
-    return result.returncode == 0 and "generative_city_sim" in result.stdout
+    from gaworld.kernel import proclive
+
+    return proclive.command_matches(pid, "generative_city_sim")
 
 
 def foreign_simulator_pid():
@@ -596,7 +591,9 @@ def stop_simulation():
         foreign = foreign_simulator_pid()
         if foreign:
             try:
-                os.kill(foreign, signal.SIGTERM)
+                from gaworld.kernel import proclive
+
+                proclive.terminate(foreign)
             except OSError as exc:
                 _LOG.warning("could not stop simulator pid %s: %s", foreign, exc)
     return run_status()

@@ -1,0 +1,50 @@
+{
+  "_label": "APPROXIMATE US population marginals, for gap reporting only — not for statistical inference.",
+  "_source": "Rounded approximations of recent US Census Bureau / ACS national estimates; ages are for adults 18+, income is household income.",
+  "age": {
+    "mean": 42.0,
+    "min": 18,
+    "max": 100
+  },
+  "gender": {
+    "shares": {
+      "female": 0.508,
+      "male": 0.492
+    }
+  },
+  "education": {
+    "shares": {
+      "less than high school": 0.10,
+      "high school": 0.28,
+      "some college": 0.16,
+      "associate": 0.10,
+      "college": 0.23,
+      "graduate": 0.13
+    }
+  },
+  "household_income": {
+    "mean": 74000.0,
+    "unit": "US dollars per year"
+  },
+  "state": {
+    "shares": {
+      "CA": 0.119,
+      "TX": 0.088,
+      "FL": 0.067,
+      "NY": 0.061,
+      "PA": 0.039,
+      "IL": 0.038,
+      "OH": 0.036,
+      "GA": 0.032,
+      "NC": 0.032,
+      "MI": 0.031,
+      "other": 0.457
+    }
+  },
+  "home_ownership": {
+    "shares": {
+      "own": 0.65,
+      "rent": 0.35
+    }
+  }
+}

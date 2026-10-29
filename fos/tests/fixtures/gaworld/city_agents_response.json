@@ -1,0 +1,68 @@
+{
+  "city": { "slug": "liuxi-cun", "name": "柳溪村", "selected": true },
+  "matched": 3,
+  "offset": 0,
+  "limit": 200,
+  "agents": [
+    {
+      "id": 1,
+      "name": "李泽宇",
+      "gender": "男",
+      "age": 24,
+      "hukou": "外省",
+      "residence": "村东头",
+      "job": "快递员",
+      "state": {
+        "emotion": 0.58,
+        "stress": 0.62,
+        "econ_security": 0.5,
+        "city_identity": 0.48,
+        "policy_sensitivity": 0.45,
+        "platform_dependence": 0.55,
+        "risk_preference": 0.4,
+        "voice_propensity": 0.2,
+        "mobility_intent": 0.6
+      }
+    },
+    {
+      "id": 2,
+      "name": "周婉清",
+      "gender": "女",
+      "age": 26,
+      "hukou": "本村",
+      "residence": "村西头",
+      "job": "小学教师",
+      "state": {
+        "emotion": 0.51,
+        "stress": 0.44,
+        "econ_security": 0.61,
+        "city_identity": 0.7,
+        "policy_sensitivity": 0.3,
+        "platform_dependence": 0.42,
+        "risk_preference": 0.35,
+        "voice_propensity": 0.4,
+        "mobility_intent": 0.22
+      }
+    },
+    {
+      "id": 34,
+      "name": "徐桂兰",
+      "gender": "女",
+      "age": 42,
+      "hukou": "本村",
+      "residence": "村口",
+      "job": "杂货店老板",
+      "state": {
+        "emotion": 0.55,
+        "stress": 0.5,
+        "econ_security": 0.66,
+        "city_identity": 0.8,
+        "policy_sensitivity": 0.5,
+        "platform_dependence": 0.3,
+        "risk_preference": 0.3,
+        "voice_propensity": 0.6,
+        "mobility_intent": 0.1
+      }
+    }
+  ]
+}

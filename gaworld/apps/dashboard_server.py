@@ -1,6 +1,7 @@
 import atexit
 import hmac
 import json
+import mimetypes
 import os
 import re
 import subprocess
@@ -14,7 +15,10 @@ from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
+from urllib.request import Request as _UpstreamRequest
+from urllib.request import urlopen as _urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -1154,13 +1158,10 @@ def _analytics_run_paths(run_id, runs=None):
 
     config = paths.effective_config()
     visualization_dir = os.path.join(paths.REPO_ROOT, run["id"])
-    if run["kind"] == "archive":
-        # An archived run keeps only its trace; its sibling artifacts belong to
-        # whichever run overwrote them since, so they are deliberately not read
-        # — the missing dirs below make those sections report "no data".
-        base = visualization_dir
-    else:
-        base = os.path.dirname(visualization_dir)
+    # An archived run keeps only its trace; its sibling artifacts belong to
+    # whichever run overwrote them since, so they are deliberately not read
+    # — the missing dirs below make those sections report "no data".
+    base = visualization_dir if run["kind"] == "archive" else os.path.dirname(visualization_dir)
     return {
         "output_dir": base,
         # A scenario run mirrors the live tree's layout inside its own output
@@ -1323,6 +1324,42 @@ DENIALS = {
 }
 
 
+def _fos_route(path):
+    """Classify a /fos request: "index", ("asset", name), or None (404).
+
+    - /fos and /fos/ (and any deep SPA route) → the built index.html;
+    - /fos/assets/<file> → that file from the build output (missing → None);
+    - /fos/api/* and /fos/uploads/* belong to the FOS backend — do_GET /
+      do_HEAD / do_POST forward them there before classification.
+    """
+    if path != FOS_PREFIX and not path.startswith(FOS_PREFIX + "/"):
+        return None
+    rest = path[len(FOS_PREFIX) :].lstrip("/")
+    if rest.startswith("api/") or rest == "api":
+        return None
+    if rest.startswith("uploads"):
+        return None
+    if rest.startswith("assets/"):
+        return ("asset", rest[len("assets/") :])
+    return "index"
+
+
+def _fos_backend_url() -> str:
+    """Base URL of the separate FOS backend process (Phase 2 integration)."""
+    return os.environ.get("FOS_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+
+
+def _is_fos_backend_path(path: str) -> bool:
+    """True for the paths the FOS backend owns: /fos/api and /fos/uploads.
+
+    The /fos prefix is KEPT when forwarding: the backend natively mounts the
+    same router under /api and /fos/api (and /uploads and /fos/uploads), so
+    dev, GAWorld-direct and the Caddy /fos/* proxy all interpret a URL the
+    same way with no rewrite.
+    """
+    return path.startswith(("/fos/api", "/fos/uploads"))
+
+
 def world_readable(world, user):
     """Owners and admins see a world; others only once it is shared."""
     if user is None:
@@ -1356,8 +1393,19 @@ STATIC_FILES = frozenset(("/README.zh-CN.md", "/AGENTS.md", "/CHANGELOG.md", "/r
 PLAY_LINK_RE = re.compile(r"^/play/(w[0-9a-f]{8})/?$")
 
 
+FOS_PREFIX = "/fos"
+
+#: The built FOS frontend (grafted at fos/, built into fos/frontend/dist with
+#: FRONTEND_BASE_URL=/fos/). Static SPA routes are hosted here; /fos/api/* and
+#: /fos/uploads/* are forwarded to the separate FOS backend process
+#: (FOS_BACKEND_URL, default http://127.0.0.1:8000) with the /fos prefix kept.
+FOS_DIST = os.path.join(paths.REPO_ROOT, "fos", "frontend", "dist")
+
+
 def _static_path_allowed(path):
     if PLAY_LINK_RE.match(path):
+        return True
+    if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
         return True
     if path in STATIC_ROUTES or path in STATIC_FILES or path.startswith(STATIC_PREFIXES):
         return True
@@ -1386,6 +1434,75 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
     AUTH_COOKIE = "gaworld_token"
     user = None
     accounts = None
+
+    # -- FOS frontend hosting (Phase 1) -----------------------------------
+
+    def _serve_fos(self, path):
+        """Serve the built FOS frontend; shared by do_GET and do_HEAD."""
+        route = _fos_route(path)
+        if route == "index":
+            file_path = os.path.join(FOS_DIST, "index.html")
+            ctype = "text/html; charset=utf-8"
+        elif isinstance(route, tuple):
+            name = route[1]
+            if not name or os.path.isabs(name) or ".." in name.split("/"):
+                return self._deny(404, "Not found")
+            file_path = os.path.join(FOS_DIST, "assets", *name.split("/"))
+            ctype = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        else:
+            return self._deny(404, "Not found")
+        if not os.path.isfile(file_path):
+            return self._deny(404, "Not found")
+        with open(file_path, "rb") as handle:
+            data = handle.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
+
+    # -- FOS backend forwarding (Phase 2) ---------------------------------
+
+    def _forward_fos(self):
+        """Forward /fos/api and /fos/uploads requests to the FOS backend.
+
+        The full original path (including the /fos prefix) and query string
+        are preserved; the backend answers those exact paths natively.
+        """
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        body = self.rfile.read(length) if length else None
+        headers = {
+            key: value
+            for key, value in self.headers.items()
+            if key.lower() not in ("host", "connection", "accept-encoding")
+        }
+        request = _UpstreamRequest(
+            _fos_backend_url() + self.path,
+            data=body,
+            headers=headers,
+            method=self.command,
+        )
+        try:
+            with _urlopen(request, timeout=60) as upstream:
+                status, upstream_headers, data = (
+                    upstream.status,
+                    upstream.headers,
+                    upstream.read(),
+                )
+        except HTTPError as exc:
+            status, upstream_headers, data = exc.code, exc.headers, exc.read()
+        except URLError:
+            return self._json_response({"error": "FOS backend unreachable"}, status=502)
+        self.send_response(status)
+        for key, value in upstream_headers.items():
+            if key.lower() in ("connection", "transfer-encoding", "content-length", "server", "date"):
+                continue
+            self.send_header(key, value)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD" and data:
+            self.wfile.write(data)
 
     def _deny(self, status, message):
         if self.path.startswith("/api/"):
@@ -2128,6 +2245,10 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
             return
         if self.cluster_node is not None:
             return self._serve_node("GET", path, {})
+        if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
+            return self._serve_fos(path)
         link = PLAY_LINK_RE.match(path)
         if link:
             return self._open_play_link(link.group(1))
@@ -2170,6 +2291,10 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
             return
         if path == "/api/health":
             return self._handle_api_get(path, parse_qs(parsed.query))
+        if path == FOS_PREFIX or path.startswith(FOS_PREFIX + "/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
+            return self._serve_fos(path)
         # "/" is the project landing page — the intro and the way in to every
         # console view. The console itself keeps the /console route it already
         # had, so nothing that linked to it breaks. To go back to opening the
@@ -2223,6 +2348,8 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
                 _LOG.exception("POST %s failed: %s", path, exc)
                 return self._json_response({"error": str(exc)}, status=500)
         if not path.startswith("/api/"):
+            if _is_fos_backend_path(path):
+                return self._forward_fos()
             return self._json_response({"error": "POST is only supported under /api"}, status=404)
         if self._wrong_method(path):
             return
@@ -2240,17 +2367,86 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
             _LOG.exception("POST %s failed: %s", path, exc)
             return self._json_response({"error": str(exc)}, status=500)
 
+    def _do_fos_or_404(self):
+        """Shared body of do_PUT / do_DELETE / do_PATCH: only FOS backend
+        paths are accepted (forwarded verbatim); everything else 404s."""
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
+        if self._guard(path, parsed.query):
+            return
+        if _is_fos_backend_path(path):
+            return self._forward_fos()
+        return self._json_response({"error": "Not found"}, status=404)
+
+    def do_PUT(self):
+        return self._do_fos_or_404()
+
+    def do_DELETE(self):
+        return self._do_fos_or_404()
+
+    def do_PATCH(self):
+        return self._do_fos_or_404()
+
+
+def _ensure_fos_backend():
+    """Validate the built FOS frontend, then start/reuse the backend (None = external)."""
+    from gaworld.apps import fos_supervisor
+
+    # Refuse to serve a bundle that would infinite-skeleton (missing dist, a
+    # standalone build referencing /assets/*, or dangling asset files).
+    fos_supervisor.validate_fos_dist()
+    return fos_supervisor.ensure_backend()
+
+
+def _shutdown_fos_backend(handle):
+    """Terminate a FOS backend only if this process spawned it."""
+    from gaworld.apps import fos_supervisor
+
+    fos_supervisor.shutdown_backend(handle)
+
 
 def run_server(host="127.0.0.1", port=8766, multi_user=False):
     from gaworld.accounts.mode import dashboard_mode
+    from gaworld.apps.fos_supervisor import FosBackendError as _FosBackendError
 
     configured_prefix()  # Invalid mounts must fail before binding a public socket.
     with dashboard_mode(multi_user, paths.REPO_ROOT):
-        server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+        try:
+            server = ThreadingHTTPServer((host, int(port)), DashboardHandler)
+        except OSError as exc:
+            print(f"error: GAWorld console cannot bind {host}:{port} ({exc}).")
+            print("Is another GAWorld dashboard already running on that port?")
+            raise SystemExit(1) from exc
+        # The FOS backend is loginless (single-user by design): it must never be
+        # exposed to other users, so it only starts in single-user mode, or in
+        # multi-user mode with an explicit operator opt-in (GAWORLD_FOS_BACKEND=1;
+        # /fos/* is then expected to sit behind Caddy Basic Auth).
+        fos_handle = None
+        if not multi_user or os.environ.get("GAWORLD_FOS_BACKEND") == "1":
+            try:
+                fos_handle = _ensure_fos_backend()
+            except _FosBackendError as exc:
+                # A plain GAWorld install must still boot without the optional
+                # integrated FOS frontend; only a missing/misbuilt dist lands here.
+                print(f"warning: integrated FOS backend not started: {exc}")
+                print("The console will serve without FOS (/fos/* will be unavailable).")
+            except Exception as exc:  # unexpected supervisor failure
+                print(f"error: integrated FOS backend could not be started: {exc}")
+                server.server_close()
+                raise SystemExit(1) from exc
+        elif multi_user:
+            print("FOS backend disabled in multi-user mode (loginless single-user auth).")
         url = f"http://{host}:{int(port)}/"
         print(f"GAWorld console: {url}")
         print("Access mode: multi-user (login required)" if multi_user else "Access mode: single-user")
         print("Press Ctrl+C to stop.")
+
+        def _on_sigterm(signum, frame):
+            raise KeyboardInterrupt
+
+        import signal
+
+        signal.signal(signal.SIGTERM, _on_sigterm)
         try:
             server.serve_forever()
         except KeyboardInterrupt:
@@ -2259,6 +2455,7 @@ def run_server(host="127.0.0.1", port=8766, multi_user=False):
             runs.stop_all_simulations()
             _reset_collaboration_service_for_tests()
             server.server_close()
+            _shutdown_fos_backend(fos_handle)
 
 
 #: Names that used to live here -> ``(module they moved to, name there)``.

@@ -1,0 +1,279 @@
+/**
+ * Simulation tree WebSocket and API services.
+ *
+ * Provides functions for connecting to simulation event streams via WebSocket,
+ * and API calls for tree manipulation (advance, branch, delete).
+ *
+ * WebSocket connections are tracked in auth store for proactive token refresh.
+ *
+ * Exports: connectTreeEvents, connectNodeEvents, getTreeGraph, treeAdvanceChain, etc.
+ */
+
+import { httpGet, httpPost, httpDelete } from "./client";
+import { useAuthStore } from "../store/auth";
+
+export type GraphNode = { id: number; depth: number; meta?: Record<string, unknown> | null };
+
+/** Checkpoint reference carried in node meta (reference only, never payloads). */
+export type CheckpointRef = {
+  checkpoint_id: string;
+  checkpoint_path: string;
+  day: number;
+  manifest_sha: string;
+  parent_checkpoint: string | null;
+};
+
+/** Recovery provenance recorded on a failed node after Retry/Fix/Substitute. */
+export type RecoveryMeta = {
+  action: "retry" | "fix_and_retry" | "substitute";
+  attempt_dir?: string;
+  [key: string]: unknown;
+};
+
+/** All runtime statuses a branch can report (Phase 8 lifecycle). */
+export const RUNTIME_STATUSES: readonly string[] = [
+  "queued",
+  "running",
+  "completed",
+  "cancelled",
+  "failed",
+  "timed_out",
+  "attention_required",
+];
+
+/** GAWorld run-progress snapshot served by the backend for a running node. */
+export type GaworldWaitStatusResponse = {
+  simulation_id?: string;
+  node_id?: number;
+  available: boolean;
+  age_seconds?: number | null;
+  wait_status?: Record<string, unknown> | null;
+};
+
+/**
+ * Read-only GAWorld wait-progress snapshot for one node.
+ * Returns available=false / null wait_status when nothing is running.
+ */
+export async function getGaworldWaitStatus(base: string, id: string, node: number, token?: string): Promise<GaworldWaitStatusResponse> {
+  return await httpGet<GaworldWaitStatusResponse>(base, `/simulations/${id}/tree/sim/${node}/gaworld-wait-status`, token);
+}
+
+/** Cancel a queued or running branch (terminal outcome, never launches afterwards). */
+export async function treeCancelNode(base: string, id: string, node: number, token?: string): Promise<{ ok: boolean }> {
+  return await httpPost<{ ok: boolean }>(base, `/simulations/${id}/tree/node/${node}/cancel`, {}, token);
+}
+
+/**
+ * Format a structured LLM-budget refusal for display: estimated vs budget,
+ * built only from safe fields so credentials can never leak into the UI.
+ */
+export function formatBudgetError(error: Record<string, unknown>): string {
+  const provider = typeof error.provider === "string" ? error.provider : "unknown";
+  const estimated = Number(error.estimated);
+  const budget = Number(error.budget);
+  const unit = typeof error.unit === "string" ? error.unit : "calls";
+  return `LLM budget exceeded for ${provider}: estimated ${estimated} ${unit}, budget ${budget} ${unit}`;
+}
+export type GraphEdge = { from: number; to: number; type: string; ops?: unknown[] };
+
+export type Graph = {
+  root: number | null;
+  frontier: number[];
+  running?: number[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+};
+
+export type SimEvent = { type: string; data?: Record<string, unknown> | null; node?: number };
+
+// Track active WebSocket connections count
+let activeWsConnections = 0;
+
+function toWsUrl(base: string, path: string, token?: string): string {
+  const b = base.replace(/\/$/, "");
+  const url = new URL(b, window.location.origin);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  // Append the path to the base's pathname so a base like /fos/api keeps its
+  // prefix (new URL with a root-absolute path would wipe it).
+  url.pathname = url.pathname.replace(/\/$/, "") + "/" + path.replace(/^\//, "");
+  if (token) url.searchParams.set("token", token);
+  return url.toString();
+}
+
+/**
+ * Notify auth store of WebSocket connection state change.
+ * Called when any WebSocket connects or disconnects.
+ */
+function notifyWsStateChange(connected: boolean): void {
+  if (connected) {
+    activeWsConnections++;
+    if (activeWsConnections === 1) {
+      // First connection - notify auth store
+      useAuthStore.getState().setWebSocketConnected(true);
+    }
+  } else {
+    activeWsConnections = Math.max(0, activeWsConnections - 1);
+    if (activeWsConnections === 0) {
+      // Last connection closed - notify auth store
+      useAuthStore.getState().setWebSocketConnected(false);
+    }
+  }
+}
+
+export async function getTreeGraph(base: string, id: string, token?: string): Promise<Graph | null> {
+  try {
+    return await httpGet<Graph>(base, `/simulations/${id}/tree/graph`, token);
+  } catch (e) {
+    console.error('[getTreeGraph] Failed to fetch tree graph:', e);
+    return null;
+  }
+}
+
+export function connectTreeEvents(base: string, id: string, token: string | undefined, onMessage: (event: SimEvent) => void): WebSocket {
+  const ws = new WebSocket(toWsUrl(base, `/simulations/${id}/tree/events`, token));
+
+  ws.onopen = () => {
+    notifyWsStateChange(true);
+    ws.send("ready");
+  };
+
+  ws.onmessage = (ev) => onMessage(JSON.parse(ev.data));
+
+  ws.onclose = () => {
+    notifyWsStateChange(false);
+  };
+
+  return ws;
+}
+
+export function connectNodeEvents(base: string, id: string, node: number, token: string | undefined, onMessage: (event: SimEvent) => void): WebSocket {
+  const ws = new WebSocket(toWsUrl(base, `/simulations/${id}/tree/${node}/events`, token));
+
+  ws.onopen = () => {
+    notifyWsStateChange(true);
+    ws.send("ready");
+  };
+
+  ws.onmessage = (ev) => onMessage(JSON.parse(ev.data));
+
+  ws.onclose = () => {
+    notifyWsStateChange(false);
+  };
+
+  return ws;
+}
+
+export async function treeAdvanceFrontier(base: string, id: string, turns: number, onlyMaxDepth = false, token?: string): Promise<{ children: number[] }> {
+  return await httpPost<{ children: number[] }>(base, `/simulations/${id}/tree/advance_frontier`, { turns, only_max_depth: onlyMaxDepth }, token);
+}
+
+export async function treeAdvanceMulti(base: string, id: string, parent: number, turns: number, count: number, token?: string): Promise<{ children: number[] }> {
+  return await httpPost<{ children: number[] }>(base, `/simulations/${id}/tree/advance_multi`, { parent, turns, count }, token);
+}
+
+export async function treeAdvanceChain(base: string, id: string, parent: number, turns: number, token?: string): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/advance_chain`, { parent, turns }, token);
+}
+
+export async function treeBranch(base: string, id: string, parent: number, ops: Array<Record<string, unknown>>, token?: string): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/branch`, { parent, ops }, token);
+}
+
+export async function treeBranchPublic(base: string, id: string, parent: number, text: string, token?: string): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/branch`, { parent, ops: [{ op: "public_broadcast", text }] }, token);
+}
+
+export async function treeDeleteSubtree(base: string, id: string, node: number, token?: string): Promise<{ ok: boolean }> {
+  return await httpDelete<{ ok: boolean }>(base, `/simulations/${id}/tree/node/${node}`, token);
+}
+
+export async function getSimEvents(base: string, id: string, node: number, token?: string): Promise<any[]> {
+  return await httpGet<any[]>(base, `/simulations/${id}/tree/sim/${node}/events`, token);
+}
+
+export async function getSimState(base: string, id: string, node: number, token?: string): Promise<any> {
+  return await httpGet<any>(base, `/simulations/${id}/tree/sim/${node}/state`, token);
+}
+
+export async function getRehydrate(base: string, id: string, token?: string): Promise<any> {
+  return await httpGet<any>(base, `/simulations/${id}/rehydrate`, token);
+}
+
+export async function applyNodeOverrides(
+  base: string,
+  id: string,
+  node: number,
+  overrides: Array<{
+    name: string;
+    language?: string;
+    llm_config?: Record<string, unknown>;
+    knowledge_base?: any[];
+    documents?: Record<string, unknown>;
+    properties?: Record<string, unknown>;
+  }>,
+  token?: string,
+): Promise<{ ok: boolean }> {
+  return await httpPost<{ ok: boolean }>(base, `/simulations/${id}/tree/sim/${node}/overrides`, { overrides }, token);
+}
+
+export async function injectHostMessage(
+  base: string,
+  id: string,
+  node: number,
+  message: string,
+  token?: string,
+): Promise<{ status: string; message: string }> {
+  return await httpPost<{ status: string; message: string }>(base, `/simulations/${id}/tree/sim/${node}/inject-message`, { message }, token);
+}
+
+/** Fork sibling branches from one completed checkpoint (each child references it in meta). */
+export async function forkFromCheckpoint(
+  base: string,
+  id: string,
+  parent: number,
+  checkpoint: Record<string, unknown>,
+  token?: string,
+  interventionsText?: string,
+  agentLlmMap?: Record<string, { provider: string; model?: string }>,
+): Promise<{ children: number[] }> {
+  return await httpPost<{ children: number[] }>(
+    base,
+    `/simulations/${id}/tree/fork-from-checkpoint`,
+    {
+      parent,
+      checkpoint,
+      ...(interventionsText ? { interventions_text: interventionsText } : {}),
+      ...(agentLlmMap ? { agent_llm_map: agentLlmMap } : {}),
+    },
+    token,
+  );
+}
+
+/** Retry a failed node: same config, same last-completed checkpoint, fresh attempt dir. */
+export async function retryNode(base: string, id: string, node: number, token?: string): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "retry" }, token);
+}
+
+/** Fix-and-retry: reload a repaired runtime config, restore the same checkpoint. */
+export async function fixAndRetryNode(
+  base: string,
+  id: string,
+  node: number,
+  runtimeConfig: Record<string, unknown>,
+  token?: string,
+): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "fix_and_retry", runtime_config: runtimeConfig }, token);
+}
+
+/** Substitute an explicit provider/model for ONE affected agent, then restore the checkpoint. */
+export async function substituteProvider(
+  base: string,
+  id: string,
+  node: number,
+  agentId: number,
+  provider: string,
+  model: string,
+  token?: string,
+): Promise<{ child: number }> {
+  return await httpPost<{ child: number }>(base, `/simulations/${id}/tree/recover/${node}`, { action: "substitute", agent_id: agentId, provider, model }, token);
+}

@@ -1,22 +1,23 @@
-import pandas as pd
-import time
-import random
-import numpy as np
-import re
 import json
-import requests
-from collections import defaultdict
 import os
+import random
+import re
 import shutil
-from html import unescape
+import time
+from collections import defaultdict
 
-from gaworld.settings import CONFIG
-from gaworld.core.runner import parallel_map, resolve_max_workers
+import numpy as np
+import pandas as pd
+import requests
+
 from gaworld.core.run_manifest import start_manifest
+from gaworld.core.runner import parallel_map, resolve_max_workers
+
 # Growth-profile lifecycle moved to gaworld.interests_plugin (K3d); only
 # the inline read-side consumers remain (schedule prompt context + matching).
 from gaworld.interests import format_growth_context, match_growth_items
 from gaworld.logging_setup import LOG_MODE, get_logger
+from gaworld.settings import CONFIG
 
 _LOG = get_logger("gaworld.sim")
 
@@ -25,66 +26,21 @@ _LOG = get_logger("gaworld.sim")
 # ---------------------------------------------------------------------------
 _LOG_SIMPLE: bool = LOG_MODE == "simple"
 
-from gaworld.world.city_map import (
-    all_locations as city_all_locations,
-    distance_between as city_distance_between,
-    load_city_map as load_structured_city_map,
-    load_city_map_text as load_structured_city_map_text,
-    load_real_city_map as load_real_structured_city_map,
-    real_city_map_text as real_structured_city_map_text,
-    node_by_name as city_node_by_name,
-    travel_plan as build_travel_plan,
-    nearest_by_category,
-    nodes_by_category,
-    resolve_best_location,
-    activity_to_categories,
-    job_to_workplace_categories,
-    area_price_level,
-    calc_transport_cost,
-    is_rush_hour,
-)
-from gaworld.distributed.comm import (
-    DistributedRelayClient,
-)
-from gaworld.kernel import build_kernel
-from gaworld.kernel import remote as kernel_remote
-from gaworld.sim.pipeline import DEFAULT_AGENT_STEP_ORDER, StagePipeline
-from gaworld.sim._stages import StepScope, builtin_stages  # noqa: E402
 from environment import EnvironmentSystem, RemoteEnvironmentClient
-from gaworld.llm.providers import call_llm
 from gaworld.apps.visualizer import (
     SimulationVisualizer,
 )
-from gaworld.memory.experience import (
-    load_agent_env_preferences,
-    load_agent_episodes,
-    load_agent_habits,
-    load_agent_intentions,
-    load_agent_relationships,
-    prune_and_decay_episodes,
-    save_agent_env_preferences,
-    save_agent_habits,
-    save_agent_intentions,
-    save_agent_relationships,
-)
 from gaworld.cognition.realism import (
-    build_context_key,
     build_daily_intentions,
     consolidate_day,
     intention_text,
     relationship_update,
-    relationship_weight,
     update_needs,  # noqa: F401 — re-exported: tests call sim.update_needs
 )
-from gaworld.social.network import (
-    apply_closeness_delta,
-    bootstrap_social_roster,
-    decay_relationships,
-    enforce_dunbar,
-    form_tie,
-    migrate_relationships,
+from gaworld.distributed.comm import (
+    DistributedRelayClient,
 )
-from gaworld.events.life import list_life_events
+from gaworld.events.life import life_event_dir, list_life_events
 from gaworld.goals import (
     apply_goal_progress,
     format_goals_context,
@@ -92,34 +48,75 @@ from gaworld.goals import (
     save_agent_goals,
 )
 
-from gaworld.plugins import builtin_plugins, validate_runtime_config
-from gaworld.personality import personality_line
-from gaworld.events.life import life_event_dir
+# --------------------------------------------------------------------
+# HTML extraction helpers — delegated to gaworld.io.web_scrape.
+# Legacy private names are kept as aliases so internal callers keep
+# working unchanged. New code should import from `gaworld.io` directly.
+# --------------------------------------------------------------------
+from gaworld.kernel import build_kernel
+from gaworld.kernel import remote as kernel_remote
+from gaworld.llm.providers import call_llm
+from gaworld.memory.experience import (
+    load_agent_episodes,
+    load_agent_habits,
+    load_agent_intentions,
+    load_agent_relationships,
+    prune_and_decay_episodes,
+    save_agent_habits,
+    save_agent_intentions,
+    save_agent_relationships,
+)
+from gaworld.memory.lifecycle import run_daily_memory_lifecycle  # noqa: E402
 from gaworld.memory.store import (
+    VECTOR_DB_TOP_K,
+    _format_memory_hint,
     append_agent_log,
     known_agent_ids,
     load_agent_actions,
-    load_agent_locations,
     load_agent_location_action_bias,
+    load_agent_locations,
     load_agent_memory,
     load_agent_schedule,
-    load_recent_actions,
     load_recent_log_blocks,
     load_sim_state,
     reset_agent_memory,
     retrieve_relevant_memories,
-    save_agent_location_action_bias,
     save_agent_locations,
     save_agent_memory,
     save_agent_schedule,
     save_sim_state,
     seed_vector_db_from_memory,
     vector_db_add_entry,
-    VECTOR_DB_TOP_K,
-    _format_memory_hint,
-    _memory_action_bias,
 )
-from gaworld.memory.lifecycle import run_daily_memory_lifecycle  # noqa: E402
+from gaworld.personality import personality_line
+from gaworld.plugins import builtin_plugins, validate_runtime_config
+from gaworld.sim._curiosity import (  # noqa: E402
+    assemble_curiosity_context,
+    propose_contextual_keywords,
+    should_seek_knowledge,
+)
+
+# --------------------------------------------------------------------
+# External information acquisition (news / search / info-seek) —
+# extracted to ``gaworld.sim._news``. Re-exported here for backwards
+# compatibility: tests use ``patch.object(sim, "_choose_info_target", ...)``
+# and ``patch.object(sim, "_build_agent_preferred_sites", ...)``, and
+# ``generate_agent_rag_seed.py`` calls ``sim.web_search`` /
+# ``sim._domain_from_url``. New code should import from
+# ``gaworld.sim._news`` directly.
+# --------------------------------------------------------------------
+from gaworld.sim._news import (  # noqa: E402
+    _build_agent_preferred_sites,
+    _choose_info_target,
+    _domain_from_url,
+    _estimate_curiosity,
+    fetch_social_page_profile_source,
+    info_seek_and_store,
+    load_news_cache,
+    load_news_sources,
+    update_news_cache,
+)
+from gaworld.sim._stages import StepScope, builtin_stages  # noqa: E402
 
 # =========================================================
 # Utils
@@ -128,9 +125,6 @@ from gaworld.memory.lifecycle import run_daily_memory_lifecycle  # noqa: E402
 # into ``gaworld.sim._utils`` during the S3 refactor. They are re-exported
 # here unchanged so internal callers keep working without any rename.
 from gaworld.sim._utils import (  # noqa: E402
-    _WEEKDAY_ALIASES,
-    _WEEKDAY_ORDER,
-    _WEEKDAY_ZH,
     _build_time_grid,
     _build_weekend_indexes,
     _clear_dir,
@@ -145,62 +139,33 @@ from gaworld.sim._utils import (  # noqa: E402
     _weekday_to_index,
     snap_schedule_to_grid,
 )
-
-# --------------------------------------------------------------------
-# HTML extraction helpers — delegated to gaworld.io.web_scrape.
-# Legacy private names are kept as aliases so internal callers keep
-# working unchanged. New code should import from `gaworld.io` directly.
-# --------------------------------------------------------------------
-from gaworld.io.web_scrape import (  # noqa: E402
-    extract_meta_description as _extract_meta_content,
-    extract_news_main_content as _extract_news_main_content,
-    extract_title as _extract_title,
-    fetch_news_excerpt,
-    normalize_text as _normalize_text,
-    strip_html as _strip_html,
+from gaworld.sim.pipeline import DEFAULT_AGENT_STEP_ORDER, StagePipeline
+from gaworld.social.network import (
+    apply_closeness_delta,
+    bootstrap_social_roster,
+    decay_relationships,
+    enforce_dunbar,
+    form_tie,
+    migrate_relationships,
 )
-from gaworld.io.web_scrape import (  # noqa: E402
-    _extract_article_like_block,
-    _extract_ld_json_article_body,
-    _extract_paragraph_fallback,
+from gaworld.world.city_map import (
+    activity_to_categories,
+    resolve_best_location,
 )
-
-
-# --------------------------------------------------------------------
-# External information acquisition (news / search / info-seek) —
-# extracted to ``gaworld.sim._news``. Re-exported here for backwards
-# compatibility: tests use ``patch.object(sim, "_choose_info_target", ...)``
-# and ``patch.object(sim, "_build_agent_preferred_sites", ...)``, and
-# ``generate_agent_rag_seed.py`` calls ``sim.web_search`` /
-# ``sim._domain_from_url``. New code should import from
-# ``gaworld.sim._news`` directly.
-# --------------------------------------------------------------------
-from gaworld.sim._news import (  # noqa: E402
-    fetch_social_page_profile_source,
-    load_news_sources,
-    load_news_cache,
-    update_news_cache,
-    _extract_interest_keywords,
-    _score_news_relevance,
-    choose_news_for_agent,
-    _domain_from_url,
-    _build_agent_preferred_sites,
-    _choose_info_target,
-    info_seek_and_store,
-    _estimate_curiosity,
-    _build_search_query,
-    _extract_google_results,
-    _extract_baidu_results,
-    _extract_bing_results,
-    _extract_generic_results,
-    web_search,
-    search_web_and_store,
-    read_news_and_store,
+from gaworld.world.city_map import (
+    all_locations as city_all_locations,
 )
-from gaworld.sim._curiosity import (  # noqa: E402
-    assemble_curiosity_context,
-    should_seek_knowledge,
-    propose_contextual_keywords,
+from gaworld.world.city_map import (
+    load_city_map as load_structured_city_map,
+)
+from gaworld.world.city_map import (
+    load_city_map_text as load_structured_city_map_text,
+)
+from gaworld.world.city_map import (
+    load_real_city_map as load_real_structured_city_map,
+)
+from gaworld.world.city_map import (
+    real_city_map_text as real_structured_city_map_text,
 )
 
 
@@ -278,6 +243,177 @@ def _persist_sim_day(day, agent_day_cursor, agent_ids):
         "agent_last_day": agent_day_cursor,
         "memory_model_version": MEMORY_MODEL_VERSION,
     })
+
+
+# ----------------------------------------------------------------------
+# Durable day-boundary checkpoints (Phase 5).  SAVE / RESTORE / CONTINUE
+# only — no retry, no rollback, no branching.  Orchestration lives in
+# gaworld.checkpoints.CheckpointManager; this launcher builds the
+# component carrier, honors CONFIG["resume_from_checkpoint"] and saves
+# day_0000 plus one checkpoint after each successfully completed day.
+# ----------------------------------------------------------------------
+
+def _checkpoint_enabled():
+    ck = CONFIG.get("checkpoint")
+    if isinstance(ck, dict) and ck.get("enabled"):
+        return True
+    return bool(CONFIG.get("resume_from_checkpoint"))
+
+
+def _checkpoint_run_id():
+    ck = CONFIG.get("checkpoint")
+    if isinstance(ck, dict) and ck.get("run_id"):
+        return str(ck["run_id"])
+    if CONFIG.get("_checkpoint_run_id"):
+        return CONFIG["_checkpoint_run_id"]
+    import uuid
+    run_id = uuid.uuid4().hex[:12]
+    CONFIG["_checkpoint_run_id"] = run_id
+    return run_id
+
+
+def _checkpoint_manager():
+    from pathlib import Path
+
+    from gaworld.checkpoints import CheckpointManager, simulation_state_hooks
+    return CheckpointManager(
+        run_dir=Path(STATE_OUTPUT_DIR).parent,  # <run>/checkpoints/… (run-relative)
+        run_id=_checkpoint_run_id(),
+        hooks=simulation_state_hooks(),
+    )
+
+
+def _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state):
+    """The mutable runtime components for one checkpoint (no handles, no
+    sockets, no secrets — see gaworld/checkpoints.py)."""
+    env_state = None
+    if env_system is not None and hasattr(env_system, "export_runtime_state"):
+        try:
+            env_state = env_system.export_runtime_state()
+        except Exception:  # noqa: BLE001 — env payload is optional
+            env_state = None
+    return {
+        "agents": agents,
+        "plugin_state": _pickleable_plugin_state(getattr(sim_ctx, "_plugin_state", {})),
+        "extension_state": _pickleable_plugin_state(extension_state),
+        "clock": sim_ctx.clock.snapshot(),
+        "agent_day_cursor": dict(agent_day_cursor),
+        "env_runtime": env_state,
+    }
+
+
+def _pickleable_plugin_state(store):
+    """Split plugin_state into a picklable payload plus explicit REBUILD
+    markers.  Namespaces that hold live runtime resources (worker threads,
+    locks — never serialized per brief §10) are marked for reconstruction:
+    their plugins recreate them on ``on_simulation_start`` after a restore.
+    This is a loud, reasoned decision — never a silent fallback."""
+    import pickle as _pickle
+    payload = {}
+    for name, namespace in store.items():
+        try:
+            payload[str(name)] = _pickle.dumps(namespace, protocol=4)
+        except Exception as exc:  # unpicklable → explicit rebuild marker
+            payload[str(name)] = {
+                "__checkpoint_rebuild__": True,
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+    return payload
+
+
+def _restore_plugin_state(store, payload):
+    import pickle as _pickle
+    store.clear()
+    for name, blob in payload.items():
+        if isinstance(blob, dict) and blob.get("__checkpoint_rebuild__"):
+            print(
+                f"♻️ 插件状态 {name!r} 含运行期资源（{blob.get('reason', '')}），"
+                "恢复后由插件重建"
+            )
+            continue
+        try:
+            store[str(name)] = _pickle.loads(blob)
+        except Exception as exc:  # noqa: BLE001 — corrupted namespace
+            raise type(exc)(f"插件状态 {name!r} 反序列化失败: {exc}")
+
+
+def _save_day_checkpoint(manager, day, carrier):
+    """Persist a day-boundary checkpoint.  Checkpointing must never crash a
+    run, and a valid existing checkpoint is never silently overwritten."""
+    from gaworld.checkpoints import CheckpointError, CheckpointExists
+    try:
+        ref = manager.save_checkpoint(
+            carrier,
+            completed_day=day,
+            extra_manifest={
+                "memory_model_version": MEMORY_MODEL_VERSION,
+                "city": str(CONFIG.get("city", "") or ""),
+                "agent_ids": list(AGENT_IDS or []),
+                "llm_routing": CONFIG.get("llm", {}).get("routing", {}),
+                "sim_config_snapshot": {
+                    k: CONFIG.get(k)
+                    for k in (
+                        "random_seed", "sim_days", "city", "stateful",
+                        "human_realism_enabled",
+                    )
+                    if k in CONFIG
+                },
+            },
+        )
+        print(f"💾 检查点已保存: {ref}")
+        return ref
+    except CheckpointExists:
+        print(f"ℹ️ day_{day:04d} 检查点已存在，跳过（不覆盖有效检查点）")
+        return None
+    except CheckpointError as exc:
+        _LOG.warning("checkpoint save failed for day %s: %s", day, exc)
+        return None
+
+
+def _restore_from_checkpoint(agents, sim_ctx, agent_day_cursor, extension_state):
+    """Restore simulation state from CONFIG['resume_from_checkpoint'].
+    Returns (completed_day, env_runtime_state).  Validation happens fully
+    inside the manager — no partial continuation on any failure."""
+    import json as _json
+    from pathlib import Path as _Path
+
+    from gaworld.checkpoints import (
+        CheckpointError,
+    )
+    ref = CONFIG.get("resume_from_checkpoint")
+    if not ref:
+        raise CheckpointError("resume_from_checkpoint 为空，无法恢复")
+    manager = _checkpoint_manager()
+    if isinstance(ref, str) and ":" in ref and "/" not in ref and os.sep not in ref:
+        # ``<run_id>:day_NNNN`` — resume may cross process boundaries, so the
+        # reference's originating run id names the checkpoint namespace.
+        manager.run_id = ref.split(":", 1)[0]
+    carrier = {}
+    try:
+        target = manager.restore_checkpoint(carrier, ref=ref)
+    except CheckpointError as exc:
+        raise CheckpointError(f"无法从检查点 {ref!r} 恢复: {exc}") from exc
+
+    # memory-model compatibility (same gate the flat STATEFUL path applies)
+    manifest = _json.loads((_Path(target.path) / "manifest.json").read_text("utf-8"))
+    mmv = manifest.get("memory_model_version")
+    if mmv is not None and int(mmv) != int(MEMORY_MODEL_VERSION):
+        raise CheckpointError(
+            f"检查点 memory_model_version={mmv} 与当前运行 "
+            f"{MEMORY_MODEL_VERSION} 不兼容 — 拒绝恢复"
+        )
+
+    # distribute the validated carrier into the live runtime
+    agents[:] = carrier["agents"]
+    plugin_store = getattr(sim_ctx, "_plugin_state", None)
+    if isinstance(plugin_store, dict):
+        _restore_plugin_state(plugin_store, carrier["plugin_state"])
+    _restore_plugin_state(extension_state, carrier["extension_state"])
+    agent_day_cursor.clear()
+    agent_day_cursor.update(
+        {str(k): int(v) for k, v in carrier["agent_day_cursor"].items()}
+    )
+    return int(target.completed_day), carrier.get("env_runtime")
 
 
 
@@ -565,12 +701,10 @@ def load_profile_from_md(agent_id):
 # the rest of this file (and external callers like
 # ``generate_agent_rag_seed.py``) keep working unchanged.
 from gaworld.sim.agents_loader import (  # noqa: E402
-    _clip_state_value,
-    _safe_float,
-    _safe_int,
     _safe_text,
     parse_profile,
 )
+
 
 def _next_profile_id(df, md_path):
     max_id = 0
@@ -633,9 +767,9 @@ def _parse_agent_seed_payload(text):
 # Imported-agent payload defaults / normalisation moved to
 # ``gaworld.sim.agents_loader`` during the S3 refactor.
 from gaworld.sim.agents_loader import (  # noqa: E402
-    _default_imported_agent_payload,
     _normalize_imported_agent_payload,
 )
+
 
 def _generate_imported_agent_seed(source, override_name=None):
     content = _safe_text(source.get("content"))
@@ -668,6 +802,7 @@ emotion, stress, econ_security, city_identity, policy_sensitivity, platform_depe
 # Markdown profile formatter moved to ``gaworld.sim.agents_loader`` during
 # the S3 refactor.
 from gaworld.sim.agents_loader import _format_imported_profile_block  # noqa: E402
+
 
 def _append_imported_agent_records(agent_id, payload, source, csv_path=CSV_PATH, md_path=MD_PATH):
     df = pd.read_csv(csv_path)
@@ -847,12 +982,10 @@ def _all_locations(city_map):
 # Location inference, agent-location assignment, and commute memory
 # moved to gaworld.sim._location during the S3 refactor.
 from gaworld.sim._location import (  # noqa: E402
-    _infer_home,
-    _infer_workplace,
     _pick_first_available,
-    _update_commute_memory,
     assign_agent_locations,
 )
+
 
 def init_agent_locations(agent, city_map):
     cached_locations = load_agent_locations(agent["id"]) if STATEFUL else {}
@@ -1091,7 +1224,6 @@ def _timeline_step_minutes(timeline, index):
 
 # Transit progress + main movement dispatcher moved to
 # gaworld.sim._location during the S3 refactor.
-from gaworld.sim._location import _update_transit_progress  # noqa: E402
 
 # =========================================================
 # Schedule & Action
@@ -1100,16 +1232,13 @@ from gaworld.sim._location import _update_transit_progress  # noqa: E402
 # gaworld.sim._schedule during the S3 refactor.
 from gaworld.sim._schedule import (  # noqa: E402
     _align_daily_planning_start_time,
-    _extract_json_array_block,
     _has_workday_signature,
     _heuristic_schedule,
-    _is_strictly_increasing_times,
     _parse_schedule,
-    _round_to_anchor,
-    _schedule_profile_flags,
     _schedule_times,
     ensure_sleep_in_schedule,
 )
+
 
 def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, day=None):
     if not schedule:
@@ -1202,11 +1331,9 @@ def _rewrite_weekend_schedule_from_profile(agent, schedule, day_context=None, da
 
 # External-RAG hint helpers moved to gaworld.sim._rag during the S3 refactor.
 from gaworld.sim._rag import (  # noqa: E402
-    EXTERNAL_RAG_TOP_K,
     _agent_has_external_rag,
     _external_rag_hint,
 )
-
 
 # _compact_text moved to gaworld.sim._schedule during the S3 refactor.
 from gaworld.sim._schedule import _compact_text  # noqa: E402
@@ -1234,12 +1361,6 @@ def _parse_structured_json(text, allowed_fields):
 # Fallback plan/reflection structs, plan/reflection text formatters, and
 # the activity-commitment-level classifier moved to gaworld.sim._schedule
 # during the S3 refactor.
-from gaworld.sim._schedule import (  # noqa: E402
-    _fallback_plan_struct,
-    _fallback_reflection_struct,
-)
-
-
 # --------------------------------------------------------------------
 # Decision-time memory recall + behavioural context — extracted to
 # ``gaworld.sim._memory_recall``.  28 helpers: ``evoke_memory``,
@@ -1303,11 +1424,14 @@ from gaworld.sim._memory_recall import (  # noqa: E402, F401
 # --------------------------------------------------------------------
 from gaworld.sim._rag import (  # noqa: E402
     _append_external_payload_to_agent,
-    _heuristic_bootstrap_external_items,
-    _parse_bootstrap_external_items,
     _llm_bootstrap_external_items,
     _summarize_bootstrap_web_item,
 )
+from gaworld.sim._schedule import (  # noqa: E402
+    _fallback_plan_struct,
+    _fallback_reflection_struct,
+)
+
 
 def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
     # Read from CONFIG at call time (not the module-load snapshot
@@ -1438,15 +1562,6 @@ def _bootstrap_agent_external_rag(agent, news_cache=None, news_sources=None):
 # etc.) working unchanged. New code should import from
 # ``gaworld.sim._schedule`` directly.
 # --------------------------------------------------------------------
-from gaworld.sim._schedule import (  # noqa: E402
-    _jitter_schedule_times,
-    normalize_schedule_to_base,
-    _dedupe_schedule_items,
-    _enforce_schedule_min_gap,
-    _has_enough_schedule_anchors,
-    normalize_flexible_schedule,
-)
-
 # ---------------------------------------------------------------------------
 # Daily-routine context aggregators
 #
@@ -1460,8 +1575,6 @@ from gaworld.sim._schedule import (  # noqa: E402
 #
 # Each aggregator is a pure function: easy to unit-test without an LLM call.
 # ---------------------------------------------------------------------------
-
-
 # --------------------------------------------------------------------
 # Prompt-fragment builders — extracted to ``gaworld.sim._prompt``.
 # Re-exported here because tests at ``tests/test_daily_routine_context.py``
@@ -1470,12 +1583,15 @@ from gaworld.sim._schedule import (  # noqa: E402
 # from ``gaworld.sim._prompt`` directly.
 # --------------------------------------------------------------------
 from gaworld.sim._prompt import (  # noqa: E402
-    _band_label,
+    _event_aftermath_for_prompt,
+    _recent_life_events_for_prompt,
+    _social_pulse_for_prompt,
     _state_brief_for_prompt,
     _yesterday_recap_for_prompt,
-    _recent_life_events_for_prompt,
-    _event_aftermath_for_prompt,
-    _social_pulse_for_prompt,
+)
+from gaworld.sim._schedule import (  # noqa: E402
+    _jitter_schedule_times,
+    normalize_flexible_schedule,
 )
 
 
@@ -1664,30 +1780,6 @@ def generate_schedule(agent):
 # ``gaworld.sim._schedule`` (siblings of the existing
 # ``_extract_json_array_block``).
 # --------------------------------------------------------------------
-from gaworld.sim._schedule import _extract_json_block  # noqa: E402
-
-# --------------------------------------------------------------------
-# Per-step routine change + transient thoughts — moved to
-# ``gaworld.sim._step`` (their ``routine_change.*`` / ``spontaneity.*``
-# knobs are read there at call time). Re-exported: ``run_simulation``
-# calls them as bare names and tests patch ``sim.maybe_adjust_activity``.
-# --------------------------------------------------------------------
-from gaworld.sim._step import (  # noqa: E402, F401
-    _event_severity,
-    format_transient_thought,
-    maybe_adjust_activity,
-    maybe_generate_transient_thought,
-    _pick_reshape_life_event,
-    _routine_change_probability,
-    _routine_change_resistance,
-    _routine_change_trigger_strength,
-    _social_context_has_trigger,
-    _spontaneity_probability,
-    _suggest_activity_for_event,
-    _top_env_event,
-    _weighted_thought_pick,
-)
-
 # --------------------------------------------------------------------
 # Action choice + action-space generation — extracted to
 # ``gaworld.sim._action`` in run-split-2.  12 names total: 3 pure JSON
@@ -1719,8 +1811,35 @@ from gaworld.sim._action import (  # noqa: E402, F401
     save_action_space,
     strip_fallback_only_activities,
 )
+
 # is_sleep_activity kept for in-file callers at L1238 and L3355 (now-shifted).
-from gaworld.sim._schedule import is_sleep_activity  # noqa: E402, F401
+from gaworld.sim._schedule import (
+    _extract_json_block,  # noqa: E402
+    is_sleep_activity,  # noqa: E402, F401
+)
+
+# --------------------------------------------------------------------
+# Per-step routine change + transient thoughts — moved to
+# ``gaworld.sim._step`` (their ``routine_change.*`` / ``spontaneity.*``
+# knobs are read there at call time). Re-exported: ``run_simulation``
+# calls them as bare names and tests patch ``sim.maybe_adjust_activity``.
+# --------------------------------------------------------------------
+from gaworld.sim._step import (  # noqa: E402, F401
+    _event_severity,
+    _pick_reshape_life_event,
+    _routine_change_probability,
+    _routine_change_resistance,
+    _routine_change_trigger_strength,
+    _social_context_has_trigger,
+    _spontaneity_probability,
+    _suggest_activity_for_event,
+    _top_env_event,
+    _weighted_thought_pick,
+    format_transient_thought,
+    maybe_adjust_activity,
+    maybe_generate_transient_thought,
+)
+
 
 # =========================================================
 # Policy effect inference
@@ -1760,6 +1879,7 @@ def infer_event_effect(agent, event_desc, event_type="event"):
 # get_social_context + perception moved to gaworld.sim._cognition during
 # the S3 refactor (unblocked once human_realism + llm_providers migrated).
 from gaworld.sim._cognition import get_social_context  # noqa: E402, F401 — tests call sim.get_social_context
+
 
 def planning(agent, perception_text, recall_context=None, decision_refs=None):
     if bool((CONFIG.get("fos_fast_mode", {}) or {}).get("deterministic_cognition", False)):
@@ -1871,6 +1991,7 @@ def reflection(agent, outcome, recall_context=None):
 # _parse_interview moved to gaworld.sim._schedule (joins _parse_schedule
 # as another LLM-JSON list parser) during the S3 refactor.
 from gaworld.sim._schedule import _parse_interview  # noqa: E402
+
 
 def interview_agent(agent, questions, context=None, max_questions=6):
     if not questions:
@@ -2052,21 +2173,6 @@ def update_state(agent):
 # =========================================================
 # Daily summary + daily diary chain (the entire ``# B. 长期记忆`` banner)
 # moved to gaworld.sim._diary during the S3 refactor.
-from gaworld.sim._diary import (  # noqa: E402
-    _append_memory_record,
-    _daily_diary_path,
-    _fallback_daily_diary,
-    _top_day_episode_lines,
-    daily_summary,
-    generate_daily_diary,
-    save_daily_diary,
-)
-from gaworld.sim._plots import (  # noqa: E402 — moved out of this file
-    visualize_social_network,
-    visualize_agent_state_changes,
-    save_state_history,
-    append_jsonl,
-)
 from gaworld.sim._compare import (  # noqa: E402 — moved out of this file
     _cli_compare_event,
     _cli_parallel_worlds,
@@ -2074,25 +2180,63 @@ from gaworld.sim._compare import (  # noqa: E402 — moved out of this file
     _extract_run_failure_hint,  # noqa: F401 — re-exported: tests reach it here
     _write_comparison_report,  # noqa: F401 — re-exported: tests reach it here
 )
+from gaworld.sim._diary import (  # noqa: E402
+    _append_memory_record,
+    _fallback_daily_diary,
+    daily_summary,
+    generate_daily_diary,
+    save_daily_diary,
+)
+from gaworld.sim._fastforward import (
+    _REL_DELTA_CAP as _FF_REL_DELTA_CAP,
+)
+from gaworld.sim._fastforward import (  # noqa: E402
+    apply_random_jitter as _ff_apply_random_jitter,
+)
+from gaworld.sim._fastforward import (
+    apply_state_changes as _ff_apply_state_changes,
+)
+from gaworld.sim._fastforward import (
+    hook_chunk_days as _ff_hook_chunk_days,
+)
+from gaworld.sim._fastforward import (
+    jitter_scale_for as _ff_jitter_scale,
+)
+from gaworld.sim._fastforward import (
+    long_run_config as _long_run_config,
+)
+from gaworld.sim._fastforward import (
+    max_state_delta_for as _ff_max_state_delta,
+)
+from gaworld.sim._fastforward import (
+    plan_hook_chunks as _ff_plan_hook_chunks,
+)
+from gaworld.sim._fastforward import (
+    plan_horizon as _ff_plan_horizon,
+)
+from gaworld.sim._fastforward import (
+    randomness_level as _ff_randomness,
+)
+from gaworld.sim._fastforward import (
+    render_period_brief_block as _ff_render_brief,
+)
+from gaworld.sim._fastforward import (
+    simulate_agent_period as _ff_simulate_agent_period,
+)
+from gaworld.sim._fastforward import (
+    span_days as _ff_span_days,
+)
+from gaworld.sim._plots import (  # noqa: E402 — moved out of this file
+    append_jsonl,
+    save_state_history,
+    visualize_agent_state_changes,
+    visualize_social_network,
+)
 from gaworld.sim._summary import (  # noqa: E402
     summarize_simulation,
     take_initial_snapshot,
 )
-from gaworld.sim._fastforward import (  # noqa: E402
-    apply_random_jitter as _ff_apply_random_jitter,
-    apply_state_changes as _ff_apply_state_changes,
-    hook_chunk_days as _ff_hook_chunk_days,
-    jitter_scale_for as _ff_jitter_scale,
-    long_run_config as _long_run_config,
-    max_state_delta_for as _ff_max_state_delta,
-    plan_hook_chunks as _ff_plan_hook_chunks,
-    plan_horizon as _ff_plan_horizon,
-    randomness_level as _ff_randomness,
-    render_period_brief_block as _ff_render_brief,
-    _REL_DELTA_CAP as _FF_REL_DELTA_CAP,
-    simulate_agent_period as _ff_simulate_agent_period,
-    span_days as _ff_span_days,
-)
+
 
 # =========================================================
 # C. 主循环
@@ -2253,7 +2397,25 @@ def run_simulation():
         print_agent_profiles([a["id"] for a in agents])
     start_day = 1
     agent_day_cursor = {}
-    if STATEFUL:
+    _resume_completed_day = None
+    _resume_env_state = None
+    _ckpt_mgr = None
+    if CONFIG.get("resume_from_checkpoint"):
+        # Phase 5: restore from a durable day-boundary checkpoint instead of
+        # the flat STATEFUL files.  completed_day=N → the next simulated day
+        # is N+1; day N is never rerun.  The RNG, agents, plugin state,
+        # clock and queues come from the checkpoint (runtime truth).
+        _ckpt_mgr = _checkpoint_manager()
+        _resume_completed_day, _resume_env_state = _restore_from_checkpoint(
+            agents, sim_ctx, agent_day_cursor, extension_state
+        )
+        start_day = _resume_completed_day + 1
+        sim_ctx.clock.start_day(_resume_completed_day)
+        print(
+            f"⏪ 已从检查点恢复 {CONFIG.get('resume_from_checkpoint')}："
+            f"第 {_resume_completed_day} 天已完成，从第 {start_day} 天继续"
+        )
+    elif STATEFUL:
         sim_state = load_sim_state()
         _enforce_memory_model_compat(sim_state)
         # Resume day count for persistent simulations, per agent: agents that
@@ -2261,7 +2423,7 @@ def run_simulation():
         # someone else's elapsed years.
         agent_day_cursor = _agent_last_day_map(sim_state)
         start_day = _resume_start_day(agent_day_cursor, AGENT_IDS)
-    if STATEFUL:
+    if STATEFUL and _resume_completed_day is None:
         for agent in agents:
             agent["memory"] = load_agent_memory(agent["id"])
             seed_vector_db_from_memory(agent)
@@ -2327,6 +2489,22 @@ def run_simulation():
     else:
         env_system = EnvironmentSystem(CONFIG, llm_fn=call_llm)
     sim_ctx.extras["env_system"] = env_system
+    if _resume_env_state is not None and hasattr(env_system, "import_runtime_state"):
+        try:
+            env_system.import_runtime_state(_resume_env_state)
+        except Exception as _env_exc:  # noqa: BLE001 — never crash a resume here
+            _LOG.warning("env runtime-state restore failed: %s", _env_exc)
+    if _checkpoint_enabled() and _ckpt_mgr is None:
+        _ckpt_mgr = _checkpoint_manager()
+    if _ckpt_mgr is not None and _resume_completed_day is None:
+        # day_0000: population loaded, config applied, BEFORE the first
+        # in-run day mutates anything.  A flat-state resume continues an
+        # older calendar, so the pre-loop day number is start_day - 1.
+        _save_day_checkpoint(
+            _ckpt_mgr,
+            max(0, int(start_day) - 1),
+            _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+        )
     os.makedirs(ENV_OUTPUT_DIR, exist_ok=True)
     env_timeline_path = os.path.join(ENV_OUTPUT_DIR, "timeline.jsonl")
     if os.path.exists(env_timeline_path):
@@ -3001,6 +3179,14 @@ def run_simulation():
             )
             if STATEFUL:
                 _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
+                if _ckpt_mgr is not None:
+                    # day N completed successfully → durable checkpoint before
+                    # day N+1 (a failed day never reaches this line)
+                    _save_day_checkpoint(
+                        _ckpt_mgr,
+                        day,
+                        _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+                    )
             continue
         llm_budget_by_agent = {}
         daily_schedules = {}
@@ -3480,6 +3666,13 @@ def run_simulation():
         )
         if STATEFUL:
             _persist_sim_day(day, agent_day_cursor, AGENT_IDS)
+            if _ckpt_mgr is not None:
+                # day N completed successfully → durable checkpoint before day N+1
+                _save_day_checkpoint(
+                    _ckpt_mgr,
+                    day,
+                    _checkpoint_carrier(agents, sim_ctx, env_system, agent_day_cursor, extension_state),
+                )
 
     print("\n✅ 模拟完成")
     if visualizer is not None:

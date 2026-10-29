@@ -29,7 +29,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          # httpx: the grafted fos/ subtree (imported by the worldrun
+          # integration tests) depends on it; it is not a GAWorld runtime dep.
+          pip install -r requirements.txt -r requirements-dev.txt httpx
 
       - name: Chromium for the browser smoke tests
         run: python -m playwright install --with-deps chromium
@@ -70,3 +72,71 @@ jobs:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
           if-no-files-found: ignore
+
+  fos-backend:
+    # The integrated FOS backend requires Python 3.12 (fos/pyproject.toml).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install FOS backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # fos/tests also import gaworld (rerun-isolation, SimTree fork tests),
+          # so the GAWorld runtime deps (numpy/pandas/matplotlib) are needed too.
+          pip install -r requirements.txt -r fos/requirements-test.txt scipy
+          pip install -e . --no-deps -e ./fos --no-deps
+      - name: Run FOS backend tests
+        working-directory: fos
+        env:
+          PYTHONPATH: src
+        # Same deterministic scope as the upstream fos CI (fos/.github/workflows/ci.yml):
+        # real-Ollama scenarios and load tests stay out of routine CI. The
+        # deselects below are narrow, documented drift between the integration
+        # branch and upstream tests (see PR #13 description):
+        #  - twin2k10 fixtures/tests read absolute paths from the original
+        #    author's machine (/home/justin/work/research/...) — dev-only.
+        #  - r1yesno_v2 fixtures were never committed to the repo.
+        #  - three runner tests exercise the snapshot-population path that
+        #    the integration retired in favour of the live GAWorld roster.
+        #  - two integration tests predate the integrated-launch contract
+        #    (task 2875): the in-checkout fos tree now resolves GAWORLD_PATH
+        #    from the repo layout, so a live-backend probe happens first.
+        run: >-
+          python -m pytest tests/ -q --no-header
+          --ignore=tests/llm_prompt_testing
+          --ignore=tests/smoke_tests
+          --ignore=tests/integration/test_real_llm_phase1.py
+          --ignore=tests/integration/test_llm_action_selection.py
+          --ignore=tests/load
+          --ignore=tests/test_twin2k10_analyze.py
+          --deselect tests/test_twin2k10_config.py::test_shipped_stimuli_are_a_verbatim_copy_of_the_research_delivery
+          --deselect tests/test_r1yesno_v2_metrics.py::test_summarize_model_matches_numpy_recomputation_of_qwen_fixture
+          --deselect tests/test_r1yesno_v2_metrics.py::test_fixture_gain_and_bias_match_published_reference_row
+          --deselect tests/test_runner.py::test_no_cross_run_contamination
+          --deselect tests/test_runner.py::test_neighbour_context_present
+          --deselect tests/test_runner.py::test_kill_mid_round_and_resume
+          --deselect tests/integration/test_gaworld_integration.py::test_simtree_routing_raises_when_gaworld_path_is_missing
+          --deselect tests/integration/test_gaworld_integration.py::test_gaworld_routing_keeps_explicit_agents_when_text_selection_is_blank
+
+  fos-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: fos/frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: fos/frontend
+        run: npm ci
+      - name: Build integrated bundle (asset base /fos/)
+        working-directory: fos/frontend
+        run: npm run build:integrated
+      - name: Frontend unit tests
+        working-directory: fos/frontend
+        run: npm run test:run -- --passWithNoTests

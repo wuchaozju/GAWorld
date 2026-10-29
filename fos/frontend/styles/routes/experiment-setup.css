@@ -1,0 +1,8 @@
+/*
+ * This file groups the experiment setup styles into one route-level stylesheet.
+ */
+
+@import "../pages/product-pages.css";
+@import "../pages/experiment-setup.css";
+
+@tailwind components;

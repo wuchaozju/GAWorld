@@ -229,6 +229,20 @@ data/moltbook_accounts.json
 /output_archive_202606/
 /_to_delete/
 .claude/settings.local.json
+
+# Frontend dependencies (never commit installs or symlinks)
+fos/frontend/node_modules
+
+# FOS integration runtime artifacts (never commit)
+TASK*.progress
+fos.db*
+fos/test_results/
+.venv-fos-integration/
+
 # Agent tool scratch: Playwright CLI page snapshots, brainstorm / delivery pages
 /.playwright-cli/
 /.superpowers/
+
+# Runtime test outputs (never commit)
+/test_results/
+/data/gaworld_runs/

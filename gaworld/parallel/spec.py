@@ -24,26 +24,11 @@ from typing import Any
 
 from gaworld.city.config import run_root_overrides
 from gaworld.settings.overrides import deep_update
+from gaworld.worldrun.config import RESERVED_CONFIG_KEYS
 
-#: Config keys a world patch may never set. These are the knobs that make the
-#: comparison valid (seed, horizon, cohort) or that isolate worlds on disk;
-#: letting a per-world patch touch them would produce a diff nobody can read.
-RESERVED_CONFIG_KEYS: frozenset[str] = frozenset({
-    "random_seed",
-    "sim_days",
-    "agent_ids",
-    "memory_dir",
-    "log_dir",
-    "vector_db_path",
-    "state_output_dir",
-    "network_output_dir",
-    "environment_output_dir",
-    "diary_output_dir",
-    "policy_events",
-    "visualization",
-    "distributed",
-    "stateful",
-})
+#: Authoritative definition lives in ``gaworld.worldrun`` (Phase 9): this
+#: module re-exports it so PW call sites keep their import path.
+_RESERVED_CONFIG_KEYS_SOURCE = "gaworld.worldrun"
 
 _SLUG_RE = re.compile(r"[^0-9A-Za-z一-鿿]+")
 _ID_RE = re.compile(r"[^0-9A-Za-z_-]+")
@@ -77,6 +62,9 @@ class WorldSpec:
     role: str = ""
     #: Optional intensity, so worlds can be read as a dose–response series.
     dose: float | None = None
+    #: Optional checkpoint directory to seed this world from (§23, additive).
+    #: ``None`` keeps the historical fresh-start semantics.
+    seed_from_checkpoint: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -87,6 +75,7 @@ class WorldSpec:
             "note": self.note,
             "role": self.role,
             "dose": self.dose,
+            "seed_from_checkpoint": self.seed_from_checkpoint,
         }
 
 
@@ -230,6 +219,11 @@ def normalize_experiment(payload: Any) -> ExperimentSpec:
                 note=str(raw.get("note", "")).strip(),
                 role=role,
                 dose=dose,
+                seed_from_checkpoint=(
+                    str(raw["seed_from_checkpoint"]).strip()
+                    if raw.get("seed_from_checkpoint") not in (None, "")
+                    else None
+                ),
             )
         )
 
@@ -335,12 +329,32 @@ def world_overrides(
     if spec.llm_provider:
         routing = base_config.get("llm", {}).get("routing", {})
         task_map = routing.get("tasks", {})
-        forced = {str(key): str(spec.llm_provider) for key in task_map} if isinstance(task_map, dict) else {}
+        # Reconciled Dev + §24 semantics, distinguished by entry type:
+        # - a plain-string ambient agent entry is a weak default-level
+        #   assignment — the forced provider overrides it (Dev: a forked
+        #   counterfactual world is pinned uniformly);
+        # - a structured dict entry (explicit provider+model pin) is an
+        #   operator decision — §24: it is preserved verbatim, never
+        #   flattened, so the Phase-4 precedence explicit>agent>task>default
+        #   still routes that agent deliberately.
+        # An empty ``fallback`` keeps the no-silent-substitution policy.
+        forced = (
+            {str(key): str(spec.llm_provider) for key in task_map}
+            if isinstance(task_map, dict)
+            else {}
+        )
+        ambient_agents = (
+            routing.get("agents") if isinstance(routing.get("agents"), dict) else {}
+        )
+        kept_agents = {
+            str(key): (entry if isinstance(entry, dict) else str(spec.llm_provider))
+            for key, entry in ambient_agents.items()
+        }
         overrides["llm"] = {
             "routing": {
                 "default": str(spec.llm_provider),
                 "tasks": forced,
-                "agents": {str(key): str(spec.llm_provider) for key in routing.get("agents", {})},
+                "agents": kept_agents,
                 "fallback": [],
             }
         }

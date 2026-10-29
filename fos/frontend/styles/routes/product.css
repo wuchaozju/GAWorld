@@ -1,0 +1,7 @@
+/*
+ * This file groups the shared product page styles into one route-level stylesheet.
+ */
+
+@import "../pages/product-pages.css";
+
+@tailwind components;

@@ -1767,6 +1767,21 @@ def _studies() -> dict[str, Any]:
             )
         },
         "/api/persona/delete": {"post": _op("persona", "Delete a portrait", body=_obj(("slug",), slug=STR))},
+        "/api/persona-generate": {
+            "post": _started(
+                "persona",
+                "Author or enrich residents with an LLM (structural facts locked)",
+                _obj(
+                    ("scope",),
+                    scope=_d(STR, "`fast` (templated, zero LLM calls) | `selected` | `focal_n` | `all`"),
+                    seed=_d(OBJ, "Structural seed for a new resident: name/gender/age/hukou/residence/job/…"),
+                    ids=_d(INT_LIST, "Resident ids for `selected`"),
+                    n=_d(INT, "How many residents for `focal_n`"),
+                    provider=_d(STR, "Explicit provider (beats task routing)"),
+                ),
+            )
+        },
+        "/api/persona-generate/jobs/{job_id}": _job("persona"),
     }
 
 
@@ -1785,6 +1800,12 @@ def _parallel() -> dict[str, Any]:
     root_q = _q("root", "Experiment root from /experiments", required=True)
     baseline_q = _q("baseline", "Baseline world (default: the spec's)")
     return {
+        "/api/analysis/compare": {"post": _op(
+            "analysis", "Run the Parallel-Worlds analysis over a supplied manifest (no simulation)",
+            body=_obj(("manifest",), manifest=OBJ),
+            ok=_obj(("report", "artifacts_dir"), report=OBJ,
+                    artifacts_dir=_d(STR, "output/comparisons/<comparison-id>")),
+            errors={"400": "Invalid manifest, path outside the repository, or missing state history"})},
         "/api/parallel-worlds/overview": {"get": _op("parallel-worlds", "Current experiment and its worlds")},
         "/api/parallel-worlds/experiments": {"get": _op("parallel-worlds", "Finished experiments")},
         "/api/parallel-worlds/experiment": {
@@ -2222,6 +2243,7 @@ TAGS = (
     "parallel-worlds",
     "games",
     "arena",
+    "analysis",
 )
 
 _PARAM = re.compile(r"\{([^}]+)\}")

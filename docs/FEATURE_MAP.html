@@ -166,7 +166,7 @@
 
 <h1>GAWorld 功能地图</h1>
 <p class="meta">
-  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 107 个具体功能点。
+  按"使用者 × 使用场景"组织的三级功能全景：5 个主轴（角色） → 22 个能力子轴 → 共 108 个具体功能点。
   每个功能点都在 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 中有详细的作用与访问方法。
   本页由 <code>docs/features.toml</code> 生成（<code>python scripts/build_feature_map.py</code>），不要手改。
 </p>
@@ -273,6 +273,7 @@ mindmap
   root((居民设计者))
     画像与状态
       Agent_Studio
+      LLM_画像撰写_丰富
       九维状态雷达
       大五人格_OCEAN
       大五人格生成与合入闸门
@@ -474,11 +475,12 @@ mindmap
 </details>
 
 <!-- 居民设计者 -->
-<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 28 功能</span></div>
+<div class="axis resident"><span>居民设计者</span><span class="cnt">5 子轴 · 29 功能</span></div>
 
-<details class="group"><summary><span>画像与状态</span><span class="count">5 项</span></summary>
+<details class="group"><summary><span>画像与状态</span><span class="count">6 项</span></summary>
 <ul>
   <li><strong>Agent Studio</strong> — 7 步可视化构建/查看单智能体 <code>/site/dashboard/studio.html</code></li>
+  <li><strong>LLM 画像撰写/丰富</strong> — 快生成＝合成结构+模板叙述（零 LLM）；丰富＝LLM 只写叙述，结构事实锁定，失败逐人可见 <code>POST /api/persona-generate</code></li>
   <li><strong>九维状态雷达</strong> — 状态变量可视化与编辑（Agent Studio 第 2 步）</li>
   <li><strong>大五人格（OCEAN）</strong> — rules/prompt/voice 三通道影响行为 <code>CONFIG[&quot;personality&quot;][&quot;enabled&quot;]</code></li>
   <li><strong>大五人格生成与合入闸门</strong> — 离线生成 + 两条闸门校验 <code>scripts/author_personality.py</code></li>
@@ -605,7 +607,7 @@ mindmap
 </details>
 
 <footer>
-  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（107 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
+  <p>数据源：<a href="./features.toml"><code>docs/features.toml</code></a>（108 个功能点，每个都指向 <a href="./FEATURES.md"><code>docs/FEATURES.md</code></a> 里的一行详细说明）。</p>
   <p>跨主轴共用的能力（如<em>本地 Dashboard</em>同时服务世界构建者与研究者）按其主要服务对象归位，详细仍见 FEATURES.md。</p>
   <p>维护约定：新增 / 移除 / 重组功能时改 <code>docs/features.toml</code>，再运行 <code>python scripts/build_feature_map.py</code>；<code>tests/test_feature_registry.py</code> 检查两边对得上。</p>
   <p>图形：<a href="https://mermaid.js.org/">Mermaid</a> 思维导图（CDN 加载 <code>mermaid@10</code>）。</p>
