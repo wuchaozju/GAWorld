@@ -29,7 +29,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          # httpx: the grafted fos/ subtree (imported by the worldrun
+          # integration tests) depends on it; it is not a GAWorld runtime dep.
+          pip install -r requirements.txt -r requirements-dev.txt httpx
 
       - name: Chromium for the browser smoke tests
         run: python -m playwright install --with-deps chromium

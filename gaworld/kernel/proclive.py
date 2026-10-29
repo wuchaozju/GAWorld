@@ -71,6 +71,15 @@ def process_command(pid: int) -> str | None:
             return None
         finally:
             ctypes.windll.kernel32.CloseHandle(handle)
+    # /proc is exact and race-free where available; ps is the fallback (and
+    # the only source on systems without procfs) but can transiently fail.
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as fh:
+            raw = fh.read()
+        if raw:
+            return raw.replace(b"\x00", b" ").decode("utf-8", "replace").rstrip()
+    except (OSError, ValueError):
+        pass
     try:
         result = subprocess.run(
             ["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, timeout=5

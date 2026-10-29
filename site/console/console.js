@@ -15,6 +15,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     { id: "dashboard", src: "/dashboard" },
     { id: "city", src: "/site/dashboard/city.html" },
     { id: "analytics", src: "/site/dashboard/analytics.html" },
+    // Legacy id kept routable: the homepage still links /console#simviz.
+    { id: "simviz", src: "/site/dashboard/analytics.html" },
     { id: "studio", src: "/site/dashboard/studio.html" },
     { id: "organizations", src: "/site/dashboard/organizations.html" },
     { id: "population", src: "/site/dashboard/population.html" },
