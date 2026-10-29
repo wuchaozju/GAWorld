@@ -12,3 +12,4 @@ global-exclude __pycache__ *.py[cod] .DS_Store
 exclude data/twin_bindings.json data/moltbook_accounts.json data/news_cache.json
 
 recursive-include site *.ttf *.otf *.woff *.woff2
+prune fos

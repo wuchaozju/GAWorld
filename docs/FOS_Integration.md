@@ -223,3 +223,36 @@ Standalone FOS deployments (fos/README.md, fos/docker-compose.yml) keep
 Single-user mode is not intended for broad-network exposure: the backend
 refuses to bind a non-loopback host unless
 `FOS_SINGLE_USER_ALLOW_REMOTE_BIND=true` is also set.
+
+## Packaging and installation
+
+Plain GAWorld installs are untouched by FOS:
+
+- `fos/` is a source subtree at the repository root; setuptools only packages
+  `gaworld*` (`pyproject.toml` `[tool.setuptools.packages.find]`), so a
+  `pip install` of GAWorld never installs FOS code or its dependencies, and
+  the sdist prunes `fos/` (`MANIFEST.in`).
+- The dashboard only starts the integrated FOS backend when the optional
+  pieces are present; otherwise it prints a warning and serves without FOS.
+
+Installing the integrated FOS backend is an explicit, opt-in step:
+
+1. **Python 3.12 is required for the FOS backend** (`fos/pyproject.toml`:
+   `requires-python = ">=3.12,<3.13"`), while GAWorld itself supports 3.11+.
+   Run the dashboard (or at least the FOS child process) with Python 3.12,
+   or point GAWorld at an already-running backend via `FOS_BACKEND_URL`.
+2. Install FOS backend dependencies into that environment:
+   `pip install -r fos/requirements.txt -r fos/requirements-gaworld.txt`
+3. Build the integrated frontend:
+   `cd fos/frontend && npm install && npm run build:integrated`
+   (the dashboard refuses to serve a missing or standalone build and tells
+   you to run exactly this).
+4. Start as usual: `python generative_city_sim.py dashboard`. The FOS backend
+   is supervised by `gaworld/apps/fos_supervisor.py` and shut down with the
+   dashboard.
+
+Multi-user deployments: the integrated FOS backend is loginless (single-user
+by design), so the dashboard keeps it disabled in `--multi-user` mode unless
+the operator explicitly opts in with `GAWORLD_FOS_BACKEND=1`; in that case
+`/fos` and `/fos/*` must stay behind Caddy Basic Auth (see
+`deployment/public/Caddyfile`).
