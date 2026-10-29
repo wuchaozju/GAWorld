@@ -242,3 +242,7 @@ fos/test_results/
 # Agent tool scratch: Playwright CLI page snapshots, brainstorm / delivery pages
 /.playwright-cli/
 /.superpowers/
+
+# Runtime test outputs (never commit)
+/test_results/
+/data/gaworld_runs/
