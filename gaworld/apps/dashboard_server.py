@@ -1158,13 +1158,10 @@ def _analytics_run_paths(run_id, runs=None):
 
     config = paths.effective_config()
     visualization_dir = os.path.join(paths.REPO_ROOT, run["id"])
-    if run["kind"] == "archive":
-        # An archived run keeps only its trace; its sibling artifacts belong to
-        # whichever run overwrote them since, so they are deliberately not read
-        # — the missing dirs below make those sections report "no data".
-        base = visualization_dir
-    else:
-        base = os.path.dirname(visualization_dir)
+    # An archived run keeps only its trace; its sibling artifacts belong to
+    # whichever run overwrote them since, so they are deliberately not read
+    # — the missing dirs below make those sections report "no data".
+    base = visualization_dir if run["kind"] == "archive" else os.path.dirname(visualization_dir)
     return {
         "output_dir": base,
         # A scenario run mirrors the live tree's layout inside its own output
@@ -1337,13 +1334,13 @@ def _fos_route(path):
     """
     if path != FOS_PREFIX and not path.startswith(FOS_PREFIX + "/"):
         return None
-    rest = path[len(FOS_PREFIX):].lstrip("/")
+    rest = path[len(FOS_PREFIX) :].lstrip("/")
     if rest.startswith("api/") or rest == "api":
         return None
     if rest.startswith("uploads"):
         return None
     if rest.startswith("assets/"):
-        return ("asset", rest[len("assets/"):])
+        return ("asset", rest[len("assets/") :])
     return "index"
 
 
@@ -1360,7 +1357,7 @@ def _is_fos_backend_path(path: str) -> bool:
     dev, GAWorld-direct and the Caddy /fos/* proxy all interpret a URL the
     same way with no rewrite.
     """
-    return path.startswith("/fos/api") or path.startswith("/fos/uploads")
+    return path.startswith(("/fos/api", "/fos/uploads"))
 
 
 def world_readable(world, user):
@@ -1496,9 +1493,7 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
         except HTTPError as exc:
             status, upstream_headers, data = exc.code, exc.headers, exc.read()
         except URLError:
-            return self._json_response(
-                {"error": "FOS backend unreachable"}, status=502
-            )
+            return self._json_response({"error": "FOS backend unreachable"}, status=502)
         self.send_response(status)
         for key, value in upstream_headers.items():
             if key.lower() in ("connection", "transfer-encoding", "content-length", "server", "date"):

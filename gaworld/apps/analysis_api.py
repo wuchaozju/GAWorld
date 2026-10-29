@@ -68,9 +68,7 @@ def _jailed_worlds(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
         except ValueError as exc:
             raise ValueError(f"world {world_id}: {exc}") from exc
         if not os.path.exists(state_csv):
-            raise ValueError(
-                f"world {world_id}: state history not found: {entry['state_csv']}"
-            )
+            raise ValueError(f"world {world_id}: state history not found: {entry['state_csv']}")
         jailed[world_id] = {**entry, "state_csv": state_csv, "dir": world_dir}
     return jailed
 

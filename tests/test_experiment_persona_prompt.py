@@ -16,9 +16,7 @@ from gaworld.apps import residents
 from gaworld.experiments.classics.paradigms import PUBLIC_GOODS_MPCR, build_prompt
 from gaworld.experiments.subjects import load_subjects
 from gaworld.sim.agents_loader import parse_profile
-
-from tests.test_persona_generate_api import BaseGenerateCase, ENRICHED, _api
-
+from tests.test_persona_generate_api import ENRICHED, BaseGenerateCase
 
 SEED = {
     "name": "测试者",
@@ -69,7 +67,7 @@ class TestEnrichedPersonaReachesThePrompt(BaseGenerateCase):
         self.assertEqual("completed", record["status"], record.get("error"))
 
         text = residents.agent_profile(agent_id)["text"]
-        block = text[text.index(f"## Profile {agent_id}"):]
+        block = text[text.index(f"## Profile {agent_id}") :]
         block = block.split("\n## Profile ", 1)[0]
         parsed = parse_profile(block)
         self.assertEqual(ENRICHED["personality"], parsed["personality"])

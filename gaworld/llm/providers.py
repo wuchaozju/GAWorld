@@ -919,9 +919,7 @@ def validate_llm_routing(cfg, selected_agent_ids=None, known_providers=None):
 
     def _check_provider(name, where):
         if known_providers is not None and name not in known_providers:
-            raise ValueError(
-                f"llm routing references unknown provider {name!r} in {where}"
-            )
+            raise ValueError(f"llm routing references unknown provider {name!r} in {where}")
 
     _check_provider(str(default_name), "default")
     selected = {int(a) for a in (selected_agent_ids or [])}
@@ -930,13 +928,9 @@ def validate_llm_routing(cfg, selected_agent_ids=None, known_providers=None):
         try:
             agent_id = int(key)
         except (TypeError, ValueError) as err:
-            raise ValueError(
-                f"llm routing agent key must be an exact int GAWorld ID, got {key!r}"
-            ) from err
+            raise ValueError(f"llm routing agent key must be an exact int GAWorld ID, got {key!r}") from err
         if selected and agent_id not in selected:
-            raise ValueError(
-                f"llm routing assigns agent {agent_id} which is not in the selected agents"
-            )
+            raise ValueError(f"llm routing assigns agent {agent_id} which is not in the selected agents")
         name, _ = _routing_entry_value(entry)
         if not name:
             raise ValueError(f"llm routing assignment for agent {agent_id} has no provider")
@@ -955,15 +949,20 @@ def llm_routing_status(routing):
     could carry a secret (``api_key``, ``headers``, nested provider bodies)
     is stripped recursively.
     """
-    _FORBIDDEN_KEYS = {"api_key", "api-key", "apikey", "authorization", "token", "secret", "password", "headers"}
+    _FORBIDDEN_KEYS = {
+        "api_key",
+        "api-key",
+        "apikey",
+        "authorization",
+        "token",
+        "secret",
+        "password",
+        "headers",
+    }
 
     def _clean(value):
         if isinstance(value, dict):
-            return {
-                k: _clean(v)
-                for k, v in value.items()
-                if str(k).lower() not in _FORBIDDEN_KEYS
-            }
+            return {k: _clean(v) for k, v in value.items() if str(k).lower() not in _FORBIDDEN_KEYS}
         if isinstance(value, (list, tuple)):
             return [_clean(v) for v in value]
         return value
@@ -978,7 +977,13 @@ def _classify_llm_failure(exc: BaseException) -> str:
         return "timeout"
     if isinstance(exc, ConnectionError) or "connection" in text or "unreachable" in text or "refused" in text:
         return "provider_unavailable"
-    if "401" in text or "403" in text or "auth" in text or "unauthorized" in text or "invalid api key" in text:
+    if (
+        "401" in text
+        or "403" in text
+        or "auth" in text
+        or "unauthorized" in text
+        or "invalid api key" in text
+    ):
         return "auth"
     if "429" in text or "rate limit" in text:
         return "rate_limit"
@@ -995,8 +1000,17 @@ class LLMRoutingFailure(Exception):
     Carries the fields the FOS run-status surface needs in plain language.
     """
 
-    def __init__(self, message, *, agent_id=None, provider_id=None, model=None,
-                 policy=None, error_type="unknown", simulation_day=None):
+    def __init__(
+        self,
+        message,
+        *,
+        agent_id=None,
+        provider_id=None,
+        model=None,
+        policy=None,
+        error_type="unknown",
+        simulation_day=None,
+    ):
         super().__init__(message)
         self.agent_id = agent_id
         self.provider_id = provider_id
@@ -1083,9 +1097,7 @@ class LLMRouter:
         failure_policy=None,
         fallback_order=None,
     ):
-        resolved = resolve_llm_target(
-            self.routing, task=task, agent_id=agent_id, provider=provider
-        )
+        resolved = resolve_llm_target(self.routing, task=task, agent_id=agent_id, provider=provider)
         primary = resolved["provider"] or next(iter(self.providers))
         policy = failure_policy or self.routing.get("failure_policy") or "pause_and_ask"
         if policy == "ordered_fallback":

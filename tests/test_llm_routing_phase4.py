@@ -67,9 +67,7 @@ def _make_router(routing, providers):
 def _feature(name):
     """Fetch a not-yet-existing attribute; fails naming the missing feature."""
     attr = getattr(llm_providers, name, None)
-    assert attr is not None, (
-        f"feature missing: gaworld.llm.providers.{name} is not implemented (Phase 4 RED)"
-    )
+    assert attr is not None, f"feature missing: gaworld.llm.providers.{name} is not implemented (Phase 4 RED)"
     return attr
 
 
@@ -81,7 +79,7 @@ def _feature(name):
 class TestPrecedenceMatrix(unittest.TestCase):
     """explicit > agent > task > default, resolved by one function."""
 
-    ROUTING = {
+    ROUTING = {  # noqa: RUF012 - read-only fixture
         "default": {"provider": "a", "model": "m-a"},
         "tasks": {"actions": {"provider": "c", "model": "m-c"}},
         "agents": {"7": {"provider": "b", "model": "m-b"}},
@@ -250,7 +248,7 @@ class TestFailurePolicies(unittest.TestCase):
     def test_no_fallback_without_explicit_config(self):
         # No failure_policy / fallback_order given: a failing assignment must
         # never quietly succeed via the default provider.
-        router, a, b = self._router()
+        router, a, b = self._router()  # noqa: RUF059 - a/b are the two routed agents
         with self.assertRaises(Exception):
             router.call("hi", agent_id=7)
         self.assertEqual(0, a.calls)
@@ -298,9 +296,7 @@ class TestFallbackProvenance(unittest.TestCase):
         self.assertIsNotNone(meta, "router.last_call provenance missing (Phase 4)")
         self.assertEqual(7, meta["agent_id"])
         self.assertEqual("b", meta["resolved"]["provider"], "original assignment recorded")
-        self.assertEqual(
-            "b", meta["attempts"][0]["provider"], "failed attempt recorded"
-        )
+        self.assertEqual("b", meta["attempts"][0]["provider"], "failed attempt recorded")
         success = meta["attempts"][-1]
         self.assertEqual("c", success["provider"])
         self.assertEqual(1, success["fallback_index"], "fallback index recorded")
@@ -332,9 +328,7 @@ class TestSecretsAbsence(unittest.TestCase):
                 "model": "m-a",
                 "api_key": "sk-super-secret-123",
             },
-            "agents": {
-                "7": {"provider": "b", "model": "m-b", "api_key": "sk-other-secret"}
-            },
+            "agents": {"7": {"provider": "b", "model": "m-b", "api_key": "sk-other-secret"}},
         }
         payload = status(routing)
         blob = repr(payload)
@@ -361,9 +355,7 @@ class TestBackwardCompatGuards(unittest.TestCase):
     def test_legacy_string_routing_still_works(self):
         a = _StubProvider("a")
         b = _StubProvider("b")
-        router = _make_router(
-            {"default": "a", "tasks": {"plan": "b"}}, {"a": a, "b": b}
-        )
+        router = _make_router({"default": "a", "tasks": {"plan": "b"}}, {"a": a, "b": b})
         self.assertEqual("hello from b", router.call("hi", task="plan"))
         self.assertEqual("hello from a", router.call("hi"))
 
@@ -382,7 +374,7 @@ class TestBackwardCompatGuards(unittest.TestCase):
 class TestFosExperimentMapping(unittest.TestCase):
     """A FOS experiment's ``llm`` field resolves to the route each agent hits."""
 
-    EXPERIMENT_LLM = {
+    EXPERIMENT_LLM = {  # noqa: RUF012 - read-only fixture
         "default": {"provider": "deepseek", "model": "deepseek-chat"},
         "agents": {"7": {"provider": "qwen-local", "model": "qwen3-4b-instruct"}},
         "failure_policy": "pause_and_ask",

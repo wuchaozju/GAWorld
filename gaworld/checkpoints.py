@@ -23,17 +23,17 @@ Python ``random`` and NumPy generators).
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import pickle
 import random
 import re
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
@@ -177,9 +177,7 @@ class CheckpointManager:
         finally:
             if tmp_dir.exists():
                 shutil.rmtree(tmp_dir, ignore_errors=True)
-        return CheckpointRef(
-            run_id=self.run_id, completed_day=completed_day, path=str(day_dir)
-        )
+        return CheckpointRef(run_id=self.run_id, completed_day=completed_day, path=str(day_dir))
 
     def _collect_state(self, runtime: Any) -> dict:
         state: dict[str, Any] = {}
@@ -190,9 +188,7 @@ class CheckpointManager:
                 continue
             state[name] = payload
         if not state:
-            raise CheckpointError(
-                "no serialization hooks registered — nothing to checkpoint"
-            )
+            raise CheckpointError("no serialization hooks registered — nothing to checkpoint")
         return state
 
     def _write_state(self, dir_path: Path, state: dict) -> tuple[str, str]:
@@ -223,9 +219,7 @@ class CheckpointManager:
                 f"checkpoint state file {path} is corrupted (not valid JSON): {exc}"
             ) from exc
 
-    def _build_manifest(
-        self, runtime: Any, completed_day: int, state: dict, extra: dict | None
-    ) -> dict:
+    def _build_manifest(self, runtime: Any, completed_day: int, state: dict, extra: dict | None) -> dict:
         config_snapshot = {}
         if "config" in state:
             config_snapshot = state["config"]
@@ -235,7 +229,7 @@ class CheckpointManager:
             "completed_day": completed_day,
             "city": (config_snapshot or {}).get("city", "") if isinstance(config_snapshot, dict) else "",
             "agent_ids": state.get("agent_ids", []),
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "state_files": [STATE_NAME],
             "state_format": "json",
             "state": state,  # small runtimes inline; file copy kept for layout stability
@@ -268,9 +262,7 @@ class CheckpointManager:
                 day = int(manifest["completed_day"])
             except Exception:  # unreadable manifest → not a valid checkpoint
                 continue
-            if any(
-                not (entry / rel).is_file() for rel in manifest.get("state_files", [])
-            ):
+            if any(not (entry / rel).is_file() for rel in manifest.get("state_files", [])):
                 continue
             if day != int(m.group(1)):
                 continue
@@ -303,9 +295,7 @@ class CheckpointManager:
         text = str(ref).strip()
         m = re.match(r"^(?P<run>[^:]+):day_(?P<day>\d+)$", text)
         if not m:
-            raise CheckpointNotFound(
-                f"invalid checkpoint reference {ref!r} — expected '<run_id>:day_NNNN'"
-            )
+            raise CheckpointNotFound(f"invalid checkpoint reference {ref!r} — expected '<run_id>:day_NNNN'")
         day = int(m.group("day"))
         if m.group("run") != self.run_id:
             raise CheckpointNotFound(
@@ -360,16 +350,12 @@ class CheckpointManager:
                     path=target.path,
                 )
             except (KeyError, TypeError, ValueError) as exc:
-                raise CheckpointCorrupted(
-                    f"manifest at {manifest_path} has no valid completed_day"
-                ) from exc
+                raise CheckpointCorrupted(f"manifest at {manifest_path} has no valid completed_day") from exc
 
         state_path = day_dir / (manifest.get("state_files") or [STATE_NAME])[0]
         state = self._read_state(state_path, manifest.get("state_format", "json"))
         if not isinstance(state, dict):
-            raise CheckpointCorrupted(
-                f"checkpoint state at {state_path} must be a JSON object"
-            )
+            raise CheckpointCorrupted(f"checkpoint state at {state_path} must be a JSON object")
 
         # All validation passed — apply state, then config overrides (brief §8/§14:
         # runtime-config overrides stay distinguishable from simulation state).
@@ -387,15 +373,12 @@ class CheckpointManager:
                 cfg.update(config_overrides)
         return target
 
-    def _locate(
-        self, ref: CheckpointRef | str | None, completed_day: int | None
-    ) -> CheckpointRef:
+    def _locate(self, ref: CheckpointRef | str | None, completed_day: int | None) -> CheckpointRef:
         if ref is not None:
             if isinstance(ref, CheckpointRef):
                 if ref.run_id != self.run_id:
                     raise CheckpointNotFound(
-                        f"checkpoint ref {ref.as_str()!r} belongs to run "
-                        f"{ref.run_id!r}, not {self.run_id!r}"
+                        f"checkpoint ref {ref.as_str()!r} belongs to run {ref.run_id!r}, not {self.run_id!r}"
                     )
                 target = ref
             elif isinstance(ref, (str, os.PathLike)) and (
@@ -405,9 +388,7 @@ class CheckpointManager:
                 path = Path(ref)
                 if path.name == MANIFEST_NAME:
                     path = path.parent
-                target = CheckpointRef(
-                    run_id=self.run_id, completed_day=-1, path=str(path)
-                )
+                target = CheckpointRef(run_id=self.run_id, completed_day=-1, path=str(path))
             else:
                 target = self.resolve_ref(ref)
         elif completed_day is not None:
@@ -419,9 +400,7 @@ class CheckpointManager:
         else:
             latest = self.latest_checkpoint()
             if latest is None:
-                raise CheckpointNotFound(
-                    f"no checkpoints found under {self.checkpoints_dir}"
-                )
+                raise CheckpointNotFound(f"no checkpoints found under {self.checkpoints_dir}")
             target = latest
         if not (Path(target.path) / MANIFEST_NAME).is_file():
             raise CheckpointNotFound(
@@ -441,9 +420,7 @@ class _HookNotApplicable(Exception):
 def _encode(obj: Any) -> Any:
     """JSON-safe encode that preserves non-string dict keys (e.g. int agent ids)."""
     if isinstance(obj, dict) and any(not isinstance(k, str) for k in obj):
-        return {
-            "__ga_dict__": [[_encode(k), _encode(v)] for k, v in obj.items()]
-        }
+        return {"__ga_dict__": [[_encode(k), _encode(v)] for k, v in obj.items()]}
     if isinstance(obj, dict):
         return {k: _encode(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
@@ -482,9 +459,7 @@ def _rng_python_save(runtime: Any) -> Any:
 
 def _rng_python_load(runtime: Any, payload: Any) -> None:
     # JSON turns the internalstate tuple into a list — restore it as a tuple
-    if isinstance(payload, (list, tuple)) and len(payload) == 3 and isinstance(
-        payload[1], list
-    ):
+    if isinstance(payload, (list, tuple)) and len(payload) == 3 and isinstance(payload[1], list):
         payload = [payload[0], tuple(payload[1]), payload[2]]
     runtime.rng_python.setstate(tuple(payload))
 
@@ -539,6 +514,7 @@ DEFAULT_HOOKS = default_hooks()
 # Secrets never enter the carrier: the config snapshot is sanitized and
 # the launcher only passes state components, never credentials.
 
+
 def _rng_capture() -> dict:
     """Snapshot the global RNG surfaces (python random + legacy numpy)."""
     np_state = np.random.get_state()
@@ -569,9 +545,7 @@ def _rng_apply(payload: dict) -> None:
 
 
 def _rng_python_tuple(payload: Any) -> tuple:
-    if isinstance(payload, (list, tuple)) and len(payload) == 3 and isinstance(
-        payload[1], list
-    ):
+    if isinstance(payload, (list, tuple)) and len(payload) == 3 and isinstance(payload[1], list):
         return (payload[0], tuple(payload[1]), payload[2])
     return tuple(payload)  # type: ignore[return-value]
 
@@ -603,19 +577,13 @@ def simulation_state_hooks() -> dict[str, dict[str, Callable]]:
         return save, load
 
     hooks: dict[str, dict[str, Callable]] = {
-        "completed_day": dict(
-            zip(("save", "load"), json_component("completed_day"))
-        ),
-        "agents": dict(zip(("save", "load"), pickle_component("agents"))),
-        "plugin_state": dict(zip(("save", "load"), pickle_component("plugin_state"))),
-        "extension_state": dict(
-            zip(("save", "load"), pickle_component("extension_state"))
-        ),
-        "clock": dict(zip(("save", "load"), json_component("clock"))),
-        "agent_day_cursor": dict(
-            zip(("save", "load"), json_component("agent_day_cursor"))
-        ),
-        "env_runtime": dict(zip(("save", "load"), json_component("env_runtime"))),
+        "completed_day": dict(zip(("save", "load"), json_component("completed_day"), strict=False)),
+        "agents": dict(zip(("save", "load"), pickle_component("agents"), strict=False)),
+        "plugin_state": dict(zip(("save", "load"), pickle_component("plugin_state"), strict=False)),
+        "extension_state": dict(zip(("save", "load"), pickle_component("extension_state"), strict=False)),
+        "clock": dict(zip(("save", "load"), json_component("clock"), strict=False)),
+        "agent_day_cursor": dict(zip(("save", "load"), json_component("agent_day_cursor"), strict=False)),
+        "env_runtime": dict(zip(("save", "load"), json_component("env_runtime"), strict=False)),
     }
     hooks["rng"] = {
         "save": lambda rt: _rng_capture(),

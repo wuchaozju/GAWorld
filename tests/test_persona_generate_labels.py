@@ -16,9 +16,7 @@ from __future__ import annotations
 import unittest
 
 from gaworld.sim.agents_loader import parse_profile
-
-from tests.test_persona_generate_api import BaseGenerateCase, ENRICHED, _api
-
+from tests.test_persona_generate_api import ENRICHED, BaseGenerateCase
 
 BLOCK = """## Profile 999｜测试者
 **基础信息**：男，42岁，绍兴人，居住于柯桥，

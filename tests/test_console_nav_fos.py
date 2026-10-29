@@ -97,9 +97,7 @@ class TestFosNavPlacement:
         )
 
     def test_fos_button_not_in_analyze_group(self, nav_groups):
-        analyze_groups = [
-            g for g in nav_groups if set(g["tabs"]) & ANALYZE_GROUP_TABS
-        ]
+        analyze_groups = [g for g in nav_groups if set(g["tabs"]) & ANALYZE_GROUP_TABS]
         offenders = [g for g in analyze_groups if "fos" in g["tabs"]]
         assert not offenders, (
             "RED: data-tab='fos' still sits in the Analyze/分析 nav group "
@@ -108,7 +106,7 @@ class TestFosNavPlacement:
 
     def test_experiment_group_labels(self, nav_groups):
         """Sanity: the group we require fos into is really the Experiment group."""
-        exp = [g for g in nav_groups if EXPERIMENT_GROUP_TABS <= set(g["tabs"])]
+        exp = [g for g in nav_groups if set(g["tabs"]) >= EXPERIMENT_GROUP_TABS]
         assert exp, "test bug: Experiment group (collaboration/games/play/survey/external) not found"
 
 

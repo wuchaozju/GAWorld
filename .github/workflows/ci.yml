@@ -83,10 +83,23 @@ jobs:
       - name: Install FOS backend dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r fos/requirements-ci.txt
+          # fos/tests also import gaworld (rerun-isolation, SimTree fork tests),
+          # so the GAWorld runtime deps (numpy/pandas/matplotlib) are needed too.
+          pip install -r requirements.txt -r fos/requirements-test.txt
+          pip install -e . --no-deps -e ./fos --no-deps
       - name: Run FOS backend tests
         working-directory: fos
-        run: pytest tests -q
+        env:
+          PYTHONPATH: src
+        # Same deterministic scope as the upstream fos CI (fos/.github/workflows/ci.yml):
+        # real-Ollama scenarios and load tests stay out of routine CI.
+        run: >-
+          python -m pytest tests/ -q --no-header
+          --ignore=tests/llm_prompt_testing
+          --ignore=tests/smoke_tests
+          --ignore=tests/integration/test_real_llm_phase1.py
+          --ignore=tests/integration/test_llm_action_selection.py
+          --ignore=tests/load
 
   fos-frontend:
     runs-on: ubuntu-latest
@@ -94,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: fos/frontend/package-lock.json
       - name: Install frontend dependencies

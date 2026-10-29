@@ -79,13 +79,13 @@ class BuildChildEnvTests(unittest.TestCase):
 class SpawnCommandTests(unittest.TestCase):
     def test_spawn_uses_sys_executable_uvicorn_and_loopback(self):
         popen = _FakePopen()
-        with mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(sup.subprocess, "Popen", return_value=popen) as mp, \
-                mock.patch.object(
-                    sup, "_probe_config", side_effect=[None, _cfg(True)]
-                ), \
-                mock.patch.object(sup, "_port_probe_responds", return_value=False), \
-                mock.patch("time.sleep"):
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(sup.subprocess, "Popen", return_value=popen) as mp,
+            mock.patch.object(sup, "_probe_config", side_effect=[None, _cfg(True)]),
+            mock.patch.object(sup, "_port_probe_responds", return_value=False),
+            mock.patch("time.sleep"),
+        ):
             handle = sup.ensure_backend(poll_attempts=2)
         self.assertIsNotNone(handle)
         args = mp.call_args.args[0]
@@ -101,9 +101,11 @@ class SpawnCommandTests(unittest.TestCase):
 
 class ReuseHealthyBackendTests(unittest.TestCase):
     def test_healthy_integrated_backend_is_reused_not_owned_nor_killed(self):
-        with mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(sup, "_probe_config", return_value=_cfg(True)), \
-                mock.patch.object(sup.subprocess, "Popen") as mp:
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(sup, "_probe_config", return_value=_cfg(True)),
+            mock.patch.object(sup.subprocess, "Popen") as mp,
+        ):
             handle = sup.ensure_backend()
         mp.assert_not_called()
         self.assertFalse(handle["owned"])
@@ -113,9 +115,11 @@ class ReuseHealthyBackendTests(unittest.TestCase):
 
 class IncompatibleBackendTests(unittest.TestCase):
     def test_standalone_backend_on_port_fails_without_spawn_or_kill(self):
-        with mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(sup, "_probe_config", return_value=_cfg(False)), \
-                mock.patch.object(sup.subprocess, "Popen") as mp:
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(sup, "_probe_config", return_value=_cfg(False)),
+            mock.patch.object(sup.subprocess, "Popen") as mp,
+        ):
             with self.assertRaises(sup.FosBackendError) as ctx:
                 sup.ensure_backend()
         mp.assert_not_called()
@@ -124,10 +128,12 @@ class IncompatibleBackendTests(unittest.TestCase):
         self.assertIn("8000", msg)
 
     def test_non_fos_process_on_port_fails(self):
-        with mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(sup, "_probe_config", return_value=None), \
-                mock.patch.object(sup, "_port_probe_responds", return_value=True), \
-                mock.patch.object(sup.subprocess, "Popen") as mp:
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(sup, "_probe_config", return_value=None),
+            mock.patch.object(sup, "_port_probe_responds", return_value=True),
+            mock.patch.object(sup.subprocess, "Popen") as mp,
+        ):
             with self.assertRaises(sup.FosBackendError):
                 sup.ensure_backend()
         mp.assert_not_called()
@@ -136,9 +142,11 @@ class IncompatibleBackendTests(unittest.TestCase):
 class ExternalBackendTests(unittest.TestCase):
     def test_explicit_external_backend_url_skips_spawn(self):
         env = dict(os.environ, FOS_BACKEND_URL="http://127.0.0.1:9999")
-        with mock.patch.object(sup.os, "environ", env), \
-                mock.patch.object(sup.subprocess, "Popen") as mp, \
-                mock.patch.object(sup, "_probe_config") as probe:
+        with (
+            mock.patch.object(sup.os, "environ", env),
+            mock.patch.object(sup.subprocess, "Popen") as mp,
+            mock.patch.object(sup, "_probe_config") as probe,
+        ):
             handle = sup.ensure_backend()
         self.assertIsNone(handle)
         mp.assert_not_called()
@@ -155,11 +163,13 @@ class OwnedLifecycleTests(unittest.TestCase):
 
     def test_readiness_failure_terminates_spawned_process(self):
         popen = _FakePopen()
-        with mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(sup.subprocess, "Popen", return_value=popen), \
-                mock.patch.object(sup, "_probe_config", return_value=None), \
-                mock.patch.object(sup, "_port_probe_responds", return_value=False), \
-                mock.patch("time.sleep"):
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(sup.subprocess, "Popen", return_value=popen),
+            mock.patch.object(sup, "_probe_config", return_value=None),
+            mock.patch.object(sup, "_port_probe_responds", return_value=False),
+            mock.patch("time.sleep"),
+        ):
             with self.assertRaises(sup.FosBackendError):
                 sup.ensure_backend(poll_attempts=2)
         self.assertTrue(popen.terminated)
@@ -180,10 +190,12 @@ class RunServerWiringTests(unittest.TestCase):
                 raise KeyboardInterrupt()
 
         env = {k: v for k, v in os.environ.items() if k != "FOS_BACKEND_URL"}
-        with mock.patch.object(ds, "_ensure_fos_backend", ensure, create=True), \
-                mock.patch.object(ds, "_shutdown_fos_backend", shutdown, create=True), \
-                mock.patch.object(ds, "ThreadingHTTPServer", _DummyServer), \
-                mock.patch.dict(os.environ, env, clear=True):
+        with (
+            mock.patch.object(ds, "_ensure_fos_backend", ensure, create=True),
+            mock.patch.object(ds, "_shutdown_fos_backend", shutdown, create=True),
+            mock.patch.object(ds, "ThreadingHTTPServer", _DummyServer),
+            mock.patch.dict(os.environ, env, clear=True),
+        ):
             ds.run_server(port=0)
         ensure.assert_called_once()
         shutdown.assert_called_once()
@@ -202,9 +214,7 @@ class CliHelpSmoke(unittest.TestCase):
             cmds.insert(0, [console_script, "dashboard", "--help"])
         for cmd in cmds:
             with self.subTest(cmd=cmd):
-                proc = subprocess.run(
-                    cmd, cwd=repo, capture_output=True, text=True, timeout=120
-                )
+                proc = subprocess.run(cmd, cwd=repo, capture_output=True, text=True, timeout=120)
                 self.assertEqual(proc.returncode, 0, proc.stderr)
                 self.assertIn("dashboard", (proc.stdout + proc.stderr).lower())
 

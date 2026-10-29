@@ -107,7 +107,10 @@ class ProductionSpawnPathTests(unittest.TestCase):
             captured.clear()
             with open(os.devnull, "w") as handle:
                 worldrun_run.launch_subprocess(
-                    ["x"], world_id="w", stdout=handle, stderr=subprocess.STDOUT,
+                    ["x"],
+                    world_id="w",
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
                     new_process_group=False,
                 )
             self.assertIs(captured["stdout"], handle)
@@ -131,14 +134,15 @@ class SeedFromCheckpointPlumbTests(unittest.TestCase):
     def test_seeded_world_dir_is_materialized_and_reset_is_skipped(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = self._make_source_run(tmp)
-            payload = dict(BASIC_PAYLOAD, worlds=[
-                {"label": "种子世界", "events": [], "seed_from_checkpoint": source},
-                {"label": "对照世界", "events": []},
-            ])
-            manifest = prunner.prepare_experiment(spec_mod.normalize_experiment(payload), tmp)
-            seeded = next(
-                wid for wid, entry in manifest["worlds"].items() if entry.get("seeded_from")
+            payload = dict(
+                BASIC_PAYLOAD,
+                worlds=[
+                    {"label": "种子世界", "events": [], "seed_from_checkpoint": source},
+                    {"label": "对照世界", "events": []},
+                ],
             )
+            manifest = prunner.prepare_experiment(spec_mod.normalize_experiment(payload), tmp)
+            seeded = next(wid for wid, entry in manifest["worlds"].items() if entry.get("seeded_from"))
             entry = manifest["worlds"][seeded]
             self.assertEqual(entry["seeded_from"], source)
             world_abs = os.path.join(tmp, entry["dir"])
@@ -146,9 +150,7 @@ class SeedFromCheckpointPlumbTests(unittest.TestCase):
             self.assertTrue(os.path.isdir(os.path.join(world_abs, "checkpoints", "day_0002")))
             with open(os.path.join(world_abs, "state", "agent_state_history.csv")) as handle:
                 self.assertIn("emotion", handle.read())
-            self.assertTrue(
-                os.path.exists(os.path.join(source, "state", "agent_state_history.csv"))
-            )
+            self.assertTrue(os.path.exists(os.path.join(source, "state", "agent_state_history.csv")))
 
             stub = os.path.join(tmp, "stub_sim.py")
             with open(stub, "w", encoding="utf-8") as handle:
@@ -167,9 +169,12 @@ class SeedFromCheckpointPlumbTests(unittest.TestCase):
 
     def test_unresolvable_seed_ref_fails_loudly(self):
         with tempfile.TemporaryDirectory() as tmp:
-            payload = dict(BASIC_PAYLOAD, worlds=[
-                {"label": "坏种子", "events": [], "seed_from_checkpoint": "no/such/ref"},
-                {"label": "对照世界", "events": []},
-            ])
+            payload = dict(
+                BASIC_PAYLOAD,
+                worlds=[
+                    {"label": "坏种子", "events": [], "seed_from_checkpoint": "no/such/ref"},
+                    {"label": "对照世界", "events": []},
+                ],
+            )
             with self.assertRaises(FileNotFoundError):
                 prunner.prepare_experiment(spec_mod.normalize_experiment(payload), tmp)

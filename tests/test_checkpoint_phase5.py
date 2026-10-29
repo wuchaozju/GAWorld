@@ -16,7 +16,6 @@ import os
 import random
 import subprocess
 import sys
-import sysconfig
 
 import numpy as np
 import pytest
@@ -27,6 +26,7 @@ try:  # deferred import: the feature is missing, tests must fail individually
         CheckpointManager,
         CheckpointVersionUnsupported,
     )
+
     _FEATURE_PRESENT = True
 except ModuleNotFoundError as _exc:  # pragma: no cover - RED phase
     if _exc.name != "gaworld.checkpoints":
@@ -44,6 +44,7 @@ def _require_feature():
 # Helpers — a tiny deterministic "runtime" standing in for the real one
 # ---------------------------------------------------------------------------
 
+
 class MiniRuntime:
     """Minimal mutable runtime state with the same shape of concerns as the
     GAWorld day loop: clock/day cursor, per-agent mutable dicts, an RNG, a
@@ -53,10 +54,7 @@ class MiniRuntime:
         self.completed_day = 0
         self.config = {"sim_days": 3, "city": "测试市"}
         self.agent_ids = [2, 7, 11]
-        self.agents = {
-            aid: {"id": aid, "mood": 0.5, "money": 100.0, "steps": []}
-            for aid in self.agent_ids
-        }
+        self.agents = {aid: {"id": aid, "mood": 0.5, "money": 100.0, "steps": []} for aid in self.agent_ids}
         self.rng_python = random.Random(seed)
         self.rng_numpy = np.random.default_rng(seed)
         self.routing = {
@@ -95,6 +93,7 @@ def capture_state(rt: MiniRuntime) -> dict:
 # Manifest / discovery
 # ---------------------------------------------------------------------------
 
+
 class TestManifestAndDiscovery:
     def test_save_day0000_before_day1(self, tmp_path):
         """Requirement 6: day_0000 checkpoint after population load, before
@@ -109,11 +108,16 @@ class TestManifestAndDiscovery:
         rt = MiniRuntime()
         mgr = CheckpointManager(run_dir=tmp_path, run_id="run-a")
         mgr.save_checkpoint(rt, completed_day=1)
-        manifest = json.loads(
-            (tmp_path / "checkpoints" / "day_0001" / "manifest.json").read_text("utf-8")
-        )
-        for key in ("checkpoint_version", "run_id", "completed_day", "city",
-                    "agent_ids", "created_at", "state_files"):
+        manifest = json.loads((tmp_path / "checkpoints" / "day_0001" / "manifest.json").read_text("utf-8"))
+        for key in (
+            "checkpoint_version",
+            "run_id",
+            "completed_day",
+            "city",
+            "agent_ids",
+            "created_at",
+            "state_files",
+        ):
             assert key in manifest, f"manifest missing {key}"
         assert manifest["run_id"] == "run-a"
         assert manifest["completed_day"] == 1
@@ -137,6 +141,7 @@ class TestManifestAndDiscovery:
 # State equivalence / restore
 # ---------------------------------------------------------------------------
 
+
 class TestStateEquivalence:
     def test_all_components_roundtrip(self, tmp_path):
         rt = MiniRuntime()
@@ -148,9 +153,7 @@ class TestStateEquivalence:
 
         fresh = MiniRuntime()  # destroyed / fresh runtime, day 0
         mgr.restore_checkpoint(fresh, ref=None)  # ref None → latest
-        assert capture_state(fresh) == before, (
-            "every checkpointed component must survive restore identically"
-        )
+        assert capture_state(fresh) == before, "every checkpointed component must survive restore identically"
 
     def test_resume_never_reruns_completed_day(self, tmp_path):
         rt = MiniRuntime()
@@ -234,6 +237,7 @@ class TestRNGContinuation:
 # Failure / atomicity / validation
 # ---------------------------------------------------------------------------
 
+
 class TestFailedDayInvariant:
     def test_failed_day_leaves_no_checkpoint(self, tmp_path):
         rt = MiniRuntime()
@@ -298,6 +302,7 @@ def manifest_state_files(day_dir):
 # Secrets
 # ---------------------------------------------------------------------------
 
+
 class TestSecretsNeverCheckpointed:
     def test_no_api_keys_in_checkpoint_payload(self, tmp_path):
         rt = MiniRuntime()
@@ -319,7 +324,7 @@ class TestSecretsNeverCheckpointed:
 # Fresh-process restore
 # ---------------------------------------------------------------------------
 
-SUBPROCESS_RESTORE = '''
+SUBPROCESS_RESTORE = """
 import json, sys, tempfile, pathlib
 sys.path.insert(0, {repo!r})
 from gaworld.checkpoints import CheckpointManager
@@ -331,7 +336,8 @@ mgr = CheckpointManager(run_dir=run_dir, run_id="run-a")
 rt = MiniRuntime()
 mgr.restore_checkpoint(rt, ref=None)
 print(json.dumps(capture_state(rt)))
-'''
+"""
+
 
 class TestFreshProcessRestore:
     def test_restore_in_fresh_subprocess(self, tmp_path):
@@ -345,12 +351,12 @@ class TestFreshProcessRestore:
 
         repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         tests_dir = os.path.dirname(os.path.abspath(__file__))
-        code = SUBPROCESS_RESTORE.format(
-            repo=repo, tests=tests_dir, run_dir=str(tmp_path)
-        )
+        code = SUBPROCESS_RESTORE.format(repo=repo, tests=tests_dir, run_dir=str(tmp_path))
         proc = subprocess.run(
             [sys.executable, "-c", code],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         assert proc.returncode == 0, proc.stderr
         assert json.loads(proc.stdout.strip().splitlines()[-1]) == expected
@@ -359,6 +365,7 @@ class TestFreshProcessRestore:
 # ---------------------------------------------------------------------------
 # Resume interface
 # ---------------------------------------------------------------------------
+
 
 class TestResumeInterface:
     def test_resume_from_checkpoint_ref_resolves(self, tmp_path):

@@ -17,8 +17,7 @@ from __future__ import annotations
 import unittest
 
 from gaworld.apps import residents, world_paths
-
-from tests.test_persona_generate_api import BaseGenerateCase, ENRICHED, _api, make_fake_llm
+from tests.test_persona_generate_api import ENRICHED, BaseGenerateCase, make_fake_llm
 
 
 def csv_snapshot():
@@ -77,7 +76,6 @@ class TestFailureIsolation(BaseGenerateCase):
         _fn, rows = csv_snapshot()
         other_id = int(next(row["id"] for row in rows if row["id"] not in ("1", "2")))
         self.run_job({"scope": "selected", "ids": [1, other_id]})
-        calls_after_first = len(self.fake_llm.calls)
         # Retry: only what failed should be re-run.
         _swap(self, make_fake_llm())
         record = self.run_job({"scope": "selected", "ids": [other_id]})

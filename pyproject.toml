@@ -73,6 +73,9 @@ exclude = [
     "__pycache__",
     "build",
     "dist",
+    # fos/ is independently maintained upstream code (fos/pyproject.toml has
+    # its own tooling); the GAWorld lint ratchet must not judge it.
+    "fos",
 ]
 
 [tool.ruff.lint]
@@ -96,7 +99,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["B011", "SIM117"]
+"tests/*" = ["B011", "SIM117", "B017"]
 "backup/*" = ["F", "E", "W", "B", "I", "UP", "SIM", "RUF"]
 "legacy/*" = ["F", "E", "W", "B", "I", "UP", "SIM", "RUF"]
 
@@ -142,7 +145,8 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+# fos/src: a few integration tests import the grafted fos subtree directly.
+pythonpath = [".", "fos/src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

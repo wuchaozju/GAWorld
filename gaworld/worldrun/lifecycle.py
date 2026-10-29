@@ -10,9 +10,7 @@ cancel or fail a sibling.
 from __future__ import annotations
 
 #: The shared status model. Nothing outside this set is ever reported.
-STATUSES = frozenset(
-    {"created", "running", "completed", "failed", "cancelled", "timed_out"}
-)
+STATUSES = frozenset({"created", "running", "completed", "failed", "cancelled", "timed_out"})
 
 TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled", "timed_out"})
 

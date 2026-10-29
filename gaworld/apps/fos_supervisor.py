@@ -43,7 +43,7 @@ FOS_SRC = os.path.join(REPO_ROOT, "fos", "src")
 FOS_FRONTEND_DIR = os.path.join(REPO_ROOT, "fos", "frontend")
 FOS_DIST_DIR = os.path.join(FOS_FRONTEND_DIR, "dist")
 DEFAULT_FOS_PORT = 8000
-DEFAULT_FOS_URL = "http://127.0.0.1:%d" % DEFAULT_FOS_PORT
+DEFAULT_FOS_URL = f"http://127.0.0.1:{DEFAULT_FOS_PORT}"
 POLL_INTERVAL_S = 0.25
 DEFAULT_POLL_ATTEMPTS = 240  # ~60s at 0.25s
 
@@ -72,9 +72,7 @@ def validate_fos_dist(dist_dir=FOS_DIST_DIR):
     fix = "Run `npm run build:integrated` in fos/frontend/, then rerun `gaworld dashboard`."
     index_path = os.path.join(dist_dir, "index.html")
     if not os.path.isfile(index_path):
-        raise FosBackendError(
-            f"No FOS frontend build found (missing {index_path}). {fix}"
-        )
+        raise FosBackendError(f"No FOS frontend build found (missing {index_path}). {fix}")
     with open(index_path, encoding="utf-8") as handle:
         html = handle.read()
     refs = [ref.lstrip("/") for ref in _LOCAL_ASSET_RE.findall(html)]
@@ -86,7 +84,7 @@ def validate_fos_dist(dist_dir=FOS_DIST_DIR):
             f"integrated hosting. {fix}"
         )
     for ref in refs:
-        name = ref[len("fos/assets/"):]
+        name = ref[len("fos/assets/") :]
         if not name or not os.path.isfile(os.path.join(dist_dir, "assets", *name.split("/"))):
             raise FosBackendError(
                 f"The FOS frontend build in {dist_dir} is incomplete: "
@@ -136,16 +134,15 @@ def _spawn_backend(port):
         "--port",
         str(port),
     ]
-    log = tempfile.NamedTemporaryFile(
-        prefix="gaworld-fos-backend-", suffix=".log", delete=False
-    )
+    # delete=False: only the path is needed here; the child process owns the file.
+    log = tempfile.NamedTemporaryFile(prefix="gaworld-fos-backend-", suffix=".log", delete=False)  # noqa: SIM115
     log_path = log.name
     log.close()
-    handle = subprocess.Popen(  # noqa: S603 - fixed argv, no shell
+    handle = subprocess.Popen(
         cmd,
         cwd=REPO_ROOT,
         env=build_child_env(),
-        stdout=open(log_path, "ab"),
+        stdout=open(log_path, "ab"),  # noqa: SIM115 - the child owns the handle for its lifetime
         stderr=subprocess.STDOUT,
     )
     handle._gaworld_fos_log = log_path  # type: ignore[attr-defined]
@@ -162,22 +159,22 @@ def ensure_backend(port=DEFAULT_FOS_PORT, poll_attempts=DEFAULT_POLL_ATTEMPTS):
     if os.environ.get("FOS_BACKEND_URL"):
         # Explicit external backend configuration: not ours to manage.
         return None
-    base_url = "http://127.0.0.1:%d" % port
+    base_url = f"http://127.0.0.1:{port}"
 
     existing = _probe_config(base_url)
     if existing is not None:
         if existing.get("single_user_mode") is True:
-            print("FOS backend: reusing integrated backend at " + base_url)
+            print(f"FOS backend: reusing integrated backend at {base_url}")
             return {"owned": False, "url": base_url}
         raise FosBackendError(
-            "Port %d is occupied by a standalone/authenticated FOS backend " % port
-            + "(single_user_mode=false). Stop it and rerun `gaworld dashboard`, "
+            f"Port {port} is occupied by a standalone/authenticated FOS backend "
+            "(single_user_mode=false). Stop it and rerun `gaworld dashboard`, "
             "or explicitly configure an external backend via FOS_BACKEND_URL."
         )
     if _port_probe_responds(base_url):
         raise FosBackendError(
-            "Port %d is occupied by an unrecognized process that is not a FOS " % port
-            + "backend. Free the port and rerun `gaworld dashboard`."
+            f"Port {port} is occupied by an unrecognized process that is not a FOS "
+            "backend. Free the port and rerun `gaworld dashboard`."
         )
 
     popen = _spawn_backend(port)
@@ -185,9 +182,9 @@ def ensure_backend(port=DEFAULT_FOS_PORT, poll_attempts=DEFAULT_POLL_ATTEMPTS):
         if popen.poll() is not None:
             log_path = getattr(popen, "_gaworld_fos_log", "<unknown>")
             raise FosBackendError(
-                ("The managed FOS backend exited during startup (exit code %s). "
-                % popen.returncode)
-                + "See its log: " + log_path
+                (f"The managed FOS backend exited during startup (exit code {popen.returncode}). ")
+                + "See its log: "
+                + log_path
             )
         cfg = _probe_config(base_url, timeout=1.0)
         if cfg is not None:
@@ -203,7 +200,8 @@ def ensure_backend(port=DEFAULT_FOS_PORT, poll_attempts=DEFAULT_POLL_ATTEMPTS):
         time.sleep(POLL_INTERVAL_S)
     _terminate(popen)
     raise FosBackendError(
-        "The managed FOS backend did not become ready on " + base_url
+        "The managed FOS backend did not become ready on "
+        + base_url
         + " in time. See the backend log and rerun `gaworld dashboard`."
     )
 
@@ -235,4 +233,3 @@ def shutdown_backend(handle):
     if popen is not None:
         _terminate(popen)
         print("FOS backend: stopped.")
-

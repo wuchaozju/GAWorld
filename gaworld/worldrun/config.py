@@ -74,8 +74,7 @@ def validate_world_overrides(config: Any, *, where: str = "world") -> None:
     conflicts = sorted(set(config) & RESERVED_CONFIG_KEYS)
     if conflicts:
         raise ReservedOverrideError(
-            f"{where}: config 不能覆盖实验级设置 {', '.join(conflicts)}"
-            f"（它们是各世界之间的对照基准）"
+            f"{where}: config 不能覆盖实验级设置 {', '.join(conflicts)}（它们是各世界之间的对照基准）"
         )
     for key, value in config.items():
         path = _dotted_path("", key)
@@ -86,15 +85,13 @@ def validate_world_overrides(config: Any, *, where: str = "world") -> None:
 def _validate_nested(node: dict, prefix: str, *, where: str) -> None:
     if prefix in RESERVED_DOTTED_KEYS:
         raise ReservedOverrideError(
-            f"{where}: config 不能覆盖输出路径 {prefix}"
-            f"（它会把这个世界的产物写回共享目录）"
+            f"{where}: config 不能覆盖输出路径 {prefix}（它会把这个世界的产物写回共享目录）"
         )
     for key, value in node.items():
         path = _dotted_path(prefix, key)
         if path in RESERVED_DOTTED_KEYS:
             raise ReservedOverrideError(
-                f"{where}: config 不能覆盖输出路径 {path}"
-                f"（它会把这个世界的产物写回共享目录）"
+                f"{where}: config 不能覆盖输出路径 {path}（它会把这个世界的产物写回共享目录）"
             )
         if isinstance(value, dict):
             _validate_nested(value, path, where=where)
@@ -103,8 +100,8 @@ def _validate_nested(node: dict, prefix: str, *, where: str) -> None:
 __all__ = [
     "RESERVED_CONFIG_KEYS",
     "RESERVED_DOTTED_KEYS",
-    "ReservedOverrideError",
     "RUN_PATHS",
+    "ReservedOverrideError",
     "run_root_overrides",
     "validate_world_overrides",
 ]

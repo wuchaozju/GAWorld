@@ -28,6 +28,7 @@ import uuid
 from typing import Any
 
 from gaworld.worldrun import lifecycle
+from gaworld.worldrun.lifecycle import STATUSES
 from gaworld.worldrun.config import (
     RESERVED_CONFIG_KEYS,
     validate_world_overrides,
@@ -239,11 +240,7 @@ def _launch_one(
         # (they are recorded in the manifest's seed_refs); it may never
         # re-point output paths into the shared tree.
         validate_world_overrides(
-            {
-                key: value
-                for key, value in config.items()
-                if isinstance(value, dict)
-            },
+            {key: value for key, value in config.items() if isinstance(value, dict)},
             where=f"world {world_id!r}",
         )
     else:
@@ -285,8 +282,7 @@ def _execute(handle: RunHandle) -> None:
 
         history = HistoryAppender(handle.output_dir)
         state_history: dict[int, dict[str, list[float]]] = {
-            agent_id: {metric: [] for metric in _EXECUTOR_METRICS}
-            for agent_id in agent_ids
+            agent_id: {metric: [] for metric in _EXECUTOR_METRICS} for agent_id in agent_ids
         }
         first_day = 0
         if seed_dir:
@@ -300,9 +296,7 @@ def _execute(handle: RunHandle) -> None:
                 "worlds": {handle.world_id: {"status": "running"}},
                 "worldrun_version": WORLDRUN_VERSION,
                 "completed_day": None,
-                "checkpoint_lineage": (
-                    {"source_run": str(seed_dir)} if seed_dir else None
-                ),
+                "checkpoint_lineage": ({"source_run": str(seed_dir)} if seed_dir else None),
                 "seed_refs": {"random_seed": seed},
                 "agent_ids": list(agent_ids),
                 "parent_run": None,
@@ -319,14 +313,10 @@ def _execute(handle: RunHandle) -> None:
         fail_on_day = spec.get("fail_on_day")
         for day in range(first_day, last_day):
             if fail_on_day is not None and day == int(fail_on_day):
-                raise RunError(
-                    f"world {handle.world_id!r}: induced failure on day {day}"
-                )
+                raise RunError(f"world {handle.world_id!r}: induced failure on day {day}")
             for agent_id in agent_ids:
                 for metric in _EXECUTOR_METRICS:
-                    state_history[agent_id][metric].append(
-                        round(0.5 + 0.01 * day, 6)
-                    )
+                    state_history[agent_id][metric].append(round(0.5 + 0.01 * day, 6))
             history.flush(state_history, step_offset=first_day)
             _patch_manifest(handle, completed_day=day, status="running")
             # Failure isolation + cancellation are day-boundary semantics:

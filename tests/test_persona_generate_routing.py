@@ -18,12 +18,9 @@ feature, never with a syntax error.
 from __future__ import annotations
 
 import unittest
-from unittest import mock
 
 from gaworld.llm.providers import resolve_llm_target
-
 from tests.test_persona_generate_api import BaseGenerateCase, _api
-
 
 ROUTING = {
     "default": {"provider": "a", "model": "m-a"},
@@ -48,7 +45,7 @@ class TestRouterPrecedenceGuard(unittest.TestCase):
 
 class TestDelegateRouting(BaseGenerateCase):
     def test_enrichment_calls_with_persona_author_task_and_no_agent(self):
-        api = _api()
+        _api()
         record = self.run_job({"scope": "selected", "ids": [1]})
         self.assertEqual("completed", record["status"], record.get("error"))
         self.assertEqual(1, len(self.fake_llm.calls))

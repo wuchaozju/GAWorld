@@ -111,7 +111,8 @@ class CompareApiTests(unittest.TestCase):
             _copy_fixture(repo)
             replied = _post_compare(_manifest())
             self.assertIsNotNone(
-                replied, "POST /api/analysis/compare is not routed",
+                replied,
+                "POST /api/analysis/compare is not routed",
             )
             body, status = replied
             self.assertEqual(status, 200, body)
@@ -123,11 +124,7 @@ class CompareApiTests(unittest.TestCase):
             self.assertTrue(treat["has_data"])
 
             artifacts = os.path.join(repo, "output", "comparisons")
-            written = [
-                name
-                for name in os.listdir(artifacts)
-                if os.path.isdir(os.path.join(artifacts, name))
-            ]
+            written = [name for name in os.listdir(artifacts) if os.path.isdir(os.path.join(artifacts, name))]
             self.assertEqual(len(written), 1, written)
             out = os.path.join(artifacts, written[0])
             for name in ("report.json", "divergence_metrics.csv", "divergence_summary.md"):
@@ -145,9 +142,7 @@ class CompareApiTests(unittest.TestCase):
     def test_missing_state_csv_is_a_clear_error(self):
         with _TempRepo() as repo:
             _copy_fixture(repo)
-            os.remove(
-                os.path.join(repo, "cmp/golden/treat/state/agent_state_history.csv")
-            )
+            os.remove(os.path.join(repo, "cmp/golden/treat/state/agent_state_history.csv"))
             body, status = _post_compare(_manifest())
             self.assertGreaterEqual(status, 400)
             self.assertLess(status, 500)
@@ -222,9 +217,7 @@ class AnalyzerResolverTests(unittest.TestCase):
                 resolved["dir"] = os.path.join(repo_root, entry["dir"])
                 return resolved
 
-            report = runner.analyze_experiment(
-                "<must-not-be-joined>", _manifest(), path_resolver=resolver
-            )
+            report = runner.analyze_experiment("<must-not-be-joined>", _manifest(), path_resolver=resolver)
             treat = next(w for w in report["worlds"] if w["id"] == "treat")
             self.assertTrue(treat["has_data"])
             self.assertEqual(treat["split_step"], 3)

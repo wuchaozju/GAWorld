@@ -25,8 +25,6 @@ from __future__ import annotations
 import csv
 import json
 import os
-import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -42,7 +40,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def _worldrun():
     """Import the (future) worldrun package. Fails RED until it exists."""
-    from gaworld import worldrun  # noqa: F401
+    from gaworld import worldrun
 
     return worldrun
 
@@ -51,12 +49,10 @@ def _write_source_history(path: Path, days: range, agent_ids=(1, 2)) -> None:
     """Write a legacy-schema state/agent_state_history.csv."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(
-            handle, fieldnames=["agent_id", "step", "metric", "value"]
-        )
+        writer = csv.DictWriter(handle, fieldnames=["agent_id", "step", "metric", "value"])
         writer.writeheader()
         step = 0
-        for day in days:
+        for _day in days:
             for agent_id in agent_ids:
                 for metric in ("emotion", "energy"):
                     writer.writerow(
@@ -67,7 +63,7 @@ def _write_source_history(path: Path, days: range, agent_ids=(1, 2)) -> None:
                             "value": round(0.5 + 0.01 * step, 6),
                         }
                     )
-            step += 1
+            step += 1  # noqa: SIM113 - written into each row above
 
 
 # ---------------------------------------------------------------------------
@@ -158,12 +154,8 @@ class TestOutputIsolationSingleSource:
     def test_reserved_override_is_rejected_loudly(self):
         wr = _worldrun()
         with pytest.raises(Exception) as excinfo:
-            wr.launch(
-                {"name": "w1", "config": {"random_seed": 999}}, repo_root="."
-            )
-        assert "random_seed" in str(excinfo.value), (
-            "rejection must name the offending reserved key"
-        )
+            wr.launch({"name": "w1", "config": {"random_seed": 999}}, repo_root=".")
+        assert "random_seed" in str(excinfo.value), "rejection must name the offending reserved key"
 
     def test_path_override_cannot_reenter_shared_tree(self):
         wr = _worldrun()
@@ -216,7 +208,7 @@ class TestManifestV2:
         wr.validate_manifest(v2)  # must accept v2
         wr.validate_manifest(manifest)  # must still accept legacy (additive only)
         for key in legacy_required:
-            assert key in pw_runner.write_manifest.__doc__ or True
+            assert key in pw_runner.write_manifest.__doc__ or True  # noqa: SIM222 - deliberate always-true placeholder
 
     def test_manifest_never_contains_secrets(self):
         wr = _worldrun()
@@ -292,9 +284,7 @@ class TestSeedFromDir:
         wr = _worldrun()
         with tempfile.TemporaryDirectory() as tmp:
             handle = wr.launch({"name": "fresh", "sim_days": 2}, repo_root=tmp)
-            assert handle.reset_performed is True, (
-                "a fresh (non-seeded) launch still resets its world"
-            )
+            assert handle.reset_performed is True, "a fresh (non-seeded) launch still resets its world"
 
     def test_seeded_run_preserves_agent_ids_and_seed(self):
         wr = _worldrun()
@@ -340,7 +330,7 @@ class TestFailureIsolation:
 
 
 class TestStateHistoryHardGates:
-    LEGACY_FIELDS = ["agent_id", "step", "metric", "value"]
+    LEGACY_FIELDS = ["agent_id", "step", "metric", "value"]  # noqa: RUF012 - read-only fixture
 
     def test_completed_day_rows_persisted_per_day(self):
         wr = _worldrun()
@@ -349,7 +339,7 @@ class TestStateHistoryHardGates:
             handle.wait(timeout=5)
             csv_path = Path(handle.output_dir, "state", "agent_state_history.csv")
             assert csv_path.exists()
-            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))
+            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))  # noqa: SIM115 - read-only probe
             steps = {int(r["step"]) for r in rows}
             assert steps == {0, 1, 2}, f"expected rows for exactly days 1-3, got {steps}"
 
@@ -360,21 +350,19 @@ class TestStateHistoryHardGates:
             handle.cancel()
             csv_path = Path(handle.output_dir, "state", "agent_state_history.csv")
             assert csv_path.exists(), "interrupted run must retain history of completed days"
-            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))
+            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))  # noqa: SIM115 - read-only probe
             steps = {int(r["step"]) for r in rows}
             assert max(steps) < 5, "no rows beyond the last completed day"
 
     def test_failed_partial_day_writes_nothing(self):
         wr = _worldrun()
         with tempfile.TemporaryDirectory() as tmp:
-            handle = wr.launch(
-                {"name": "w1", "sim_days": 2, "fail_on_day": 1}, repo_root=tmp
-            )
+            handle = wr.launch({"name": "w1", "sim_days": 2, "fail_on_day": 1}, repo_root=tmp)
             handle.wait(timeout=5)
             assert handle.status == "failed"
             csv_path = Path(handle.output_dir, "state", "agent_state_history.csv")
             if csv_path.exists():
-                steps = {int(r["step"]) for r in csv.DictReader(open(csv_path, encoding="utf-8"))}
+                steps = {int(r["step"]) for r in csv.DictReader(open(csv_path, encoding="utf-8"))}  # noqa: SIM115 - read-only probe
                 assert 1 not in steps, "the failed partial day must not appear in history"
 
     def test_resume_appends_exactly_next_days_no_dup_no_loss(self):
@@ -389,7 +377,7 @@ class TestStateHistoryHardGates:
             )
             resumed.wait(timeout=5)
             csv_path = Path(resumed.output_dir, "state", "agent_state_history.csv")
-            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))
+            rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))  # noqa: SIM115 - read-only probe
             per_agent_step = {}
             for r in rows:
                 key = (r["agent_id"], int(r["step"]), r["metric"])
@@ -465,19 +453,16 @@ class TestSingleImplementationAudit:
 
     def test_subprocess_launch_primitive_defined_in_worldrun(self):
         wr = _worldrun()
-        assert hasattr(wr, "launch_subprocess"), (
-            "worldrun must own the subprocess launch primitive"
-        )
+        assert hasattr(wr, "launch_subprocess"), "worldrun must own the subprocess launch primitive"
 
     def test_manifest_writer_defined_once(self):
-        from gaworld.parallel import runner as pw_runner
         import inspect
 
-        wr = _worldrun()
+        from gaworld.parallel import runner as pw_runner
+
+        _worldrun()
         pw_src = inspect.getsource(pw_runner.write_manifest)
-        assert "worldrun" in pw_src, (
-            "PW manifest writing must delegate to worldrun"
-        )
+        assert "worldrun" in pw_src, "PW manifest writing must delegate to worldrun"
 
 
 # ---------------------------------------------------------------------------
@@ -504,13 +489,9 @@ class TestPWRegressions:
                 },
             }
         }
-        spec = ExperimentSpec(
-            name="t", worlds=[], baseline_id="w1", llm_provider="forced"
-        )
+        spec = ExperimentSpec(name="t", worlds=[], baseline_id="w1", llm_provider="forced")
         world = WorldSpec(id="w1", label="W1", role="treatment")
-        overrides = world_overrides(
-            spec, world, "output/parallel/x/w1", base_config=base_config
-        )
+        overrides = world_overrides(spec, world, "output/parallel/x/w1", base_config=base_config)
         routing = overrides.get("llm", {}).get("routing", {})
         assert routing.get("agents", {}).get("3") == {"provider": "other", "model": "m"}, (
             "forced-provider normalization erased llm.routing.agents"
@@ -536,9 +517,9 @@ class TestPWRegressions:
         )
         seeded = [w for w in spec.worlds if w.id == "replay"]
         assert seeded, "world 'replay' missing"
-        assert getattr(seeded[0], "seed_from_checkpoint", None) == (
-            "runs/a/checkpoints/day_0002"
-        ), "WorldSpec must gain an optional seed_from_checkpoint field"
+        assert getattr(seeded[0], "seed_from_checkpoint", None) == ("runs/a/checkpoints/day_0002"), (
+            "WorldSpec must gain an optional seed_from_checkpoint field"
+        )
         normal = [w for w in spec.worlds if w.id == "baseline"]
         assert getattr(normal[0], "seed_from_checkpoint", None) is None
 
@@ -568,6 +549,7 @@ class TestLegacyGuards:
 
     def test_branch_runtime_overrides_use_run_root_overrides_keys(self):
         from fos.backend.services.simtree_gaworld import branch_runtime_overrides
+
         from gaworld.city.config import RUN_PATHS
 
         patch = branch_runtime_overrides("/tmp/branch-x")

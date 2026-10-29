@@ -47,9 +47,7 @@ class FosFrontendHostingTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not os.path.isfile(FOS_INDEX):
-            raise unittest.SkipTest(
-                "fos/frontend/dist/index.html missing — build the FOS frontend first"
-            )
+            raise unittest.SkipTest("fos/frontend/dist/index.html missing — build the FOS frontend first")
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), ds.DashboardHandler)
         cls.port = cls.server.server_address[1]
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()

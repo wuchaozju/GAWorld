@@ -7,7 +7,6 @@ resolutions (Caddyfile path matcher, dashboard locales).
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -116,9 +115,7 @@ def test_caddyfile_unions_multi_user_and_fos_paths():
 def test_locale_key_union(locale):
     """Both locales carry the FOS keys and the multi-user/community keys."""
     data = json.loads(
-        (REPO_ROOT / "site" / "dashboard" / "locales" / f"{locale}.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "site" / "dashboard" / "locales" / f"{locale}.json").read_text(encoding="utf-8")
     )
     for key in (
         "nav.fos",

@@ -74,9 +74,7 @@ def make_fake_llm(*, fail_on_call=(), broken_json_on_call=(), mutates_structural
     calls: list[dict] = []
 
     def fake(prompt, task=None, agent_id=None, provider=None, **kwargs):
-        calls.append(
-            {"prompt": prompt, "task": task, "agent_id": agent_id, "provider": provider, **kwargs}
-        )
+        calls.append({"prompt": prompt, "task": task, "agent_id": agent_id, "provider": provider, **kwargs})
         index = len(calls)
         if index in fail_on_call:
             raise ConnectionError(f"simulated LLM failure on call {index}")
@@ -116,9 +114,7 @@ class BaseGenerateCase(unittest.TestCase):
         try:
             import gaworld.apps.persona_generate_api as _mod  # noqa: F401
 
-            self._patches.append(
-                mock.patch("gaworld.apps.persona_generate_api.call_llm", self.fake_llm)
-            )
+            self._patches.append(mock.patch("gaworld.apps.persona_generate_api.call_llm", self.fake_llm))
         except ImportError:
             pass
         for patch in self._patches:
@@ -167,7 +163,7 @@ class TestEnrichmentPersistence(BaseGenerateCase):
             patch.stop()
         self._patches = [mock.patch("gaworld.llm.providers.call_llm", self.fake_llm)]
         try:
-            import gaworld.apps.persona_generate_api as _mod
+            import gaworld.apps.persona_generate_api as _mod  # noqa: F401 - import availability is the point
 
             self._patches.append(mock.patch("gaworld.apps.persona_generate_api.call_llm", self.fake_llm))
         except ImportError:
@@ -203,7 +199,7 @@ class TestEnrichmentPersistence(BaseGenerateCase):
             patch.stop()
         self._patches = [mock.patch("gaworld.llm.providers.call_llm", self.fake_llm)]
         try:
-            import gaworld.apps.persona_generate_api as _mod
+            import gaworld.apps.persona_generate_api as _mod  # noqa: F401 - import availability is the point
 
             self._patches.append(mock.patch("gaworld.apps.persona_generate_api.call_llm", self.fake_llm))
         except ImportError:
@@ -230,7 +226,7 @@ class TestEnrichmentPersistence(BaseGenerateCase):
             # provenance may live in a sidecar instead of the job record
             sidecar = os.path.join(self.tmp, "personas", "derived", "1.json")
             self.assertTrue(os.path.exists(sidecar), "provenance must be recorded somewhere")
-            entries = [json.load(open(sidecar, encoding="utf-8"))]
+            entries = [json.load(open(sidecar, encoding="utf-8"))]  # noqa: SIM115 - read-only probe
         entry = entries[0]
         self.assertEqual("llm_enriched", entry.get("persona_source"))
         self.assertEqual("persona_author", entry.get("task"))
