@@ -70,3 +70,39 @@ jobs:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
           if-no-files-found: ignore
+
+  fos-backend:
+    # The integrated FOS backend requires Python 3.12 (fos/pyproject.toml).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install FOS backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r fos/requirements-ci.txt
+      - name: Run FOS backend tests
+        working-directory: fos
+        run: pytest tests -q
+
+  fos-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: fos/frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: fos/frontend
+        run: npm ci
+      - name: Build integrated bundle (asset base /fos/)
+        working-directory: fos/frontend
+        run: npm run build:integrated
+      - name: Frontend unit tests
+        working-directory: fos/frontend
+        run: npm run test:run -- --passWithNoTests
