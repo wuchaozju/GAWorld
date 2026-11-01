@@ -1439,15 +1439,21 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
 
     def _serve_fos(self, path):
         """Serve the built FOS frontend; shared by do_GET and do_HEAD."""
+        dist = FOS_DIST
+        if self.url_prefix:
+            # Each mount needs its own Vite base, including lazy imports and API URLs.
+            dist = os.path.join(dist, "mounts", self.url_prefix.lstrip("/"))
+            if not os.path.isfile(os.path.join(dist, "index.html")):
+                return self._deny(503, "FOS frontend build is missing for this URL mount")
         route = _fos_route(path)
         if route == "index":
-            file_path = os.path.join(FOS_DIST, "index.html")
+            file_path = os.path.join(dist, "index.html")
             ctype = "text/html; charset=utf-8"
         elif isinstance(route, tuple):
             name = route[1]
             if not name or os.path.isabs(name) or ".." in name.split("/"):
                 return self._deny(404, "Not found")
-            file_path = os.path.join(FOS_DIST, "assets", *name.split("/"))
+            file_path = os.path.join(dist, "assets", *name.split("/"))
             ctype = mimetypes.guess_type(name)[0] or "application/octet-stream"
         else:
             return self._deny(404, "Not found")

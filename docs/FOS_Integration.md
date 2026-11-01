@@ -198,6 +198,21 @@ Then open `http://127.0.0.1:8766/console` and click **FOS** under
 **Experiment** — or `http://127.0.0.1:8766/fos/` directly. FOS opens with the
 local persisted user already active, so no FOS login is required.
 
+If the dashboard also uses `GAWORLD_URL_PREFIX=/GAWorld`, build an additional
+bundle for that mount after building the regular integrated bundle:
+
+```bash
+cd fos/frontend
+npm run build:integrated
+FRONTEND_BASE_URL=/GAWorld/fos/ npx vite build --mode integrated --outDir dist/mounts/GAWorld
+```
+
+The mounted dashboard serves that second bundle at `/GAWorld/fos/`, keeping
+its assets, router, API requests, and account cookie in the same mount. The
+root `/fos/` build remains available independently. Rebuild both bundles when
+updating the frontend. A missing mounted bundle returns 503 rather than serving
+a root bundle whose assets and API URLs would use the wrong account session.
+
 Advanced/manual startup (two terminals, not needed for normal use):
 
 ```bash
