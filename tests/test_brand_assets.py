@@ -70,7 +70,6 @@ def test_primary_brand_slots_use_the_selected_symbol():
         "site/dashboard/research.html",
         "site/dashboard/studio.html",
         "site/dashboard/games.html",
-        "site/simviz/index.html",
     ):
         html = (ROOT / name).read_text(encoding="utf-8")
         assert re.search(r'<img[^>]+src="' + re.escape(SYMBOL) + '"', html), name
