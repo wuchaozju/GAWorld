@@ -38,6 +38,8 @@ ADMIN_READS = (
     "/api/auth/audit",
     "/api/auth/usage",
     "/api/analytics/system",
+    # Crowd sessions share a service/store and are not yet owner-scoped.
+    "/api/crowdsourcing/",
 )
 
 #: Requests that start model calls: refused once a member's daily quota is used

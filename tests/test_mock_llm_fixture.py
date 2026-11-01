@@ -63,6 +63,20 @@ class TestDefaultsCoverFrequentTasks(unittest.TestCase):
 
 
 class TestInstallPatch(unittest.TestCase):
+    def test_install_isolates_live_feeds_and_restores_the_adapter(self):
+        from unittest.mock import patch
+
+        from gaworld.infosources import channels
+        from gaworld.infosources.schema import Source
+
+        original = channels.fetch_source
+        source = Source("fixture", "Fixture", "news", "rss", "https://example.com/feed")
+        with patch("requests.sessions.Session.request") as request:
+            with install():
+                self.assertEqual(channels.fetch_source(source), [])
+            request.assert_not_called()
+        self.assertIs(channels.fetch_source, original)
+
     def test_previously_captured_callable_cannot_reach_a_real_model(self):
         from unittest.mock import patch
 

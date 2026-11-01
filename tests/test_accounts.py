@@ -291,6 +291,30 @@ class HttpTest(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(body, {"own": True})
 
+    def test_unscoped_crowdsourcing_reads_are_admin_only(self):
+        store = _store(self.tmp.name)
+        store.create_user("teacher", PASSWORD, role="admin")
+        store.create_user("student", PASSWORD, role="member")
+        teacher, student = self._login("teacher"), self._login("student")
+        service = mock.Mock()
+        service.strategies.return_value = {"strategies": []}
+        with mock.patch.object(ds, "_get_crowdsourcing_service", return_value=service) as factory:
+            for path in (
+                "/api/crowdsourcing/strategies",
+                "/api/crowdsourcing/sessions",
+                "/api/crowdsourcing/sessions/private-task",
+                "/api/crowdsourcing/sessions/private-task/events",
+                "/api/crowdsourcing/sessions/private-task/rounds",
+            ):
+                for method in ("GET", "HEAD"):
+                    with self.subTest(method=method, path=path):
+                        response, _ = self._req(method, path, cookie=student)
+                        self.assertEqual(response.status, 403)
+            factory.assert_not_called()
+            response, body = self._req("GET", "/api/crowdsourcing/strategies", cookie=teacher)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(body, {"strategies": []})
+
     def test_classroom_flow(self):
         store = _store(self.tmp.name)
         store.create_user("老师", PASSWORD, role="admin")

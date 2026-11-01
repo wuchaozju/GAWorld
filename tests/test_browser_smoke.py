@@ -92,6 +92,35 @@ class BrowserSmokeTest(unittest.TestCase):
         with (
             tempfile.TemporaryDirectory() as directory,
             mock.patch.dict(os.environ, {"GAWORLD_ACCOUNTS_DB": os.path.join(directory, "accounts.sqlite")}),
+            mock.patch.object(
+                ds,
+                "_live_analytics_paths",
+                return_value={
+                    "output_dir": os.path.join(directory, "output"),
+                    "memory_dir": os.path.join(directory, "memory"),
+                    "visualization_dir": os.path.join(directory, "visualization"),
+                    "diary_dir": os.path.join(directory, "diaries"),
+                },
+            ),
+            mock.patch.object(
+                ds,
+                "_replay_runs",
+                return_value=[
+                    {
+                        "id": "output/visualization",
+                        "kind": "live",
+                        "label": "Browser fixture",
+                        "trace_url": "/output/visualization/simulation_trace.json",
+                        "avatar_base": "/output/visualization/",
+                        "frame_count": 0,
+                        "finished": False,
+                        "generated_at": "",
+                        "last_updated": "",
+                        "sim_days": 1,
+                        "agent_count": 0,
+                    }
+                ],
+            ),
         ):
             store = AccountStore(os.environ["GAWORLD_ACCOUNTS_DB"])
             store.init_schema()
@@ -104,9 +133,17 @@ class BrowserSmokeTest(unittest.TestCase):
             self.assertEqual(response.status, 200)
             requested = []
             page.on("request", lambda request: requested.append(request.url))
-            page.goto(self.base + "/site/dashboard/analytics.html")
+            # The workbench loads analysis only after selecting a recorded run.
+            page.route(
+                "**/output/visualization/simulation_trace.json",
+                lambda route: route.fulfill(
+                    json={"meta": {}, "map": {"nodes": []}, "agents": [], "frames": []},
+                ),
+            )
+            page.goto(self.base + "/site/dashboard/analytics.html?view=analysis")
             page.wait_for_function("document.querySelector('#anOverview').children.length > 0")
             self.assertTrue(page.locator("#anSystemPanel").is_hidden())
+            self.assertTrue(page.locator("#systemTab").is_hidden())
             self.assertFalse(page.locator("#anStatus").evaluate("el => el.classList.contains('is-error')"))
             self.assertFalse(any("/api/analytics/system" in url for url in requested))
             self.assertEqual(errors, [])
