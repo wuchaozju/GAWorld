@@ -34,6 +34,7 @@ import json
 import sys
 import threading
 from typing import Any, Callable, Iterator
+from unittest.mock import patch
 
 
 # Default canned responses keyed by ``task`` name. Each value is the
@@ -356,7 +357,9 @@ def install(mock: MockLLM | None = None) -> Iterator[MockLLM]:
             module.call_llm = real_mock
 
     try:
-        yield real_mock
+        # A mocked simulation must not fetch live RSS/social feeds either.
+        with patch("gaworld.infosources.channels.fetch_source", return_value=[]):
+            yield real_mock
     finally:
         for module in modules():
             if getattr(module, "call_llm", None) is real_mock:
