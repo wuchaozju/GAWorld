@@ -358,7 +358,7 @@ def test_real_router_and_http_ledger_pause_on_mocked_minimax_2062(env, monkeypat
         response._content = json.dumps(body).encode()
         return response
 
-    monkeypatch.setattr(providers.requests, "post", post)
+    monkeypatch.setattr(providers, "http_post", post)
     monkeypatch.setattr(api.usage, "record", lambda task: charged.append(task))
     monkeypatch.setattr(api.ownership, "spawn", lambda fn, *a, **kw: fn(*a))
     api.handle_post(api.PREFIX + "/" + record["id"] + "/run", {})

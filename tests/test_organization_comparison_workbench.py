@@ -4,6 +4,13 @@ import json
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def no_real_request_waits(monkeypatch):
+    from gaworld.research.organization_intelligence.comparison import execution
+
+    monkeypatch.setattr(execution, "wait_for_request", lambda *a, **kw: None)
+
+
 def modules():
     assert importlib.util.find_spec("gaworld.research.organization_intelligence.comparison"), (
         "comparison package missing"

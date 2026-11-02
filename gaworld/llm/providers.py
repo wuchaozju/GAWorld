@@ -8,6 +8,7 @@ from typing import Any
 
 import requests
 
+from gaworld.llm.http_transport import post as http_post
 from gaworld.llm.run_state import (
     before_attempt,
     current_ledger,
@@ -27,7 +28,7 @@ def _post(*args: Any, **kwargs: Any) -> Any:
     """Count actual HTTP submissions, independently from router chains."""
     ledger = current_ledger()
     try:
-        response = requests.post(*args, **kwargs)
+        response = http_post(*args, **kwargs)
     except requests.RequestException:
         if ledger is not None:
             ledger.http_attempt(ok=False)

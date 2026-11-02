@@ -48,6 +48,8 @@
 .oc-table { overflow-x: auto; }.oc-workbench progress { width: 100%; accent-color: var(--oc-accent); margin: 1rem 0; }
 .oc-workbench details { border-top: 1px solid var(--oc-line); }.oc-workbench summary { color: var(--oc-muted); }
 .oc-workbench .oi-record { color: var(--oc-ink); border-color: var(--oc-line); }.oc-workbench .oi-record small { display: block; color: var(--oc-muted); margin-top: .5rem; }
+.oc-workbench .oi-record:hover,.oc-workbench .oi-record[aria-current="true"] { border-color: var(--oc-accent); background: var(--oc-wash); }
+.oc-workbench button[aria-busy="true"] { cursor: progress; }
 .oc-legacy { margin-top: 2rem; }.oc-legacy-layout { display: grid; grid-template-columns: minmax(0,2fr) minmax(240px,1fr); gap: 1rem; }
 @media(max-width:850px) { .oc-layout { grid-template-columns: minmax(0,1fr); }.oc-sidebar { display:grid;grid-template-columns: 1fr 1fr;gap:1rem; }.oc-method svg { max-height:180px; }.oc-legacy-layout{grid-template-columns:1fr;} }
 @media(max-width:540px) { .oc-steps { grid-template-columns: repeat(3,minmax(0,1fr)); }.oc-steps button { font-size:.78rem; }.oc-steps b { font-size:1.15rem; }.oc-fields,.oc-sidebar,.oc-baselines{grid-template-columns:minmax(0,1fr);}.oc-score{gap:.5rem;}.oc-score small{font-size:.7rem;}.oc-actions .btn{font-size:.83rem;} }

@@ -8,7 +8,9 @@ from pathlib import Path
 from gaworld.collaboration import organization_engine
 from gaworld.collaboration.organization_methods import baseline, integer, normalize_method
 from gaworld.collaboration.organization_methods import digest as digest
+from gaworld.llm import failures
 from gaworld.research.organization_intelligence.comparison import benchmarks
+from gaworld.research.organization_intelligence.comparison.execution import POLICY
 
 VERSION = "organization-comparison-1"
 
@@ -17,6 +19,7 @@ def runtime_fingerprint():
     files = [
         Path(organization_engine.__file__),
         Path(organization_engine.__file__).with_name("organization_methods.py"),
+        Path(failures.__file__),
         *Path(__file__).parent.glob("*.py"),
     ]
     return digest({p.name: digest(p.read_text()) for p in sorted(files)})
@@ -26,7 +29,14 @@ def freeze(payload, members, model):
     candidate = normalize_method(payload["candidate"])
     if len(members) != len(candidate["roles"]) or len({m["id"] for m in members}) != len(members):
         raise ValueError("请选择与角色数量相同、编号唯一的居民")
-    control = baseline(payload.get("baseline", "random"), len(members))
+    custom = payload.get("baseline") == "custom"
+    control = (
+        normalize_method(payload.get("baseline_method"))
+        if custom
+        else baseline(payload.get("baseline", "random"), len(members))
+    )
+    if len(control["roles"]) != len(members):
+        raise ValueError("对照组织的角色数量必须与候选组织一致")
     mode = payload.get("comparison_mode", "auto")
     if mode not in {"auto", "topology", "whole_method"}:
         raise ValueError("对比模式不合法")
@@ -70,10 +80,12 @@ def freeze(payload, members, model):
     return {
         "version": VERSION,
         "runtime_fingerprint": runtime_fingerprint(),
+        "execution_policy": POLICY.copy(),
         "engine_version": organization_engine.VERSION,
         "title": str(payload.get("title") or candidate["name"] + " · 组织对照实验")[:200],
         "candidate": candidate,
         "baseline": control,
+        "baseline_kind": "custom" if custom else payload.get("baseline", "random"),
         "benchmark": bank,
         "members": members,
         "model": model,

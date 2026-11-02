@@ -1145,6 +1145,11 @@ def _panels() -> dict[str, Any]:
                 "One resident's home design and latest observations",
                 query=[_q("tail", "Observations to return", INT)],
                 errors={"404": "No home design yet"},
+                description=(
+                    "The design the run wrote (``source=\"run\"``), or the flat the "
+                    "resident would have, rebuilt from the roster when the run never "
+                    "touched them (``source=\"preview\"``)."
+                ),
             )
         },
         "/api/moltbook/agent": {
@@ -1480,9 +1485,10 @@ def _studies() -> dict[str, Any]:
                                   ("protocol", "Frozen settings"), ("audit", "Owned complete call audit"),
                                   ("csv", "Per-question scores as CSV"))},
         **{f"/api/research/organization-intelligence/comparisons/{{study_id}}/{action}": {
-            "post": _op("research", summary, body=OBJ, status="201" if action == "save-method" else "202" if action in {"run", "resume"} else "200")
+            "post": _op("research", summary, body=OBJ, status="201" if action in {"save-method", "recover"} else "202" if action in {"run", "resume"} else "200")
         } for action, summary in (("run", "Start comparison"), ("resume", "Resume same comparison"),
                                   ("pause", "Pause between requests"), ("stop", "Terminate comparison"),
+                                  ("recover", "Verify cached responses and save a linked recovery without model calls"),
                                   ("save-method", "Save tested method to cooperation library"))},
         "/api/research/organization-intelligence/v2": {
             "get": _op("research", "OI-2 runtime identity and owned zero-provider studies"),

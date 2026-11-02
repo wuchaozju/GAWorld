@@ -28,7 +28,7 @@ def test_cloud_presets_use_private_key_and_compatible_payload(tmp_path, monkeypa
         response.iter_lines.return_value = [
             'data: {"choices":[{"delta":{"content":"OK"}}]}', "data: [DONE]",
         ]
-        with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+        with mock.patch("gaworld.llm.providers.http_post", return_value=response) as post:
             assert provider.call("hi", temperature=0.6, max_tokens=123) == "OK"
         args, kwargs = post.call_args
         assert args[0] == cfg["base_url"] + "/chat/completions"
@@ -41,7 +41,7 @@ def test_cloud_presets_use_private_key_and_compatible_payload(tmp_path, monkeypa
         USER.set({"id": 2, "role": "member"})
         # Even the previously constructed provider cannot carry another user's key.
         assert provider.api_key is None
-        with mock.patch("gaworld.llm.providers.requests.post") as post:
+        with mock.patch("gaworld.llm.providers.http_post") as post:
             assert probe_provider(cfg)["ok"] is False
             post.assert_not_called()
     finally:
@@ -57,7 +57,7 @@ def test_ollama_context_and_thinking_are_opt_in(think):
     response = mock.MagicMock()
     response.__enter__.return_value = response
     response.iter_lines.return_value = [json.dumps({"response": "OK", "done": True})]
-    with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+    with mock.patch("gaworld.llm.providers.http_post", return_value=response) as post:
         assert provider.call("hi", temperature=0.6, max_tokens=123) == "OK"
     payload = post.call_args.kwargs["json"]
     assert payload["options"]["num_predict"] == 123
@@ -75,7 +75,7 @@ def test_old_openai_configuration_does_not_send_thinking(monkeypatch):
     provider = build_provider({"type": "openai", "model": "old", "api_key": "test"})
     response = mock.Mock()
     response.json.return_value = {"choices": [{"message": {"content": "OK"}}]}
-    with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+    with mock.patch("gaworld.llm.providers.http_post", return_value=response) as post:
         assert provider.call("hi") == "OK"
     assert "thinking" not in post.call_args.kwargs["json"]
 

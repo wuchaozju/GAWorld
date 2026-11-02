@@ -148,11 +148,40 @@ test("renders empty state when payload is missing", () => {
   assert.strictEqual(root.children.length, 1);
   const node = root.children[0];
   assert.ok(node.classList.contains("home-empty"));
+  // Nothing was asked for yet: that is not "the resident has no home".
+  assert.ok(node.textContent.includes("尚无居家模式数据"));
 });
 
 test("renders empty state when has_home is false", () => {
   const root = render({ has_home: false });
   assert.ok(root.children[0].classList.contains("home-empty"));
+});
+
+test("says the resident has no home when the server says so", () => {
+  const root = render({ has_home: false, reason: "no_home_design" });
+  const text = root.children[0].textContent;
+  assert.ok(text.includes("还没有家"), text);
+  assert.ok(!text.includes("失败"), text);
+});
+
+test("shows the server's reason when the endpoint failed", () => {
+  const root = render({ has_home: false, reason: "error", error: "HTTP 500" });
+  const text = root.children[0].textContent;
+  assert.ok(text.includes("失败"), text);
+  assert.ok(text.includes("HTTP 500"), text);
+});
+
+test("a flat rebuilt from the roster says it is a preview", () => {
+  const root = render({ ...PAYLOAD, source: "preview" });
+  const note = collect(root).find((n) => n.classList.contains("home-preview-note"));
+  assert.ok(note, "preview note missing");
+  assert.ok(note.textContent.includes("推算"), note.textContent);
+});
+
+test("a flat from the run carries no preview note", () => {
+  const root = render({ ...PAYLOAD, source: "run" });
+  const note = collect(root).find((n) => n.classList.contains("home-preview-note"));
+  assert.ok(!note, "a simulated home must not be labelled a preview");
 });
 
 test("renders four-cell summary, vibe, rooms, ambiance, observations", () => {

@@ -40,6 +40,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
+from gaworld.core.performance import record_timing
+
 
 @dataclass
 class _Bucket:
@@ -99,6 +101,7 @@ class LLMCallStats:
             if not ok:
                 self._bucket(self._by_provider, provider or "").failures += 1
             self._bucket(self._by_provider, provider or "").total_latency_ms += max(0, int(latency_ms))
+        record_timing(f"llm.{task or 'unspecified'}", latency_ms, failed=not ok)
 
     def record_request(self, *, ok: bool, fell_back: bool = False) -> None:
         """One routed request finished: answered (``ok``) or lost after every

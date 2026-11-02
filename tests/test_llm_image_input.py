@@ -41,7 +41,7 @@ def test_openai_sends_a_data_url_image_part(monkeypatch, image):
         captured["payload"] = json
         return _Response({"choices": [{"message": {"content": "看到了"}}]})
 
-    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers, "http_post", fake_post)
     provider = providers.OpenAIProvider("http://x/v1", "gpt-4o", api_key="k", attempts=1)
     assert provider.call("这是什么", images=image) == "看到了"
 
@@ -59,7 +59,7 @@ def test_openai_without_images_keeps_the_plain_string_content(monkeypatch):
         captured["payload"] = json
         return _Response({"choices": [{"message": {"content": "ok"}}]})
 
-    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers, "http_post", fake_post)
     provider = providers.OpenAIProvider("http://x/v1", "gpt-4o", api_key="k", attempts=1)
     provider.call("纯文本")
     assert captured["payload"]["messages"][-1]["content"] == "纯文本"
@@ -72,7 +72,7 @@ def test_anthropic_puts_the_image_block_before_the_text(monkeypatch, image):
         captured["payload"] = json
         return _Response({"content": [{"type": "text", "text": "看到了"}], "stop_reason": "end_turn"})
 
-    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers, "http_post", fake_post)
     provider = providers.AnthropicProvider("http://x", "claude-sonnet-5", api_key="k", attempts=1)
     assert provider.call("这是什么", images=image) == "看到了"
 
@@ -106,7 +106,7 @@ def test_ollama_sends_bare_base64_without_the_data_url_prefix(monkeypatch, image
         captured["payload"] = json
         return _Stream()
 
-    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers, "http_post", fake_post)
     provider = providers.OllamaProvider("http://x/api/generate", "gemma3:4b", attempts=1)
     assert provider.call("这是什么", images=image) == "看到了"
     assert captured["payload"]["images"] == ["aGVsbG8="]
@@ -119,7 +119,7 @@ def test_malformed_image_entries_are_dropped_not_forwarded(monkeypatch):
         captured["payload"] = json
         return _Response({"choices": [{"message": {"content": "ok"}}]})
 
-    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers, "http_post", fake_post)
     provider = providers.OpenAIProvider("http://x/v1", "gpt-4o", api_key="k", attempts=1)
     provider.call("q", images=[{"media_type": "image/png"}, "not-a-dict", {"data": ""}])
     # Nothing usable survived, so the content must stay a plain string rather

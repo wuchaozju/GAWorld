@@ -43,6 +43,7 @@ def builtin_plugins():
     from gaworld.multiplayer.plugin import MultiplayerPlugin
     from gaworld.organizations.plugin import OrganizationsPlugin
     from gaworld.personality.plugin import BigFivePlugin
+    from gaworld.plugins.performance import PerformancePlugin
     from gaworld.policy.plugin import InterventionPlugin
     from gaworld.public_sector.plugin import PublicSectorPlugin
     from gaworld.skills.plugin import SkillsPlugin
@@ -64,6 +65,8 @@ def builtin_plugins():
         # before any other `agents.built` handler means a subsystem that later
         # wants to consult traits at build time can, without a reordering.
         BigFivePlugin(),
+        # Timing observes work without changing resident decisions.
+        PerformancePlugin(),
         # Media diets read Big Five openness, so they are built after traits
         # are seeded and before the simulator's own news bootstrap runs.
         InfoSourcesPlugin(),

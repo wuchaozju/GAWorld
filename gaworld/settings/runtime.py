@@ -393,6 +393,9 @@ def simulation_settings() -> dict[str, Any]:
             "enabled": False,
             "day_routine_workers": 1,
         },
+        # Inclusive stage/model/search timings, emitted by PerformancePlugin.
+        # Percentiles cover the most recent sample_limit calls per operation.
+        "performance": {"enabled": True, "sample_limit": 512},
         # Structured run manifest + HTML report (S4).
         # A cheap end-of-run summary that fixes what the JSON logs alone
         # cannot: git commit, dependency versions, seed, effective config,

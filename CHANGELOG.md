@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-10-30 — 控制台：按钮不再卡在「启动中」
+
+### Fixed
+
+- **同一个按钮第二次用完就永久停在「启动中…」** — 公共的按钮忙碌态助手 `site/dashboard/_button-busy.js`
+  只在「计数器属性不存在」时拍下按钮静止时的文案，可一轮忙态结束时它把这份快照删了、
+  计数器却留在 `"0"`。于是这个按钮**第二次**进入忙态时就没有可还原的文案了：`release()` 不写任何东西，
+  标签就一直停在忙碌文案上（运行仿真 → 「启动中…」、保存配置 → 「保存中…」）—— 控制台里所有走这个
+  助手的按钮都中招，第一次点完是好的，第二次开始坏掉。现在按「忙碌深度为 0 = 新一轮忙态」重新拍快照，
+  第二轮、第三轮都能正常还原。
+- **状态轮询会把「请求还在飞」的按钮重新启用** — `app.js` 的 `syncRunButtons()` 每 2.5 秒跑一次，
+  在按钮忙着的时候把它设回可点，于是同一次点击可能发出两个请求。现在轮询尊重忙碌态。
+
+### Added
+
+- 回归测试：`site/dashboard/button-busy.test.js`（`node --test`，用桩 DOM 直接驱动真实的助手源码）
+  + `tests/test_dashboard_button_busy.py`（pytest 包装，和仓库其他前端套件一个套路）。
+
+## [Unreleased] — 2026-10-27 — 居家模式：首屏也要有家
+
+### Fixed
+
+- **首屏的「家」卡片永远是空的** — `site/dashboard/app.js` 只在点选居民时（`selectAgent`）拉
+  `/api/home/<id>`，页面初始化时从来没拉过；于是打开控制台看到的第一位居民即便有户型，
+  卡片也写着「这位居民没有参与上一轮运行，因此没有居家记录」，室内模式也只能画通用楼栋模板，
+  画不出他/她自己的户型。现在启动序列里多一步 `load.home`（`site/dashboard/app.js`），
+  切换城市后也重新拉一次。
+- **接口报错被说成「没有记录」** — 前端把任何失败都换成同一句「没参与上一轮运行」，
+  真实的 500 / 网络错误看不见了。现在分三种情况说：**还没加载**（`home.empty`）、
+  **这位居民没有家**（`home.not_in_run`）、**接口出错**（`home.load_failed`，带服务端原因）；
+  服务端在 404 里回 `reason="no_home_design"`，前端 `api()` 把响应体挂在 `error.payload` 上。
+
+### Added
+
+- **没跑过的居民也有家** — 户型本来就是程序化生成的（按居民 id + 收入档 + `home.seed` 抽签），
+  所以 `/api/home/<id>` 在运行产物里找不到这个人时，按当前城市的名册现算一套出来，
+  标 `source="preview"`；卡片上写明「户型是按设定推算的」。算出来的房间、家具、气质与真跑一次
+  **完全一致**（只有楼栋名用名册里的居住区，因为没跑过就没有地图节点）。
+  关闭居家模式插件（`home.enabled=False`）时不生成。代码在 `gaworld/apps/home_api.py`。
+
 ## [Unreleased] — 2026-10-10 — 工程：行数闸门、lint 棘轮、功能注册表、浏览器冒烟
 
 ### Added

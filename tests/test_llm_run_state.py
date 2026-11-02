@@ -117,7 +117,7 @@ def test_wire_retry_failures_are_counted_separately_from_router_chains(tmp_path,
         r._content_consumed = True
         return r
 
-    monkeypatch.setattr(providers.requests, "post", response)
+    monkeypatch.setattr(providers, "http_post", response)
     result = providers.OllamaProvider("http://localhost:11434/api/generate", "stub").call("test")
     assert result == "success"
     snapshot = RunLedger(path).snapshot()

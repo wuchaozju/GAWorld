@@ -9,6 +9,7 @@ from collections import Counter
 
 from gaworld.collaboration._parsing import extract_json
 from gaworld.collaboration.organization_methods import digest, normalize_method
+from gaworld.llm.failures import describe
 
 VERSION = "organization-engine-1"
 
@@ -49,7 +50,17 @@ def edges(method, seed=0):
 
 
 def run_method(
-    method, members, task, llm, *, seed=0, limits=None, state=None, checkpoint=None, before_call=None
+    method,
+    members,
+    task,
+    llm,
+    *,
+    seed=0,
+    limits=None,
+    state=None,
+    checkpoint=None,
+    before_call=None,
+    before_request=None,
 ):
     method = normalize_method(method)
     if len(members) != len(method["roles"]):
@@ -112,6 +123,8 @@ def run_method(
                 or sum(c["input_chars"] for c in attempts) + len(prompt) > caps["input_chars"]
             ):
                 raise BudgetExceeded("本题已达到保存的调用或上下文上限")
+            if before_request:
+                before_request()
             started = time.monotonic()
             item = {
                 "prompt_hash": fingerprint,
@@ -130,7 +143,12 @@ def run_method(
             try:
                 raw = str(llm(prompt, agent_id=members[slot]["id"]))
             except Exception as exc:
-                item.update(status="failed", error=type(exc).__name__, elapsed=time.monotonic() - started)
+                item.update(
+                    status="failed",
+                    error=type(exc).__name__,
+                    error_info=describe(exc),
+                    elapsed=time.monotonic() - started,
+                )
                 if checkpoint:
                     checkpoint(state, item)
                 raise

@@ -15,8 +15,10 @@ from gaworld.collaboration.organization_methods import KINDS, digest
 from gaworld.research.organization_intelligence.comparison import (
     analysis,
     benchmarks,
+    execution,
     material,
     protocol,
+    recovery,
     runner,
 )
 from gaworld.research.organization_intelligence.comparison.store import Store
@@ -52,13 +54,28 @@ def present(record):
         "output_chars": sum(c["output_chars"] for c in values),
         "tokens": None,
     }
+    value["resume_requires_recovery"] = (
+        record["status"] in {"draft", "paused", "interrupted", "rate_limited"}
+        and record["protocol"].get("runtime_fingerprint") != protocol.runtime_fingerprint()
+    )
     return value
+
+
+class CooldownPending(ValueError):
+    def __init__(self, info):
+        self.info = info
+        super().__init__(info["message"] + " 请等待页面显示的最早重试时间。")
 
 
 def launch(db, record):
     spec = record["protocol"]
-    if record["status"] in {"completed", "stopped"}:
+    if record["status"] not in {"draft", "paused", "interrupted", "rate_limited"}:
         raise ValueError("此实验已结束；可以复制设置另建一次")
+    if record.get("retry_blocked_reason"):
+        raise ValueError(record["retry_blocked_reason"])
+    info = record.get("error_info") or {}
+    if (info.get("retry_at") or 0) > execution.now():
+        raise CooldownPending(info)
     if digest(spec) != record["protocol_hash"]:
         raise ValueError("实验设置校验失败")
     if spec.get("runtime_fingerprint") != protocol.runtime_fingerprint():
@@ -162,7 +179,9 @@ def handle_post(path, payload):
         if parts == ["analyze"]:
             model = legacy.model_info(str(payload.get("provider") or ""))
             caller = legacy.make_caller({"model": model, "temperature": 0.3, "max_tokens": 4096})
-            return material.extract(payload.get("text"), str(payload.get("title", "")), caller), 200
+            return material.extract(
+                payload.get("text"), str(payload.get("title", "")), caller, slots=payload.get("slots")
+            ), 200
         if parts == ["benchmark"]:
             if "text" in payload:
                 bank = benchmarks.import_data(
@@ -205,8 +224,12 @@ def handle_post(path, payload):
         if parts[1:] in (["run"], ["resume"]):
             launch(db, record)
             return {"id": record["id"], "status": "running"}, 202
+        if parts[1:] == ["recover"]:
+            if legacy.model_info(record["protocol"]["model"]["name"]) != record["protocol"]["model"]:
+                raise ValueError("模型配置已变化，不能把其他模型的回答接入原实验")
+            return present(recovery.prepare(db, record)), 201
         if parts[1:] in (["pause"], ["stop"]):
-            if record["status"] not in {"running", "paused", "interrupted"}:
+            if record["status"] not in {"running", "paused", "interrupted", "rate_limited"}:
                 raise ValueError("此实验当前不能暂停或终止")
             action = parts[1]
             updated = db.update(
@@ -223,6 +246,8 @@ def handle_post(path, payload):
             return organization_methods_api.save_study(record, payload), 201
     except LookupError as exc:
         return {"error": str(exc)}, 404
+    except CooldownPending as exc:
+        return {"error": str(exc), "error_info": exc.info}, 429
     except (ValueError, TypeError, KeyError) as exc:
         return {"error": str(exc)}, 400
     return {"error": "Unknown endpoint"}, 404

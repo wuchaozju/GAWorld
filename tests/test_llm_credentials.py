@@ -199,7 +199,7 @@ def test_requests_use_saved_key_without_following_redirects(vault, cfg, kind):
         "choices": [{"message": {"content": "OK"}}],
         "content": [{"type": "text", "text": "OK"}],
     }
-    with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+    with mock.patch("gaworld.llm.providers.http_post", return_value=response) as post:
         assert probe_provider(cfg)["ok"]
         assert post.call_args.kwargs["allow_redirects"] is False
         assert "test-key" in " ".join(post.call_args.kwargs["headers"].values())
@@ -290,7 +290,7 @@ def test_identity_reaches_threads_and_child_environment(vault, cfg, monkeypatch)
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
 def test_missing_personal_key_never_calls_shared_paid_backend(vault, cfg, kind):
     cfg = dict(cfg, type=kind, api_key="server-key-must-not-be-used")
-    with mock.patch("gaworld.llm.providers.requests.post") as post:
+    with mock.patch("gaworld.llm.providers.http_post") as post:
         with pytest.raises(ValueError, match="API Key"):
             build_provider(cfg).call("test")
         post.assert_not_called()

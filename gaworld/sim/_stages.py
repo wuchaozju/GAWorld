@@ -57,6 +57,7 @@ from gaworld.logging_setup import get_logger
 from gaworld.memory.experience import append_agent_episode
 from gaworld.memory.store import (
     append_agent_log,
+    vector_db_add_entries,
     vector_db_add_entry,
 )
 from gaworld.sim._action import (
@@ -1087,10 +1088,12 @@ def _stage_record(agent, step, sim, *, scope):
     print(log)
     scope.daily_logs[agent["id"]] += log
     append_agent_log(agent, log)
-    vector_db_add_entry(agent["id"], "log", log, sim_day=scope.day, sim_time=scope.time_str)
-    vector_db_add_entry(agent["id"], "plan", plan_text, sim_day=scope.day, sim_time=scope.time_str)
-    vector_db_add_entry(agent["id"], "reflection", refl_text, sim_day=scope.day, sim_time=scope.time_str)
-    vector_db_add_entry(agent["id"], "action", outcome, sim_day=scope.day, sim_time=scope.time_str)
+    vector_db_add_entries(
+        agent["id"],
+        [("log", log), ("plan", plan_text), ("reflection", refl_text), ("action", outcome)],
+        sim_day=scope.day,
+        sim_time=scope.time_str,
+    )
     step.update(
         {
             "perception": perc,

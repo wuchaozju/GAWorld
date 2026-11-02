@@ -446,6 +446,8 @@ LABELS_EN: dict[str, str] = {
     "random_action_chance": "Random action chance",
     "max_override_bonus": "Override bonus cap",
     "concurrency": "Concurrency",
+    "performance": "Runtime timings",
+    "sample_limit": "Recent timing samples",
     "run_manifest": "Run manifest",
     "html_report": "HTML report",
     "partial_write": "Partial manifest at start",
@@ -1263,6 +1265,9 @@ MANUAL_HELP_EN: dict[str, str] = {
         "Worker threads during daily schedule generation. Bounded by what the model server "
         "can take concurrently."
     ),
+    "performance": "Inclusive stage, model-task and memory-search timings; cumulative reports use the records directory.",
+    "performance.enabled": "Record runtime timings without changing model calls or simulation decisions.",
+    "performance.sample_limit": "Recent samples per operation for P50/P95 (1–4096). Collection covers agents.built through on_simulation_end; final plots/narrative are excluded. Nested timing categories overlap.",
     "run_manifest": (
         "Structured end-of-run summary written under output/run_manifests/: git commit, "
         "dependency versions, seed, effective config, LLM stats, and artefact index. Six "
@@ -2335,6 +2340,9 @@ MANUAL_HELP: dict[str, str] = {
     "spontaneity": "自发性：会不会突然冒出念头、临时起意做点别的。压力、疲劳、饥饿都会把这些概率往上推。",
     "concurrency": "并行度。默认串行以保证同种子可复现；开并行会快，但日内顺序不再严格一致。",
     "concurrency.day_routine_workers": "每日日程生成阶段的并发线程数。受限于模型服务端的并发能力。",
+    "performance": "记录认知阶段、模型任务和记忆检索耗时，累计报告写入当前运行的 records 目录。",
+    "performance.enabled": "记录耗时，不改变模型调用和模拟决策。",
+    "performance.sample_limit": "每类操作保留多少个最近耗时样本计算 P50/P95（1–4096）。采集从居民构建完成到仿真结束钩子，末尾绘图和总结模型调用不计入；阶段包含内部模型和检索时间，不可相加。",
     "run_manifest": (
         "运行清单：结束时把 git commit、依赖版本、seed、effective config、LLM 调用统计、"
         "artefacts 索引写到 output/run_manifests/。半年后翻回来能立刻回想起是哪一次跑出来的。"
@@ -2660,6 +2668,7 @@ LABELS: dict[str, str] = {
     "impulse_activity_chance": "冲动行为概率", "random_action_chance": "随机行为概率",
     "max_override_bonus": "覆盖加成上限",
     "concurrency": "并行度", "day_routine_workers": "日程生成并发数",
+    "performance": "运行耗时", "sample_limit": "最近耗时样本数",
     "run_manifest": "运行清单", "html_report": "HTML 报告", "partial_write": "开跑时写 partial",
     "degraded_failure_share": "判为降级的失败请求占比",
     "external_rag": "外部信息注入", "bootstrap": "冷启动注入", "use_seed_script": "使用种子脚本",

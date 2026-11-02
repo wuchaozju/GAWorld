@@ -251,3 +251,15 @@
   font-size: 13px;
   text-align: center;
 }
+
+/* A flat that was rebuilt from the roster instead of simulated. */
+.home-preview-note {
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px dashed var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

@@ -12,6 +12,7 @@ from html import unescape
 
 from gaworld.settings import CONFIG
 from gaworld.core.runner import parallel_map, resolve_max_workers
+from gaworld.core.performance import isolate_timings
 from gaworld.core.run_manifest import start_manifest
 # Growth-profile lifecycle moved to gaworld.interests_plugin (K3d); only
 # the inline read-side consumers remain (schedule prompt context + matching).
@@ -2185,6 +2186,7 @@ def _resolve_run_seed():
     return _AUTO_SEED, "auto"
 
 
+@isolate_timings
 def run_simulation():
     validate_runtime_config(CONFIG)
     # ====================================================================

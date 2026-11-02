@@ -4,8 +4,8 @@
   const mount = document.getElementById('organizationComparison');
   if (!C || !mount) return;
   const P = '/api/research/organization-intelligence/comparisons';
-  const state = {step:0, method:null, benchmark:null, study:null, ids:[], provider:'', baseline:'random', revision:0, reviewed:false};
-  let context = {}, timer = null, busy = false;
+  const state = {step:0, method:null, benchmark:null, study:null, ids:[], provider:'', baseline:'random', baselineMethod:null, baselineDraft:null, revision:0, reviewed:false};
+  let context = {}, timer = null, busy = false, busyLabel = '';
   const en = () => document.documentElement.lang.startsWith('en');
   const T = (zh, eng) => en() ? eng : zh;
   const E = C.escape;
@@ -39,7 +39,15 @@
         <div class="oc-actions">${button('ocAdopt','采用这份组织方式','Use this organization','primary')}</div>
       </div></section>
     <section data-oc-pane="1" class="rw-card" hidden><p class="oc-index">02 / CONTROL</p><h2>${L('与哪种基本方式比较？','Choose a baseline')}</h2>
-      <div id="ocBaselineCards" class="oc-baselines">${kinds.map(([id,zh,eng])=>`<label><input type="radio" name="ocBaseline" value="${id}" ${id==='random'?'checked':''}>${L(zh,eng)}</label>`).join('')}</div>
+      <div id="ocBaselineCards" class="oc-baselines">${kinds.map(([id,zh,eng])=>`<label><input type="radio" name="ocBaseline" value="${id}" ${id==='random'?'checked':''}>${L(zh,eng)}</label>`).join('')}<label><input type="radio" name="ocBaseline" value="custom">${L('自定义输入','Custom description')}</label></div>
+      <div id="ocCustomBaseline" hidden>
+        <label class="oc-field">${L('描述对照组织如何工作','Describe how the baseline works')}<textarea id="ocBaselineText" rows="5" placeholder="${E(T('例如：成员先独立给出答案，再由一位协调人收集理由并作最终决定。','For example: members answer independently, then a coordinator gathers reasons and decides.'))}"></textarea></label>
+        <p class="oc-note">${L('生成规则会调用当前选择的模型；对照人数与候选相同。核对并采用后才能继续。','Generating rules calls the selected model. The baseline must match the candidate team size. Review and adopt the rules to continue.')}</p>
+        ${button('ocAnalyzeBaseline','生成对照规则','Generate baseline rules')}
+        <div id="ocBaselinePreview"></div>
+        <details id="ocBaselineDetails"><summary>${L('查看与修改完整对照规则','Review and edit full baseline rules')}</summary><label class="oc-field">${L('可编辑规则 JSON','Editable rules JSON')}<textarea id="ocBaselineJson" rows="14" spellcheck="false"></textarea></label></details>
+        ${button('ocAdoptBaseline','采用此对照方式','Use this baseline','primary')}<p id="ocBaselineStatus" class="oc-note" role="status"></p>
+      </div>
       <p>${L('随机网络默认无向、无自环，连边概率为0.5。每题每次重复独立生成，题内保持不变。','Random networks are undirected, without self-links, with edge probability 0.5. A new fixed graph is drawn for each question and repeat.')}</p>
       <p>${L('默认保留基本组织的规则；若新方式还改变分工、审阅或决策，报告将比较整套组织方式。','Baseline mechanisms are retained. Changes in roles, review or decision rules are evaluated as a whole method.')}</p>
       <label class="oc-field">${L('比较范围','Comparison scope')}<select id="ocMode">${options([['auto','自动识别（推荐）','Detect automatically (recommended)'],['topology','只比较通信结构：其他规则保持一致','Communication only: match other mechanisms'],['whole_method','比较整套组织方式','Compare the whole method']])}</select></label>
@@ -65,12 +73,12 @@
         <label class="oc-field">${L('随机种子','Seed')}<input id="ocSeed" type="number" min="0" value="20261026"></label>
         <label class="oc-field">${L('每组每题最多调用','Max actor calls per arm/question')}<input id="ocCalls" type="number" min="1" max="200" value="100"></label>
         <label class="oc-field">${L('每次最大输出 token','Max output tokens per call')}<input id="ocTokens" type="number" min="64" max="4096" value="2048"></label></div></details>
-      <p id="ocEstimate" class="oc-note"></p><div class="oc-actions">${button('ocSave','保存实验设置','Save experiment settings','primary')}${button('ocRun','开始实验','Start experiment','primary')}</div>
-      <p>${L('保存不会调用实验模型。点击开始后才发生实际调用。未完成或小样本结果不作优势结论。','Saving makes no experiment calls. Starting uses the model. Incomplete or small samples cannot establish superiority.')}</p>
+      <p id="ocSavedProgress" class="oc-note" role="status"></p><p id="ocEstimate" class="oc-note"></p><div class="oc-actions">${button('ocSave','保存实验设置','Save experiment settings','primary')}${button('ocRun','开始实验','Start experiment','primary')}</div>
+      <p>${L('保存不会调用实验模型。点击开始后才发生实际调用。为降低限流风险，相邻实际请求至少间隔10秒；已有回答直接复用。未完成或小样本结果不作优势结论。','Saving makes no experiment calls. Actual requests are at least 10 seconds apart; cached responses are reused immediately. Incomplete or small samples cannot establish superiority.')}</p>
     </section>
     <section data-oc-pane="4" class="rw-card" hidden><p class="oc-index">05 / EVIDENCE</p><h2>${L('看成绩，也看代价','Compare scores and costs')}</h2>
-      <div id="ocProgress" aria-live="polite"></div><progress id="ocBar" max="1" value="0"></progress>
-      <div class="oc-actions">${button('ocPause','暂停','Pause')}${button('ocResume','继续实验','Resume')}${button('ocStop','终止','Stop')}${button('ocRefresh','刷新进度','Refresh')}</div>
+      <div id="ocProgress" aria-live="polite"></div><p id="ocFailure" class="oc-error" role="alert"></p><p id="ocWait" class="oc-note" aria-live="polite"></p><p id="ocRecovery" class="oc-note"></p><details id="ocFailureDetails" hidden><summary>${L('查看错误诊断与恢复来源','Error diagnostics and recovery provenance')}</summary><pre id="ocFailureJson" class="oi-log"></pre></details><progress id="ocBar" max="1" value="0"></progress>
+      <div class="oc-actions">${button('ocPause','暂停','Pause')}${button('ocResume','继续实验','Resume')}${button('ocRetry','重新运行（保留进度）','Retry from saved progress','primary')}${button('ocStop','终止','Stop')}${button('ocRefresh','刷新进度','Refresh')}</div>
       <div id="ocResult"></div><div class="oc-actions">${button('ocReport','下载报告','Download report')}${button('ocCsv','每道题成绩','Question scores')}${button('ocSettings','实验设置','Settings')}${button('ocAudit','全部调用记录','Call audit')}</div>
       <details><summary>${L('查看每道题和运行错误','Per-question details and errors')}</summary><div id="ocRows" class="oc-table"></div></details>
     </section>
@@ -82,24 +90,24 @@
     </section>
     <div class="oc-actions oc-bottom">${button('ocBack','上一步','Back')}${button('ocNext','下一步','Next','primary')}</div>
     </div><aside class="oc-sidebar"><div class="rw-card"><p class="oc-index">SIDE BY SIDE</p><h3>${L('待比较的两种组织','The two organizations')}</h3><div id="ocCompare"></div></div>
-      <div class="rw-card"><h3>${L('实验记录','Experiments')}</h3><div id="ocHistory"></div>${button('ocNew','另建实验','New experiment')}</div></aside></div></div>`;
+      <div class="rw-card"><h3>${L('实验记录','Experiments')}</h3><p id="ocHistoryStatus" class="oc-note" role="status"></p><div id="ocHistory"></div>${button('ocNew','另建实验','New experiment')}</div></aside></div></div>`;
   const $ = id => document.getElementById(id);
   function error(message='') { $('ocError').textContent = message; }
   async function api(path, body) {
     const response = await fetch(path, {credentials:'same-origin', ...(body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});
-    const value = await response.json();
-    if (!response.ok || value.error) throw new Error(value.error || `HTTP ${response.status}`);
-    return value;
+    return C.responseValue(response);
   }
+  const busyLabels={ocAnalyze:['正在分析…','Analyzing…'],ocAnalyzeBaseline:['正在生成规则…','Generating rules…'],ocSave:['正在保存…','Saving…'],ocRun:['正在启动…','Starting…'],ocPause:['正在请求暂停…','Requesting pause…'],ocResume:['正在继续…','Resuming…'],ocRetry:['正在恢复进度…','Recovering progress…'],ocStop:['正在终止…','Stopping…'],ocRefresh:['正在刷新…','Refreshing…'],ocBuiltin:['正在准备题库…','Preparing benchmark…'],ocImport:['正在检查…','Validating…'],ocSaveMethod:['正在保存…','Saving…']};
   function act(id, action) { $(id).addEventListener('click', async () => {
     if (busy) return;
-    busy=true; $(id).disabled=true; $(id).setAttribute('aria-busy','true'); error();
-    try { await action(); } catch (e) { error(e.message); } finally { busy=false; $(id).disabled=false; $(id).removeAttribute('aria-busy'); update(); }
+    busy=id; busyLabel=$(id).innerHTML; error(); update();
+    try { await action(); } catch (e) { error(e.message); } finally { $(id).innerHTML=busyLabel; busy=false; update(); }
   }); }
-  function invalidate() { state.revision++; state.study=null; clearTimeout(timer); update(); }
+  function invalidate() { state.revision++; state.study=null; clearTimeout(timer);const url=new URL(location.href);url.searchParams.delete('comparison');window.history.replaceState(null,'',url);update(); }
   function chooseStep(step) { if (C.canVisit(step,state)) {state.step=step; update();} }
   function baseline() {
     if (!state.method) return null;
+    if(state.baseline==='custom') return C.effectiveBaseline(state.method,state.baselineMethod,$('ocMode').value);
     const m = JSON.parse(JSON.stringify(state.method));
     m.name=T(kinds.find(k=>k[0]===state.baseline)[1],kinds.find(k=>k[0]===state.baseline)[2]);
     m.topology={kind:state.baseline,probability:.5,edges:[]};
@@ -108,19 +116,42 @@
   }
   function methodCard(m, caption, actual) { return m ? `<article class="oc-method"><p>${E(caption)}</p><h4>${E(m.name)}</h4>${C.graph(m,actual)}<p class="oc-note">${E(m.roles.join(' · '))}</p><p class="oc-note">${E(T('讨论轮数','Rounds'))}: ${m.rounds} · ${E(({auto:T('按题型汇总','Task-specific readout'),vote:T('投票','Vote'),synthesis:T('成员汇总','Member synthesis')})[m.decision]||m.decision)}${m.review?' · '+E(T('审阅与修订','Review and revise')):''}</p></article>` : `<p class="oc-note">${E(T('先提供组织方式','Provide an organization first'))}</p>`; }
   function update() {
+    mount.querySelectorAll('button,input,select,textarea').forEach(el=>el.disabled=Boolean(busy));
+    $('ocCustomBaseline').hidden=state.baseline!=='custom';
+    $('ocAnalyzeBaseline').disabled=Boolean(busy)||!state.method||$('ocBaselineText').value.trim().length<10||!state.provider;
+    $('ocAdoptBaseline').disabled=Boolean(busy)||!$('ocBaselineJson').value.trim()||Boolean(state.baselineMethod);
+    $('ocAdoptBaseline').innerHTML=state.baselineMethod?L('已采用此对照方式','Baseline adopted'):L('采用此对照方式','Use this baseline');
+    $('ocBaselineStatus').textContent=state.baselineMethod?T('已采用，修改描述或规则后需要重新采用。','Adopted. Review and adopt again after editing.'):T('请核对并采用对照规则后继续。','Review and adopt the baseline rules to continue.');
+    $('ocAnalyze').disabled=Boolean(busy)||!state.provider||$('ocMaterial').value.trim().length<10;
+    $('ocAdopt').disabled=Boolean(busy)||!state.method||state.reviewed;
+    $('ocBuiltin').disabled=Boolean(busy)||!state.method||!state.reviewed;
+    $('ocImport').disabled=Boolean(busy)||!$('ocBenchmarkFile').files.length;
+    $('ocAdopt').innerHTML=state.reviewed?L('已采用组织方式','Organization adopted'):L('采用这份组织方式','Use this organization');
     mount.querySelectorAll('[data-oc-pane]').forEach(el=>el.hidden=Number(el.dataset.ocPane)!==state.step);
-    mount.querySelectorAll('[data-oc-step]').forEach(el=>{const i=Number(el.dataset.ocStep);el.disabled=!C.canVisit(i,state);el.setAttribute('aria-current',i===state.step?'step':'false');});
+    mount.querySelectorAll('[data-oc-step]').forEach(el=>{const i=Number(el.dataset.ocStep);el.disabled=Boolean(busy)||!C.canVisit(i,state);el.setAttribute('aria-current',i===state.step?'step':'false');});
     $('ocBack').hidden=state.step===0; $('ocNext').hidden=state.step===5;
-    $('ocNext').disabled=!C.canVisit(state.step+1,state);
+    $('ocNext').disabled=Boolean(busy)||!C.canVisit(state.step+1,state);
     $('ocRun').hidden=!state.study || state.study.status!=='draft';
     const record=state.study, spec=record && record.protocol;
+    if(record){const url=new URL(location.href);if(url.searchParams.get('comparison')!==record.id){url.searchParams.set('comparison',record.id);window.history.replaceState(null,'',url);}}
+    $('ocSave').disabled=Boolean(busy)||Boolean(record)||!C.canVisit(3,state)||$('ocMembers').selectedOptions.length!==state.method?.roles.length;
+    $('ocSave').innerHTML=record?L('设置已保存','Settings saved'):L('保存实验设置','Save experiment settings');
+    $('ocRun').innerHTML=record?.recovery?L('从保存进度继续','Continue from saved progress'):L('开始实验','Start experiment');
+    $('ocSavedProgress').textContent=record?.recovery?T(`已核对并保留${record.rows.length}/${record.protocol.expected}个单元、${record.recovery.verified_responses}次回答。无需再次保存，点击「从保存进度继续」。`,`Verified ${record.rows.length}/${record.protocol.expected} cells and ${record.recovery.verified_responses} responses. Settings are saved; continue from this checkpoint.`):'';
     $('ocCompare').innerHTML=methodCard(spec?spec.candidate:state.method,T('新的组织方式','Candidate'),record?.rows?.find(r=>r.arm==='candidate')?.edges)
       +methodCard(spec?spec.baseline:baseline(),T('对照方式','Baseline'),record?.rows?.find(r=>r.arm==='baseline')?.edges)
-      +`<p class="oc-note">${E(T('图为通信结构示意；运行后显示本次某道题的实际连边。汇总和审阅步骤另按规则执行。','Graphs illustrate communication; after running they show a recorded question graph. Readout and review use their separate rules.'))}</p>`;
+      +`<p class="oc-note">${E(T('图为通信结构示意；运行后显示本次某道题的实际连边。汇总和审阅步骤另按规则执行。','Graphs illustrate communication; after running they show a recorded question graph. Readout and review use their separate rules.'))}</p>`
+      +($('ocMode').value==='topology'?`<p class="oc-note">${E(T('只比较通信结构：对照的分工、轮数、决策和审阅已与候选统一，卡片显示实际将执行的规则。','Communication-only comparison: baseline roles, rounds, decision and review match the candidate. Cards show the effective rules.'))}</p>`:'');
     const n=state.benchmark?.tasks.length || 0;
     $('ocEstimate').textContent=T(`已选${n}道题、${state.method?.roles.length||0}个角色。两组共${n*Number($('ocRepeats').value)*2}个实验单元。`,`${n} questions, ${state.method?.roles.length||0} roles; ${n*Number($('ocRepeats').value)*2} arm/question runs.`);
     if (spec) $('ocEstimate').textContent+=T(` 调用上限${spec.budget.max_requests}次；实际消耗另计。`, ` At most ${spec.budget.max_requests} requests; actual usage is reported separately.`);
     if (record) renderStudy(record);
+    mount.querySelectorAll('[data-oc-study]').forEach(el=>{
+      el.setAttribute('aria-current',el.dataset.ocStudy===record?.id?'true':'false');
+      if(el.dataset.ocStudy===record?.id)el.querySelector('small:last-child').textContent=statusName(record.status)+` · ${record.rows.length}/${record.protocol.expected}`;
+    });
+    if(busy && $(busy)){ $(busy).setAttribute('aria-busy','true'); $(busy).textContent=T(...(busyLabels[busy]||['处理中…','Working…'])); }
+    mount.querySelectorAll('button[aria-busy]').forEach(el=>{if(el.id!==busy)el.removeAttribute('aria-busy');});
   }
   function edit(method) {
     state.method=method; state.reviewed=false; $('ocEditor').hidden=false;
@@ -142,6 +173,7 @@
   }
   function loadStudy(record) {
     const p=record.protocol, fields=C.protocolFields(p);
+    state.study=null;state.baseline=fields.baseline;state.baselineMethod=fields.baseline==='custom'?p.baseline:null;
     edit(p.candidate);
     state.reviewed=true;state.study=record;state.benchmark=p.benchmark;state.provider=fields.provider;state.baseline=fields.baseline;state.ids=fields.ids;
     $('ocMaterial').value=p.candidate.source?.text||'';$('ocTitle').value=p.candidate.source?.title||'';
@@ -149,17 +181,33 @@
     $('ocProvider').value=fields.provider;
     mount.querySelectorAll('[name=ocBaseline]').forEach(el=>el.checked=el.value===fields.baseline);
     $('ocMode').value=fields.mode;
+    $('ocBaselineText').value=state.baselineMethod?.source?.text||'';
+    $('ocBaselineJson').value=state.baselineMethod?JSON.stringify(state.baselineMethod,null,2):'';
+    $('ocBaselinePreview').innerHTML=state.baselineMethod?methodCard(state.baselineMethod,T('自定义对照规则','Custom baseline rules')):'';
     for(const [id,key] of [['ocRepeats','repeats'],['ocDelta','delta'],['ocSeed','seed'],['ocCalls','calls'],['ocTokens','tokens']])$(id).value=fields[key];
     Array.from($('ocMembers').options).forEach(o=>o.selected=fields.ids.includes(Number(o.value)));
     preview(p.benchmark);
-    state.step=record.status==='draft'?3:4;update();
+    state.step=record.status==='draft'?3:4;
+    const url=new URL(location.href);url.searchParams.set('comparison',record.id);window.history.replaceState(null,'',url);
+    error();update();
   }
   function renderStudy(r) {
-    const a=r.analysis||{}, running=r.status==='running';
-    const labels={draft:T('设置已保存','Settings saved'),running:T('运行中','Running'),paused:T('已暂停','Paused'),interrupted:T('运行中断，可继续','Interrupted; resumable'),completed:T('已完成','Completed'),stopped:T('已终止','Stopped')};
-    $('ocProgress').textContent=`${labels[r.status]||r.status} · ${r.rows.length}/${r.protocol.expected} · ${r.metrics?.calls||0} ${T('次实际调用','requests')} ${r.error?' · '+r.error:''}`;
+    const a=r.analysis||{}, c=C.controls(r,Boolean(busy));
+    const labels={draft:T('设置已保存','Settings saved'),running:T('运行中','Running'),paused:T('已暂停','Paused'),interrupted:T('运行中断，可继续','Interrupted; resumable'),completed:T('已完成','Completed'),stopped:T('已终止','Stopped'),rate_limited:T('模型限流，已保留进度','Rate limited; progress saved')};
+    $('ocProgress').textContent=`${r.status==='running'&&r.control?T(r.control==='stop'?'正在终止，等待当前请求结束':'正在暂停，等待当前请求结束',r.control==='stop'?'Stopping after the current request':'Pausing after the current request'):labels[r.status]||r.status} · ${r.rows.length}/${r.protocol.expected} · ${r.metrics?.calls||0} ${T('次实际调用','requests')} `;
     $('ocBar').max=r.protocol.expected; $('ocBar').value=r.rows.length;
-    $('ocPause').hidden=!running; $('ocStop').hidden=!['running','paused','interrupted'].includes(r.status); $('ocResume').hidden=!['paused','interrupted'].includes(r.status);
+    const cooling=C.coolingDown(r), failure=C.failureMessage(r,en());
+    $('ocFailure').textContent=failure;
+    $('ocWait').textContent=r.error_info?.retry_at ? T('最早可手动继续：','Earliest manual retry: ')+new Date(r.error_info.retry_at*1000).toLocaleString()+T('。这是本地等待下限，不代表服务商保证额度已恢复；页面不会自动重试。',' . This is a local lower bound, not a provider guarantee. No automatic retries.') : r.waiting ? T('正在按已保存的请求间隔等待；可以随时暂停。','Waiting for the frozen request interval; you may pause at any time.') : '';
+    $('ocRecovery').textContent=r.recovery ? T(`恢复副本：复用${r.recovery.reused_cells}个已完成单元和${r.recovery.verified_responses}次已保存回答，原实验保留不变。`,`Recovery copy: reuses ${r.recovery.reused_cells} completed cells and ${r.recovery.verified_responses} saved responses; the source study is unchanged.`) : '';
+    $('ocFailureDetails').hidden=!r.error_info&&!r.recovery;
+    $('ocFailureJson').textContent=JSON.stringify({error:r.error_info||r.error||null,recovery:r.recovery||null},null,2);
+    $('ocRun').disabled=busy||cooling;
+    for(const [id,key] of [['ocPause','pause'],['ocResume','resume'],['ocRetry','retry'],['ocStop','stop']]){ $(id).hidden=!c[key];$(id).disabled=c[key+'Disabled']; }
+    $('ocPause').innerHTML=c.pauseLabel==='pausing'?L('正在暂停…','Pausing…'):L('暂停','Pause');
+    $('ocStop').innerHTML=r.status==='running'&&r.control==='stop'?L('正在终止…','Stopping…'):L('终止','Stop');
+    $('ocRetry').innerHTML=r.retry_blocked_reason?L('请求已达上限，请另建实验','Request limit reached; create a new experiment'):cooling?L('等待服务恢复后重试','Retry after cooldown'):L('重新运行（保留进度）','Retry from saved progress');
+    $('ocResume').innerHTML=cooling?L('等待后继续','Resume after cooldown'):L('继续实验','Resume');
     const f=x=>typeof x==='number'?x.toFixed(4):'—';
     $('ocResult').innerHTML=`<p class="oc-verdict" data-verdict="${E(a.verdict||'incomplete')}">${E(C.verdict(a.verdict,en()))}</p>`
       +`<p>${E(T('主指标：0–1成绩，越高越好。差异为候选减去对照。','Primary score: 0–1, higher is better. Difference is candidate minus baseline.'))}</p>`
@@ -177,11 +225,13 @@
     const r=await api(P+'/'+id);
     if (state.revision!==revision || state.study?.id!==id) return;
     state.study=r; update();clearTimeout(timer);
-    if(C.shouldPoll(r)) timer=setTimeout(()=>refresh().catch(e=>error(e.message)),2000);
+    if(C.shouldPoll(r)) timer=setTimeout(()=>refresh().catch(e=>error(e.message)),r.status==='running'?2000:10000);
   }
+  function statusName(status) {return ({draft:T('设置已保存','Settings saved'),running:T('运行中','Running'),paused:T('已暂停','Paused'),interrupted:T('运行中断','Interrupted'),completed:T('已完成','Completed'),stopped:T('已终止','Stopped'),rate_limited:T('模型限流','Rate limited')})[status]||status;}
   async function history() {
     const list=(await api(P)).studies;
-    $('ocHistory').innerHTML=list.map(r=>`<button type="button" class="oi-record" data-oc-study="${E(r.id)}">${E(r.title)}<small>${E(({draft:T('设置已保存','Settings saved'),running:T('运行中','Running'),paused:T('已暂停','Paused'),interrupted:T('运行中断','Interrupted'),completed:T('已完成','Completed'),stopped:T('已终止','Stopped')})[r.status]||r.status)}</small></button>`).join('')||`<p class="oc-note">${E(T('还没有实验','No experiments yet'))}</p>`;
+    $('ocHistory').innerHTML=list.map(r=>`<button type="button" class="oi-record" data-oc-study="${E(r.id)}">${E(r.title)}<small>${E(new Date(r.created_at*1000).toLocaleString())} · ${E(r.id.slice(-6))}</small><small>${E(statusName(r.status))} · ${r.analysis?.rows||0}/${r.analysis?.expected||'—'}</small></button>`).join('')||`<p class="oc-note">${E(T('还没有实验','No experiments yet'))}</p>`;
+    update();
   }
   function download(filename,text,type='text/plain') {const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type}));a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   async function readPaper(file) {
@@ -201,23 +251,31 @@
   act('ocAnalyze',async()=>{const revision=state.revision;const data=await api(P+'/analyze',{text:$('ocMaterial').value,title:$('ocTitle').value,provider:state.provider});if(revision!==state.revision)return;if(data.runnable===false)throw new Error(T('暂不能实现：','Unsupported: ')+data.unsupported.join(', '));invalidate();edit(data);});
   act('ocExample',()=>{invalidate();edit({version:'organization-method-1',name:T('分工讨论与交叉审阅','Role discussion with peer review'),description:'',roles:[T('分析','Analyze'),T('核对','Check'),T('决策','Decide')],topology:{kind:'full',probability:.5,edges:[]},rounds:2,decision:'auto',review:true,revisions:1,memory:'reset',rules:[{text:T('各自分析后交换信息，再交叉审阅并修订。','Work independently, exchange evidence, peer-review and revise.'),quote:'',origin:'inferred'}],source:{title:T('示例规则','Example rules'),text:''},unsupported:[]});});
   act('ocApplyJson',()=>{const m=JSON.parse($('ocRuleJson').value);if(!Array.isArray(m.roles)||!m.topology)throw new Error(T('规则格式不完整','Incomplete method'));invalidate();edit(m);});
-  act('ocAdopt',()=>{const m=readMethod();if(state.method.roles.length!==m.roles.length)state.benchmark=null;invalidate();state.method=m;state.reviewed=true;state.step=1;update();});
+  act('ocAdopt',()=>{const m=readMethod();if(state.method.roles.length!==m.roles.length){state.benchmark=null;state.baselineMethod=null;}invalidate();state.method=m;state.reviewed=true;state.step=1;update();});
   ['ocMethodName','ocRoles','ocTopology','ocRounds','ocDecision','ocReview','ocReviewEnabled','ocRules'].forEach(id=>$(id).addEventListener('input',()=>{if(state.method){state.reviewed=false;invalidate();}}));
   mount.querySelectorAll('[name=ocBaseline]').forEach(el=>el.onchange=()=>{state.baseline=el.value;invalidate();});
   $('ocMode').onchange=invalidate;
+  $('ocBaselineText').oninput=()=>{state.baselineMethod=null;state.baselineDraft=null;$('ocBaselineJson').value='';$('ocBaselinePreview').textContent='';invalidate();};
+  $('ocBaselineJson').oninput=()=>{state.baselineMethod=null;invalidate();};
+  act('ocAnalyzeBaseline',async()=>{const rev=state.revision;const m=await api(P+'/analyze',{text:$('ocBaselineText').value,title:T('自定义对照','Custom baseline'),provider:state.provider,slots:state.method.roles.length});if(rev!==state.revision)return;if(m.runnable===false)throw new Error(T('暂不支持：','Unsupported: ')+m.unsupported.join(', '));state.baselineDraft=m;state.baselineMethod=null;$('ocBaselineJson').value=JSON.stringify(m,null,2);$('ocBaselinePreview').innerHTML=methodCard(m,T('待核对的对照规则','Baseline rules to review'));invalidate();});
+  act('ocAdoptBaseline',()=>{const m=JSON.parse($('ocBaselineJson').value);if(!Array.isArray(m.roles)||m.roles.length!==state.method.roles.length||!m.topology)throw new Error(T('对照角色数量必须匹配，且需要通信结构。','Baseline roles must match the candidate and include a communication structure.'));state.baselineMethod=m;$('ocBaselinePreview').innerHTML=methodCard(m,T('已采用的对照规则','Adopted baseline rules'));invalidate();});
+  $('ocBenchmarkFile').onchange=update;
+
   function preview(bank) {state.benchmark=bank;const q=bank.tasks[0];$('ocBenchmarkPreview').innerHTML=`<h3>${E(bank.name)} · ${bank.tasks.length} ${E(T('道题','questions'))}</h3><p>${E(q.prompt)}</p><p class="oc-note">${E(T('验证通过；评分范围0–1。参考答案仅供评分端使用。','Validated; scores range from 0 to 1. References are available only to the scorer.'))}</p>`;update();}
   act('ocBuiltin',async()=>{const rev=state.revision;const r=await api(P+'/benchmark',{problem:$('ocProblem').value,count:Number($('ocCount').value),slots:state.method.roles.length});if(rev!==state.revision)return;invalidate();preview(r.benchmark);});
   act('ocImport',async()=>{const file=$('ocBenchmarkFile').files[0];if(!file)throw new Error(T('请选择题库文件','Choose a benchmark file'));if(file.size>2_000_000)throw new Error(T('题库不能超过2MB','Benchmark limit: 2MB'));const rev=state.revision;const text=await file.text();const r=await api(P+'/benchmark',{text,format:/\.csv$/i.test(file.name)?'csv':'jsonl',mapping:JSON.parse($('ocMapping').value),scorer:$('ocScorer').value,name:file.name});if(rev!==state.revision)return;invalidate();preview(r.benchmark);});
   ['ocRepeats','ocDelta','ocSeed','ocCalls','ocTokens','ocMembers'].forEach(id=>$(id).addEventListener('input',invalidate));
   act('ocSave',async()=>{state.ids=Array.from($('ocMembers').selectedOptions,x=>Number(x.value));if(state.ids.length!==state.method.roles.length)throw new Error(T('居民人数必须与角色数量相同','Resident count must match role count'));const rev=state.revision;const record=await api(P,C.settings(state,{repeats:Number($('ocRepeats').value),delta:Number($('ocDelta').value),seed:Number($('ocSeed').value),limits:{calls:Number($('ocCalls').value)},max_tokens:Number($('ocTokens').value),comparison_mode:$('ocMode').value}));if(rev!==state.revision)return;state.study=record;await history();});
-  act('ocRun',async()=>{await api(P+'/'+state.study.id+'/run',{});state.step=4;await refresh();});
-  for(const [id,action] of [['ocPause','pause'],['ocResume','resume'],['ocStop','stop']])act(id,async()=>{await api(P+'/'+state.study.id+'/'+action,{});await refresh();});
+  act('ocRun',async()=>{if(state.study.resume_requires_recovery)return continueStudy();await api(P+'/'+state.study.id+'/run',{});state.step=4;await refresh();await history();});
+  for(const [id,action] of [['ocPause','pause'],['ocStop','stop']])act(id,async()=>{await api(P+'/'+state.study.id+'/'+action,{});await refresh();});
+  async function continueStudy(){if(state.study.resume_requires_recovery){const r=await api(P+'/'+state.study.id+'/recover',{});state.revision++;loadStudy(r);}await api(P+'/'+state.study.id+'/resume',{});state.step=4;await refresh();await history();}
+  act('ocResume',continueStudy);act('ocRetry',continueStudy);
   act('ocRefresh',refresh);
   for(const [id,route,key,type] of [['ocReport','export','markdown','text/markdown'],['ocCsv','csv','csv','text/csv'],['ocSettings','protocol','protocol','application/json'],['ocAudit','audit','record','application/json']])act(id,async()=>{const r=await api(P+'/'+state.study.id+'/'+route);download(r.filename,typeof r[key]==='string'?r[key]:JSON.stringify(r[key],null,2),type);});
   act('ocSaveMethod',async()=>{const r=await api(P+'/'+state.study.id+'/save-method',{name:$('ocLibraryName').value});$('ocSavedMethod').textContent=T(`已保存「${r.name}」版本${r.version}。在合作任务中选择相同人数即可使用。`,`Saved “${r.name}”, version ${r.version}. Select it in Cooperation with the matching team size.`);});
-  $('ocNew').onclick=()=>{clearTimeout(timer);state.revision++;state.study=null;state.step=0;error();update();};
-  $('ocHistory').onclick=async event=>{const b=event.target.closest('[data-oc-study]');if(!b)return;try{clearTimeout(timer);state.revision++;const revision=state.revision;const record=await api(P+'/'+b.dataset.ocStudy);if(revision!==state.revision)return;loadStudy(record);if(C.shouldPoll(state.study))await refresh();}catch(e){error(e.message);}};
+  $('ocNew').onclick=()=>{if(busy)return;clearTimeout(timer);state.revision++;state.study=null;state.step=0;const url=new URL(location.href);url.searchParams.delete('comparison');window.history.replaceState(null,'',url);error();update();};
+  $('ocHistory').onclick=async event=>{const b=event.target.closest('[data-oc-study]');if(!b||busy)return;busy='history';$('ocHistoryStatus').textContent=T('正在打开实验…','Opening experiment…');update();try{clearTimeout(timer);state.revision++;const revision=state.revision;const record=await api(P+'/'+b.dataset.ocStudy);if(revision!==state.revision)return;loadStudy(record);if(C.shouldPoll(state.study))await refresh();}catch(e){error(e.message);}finally{busy=false;$('ocHistoryStatus').textContent='';update();}};
   document.addEventListener('locale-changed',()=>{mount.querySelectorAll('[data-oc-en]').forEach(el=>el.textContent=en()?el.dataset.ocEn:el.dataset.ocZh);update();});
-  async function init() {try{context=await api(P+'/context');$('ocProvider').innerHTML=context.providers.map(p=>`<option value="${E(p.name)}">${E(p.name)} · ${E(p.model||'')}</option>`).join('');if(context.default_provider&&context.providers.some(p=>p.name===context.default_provider))$('ocProvider').value=context.default_provider;state.provider=$('ocProvider').value;$('ocMembers').innerHTML=context.members.map((p,i)=>`<option value="${p.id}" ${i<3?'selected':''}>${E(p.name)} · ${p.id}</option>`).join('');await history();update();}catch(e){error(e.message);}}
+  async function init() {try{context=await api(P+'/context');$('ocProvider').innerHTML=context.providers.map(p=>`<option value="${E(p.name)}">${E(p.name)} · ${E(p.model||'')}</option>`).join('');if(context.default_provider&&context.providers.some(p=>p.name===context.default_provider))$('ocProvider').value=context.default_provider;state.provider=$('ocProvider').value;$('ocMembers').innerHTML=context.members.map((p,i)=>`<option value="${p.id}" ${i<3?'selected':''}>${E(p.name)} · ${p.id}</option>`).join('');await history();const linked=C.studyFromSearch(location.search);if(linked){loadStudy(await api(P+'/'+linked));if(C.shouldPoll(state.study))await refresh();}update();}catch(e){error(e.message);}}
   update();init();
 }());

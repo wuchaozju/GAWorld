@@ -1014,6 +1014,7 @@ def _agent_home_payload(agent_id):
     design = payload.get("design") or {}
     return {
         "has_home": True,
+        "source": payload.get("source") or "run",
         "summary": summary,
         "design": design,
         "recent_observations": (payload.get("observations") or [])[-30:],

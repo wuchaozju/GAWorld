@@ -49,10 +49,16 @@
    */
   function setButtonBusy(btn, busyKey, busyFallback) {
     if (!btn) return function noopRelease() {};
-    // First busy() call snapshots the resting label so we can restore it
-    // after the *last* release, even if the locale changed mid-flight.
-    if (btn.dataset[COUNTER] === undefined) {
-      btn.dataset[COUNTER] = "0";
+    const depth = parseInt(btn.dataset[COUNTER], 10) || 0;
+    // Depth 0 means "not busy right now", so this call opens a *new* busy
+    // cycle and has to snapshot the resting label again. The snapshot used to
+    // be taken only when the counter attribute was missing — but a finished
+    // cycle deletes the snapshot while leaving the counter at "0", so the
+    // second use of a button had nothing to restore and stayed stuck on the
+    // busy copy ("启动中…") for good.
+    if (depth === 0) {
+      delete btn.dataset[ORIGINAL_KEY];
+      delete btn.dataset[ORIGINAL_TEXT];
       // Prefer the i18n key over the rendered text so locale switches
       // rerender the resting label correctly.
       const i18nKey = btn.getAttribute("data-i18n") || "";
@@ -66,7 +72,6 @@
       // buttons gated by an agent being chosen).
       btn.dataset._busyOrigDisabled = btn.disabled ? "1" : "0";
     }
-    const depth = parseInt(btn.dataset[COUNTER], 10) || 0;
     btn.dataset[COUNTER] = String(depth + 1);
     btn.disabled = true;
     btn.classList.add("is-busy");
@@ -116,6 +121,18 @@
     }
   }
 
+  /**
+   * Whether the button is in a busy cycle right now. The dashboard polls the
+   * run status every few seconds, and that poll must not re-enable a button
+   * whose request is still in flight — otherwise the user can click it twice
+   * and fire a duplicate request.
+   */
+  function isButtonBusy(btn) {
+    if (!btn) return false;
+    return (parseInt(btn.dataset[COUNTER], 10) || 0) > 0;
+  }
+
   window.setButtonBusy = setButtonBusy;
   window.withButtonBusy = withButtonBusy;
+  window.isButtonBusy = isButtonBusy;
 })();

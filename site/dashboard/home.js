@@ -51,7 +51,9 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     "home.now_activity": "在{room} · {activity}",
     "home.away": "此刻不在家",
     "home.empty": "尚无居家模式数据。运行一次仿真后，这里会显示每位居民的居家环境。",
-    "home.not_in_run": "这位居民没有参与上一轮运行，因此没有居家记录。",
+    "home.not_in_run": "这位居民还没有家：名册里没有他/她，或他/她还没参与过运行。",
+    "home.load_failed": "读取居家记录失败：{error}",
+    "home.preview_note": "户型是按设定推算的——这位居民还没参与过运行。",
     "home.summary.rooms": "房间",
     "home.summary.size": "总面积",
     "home.summary.quality": "档次",
@@ -110,14 +112,15 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       ? Boolean(payload.has_home)
       : Boolean(Object.keys(rooms).length);
     if (!hasHome) {
-      const text = payload && payload.error && payload.has_home === undefined
-        ? payload.error
-        : t(helpers.t, "home.not_in_run");
-      root.appendChild(el("div", { cls: "home-empty", text }));
+      root.appendChild(el("div", { cls: "home-empty", text: emptyText(payload, helpers) }));
       return;
     }
 
     root.appendChild(renderHead(payload, helpers));
+    // A flat rebuilt from the roster (the resident never ran) says so.
+    if (payload && payload.source === "preview") {
+      root.appendChild(el("div", { cls: "home-preview-note", text: t(helpers.t, "home.preview_note") }));
+    }
     const now = renderNow(payload, helpers);
     if (now) root.appendChild(now);
     root.appendChild(renderSummary(payload, helpers));
@@ -125,6 +128,24 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     root.appendChild(renderRooms(payload, helpers));
     root.appendChild(renderAmbiance(payload, helpers));
     root.appendChild(renderObservations(payload, helpers));
+  }
+
+  // Three different reasons the card can be empty, and they must not borrow
+  // each other's wording:
+  //   · the data never arrived — the request is still running, or nobody
+  //     asked for it yet;
+  //   · the resident has no home — not in the roster, or never simulated;
+  //   · the endpoint failed — a fault, and the reason belongs on screen.
+  function emptyText(payload, helpers) {
+    const reason = (payload && payload.reason) || "";
+    const error = (payload && payload.error) || "";
+    if (reason === "error" || (error && reason !== "no_home_design")) {
+      return t(helpers.t, "home.load_failed", { error: error || "—" });
+    }
+    if (reason === "no_home_design") {
+      return t(helpers.t, "home.not_in_run");
+    }
+    return t(helpers.t, "home.empty");
   }
 
   // The card's own header: what this panel is, and a way to reload it.

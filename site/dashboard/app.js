@@ -234,7 +234,14 @@ async function api(path, options = {}) {
     ...options,
   });
   const payload = await response.json();
-  if (!response.ok || payload.error) throw new Error(payload.error || `HTTP ${response.status}`);
+  if (!response.ok || payload.error) {
+    const error = new Error(payload.error || `HTTP ${response.status}`);
+    // Keep the body: a caller may need to tell "this resident has no record"
+    // (a state) from "the endpoint failed" (a fault).
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
   return payload;
 }
 
@@ -254,8 +261,12 @@ function message(text, tone = "") {
 // run buttons and run-config inputs lock while running, stop unlocks.
 function syncRunButtons() {
   const running = Boolean(state.running);
-  els.runBtn.disabled = running;
-  els.resetRunBtn.disabled = running;
+  // A button whose request is still in flight stays disabled even when the run
+  // state says otherwise: the status poll runs while the button is busy, and
+  // re-enabling it would let a second click fire a duplicate request.
+  const busy = (btn) => (typeof isButtonBusy === "function" ? isButtonBusy(btn) : false);
+  els.runBtn.disabled = running || busy(els.runBtn);
+  els.resetRunBtn.disabled = running || busy(els.resetRunBtn);
   els.stopBtn.disabled = !running;
   // A pending schedule swaps its button for 取消定时: re-arming would silently
   // replace the timer, so cancelling has to be the visible next step.
@@ -506,6 +517,9 @@ async function saveConfig() {
     state.selectedAgentId = null;
     await loadAgents();
     exitCityBrowse();
+    // The city changed, so the run root changed with it: the home card and
+    // the flat drawn in the indoor mode belong to the new city's residents.
+    await loadHome();
     const cityInfo = (state.config.cities || []).find((city) => city.slug === newCity);
     const cityName = cityInfo ? cityInfo.display_name : __("sim.city_default");
     message(__f("sim.city_switch_notice", { name: cityName }));
@@ -986,9 +1000,14 @@ async function loadHome(agentId) {
     const payload = await api(`/api/home/${id}`);
     state.home = payload;
   } catch (error) {
-    // 404 means the agent has no home design yet — treat that as an empty
-    // state rather than an error message.
-    state.home = { has_home: false, error: error.message };
+    // A resident the last run never touched has no home record; that is a
+    // state, not a failure. Anything else is a real fault and has to say so
+    // instead of borrowing the "no record" wording.
+    // A 404 is the "no home" answer even when the body carries no reason
+    // (an older server answers with the message alone).
+    const reason = (error.payload && error.payload.reason)
+      || (error.status === 404 ? "no_home_design" : "error");
+    state.home = { has_home: false, reason, error: error.message };
   }
   // The indoor mode draws the resident's own flat from this design.
   if (indoorView) indoorView.setHome(state.home);
@@ -2207,6 +2226,10 @@ async function init() {
     ["load.life_events", loadLifeEvents],
     ["load.candidates", () => loadLifeEventCandidates(true)],
     ["load.profile", loadProfile],
+    // The home card and the resident's own flat are drawn from /api/home/<id>,
+    // so the first resident needs it too — not only the ones you click on
+    // afterwards.
+    ["load.home", loadHome],
     ["load.family", loadFamily],
     ["load.memory", loadMemory],
     ["load.run_status", refreshStatus],

@@ -68,7 +68,7 @@ class TestInstallPatch(unittest.TestCase):
 
         from gaworld.llm.providers import call_llm as captured
 
-        with install() as mock, patch("gaworld.llm.providers.requests.post") as post:
+        with install() as mock, patch("gaworld.llm.providers.http_post") as post:
             captured("test", task="daily_intentions", system="test")
             self.assertEqual(mock.call_count("daily_intentions"), 1)
             post.assert_not_called()
