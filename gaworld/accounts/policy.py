@@ -138,6 +138,7 @@ OWNER_DELETES = {"/api/interview/delete", "/api/research/delete", "/api/persona/
 #: through the world-aware config (the Big Five table is the world's own copy
 #: under ``seed/``). Life events still read global files and so stay admin-only.
 WORLD_WRITES_EXACT = {
+    "/api/settings/llm/routing",
     "/api/config",
     "/api/run/start",
     "/api/run/stop",

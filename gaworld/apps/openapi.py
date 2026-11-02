@@ -1187,6 +1187,10 @@ def _panels() -> dict[str, Any]:
             "settings", "Write-only personal credential scoped to the signed-in account; never returned",
             body=_obj(("name",), name=STR, action=_d(STR, "save or delete"),
                       api_key={"type": "string", "format": "password", "writeOnly": True}))},
+        "/api/settings/llm/routing": {"post": _op(
+            "settings", "Select registered model backends in the active owned world",
+            body=_obj(("routing",), routing=OBJ),
+            errors={"400": "Invalid routing or unknown model", "403": "Select an owned world"})},
         "/api/external-systems/overview": {"get": _op("external-systems", "Economy, environment and services")},
         "/api/external-systems/health": {"get": _op("external-systems", "Reachability of external services")},
         "/api/external-systems/interventions": {

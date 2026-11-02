@@ -29,11 +29,13 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   var SOURCE_LABEL_KEYS = {
     "default": "set.src_default",
     dashboard: "set.src_dashboard",
+    world: "set.src_world",
     env: "set.src_env",
   };
 
   var SOURCE_SHORT_KEYS = {
     dashboard: "set.src_short_dashboard",
+    world: "set.src_short_world",
     env: "set.src_short_env",
     env_file: "set.src_short_env_file",
   };
@@ -299,7 +301,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     var source = sourceFor(path);
     if (source === "default") return "";
     var out = '<span class="set-badge is-' + source + '">' + esc(sourceShort(source)) + "</span>";
-    if (source === "dashboard") {
+    if (source === "dashboard" && state.data.can_edit_config !== false) {
       out += '<button type="button" class="set-revert" data-revert="' + esc(path) +
         '" title="' + esc(__("set.revert_title")) + '">↺</button>';
     }
@@ -441,11 +443,12 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     return '<div class="llm-card llm-pick">' +
       "<h3>" + esc(__("set.pick_title")) +
         '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
-      '<label class="' + fieldClass(path) + '">' +
+      '<label for="setDefaultProvider" class="' + fieldClass(path) + '">' +
       '<span class="set-label">' + esc(__("set.pick_default")) +
         '<code class="set-path">' + esc(path) + "</code>" + badges(path) + "</span>" +
-      '<select data-kind="text" data-path="' + esc(path) + '">' + optionsHtml(options, value) + "</select></label>" +
-      '<p class="set-hint">' + esc(__("set.pick_hint")) + "</p></div>";
+      '<select id="setDefaultProvider" data-kind="text" data-path="' + esc(path) + '">' + optionsHtml(options, value) + "</select></label>" +
+      '<p class="set-hint">' + esc(__(state.data.can_edit_model_routing
+        ? "set.pick_world_hint" : "set.pick_hint")) + "</p></div>";
   }
 
   function renderProviderList() {
@@ -768,7 +771,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
     if (state.data.can_edit_config === false) {
       document.querySelectorAll('input[data-path], select[data-path], textarea[data-path], [data-revert], #setResetAll')
-        .forEach(function (el) { el.disabled = true; });
+        .forEach(function (el) {
+          var path = el.getAttribute("data-path") || "";
+          el.disabled = !(state.data.can_edit_model_routing && path.indexOf("llm.routing.") === 0);
+        });
     }
 
     var sources = state.data.sources || {};
@@ -883,7 +889,13 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       return;
     }
     var count = dirtyPaths().length;
-    api("POST", "/api/settings/save", { config: buildPatch() }).then(function (payload) {
+    var patch = buildPatch();
+    var worldRouting = state.data.can_edit_model_routing && dirtyPaths().every(function (path) {
+      return path.indexOf("llm.routing.") === 0;
+    });
+    var endpoint = worldRouting ? "/api/settings/llm/routing" : "/api/settings/save";
+    var body = worldRouting ? { routing: patch.llm.routing } : { config: patch };
+    api("POST", endpoint, body).then(function (payload) {
       var notes = [];
       if (payload.saved) notes.push(__f("set.saved_n", { count: (payload.applied || []).length }));
       else notes.push(__("set.saved_none"));
@@ -898,7 +910,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       // 指望用户去 hover。
       var shadowed = (payload.applied || []).filter(function (path) {
         var source = (payload.sources || {})[path];
-        return source && source !== "dashboard";
+        return source && source !== "dashboard" && source !== "world";
       });
       absorb(payload);
       status(notes.join("；") + __("set.applies_next_run"), payload.saved ? "ok" : "warn");
