@@ -3351,6 +3351,8 @@
   "set.pick_help": "所有没有单独指定的任务都用这个后端，它决定了绝大部分成本。选完要点右下角「保存配置」才会写进 dashboard_config.json，并在下一次启动仿真时生效。个别任务想用别的后端，去下面的 llm → routing → tasks。",
   "set.pick_hint": "改动会进入右侧「待保存的修改」，点「保存配置」生效。",
   "set.pick_world_hint": "点「保存配置」后仅改变当前世界。使用旧默认模型的任务会同步切换；其他专用模型保留。新任务生效，运行中的任务不变。",
+  "set.pick_world_required": "当前是共享默认世界或他人的世界，模型配置只读。请在控制台顶部选择自己的世界；没有则点「管理世界」创建，再重新打开配置页。",
+  "set.pick_world_setup": "返回控制台选择世界",
   "set.src_world": "当前世界的模型配置",
   "set.src_short_world": "当前世界",
   "set.pick_title": "用哪个大模型",

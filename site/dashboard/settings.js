@@ -440,6 +440,9 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     var value = String(currentValue(path, at(state.data.tree, path) || ""));
     var options = choicesFor(path) || [];
     var help = __("set.pick_help");
+    var readonly = state.data.can_edit_config === false && !state.data.can_edit_model_routing;
+    var hintKey = readonly ? "set.pick_world_required" :
+      (state.data.can_edit_model_routing ? "set.pick_world_hint" : "set.pick_hint");
     return '<div class="llm-card llm-pick">' +
       "<h3>" + esc(__("set.pick_title")) +
         '<span class="help-tip" data-help="' + esc(help) + '"></span></h3>' +
@@ -447,8 +450,9 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       '<span class="set-label">' + esc(__("set.pick_default")) +
         '<code class="set-path">' + esc(path) + "</code>" + badges(path) + "</span>" +
       '<select id="setDefaultProvider" data-kind="text" data-path="' + esc(path) + '">' + optionsHtml(options, value) + "</select></label>" +
-      '<p class="set-hint">' + esc(__(state.data.can_edit_model_routing
-        ? "set.pick_world_hint" : "set.pick_hint")) + "</p></div>";
+      '<p class="set-hint">' + esc(__(hintKey)) +
+      (readonly ? ' <a id="llmWorldSetup" href="' + esc(gwURL("/console#settings")) +
+        '" target="_top">' + esc(__("set.pick_world_setup")) + "</a>" : "") + "</p></div>";
   }
 
   function renderProviderList() {

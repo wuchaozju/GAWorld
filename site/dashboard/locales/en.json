@@ -3351,6 +3351,8 @@
   "set.pick_help": "Every task that does not name its own backend uses this one, so it drives almost all of the cost. Your choice only reaches dashboard_config.json when you press “Save Config” at the bottom right, and applies to the next run you start. To give an individual task a different backend, see llm → routing → tasks below.",
   "set.pick_hint": "Changes go to “Pending changes” on the right; press “Save Config” to apply them.",
   "set.pick_world_hint": "Save Config changes this world only. Tasks using the old default follow the new model; other dedicated models stay selected. Applies to new tasks; running tasks keep their settings.",
+  "set.pick_world_required": "The shared default world and other people's worlds are read-only. Select your world at the top of the console, or use Manage worlds to create one, then reopen Settings.",
+  "set.pick_world_setup": "Return to console to select a world",
   "set.src_world": "Current world's model configuration",
   "set.src_short_world": "this world",
   "set.pick_title": "Which model to use",

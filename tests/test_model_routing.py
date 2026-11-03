@@ -161,7 +161,7 @@ def test_member_can_switch_models_and_save_from_the_page(routing_host):
             picker = page.locator('.llm-pick select[data-path="llm.routing.default"]')
             picker.wait_for()
             assert picker.is_enabled()
-            assert page.locator("#llmDraftName").count() == 0
+            assert page.locator("#llmAddBox").count() == 0
             assert picker.locator('option[value="model_b"]').count() == 1, picker.inner_html()
             assert picker.input_value() == "model_a"
             picker.select_option("model_b", timeout=5000)
@@ -175,6 +175,17 @@ def test_member_can_switch_models_and_save_from_the_page(routing_host):
             picker.wait_for()
             assert picker.input_value() == "model_b"
             assert host.global_path.read_bytes() == before
+            assert page.request.post(base + "/api/worlds/select", data={"id": ""}).status == 200
+            page.reload()
+            picker.wait_for()
+            assert picker.is_disabled()
+            setup = page.locator("#llmWorldSetup")
+            assert setup.is_visible()
+            assert setup.get_attribute("href") == "/GAWorld/console#settings"
+            setup.click()
+            page.wait_for_url("**/console#settings")
+            page.locator("#worldSelect").wait_for()
+            assert page.locator("#worldManageBtn").is_visible()
             assert errors == []
         finally:
             browser.close()
