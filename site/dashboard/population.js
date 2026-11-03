@@ -955,7 +955,13 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
   function render() {
     var renderers = { 1: renderStep1, 2: renderStep2, 3: renderStep3, 4: renderStep4, 5: renderStep5 };
-    $("popPanel").innerHTML = gwHTML((renderers[state.step] || renderStep1)());
+    var readonly = state.schema && state.schema.can_write_population === false;
+    var notice = readonly ? '<div class="pop-card"><p class="pop-hint">' + esc(__("pop.world_required")) +
+      ' <a href="' + esc(gwURL("/console#population")) + '" target="_top">' + esc(__("pop.select_world")) + '</a></p></div>' : "";
+    $("popPanel").innerHTML = gwHTML(notice + (renderers[state.step] || renderStep1)());
+    if (readonly) ["popGenerate", "popRunGroup", "popValidate", "popWrite"].forEach(function (id) {
+      if ($(id)) $(id).disabled = true;
+    });
     Array.prototype.forEach.call(document.querySelectorAll("#popSteps .step"), function (btn) {
       btn.classList.toggle("is-active", Number(btn.dataset.step) === state.step);
     });
@@ -1305,6 +1311,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       }
       state.schema = schema;
       state.spec = schema.defaults;
+      var preferred = (schema.providers || []).find(function (provider) { return provider.is_default; });
+      if (preferred) state.run.provider = preferred.name;
       var meta = $("popTopMeta");
       if (meta) {
         meta.innerHTML =

@@ -31,7 +31,7 @@ from dataclasses import asdict, is_dataclass
 from typing import Any
 
 from gaworld.accounts import ownership
-from gaworld.apps import world_paths
+from gaworld.apps import population_scope, world_paths
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.population")
@@ -51,6 +51,13 @@ _MAX_JOBS = 20
 def _new_job(kind: str) -> str:
     job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
     with _JOBS_LOCK:
+        from gaworld.accounts.context import USER
+
+        user = USER.get()
+        if user and user.get("role") != "admin":
+            active = [r for r in _JOBS.values() if r["status"] == "running"]
+            if len(active) >= _MAX_JOBS or any(population_scope.visible(r) for r in active):
+                raise ValueError("当前世界已有人口任务运行，或服务器任务已满，请稍后重试。")
         _JOBS[job_id] = {
             "id": job_id,
             "kind": kind,
@@ -61,6 +68,7 @@ def _new_job(kind: str) -> str:
             "finished_at": None,
             "result": None,
             "error": None,
+            **population_scope.tag(),
         }
         # Drop the oldest finished jobs once we exceed the cap. Running jobs are
         # never evicted — losing the handle to work still in flight would leave
@@ -110,7 +118,7 @@ def _run_in_background(job_id: str, work: Any) -> None:
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        if not record:
+        if not record or not population_scope.visible(record):
             return None
         # `parse_constant` turns NaN/Infinity into null. Not cosmetic: the L2
         # detail carries a ratio of two Moran's I values that is NaN whenever
@@ -144,6 +152,7 @@ def population_schema() -> dict[str, Any]:
     defaults = pop_schema.normalize_spec({})
     return {
         "version": "1.0",
+        "can_write_population": population_scope.can_write(),
         "presets": sorted(pop_schema.PRESETS),
         "state_var_keys": list(pop_schema.STATE_VAR_KEYS),
         "industries": list(pop_schema.INDUSTRIES),
@@ -189,9 +198,13 @@ def _providers() -> list[dict[str, Any]]:
     cannot be read should degrade the picker, not break the whole panel.
     """
     try:
-        from gaworld.llm.providers import available_providers
-
-        return list(available_providers())
+        config = world_paths.effective_config().get("llm") or {}
+        default = (config.get("routing") or {}).get("default")
+        return [
+            {"name": name, "type": cfg.get("type"), "model": cfg.get("model"), "is_default": name == default}
+            for name, cfg in (config.get("providers") or {}).items()
+            if isinstance(cfg, dict)
+        ]
     except Exception:  # a broken LLM config must not break the whole panel
         _LOG.warning("could not read the LLM provider registry", exc_info=True)
         return []
@@ -341,6 +354,7 @@ def start_population_job(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.population.schema import normalize_spec
 
     spec = normalize_spec(payload.get("spec") or payload)
+    population_scope.require_write(spec.size)
     # Resolve the write target *before* the job starts, so a rejected path is a
     # 400 on the request rather than a 202 followed by a failure the caller only
     # discovers by polling. Validation that happens inside the worker is
@@ -398,15 +412,7 @@ def _output_dir(payload: dict[str, Any]) -> str:
     the browser, so an unchecked value would be an arbitrary-write hole. The
     collaboration endpoints already guard their paths this way.
     """
-    import os
-
-
-    raw = str(payload.get("out_dir") or "output/population").strip()
-    root = os.path.realpath(world_paths.REPO_ROOT)
-    target = os.path.realpath(os.path.join(root, raw))
-    if not (target == root or target.startswith(root + os.sep)):
-        raise ValueError("out_dir 必须位于仓库目录内")
-    return target
+    return population_scope.output_dir(payload)
 
 
 #: How many lines of each written file to inline as a preview. Enough to see
@@ -424,7 +430,6 @@ def _describe_written(written: dict[str, Any]) -> list[dict[str, Any]]:
     immediately after "where is it?".
     """
     import os
-
 
     root = os.path.realpath(world_paths.REPO_ROOT)
     labels = {
@@ -477,8 +482,8 @@ _LAST_POPULATION: dict[str, Any] = {}
 
 
 def _remember_population(job_id: str, result: Any) -> None:
-    _LAST_POPULATION.clear()
-    _LAST_POPULATION.update(
+    population_scope.remember(
+        _LAST_POPULATION,
         {
             "job_id": job_id,
             # The whole result, kept so a download can be rendered later
@@ -502,7 +507,7 @@ def _remember_population(job_id: str, result: Any) -> None:
                 for p in result.people
             ],
             "neighbours": {int(k): list(v) for k, v in result.neighbours.items()},
-        }
+        },
     )
 
 
@@ -536,7 +541,7 @@ def export_population(fmt: str) -> dict[str, Any]:
         render_state_csv,
     )
 
-    result = _LAST_POPULATION.get("generated")
+    result = population_scope.current(_LAST_POPULATION).get("generated")
     if result is None:
         raise ValueError("还没有生成人口，请先在「人口结构」步骤生成。")
     if fmt not in _EXPORT_FORMATS:
@@ -580,10 +585,13 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.population.schema import normalize_spec
 
     source = str(payload.get("source") or "last")
-    if source == "last" and not _LAST_POPULATION.get("agents"):
+    population_scope.require_write()
+    last = population_scope.current(_LAST_POPULATION)
+    if source == "last" and not last.get("agents"):
         return {"error": "还没有生成人口，请先在「人口结构」步骤生成。"}
 
     spec = normalize_spec(payload.get("spec") or {})
+    population_scope.require_write(spec.size)
     days = max(1, min(90, int(payload.get("days", 7) or 7)))
     budget = max(0, min(500, int(payload.get("materialization_budget", 20) or 0)))
     audit = max(0.0, min(0.25, float(payload.get("audit_fraction", 0.03) or 0.0)))
@@ -592,6 +600,7 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
     provider = str(payload.get("provider") or "").strip() or None
     axes = payload.get("cohort_axes") or None
     focal = [int(i) for i in (payload.get("focal_ids") or []) if str(i).strip()]
+    llm_fn = population_scope.model_call(provider) if use_llm else None
 
     job_id = _new_job("group")
 
@@ -601,8 +610,8 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
         from gaworld.group.driver import GroupRunConfig, render_day_block, run_group_simulation
 
         if source == "last":
-            agents = copy.deepcopy(_LAST_POPULATION["agents"])
-            neighbours = _LAST_POPULATION["neighbours"]
+            agents = copy.deepcopy(last["agents"])
+            neighbours = last["neighbours"]
         else:
             report(0.05, "正在合成人口…")
             from gaworld.population.generate import generate_population
@@ -636,21 +645,6 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
             seed=int(payload.get("seed", 1) or 1),
             network_coupling=coupling,
         )
-        llm_fn = None
-        if use_llm:
-            from gaworld.llm import providers as llm_providers
-
-            if provider:
-                # Honour the panel's choice explicitly. Falling back to the
-                # config's routing here would make the model picker a lie.
-                def llm_fn(prompt: str, task: str | None = None, agent_id: Any = None) -> str:
-                    return str(
-                        llm_providers.call_llm(prompt, task=task, agent_id=agent_id, provider=provider)
-                    )
-
-            else:
-                llm_fn = llm_providers.call_llm
-
         report(0.3, f"正在运行 {days} 天群体模拟…")
         result = run_group_simulation(
             agents, cfg, llm_fn=llm_fn, neighbours=neighbours if coupling > 0 else None
@@ -696,6 +690,8 @@ def start_validation_job(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.population.schema import normalize_spec
 
     spec = normalize_spec(payload.get("spec") or {})
+    population_scope.require_write(spec.size)
+    last = population_scope.current(_LAST_POPULATION)
     days = max(1, min(60, int(payload.get("days", 14) or 14)))
     budget = max(0, min(500, int(payload.get("materialization_budget", 20) or 0)))
     coupling = max(0.0, min(2.0, float(payload.get("network_coupling", 0.0) or 0.0)))
@@ -704,11 +700,11 @@ def start_validation_job(payload: dict[str, Any]) -> dict[str, Any]:
     def work(report: Any) -> dict[str, Any]:
         from gaworld.group.validate import render_verdict, run_validation
 
-        if _LAST_POPULATION.get("agents"):
+        if last.get("agents"):
             import copy
 
-            agents = copy.deepcopy(_LAST_POPULATION["agents"])
-            neighbours = _LAST_POPULATION["neighbours"]
+            agents = copy.deepcopy(last["agents"])
+            neighbours = last["neighbours"]
         else:
             report(0.05, "正在合成人口…")
             from gaworld.population.generate import generate_population
@@ -768,8 +764,8 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         except ValueError as exc:
             return {"error": str(exc)}, 400
     if path == "/api/population/last":
-        agents = _LAST_POPULATION.get("agents") or []
-        return {"count": len(agents), "job_id": _LAST_POPULATION.get("job_id")}, 200
+        last = population_scope.current(_LAST_POPULATION)
+        return {"count": len(last.get("agents") or []), "job_id": last.get("job_id")}, 200
     return {"error": "Unknown endpoint"}, 404
 
 
@@ -785,6 +781,8 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return result, (400 if "error" in result else 202)
         if path == "/api/population/validate":
             return start_validation_job(payload), 202
+    except PermissionError as exc:
+        return {"error": str(exc)}, 403
     except ValueError as exc:
         return {"error": str(exc)}, 400
     return {"error": "Unknown endpoint"}, 404

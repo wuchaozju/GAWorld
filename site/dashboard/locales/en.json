@@ -1,4 +1,6 @@
 {
+  "pop.world_required": "You can preview parameters here. Select your own world to generate, save or run population experiments; results stay in that world.",
+  "pop.select_world": "Return to console to select a world",
   "admin.action": "Action",
   "admin.audit": "Audit",
   "admin.broadcast": "Broadcast an event",

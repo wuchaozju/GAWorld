@@ -1412,6 +1412,8 @@ def _static_path_allowed(path):
     # Traces and avatars: the live run, archived runs and every scenario /
     # parallel world keep them in a `visualization` dir (see replay_runs).
     parts = [part for part in path.split("/") if part]
+    if len(parts) > 4 and parts[:2] == ["output", "worlds"] and parts[3] == "population":
+        return True
     return len(parts) > 2 and parts[0] == "output" and "visualization" in parts[1:-1]
 
 
@@ -1634,6 +1636,14 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
         if parts[:2] == ["output", "worlds"]:
             target = self.accounts.get_world(parts[2]) if len(parts) > 2 else None
             if target is None or not world_readable(target, self.user):
+                self._deny(404, "Not found")
+                return True
+            if (
+                len(parts) > 3
+                and parts[3] == "population"
+                and self.user.get("role") != "admin"
+                and target["owner_id"] != self.user.get("id")
+            ):
                 self._deny(404, "Not found")
                 return True
         if len(parts) >= 3 and parts[:2] in (["output", "parallel_worlds"], ["output", "comparisons"]):

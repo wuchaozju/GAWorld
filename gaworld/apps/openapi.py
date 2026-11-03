@@ -1334,19 +1334,19 @@ def _cities() -> dict[str, Any]:
         "/api/population/export": {
             "get": _op(
                 "population",
-                "Export the last generated population",
+                "Export the current user's last generated population in this world",
                 query=[_q("format", "csv | json", {"type": "string", "default": "csv"})],
             )
         },
-        "/api/population/last": {"get": _op("population", "Size of the last generated population")},
+        "/api/population/last": {"get": _op("population", "Size of the current user's last population in this world")},
         "/api/population/preview": {
             "post": _op("population", "Marginals a spec would produce", body=_obj(spec=OBJ))
         },
         "/api/population/generate": {
             "post": _started(
                 "population",
-                "Generate a population",
-                _obj(spec=OBJ, write=_d(BOOL, "Also write files"), out_dir=STR),
+                "Generate a population in the active owned world",
+                _obj(spec=OBJ, write=_d(BOOL, "Also write files in this world's population directory"), out_dir=STR),
             )
         },
         "/api/population/group-run": {

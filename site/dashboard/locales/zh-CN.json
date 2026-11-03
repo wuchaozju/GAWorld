@@ -1,4 +1,6 @@
 {
+  "pop.world_required": "可先调整参数并查看体检；生成、写入及运行人口实验需要切换到自己的世界，结果只保存在该世界中。",
+  "pop.select_world": "返回控制台选择世界",
   "admin.action": "操作",
   "admin.audit": "审计",
   "admin.broadcast": "广播事件",

@@ -104,6 +104,7 @@ def quota_gated(path: str) -> bool:
 
 
 MEMBER_WRITES_EXACT = {
+    "/api/population/preview",
     "/api/settings/llm/credential",
     "/api/settings/llm/test",
     "/api/todos/create",
@@ -138,6 +139,9 @@ OWNER_DELETES = {"/api/interview/delete", "/api/research/delete", "/api/persona/
 #: through the world-aware config (the Big Five table is the world's own copy
 #: under ``seed/``). Life events still read global files and so stay admin-only.
 WORLD_WRITES_EXACT = {
+    "/api/population/generate",
+    "/api/population/group-run",
+    "/api/population/validate",
     "/api/settings/llm/routing",
     "/api/config",
     "/api/run/start",
