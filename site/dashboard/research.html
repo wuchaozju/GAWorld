@@ -359,13 +359,15 @@
             </label>
             <label class="rw-field sg-field-num">
               <span data-i18n="research.rp_sample_label">智能体规模</span>
-              <select id="rpSample"></select>
+              <input id="rpSample" type="number" min="5" max="500" step="1" value="50" required list="rpSamplePresets" aria-describedby="rpSampleHint" />
+              <datalist id="rpSamplePresets"></datalist>
             </label>
             <label class="rw-field sg-field-num">
               <span data-i18n="research.rp_seed_label">随机种子</span>
               <input id="rpSeed" type="number" min="1" data-i18n-placeholder="research.sg_auto" placeholder="自动" />
             </label>
           </div>
+          <p class="rw-hint" id="rpSampleHint"></p>
           <div class="rw-kind" role="radiogroup" data-i18n-aria="research.rp_design_label" aria-label="分配方式">
             <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="between" checked /><span data-i18n="research.rp_design_between">组间：每人随机分到一个条件（同文献）</span></label>
             <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="paired" /><span data-i18n="research.rp_design_paired">配对：每人分别作答每个条件（更省样本）</span></label>

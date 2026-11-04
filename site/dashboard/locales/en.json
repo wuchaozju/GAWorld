@@ -2739,6 +2739,8 @@
   "research.rp_running": "Residents are answering…",
   "research.rp_runs": "Fidelity runs",
   "research.rp_sample_label": "Number of agents",
+  "research.rp_sample_hint": "Enter any integer from {min} to {max}. The actual sample is capped at the city's age-eligible residents.",
+  "research.rp_sample_invalid": "Enter a whole number of agents between {min} and {max}.",
   "research.rp_sample_meta": "{n} residents · {design} · seed {seed}",
   "research.rp_score": "Fidelity score",
   "research.rp_score_note": "Fidelity score = 100 × (with treatment effects: 50% level accuracy + 50% direction match; survey only: level accuracy). Level accuracy = 1 − mean error.",

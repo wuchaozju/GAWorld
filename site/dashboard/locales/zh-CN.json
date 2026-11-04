@@ -2739,6 +2739,8 @@
   "research.rp_running": "居民正在作答…",
   "research.rp_runs": "拟合记录",
   "research.rp_sample_label": "智能体规模",
+  "research.rp_sample_hint": "可输入 {min}～{max} 的任意整数；实际人数不超过城市里符合年龄条件的居民数。",
+  "research.rp_sample_invalid": "请输入 {min}～{max} 之间的整数人数。",
   "research.rp_sample_meta": "{n} 位居民 · {design} · 种子 {seed}",
   "research.rp_score": "拟合度分",
   "research.rp_score_note": "拟合度分 = 100 ×（有处理效应时：50% 水平准确度 + 50% 效应方向一致率；只有调查时：水平准确度）。水平准确度 = 1 − 平均误差。",
