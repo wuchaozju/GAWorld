@@ -1026,10 +1026,11 @@ def run_replication(
         progress(0.02 + 0.96 * done[0] / len(pairs), f"已作答 {done[0]}/{len(pairs)}")
         return {"agent_id": agent_id, "condition": cid, **parsed}
 
-    # Worker threads start with an empty context; each call carries the
-    # caller's, so the asking user and world stay attached to the model calls.
+    # Capture a separate context in the submitting thread for each answer.
+    # Copying inside an executor.map callback would copy the worker's empty context.
     with ThreadPoolExecutor(max_workers=max(1, workers), thread_name_prefix="replication") as executor:
-        responses = list(executor.map(lambda pair: contextvars.copy_context().run(ask, pair), pairs))
+        futures = [executor.submit(contextvars.copy_context().run, ask, pair) for pair in pairs]
+        responses = [future.result() for future in futures]
     if not any(r["ok"] for r in responses):
         raise RuntimeError(f"{len(responses)} 份回答全部无效，例如：{responses[0]['error']}")
 

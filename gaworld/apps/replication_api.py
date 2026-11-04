@@ -41,6 +41,7 @@ def _llm(provider: str, task: str, temperature: float, max_tokens: int) -> Calla
                 provider=provider or None,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                allow_fallback=False,
             )
         )
 
