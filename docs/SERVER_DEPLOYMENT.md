@@ -235,6 +235,11 @@ Environment=GAWORLD_DASHBOARD_TOKEN=<令牌>
 
 ### 多人账号（课堂 / 工作坊）
 
+建城权限由管理员页面「名单 → 可以建城」独立控制，不需要管理员角色。新增邀请码默认勾选「可以建城」，
+管理员可按需取消；命令行生成邀请码时使用 `python -m gaworld.accounts invite --can-create-city`。
+已有账号可用 `python -m gaworld.accounts city-permission --nickname <昵称> --allow` 开启。
+开启后仅可创建新城市并编辑自己创建的城市，已有公共城市及他人城市仍受所有权限制。
+
 多人共用一台服务器时，使用 `python generative_city_sim.py dashboard --multi-user True` 开启账号模式。参数默认 False；省略参数或使用 `--multi-user False` 时，已有账号库不会自动限制单用户功能。
 多用户模式启动时会检查账号库和管理员；运行中账号库丢失或不可用时返回 503，防止回退单用户模式。
 可复用的配置和验收步骤见 [多用户服务器配置](../deployment/multi-user/README.md)。
