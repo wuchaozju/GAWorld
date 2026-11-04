@@ -1445,6 +1445,7 @@ def _studies() -> dict[str, Any]:
             "get": _op("interview", "One session", errors={"404": "Unknown session"})
         },
         "/api/interview/sessions/{session_id}/export": {"get": _op("interview", "A session as Markdown")},
+        "/api/interview/jobs": {"get": _op("interview", "Recover the caller's active interview jobs")},
         "/api/interview/jobs/{job_id}": _job("interview"),
         "/api/interview/plan": {
             "post": _op("interview", "Check a round and say who will be asked", body=interview_spec)
