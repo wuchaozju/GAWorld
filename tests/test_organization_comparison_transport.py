@@ -123,6 +123,8 @@ def test_http_limit_preserves_progress_and_can_prepare_verified_recovery(tmp_pat
         [{"id": 1}, {"id": 2}],
         {"name": "test", "model": "test"},
     )
+    # One lane, so the order of the requests is the order of the cells.
+    spec["execution_policy"] = {**spec["execution_policy"], "concurrency": 1}
     original = db.create(
         "C",
         {

@@ -86,8 +86,8 @@ def quota_gated(path: str) -> bool:
     path = path.rstrip("/") or "/"
     if path.startswith("/api/research/organization-intelligence/comparisons/"):
         return path.rsplit("/", 1)[-1] in {"analyze", "run", "resume"}
-    if path.startswith("/api/research/organization-intelligence/v2/"):
-        return False  # Frozen OI-2 engine is standard-library-only and has zero provider calls.
+    if path.startswith("/api/research/team-handover/"):
+        return False  # The frozen handover engine is standard-library-only: zero provider calls.
     if path.startswith("/api/research/organization-intelligence/") and path.endswith("/run"):
         return True
     if path.startswith("/api/research/replication/") and path.endswith("/interpret"):
@@ -121,6 +121,7 @@ MEMBER_WRITES_EXACT = {
 MEMBER_WRITES_PREFIX = (
     "/api/collaboration/organization-methods",
     "/api/research/organization-intelligence",
+    "/api/research/team-handover",
     "/api/games/",
     "/api/arena/",
     "/api/research/games",

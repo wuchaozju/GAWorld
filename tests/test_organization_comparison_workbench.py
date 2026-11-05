@@ -6,9 +6,12 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def no_real_request_waits(monkeypatch):
+    import time
+
     from gaworld.research.organization_intelligence.comparison import execution
 
     monkeypatch.setattr(execution, "wait_for_request", lambda *a, **kw: None)
+    monkeypatch.setattr(time, "sleep", lambda *a: None)
 
 
 def modules():
@@ -162,15 +165,130 @@ def test_malformed_material_never_falls_back_to_a_generic_organization():
         material.extract("Members share reports.", "paper", lambda prompt: "not JSON")
 
 
-def test_review_mechanism_changes_compare_whole_method():
+def test_default_comparison_holds_everything_but_the_topology_equal():
     modules()
     from gaworld.collaboration.organization_methods import baseline
     from gaworld.research.organization_intelligence.comparison import protocol
 
     candidate = {**baseline("full", 3), "review": True, "revisions": 1}
     p = protocol.freeze({"candidate": candidate, "count": 1}, [{"id": i} for i in range(3)], {"model": "x"})
+    assert p["scope"] == "topology"
+    assert p["scope_factors"]["candidate"] == ["topology"]
+    assert p["scope_factors"]["baseline"] == []
+    assert p["baseline"]["review"] is True
+    assert p["baseline"]["revisions"] == 1
+    assert p["baseline"]["roles"] == candidate["roles"]
+
+
+def test_a_factor_asked_to_differ_is_left_alone_and_widens_the_scope():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    candidate = {**baseline("full", 3), "review": True, "revisions": 1}
+    p = protocol.freeze(
+        {"candidate": candidate, "count": 1, "factors": {"review": "candidate"}},
+        [{"id": i} for i in range(3)],
+        {"model": "x"},
+    )
     assert p["scope"] == "whole_method"
+    assert set(p["scope_factors"]["candidate"]) == {"review"}
     assert not p["baseline"]["review"]
+    # A factor that was not asked to differ is held equal, so the result can
+    # be attributed to one mechanism.
+    assert p["baseline"]["topology"]["kind"] == candidate["topology"]["kind"]
+
+
+def test_every_factor_same_is_refused():
+    modules()
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    with pytest.raises(ValueError, match="至少"):
+        protocol.resolve_factors({"factors": dict.fromkeys(protocol.FACTORS, "same")})
+    with pytest.raises(ValueError, match="same"):
+        protocol.resolve_factors({"factors": {"topology": "whatever"}})
+
+
+def test_custom_baseline_keeps_the_roles_its_author_wrote():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    candidate = {**baseline("full", 2), "roles": ["分析", "核对"]}
+    custom = {**baseline("independent", 2), "roles": ["甲", "乙"]}
+    p = protocol.freeze(
+        {"candidate": candidate, "baseline": "custom", "baseline_method": custom, "count": 1},
+        [{"id": 1}, {"id": 2}],
+        {"model": "x"},
+    )
+    assert p["baseline"]["roles"] == ["甲", "乙"]
+    assert p["scope_factors"]["candidate"] == ["roles", "topology"]
+
+
+def test_both_arms_receive_the_organization_rules_they_need():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    candidate = {
+        **baseline("full", 2),
+        "rules": [{"text": "先各自写出证据再统一结论", "origin": "user", "quote": ""}],
+    }
+    p = protocol.freeze(
+        {"candidate": candidate, "baseline": "hierarchy", "count": 1},
+        [{"id": 1}, {"id": 2}],
+        {"model": "x"},
+    )
+    assert any("先各自写出证据再统一结论" in line for line in p["instructions"]["candidate"])
+    assert any("层级组织" in line for line in p["instructions"]["baseline"])
+    assert all(p["instructions"]["baseline"])
+
+
+def test_resource_limits_follow_the_shape_of_the_method():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    candidate = {**baseline("full", 12), "rounds": 6}
+    p = protocol.freeze({"candidate": candidate, "count": 1}, [{"id": i} for i in range(12)], {"model": "x"})
+    needed = candidate and p["plan"]["calls_per_cell"]["candidate"]
+    assert needed == 12 * (1 + 6) + 1
+    assert p["limits"]["calls"] >= needed
+    assert p["limits"]["prompt_chars"] > 12 * 4000
+    assert p["plan"]["sufficient"]
+
+
+def test_plan_reports_cells_calls_and_the_earliest_finish():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    p = protocol.freeze(
+        {"candidate": baseline("full", 3), "count": 4, "repeats": 2},
+        [{"id": i} for i in range(3)],
+        {"model": "x"},
+    )
+    assert p["plan"]["cells"] == 16
+    assert p["plan"]["total_calls"] == 8 * (
+        p["plan"]["calls_per_cell"]["candidate"] + p["plan"]["calls_per_cell"]["baseline"]
+    )
+    assert p["plan"]["min_seconds"] == int(
+        p["plan"]["total_calls"] * p["plan"]["min_interval_seconds"] / p["plan"]["concurrency"]
+    )
+
+
+def test_a_limit_below_the_shape_is_a_warning_and_the_run_is_refused():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    p = protocol.freeze(
+        {"candidate": baseline("full", 3), "count": 1, "limits": {"calls": 1}},
+        [{"id": i} for i in range(3)],
+        {"model": "x"},
+    )
+    assert not p["plan"]["sufficient"]
+    assert any("调用次数上限" in w for w in p["plan"]["warnings"])
 
 
 def test_import_cannot_forge_allocation_optimum_or_choice_reference():
@@ -295,14 +413,14 @@ def test_comparison_pause_keeps_attempt_and_resume_reuses_it(tmp_path):
     def call(prompt, **kwargs):
         calls.append(prompt)
         if len(calls) == 1:
-            db.update(record["id"], lambda r: r.update(control="pause"))
+            db.touch(record["id"], control="pause")
         return '{"answer":"A"}'
 
     runner.run(db, record["id"], call)
-    assert db.get(record["id"])["status"] == "paused"
-    db.update(record["id"], lambda r: r.update(control=""))
+    assert db.merged(record["id"])["status"] == "paused"
+    db.touch(record["id"], control="")
     runner.run(db, record["id"], call)
-    assert db.get(record["id"])["status"] == "completed"
+    assert db.merged(record["id"])["status"] == "completed"
     assert len(calls) == 4
 
 
@@ -316,3 +434,565 @@ def test_call_evidence_is_stored_per_cell_not_rewritten_into_progress_record(tmp
     db.save_state(r["id"], cell, {"calls": [{"response": "PRIVATE-EVIDENCE"}], "attempts": []})
     assert db.load_state(r["id"], cell)["calls"][0]["response"] == "PRIVATE-EVIDENCE"
     assert "PRIVATE-EVIDENCE" not in (db.directory(r["id"]) / "record.json").read_text()
+
+
+def test_a_cell_that_cannot_be_measured_is_not_scored_as_a_wrong_answer(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=1, slots=2),
+            "repeats": 1,
+            "limits": {"calls": 1},
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    runner.run(db, record["id"], lambda prompt, **kw: '{"answer":"A"}')
+    final = db.audit(record["id"])
+    assert final["status"] == "completed"
+    assert final["rows"]
+    assert all(row["measured"] is False for row in final["rows"])
+    assert all(row["score"] is None for row in final["rows"])
+    assert all(row["invalid_reason"] == "budget_exceeded" for row in final["rows"])
+    # The numbers that were measured are still reported.
+    assert final["analysis"]["verdict"] == "incomplete"
+    assert final["analysis"]["arms"]["candidate"]["mean"] is None
+    assert final["analysis"]["unmeasured_rows"] == len(final["rows"])
+
+
+def test_descriptive_statistics_are_reported_even_when_the_run_is_incomplete(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=2, slots=2),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    runner.run(db, record["id"], lambda prompt, **kw: '{"answer":"A"}')
+    result = db.audit(record["id"])["analysis"]
+    assert result["complete"]
+    assert result["arms"]["candidate"]["calls"] > 0
+    assert result["arms"]["candidate"]["completion_rate"] == 1.0
+
+
+def test_the_run_writes_an_append_only_log_and_leaves_the_record_alone(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=1, slots=2),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    prompts = []
+
+    def llm(prompt, **kw):
+        prompts.append(prompt)
+        return '{"answer":"A"}'
+
+    runner.run(db, record["id"], llm)
+    events = (db.directory(record["id"]) / "events.jsonl").read_text().splitlines()
+    assert len(events) >= 4
+    assert all(json.loads(line)["cell"] for line in events)
+    # The evidence of a request lives in the cell file and the log, not in the
+    # study record that is rewritten for every cell.
+    record_text = (db.directory(record["id"]) / "record.json").read_text()
+    assert all(prompt not in record_text for prompt in prompts)
+    assert '"attempts":' not in record_text
+
+
+def test_the_two_arms_do_not_share_one_random_graph(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("random", 3),
+            "baseline": "random",
+            "benchmark": b.builtin(count=1, slots=3),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}, {"id": 3}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    runner.run(db, record["id"], lambda prompt, **kw: '{"answer":"A"}')
+    rows = {row["arm"]: row for row in db.audit(record["id"])["rows"]}
+    assert rows["candidate"]["edges"] != rows["baseline"]["edges"]
+
+
+def test_a_provider_error_marks_one_cell_and_the_run_continues(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=2, slots=2),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+
+    def llm(prompt, **kw):
+        raise RuntimeError("provider is down")
+
+    runner.run(db, record["id"], llm)
+    final = db.audit(record["id"])
+    assert final["status"] == "completed"
+    assert len(final["rows"]) == 4
+    assert all(row["measured"] is False for row in final["rows"])
+    assert all(row["invalid_reason"] == "request_failed" for row in final["rows"])
+    assert all(row["score"] is None for row in final["rows"])
+
+
+def test_a_failed_request_is_retried_once_before_the_cell_is_given_up(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=1, slots=2),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    seen = []
+
+    def llm(prompt, **kw):
+        seen.append(prompt)
+        if len(seen) == 1:
+            raise RuntimeError("provider is down")
+        return '{"answer":"A"}'
+
+    runner.run(db, record["id"], llm)
+    final = db.audit(record["id"])
+    assert all(row["measured"] for row in final["rows"])
+    assert len(seen) == 5  # 4 calls plus the one that was retried
+
+
+def test_a_saved_judge_answer_is_reused_after_an_interruption(tmp_path):
+    b, _ = modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    bank = b.validate(
+        [{"id": "q", "category": "open", "prompt": "write", "rubric": "quality 0-1"}], scorer="rubric"
+    )
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": bank,
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    judges = []
+
+    def llm(prompt, **kw):
+        if "rubric" in prompt:
+            judges.append(prompt)
+            return '{"score":0.5}'
+        return '{"answer":"A"}'
+
+    runner.run(db, record["id"], llm)
+    assert len(judges) == 2  # one judge per cell
+    # An interruption between the judge's answer and the written row: the
+    # answer is in the cell's evidence, the row is not there yet.
+    final = db.audit(record["id"])
+    cell = final["rows"][0]["cell"]
+    db.update(record["id"], lambda r: r.update(rows=[row for row in r["rows"] if row["cell"] != cell]))
+    db.update(record["id"], lambda r: r.update(status="interrupted"))
+    judges.clear()
+    runner.run(db, record["id"], llm)
+    # The cell runs again, but neither its members nor its judge are asked
+    # again: the answers already paid for are in its evidence.
+    assert len(judges) == 0
+    rows = db.audit(record["id"])["rows"]
+    assert len(rows) == 2
+    assert all(row["score"] is not None for row in rows)
+
+
+def test_the_fingerprint_follows_the_meaning_and_not_the_files(monkeypatch):
+    modules()
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    first = protocol.runtime_fingerprint()
+    assert first == protocol.runtime_fingerprint()
+    monkeypatch.setattr(protocol.organization_engine, "VERSION", "organization-engine-99")
+    assert protocol.runtime_fingerprint() != first
+    # The bytes of the files are recorded separately, for the audit trail.
+    assert protocol.code_fingerprint() != first
+
+
+def test_a_resume_under_a_different_prompt_is_refused_and_not_scored(tmp_path, monkeypatch):
+    b, _ = modules()
+    from gaworld.collaboration import organization_engine
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol, runner, store
+
+    spec = protocol.freeze(
+        {
+            "candidate": baseline("independent", 2),
+            "baseline": "independent",
+            "benchmark": b.builtin(count=1, slots=2),
+            "repeats": 1,
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "test"},
+    )
+    db = store.Store(tmp_path)
+    record = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": spec,
+            "protocol_hash": protocol.digest(spec),
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    runner.run(db, record["id"], lambda prompt, **kw: '{"answer":"A"}')
+    rows = db.audit(record["id"])["rows"]
+    cell = rows[0]["cell"]
+    db.update(record["id"], lambda r: r.update(rows=[row for row in r["rows"] if row["cell"] != cell]))
+    db.update(record["id"], lambda r: r.update(status="interrupted"))
+    # The engine now sends a different prompt for the same method.
+    monkeypatch.setattr(organization_engine, "instructions", lambda method: ["另一种做法"])
+    runner.run(db, record["id"], lambda prompt, **kw: '{"answer":"A"}')
+    final = db.audit(record["id"])
+    drifted = [row for row in final["rows"] if row["cell"] == cell]
+    assert drifted and drifted[0]["measured"] is False
+    assert drifted[0]["invalid_reason"] == "protocol_drift"
+    assert drifted[0]["score"] is None
+    assert final["status"] == "interrupted"
+
+
+def test_two_studies_on_one_model_may_not_run_at_the_same_time(tmp_path):
+    modules()
+    import fcntl
+
+    from gaworld.apps import organization_comparison_api
+    from gaworld.research.organization_intelligence.comparison import store
+
+    db = store.Store(tmp_path)
+    first = db.create(
+        "C",
+        {
+            "status": "running",
+            "protocol": {"model": {"name": "m"}},
+            "protocol_hash": "x",
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    second = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": {"model": {"name": "m"}},
+            "protocol_hash": "x",
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    lease = (db.directory(first["id"]) / "runner.lock").open("a")
+    fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    try:
+        with pytest.raises(ValueError, match="该模型已有"):
+            organization_comparison_api._guard_capacity(db, second)
+    finally:
+        lease.close()
+    assert first["id"] != second["id"]
+
+
+def test_at_most_two_studies_run_at_the_same_time(tmp_path):
+    modules()
+    import fcntl
+
+    from gaworld.apps import organization_comparison_api
+    from gaworld.research.organization_intelligence.comparison import store
+
+    db = store.Store(tmp_path)
+    running = [
+        db.create(
+            "C",
+            {
+                "status": "running",
+                "protocol": {"model": {"name": f"m{index}"}},
+                "protocol_hash": "x",
+                "rows": [],
+                "analysis": {},
+            },
+        )
+        for index in range(2)
+    ]
+    third = db.create(
+        "C",
+        {
+            "status": "draft",
+            "protocol": {"model": {"name": "other"}},
+            "protocol_hash": "x",
+            "rows": [],
+            "analysis": {},
+        },
+    )
+    leases = [(db.directory(item["id"]) / "runner.lock").open("a") for item in running]
+    for lease in leases:
+        fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    try:
+        with pytest.raises(ValueError, match="最多同时"):
+            organization_comparison_api._guard_capacity(db, third)
+    finally:
+        for lease in leases:
+            lease.close()
+
+
+def test_more_than_one_candidate_can_be_compared_against_the_same_control():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    p = protocol.freeze(
+        {
+            "candidate": baseline("full", 2),
+            "baseline": "independent",
+            "count": 1,
+            "candidates": [
+                {"label": "层级做法", "method": baseline("hierarchy", 2)},
+                {"label": "随机做法", "method": baseline("random", 2)},
+            ],
+        },
+        [{"id": 1}, {"id": 2}],
+        {"model": "x"},
+    )
+    ids = [arm["id"] for arm in p["arms"]]
+    assert ids == ["candidate", "candidate-2", "candidate-3", "baseline"]
+    assert p["arms"][-1]["is_control"] is True
+    # The two arms of a two-arm study keep the seeds they had before the
+    # candidates existed.
+    assert p["arms"][0]["seed_offset"] == 0
+    assert p["arms"][-1]["seed_offset"] == 1
+    assert [arm["seed_offset"] for arm in p["arms"][1:-1]] == [2, 3]
+    assert p["expected"] == len(p["benchmark"]["tasks"]) * p["repeats"] * 4
+    assert set(p["instructions"]) == set(ids)
+    # Every candidate has its own scope against the shared control.
+    assert p["scope_factors"]["candidate-2"] == ["topology"]
+    assert p["scope_factors"]["baseline"] == []
+
+
+def test_a_candidate_needs_its_own_name_and_the_same_number_of_roles():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    with pytest.raises(ValueError, match="名称"):
+        protocol.freeze(
+            {
+                "candidate": baseline("full", 2),
+                "count": 1,
+                "candidates": [{"method": baseline("hierarchy", 2)}],
+            },
+            [{"id": 1}, {"id": 2}],
+            {"model": "x"},
+        )
+    with pytest.raises(ValueError, match="角色数量"):
+        protocol.freeze(
+            {
+                "candidate": baseline("full", 2),
+                "count": 1,
+                "candidates": [{"label": "三人", "method": baseline("hierarchy", 3)}],
+            },
+            [{"id": 1}, {"id": 2}],
+            {"model": "x"},
+        )
+    with pytest.raises(ValueError, match="最多"):
+        protocol.freeze(
+            {
+                "candidate": baseline("full", 2),
+                "count": 1,
+                "candidates": [
+                    {"label": "甲", "method": baseline("hierarchy", 2)},
+                    {"label": "乙", "method": baseline("random", 2)},
+                    {"label": "丙", "method": baseline("full", 2)},
+                ],
+            },
+            [{"id": 1}, {"id": 2}],
+            {"model": "x"},
+        )
+
+
+def test_every_candidate_gets_its_own_verdict_against_the_control():
+    _, a = modules()
+    rows = []
+    for index in range(30):
+        task = f"q{index}"
+        rows.append(
+            {"task_id": task, "repeat": 0, "arm": "candidate", "score": 0.9, "valid": True, "measured": True}
+        )
+        rows.append(
+            {
+                "task_id": task,
+                "repeat": 0,
+                "arm": "candidate-2",
+                "score": 0.5,
+                "valid": True,
+                "measured": True,
+            }
+        )
+        rows.append(
+            {"task_id": task, "repeat": 0, "arm": "baseline", "score": 0.4, "valid": True, "measured": True}
+        )
+    result = a.analyze(rows, expected=90, arms=["candidate", "candidate-2", "baseline"])
+    assert result["verdict"] == "better"
+    assert result["candidates"]["candidate"]["verdict"] == "better"
+    assert result["candidates"]["candidate-2"]["verdict"] == "better"
+    assert result["candidates"]["candidate"]["difference"] == 0.5
+    assert result["candidates"]["candidate-2"]["difference"] == pytest.approx(0.1)
+    # The candidate that is not better is not called better.
+    weak = [dict(row, score=0.4) if row["arm"] == "candidate" else row for row in rows]
+    assert (
+        a.analyze(weak, expected=90, arms=["candidate", "candidate-2", "baseline"])["candidates"][
+            "candidate"
+        ]["verdict"]
+        == "uncertain"
+    )
+
+
+def test_an_unmeasured_cell_leaves_the_other_candidates_readable():
+    _, a = modules()
+    rows = [
+        {"task_id": "q1", "repeat": 0, "arm": "candidate", "score": 0.8, "valid": True, "measured": True},
+        {
+            "task_id": "q1",
+            "repeat": 0,
+            "arm": "candidate-2",
+            "score": None,
+            "valid": False,
+            "measured": False,
+        },
+        {"task_id": "q1", "repeat": 0, "arm": "baseline", "score": 0.5, "valid": True, "measured": True},
+    ]
+    result = a.analyze(rows, expected=3, arms=["candidate", "candidate-2", "baseline"])
+    assert result["complete"] is False
+    assert result["verdict"] == "incomplete"
+    assert result["arms"]["candidate-2"]["unmeasured"] == 1
+    assert result["arms"]["candidate"]["mean"] == 0.8
+
+
+def test_a_protocol_frozen_before_the_arms_existed_is_still_readable():
+    modules()
+    from gaworld.collaboration.organization_methods import baseline
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    spec = protocol.freeze(
+        {"candidate": baseline("full", 2), "count": 1}, [{"id": 1}, {"id": 2}], {"model": "x"}
+    )
+    old = {key: value for key, value in spec.items() if key != "arms"}
+    arms = protocol.arms_of(old)
+    assert [arm["id"] for arm in arms] == ["candidate", "baseline"]
+    assert [arm["seed_offset"] for arm in arms] == [0, 1]

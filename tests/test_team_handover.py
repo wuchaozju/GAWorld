@@ -10,7 +10,14 @@ import time
 
 import pytest
 
-from gaworld.research.organization_intelligence.v2 import build, engine, environment, protocol, queue, report
+from gaworld.research.organization_intelligence.handover import (
+    build,
+    engine,
+    environment,
+    protocol,
+    queue,
+    report,
+)
 
 
 def test_pilot_is_frozen_factorial_and_zero_calls():
@@ -224,7 +231,7 @@ def test_paused_before_worker_start_and_duplicate_worker_cannot_publish(tmp_path
 def test_real_process_death_reclaims_uncommitted_lease(tmp_path):
     path, _ = create_db(tmp_path)
     ready = tmp_path / "ready"
-    code = "from gaworld.research.organization_intelligence.v2 import queue; from pathlib import Path; import time; queue.claim(Path(__import__('sys').argv[1]), 'doomed'); Path(__import__('sys').argv[2]).touch(); time.sleep(30)"
+    code = "from gaworld.research.organization_intelligence.handover import queue; from pathlib import Path; import time; queue.claim(Path(__import__('sys').argv[1]), 'doomed'); Path(__import__('sys').argv[2]).touch(); time.sleep(30)"
     child = subprocess.Popen([sys.executable, "-c", code, str(path), str(ready)])
     try:
         deadline = time.monotonic() + 5

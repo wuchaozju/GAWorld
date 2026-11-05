@@ -1472,10 +1472,14 @@ def _studies() -> dict[str, Any]:
         "/api/research/organization-intelligence/comparisons/context": {
             "get": _op("research", "Models, current-world residents and supported baselines")
         },
+        "/api/research/organization-intelligence/comparisons/summary": {
+            "get": _op("research", "Every comparison of this world with its verdict and measured cost")
+        },
         **{f"/api/research/organization-intelligence/comparisons/{action}": {
             "post": _op("research", summary, body=OBJ)
         } for action, summary in (("analyze", "Extract sourced organization rules"),
-                                  ("benchmark", "Validate or generate benchmark data"))},
+                                  ("benchmark", "Validate or generate benchmark data"),
+                                  ("plan", "Estimate cells, calls and the earliest finish without model calls"))},
         "/api/research/organization-intelligence/comparisons/{study_id}": {
             "get": _op("research", "Comparison status and paired results")
         },
@@ -1485,20 +1489,22 @@ def _studies() -> dict[str, Any]:
                                   ("protocol", "Frozen settings"), ("audit", "Owned complete call audit"),
                                   ("csv", "Per-question scores as CSV"))},
         **{f"/api/research/organization-intelligence/comparisons/{{study_id}}/{action}": {
-            "post": _op("research", summary, body=OBJ, status="201" if action in {"save-method", "recover"} else "202" if action in {"run", "resume"} else "200")
+            "post": _op("research", summary, body=OBJ, status="201" if action in {"save-method", "recover", "duplicate"} else "202" if action in {"run", "resume"} else "200")
         } for action, summary in (("run", "Start comparison"), ("resume", "Resume same comparison"),
                                   ("pause", "Pause between requests"), ("stop", "Terminate comparison"),
                                   ("recover", "Verify cached responses and save a linked recovery without model calls"),
+                                  ("duplicate", "Copy the frozen settings into a new comparison"),
+                                  ("delete", "Delete this comparison and its evidence"),
                                   ("save-method", "Save tested method to cooperation library"))},
-        "/api/research/organization-intelligence/v2": {
-            "get": _op("research", "OI-2 runtime identity and owned zero-provider studies"),
-            "post": _op("research", "Freeze a zero-provider organization mechanism study", body=_obj(("expected_build",), expected_build=STR, seed=INT, seeds=INT), status="201", errors={"409": "Runtime build handshake mismatch"}),
+        "/api/research/team-handover": {
+            "get": _op("research", "Handover runtime identity and owned zero-provider studies"),
+            "post": _op("research", "Freeze a zero-provider team handover study", body=_obj(("expected_build",), expected_build=STR, seed=INT, seeds=INT), status="201", errors={"409": "Runtime build handshake mismatch"}),
         },
-        "/api/research/organization-intelligence/v2/{study_id}": {
+        "/api/research/team-handover/{study_id}": {
             "get": _op("research", "Durable episode counts, frozen protocol and worker identity")
         },
         **{
-            f"/api/research/organization-intelligence/v2/{{study_id}}/{action}": {
+            f"/api/research/team-handover/{{study_id}}/{action}": {
                 "get": _op("research", summary)
             }
             for action, summary in (
@@ -1507,16 +1513,14 @@ def _studies() -> dict[str, Any]:
                 ("export", "Export the organization mechanism study report"),
             )
         },
-        "/api/research/organization-intelligence/v2/{study_id}/run": {
+        "/api/research/team-handover/{study_id}/run": {
             "post": _op("research", "Start or resume the same frozen zero-provider study", body=_obj(("expected_build",), expected_build=STR), status="202", errors={"409": "Frozen build handshake mismatch"})
         },
-        "/api/research/organization-intelligence/v2/{study_id}/pause": {
+        "/api/research/team-handover/{study_id}/pause": {
             "post": _op("research", "Pause after atomic episode commit and retain the task graph", body=OBJ)
         },
         "/api/research/organization-intelligence": {
-            "get": _op("research", "Organization intelligence template, models and owned studies"),
-            "post": _op("research", "Freeze an exploratory organization intelligence protocol without model calls",
-                        body=_obj((), provider=STR, repeats=INT, seed=INT), status="201"),
+            "get": _op("research", "The old organization intelligence records and the models they used"),
         },
         "/api/research/organization-intelligence/{study_id}": {
             "get": _op("research", "Frozen protocol, objective results and live telemetry")

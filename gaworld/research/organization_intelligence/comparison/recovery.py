@@ -10,8 +10,9 @@ from gaworld.collaboration.organization_methods import digest
 from gaworld.research.organization_intelligence.comparison import analysis, benchmarks, protocol
 from gaworld.research.organization_intelligence.comparison.execution import POLICY
 
-# Exact pre-fix implementation whose successful prompts/scoring remain unchanged.
-COMPATIBLE_SOURCE = "ea551e3458e911371fa8f7fd480bb918031d7c3c4ca6bf989d12d8fe43b2b45e"
+# A recovery is allowed when the replay reproduces every saved prompt and
+# score; see ``_prepare_locked``. No list of allowed code versions is kept,
+# because a hash of a file on disk says less than the replay does.
 
 
 class PendingResponse(Exception):
@@ -25,7 +26,7 @@ def prepare(db, source):
             fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise ValueError("实验仍在运行，请先暂停") from None
-        return _prepare_locked(db, db.get(identifier))
+        return _prepare_locked(db, db.merged(identifier))
 
 
 def _prepare_locked(db, source):
@@ -59,15 +60,17 @@ def _prepare_locked(db, source):
         raise ValueError("只能恢复暂停或中断的实验")
     if source["status"] == "draft" and (source["rows"] or source["states"]):
         raise ValueError("未启动的实验存在未知进度，不能恢复")
-    if digest(spec) != source["protocol_hash"] or spec["engine_version"] != organization_engine.VERSION:
+    if digest(spec) != source["protocol_hash"]:
         raise ValueError("原实验设置校验失败")
-    if spec.get("runtime_fingerprint") not in {COMPATIBLE_SOURCE, protocol.runtime_fingerprint()}:
-        raise ValueError("原实验代码不在已验证的恢复兼容范围内；不能混合运行")
+    # No whitelist of allowed code versions: the replay below checks every
+    # saved prompt against what the current engine would send, which is a
+    # stronger statement than a hash of a file on disk.
+    arms = protocol.arms_of(spec)
     cells = {
-        f"{qi}:{repeat}:{arm}": (task, repeat, arm)
+        f"{qi}:{repeat}:{arm['id']}": (task, repeat, arm)
         for qi, task in enumerate(spec["benchmark"]["tasks"])
         for repeat in range(spec["repeats"])
-        for arm in ("candidate", "baseline")
+        for arm in arms
     }
     rows = {r["cell"]: r for r in source["rows"]}
     if len(rows) != len(source["rows"]) or set(rows) - set(cells):
@@ -76,7 +79,7 @@ def _prepare_locked(db, source):
         raise ValueError("原实验结果缺少对应的调用证据")
     for cell, row in rows.items():
         task, repeat, arm = cells[cell]
-        if row["task_id"] != task["id"] or row["repeat"] != repeat or row["arm"] != arm:
+        if row["task_id"] != task["id"] or row["repeat"] != repeat or row["arm"] != arm["id"]:
             raise ValueError("原实验单元与成绩标记不一致")
     copied, hashes, verified = {}, {}, 0
 
@@ -101,11 +104,11 @@ def _prepare_locked(db, source):
             raise ValueError("原调用内容与提示词指纹不一致")
         try:
             outcome = organization_engine.run_method(
-                spec[arm],
+                arm["method"],
                 spec["members"],
                 benchmarks.public_task(task, len(spec["members"])),
                 no_call,
-                seed=spec["seed"] + qi * 17 + repeat,
+                seed=spec["seed"] + qi * 17 + repeat + arm["seed_offset"],
                 limits=spec["limits"],
                 state=copy.deepcopy(state),
             )
@@ -113,10 +116,10 @@ def _prepare_locked(db, source):
             if cell in rows:
                 raise ValueError("已有成绩缺少完整的模型回答") from None
         except organization_engine.BudgetExceeded:
-            if cell in rows and (rows[cell]["score"] != 0 or rows[cell]["valid"]):
+            if cell in rows and rows[cell].get("measured", True):
                 raise ValueError("预算失败与原成绩不一致") from None
         else:
-            if cell in rows:
+            if cell in rows and rows[cell].get("measured", True):
 
                 def judge(prompt, state=state):
                     for a in state.get("scoring_attempts", []):
@@ -128,7 +131,7 @@ def _prepare_locked(db, source):
                 row = rows[cell]
                 if (
                     row["task_id"] != task["id"]
-                    or row["arm"] != arm
+                    or row["arm"] != arm["id"]
                     or row["repeat"] != repeat
                     or score["score"] != row["score"]
                     or score["valid"] != row["valid"]
@@ -152,7 +155,11 @@ def _prepare_locked(db, source):
             "error_info": copy.deepcopy(source.get("error_info")),
             "last_request_at": source.get("last_request_at"),
             "analysis": analysis.analyze(
-                source["rows"], expected=spec["expected"], delta=spec["delta"], seed=spec["seed"]
+                source["rows"],
+                expected=spec["expected"],
+                delta=spec["delta"],
+                seed=spec["seed"],
+                arms=[arm["id"] for arm in protocol.arms_of(spec)],
             ),
             "recovery": {
                 "source_id": source["id"],

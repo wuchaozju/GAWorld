@@ -1,9 +1,14 @@
-"""Frozen organization-intelligence studies with explicit launch and audit trails."""
+"""The first organization-intelligence studies: old records, still finishable.
+
+A new study is started in the comparison workbench, which is now the only
+place a model experiment is created. What is left here reads the old records
+and can still run the ones that were saved but never finished; it cannot
+create a new one.
+"""
 
 from __future__ import annotations
 
 import copy
-import csv
 import fcntl
 import hashlib
 import json
@@ -13,15 +18,22 @@ import time
 import uuid
 from pathlib import Path
 
-from gaworld.accounts import ownership, usage
-from gaworld.apps import research_api, world_paths
+from gaworld.accounts import ownership
+from gaworld.apps import research_api
 from gaworld.llm.run_state import RunLedger, ledger_context
 from gaworld.research import workspaces
-from gaworld.research.organization_intelligence import analysis, experiment, protocol, recovery, store
+from gaworld.research.organization_intelligence import analysis, common, experiment, protocol, recovery, store
 from gaworld.research.progress import RunTiming
 from gaworld.research.run_logs import configured_secrets, redact
 
 PREFIX = "/api/research/organization-intelligence"
+
+#: The population, the provider info and the caller are shared with every other
+#: part of this feature; they live in ``common`` and are re-exported here for
+#: the callers that already know this module.
+population = common.population
+model_info = common.model_info
+make_caller = common.make_caller
 _ACTIVE = {}
 _LOCK = threading.RLock()
 
@@ -30,101 +42,11 @@ class Stopped(Exception):
     """Cooperative stop between requests, including immediately after a response."""
 
 
-def population():
-    from gaworld.interview.roster import _jobs_by_id
-
-    jobs = _jobs_by_id(Path(world_paths.profile_path()))
-    people = []
-    with open(world_paths.state_csv_path(), encoding="utf-8-sig", newline="") as handle:
-        for row in csv.DictReader(handle):
-            try:
-                identifier = int(row.get("id") or row.get("agent_id") or "")
-                age = int(float(row.get("age") or 0))
-            except ValueError:
-                continue
-            people.append(
-                {
-                    "id": identifier,
-                    "name": row.get("name", ""),
-                    "age": age,
-                    "gender": row.get("gender", ""),
-                    "job": jobs.get(identifier, "")[:500],
-                }
-            )
-    return people
-
-
-def model_info(name=""):
-    config = research_api._base_config()
-    llm = config.get("llm") or {}
-    name = name or (llm.get("routing") or {}).get("default", "")
-    settings = (llm.get("providers") or {}).get(name)
-    if not isinstance(settings, dict) or not settings.get("model"):
-        raise ValueError("选择的模型不存在或未配置；不会自动切换模型")
-    # Hash safe generation and endpoint settings, never persist credentials or headers.
-    safe = {
-        k: v
-        for k, v in settings.items()
-        if k
-        in {
-            "type",
-            "model",
-            "base_url",
-            "url",
-            "temperature",
-            "top_p",
-            "top_k",
-            "seed",
-            "max_tokens",
-            "num_ctx",
-            "think",
-            "thinking",
-            "reasoning_effort",
-            "system",
-            "stream",
-            "timeout",
-        }
-    }
-    return {
-        "name": name,
-        "type": settings.get("type"),
-        "model": settings["model"],
-        "fingerprint": protocol.digest(safe),
-    }
-
-
 def code_hashes():
     paths = [Path(module.__file__) for module in (protocol, experiment, analysis, recovery, store)] + [
         Path(__file__)
     ]
     return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
-
-
-def make_caller(spec):
-    from gaworld.llm.providers import LLMRouter
-
-    name = spec["model"]["name"]
-    if model_info(name) != spec["model"]:
-        raise ValueError("模型配置与冻结协议不同，请创建新研究")
-    settings = copy.deepcopy(research_api._base_config()["llm"]["providers"][name])
-    settings["authorization_retry_schemes"] = []
-    router = LLMRouter({"llm": {"providers": {name: settings}, "routing": {"default": name}}})
-    router.providers[name].attempts = 1
-
-    def call(prompt):
-        try:
-            return router.call(
-                prompt,
-                task="research.organization_intelligence",
-                provider=name,
-                allow_fallback=False,
-                temperature=spec["temperature"],
-                max_tokens=spec["max_tokens"],
-            )
-        finally:
-            usage.record("research.organization_intelligence")
-
-    return call
 
 
 def save_draft(spec):
@@ -151,12 +73,6 @@ def save_draft(spec):
         store.directory(record["id"]) / "protocol.json", json.dumps(spec, ensure_ascii=False, indent=2)
     )
     return record
-
-
-def create(payload):
-    payload = dict(payload)
-    payload["city"] = str(research_api._base_config().get("city") or "")
-    return save_draft(protocol.freeze(payload, population(), model_info(str(payload.get("provider") or ""))))
 
 
 def verified_protocol(record):
@@ -502,7 +418,7 @@ def handle_post(path, payload):
         if not isinstance(payload, dict):
             raise ValueError("需要JSON对象")
         if not parts:
-            return create(payload), 201
+            raise ValueError("新的实验请在「对照实验」里建立；这里只能继续以前保存的实验。")
         record = store.load(parts[0])
         if not workspaces.visible(record):
             return {"error": "找不到研究"}, 404

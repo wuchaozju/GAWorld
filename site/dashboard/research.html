@@ -46,7 +46,12 @@
 
     <section class="studio-main rw-main oi-pane" id="rwPaneOrganizationIntelligence" role="tabpanel" aria-labelledby="rwTabOrganizationIntelligence" hidden>
       <div id="organizationComparison"></div>
-      <details class="oc-legacy"><summary data-i18n="oi3.history">专题与历史实验：团队换人和经验保留</summary><div class="oc-legacy-layout">
+      <article class="rw-card oc-summary"><p class="oc-index">ALL STUDIES</p>
+        <h2 data-i18n="oi3.summary">所有实验的汇总与代价</h2>
+        <p class="oc-note" data-i18n="oi3.summaryNote">把这个世界里做过的对照实验放在一起看：每项的结论、实际调用次数和字符数。金额不估算：配置里没有单价，字符也不是 token。</p>
+        <div id="ocSummary" aria-live="polite"></div>
+      </article>
+      <details class="oc-legacy"><summary data-i18n="oi3.history">另两个研究：团队换人（不调用模型）与早期大模型实验</summary><div class="oc-legacy-layout">
       <div class="rw-column">
         <article class="rw-card oi2-intro">
           <p class="oi-kicker">组织智能 · 团队协作实验</p>
@@ -98,14 +103,7 @@
           <p>这是以前使用大模型做决策的版本：先让成员完成练习并总结经验，再比较换人、保留经验记录后，团队做新题的表现。</p>
           <div class="oi-phases"><span>01 · 先做练习</span><span>02 · 总结经验、比较换人</span><span>03 · 做新题看表现</span></div>
           <p class="oi-note">这个版本每道题需要调用模型多次，可能受网络和服务额度影响。已有失败记录保留在这里，可以查看原始回答；它们不会算入上面的程序实验。</p>
-          <form id="oiForm" class="oi-form">
-            <label>实验模型<select id="oiProvider" required></select></label>
-            <label>重复做几组？<input id="oiRepeats" type="number" min="1" max="20" value="3" required /></label>
-            <label>题目生成编号<input id="oiSeed" type="number" min="0" max="2147483548" value="20261020" required /></label>
-            <p id="oiBudget" class="oi-note"></p>
-            <button type="submit" class="btn primary" id="oiCreate">保存实验设置</button>
-          </form>
-          <p class="oi-note">这一步只保存设置，不会调用模型。确认后点击「开始大模型实验」才会运行，费用按模型服务计收。</p>
+          <p class="oi-note">新的实验请在上面的「对照实验」里建立。这里只保留以前保存的记录：可以查看、导出，也可以把当年没做完的实验接着跑完。</p>
           <p id="oiError" class="rw-warn" role="alert"></p>
         </article>
         <article class="rw-card" id="oiStudy" hidden>
@@ -130,9 +128,9 @@
         </details>
       </div>
       <aside class="rw-column">
-        <article class="rw-card"><h3>以前的实验</h3><p class="oi-note">点击记录可以查看进度和结果。暂停后可以接着运行，已完成的题不会重做。</p><div id="oi2Studies"></div></article>
+        <article class="rw-card"><h3>团队换人实验（不调用模型）</h3><p class="oi-note">点击记录可以查看进度和结果。暂停后可以接着运行，已完成的题不会重做。</p><div id="oi2Studies"></div></article>
         <article class="rw-card"><h3>怎样判断做得更好？</h3><p class="oi-note">先看团队选得好不好，再扣掉沟通、查证和等待的成本。重点看：成员全部换新后，保留团队经验是否还有帮助。所有任务完成后才给出比较结果。</p></article>
-        <details><summary>以前的大模型实验记录</summary><article class="rw-card"><p class="oi-note">设置和回答都已保留，不会算入上面的程序实验。</p><div id="oiStudies"></div></article></details>
+        <details><summary>早期大模型实验记录（只读，可续跑）</summary><article class="rw-card"><p class="oi-note">设置和回答都已保留，不会算入上面的程序实验。</p><div id="oiStudies"></div></article></details>
       </aside>
       </div></details>
     </section>
@@ -554,7 +552,7 @@
   <script src="/site/dashboard/research.js"></script>
   <script src="/site/dashboard/research-batches.js"></script>
   <script src="/site/dashboard/organization-intelligence.js"></script>
-  <script src="/site/dashboard/organization-intelligence-v2.js"></script>
+  <script src="/site/dashboard/team-handover.js"></script>
   <script src="/site/dashboard/organization-comparison-core.js"></script>
   <script src="/site/dashboard/organization-comparison.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>

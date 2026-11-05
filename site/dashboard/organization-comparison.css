@@ -30,8 +30,13 @@
 .oc-note,.oc-rule small { color: var(--oc-muted); font-size: .8rem; line-height: 1.7; overflow-wrap: anywhere; }
 .oc-upload input { width: 1px; height: 1px; position: absolute; overflow: hidden; clip-path: inset(50%); }
 .oc-upload:focus-within { outline: 2px solid var(--oc-accent); }
-.oc-error { color: var(--danger,#b04e39); white-space: pre-wrap; overflow-wrap: anywhere; }
+.oc-error { color: var(--red,#b04e39); white-space: pre-wrap; overflow-wrap: anywhere; }
 .oc-error:empty { display: none; }
+.oc-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.oc-factors { border: 1px solid var(--oc-line); border-radius: 4px; padding: .9rem 1rem .4rem; margin: 1.15rem 0; }
+.oc-factors legend { color: var(--oc-muted); font-size: .88rem; padding: 0 .35rem; }
+.oc-check-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(155px,1fr)); gap: .3rem .9rem; }
+.oc-check-grid .oc-check { margin-top: .35rem; }
 .oc-method { border-top: 1px solid var(--oc-line); padding-top: .6rem; }
 .oc-method h4 { margin: .25rem 0; font-size: 1.1rem; }
 .oc-method svg { display: block; max-width: 260px; width: 100%; margin: auto; color: var(--oc-muted); }
@@ -54,3 +59,14 @@
 @media(max-width:850px) { .oc-layout { grid-template-columns: minmax(0,1fr); }.oc-sidebar { display:grid;grid-template-columns: 1fr 1fr;gap:1rem; }.oc-method svg { max-height:180px; }.oc-legacy-layout{grid-template-columns:1fr;} }
 @media(max-width:540px) { .oc-steps { grid-template-columns: repeat(3,minmax(0,1fr)); }.oc-steps button { font-size:.78rem; }.oc-steps b { font-size:1.15rem; }.oc-fields,.oc-sidebar,.oc-baselines{grid-template-columns:minmax(0,1fr);}.oc-score{gap:.5rem;}.oc-score small{font-size:.7rem;}.oc-actions .btn{font-size:.83rem;} }
 @media(prefers-reduced-motion:no-preference) { .oc-steps [aria-current="step"] { transition: border-color .2s; } }
+
+/* The verdict of every candidate against the shared control. */
+.oc-verdicts{margin:.6rem 0;padding:.5rem .7rem;border-left:3px solid var(--oc-accent,#5b7cfa);background:var(--oc-surface-soft,rgba(91,124,250,.06));border-radius:.3rem}
+.oc-verdicts p{margin:.25rem 0}
+
+/* The summary of every study of this world, with what it cost. */
+.oc-summary{margin-top:1rem}
+.oc-summary .oc-score{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;margin:.6rem 0}
+.oc-summary .oc-score small{display:block;color:var(--ink-soft,#667);font-size:.78rem}
+.oc-summary .oc-score strong{font-size:1.05rem}
+.oc-tally{display:inline-block;margin:.2rem .4rem .2rem 0;padding:.15rem .5rem;border-radius:.8rem;background:var(--oc-surface-soft,rgba(91,124,250,.08));font-size:.85rem}

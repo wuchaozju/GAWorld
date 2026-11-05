@@ -1,12 +1,12 @@
 import pytest
 
 from gaworld.accounts.context import USER, WORLD
-from gaworld.research.organization_intelligence.v2 import build, queue
+from gaworld.research.organization_intelligence.handover import build, queue
 
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    from gaworld.apps import organization_intelligence_v2_api as api
+    from gaworld.apps import team_handover_api as api
 
     monkeypatch.setattr(api, "root", lambda: tmp_path)
     user = USER.set({"id": "alice", "role": "member"})
@@ -75,13 +75,13 @@ def test_protocol_corruption_blocks_worker_without_advancing(env, monkeypatch):
     assert result["status"] == "blocked" and result["committed"] == 0
 
 
-def test_v2_routes_documented_and_not_provider_quota_gated():
+def test_handover_routes_documented_and_not_provider_quota_gated():
     from gaworld.accounts import policy
     from gaworld.apps import openapi, routes
 
-    prefix = "/api/research/organization-intelligence/v2"
+    prefix = "/api/research/team-handover"
     path = prefix + "/OI2" + "a" * 24 + "/run"
-    assert routes.find(routes.POST_ROUTES, path).module == "organization_intelligence_v2_api"
+    assert routes.find(routes.POST_ROUTES, path).module == "team_handover_api"
     assert policy.required("POST", path) == "member"
     assert not policy.quota_gated(path)
     assert openapi.allowed_methods(path) == {"POST"}
