@@ -428,6 +428,36 @@ select,
   line-height: 1.5;
 }
 
+/* A select with a quiet action beside it: the action belongs to the field, so
+   it sits on the same row instead of floating under the note. */
+.picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.quiet-action {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--steel);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.quiet-action:hover {
+  border-color: var(--steel);
+  background: var(--surface-alt);
+}
+
+.quiet-action.is-busy {
+  opacity: 0.7;
+}
+
 .role-row {
   display: grid;
   grid-template-columns: minmax(80px, 0.7fr) minmax(100px, 1.3fr);

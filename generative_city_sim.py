@@ -2340,7 +2340,7 @@ def run_simulation():
     # The selected city's industry profile rides along on the background so every
     # cognition prompt knows what kind of place this is. Empty without a city.
     _city_context = _load_city_context(CONFIG)
-    _city_block = _city_context.profile.prompt_block()
+    _city_block = _city_context.prompt_block()
     if _city_block:
         background_text = f"{background_text} {_city_block}".strip()
     news_sources = load_news_sources(NEWS_SOURCES_PATH) if NEWS_ENABLED else []

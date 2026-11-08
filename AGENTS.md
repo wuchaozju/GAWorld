@@ -134,6 +134,20 @@ GAWorld/
   - Portraits land in `output/personas/<slug>/` (`persona.json`, `research.md`, `SKILL.md`)
   - Distilling writes only there; **deploying** is the separate, reviewed step that writes the
     seed CSV and the profile Markdown. Docs in `docs/PERSONA_DISTILL_TUTORIAL.md`
+- Write a resident's life in two halves (自传 + 人生预测): Agent Studio's step 1 (身份) carries two
+  long-form cards, both one model call served as a background job
+  (`gaworld/apps/autobiography_api.py`, `gaworld/apps/life_prediction_api.py`):
+  - **生成自传** — the life so far, in the resident's own first person, from identity, Big Five,
+    memory, goals, life events, relationships and finance. A distilled summary is folded into the
+    resident's long-term memory, so the next tick reads a stable self-image.
+  - **人生预测** — the life still to come, same voice, written from the far end of the life all the
+    way to death. Three optional inputs steer it: `direction` (人生大致走向, free text),
+    `randomness` (人生随机性, 0–100) and `turbulence` (时代动荡性, 0–100); the server turns each
+    knob into a band of prose, because a model has no intuition about "randomness 73".
+    **The prediction is never written to memory** — a hypothesis the resident reads as fact would
+    be acted out, and the simulation would start from the answer it was meant to test.
+  - Both share one dossier (`gaworld/apps/resident_dossier.py`); documents land in
+    `output/autobiography/` and `output/life_prediction/` and can be downloaded as Markdown.
 - Turn a research idea or a paper into a study (研究工作台): `/site/dashboard/research.html`,
   backed by `/api/research/*`. A paper is read first (`/digest`, editable), then planned against
   `docs/FEATURES.md` with 2–3 alternative designs (`/analyze`); a chosen design compiles into a
@@ -174,6 +188,17 @@ GAWorld/
   - `python -m gaworld.city add-agents <city> --size 200` / `add-agent <city> --name … --age …`
     / `migrate <city> --agent-id 31`
   - `python -m gaworld.city list` / `show <city>` / `use <city>` / `delete <city> --yes`
+  - A city carries three researched layers besides the map: `knowledge.json` (what the city
+    does for a living), `locale.json` (what its residents are called) and `region.json`
+    (**what the place itself is like** — terrain, weather hazards, customs, dialect, food,
+    transport, daily habits). The region dossier is researched at creation time from six
+    web searches + one model call (`gaworld/city/region.py`); when it has evidence it
+    **replaces** the latitude band in the environment's event pools, rides on the
+    `background` every cognition prompt sees, and writes local habits into each
+    resident's profile. Research that finds nothing leaves the dossier empty and the
+    behaviour coarse rather than invented — never block creation on it.
+    `python -m gaworld.city region <city> [--rebuild]` re-researches it and refreshes the
+    event pools; `GET/POST /api/city/region` is the dashboard's route.
   - Cities live in `data/cities/<slug>/`; `use` writes `{"city": slug}` into
     `dashboard_config.json`, which repoints `map_path` / `csv_path` / `md_path`, the
     environment events and the background prompt at that bundle.

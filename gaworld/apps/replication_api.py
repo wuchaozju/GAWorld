@@ -13,12 +13,14 @@ and listed from disk.
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any
 
 from gaworld.accounts import ownership
 from gaworld.apps.game_jobs import JobStore
 from gaworld.research import replication as rp
 from gaworld.research import replication_interpret as ri
+from gaworld.research import result_checks as rc
 
 _JOBS = JobStore("replication")
 
@@ -29,21 +31,68 @@ PREFIX = "/api/research/replication"
 
 
 def _llm(provider: str, task: str, temperature: float, max_tokens: int) -> Callable[[str], str]:
+    override = _LLM_OVERRIDE
+    task_name = f"research.replication.{task}"
+    provenance = {
+        "provider": provider,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "allow_fallback": False,
+        "kind": "injected" if override else "configured",
+    }
+    if override is None:
+        from gaworld.llm import providers
+
+        provider = providers.resolve_provider(task=task_name, provider=provider or None)
+        router = providers.LLM_ROUTER
+        backend = router.providers[provider]
+        cfg = deepcopy(router.config.get("llm", {}).get("providers", {}).get(provider, {}))
+        model = str(getattr(backend, "model", ""))
+        endpoint = str(getattr(backend, "base_url", getattr(backend, "url", "")))
+        provenance.update(
+            provider=provider,
+            model=model,
+            backend_type=type(backend).__name__,
+            endpoint_hash=rc.fingerprint(endpoint),
+            generation_settings={
+                key: cfg[key]
+                for key in (
+                    "top_p",
+                    "top_k",
+                    "seed",
+                    "repeat_penalty",
+                    "frequency_penalty",
+                    "presence_penalty",
+                    "reasoning_effort",
+                )
+                if key in cfg
+            },
+        )
+
     def call(prompt: str) -> str:
-        if _LLM_OVERRIDE is not None:
-            return _LLM_OVERRIDE(prompt, task, provider)
-        from gaworld.llm.providers import call_llm
+        if override is not None:
+            return override(prompt, task, provider)
+        if (
+            providers.LLM_ROUTER is not router
+            or router.providers.get(provider) is not backend
+            or str(getattr(backend, "model", "")) != model
+            or str(getattr(backend, "base_url", getattr(backend, "url", ""))) != endpoint
+            or router.config.get("llm", {}).get("providers", {}).get(provider, {}) != cfg
+        ):
+            raise RuntimeError("实验期间模型配置已改变，请固定配置后重新运行")
 
         return str(
-            call_llm(
+            providers.call_llm(
                 prompt,
-                task=f"research.replication.{task}",
-                provider=provider or None,
+                task=task_name,
+                provider=provider,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                allow_fallback=False,
             )
         )
 
+    call.provenance = provenance
     return call
 
 
@@ -69,11 +118,11 @@ def start_extract(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _interpret(run: dict[str, Any], provider: str, language: str) -> dict[str, Any]:
     """The reading, or ``{"error": ...}``: a failed reading never fails the run it reads."""
-    llm = _llm(provider, "interpret", temperature=0.3, max_tokens=ri.INTERPRET_MAX_TOKENS)
     try:
+        llm = _llm(provider, "interpret", temperature=0.3, max_tokens=ri.INTERPRET_MAX_TOKENS)
         return {**ri.interpret(run, llm_fn=llm, language=language), "provider": provider}
-    except ValueError as exc:
-        return {"error": str(exc)}
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def start_interpret(run_id: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -122,7 +171,8 @@ def start_run(payload: dict[str, Any]) -> dict[str, Any]:
             progress=progress,
         )
         run.update(ownership.stamp())
-        if interpret:
+        rp.save_run(run)
+        if interpret and run["failed"] < len(run["responses"]):
             progress(0.99, "正在解读偏差…")
             run["interpretation"] = _interpret(run, provider, language)
         rp.save_run(run)
@@ -176,8 +226,8 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return {"deleted": rp.delete_run(parts[0]), "run_id": parts[0]}, 200
     except KeyError:
         return {"error": "Unknown replication run"}, 404
-    except ValueError as exc:
-        return {"error": str(exc)}, 400
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}, 400
     return {"error": "Unknown endpoint"}, 404
 
 

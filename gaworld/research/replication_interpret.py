@@ -25,6 +25,7 @@ from collections.abc import Callable
 from typing import Any
 
 from gaworld.research import replication as rp
+from gaworld.research import result_checks as rc
 
 INTERPRET_MAX_TOKENS = 4_000
 #: Rows per table shown to the model.
@@ -54,7 +55,13 @@ _PROMPT = """你是一位社会科学方法学家。下面是一次「拟合度�
 - pattern 从这些里选一个：{patterns}；
 - explanation 写可能的原因，并区分三类：文献人群与居民样本的差别（国家、年龄、教育、时代）、题目与材料在翻译或情境上的差别、
   模型扮演本身的偏差（回答过于一致、社会期许、风险厌恶、缺少真实激励等）；拿不准就说拿不准；
-- 小样本（n 小、标注「样本少」）的单元格只能作为线索；判定不是「复现」的效应不要写成复现；
+- 小样本只能作为线索；方向一致且显著不等于效应等价；检查为未检验或证据不足时不得断言无偏。只在真人参照检查为 stable 时说在指定范围内接近；
+- 社会期许、训练对齐只能作为待验证解释，不能根据单次回答判为机制事实；
+- 身份检查只比较共同材料中的 A/B 身份线索；差值为 B − A，不代表受访居民自身身份的因果效应，
+  也不自动证明不公正或现实歧视。身份 stable 只对该线索和容许误差成立，不能当作真人等价；
+- 互动检查的独立单位是小组，不是居民或轮次；三项比较区分同伴反馈、自己过往回答及二者共同作用。
+  只检查结构化回答反馈和短期上下文，更一致不代表正确、无偏或长期社会惯例。单选题变化只是描述。
+- 重复回答检查以居民为独立单位，重复抽样只描述固定输入和模型下的波动；重复平均差不自动证明因果，单次卡片不可冒充重复校准结论。
 - population_gap 专门写文献人群和这批居民的差别，以及它最可能解释哪些偏差；
 - suggestions 给 2–4 条在这个工具里就能做的下一步（调整年龄范围或换城市、加大样本、换配对设计、换模型、改写材料、核对抽取的数字），
   每条说明为什么、怎么做。
@@ -198,7 +205,7 @@ def build_prompt(run: dict[str, Any], language: str = "zh-CN") -> str:
         f"- 拟合度分 {summary.get('score')}；水平准确度 {_fmt(summary.get('level_accuracy'))}；"
         f"真人值落在居民 95% 区间内 {_fmt(summary.get('within_ci_rate'))}；单元格相关 r {_fmt(summary.get('level_r'))}；"
         f"平均 SD 比 {_fmt(summary.get('mean_sd_ratio'), 2)}",
-        f"- 效应方向一致率 {_fmt(summary.get('direction_rate'))}，显著复现率 {_fmt(summary.get('replication_rate'))}"
+        f"- 效应方向一致率 {_fmt(summary.get('direction_rate'))}，方向一致且显著比例 {_fmt(summary.get('replication_rate'))}"
         f"（{summary.get('effects_judged')} 个效应），效应相关 r {_fmt(summary.get('effect_r'))}",
     ]
     if summary.get("group_cells_compared"):
@@ -206,6 +213,12 @@ def build_prompt(run: dict[str, Any], language: str = "zh-CN") -> str:
             f"- 分组水平准确度 {_fmt(summary.get('group_level_accuracy'))}；分组差异方向一致率 "
             f"{_fmt(summary.get('group_direction_rate'))}（{summary.get('group_gaps_judged')} 个差异）"
         )
+    summary_lines.append(rc.markdown(comparison.get("result_checks")))
+    summary_lines.extend(
+        rc.markdown(row.get("result_checks"))
+        for key in ("cells", "effects", "group_cells", "group_gaps")
+        for row in comparison.get(key, [])[:MAX_ROWS]
+    )
     return _PROMPT.format(
         patterns="、".join(f"{key}（{label}）" for key, label in PATTERNS.items()),
         study=_study_text(spec),

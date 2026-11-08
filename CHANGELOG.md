@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — 2026-11-07 — 人生预测：把「还没发生的一生」也写出来
+
+### Added
+
+- **人生预测（未来自传）** — Agent Studio 第 1 步（身份）新增一张长文卡，用居民本人的口吻写他从
+  **此刻起直到死亡**的一生：叙述者站在人生的终点回望，所以是「后来我才明白」这种事后视角，而不是
+  计划书。三个可选输入：人生大致走向（自由文本）、人生随机性（0–100）、时代动荡性（0–100）。
+  两个滑块的两端都写了定性说明（命已注定 ↔ 跌宕无常、岁月静好 ↔ 天翻地覆）；服务端把数字翻译成
+  一段话再交给模型（「几乎不可预测：一生充满剧变……」），因为模型对「randomness 73」没有感觉、
+  对那句话有。接口：`POST /api/agents/{id}/life-prediction`（202 + `job_id`）、
+  `GET /api/agents/{id}/life-prediction/jobs/{job_id}`、`GET /api/agents/{id}/life-prediction`、
+  `GET /api/agents/{id}/life-prediction/download`；文档落在 `output/life_prediction/agent_<id>.md`。
+  实现：`gaworld/apps/life_prediction_api.py`。
+- **人生预测不写进长期记忆** — 这是与自传最重要的差别，写在这里以免后来被「顺手补上」：
+  自传是关于过去的事实，摘要进记忆后下一次 tick 读到的是稳定的自我认知；预测是关于未来的假设，
+  写进去居民就会把自己预测出来的未来当成既定事实并照着演，仿真便从「被检验的假设」变成
+  「自己实现的预言」。预测只读：写在盘上、显示在面板里。
+- `gaworld/apps/resident_dossier.py` — 自传与人生预测共用的一份「居民档案」（身份、大五、状态、
+  目标、记忆、关系、财务、生命事件）。原先这些逻辑住在 `autobiography_api.py` 里，现在抽出来，
+  两个写作者看到的证据形状一致。
+
+### Changed
+
+- **「生成自传」从第 7 步（复核·部署）移到第 1 步（身份）** — 自传讲的是「已经发生的我」，
+  人生预测讲的是「将要成为的我」，两张卡上下并排才构成完整叙事；拆到两步里，这个对照就看不见了。
+  第 7 步现在只留财务、Moltbook、采访预览三块功能卡。
+
 ## [Unreleased] — 2026-10-30 — 控制台：按钮不再卡在「启动中」
 
 ### Fixed

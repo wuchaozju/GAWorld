@@ -10,8 +10,14 @@ and its recent news — reaches agents through exactly these read-outs:
 ``rag_chunks``   each agent's ``external_info`` RAG store at bootstrap
 ===============  ==========================================================
 
+The region's dossier (:mod:`gaworld.city.region`) rides along on the first
+and the last: what the place looks like and how people live there is exactly
+the kind of thing an agent should be able to bring up, and exactly the kind
+of thing that used to be missing — every city used to describe itself as
+"亚热带、中等城市" no matter where it was.
+
 Loading is cached on the bundle files' mtimes: this is read on hot paths (every
-cognition step asks for the prompt block) and re-parsing two JSON files per
+cognition step asks for the prompt block) and re-parsing three JSON files per
 agent per tick would be pure waste.
 """
 
@@ -25,11 +31,12 @@ from typing import Any
 from gaworld.city.knowledge import CityProfile
 from gaworld.city.news import NewsCache, for_sim_day
 from gaworld.city.news import prompt_block as news_prompt_block
+from gaworld.city.region import RegionProfile, normalize_region
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.city.context")
 
-#: Parsed contexts keyed by (slug, knowledge mtime, news mtime).
+#: Parsed contexts keyed by (slug, knowledge mtime, news mtime, region mtime).
 _CACHE: dict[tuple, "CityContext"] = {}
 _CACHE_LIMIT = 4
 
@@ -42,16 +49,17 @@ class CityContext:
     name: str = ""
     profile: CityProfile = field(default_factory=CityProfile)
     news: NewsCache = field(default_factory=NewsCache)
+    region: RegionProfile = field(default_factory=RegionProfile)
 
     @property
     def is_empty(self) -> bool:
-        return self.profile.is_empty and not self.news.items
+        return self.profile.is_empty and not self.news.items and self.region.is_empty
 
     # -- channel A: cognition prompts --------------------------------------
 
     def prompt_block(self, sim_day: int | None = None, *, per_day: int = 2) -> str:
         """City briefing for the background prompt, optionally with the day's news."""
-        parts = [self.profile.prompt_block()]
+        parts = [self.profile.prompt_block(), self.region.prompt_block()]
         if sim_day is not None:
             headlines = news_prompt_block(for_sim_day(self.news, sim_day, per_day=per_day))
             if headlines:
@@ -103,9 +111,9 @@ class CityContext:
 
     def rag_chunks(self, *, max_chunks: int = 5) -> list[str]:
         """Short standalone facts to seed agents' external-info memory with."""
-        if self.profile.is_empty:
-            return []
         chunks: list[str] = []
+        if self.profile.is_empty and self.region.is_empty:
+            return []
         if self.profile.summary:
             chunks.append(f"[城市概况] {self.name}：{self.profile.summary}")
         for industry in self.profile.top_industries(limit=3):
@@ -118,6 +126,7 @@ class CityContext:
             )
         if self.profile.priorities:
             chunks.append(f"[发展重点] {self.name}正在推进：" + "、".join(self.profile.priorities[:3]) + "。")
+        chunks.extend(self.region.rag_chunks(max_chunks=max_chunks))
         return chunks[:max_chunks]
 
 
@@ -158,15 +167,20 @@ def load_context(config: Any = None, *, root: Any = None) -> CityContext:
         except OSError:
             return 0.0
 
-    key = (bundle.slug, mtime(bundle.knowledge_path), mtime(bundle.news_path))
+    key = (bundle.slug, mtime(bundle.knowledge_path), mtime(bundle.news_path), mtime(bundle.region_path))
     cached = _CACHE.get(key)
     if cached is not None:
         return cached
 
     profile = CityProfile.from_dict(_read_json(bundle.knowledge_path))
     news = NewsCache.from_dict(_read_json(bundle.news_path))
+    region = normalize_region(_read_json(bundle.region_path))
     context = CityContext(
-        slug=bundle.slug, name=profile.name or bundle.name, profile=profile, news=news
+        slug=bundle.slug,
+        name=profile.name or region.label or bundle.name,
+        profile=profile,
+        news=news,
+        region=region,
     )
     if len(_CACHE) >= _CACHE_LIMIT:
         _CACHE.clear()

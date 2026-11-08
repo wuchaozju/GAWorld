@@ -184,10 +184,10 @@ def _repo_path(value):
     return (Path(paths.REPO_ROOT) / path).resolve()
 
 
-def _organization_method(identifier, version):
+def _organization_method(identifier, version, slots=None):
     from gaworld.apps.organization_methods_api import resolve
 
-    return resolve(identifier, version)
+    return resolve(identifier, version, slots)
 
 
 def _collaboration_config():
@@ -1830,6 +1830,37 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
 
             payload, status = autobiography_api.handle_get(path, query)
             return self._json_response(payload, status=status)
+        if path.startswith("/api/agents/") and "/life-prediction/jobs/" in path:
+            from gaworld.apps import life_prediction_api
+
+            payload, status = life_prediction_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
+        if path.startswith("/api/agents/") and path.endswith("/life-prediction/download"):
+            from gaworld.apps import life_prediction_api
+
+            filename, content_type, body, status = life_prediction_api.handle_download(path)
+            if status != 200:
+                return self._json_response(
+                    {"error": "尚未生成人生预测"} if status == 404 else {"error": body},
+                    status=status,
+                )
+            data = body.encode("utf-8") if isinstance(body, str) else body
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header(
+                "Content-Disposition",
+                f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename}",
+            )
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if path.startswith("/api/agents/") and path.endswith("/life-prediction"):
+            from gaworld.apps import life_prediction_api
+
+            payload, status = life_prediction_api.handle_get(path, query)
+            return self._json_response(payload, status=status)
         if path.startswith("/api/agents/") and path.endswith("/detail"):
             agent_id = path.split("/")[3]
             detail = residents.agent_detail(agent_id)
@@ -2004,6 +2035,11 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
 
             body, status = autobiography_api.handle_post(path, payload)
             return self._json_response(body, status=status)
+        if path.startswith("/api/agents/") and path.endswith("/life-prediction"):
+            from gaworld.apps import life_prediction_api
+
+            body, status = life_prediction_api.handle_post(path, payload)
+            return self._json_response(body, status=status)
         if path.startswith("/api/agents/") and path.endswith("/goals"):
             agent_id = path.split("/")[3]
             try:
@@ -2075,6 +2111,7 @@ class DashboardHandler(SubpathMixin, PublicMediaMixin, SimpleHTTPRequestHandler)
                             "organization_method": _organization_method(
                                 _collaboration_text(payload, "organization_method_id"),
                                 _collaboration_integer(payload, "organization_method_version", default=1),
+                                slots=len({int(agent_id) for agent_id in agent_ids}),
                             )
                         }
                         if payload.get("organization_method_id")

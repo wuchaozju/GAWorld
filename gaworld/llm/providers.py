@@ -8,6 +8,7 @@ from typing import Any
 
 import requests
 
+from gaworld.llm import call_scope
 from gaworld.llm.http_transport import post as http_post
 from gaworld.llm.run_state import (
     before_attempt,
@@ -27,6 +28,7 @@ _LOG = get_logger("gaworld.llm")
 def _post(*args: Any, **kwargs: Any) -> Any:
     """Count actual HTTP submissions, independently from router chains."""
     ledger = current_ledger()
+    kwargs["timeout"] = call_scope.request_timeout(kwargs.get("timeout"))
     try:
         response = http_post(*args, **kwargs)
     except requests.RequestException:
@@ -190,9 +192,13 @@ def _retrying(
     delay = 0.6
     last_exc: BaseException | None = None
     for attempt in range(1, max(1, attempts) + 1):
+        call_scope.check()
         try:
             before_attempt(provider)
-            return call()
+            call_scope.check()
+            result = call()
+            call_scope.check()
+            return result
         except Exception as exc:
             last_exc = exc
             if attempt >= attempts or not _is_retryable(exc):
@@ -275,6 +281,7 @@ class OllamaProvider:
                     r.raise_for_status()
                     parts: list[str] = []
                     for line in r.iter_lines(decode_unicode=True):
+                        call_scope.check()
                         if not line:
                             continue
                         # Use stdlib json instead of requests' private complexjson alias.
@@ -415,6 +422,7 @@ class OpenAIProvider(_CredentialProvider):
                 r.raise_for_status()
                 parts: list[str] = []
                 for raw_line in r.iter_lines(decode_unicode=True):
+                    call_scope.check()
                     if not raw_line:
                         continue
                     line = raw_line.strip()
@@ -949,6 +957,7 @@ class LLMRouter:
         last_exc: BaseException | None = None
         failures: list[str] = []
         for index, provider_name in enumerate(chain):
+            call_scope.check()
             started = time.perf_counter()
             try:
                 with provider_context(provider_name):

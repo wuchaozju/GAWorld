@@ -29,6 +29,7 @@ from __future__ import annotations
 import base64
 import copy
 import json
+import re
 import threading
 import time
 import traceback
@@ -41,6 +42,7 @@ from gaworld.accounts import ownership
 from gaworld.accounts.context import USER
 from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
+from gaworld.research import jobs as job_store
 from gaworld.research import workspaces
 from gaworld.research.progress import RunTiming
 
@@ -48,7 +50,7 @@ _LOG = get_logger("gaworld.dashboard.research")
 
 #: job id → record. One table per delegate, matching ``interview_api``.
 _JOBS: dict[str, dict[str, Any]] = {}
-_JOBS_LOCK = threading.Lock()
+_JOBS_LOCK = threading.RLock()
 _MAX_JOBS = 10
 
 #: Uploaded PDFs are decoded server-side; past this the file is a scanned
@@ -62,16 +64,18 @@ MAX_UPLOAD_B64 = 30_000_000
 # ---------------------------------------------------------------------------
 
 
-def _new_job(kind: str) -> str:
+def _new_job(kind: str, request_id: str = "") -> str:
     job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
     with _JOBS_LOCK:
         _JOBS[job_id] = {
             "id": job_id,
             "kind": kind,
+            "request_id": request_id,
             "status": "running",
             "progress": 0.0,
             "message": "启动中…",
             "started_at": time.time(),
+            "updated_at": time.time(),
             "finished_at": None,
             "result": None,
             "error": None,
@@ -81,6 +85,7 @@ def _new_job(kind: str) -> str:
             "_events": [],
             **workspaces.stamp(),
         }
+        job_store.save(_JOBS[job_id])
         finished = [
             (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
         ]
@@ -89,6 +94,27 @@ def _new_job(kind: str) -> str:
             _, oldest = finished.pop(0)
             _JOBS.pop(oldest, None)
     return job_id
+
+
+def _claim_job(kind: str, payload: dict[str, Any]) -> tuple[str, bool]:
+    """Reserve a submission once, including when its POST reply was lost."""
+    request_id = str(payload.get("request_id") or "")
+    if request_id and not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_id):
+        raise ValueError("非法的提交标识，请刷新页面后重试")
+    with _JOBS_LOCK:
+        if request_id:
+            stamp = workspaces.stamp()
+            records = [*_JOBS.values(), *job_store.recent()]
+            for record in records:
+                if (
+                    record.get("kind") == kind
+                    and record.get("request_id") == request_id
+                    and record.get("owner_id") == stamp.get("owner_id")
+                    and record.get("world_id") == stamp.get("world_id")
+                    and workspaces.visible(record)
+                ):
+                    return record["id"], False
+        return _new_job(kind, request_id), True
 
 
 def _update_job(job_id: str, **fields: Any) -> None:
@@ -126,6 +152,8 @@ def _update_job(job_id: str, **fields: Any) -> None:
             if "progress" in fields:
                 fields["progress"] = max(record.get("progress", 0.0), min(1.0, fields["progress"]))
             record.update(fields)
+            record["updated_at"] = time.time()
+            job_store.save(record)
 
 
 def _run_in_background(job_id: str, work: Any) -> None:
@@ -166,12 +194,23 @@ def _run_in_background(job_id: str, work: Any) -> None:
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
+        if record is None:
+            record = job_store.load(job_id)
+            if record and workspaces.visible(record) and record.get("status") == "running":
+                record.update(
+                    status="error",
+                    message="任务已中断（服务已重启）；请重新生成，已有研究和结果仍保留。",
+                    finished_at=time.time(),
+                )
+                job_store.save(record)
         if not record or not workspaces.visible(record):
             return None
         snapshot = {key: value for key, value in record.items() if not key.startswith("_")}
         timing = record.get("_timing")
         if timing is not None:
             snapshot.update(timing.snapshot(float(record.get("progress") or 0)))
+        if record.get("kind") != "run":
+            snapshot["remaining_seconds"] = None
         if record.get("stopping"):
             snapshot["remaining_seconds"] = None
         ledger_path = record.get("_ledger_path")
@@ -216,7 +255,7 @@ def _providers() -> list[dict[str, Any]]:
         return []
 
 
-def context() -> dict[str, Any]:
+def context(request_id: str = "") -> dict[str, Any]:
     """Everything the panel needs before its first render, in one request."""
     from gaworld import accounts
     from gaworld.accounts.context import USER
@@ -242,8 +281,16 @@ def context() -> dict[str, Any]:
         "workspace": {
             "mode": "multi_user" if user or accounts.enabled_store(_repo_root()) else "single_user",
             "owner": user.get("nickname") or "",
+            "owner_id": user.get("id"),
             "world_id": workspaces.stamp()["world_id"],
         },
+        "jobs": [
+            {key: job.get(key) for key in ("id", "kind", "status", "request_id", "message", "started_at")}
+            for record in job_store.recent()
+            if workspaces.visible(record)
+            and (job := job_status(record["id"]))
+            and (not request_id or record.get("request_id") == request_id)
+        ][:10],
     }
 
 
@@ -258,7 +305,14 @@ def plan_detail(plan_id: str) -> dict[str, Any] | None:
     from gaworld.research import workbench
 
     plan = workbench.load_plan(plan_id)
-    return plan if workspaces.visible(plan) else None
+    if not workspaces.visible(plan):
+        return None
+    from gaworld.research.reading import plan_summary
+
+    plan["reading"] = plan_summary(plan)
+    plan["reading_designs"] = [plan_summary(plan, index) for index in range(len(plan.get("designs") or []))]
+    plan["markdown"] = workbench.render_markdown(workbench.ResearchPlan.from_dict(plan))
+    return plan
 
 
 def export_markdown(plan_id: str) -> dict[str, Any]:
@@ -296,10 +350,12 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
     # Validate before returning a job id: an empty textarea should come back
     # as a 400 the user can fix, not as a job that fails a second later.
     request = workbench.normalize_request(payload)
-    job_id = _new_job("plan")
+    job_id, created = _claim_job("plan", payload)
+    if not created:
+        return {"job_id": job_id, "kind": request["kind"], "truncated": request["truncated"]}
 
     def work(report: Any) -> dict[str, Any]:
-        from gaworld.llm.providers import call_llm, resolve_provider
+        from gaworld.llm.providers import resolve_provider
 
         provider = request["provider"] or None
         try:
@@ -309,12 +365,7 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
         report(0.1, f"正在用 {routed or '默认模型'} 分析…")
 
         def llm_fn(prompt: str) -> str:
-            return call_llm(
-                prompt,
-                task="research",
-                provider=provider,
-                max_tokens=workbench.PLAN_MAX_TOKENS,
-            )
+            return _llm(provider or "", workbench.PLAN_MAX_TOKENS)(prompt)
 
         plan = workbench.analyze(request, llm_fn=llm_fn, provider=routed)
         report(0.9, "正在保存方案…")
@@ -328,25 +379,27 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
 def start_digest(payload: dict[str, Any]) -> dict[str, Any]:
     """Step one for a paper: read it in the background, return the digest.
 
-    The digest is not saved — it is the job's result, which the panel shows
-    for editing and then sends back with ``/analyze``.
+    The digest and source stay in the scoped job record so a refresh can
+    recover both before sending the confirmed reading to ``/analyze``.
     """
     from gaworld.research import workbench
 
     request = workbench.normalize_request({**payload, "kind": "paper"})
-    job_id = _new_job("digest")
+    job_id, created = _claim_job("digest", payload)
+    if not created:
+        return {"job_id": job_id, "truncated": request["truncated"]}
 
     def work(report: Any) -> dict[str, Any]:
-        from gaworld.llm.providers import call_llm
-
         provider = request["provider"] or None
         report(0.1, "正在解读论文…")
-        return workbench.digest_paper(
+        digest = workbench.digest_paper(
             request,
-            llm_fn=lambda prompt: call_llm(
-                prompt, task="research", provider=provider, max_tokens=workbench.DIGEST_MAX_TOKENS
-            ),
+            llm_fn=_llm(provider or "", workbench.DIGEST_MAX_TOKENS),
         )
+        return {
+            **digest,
+            "source": {key: request[key] for key in ("text", "title", "kind", "provider", "language")},
+        }
 
     _run_in_background(job_id, work)
     return {"job_id": job_id, "truncated": request["truncated"]}
@@ -811,10 +864,14 @@ def _heal_all() -> None:
 
 
 def _llm(provider: str, max_tokens: int) -> Any:
+    from gaworld.llm.call_scope import bounded_call, limit
     from gaworld.llm.providers import call_llm
 
     def call(prompt: str) -> str:
-        return call_llm(prompt, task="research", provider=provider or None, max_tokens=max_tokens)
+        with limit(300):
+            return bounded_call(
+                lambda: call_llm(prompt, task="research", provider=provider or None, max_tokens=max_tokens)
+            )
 
     return call
 
@@ -850,6 +907,9 @@ def study_detail(study_id: str) -> dict[str, Any]:
             job_id = max(matching, key=lambda job: job["started_at"])["id"] if matching else None
     detail["run_status"] = job_status(job_id) if job_id else None
     detail["runtime"]["telemetry"] = _telemetry(study)
+    from gaworld.research.reading import study_summary
+
+    detail["reading"] = study_summary(detail)
     return detail
 
 
@@ -857,7 +917,7 @@ def export_study_report(study_id: str) -> dict[str, Any]:
     from gaworld.research.report import render_study_markdown
 
     study = _load_study(study_id)
-    markdown = study.report_markdown or render_study_markdown(study.to_dict())
+    markdown = render_study_markdown(study.to_dict())
     safe = "".join(char if char.isalnum() or char in "-_（）()" else "_" for char in study.title)[:40]
     return {
         "filename": f"{safe or 'study'}-{study.id}.md",
@@ -887,7 +947,9 @@ def start_study(payload: dict[str, Any]) -> dict[str, Any]:
     provider = str(payload.get("provider") or "").strip()[:64]
     autopilot = bool(payload.get("autopilot"))
     overrides = {key: payload[key] for key in _OVERRIDE_KEYS if key in payload}
-    job_id = _new_job("study")
+    job_id, created = _claim_job("study", payload)
+    if not created:
+        return {"job_id": job_id, "plan_id": plan_id}
 
     def work(report: Any) -> dict[str, Any]:
         from gaworld.city.knowledge import _parse_json_object
@@ -1167,6 +1229,7 @@ def _launch_run(study_id: str, *, base_config: dict[str, Any] | None = None) -> 
 
 
 def _run_study(study_id: str, report: Any) -> dict[str, Any]:
+    from gaworld.llm.call_scope import ModelWaitTimeout, limit
     from gaworld.research import backends
     from gaworld.research import study as study_mod
     from gaworld.research.evaluate import evaluate, has_comparable_data
@@ -1215,15 +1278,17 @@ def _run_study(study_id: str, report: Any) -> dict[str, Any]:
         if not has_comparable_data(study.evaluation):
             raise ResearchError("运行失败：没有可用于判定假设的数据，请查看执行记录和运行日志。")
         study.set_stage("evaluated")
+        study.report_markdown = render_study_markdown(study.to_dict())
         study_mod.save_study(study)
-        report(0.9, "正在解读结果…")
+        report(0.9, "统计已完成，可先阅读结果；正在生成补充解读…")
         # A failed reading is a missing section, not a failed study: the
         # verdicts are already on disk and the report renders without it.
         try:
-            study.interpretation = interpret(
-                protocol, study.evaluation, llm_fn=_llm(study.provider, INTERPRET_MAX_TOKENS)
-            )
-        except ResearchError as exc:
+            with limit(90):
+                study.interpretation = interpret(
+                    protocol, study.evaluation, llm_fn=_llm(study.provider, INTERPRET_MAX_TOKENS)
+                )
+        except (ResearchError, ModelWaitTimeout) as exc:
             study.interpretation = {"error": str(exc)}
         checkpoint(check_provider=False)
         study.set_stage("reported")
@@ -1417,7 +1482,10 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return replication_api.handle_get(path, query)
     try:
         if path == "/api/research/context":
-            return context(), 200
+            request_id = (query or {}).get("request_id") or ""
+            if isinstance(request_id, list):
+                request_id = request_id[0] if request_id else ""
+            return context(str(request_id)), 200
         if path == "/api/research/plans":
             return plans(), 200
         if path.startswith("/api/research/jobs/"):

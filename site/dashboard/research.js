@@ -159,29 +159,95 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
   /* ------------------------------------------------------------------- api */
 
+  var boundedRequest = window.GAResearchRuntime.createRequest({
+    timeoutMs: 20000,
+    timeoutMessage: t("request_timeout", "请求超时；正在运行的任务不会因此停止。请查看任务状态或历史记录，避免重复提交。")
+  });
+
   function api(method, path, body) {
-    return fetch(path, {
-      method: method,
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    })
-      .then(function (res) {
-        return res
-          .json()
-          .catch(function () {
-            throw new Error(tf("not_json", "HTTP {status}（返回的不是 JSON）", { status: res.status }));
-          })
-          .then(function (data) {
-            if (!res.ok) throw new Error((data && data.error) || "HTTP " + res.status);
-            return data;
-          });
-      })
-      .catch(function (err) {
-        if (err instanceof TypeError) {
-          throw new Error(tf("no_backend", "连不上后端：{error}", { error: err.message }));
+    return boundedRequest(method, path, body);
+  }
+
+  function restoreMaterial(source) {
+    $("rwText").value = source.text || "";
+    $("rwTitle").value = source.title || "";
+    var radio = document.querySelector('input[name="rwKind"][value="' + (source.kind === "paper" ? "paper" : "idea") + '"]');
+    if (radio) radio.checked = true;
+    if (source.provider) $("rwProvider").value = source.provider;
+    syncKindPlaceholder(); syncRunLabel(); syncCount();
+  }
+
+  function setCompileBusy(busy) {
+    state.compiling = busy;
+    if ($("rwToStudy")) $("rwToStudy").disabled = busy;
+  }
+
+  function jobProgress(job) {
+    if (job.reconnecting) return t("reconnecting", "连接暂时中断，正在自动重连原任务…");
+    var message = job.message || t("starting", "正在提交…");
+    if (job.status === "running" && job.elapsed_seconds !== undefined) {
+      message += " · " + tf("task_elapsed", "已等待 {time}", { time: duration(job.elapsed_seconds) });
+      message += " · " + t("task_wait_hint", "可离开或刷新此页，返回后会继续追踪。");
+    }
+    return message;
+  }
+
+  function setupTrackers() {
+    var workspace = (state.context || {}).workspace || {};
+    var key = "gaworld.research.jobs:" + JSON.stringify([workspace.mode, workspace.owner_id, workspace.world_id]);
+    var storage;
+    try { storage = window.localStorage; } catch (_) { storage = null; }
+    function make(slot) {
+      return window.GAResearchRuntime.createJobTracker({api: api, storage: storage, storageKey: key + ":" + slot,
+        missingMessage: t("submission_missing", "未找到这次提交的任务；可以重新生成。已有方案和结果仍保留。"),
+        isHidden: function () { return document.hidden; },
+        onUpdate: function (job) {
+          if (slot === "material") setBusy(job.status === "running");
+          else setCompileBusy(job.status === "running");
+          setProgress(jobProgress(job), job.status === "running" ? "live" : "");
+        },
+        onError: function (err) {
+          if (slot === "material") setBusy(false); else setCompileBusy(false);
+          setProgress(err.message, "error");
+        },
+        onDone: function (job, kind) {
+          var result = job.result || {};
+          if (kind === "digest") {
+            state.digest = result;
+            if (result.source && !$("rwText").value.trim()) restoreMaterial(result.source);
+            if (result.title && !$("rwTitle").value.trim()) $("rwTitle").value = result.title;
+            setProgress(t("digest_done", "论文解读好了：请核对、修改，再据此设计实验。"), "");
+            renderDigest();
+            $("rwDigest").scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+          }
+          setProgress(t(kind === "study" ? "study_created" : "done", kind === "study" ? "协议已生成。" : "方案已生成。"), "");
+          var opening = kind === "study" ? openStudy(result.study_id).then(refreshStudies) : openPlan(result.plan_id).then(refreshHistory);
+          return opening.catch(function (err) { setProgress(err.message, "error"); });
         }
-        throw err;
       });
+    }
+    state.trackers = {material: make("material"), compile: make("compile")};
+    return Promise.all(["material", "compile"].map(function (slot) {
+      return state.trackers[slot].restore().then(function (restored) {
+        if (restored) return;
+        var job = ((state.context || {}).jobs || []).find(function (item) {
+          return item.status === "running" && (slot === "compile" ? item.kind === "study" : item.kind === "plan" || item.kind === "digest");
+        });
+        if (job) return state.trackers[slot].watch(job.id, job.kind);
+      });
+    }));
+  }
+
+  function submissionFailed(slot, err) {
+    var tracker = state.trackers[slot];
+    if (!err.status || err.status >= 500 || err.status === 408 || err.status === 429) {
+      setProgress(t("reconnecting", "连接暂时中断，正在自动重连原任务…"), "live");
+      return tracker.restore();
+    }
+    tracker.discard();
+    if (slot === "material") setBusy(false); else setCompileBusy(false);
+    setProgress(err.message, "error");
   }
 
   /* ------------------------------------------------------------------ form */
@@ -218,6 +284,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   function dropDigest() {
     if (!state.digest) return;
     state.digest = null;
+    if (!state.busy && state.trackers) state.trackers.material.discard();
     renderDigest();
   }
 
@@ -297,20 +364,21 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
   function setBusy(busy) {
     state.busy = busy;
-    $("rwRun").disabled = busy;
     $("rwSkipDigest").disabled = busy;
-    if ($("rwDesignFromDigest")) $("rwDesignFromDigest").disabled = busy;
+    if ($("rwDesignFromDigest")) $("rwDesignFromDigest").disabled = busy || !!(state.digest && state.digest.source && state.digest.source.text.trim() !== $("rwText").value.trim());
     if ($("rwRedigest")) $("rwRedigest").disabled = busy;
     if (busy) {
       // Flip the run button's label too. saveRunLabel() restores it correctly
       // even after a locale switch in the middle of a long run.
       if (typeof setButtonBusy === "function") {
-        state._rwRunRelease = setButtonBusy($("rwRun"), "research.running", "分析中…");
+        if (!state._rwRunRelease) state._rwRunRelease = setButtonBusy($("rwRun"), "research.running", "分析中…");
       } else {
+        $("rwRun").disabled = true;
         $("rwRun").textContent = t("running", "分析中…");
       }
     } else {
       if (state._rwRunRelease) { state._rwRunRelease(); state._rwRunRelease = null; }
+      $("rwRun").disabled = false;
       syncRunLabel();
     }
   }
@@ -398,19 +466,14 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if (state.busy || needText()) return;
     setBusy(true);
     setProgress(t("digesting", "正在解读论文…"), "live");
-    api("POST", "/api/research/digest", materialPayload())
+    var payload = materialPayload();
+    payload.request_id = state.trackers.material.begin("digest");
+    api("POST", "/api/research/digest", payload)
       .then(function (data) {
-        pollJob(data.job_id, t("digesting", "正在解读论文…"), function (result) {
-          state.digest = result;
-          if (result.title && !$("rwTitle").value.trim()) $("rwTitle").value = result.title;
-          setProgress(t("digest_done", "论文解读好了：请核对、修改，再据此设计实验。"), "");
-          renderDigest();
-          $("rwDigest").scrollIntoView({ behavior: "smooth", block: "start" });
-        });
+        return state.trackers.material.watch(data.job_id, "digest");
       })
       .catch(function (err) {
-        setBusy(false);
-        setProgress(t("failed", "分析失败：") + err.message, "error");
+        return submissionFailed("material", err);
       });
   }
 
@@ -418,6 +481,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if (state.busy || needText()) return;
     var payload = materialPayload();
     if (digest) payload.digest = digest;
+    payload.request_id = state.trackers.material.begin("plan");
     setBusy(true);
     setProgress(t("starting", "正在提交…"), "live");
     api("POST", "/api/research/analyze", payload)
@@ -425,33 +489,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         poll(data.job_id);
       })
       .catch(function (err) {
-        setBusy(false);
-        setProgress(t("failed", "分析失败：") + err.message, "error");
-      });
-  }
-
-  /* A job whose result is handed to onDone as-is (the digest). */
-  function pollJob(jobId, liveText, onDone) {
-    clearTimeout(state.pollTimer);
-    api("GET", "/api/research/jobs/" + encodeURIComponent(jobId))
-      .then(function (job) {
-        if (job.status === "running") {
-          setProgress(job.message || liveText, "live");
-          state.pollTimer = setTimeout(function () {
-            pollJob(jobId, liveText, onDone);
-          }, POLL_MS);
-          return;
-        }
-        setBusy(false);
-        if (job.status !== "done") {
-          setProgress(t("failed", "分析失败：") + (job.message || ""), "error");
-          return;
-        }
-        onDone(job.result || {});
-      })
-      .catch(function (err) {
-        setBusy(false);
-        setProgress(t("task_lost", "任务丢失了：") + err.message, "error");
+        return submissionFailed("material", err);
       });
   }
 
@@ -479,6 +517,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     var paper = digest.paper_digest || {};
     var html = "<h3>" + esc(t("digest_title", "2 · 论文解读（可修改）")) + "</h3>" +
       "<p class=\"rw-hint\">" + esc(t("digest_hint", "模型读出的理论、方法、变量和发现。改掉读错的地方、删掉编造的内容，实验设计会以这里为准。列表类字段每行一条。")) + "</p>";
+    if (digest.source) {
+      html += "<details class=\"rw-technical\"><summary>" + esc(t("digest_source", "查看解读所用的材料")) + "</summary><pre class=\"rw-runtime-note\">" + esc(digest.source.text) + "</pre><button class=\"btn tiny ghost\" id=\"rwRestoreMaterial\">" + esc(t("restore_material", "使用这份材料")) + "</button></details>";
+      if (digest.source.text.trim() !== $("rwText").value.trim()) html += "<p class=\"rw-hint rw-warn\">" + esc(t("digest_source_changed", "当前材料已改变。请使用解读时的材料，或重新解读当前材料，再设计实验。")) + "</p>";
+    }
     if (digest.truncated) html += "<p class=\"rw-hint rw-warn\">" + esc(t("truncated", "（已截断）")) + "</p>";
     html += digestField("rwDgTheory", t("theory", "理论框架"), paper.theory, 3);
     html += digestField("rwDgMethod", t("method", "方法与数据"), paper.method, 3);
@@ -490,6 +532,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "<button class=\"btn\" id=\"rwDesignFromDigest\">" + esc(t("design_from_digest", "③ 据此设计实验")) + "</button></div>";
     host.innerHTML = gwHTML(html);
     host.hidden = false;
+    if ($("rwRestoreMaterial")) $("rwRestoreMaterial").addEventListener("click", function () { restoreMaterial(digest.source); renderDigest(); });
     $("rwRedigest").addEventListener("click", runDigest);
     $("rwDesignFromDigest").addEventListener("click", function () {
       runAnalysis(readDigest());
@@ -511,29 +554,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   }
 
   function poll(jobId) {
-    clearTimeout(state.pollTimer);
-    api("GET", "/api/research/jobs/" + encodeURIComponent(jobId))
-      .then(function (job) {
-        if (job.status === "running") {
-          setProgress(job.message || t("analyzing", "模型正在分析…"), "live");
-          state.pollTimer = setTimeout(function () {
-            poll(jobId);
-          }, POLL_MS);
-          return;
-        }
-        setBusy(false);
-        if (job.status !== "done") {
-          setProgress(t("failed", "分析失败：") + (job.message || ""), "error");
-          return;
-        }
-        setProgress(t("done", "方案已生成。"), "");
-        var planId = job.result && job.result.plan_id;
-        return Promise.all([openPlan(planId), refreshHistory()]);
-      })
-      .catch(function (err) {
-        setBusy(false);
-        setProgress(t("task_lost", "任务丢失了：") + err.message, "error");
-      });
+    return state.trackers.material.watch(jobId, "plan");
   }
 
   /* ----------------------------------------------------------------- plans */
@@ -551,6 +572,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       .then(function (plan) {
         state.plan = plan;
         state.designIndex = plan.recommended_design || 0;
+        var selectedURL = new URL(location.href);
+        selectedURL.searchParams.set("plan_id", plan.id);
+        selectedURL.searchParams.delete("study_id");
+        history.replaceState(null, "", selectedURL);
         renderPlan();
         renderHistory();
         $("rwResult").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -710,26 +735,29 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       : paused ? t("stage_paused", "已暂停")
       : job.status === "done" ? t("run_complete", "运行完成")
       : job.status === "stopped" ? t("stage_stopped", "已停止")
-      : job.status === "error" ? t("stage_error", "出错") : t("stage_running", "运行中");
+      : job.status === "error" ? t("stage_error", "出错")
+      : state.study && state.study.stage === "evaluated" ? t("statistics_ready", "统计完成 · 补充解读中") : t("stage_running", "运行中");
     $("rwRunMessage").textContent = job.message || "";
     $("rwRunElapsed").textContent = tf("run_elapsed", "已运行 {time}", { time: duration(job.elapsed_seconds || 0) });
-    var remaining = job.remaining_seconds;
+    var remaining = state.study && state.study.stage === "evaluated" ? null : job.remaining_seconds;
     $("rwRunRemaining").textContent = stopping ? t("stop_pending", "正在结束当前任务…")
       : job.status !== "running" ? ""
       : remaining === null || remaining === undefined ? t("eta_pending", "剩余时间：正在估算…")
       : tf(paused ? "eta_paused" : "eta_remaining", paused ? "继续后预计还需约 {time}" : "预计剩余约 {time}", { time: duration(remaining) });
     $("rwRunHint").textContent = job.status === "running"
-      ? t("run_control_hint", "时间按当前进度粗估，暂停时间不计入。问卷、评分和解读会在当前调用结束后暂停或停止。") : "";
+      ? (state.study && state.study.stage === "evaluated" ? t("statistics_ready_hint", "统计结果已保存，可先阅读和下载报告。补充解读失败不会丢失统计结果。") : t("run_control_hint", "时间按当前进度粗估，暂停时间不计入。问卷、评分和解读会在当前调用结束后暂停或停止。")) : "";
     panel.classList.toggle("is-paused", paused);
     panel.classList.toggle("is-stopping", stopping);
   }
 
   function createStudy() {
-    if (!state.plan) return;
+    if (!state.plan || state.compiling) return;
+    setCompileBusy(true);
     var autopilot = !!($("rwAutopilot") && $("rwAutopilot").checked);
     setProgress(t("compiling", "正在编译预注册协议…"), "live");
     api("POST", "/api/research/studies", {
       plan_id: state.plan.id,
+      request_id: state.trackers.compile.begin("study"),
       design_index: (state.plan.designs || []).length > 1 ? state.designIndex : undefined,
       provider: $("rwProvider").value,
       autopilot: autopilot,
@@ -738,34 +766,12 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         pollStudyJob(data.job_id);
       })
       .catch(function (err) {
-        setProgress(t("study_failed", "研究失败：") + err.message, "error");
+        return submissionFailed("compile", err);
       });
   }
 
   function pollStudyJob(jobId) {
-    clearTimeout(state.studyPollTimer);
-    api("GET", "/api/research/jobs/" + encodeURIComponent(jobId))
-      .then(function (job) {
-        if (job.status === "running") {
-          setProgress(job.message || t("compiling", "正在编译预注册协议…"), "live");
-          state.studyPollTimer = setTimeout(function () {
-            pollStudyJob(jobId);
-          }, document.hidden ? 15000 : POLL_MS);
-          return;
-        }
-        if (job.status !== "done") {
-          setProgress(t("study_failed", "研究失败：") + (job.message || ""), "error");
-          return;
-        }
-        setProgress(t("study_created", "协议已生成。"), "");
-        var result = job.result || {};
-        return openStudy(result.study_id).then(function () {
-          return refreshStudies();
-        });
-      })
-      .catch(function (err) {
-        setProgress(t("task_lost", "任务丢失了：") + err.message, "error");
-      });
+    return state.trackers.compile.watch(jobId, "study");
   }
 
   function pollStudyRun(jobId) {
@@ -783,7 +789,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         var job = data[0];
         var study = data[1];
         var changed = state.study.stage !== study.stage || state.study.paused !== study.paused ||
-          state.study.stopping !== study.stopping || state.study.live !== study.live;
+          state.study.stopping !== study.stopping || state.study.live !== study.live ||
+          JSON.stringify(state.study.evaluation || {}) !== JSON.stringify(study.evaluation || {});
         study.run_status = job;
         state.study = study;
         if (changed) renderStudy();
@@ -845,6 +852,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       .then(function (study) {
         if (request !== state.studyRequest) return;
         state.study = study;
+        var selectedURL = new URL(location.href);
+        selectedURL.searchParams.set("study_id", study.id);
+        selectedURL.searchParams.delete("plan_id");
+        history.replaceState(null, "", selectedURL);
         state.logSource = "";
         logStream.activate(study.id, study.attempt || 1, study.live);
         renderStudy();
@@ -939,6 +950,17 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       });
   }
 
+  function readingSummary(brief) {
+    if (!brief) return "";
+    return "<section class=\"rw-reading\" aria-label=\"" + esc(brief.title) + "\"><h4>" + esc(brief.title) + "</h4>" +
+      "<p class=\"rw-reading-lead\">" + esc(brief.lead) + "</p><dl class=\"rw-reading-facts\">" +
+      (brief.facts || []).map(function (fact) { return "<div><dt>" + esc(fact.label) + "</dt><dd>" + esc(fact.text) + "</dd></div>"; }).join("") + "</dl>" +
+      (brief.findings || []).map(function (finding) {
+        return "<article class=\"rw-reading-finding\"><div>" + esc(finding.id) + " · " + esc(finding.text) + "</div><p>" + esc(finding.title) + "</p><p class=\"rw-reasons\">" + esc(finding.evidence) + "</p>" +
+          (finding.limit ? "<p class=\"rw-reading-limit\">" + esc(finding.limit) + "</p>" : "") + "</article>";
+      }).join("") + (brief.terms ? "<details class=\"rw-reading-terms\"><summary>" + esc(brief.terms_title) + "</summary><dl>" + brief.terms.map(function (term) { return "<dt>" + esc(term.label) + "</dt><dd>" + esc(term.text) + "</dd>"; }).join("") + "</dl></details>" : "") + "<p class=\"rw-reading-notice\">" + esc(brief.notice) + "</p><p class=\"rw-reading-next\">" + esc(brief.next) + "</p></section>";
+  }
+
   function renderStudy() {
     var host = $("rwStudy");
     var study = state.study;
@@ -1004,6 +1026,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "<p id=\"rwRunMessage\"></p><div class=\"rw-run-times\"><span id=\"rwRunElapsed\"></span><span id=\"rwRunRemaining\"></span></div>" +
       "<p class=\"rw-run-hint\" id=\"rwRunHint\"></p></div>" +
       "<p class=\"rw-progress\" id=\"rwStudyProgress\" aria-live=\"polite\"></p>";
+    html += readingSummary(study.reading);
     if (study.error) html += "<p class=\"rw-rationale rw-warn\">" + esc(briefFailureMessage(study.error)) + "</p>";
     if (editable && !preflight.ok) html += "<p class=\"rw-rationale rw-warn\">" + esc(t("approval_blocked", "批准被阻止：请编辑运行方案或重新检查。") + " " + (preflight.errors || []).join("；")) + "</p>";
     if (Object.keys(study.source_plan || {}).length > 1) html += "<details class=\"rw-source-plan\"><summary>" + esc(t("source_plan_snapshot", "查看编译时的实施方案（历史版本）")) + "</summary><pre>" + esc(study.source_plan.markdown || JSON.stringify(study.source_plan, null, 2)) + "</pre></details>";
@@ -1014,11 +1037,11 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if (editable && study.parent_study_id && executionMode(protocol) === "daily_brief" && !preflight.ok) {
       html += "<button class=\"btn tiny ghost\" id=\"rwExcludeIncompatible\">" + esc(t("quick_exclude", "排除不兼容指标及相关假设（仅当前探索版本）")) + "</button>";
     }
-    html += "<pre id=\"rwRunMetrics\" class=\"rw-runtime-note\"></pre>" +
+    html += "<details class=\"rw-technical\"><summary>" + esc(t("technical_details", "运行统计与模型诊断")) + "</summary><pre id=\"rwRunMetrics\" class=\"rw-runtime-note\"></pre>" +
       "<div class=\"rw-row\"><button class=\"btn tiny ghost\" id=\"rwCheckProvider\">" + esc(t("provider_inspect", "检查模型配置与本地连接")) + "</button>" +
       "<button class=\"btn tiny ghost\" id=\"rwProbeProvider\">" + esc(t("provider_probe", "测试生成（一次模型调用）")) + "</button></div>" +
-      "<pre id=\"rwProviderResult\" class=\"rw-runtime-note\">" + esc(state.providerResult ? JSON.stringify(state.providerResult, null, 2) : "") + "</pre>" +
-      "<details class=\"rw-log-panel\" open><summary>" + esc(t("log_title", "运行日志")) + "</summary>" +
+      "<pre id=\"rwProviderResult\" class=\"rw-runtime-note\">" + esc(state.providerResult ? JSON.stringify(state.providerResult, null, 2) : "") + "</pre></details>" +
+      "<details class=\"rw-log-panel\"><summary>" + esc(t("log_title", "运行日志")) + "</summary>" +
       "<div class=\"rw-row\"><select id=\"rwLogSource\" aria-label=\"" + esc(t("log_source", "日志来源")) + "\"></select>" +
       "<label><input type=\"checkbox\" id=\"rwLogScroll\"" + (state.autoScroll ? " checked" : "") + " /> " + esc(t("log_scroll", "自动滚动")) + "</label>" +
       "<button class=\"btn tiny ghost\" id=\"rwLogRefresh\">" + esc(t("log_refresh", "刷新日志")) + "</button></div>" +
@@ -1146,7 +1169,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
           return "<tr><td class=\"rw-feature\">" + esc(h.id) + "</td><td>" + verdictBadge(h.verdict) + "</td><td>" + esc(h.measure_label || h.measure) +
             gradeChip(h.measure, h.measure_grade, h.measure_basis) +
             "</td><td class=\"rw-num\">" + esc(per) + "</td><td class=\"rw-num\">" + esc(num(h.mean_effect, true)) + sizeNote + "</td><td class=\"rw-num\">" + esc(num(h.noise, false)) + "</td></tr>" +
-            "<tr><td></td><td colspan=\"5\"><div class=\"rw-reasons\">" + esc((h.statement ? h.statement + " — " : "") + (h.reasons || []).join("；")) + "</div></td></tr>";
+            "<tr><td></td><td colspan=\"5\"><div class=\"rw-reasons\">" + esc((h.statement ? h.statement + " — " : "") + (h.reasons || []).join("；")) + "</div>" + window.GAWorldResultChecks.render(h.result_checks) + "</td></tr>";
         }).join("") + "</tbody></table>";
       var quality = evaluation.quality || {};
       body += "<h4>" + esc(t("quality", "数据质量")) + "</h4>";
@@ -1350,6 +1373,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "<button class=\"btn tiny ghost\" id=\"rwCopy\">" + esc(t("copy", "复制")) + "</button>" +
       "<button class=\"btn tiny ghost danger\" id=\"rwDelete\">" + esc(t("delete", "删除")) + "</button>" +
       "</div></div>";
+    html += readingSummary((plan.reading_designs || [])[state.designIndex] || plan.reading);
     if (plan.summary) html += "<p class=\"rw-summary\">" + esc(plan.summary) + "</p>";
     if (feas.rationale) html += "<p class=\"rw-rationale\"><b>" + esc(t("feasibility", "可行性")) + "：</b>" + esc(feas.rationale) + "</p>";
 
@@ -1364,16 +1388,6 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     }
     html += section(t("questions", "研究问题"), list(plan.research_questions));
     html += section(t("hypotheses", "假设"), list(plan.hypotheses));
-
-    if ((plan.capability_map || []).length) {
-      html += section(t("map", "功能映射"),
-        "<table class=\"rw-table\"><thead><tr><th>" + esc(t("need", "研究需要")) + "</th><th>" + esc(t("feature", "GAWorld 功能")) +
-        "</th><th>" + esc(t("how", "用法")) + "</th><th>" + esc(t("entry", "入口")) + "</th></tr></thead><tbody>" +
-        plan.capability_map.map(function (row) {
-          return "<tr><td>" + esc(row.need) + "</td><td class=\"rw-feature\">" + esc(row.feature) + "</td><td>" + esc(row.how) +
-            "</td><td><code>" + esc(row.entry) + "</code></td></tr>";
-        }).join("") + "</tbody></table>");
-    }
 
     var designs = planDesigns(plan);
     if (designs.length) {
@@ -1390,6 +1404,16 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       }
       designHtml += renderDesign(designs[index]);
       html += section(t("design", "实验设计"), designHtml);
+    }
+
+    if ((plan.capability_map || []).length) {
+      html += section(t("map", "功能映射"),
+        "<table class=\"rw-table\"><thead><tr><th>" + esc(t("need", "研究需要")) + "</th><th>" + esc(t("feature", "GAWorld 功能")) +
+        "</th><th>" + esc(t("how", "用法")) + "</th><th>" + esc(t("entry", "入口")) + "</th></tr></thead><tbody>" +
+        plan.capability_map.map(function (row) {
+          return "<tr><td>" + esc(row.need) + "</td><td class=\"rw-feature\">" + esc(row.feature) + "</td><td>" + esc(row.how) +
+            "</td><td><code>" + esc(row.entry) + "</code></td></tr>";
+        }).join("") + "</tbody></table>");
     }
 
     if ((plan.steps || []).length) {
@@ -1423,6 +1447,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
     host.innerHTML = gwHTML(html);
     host.hidden = false;
+    $("rwToStudy").disabled = !!state.compiling;
     $("rwToStudy").addEventListener("click", createStudy);
     $("rwEditPlan").addEventListener("click", editPlan);
     $("rwDownload").addEventListener("click", downloadPlan);
@@ -1571,7 +1596,11 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       syncRunLabel();
     });
 
-    api("GET", "/api/research/context")
+    loadContext();
+  }
+
+  function loadContext() {
+    return api("GET", "/api/research/context")
       .then(function (context) {
         state.context = context;
         state.plans = context.plans || [];
@@ -1585,12 +1614,17 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         syncRunLabel();
         syncCount();
         setTimeout(pollHistory, 5000);
+        setupTrackers();
         var initial = new URLSearchParams(location.search);
         if (initial.get("study_id")) return openStudy(initial.get("study_id"));
         if (initial.get("plan_id")) return openPlan(initial.get("plan_id"));
       })
       .catch(function (err) {
         setProgress(err.message, "error");
+        if (!err.status || err.status >= 500 || err.status === 408 || err.status === 429) {
+          setProgress(t("context_reconnecting", "暂时连不上研究工作台，正在自动重连…"), "live");
+          setTimeout(loadContext, document.hidden ? 15000 : 3000);
+        }
       });
   }
 

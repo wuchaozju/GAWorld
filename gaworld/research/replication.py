@@ -45,6 +45,9 @@ from pathlib import Path
 from typing import Any
 
 from gaworld.logging_setup import get_logger
+from gaworld.research import identity_checks, interaction_checks, interaction_probe, sampling_checks
+from gaworld.research import replication_checks as checks
+from gaworld.research import result_checks as rc
 
 _LOG = get_logger("gaworld.research.replication")
 
@@ -78,7 +81,7 @@ HUKOU_VALUES = ("本地", "外地")
 SCORE_WEIGHTS = {"level": 0.5, "direction": 0.5}
 
 VERDICTS = {
-    "replicated": "复现：方向一致且显著",
+    "replicated": "方向一致且显著（不代表效应等价）",
     "same_direction": "方向一致，但不显著",
     "not_replicated": "未复现：方向不一致，也不显著",
     "reversed": "方向相反且显著",
@@ -187,6 +190,17 @@ def _normalize_item(raw: Any, index: int, used: set[str], warnings: list[str]) -
         qid += "X"
     used.add(qid)
     item["id"] = qid
+    margin = _num(raw.get("equivalence_margin"))
+    item["equivalence_margin"] = margin if margin is not None and margin > 0 else None
+    interaction_margin = _num(raw.get("interaction_margin"))
+    item["interaction_margin"] = (
+        interaction_margin if interaction_margin is not None and interaction_margin > 0 else None
+    )
+    sampling_margin = _num(raw.get("sampling_margin"))
+    item["sampling_margin"] = sampling_margin if sampling_margin is not None and sampling_margin > 0 else None
+    identity_margin = _num(raw.get("identity_margin"))
+    item["identity_margin"] = identity_margin if identity_margin is not None and identity_margin > 0 else None
+    item["audit_wording"] = _text(raw.get("audit_wording"), 600)
     return item
 
 
@@ -318,6 +332,8 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
     """
     data = raw if isinstance(raw, dict) else {}
     warnings: list[str] = []
+    bias_settings = data.get("bias_checks")
+    bias_settings = bias_settings if isinstance(bias_settings, dict) else {}
 
     used: set[str] = set()
     items = [
@@ -380,7 +396,7 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
             mean = sd = None  # a nominal answer has no mean
         if mean is None and distribution is None:
             continue
-        if sd is not None and sd <= 0:
+        if sd is not None and sd < 0:
             sd = None
         seen.add((item["id"], condition, group))
         results.append(
@@ -403,6 +419,13 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
         age_min, age_max = age_max, age_min
     kind = "experiment" if len(conditions) > 1 else _text(data.get("kind"), 16) or "survey"
     return {
+        "sampling_probe": sampling_checks.normalize(data.get("sampling_probe")),
+        "interaction_probe": interaction_checks.normalize(data.get("interaction_probe")),
+        "identity_probe": identity_checks.normalize(data.get("identity_probe")),
+        "human_design": data.get("human_design")
+        if data.get("human_design") in ("between", "paired")
+        else "unknown",
+        "bias_checks": {key: bias_settings.get(key) is True for key in ("order", "wording")},
         "title": _text(data.get("title"), 160),
         "citation": _text(data.get("citation"), 400),
         "kind": kind if kind in ("survey", "experiment") else "survey",
@@ -428,6 +451,7 @@ _EXTRACT_SCHEMA = """{
   "title": "研究标题",
   "citation": "作者（年份）. 题目. 期刊",
   "kind": "survey 或 experiment",
+  "human_design": "between（独立组）或 paired（同一人重复）或 unknown（未报告）",
   "population": "真人受访者是谁：国家/地区、人群、抽样方式、年龄",
   "human_n": 总样本量（整数，未报告写 null）,
   "age_min": 受访者最小年龄（整数或 null）, "age_max": 最大年龄（整数或 null）,
@@ -783,7 +807,11 @@ def contrast(
     agent_effect = (statistics.fmean(a_other.values()) - statistics.fmean(a_base.values())) / span
     if paired:
         shared = sorted(set(a_base) & set(a_other))
-        agent_p = _paired_p([a_other[k] - a_base[k] for k in shared])
+        if not shared:
+            return None
+        diffs = [a_other[k] - a_base[k] for k in shared]
+        agent_effect = statistics.fmean(diffs) / span
+        agent_p = _paired_p(diffs)
     else:
         agent_p = _welch_p(list(a_other.values()), list(a_base.values()))
     return {
@@ -822,13 +850,17 @@ def _group_rows(
         firsts: dict[str, dict[str, Any]] = {}
         for group in spec["groups"]:
             result = human.get((cid, group["id"]))
-            if result is None:
+            if result is None and not (spec.get("identity_probe") or {}).get("enabled"):
                 continue
             answers = {k: v for k, v in values.get(cid, {}).items() if k in members[group["id"]]}
             cell = compare_cell(item, result, _agent_cell(item, list(answers.values())))
             cell.update(condition=cid, group=group["id"], ref=f"{item['id']}/{cid}/{group['id']}")
             cell["thin"] = cell["agent"]["n"] < MIN_GROUP_N
             cells.append(cell)
+            if result is None:
+                # Identity pairs need no human reference. They must not change
+                # the reference group of the legacy human-gap comparisons.
+                continue
             dimension = group_dimension(group)
             base = firsts.setdefault(dimension, {"group": group, "human": result, "answers": answers})
             if base["group"] is group:
@@ -853,6 +885,7 @@ def compare(
     responses: list[dict[str, Any]],
     design: str,
     residents: list[dict[str, Any]] | None = None,
+    provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Cells, effects, group cells, group gaps and the summary for a finished run.
 
@@ -935,13 +968,20 @@ def compare(
         "group_gaps_judged": sum(1 for g in group_gaps if g["verdict"] != "no_human_effect"),
         "group_direction_rate": _r(_direction_rate(group_gaps), 3),
     }
-    return {
-        "cells": cells,
-        "effects": effects,
-        "group_cells": group_cells,
-        "group_gaps": group_gaps,
-        "summary": summary,
-    }
+    return checks.attach(
+        spec,
+        responses,
+        design,
+        residents or [],
+        {
+            "cells": cells,
+            "effects": effects,
+            "group_cells": group_cells,
+            "group_gaps": group_gaps,
+            "summary": summary,
+        },
+        provenance=provenance,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1008,30 +1048,117 @@ def run_replication(
         )
 
     pairs = assign(picked, spec["conditions"], design, seed)
+    interaction_groups = interaction_checks.partition(pairs, spec["interaction_probe"], seed)
     conditions = {c["id"]: c for c in spec["conditions"]}
     done = [0]
+    variants = checks.variants(spec)
+    identity_orders = identity_checks.orders(pairs, seed) if spec["identity_probe"]["enabled"] else {}
+    sampling_extra = spec["sampling_probe"]["repeats"] if spec["sampling_probe"]["enabled"] else 0
+    check_protocol = {
+        "version": rc.VERSION,
+        "spec_hash": rc.fingerprint(spec),
+        "personas_hash": rc.fingerprint(personas),
+        "model": getattr(answer, "provenance", {"kind": "unknown", "provider": provider}),
+        "seed": seed,
+        "design": design,
+        "variants": list(variants),
+        "planned_calls": len(pairs)
+        * (
+            (1 + len(variants)) * (1 + sampling_extra)
+            + (4 * spec["interaction_probe"]["rounds"] if interaction_groups else 0)
+        ),
+        "unit": "resident",
+        "independent_worlds": 1,
+        "note": "额外检查独立提问，不将回答写入主实验或居民记忆；模型标识不保证服务端权重不变",
+    }
+    check_protocol["sampling_probe"] = spec["sampling_probe"]
+    if interaction_groups:
+        check_protocol["interaction_probe"] = {
+            **spec["interaction_probe"],
+            "groups": interaction_groups,
+            "unit": "group",
+            "contrasts": {key: formula for key, (_, _, formula) in interaction_checks.CONTRASTS.items()},
+            "scope": interaction_checks.SCOPE,
+        }
+    if identity_orders:
+        check_protocol["identity_probe"] = {
+            **spec["identity_probe"],
+            "contrast": "B - A",
+            "scope": identity_checks.SCOPE,
+            "order": "seeded counterbalance within each condition; main answer first",
+        }
 
     def ask(pair: tuple[int, str]) -> dict[str, Any]:
         agent_id, cid = pair
         error = ""
+        prompt = answer_prompt(personas[agent_id], spec, conditions[cid])
         try:
-            raw = answer(answer_prompt(personas[agent_id], spec, conditions[cid]))
+            raw = answer(prompt)
         except Exception as exc:
             _LOG.warning("replication answer failed for #%s: %s", agent_id, exc)
             raw, error = "", f"{type(exc).__name__}: {exc}"
         parsed = parse_answers(spec, raw)
+        parsed["raw"] = str(raw)[:12000]
+        parsed["prompt_hash"] = rc.fingerprint(prompt)
+        parsed["probes"] = {}
+        probe_order = [name for name in variants if not name.startswith("identity_")]
+        probe_order += identity_orders.get(pair, [])
+        parsed["probe_order"] = probe_order
+        for name in probe_order:
+            variant = variants[name]
+            probe_prompt = answer_prompt(personas[agent_id], variant, conditions[cid])
+            try:
+                probe_raw = answer(probe_prompt)
+                probe = checks.canonical(parse_answers(variant, probe_raw), variant, spec)
+                probe["raw"] = str(probe_raw)[:12000]
+            except Exception as exc:
+                probe = {"ok": False, "answers": {}, "error": f"{type(exc).__name__}: {exc}"}
+            parsed["probes"][name] = {**probe, "prompt_hash": rc.fingerprint(probe_prompt)}
+        if sampling_extra:
+            parsed["sampling"] = sampling_checks.execute(
+                spec,
+                variants,
+                answer,
+                answer_prompt,
+                parse_answers,
+                checks.canonical,
+                personas[agent_id],
+                conditions[cid],
+                seed,
+                agent_id,
+            )
         if not parsed["ok"]:
             parsed["error"] = error or f"读不出回答：{_text(raw, 200)}"
         done[0] += 1
-        progress(0.02 + 0.96 * done[0] / len(pairs), f"已作答 {done[0]}/{len(pairs)}")
+        progress(
+            0.02 + (0.48 if interaction_groups else 0.96) * done[0] / len(pairs),
+            f"已作答 {done[0]}/{len(pairs)}",
+        )
         return {"agent_id": agent_id, "condition": cid, **parsed}
 
     # Worker threads start with an empty context; each call carries the
     # caller's, so the asking user and world stay attached to the model calls.
+    caller_context = contextvars.copy_context()
     with ThreadPoolExecutor(max_workers=max(1, workers), thread_name_prefix="replication") as executor:
-        responses = list(executor.map(lambda pair: contextvars.copy_context().run(ask, pair), pairs))
-    if not any(r["ok"] for r in responses):
-        raise RuntimeError(f"{len(responses)} 份回答全部无效，例如：{responses[0]['error']}")
+        responses = list(executor.map(lambda pair: caller_context.copy().run(ask, pair), pairs))
+    # Preserve all-failed attempts as evidence; never replace them with a successful sample.
+    comparison = compare(spec, responses, design, residents, provenance=check_protocol)
+    sampling_checks.attach(comparison, spec, responses)
+    interaction_run = None
+    if interaction_groups:
+        interaction_run = interaction_probe.execute(
+            spec=spec,
+            groups=interaction_groups,
+            baseline=responses,
+            personas=personas,
+            answer=answer,
+            prompt_fn=answer_prompt,
+            parse_fn=parse_answers,
+            seed=seed,
+            workers=workers,
+            progress=progress,
+        )
+        interaction_checks.attach(comparison, spec, responses, interaction_run)
 
     return {
         "id": _new_id(),
@@ -1041,13 +1168,15 @@ def run_replication(
         "provider": provider,
         "seed": seed,
         "design": design,
+        "check_protocol": check_protocol,
         "requested_sample": size,
         "eligible": len(pool),
         "spec": spec,
         "residents": residents,
         "responses": responses,
         "failed": sum(1 for r in responses if not r["ok"]),
-        "comparison": compare(spec, responses, design, residents),
+        "comparison": comparison,
+        "interaction_run": interaction_run,
         "created_at": time.time(),
     }
 
@@ -1120,7 +1249,7 @@ def export_markdown(run: dict[str, Any]) -> str:
         f"- 水平准确度（1 − 平均误差）：{_fmt(summary['level_accuracy'], 3)}（{summary['cells_compared']} 个单元格）",
         f"- 真人数值落在智能体 95% 区间内的比例：{_pct(summary['within_ci_rate'])}",
         f"- 单元格水平相关 r：{_fmt(summary['level_r'], 3)}",
-        f"- 效应方向一致率：{_pct(summary['direction_rate'])}；显著复现率：{_pct(summary['replication_rate'])}"
+        f"- 效应方向一致率：{_pct(summary['direction_rate'])}；方向一致且显著比例：{_pct(summary['replication_rate'])}"
         f"（{summary['effects_judged']} 个效应）；效应相关 r：{_fmt(summary['effect_r'], 3)}",
         "",
         "拟合度分 = 100 ×（有处理效应时：50% 水平准确度 + 50% 效应方向一致率；只有调查时：水平准确度）。"
@@ -1209,6 +1338,24 @@ def export_markdown(run: dict[str, Any]) -> str:
         "> 智能体回答由大模型按每位居民的档案扮演生成；p 值为正态近似。"
         "拟合度衡量的是这批居民与文献中真人的接近程度，不等于真人在本城市会怎样作答。",
     ]
+    comparison = run["comparison"]
+    lines.append(rc.markdown(comparison.get("result_checks")))
+    for row in (
+        comparison["cells"]
+        + comparison["effects"]
+        + comparison.get("group_cells", [])
+        + comparison.get("group_gaps", [])
+    ):
+        lines.append(rc.markdown(row.get("result_checks")))
+    if run.get("check_protocol"):
+        lines += [
+            "",
+            "## 检查设置与追溯信息",
+            "",
+            "```json",
+            json.dumps(run["check_protocol"], ensure_ascii=False, indent=2),
+            "```",
+        ]
     return "\n".join(lines) + "\n"
 
 

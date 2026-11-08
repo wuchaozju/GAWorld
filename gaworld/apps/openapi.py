@@ -683,6 +683,34 @@ def _simulation() -> dict[str, Any]:
                 errors={"404": "尚未生成自传"},
             )
         },
+        "/api/agents/{agent_id}/life-prediction": {
+            "get": _op(
+                "agents",
+                "Latest life prediction on disk (the resident's narrated future)",
+                errors={"400": "Invalid agent id", "404": "尚未生成人生预测"},
+            ),
+            "post": _op(
+                "agents",
+                "Enqueue a life-prediction job; returns {job_id} immediately",
+                body=_obj(
+                    direction=_d(STR, "Optional 人生大致走向 — the arc the life takes"),
+                    randomness=_d(INT, "人生随机性, 0–100 (default 50)"),
+                    turbulence=_d(INT, "时代动荡性, 0–100 (default 50)"),
+                ),
+                errors={"400": "Invalid agent id", "409": "A life prediction is already running"},
+            ),
+        },
+        "/api/agents/{agent_id}/life-prediction/jobs/{job_id}": {
+            "get": _op("agents", "Poll a life-prediction job", ok=JOB, errors={"404": "Unknown job"})
+        },
+        "/api/agents/{agent_id}/life-prediction/download": {
+            "get": _op(
+                "agents",
+                "Download the saved life prediction as a Markdown attachment",
+                response={"description": "Markdown", "content": {"text/markdown": {"schema": STR}}},
+                errors={"404": "尚未生成人生预测"},
+            )
+        },
         "/api/agents/{agent_id}/memory": {
             "get": _op("agents", "Memories, summary and tag counts"),
             "post": _op("agents", "Append a memory", body=_obj(("text",), text=STR, kind=STR)),
@@ -1288,6 +1316,10 @@ def _cities() -> dict[str, Any]:
             "get": _op("city", "A city's knowledge base", query=[city_required]),
             "post": _op("city", "Rebuild the knowledge base", body=_obj(("city",), city=STR, offline=BOOL)),
         },
+        "/api/city/region": {
+            "get": _op("city", "A city's regional dossier", query=[city_required]),
+            "post": _op("city", "Rebuild the regional dossier", body=_obj(("city",), city=STR, offline=BOOL)),
+        },
         "/api/city/news": {
             "get": _op("city", "A city's cached news", query=[city_required]),
             "post": _op(
@@ -1458,7 +1490,11 @@ def _studies() -> dict[str, Any]:
             "get": _op("collaboration", "Download a registered artifact from the current owned workspace")
         },
         "/api/collaboration/organization-methods": {
-            "get": _op("collaboration", "Owned organization method versions"),
+            "get": _op(
+                "collaboration",
+                "Owned organization method versions",
+                query=(_q("include", "Also return the basic organization methods (builtin)"),),
+            ),
             "post": _op("collaboration", "Save an untested organization method", body=OBJ, status="201"),
         },
         "/api/collaboration/organization-methods/{method_id}": {
@@ -1564,7 +1600,8 @@ def _studies() -> dict[str, Any]:
             )
         },
         "/api/research/context": {
-            "get": _op("research", "What the workbench can build on (features, cities)")
+            "get": _op("research", "What the workbench can build on (features, cities)",
+                       query=[_q("request_id", "Recover this scoped planning submission, including its terminal result")])
         },
         "/api/research/plans": {"get": _op("research", "Saved plans")},
         "/api/research/plans/{plan_id}": {"get": _op("research", "One plan", errors={"404": "Unknown plan"})},
@@ -1577,7 +1614,8 @@ def _studies() -> dict[str, Any]:
             "post": _started(
                 "research",
                 "Read a paper into an editable digest",
-                _obj(("text",), text=STR, title=STR, language=STR, provider=STR),
+                _obj(("text",), text=STR, title=STR, language=STR, provider=STR,
+                     request_id=_d(STR, "Optional idempotency key, 8–80 letters/digits/underscores/hyphens")),
             )
         },
         "/api/research/analyze": {
@@ -1590,6 +1628,7 @@ def _studies() -> dict[str, Any]:
                     title=STR,
                     kind={"type": "string", "enum": ["idea", "paper"]},
                     digest=_d(OBJ, "Edited digest from /digest"),
+                    request_id=_d(STR, "Optional scoped idempotency key for refresh and lost-response recovery"),
                     language=STR,
                     provider=STR,
                 ),
@@ -1610,7 +1649,8 @@ def _studies() -> dict[str, Any]:
             "post": _started(
                 "research",
                 "Compile a plan's design into a pre-registered study",
-                _obj(("plan_id",), plan_id=STR, design_index=INT, autopilot=BOOL, provider=STR),
+                _obj(("plan_id",), plan_id=STR, design_index=INT, autopilot=BOOL, provider=STR,
+                     request_id=_d(STR, "Optional scoped idempotency key for refresh and lost-response recovery")),
             ),
         },
         "/api/research/studies/{study_id}": {

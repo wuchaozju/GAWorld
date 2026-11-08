@@ -25,11 +25,19 @@ from pathlib import Path
 from typing import Any
 
 from gaworld.city.bundle import CityBundle
+from gaworld.city.knowledge import CityProfile
 from gaworld.city.locale import load_locale
 from gaworld.city.procedural import districts_from_spec, seed_from_name
+from gaworld.city.region import load_region
 from gaworld.logging_setup import get_logger
 from gaworld.population.generate import generate_population
-from gaworld.population.schema import CSV_COLUMNS, STATE_VAR_KEYS, normalize_spec
+from gaworld.population.schema import (
+    CSV_COLUMNS,
+    PRESETS,
+    STATE_VAR_KEYS,
+    EducationWork,
+    normalize_spec,
+)
 from gaworld.population.synth import RESIDENCE_SUFFIXES
 from gaworld.population.writer import render_profiles_markdown, render_state_csv
 
@@ -44,6 +52,49 @@ _PROFILE_SPLIT = re.compile(r"(?=^## Profile )", re.M)
 #: ("居住于余杭·商品房。") — a literal string replace matches neither reliably.
 _RESIDENCE_CLAUSE = re.compile(r"(居住(?:于)?)(.+?)([，。])")
 
+#: The default daily-life sentence for a hand-added resident. Kept as a named
+#: constant because it doubles as the marker for "the caller did not write
+#: this person's day" — see :func:`add_agent`.
+_DEFAULT_DAILY_LIFE = "作息规律，日常以工作、家务和少量社交为主。"
+
+#: The daily-life line of a profile block. Non-greedy up to the blank line,
+#: so the replacement cannot run past the section into the next one.
+_DAILY_LINE = re.compile(r"(\*\*日常生活与生活习惯\*\*：)(.+?)(?=\n\n)", re.S)
+
+
+def _local_habit(city: CityBundle, agent_id: int) -> str:
+    """One local habit for a resident of *city*, chosen deterministically.
+
+    The dossier's habits are the place's own — "晚饭吃笋干面"。 Which resident
+    draws which habit is fixed by id, so the same city always produces the
+    same residents. Only the general pool is used here: a hand-added or
+    migrated resident's age and job are not always known, and a work habit
+    ("骑电动车上下班") on a schoolchild reads as nonsense.
+    """
+    region = load_region(city)
+    habits = list(region.habits) or list(region.work_habits)
+    if not habits:
+        return ""
+    return habits[max(0, int(agent_id) - 1) % len(habits)]
+
+
+def rewrite_daily_life(block: str, habit: str) -> str:
+    """Append a local habit to a profile's daily-life line.
+
+    Used when a resident moves: the person keeps their own routine but stops
+    describing the food and the commute of the city they left.
+    """
+    addition = str(habit or "").strip()
+    if not addition:
+        return block
+    match = _DAILY_LINE.search(block)
+    if not match:
+        return block
+    base = match.group(2).rstrip()
+    if not base.endswith(("。", "！", "？")):
+        base += "。"
+    return block[: match.start(2)] + f"{base}{addition}。" + block[match.end(2) :]
+
 
 class AgentError(RuntimeError):
     """Raised when agents could not be added to a bundle."""
@@ -52,6 +103,7 @@ class AgentError(RuntimeError):
 # ---------------------------------------------------------------------------
 # Districts
 # ---------------------------------------------------------------------------
+
 
 def city_districts(city: CityBundle) -> list[str]:
     """District names the city actually has, for narrative residences.
@@ -88,6 +140,7 @@ def city_districts(city: CityBundle) -> list[str]:
 # ---------------------------------------------------------------------------
 # Existing-file IO
 # ---------------------------------------------------------------------------
+
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
@@ -142,9 +195,7 @@ def rewrite_residence(block: str, residence: str) -> tuple[str, str]:
     previous = match.group(2)
     # A function replacement avoids re-interpreting backslashes or group
     # references that happen to appear in a place name.
-    updated = _RESIDENCE_CLAUSE.sub(
-        lambda m: f"{m.group(1)}{residence}{m.group(3)}", block, count=1
-    )
+    updated = _RESIDENCE_CLAUSE.sub(lambda m: f"{m.group(1)}{residence}{m.group(3)}", block, count=1)
     return updated, previous
 
 
@@ -159,8 +210,90 @@ def _sync_count(city: CityBundle) -> int:
 
 
 # ---------------------------------------------------------------------------
+# City-shaped inputs
+# ---------------------------------------------------------------------------
+
+
+def _city_knowledge(city: CityBundle) -> CityProfile | None:
+    """The city's economic profile, when it has one."""
+    if not city.knowledge_path.exists():
+        return None
+    try:
+        data = json.loads(city.knowledge_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    return CityProfile.from_dict(data)
+
+
+def _local_industry_mix(profile: CityProfile | None) -> dict[str, float]:
+    """The job mix this city's industries imply, in the economy's six buckets.
+
+    Only a **web-researched** profile qualifies. A map-derived profile folds
+    every category it does not recognise into ``service``, which would put an
+    entire town in the service sector — a confident answer built on a lossy
+    mapping. Two categories minimum, for the same reason: one industry is not
+    an economy.
+    """
+    if profile is None or profile.source != "web":
+        return {}
+    mix = profile.industry_mix()
+    if len(mix) < 2:
+        return {}
+    return mix
+
+
+def _blend_mix(base: dict[str, float], local: dict[str, float], *, weight: float = 0.65) -> dict[str, float]:
+    """Blend the generic job mix with the city's own industries.
+
+    The local mix wins the weight but never wipes the rest out: a town whose
+    profile names two industries still needs teachers, doctors and shopkeepers,
+    and a mix with zeroes in three categories would produce a town with no
+    schools.
+    """
+    if not local:
+        return {}
+    mixed: dict[str, float] = {}
+    for category in set(base) | set(local):
+        mixed[category] = base.get(category, 0.0) * (1.0 - weight) + local.get(category, 0.0) * weight
+    total = sum(mixed.values())
+    if total <= 0:
+        return {}
+    return {key: round(value / total, 4) for key, value in mixed.items()}
+
+
+def _preset_mix(preset: str | None) -> dict[str, float]:
+    """The job mix the chosen preset starts from."""
+    section = (PRESETS.get(preset or "cn_county_town", {}) or {}).get("education_work") or {}
+    mix = section.get("industry_mix")
+    if isinstance(mix, dict) and mix:
+        return {key: float(value) for key, value in mix.items() if float(value) > 0}
+    return dict(EducationWork().industry_mix)
+
+
+def _merge_sections(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
+    """Merge two partial spec fragments, section by section.
+
+    A shallow ``dict.update`` would let the region wipe out the locale's
+    ``education_work`` block by replacing it wholesale with its own
+    ``demography``-only fragment.
+    """
+    merged = dict(base)
+    for section, values in (extra or {}).items():
+        if isinstance(values, dict) and isinstance(merged.get(section), dict):
+            combined = dict(merged[section])
+            combined.update(values)
+            merged[section] = combined
+        else:
+            merged[section] = values
+    return merged
+
+
+# ---------------------------------------------------------------------------
 # Bulk synthesis
 # ---------------------------------------------------------------------------
+
 
 def add_population(
     city: CityBundle,
@@ -188,8 +321,16 @@ def add_population(
     residency layer.  Its *demographic* suggestions are weaker: they apply only
     when ``preset`` is ``None``, because a caller who asked for
     ``aging_community`` means it, and they sit under ``overrides`` either way.
+
+    The region's dossier (``region.json``, see :mod:`gaworld.city.region`)
+    contributes the other half of "what a resident of this place is like":
+    the local daily routine (food, commuting, habits), the local customs, and
+    — when the city has a web-researched economic profile — the job mix its
+    industries imply.  Demographic numbers from the dossier also apply only
+    when ``preset`` is ``None``, for the same reason as the locale's.
     """
     locale = load_locale(city)
+    region = load_region(city)
     districts = city_districts(city)
     raw: dict[str, Any] = {
         "preset": preset or "cn_county_town",
@@ -202,6 +343,20 @@ def add_population(
         # education_work / income, and ``normalize_spec`` deep-merges each of
         # those partial sections onto the preset's own.
         raw.update(locale.suggested_overrides)
+        # The dossier wins field by field: it was built from search evidence
+        # about this place, while the locale's numbers came from one unsourced
+        # model call.
+        raw = _merge_sections(raw, region.suggested_overrides)
+    # The job mix follows the city whether or not a preset was named: a preset
+    # describes the *shape* of a population, the city describes what its
+    # residents actually do for a living.
+    local_mix = _local_industry_mix(_city_knowledge(city))
+    if local_mix:
+        mixed = _blend_mix(_preset_mix(preset), local_mix)
+        if mixed:
+            section = dict(raw.get("education_work") or {})
+            section["industry_mix"] = mixed
+            raw["education_work"] = section
     if seed is None:
         # The spec's own default is a fixed 42, which gave every city the same
         # residents id for id.  Derive it from the city instead, and from the
@@ -221,7 +376,7 @@ def add_population(
         raise AgentError(f"population generation failed validation: {blocking or result.findings}")
 
     new_csv = render_state_csv(result.people)
-    new_md = render_profiles_markdown(spec, result.people, result.households)
+    new_md = render_profiles_markdown(spec, result.people, result.households, region.traits())
 
     if replace or not city.state_csv_path.exists():
         city.state_csv_path.write_text(new_csv, encoding="utf-8-sig")
@@ -238,14 +393,18 @@ def add_population(
 
         header, old_blocks = _profile_blocks(city.profiles_md_path.read_text(encoding="utf-8"))
         _, new_blocks = _profile_blocks(new_md)
-        renumbered = [
-            _renumber_block(block, offset + index + 1) for index, block in enumerate(new_blocks)
-        ]
+        renumbered = [_renumber_block(block, offset + index + 1) for index, block in enumerate(new_blocks)]
         city.profiles_md_path.write_text(header + "".join(old_blocks + renumbered), encoding="utf-8")
         added = len(fresh_rows)
 
+    # The spec is recorded next to the report: the demographics and the job
+    # mix are now partly the *city's* (the locale's and the region's
+    # suggestions, the local industries), so a population can only be
+    # reproduced from the numbers it was actually built with.
+    manifest_payload = dict(result.report)
+    manifest_payload["spec"] = spec.to_dict()
     (city.directory / "population_manifest.json").write_text(
-        json.dumps(result.report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        json.dumps(manifest_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     total = _sync_count(city)
     city.record(
@@ -272,6 +431,7 @@ def add_population(
 # Single agent
 # ---------------------------------------------------------------------------
 
+
 def _default_state(rng: random.Random) -> dict[str, float]:
     return {key: round(rng.uniform(0.35, 0.70), 2) for key in STATE_VAR_KEYS}
 
@@ -292,9 +452,7 @@ def _render_single_profile(agent_id: int, fields: dict[str, Any]) -> str:
     state = fields["state"]
     income = fields.get("income_monthly") or 0
     income_text = f"月收入约 {income:,.0f} 元" if income else "目前没有工资性收入"
-    education_income = (
-        fields.get("education_income") or f"{fields['education']}学历，{income_text}。"
-    )
+    education_income = fields.get("education_income") or f"{fields['education']}学历，{income_text}。"
     social_network = fields.get("social_network") or "新迁入居民，当前社会关系较少。"
     return (
         f"\n## Profile {agent_id:02d}｜{fields['name']}\n"
@@ -331,7 +489,7 @@ def add_agent(
     income_monthly: float = 0.0,
     education_income: str = "",
     personality: str = "性格平和，情绪起伏不大，遇事偏向先观察再行动。",
-    daily_life: str = "作息规律，日常以工作、家务和少量社交为主。",
+    daily_life: str = _DEFAULT_DAILY_LIFE,
     values: str = "对公共事务关注有限，除非直接影响到自己的生活才会去了解。",
     social_network: str = "",
     state: dict[str, float] | None = None,
@@ -365,6 +523,14 @@ def add_agent(
         }
     )
     _write_rows(city.state_csv_path, rows)
+
+    # A hand-added resident gets the same local touch as a generated one, but
+    # only when the caller did not write their day themselves: an explicit
+    # ``daily_life`` is a deliberate statement about this person.
+    if daily_life == _DEFAULT_DAILY_LIFE:
+        habit = _local_habit(city, agent_id)
+        if habit:
+            daily_life = f"{daily_life.rstrip('。')}；{habit}"
 
     fields = {
         "name": label,
@@ -403,6 +569,7 @@ def add_agent(
 # Migration
 # ---------------------------------------------------------------------------
 
+
 def migrate_agent(
     city: CityBundle,
     agent_id: int,
@@ -440,6 +607,12 @@ def migrate_agent(
         # The profile's own clause is the source of truth for the old value —
         # the CSV and the prose disagree in the hand-authored corpus.
         block, _ = rewrite_residence(block, new_residence)
+        # The old city's food and commute go with it: a resident of 临安 who
+        # describes their days in the old city's terms is describing a place
+        # they no longer live in.
+        habit = _local_habit(city, int(agent_id))
+        if habit:
+            block = rewrite_daily_life(block, habit)
 
     rows = _read_rows(city.state_csv_path)
     new_id = _max_id(rows) + 1
@@ -479,5 +652,6 @@ __all__ = [
     "add_population",
     "city_districts",
     "migrate_agent",
+    "rewrite_daily_life",
     "rewrite_residence",
 ]

@@ -218,7 +218,7 @@ class RunTest(unittest.TestCase):
         self.assertEqual((run["eligible"], len(run["responses"])), (4, 8))
         self.assertEqual({e["verdict"] for e in run["comparison"]["effects"]}, {"replicated"})
 
-    def test_invalid_answers_say_why_and_all_invalid_fails(self) -> None:
+    def test_invalid_answers_say_why_and_all_invalid_is_retained(self) -> None:
         replies = iter(["随便聊聊"] + [framed_answer("可以救 200 人")] * 7)
         run = self._run(answer=lambda prompt: next(replies), workers=1)
         bad = [r for r in run["responses"] if not r["ok"]]
@@ -227,8 +227,10 @@ class RunTest(unittest.TestCase):
         def broken(prompt: str) -> str:
             raise TimeoutError("provider down")
 
-        with self.assertRaisesRegex(RuntimeError, "全部无效.*TimeoutError: provider down"):
-            self._run(answer=broken)
+        failed = self._run(answer=broken)
+        self.assertEqual(failed["failed"], len(failed["responses"]))
+        self.assertIsNone(failed["comparison"]["summary"]["score"])
+        self.assertIn("TimeoutError: provider down", failed["responses"][0]["error"])
 
     def test_unusable_spec_is_refused(self) -> None:
         with self.assertRaises(ValueError):
@@ -245,7 +247,7 @@ class RunTest(unittest.TestCase):
     def test_export(self) -> None:
         markdown = rp.export_markdown({**self._run(), "id": "rep-x"})
         self.assertTrue(markdown.startswith("# 社会调查/实验拟合度"))
-        self.assertIn("复现：方向一致且显著", markdown)
+        self.assertIn("方向一致且显著（不代表效应等价）", markdown)
         self.assertRegex(markdown, re.compile(r"拟合度分：93\.8"))
 
 

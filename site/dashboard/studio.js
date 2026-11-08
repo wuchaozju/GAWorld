@@ -69,6 +69,15 @@ const store = {
    * cache survives step switches because renderStep() rewrites the DOM. */
   autobioCache: null, // { markdown, length, length_cjk, from_cache, path } from /api/agents/<id>/autobiography
   autobioLoading: false, // guards the lazy fetch against retry loops
+  /* Life prediction. Same shape as the autobiography's cache (the panel
+   * hydrates from disk on every render so a saved document survives a step
+   * switch), plus the three operator inputs, which live in the draft so a
+   * re-render does not throw away a half-typed 人生大致走向. */
+  predictCache: null, // { markdown, length, length_cjk, from_cache, path } from /api/agents/<id>/life-prediction
+  predictLoading: false, // guards the lazy fetch against retry loops
+  predictDraft: null, // { direction, randomness, turbulence }
+  predictTimer: null, // polling handle for the running job
+  predictWatchdog: null, // gives up on a job that never finishes
   /* Cross-city browsing. `cities` is the catalogue, `runningCity` the slug the
    * simulator is pointed at, `cityRef` the one being looked at. They differ
    * only in browse mode (the 城市 page's hand-off), which is read-only. */
@@ -225,6 +234,11 @@ async function selectAgent(id) {
   store.moltbook = null; // fetched lazily by moltbookCard() when step 7 renders
   store.autobioCache = null;
   store.autobioLoading = false;
+  store.predictCache = null;
+  store.predictLoading = false;
+  // The three prediction inputs belong to one resident: a new resident must
+  // not inherit the previous one's 人生大致走向.
+  store.predictDraft = { direction: "", randomness: 50, turbulence: 50 };
   $("#saveHint").textContent = __("sd.loaded");
   renderSubject();
   renderStep();
@@ -237,7 +251,9 @@ async function selectAgent(id) {
   store.big5Draft = null;
   store.big5Dirty = false;
   loadBig5().then(() => { if (store.step === 2) renderStep(); });
-  loadAutobiography().then(() => { if (store.step === 7) renderStep(); });
+  // Both long-form documents live in step 1 (身份), so they hydrate there.
+  loadAutobiography().then(() => { if (store.step === 1) renderStep(); });
+  loadLifePrediction().then(() => { if (store.step === 1) renderStep(); });
 }
 
 /* ---------- cross-city browsing ----------
@@ -476,6 +492,103 @@ function renderStep() {
   bindStep();
 }
 
+/* ---------- long-form documents (自传 + 人生预测) ----------
+ *
+ * Two cards live in step 1 (身份), side by side in one column:
+ *
+ * * 生成自传 — what has already happened to this resident, written by the
+ *   resident from their own memories.
+ * * 人生预测 — what is still going to happen to them: the same first-person
+ *   voice, but narrated from the far end of the life, all the way to death.
+ *
+ * They belong together because they are two halves of one story: the
+ * autobiography is what the resident has lived, the prediction is what that
+ * same person, with the same Big Five, the same goals and the same wounds,
+ * will go on to live. Split across two steps, that pairing is invisible.
+ *
+ * Both are single long model calls served as background jobs, so both cards
+ * show the same three states: nothing written yet (Start), a document saved
+ * on disk (Regenerate), and a running job (the live progress line).
+ * ---------------------------------------------------------------------- */
+
+function autobiographyCard() {
+  const hasCache = !!store.autobioCache && !!store.autobioCache.markdown;
+  const btnLabel = hasCache ? __("sd.autobio_regen") : __("sd.autobio_start");
+  const btnClass = store.creating ? "" : "primary";
+  const cachedMeta = hasCache
+    ? __f("sd.autobio_loaded", { cjk: store.autobioCache.length_cjk || 0 })
+    : "";
+  /* Anchor to the server endpoint, not a Blob URL — Blob URLs die the moment
+   * the panel re-renders, so they are the typical cause of "download
+   * failed". The server streams the saved file with the right
+   * Content-Disposition header so the browser saves it directly. */
+  const dlHref = store.currentId == null
+    ? ""
+    : `/api/agents/${store.currentId}/autobiography/download`;
+  return `
+    <div class="card">
+      <h3>${esc(__("sd.autobio_title"))}</h3>
+      <p class="section-note">${esc(__("sd.autobio_note"))}</p>
+      <button id="autobioBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
+      <div class="autobio-out" id="autobioOut" ${hasCache ? "" : "hidden"}>
+        <div class="autobio-meta" id="autobioMeta">${esc(cachedMeta)}</div>
+        <div class="autobio-actions">
+          <a id="autobioDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-autobiography.md`)}">${esc(__("sd.autobio_download"))}</a>
+        </div>
+        <div class="profile-md md-body" id="autobioBody">${hasCache ? renderMarkdown(store.autobioCache.markdown) : ""}</div>
+      </div>
+    </div>`;
+}
+
+/* The operator's three inputs. The two knobs are 0–100 and carry a pole
+ * description at each end: a bare number tells the reader nothing, and the
+ * server turns the same number into a band of prose for the model (see
+ * ``gaworld/apps/life_prediction_api.py::_band``). */
+function ensurePredictDraft() {
+  if (!store.predictDraft) store.predictDraft = { direction: "", randomness: 50, turbulence: 50 };
+  return store.predictDraft;
+}
+
+function predictSlider(key, labelKey, loKey, hiKey) {
+  const draft = ensurePredictDraft();
+  const value = Number(draft[key]) || 0;
+  return `
+    <div class="slider-row" data-predict-row="${esc(key)}">
+      <div class="slabel"><span>${esc(__(labelKey))}</span><span class="val">${value}</span></div>
+      <input type="range" min="0" max="100" step="1" value="${value}" data-predict-scale="${esc(key)}">
+      <div class="poles"><span>${esc(__(loKey))}</span><span>${esc(__(hiKey))}</span></div>
+    </div>`;
+}
+
+function lifePredictionCard() {
+  const draft = ensurePredictDraft();
+  const hasCache = !!store.predictCache && !!store.predictCache.markdown;
+  const btnLabel = hasCache ? __("sd.predict_regen") : __("sd.predict_start");
+  const btnClass = store.creating ? "" : "primary";
+  const cachedMeta = hasCache
+    ? __f("sd.predict_loaded", { cjk: store.predictCache.length_cjk || 0 })
+    : "";
+  const dlHref = store.currentId == null
+    ? ""
+    : `/api/agents/${store.currentId}/life-prediction/download`;
+  return `
+    <div class="card">
+      <h3>${esc(__("sd.predict_title"))}</h3>
+      <p class="section-note">${esc(__("sd.predict_note"))}</p>
+      ${field(__("sd.predict_direction"), `<textarea id="predictDirection" placeholder="${esc(__("sd.predict_direction_ph"))}">${esc(draft.direction)}</textarea>`)}
+      ${predictSlider("randomness", "sd.predict_randomness", "sd.predict_randomness_lo", "sd.predict_randomness_hi")}
+      ${predictSlider("turbulence", "sd.predict_turbulence", "sd.predict_turbulence_lo", "sd.predict_turbulence_hi")}
+      <button id="predictBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
+      <div class="autobio-out" id="predictOut" ${hasCache ? "" : "hidden"}>
+        <div class="autobio-meta" id="predictMeta">${esc(cachedMeta)}</div>
+        <div class="autobio-actions">
+          <a id="predictDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-life-prediction.md`)}">${esc(__("sd.predict_download"))}</a>
+        </div>
+        <div class="profile-md md-body" id="predictBody">${hasCache ? renderMarkdown(store.predictCache.markdown) : ""}</div>
+      </div>
+    </div>`;
+}
+
 function stepIdentity() {
   const i = store.draft.identity;
   const extra = store.creating
@@ -507,6 +620,10 @@ function stepIdentity() {
         <h3>${esc(__("sd.state_glance"))}</h3>
         <div class="viz-wrap">${radarSVG(store.draft.state, true)}</div>
       </div>
+    </div>
+    <div class="docs-block">
+      ${autobiographyCard()}
+      ${lifePredictionCard()}
     </div>`;
 }
 
@@ -621,6 +738,20 @@ async function loadAutobiography() {
     store.autobioCache = null;
   } finally {
     store.autobioLoading = false;
+  }
+}
+
+/* Hydrate the saved life prediction from disk, exactly like the
+ * autobiography above. */
+async function loadLifePrediction() {
+  if (store.creating || store.currentId == null || store.predictLoading) return;
+  store.predictLoading = true;
+  try {
+    store.predictCache = await api(`/api/agents/${store.currentId}/life-prediction`);
+  } catch (err) {
+    store.predictCache = null;
+  } finally {
+    store.predictLoading = false;
   }
 }
 
@@ -1835,24 +1966,6 @@ function stepReview() {
     .map(([k, v]) => `<div><span class="k">${esc(__(k))}</span><span class="v">${esc(v)}</span></div>`).join("");
   const stRows = STATE_VARS.map((v) => `<div><span class="k">${esc(varLabel(v))}</span><span class="v">${st[v.key].toFixed(2)}</span></div>`).join("");
   const finCard = financeCard();
-  /* The autobiography card has three visual states: nothing generated yet
-   * (Start), a saved essay on disk (cached body + Regenerate), and a running
-   * job (the live progress line — handled by runAutobiography() itself). The
-   * server is the source of truth for "have we ever written one?" so a hard
-   * refresh or a new tab shows the same content. */
-  const hasCache = !!store.autobioCache && !!store.autobioCache.markdown;
-  const btnLabel = hasCache ? __("sd.autobio_regen") : __("sd.autobio_start");
-  const btnClass = store.creating ? "" : "primary";
-  const cachedMeta = hasCache
-    ? __f("sd.autobio_loaded", { cjk: store.autobioCache.length_cjk || 0 })
-    : "";
-  /* Anchor to the server endpoint, not a Blob URL — Blob URLs die the moment
-   * the panel re-renders, so they are the typical cause of "download
-   * failed". The server streams the saved file with the right
-   * Content-Disposition header so the browser saves it directly. */
-  const dlHref = store.currentId == null
-    ? ""
-    : `/api/agents/${store.currentId}/autobiography/download`;
   return `
     <h2 class="section-title">${esc(__("sd.review_title"))}</h2>
     <p class="section-note">${esc(store.creating ? __("sd.review_create_note") : __("sd.review_save_note"))}</p>
@@ -1869,18 +1982,6 @@ function stepReview() {
         <input id="interviewQ" placeholder="${esc(__("sd.interview_ph"))}"></label>
       <button id="interviewBtn" class="button" ${store.creating ? "disabled" : ""}>${esc(__("sd.interview_start"))}</button>
       <div class="interview-out" id="interviewOut" hidden></div>
-    </div>
-    <div class="card">
-      <h3>${esc(__("sd.autobio_title"))}</h3>
-      <p class="section-note">${esc(__("sd.autobio_note"))}</p>
-      <button id="autobioBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
-      <div class="autobio-out" id="autobioOut" ${hasCache ? "" : "hidden"}>
-        <div class="autobio-meta" id="autobioMeta">${esc(cachedMeta)}</div>
-        <div class="autobio-actions">
-          <a id="autobioDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-autobiography.md`)}">${esc(__("sd.autobio_download"))}</a>
-        </div>
-        <div class="profile-md md-body" id="autobioBody">${hasCache ? renderMarkdown(store.autobioCache.markdown) : ""}</div>
-      </div>
     </div>
     <div class="deploy-actions">
       <button id="saveBtn2" class="button primary">${esc(store.creating ? __("sd.create_resident") : __("sd.save_changes"))}</button>
@@ -2007,6 +2108,18 @@ function bindStep() {
   bindMoltbookStep();
   const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", withBusy(iBtn, runInterview, "sd.interview_running", "采访中…"));
   const aBtn = $("#autobioBtn"); if (aBtn) aBtn.addEventListener("click", withBusy(aBtn, runAutobiography, "sd.autobio_running", "自传生成中…"));
+  const pDir = $("#predictDirection");
+  if (pDir) pDir.addEventListener("input", () => { ensurePredictDraft().direction = pDir.value; });
+  $("#stepBody").querySelectorAll("[data-predict-scale]").forEach((el) => {
+    el.addEventListener("input", () => {
+      const key = el.dataset.predictScale;
+      ensurePredictDraft()[key] = Number(el.value);
+      const row = el.closest(".slider-row");
+      const val = row && row.querySelector(".val");
+      if (val) val.textContent = el.value;
+    });
+  });
+  const predBtn = $("#predictBtn"); if (predBtn) predBtn.addEventListener("click", withBusy(predBtn, runLifePrediction, "sd.predict_running", "人生预测生成中…"));
   const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", withBusy(s2, save, "sd.saving", "保存中…"));
   const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", withBusy(r2, runSim, "studio.run", "运行中…"));
 }
@@ -2294,6 +2407,105 @@ function finishAutobiography(result, meta) {
   if (dl) dl.removeAttribute("href");
   renderStep();
   foot(__f("sd.autobio_done", { length: result.length_cjk || 0 }), "ok");
+}
+
+/* Compose the predicted life: the resident's own narration of everything
+ * from now until death, steered by the three operator inputs.
+ *
+ * Same job shape as the autobiography (POST enqueues, GET polls), because
+ * the cost is the same — one 20k-character model call that runs for minutes.
+ * A synchronous handler would block the dashboard's request thread. */
+async function runLifePrediction() {
+  if (store.creating || store.currentId == null) {
+    foot(__("sd.predict_no_agent"), "err"); return;
+  }
+  const btn = $("#predictBtn");
+  const out = $("#predictOut");
+  const meta = $("#predictMeta");
+  const body = $("#predictBody");
+  if (!btn || !out) return;
+  const draft = ensurePredictDraft();
+  btn.disabled = true;
+  out.hidden = false;
+  body.innerHTML = gwHTML("");
+
+  /* Reset stuck handlers if a previous run died before this one started. */
+  if (store.predictTimer) { clearInterval(store.predictTimer); store.predictTimer = null; }
+
+  /* A knob that never got a number keeps the neutral middle instead of
+   * silently meaning "nothing can go wrong". */
+  const knob = (value) => (Number.isFinite(Number(value)) ? Math.round(Number(value)) : 50);
+
+  let job;
+  try {
+    job = await api(`/api/agents/${store.currentId}/life-prediction`, {
+      method: "POST",
+      body: JSON.stringify({
+        direction: draft.direction || "",
+        randomness: knob(draft.randomness),
+        turbulence: knob(draft.turbulence),
+      }),
+    });
+  } catch (err) {
+    btn.disabled = false;
+    meta.textContent = __("sd.predict_failed") + err.message;
+    foot(__("sd.predict_failed_short"), "err");
+    return;
+  }
+
+  meta.textContent = __("sd.predict_running");
+  foot(__("sd.predict_started"), "ok");
+
+  const startedMs = Date.now();
+  store.predictTimer = setInterval(async () => {
+    let res;
+    try {
+      res = await api(`/api/agents/${store.currentId}/life-prediction/jobs/${job.job_id}`);
+    } catch (err) {
+      // Network blip — keep polling until the watchdog kicks in.
+      return;
+    }
+    const elapsed = Math.round((Date.now() - startedMs) / 1000);
+    if (res.status === "done") {
+      finishLifePrediction(res.result);
+    } else if (res.status === "error") {
+      meta.textContent = __("sd.predict_failed") + (res.message || "");
+      body.innerHTML = gwHTML("");
+      foot(__("sd.predict_failed_short"), "err");
+      clearInterval(store.predictTimer); store.predictTimer = null;
+      btn.disabled = false;
+    } else {
+      // running: refresh progress line so the user sees the panel is alive.
+      meta.textContent = `${__("sd.predict_running")}（${elapsed}s · ${res.message || ""}）`;
+    }
+  }, 3000);
+
+  // Watchdog: if the backend never says done after 12 minutes, give up
+  // rather than spinning forever. 24k output tokens at the slowest model
+  // finishes inside that ceiling with plenty of margin.
+  store.predictWatchdog = setTimeout(() => {
+    if (!store.predictTimer) return;
+    clearInterval(store.predictTimer); store.predictTimer = null;
+    meta.textContent = __("sd.predict_timeout");
+    foot(__("sd.predict_failed_short"), "err");
+    btn.disabled = false;
+  }, 12 * 60 * 1000);
+}
+
+function finishLifePrediction(result) {
+  if (store.predictTimer) { clearInterval(store.predictTimer); store.predictTimer = null; }
+  if (store.predictWatchdog) { clearTimeout(store.predictWatchdog); store.predictWatchdog = null; }
+
+  /* Same trick as the autobiography: the cache survives the re-render, so
+   * the button flips to "Regenerate" and the body stays on screen. */
+  store.predictCache = {
+    markdown: result.markdown || "",
+    length: result.length || 0,
+    length_cjk: result.length_cjk || 0,
+    from_cache: false,
+  };
+  renderStep();
+  foot(__f("sd.predict_done", { length: result.length_cjk || 0 }), "ok");
 }
 
 /* ---------- wire up ---------- */

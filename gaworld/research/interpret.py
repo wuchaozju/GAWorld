@@ -19,6 +19,7 @@ from collections.abc import Callable
 from typing import Any
 
 from gaworld.city.knowledge import _parse_json_object
+from gaworld.research import result_checks as rc
 from gaworld.research.protocol import Protocol
 from gaworld.research.workbench import ResearchError
 
@@ -29,7 +30,7 @@ _PROMPT = """你是 GAWorld 平台的研究解读助手。下面是一项已经�
 - 每条 finding 必须挂在一个假设 id 上，只能引用表里出现的数字；
 - 判定为 inconclusive / unmeasured 的假设，不要写成有效应；
 - 「指标等级」为 (c) 的假设，claim 里只说方向（上升 / 下降），不写、不比较、不换算效应大小——这类指标由我们自定的参数与模型判断驱动，大小没有现实含义；evidence 可以列各种子效应，作为方向一致的依据；
-- 数据质量问题必须体现在 limitations 里；
+- 数据质量问题和偏向性检查限制必须体现在 limitations 里；未检验或证据不足不能说成无偏，方向一致不能说成真人效应等价；
 - next_studies 给 2–3 个能在 GAWorld 平行世界里继续做的研究（剂量反应、机制探查、稳健性），每个说明相对本研究改什么。
 
 ## 研究：{title}
@@ -75,6 +76,7 @@ def build_interpret_prompt(protocol: Protocol, evaluation: dict[str, Any]) -> st
             f"| {_fmt(item.get('mean_effect'))} | {_fmt(item.get('noise')) if item.get('noise') is not None else '—'} "
             f"| {item['verdict']} | {'；'.join(item.get('reasons') or [])} |"
         )
+    rows.extend(rc.markdown(item.get("result_checks")) for item in evaluation.get("hypotheses") or [])
     quality = evaluation.get("quality") or {}
     issues = [f"- {issue.get('issue')}（{issue.get('detail', '')}）" for issue in quality.get("issues") or []]
     return _PROMPT.format(

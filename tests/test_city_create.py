@@ -278,6 +278,17 @@ class CreateCityTest(unittest.TestCase):
         self.root = Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
 
+    @staticmethod
+    def _no_web(query: str) -> list[dict[str, str]]:
+        """A search backend with nothing to say.
+
+        City creation asks the web about the place — its economy and the
+        region itself. The tests here are about what happens around that
+        research (geocoding, the map, the fallback), so the research is
+        stubbed out instead of reaching for the network on every run.
+        """
+        return []
+
     def test_offline_creation_produces_a_usable_bundle(self):
         city = create_city("柳溪村", offline=True, scale="tiny", root=self.root)
 
@@ -294,7 +305,11 @@ class CreateCityTest(unittest.TestCase):
         def boom(name, **kwargs):
             raise GeocodeError("no network")
 
-        city = create_city("无人知晓村", root=self.root, geocode_fn=boom, offline=False)
+        city = create_city(
+            "无人知晓村", root=self.root, geocode_fn=boom, offline=False,
+            search_fn=self._no_web, llm_fn=lambda _prompt: "",
+            locale_llm_fn=lambda _prompt: "",
+        )
         # No geocode means no bbox worth fetching, so it stays virtual.
         self.assertEqual(city.map_mode, "virtual")
         self.assertEqual(city.manifest["place"]["source"], "offline")
@@ -307,7 +322,9 @@ class CreateCityTest(unittest.TestCase):
             raise OSMError("overpass down")
 
         city = create_city(
-            "绍兴柯桥", root=self.root, geocode_fn=fake_geocode, overpass=failing_overpass
+            "绍兴柯桥", root=self.root, geocode_fn=fake_geocode, overpass=failing_overpass,
+            search_fn=self._no_web, llm_fn=lambda _prompt: "",
+            locale_llm_fn=lambda _prompt: "",
         )
         self.assertEqual(city.map_mode, "virtual")
         self.assertEqual(city.manifest["place"]["source"], "nominatim")
@@ -329,7 +346,9 @@ class CreateCityTest(unittest.TestCase):
             return {"elements": nodes}
 
         city = create_city(
-            "绍兴柯桥", root=self.root, geocode_fn=fake_geocode, overpass=overpass
+            "绍兴柯桥", root=self.root, geocode_fn=fake_geocode, overpass=overpass,
+            search_fn=self._no_web, llm_fn=lambda _prompt: "",
+            locale_llm_fn=lambda _prompt: "",
         )
         self.assertEqual(city.map_mode, "real")
         self.assertTrue(city.real_map_path.exists())

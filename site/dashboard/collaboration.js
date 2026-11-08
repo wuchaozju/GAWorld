@@ -429,6 +429,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       renderMemberPicker();
       renderLeaderSelect();
       renderRoleOverrides();
+      // The organization picker sizes its built-in structures by the team.
+      document.dispatchEvent(
+        new CustomEvent("collab:roster-change", { detail: { count: selectedIds().length } }),
+      );
     }
 
     function loadAgentDetail(agentId) {

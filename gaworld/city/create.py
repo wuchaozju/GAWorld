@@ -8,6 +8,7 @@ you a city you can simulate:
       → geocode (Nominatim)            ── fails ──▶ synthetic place record
       → real map (Overpass/OSM)        ── fails ──▶ procedural map only
       → procedural map                 (always written: prompt context + fallback)
+      → region dossier (search + LLM)  ── fails ──▶ empty dossier (coarse behaviour)
       → environment config
       → manifest
 
@@ -33,11 +34,17 @@ from gaworld.city import bundle as bundle_mod
 from gaworld.city.bundle import CityBundle, city_root, new_manifest, slugify
 from gaworld.city.environment import build_environment
 from gaworld.city.geocode import GeocodeError, Place, geocode, offline_place
-from gaworld.city.imagine import ImagineError, ImaginedCity, imagine_city
+from gaworld.city.imagine import ImaginedCity, ImagineError, imagine_city
 from gaworld.city.knowledge import CityProfile, build_from_map, build_from_web, map_category_counts
 from gaworld.city.locale import build_locale
 from gaworld.city.osm import OSMError, fetch_bundle
 from gaworld.city.procedural import generate_citymap, seed_from_name
+from gaworld.city.region import (
+    RegionProfile,
+    build_region,
+    region_from_imagined,
+    save_region,
+)
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.city.create")
@@ -106,6 +113,68 @@ def default_llm(prompt: str) -> str:
     return call_llm(prompt, task="city_knowledge")
 
 
+#: How many research queries run at once. City creation asks the web nine
+#: questions (three about the economy, six about the place); run one after the
+#: other they dominate the whole operation, and they are independent I/O.
+RESEARCH_WORKERS = 4
+
+
+def research_search(
+    name: str,
+    search_fn: Callable[[str], list[dict[str, str]]],
+    *,
+    queries: list[str] | None = None,
+) -> Callable[[str], list[dict[str, str]]]:
+    """A search function that answers every research query in parallel.
+
+    Returns a callable with the same contract as ``search_fn``, backed by one
+    batch of concurrent queries.  Two callers (the economy's profile and the
+    region's dossier) ask different questions about the same place, so the
+    queries are collected up front and run together rather than one
+    round-trip at a time.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from gaworld.city import knowledge as knowledge_mod
+    from gaworld.city import region as region_mod
+
+    if queries is None:
+        queries = knowledge_mod.search_queries(name) + region_mod.search_queries(name)
+    else:
+        queries = list(queries)
+    queries = list(dict.fromkeys(queries))
+    if not queries:
+        return lambda _query: []
+
+    def run(query: str) -> tuple[str, list[dict[str, str]]]:
+        try:
+            return query, list(search_fn(query) or [])
+        except Exception as exc:  # noqa: BLE001 - one failed query must not stop the rest
+            _LOG.warning("research search failed for %r: %s", query, exc)
+            return query, []
+
+    cache: dict[str, list[dict[str, str]]] = {}
+    # Two queries first, on their own: if the backend is unreachable they
+    # answer "nothing" quickly enough to stop, instead of every remaining
+    # query waiting out its own timeout for the same answer.
+    for query in queries[:2]:
+        done, hits = run(query)
+        cache[done] = hits
+    if not any(cache.values()):
+        _LOG.info("research search backend unreachable for %s; skipping research", name)
+        return lambda _query: []
+
+    workers = max(1, min(RESEARCH_WORKERS, len(queries) - 2))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for query, hits in pool.map(run, queries[2:]):
+            cache[query] = hits
+
+    def memoized(query: str) -> list[dict[str, str]]:
+        return list(cache.get(query, []))
+
+    return memoized
+
+
 #: Output budget for one city design. A dozen districts with their places,
 #: roads, industries and labour demand runs to ~3–4k tokens of JSON; the
 #: providers' 512-token default cuts that off mid-object, and a truncated
@@ -166,6 +235,52 @@ def build_knowledge(
         except (OSError, json.JSONDecodeError):
             counts = {}
     return build_from_map(name, counts)
+
+
+def place_from_manifest(city: CityBundle) -> Place:
+    """Rebuild the geocoded :class:`Place` a bundle was created from.
+
+    ``bbox`` round-trips through JSON as a list, and ``Place`` declares it a
+    tuple; the difference matters because the geocode helpers unpack it.
+    """
+    raw = dict(city.manifest.get("place") or {})
+    raw["bbox"] = tuple(raw.get("bbox") or (0, 0, 0, 0))
+    return Place(**raw)
+
+
+def refresh_environment(
+    city: CityBundle, *, region: RegionProfile | None = None
+) -> dict[str, Any]:
+    """Rewrite ``environment.json`` so it matches the city's current dossier.
+
+    Called after a region rebuild: the weather events and the event
+    generator's context are *derived* from the dossier, so leaving them
+    stale would mean the city keeps broadcasting the latitude band's weather
+    after the research found better facts.
+    """
+    from gaworld.city.region import load_region
+
+    place = place_from_manifest(city)
+    dossier = region if region is not None else load_region(city)
+    imagined = city.manifest.get("imagined") or {}
+    note = str(imagined.get("summary") or "")
+    seed = city.manifest.get("seed")
+    environment = build_environment(
+        place,
+        seed=int(seed) if seed is not None else None,
+        note=note,
+        region=dossier,
+    )
+    city.environment_path.write_text(
+        json.dumps(environment, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    city.record(
+        "environment.refreshed",
+        climate=environment["climate"],
+        region=dossier.source,
+        events=len(environment["environment"]["natural_events"]),
+    )
+    return environment
 
 
 def create_city(
@@ -268,6 +383,15 @@ def create_city(
             scale=place.scale,
         ),
     )
+    # The map seed is kept in the manifest so a later rebuild (region,
+    # environment) reproduces the same city rather than a different one.
+    city.manifest["seed"] = int(map_seed)
+
+    # One batch of parallel searches, shared by the economy profile and the
+    # regional dossier: nine questions about one place, asked together.
+    web_search: Callable[[str], list[dict[str, str]]] | None = None
+    if not offline and not is_imagined:
+        web_search = research_search(place.name or label, search_fn or default_search)
 
     # 1. Virtual map — always written. It doubles as the LLM prompt context
     #    and as the fallback if the real bundle is ever deleted.
@@ -319,11 +443,30 @@ def create_city(
             }
             city.record("map.real", nodes=node_count, bbox=list(place.bbox))
 
-    # 3. Environment. An imagined city's own summary goes in as the note: it is
+    # 3. Region dossier — what this place is *like*. Terrain, weather, customs
+    #    and the way people live here. Without it the environment is only a
+    #    latitude band and every resident gets the same generic routine.
+    if imagined is not None:
+        # An invented place has no web footprint, and searching for it would
+        # find a real homonym instead. The design pass already said what the
+        # place is about, so that becomes the dossier.
+        region = region_from_imagined(
+            label=place.name or label,
+            summary=imagined.summary,
+            livelihood=imagined.summary,
+        )
+        save_region(city, region)
+        city.record("region.imagined", label=region.label)
+    else:
+        region = build_region(
+            city, place, offline=offline, search_fn=web_search, llm_fn=llm_fn
+        )
+
+    # 4. Environment. An imagined city's own summary goes in as the note: it is
     #    the only place the volcano and the coral reef are written down, and
     #    without it the background prompt would describe a generic tropical town.
     environment = build_environment(
-        place, seed=map_seed, note=imagined.summary if imagined else ""
+        place, seed=map_seed, note=imagined.summary if imagined else "", region=region
     )
     city.environment_path.write_text(
         json.dumps(environment, ensure_ascii=False, indent=2) + "\n",
@@ -331,7 +474,7 @@ def create_city(
     )
     city.record("environment", climate=environment["climate"])
 
-    # 4. Knowledge base — what the city *is* economically. Best effort, and
+    # 5. Knowledge base — what the city *is* economically. Best effort, and
     #    never fatal: a city with no industry profile still simulates fine, it
     #    just does not steer its residents' careers. An imagined city already
     #    has one from the design pass; searching the web for a place that does
@@ -340,7 +483,7 @@ def create_city(
         profile = imagined.profile
     else:
         profile = build_knowledge(
-            city, place, offline=offline or is_imagined, search_fn=search_fn, llm_fn=llm_fn
+            city, place, offline=offline or is_imagined, search_fn=web_search, llm_fn=llm_fn
         )
     city.knowledge_path.write_text(
         json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -351,7 +494,7 @@ def create_city(
         industries=[i.name for i in profile.top_industries()],
     )
 
-    # 5. Locale — what this city's residents are called, and how their housing
+    # 6. Locale — what this city's residents are called, and how their housing
     #    and residency read. Skipped for an invented city, whose prompt would
     #    have no real administrative chain to reason from ("南城街道, 东莞市,
     #    广东省, 中国" is the whole point), and for an offline build, where the
@@ -366,4 +509,11 @@ def create_city(
     return city
 
 
-__all__ = ["CityCreationError", "create_city", "projection_origin", "resolve_place"]
+__all__ = [
+    "CityCreationError",
+    "create_city",
+    "place_from_manifest",
+    "projection_origin",
+    "refresh_environment",
+    "resolve_place",
+]

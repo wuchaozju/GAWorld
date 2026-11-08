@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from gaworld.collaboration.organization_methods import method_hash, normalize_method
+from gaworld.collaboration.organization_methods import (
+    BUILTIN_VERSION,
+    KINDS,
+    VERSION,
+    builtin_id,
+    builtin_method,
+    method_hash,
+    normalize_method,
+    parse_builtin,
+    topology_text,
+)
 from gaworld.research.organization_intelligence.comparison.store import Store
 
 PREFIX = "/api/collaboration/organization-methods"
@@ -14,7 +24,57 @@ def database():
     return Store(root() / "methods")
 
 
-def resolve(identifier, version):
+def builtin_entries():
+    """The basic organization methods, ready to be picked by structure.
+
+    Their role slots are not fixed: a built-in method is sized when a task
+    starts, so the team that runs it decides how many roles exist. The empty
+    ``roles`` list below marks a template, not a runnable method.
+    """
+    entries = []
+    for kind, name in KINDS.items():
+        entries.append(
+            {
+                "id": builtin_id(kind),
+                "name": name,
+                "version": BUILTIN_VERSION,
+                "builtin": True,
+                "slots": None,
+                "description": topology_text(kind),
+                "method": {
+                    "version": VERSION,
+                    "name": name,
+                    "roles": [],
+                    "topology": {"kind": kind},
+                    "rounds": 0 if kind == "independent" else 2,
+                },
+                "method_hash": None,
+                "evidence": {"verdict": "builtin", "scope": "内置基本组织方式，未在本题上验证"},
+            }
+        )
+    return entries
+
+
+def resolve(identifier, version, slots=None):
+    """The method behind an id: a saved version, or a built-in sized now."""
+    kind = parse_builtin(identifier)
+    if kind is not None:
+        if type(version) is not int or version != BUILTIN_VERSION:
+            raise ValueError("组织方式版本不存在，请刷新后重新选择")
+        count = int(slots or 0)
+        if not 2 <= count <= 12:
+            raise ValueError("内置组织方式需要 2–12 位成员")
+        method = builtin_method(kind, count)
+        return {
+            "id": identifier,
+            "name": method["name"],
+            "version": BUILTIN_VERSION,
+            "builtin": True,
+            "method": method,
+            "method_hash": method_hash(method),
+            "description": method["description"],
+            "evidence": {"verdict": "builtin", "scope": "内置基本组织方式，未在本题上验证"},
+        }
     record = database().get(identifier)
     if type(version) is not int or version != record["version"]:
         raise ValueError("组织方式版本不存在，请刷新后重新选择")
@@ -47,11 +107,31 @@ def save_study(study, payload):
     )
 
 
+def _entry(record):
+    """One list entry: a saved record says how many roles it runs with."""
+    return {
+        **record,
+        "builtin": bool(record.get("builtin")),
+        "slots": len((record.get("method") or {}).get("roles") or []),
+    }
+
+
+def _includes_builtins(query):
+    """Whether the caller asked for the basic organization methods as well."""
+    raw = (query or {}).get("include")
+    if isinstance(raw, (list, tuple)):
+        raw = raw[0] if raw else None
+    return str(raw or "").strip().lower() in {"builtin", "builtins", "all"}
+
+
 def handle_get(path, query=None):
     suffix = path[len(PREFIX) :].strip("/")
     try:
         if not suffix:
-            return {"methods": database().list("M")}, 200
+            methods = [_entry(record) for record in database().list("M")]
+            if _includes_builtins(query):
+                methods = builtin_entries() + methods
+            return {"methods": methods}, 200
         return database().get(suffix), 200
     except LookupError as exc:
         return {"error": str(exc)}, 404

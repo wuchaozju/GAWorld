@@ -34,7 +34,9 @@
   "sim_days": 1,
   "seconds_per_day": 10,
   "agent_ids": [
-    1
+    8,
+    9,
+    10
   ],
   "simulate_realtime": true,
   "time_step_minutes": null,
@@ -45,6 +47,5 @@
   },
   "routine_change": {
     "randomness": 1.0
-  },
-  "city": "伦敦"
+  }
 }

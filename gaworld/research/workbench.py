@@ -633,6 +633,9 @@ def render_markdown(plan: ResearchPlan) -> str:
         meta.append(f"{L['feasibility']}: {feas['verdict']}{score}")
     lines.append(" · ".join(meta))
     lines.append("")
+    from gaworld.research.reading import markdown, plan_summary
+
+    lines += [markdown(plan_summary(plan.to_dict())), ""]
     if plan.summary:
         lines += [f"## {L['summary']}", "", plan.summary, ""]
     if feas.get("rationale"):

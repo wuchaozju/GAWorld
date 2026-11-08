@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from gaworld.research import result_checks as rc
 from gaworld.research.evaluate import has_comparable_data
 
 _L = {
@@ -116,6 +117,9 @@ def render_study_markdown(study: dict[str, Any]) -> str:
         f"{L['created']}: {study.get('created_at', '')}",
     ]
     lines += [" · ".join(meta), ""]
+    from gaworld.research.reading import markdown, study_summary
+
+    lines += [markdown(study_summary(study)), ""]
     mode = protocol.get("execution_mode") or ("lean_tick" if protocol.get("fast") else "tick")
     lines += [f"- execution_mode: {mode}", ""]
     if protocol.get("purpose") == "exploratory" or mode == "daily_brief":
@@ -304,6 +308,8 @@ def render_study_markdown(study: dict[str, Any]) -> str:
             lines.append(f"- **{L['reasons']}**: " + "；".join(item.get("reasons") or []))
             lines.append("")
 
+        for item in evaluation.get("hypotheses") or []:
+            lines.append(rc.markdown(item.get("result_checks")))
         quality = evaluation.get("quality") or {}
         lines += [f"### {L['quality']}", ""]
         if quality.get("issues"):

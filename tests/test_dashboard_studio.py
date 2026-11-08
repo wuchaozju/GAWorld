@@ -8,6 +8,7 @@ snapshot reader. All writes target temp copies so repo seed data is untouched.
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -464,6 +465,53 @@ class TestPrivateSkills(unittest.TestCase):
 
     def test_empty_when_absent(self):
         self.assertEqual(residents._private_skills(6), [])
+
+
+class TestLongFormDocuments(unittest.TestCase):
+    """The two long-form documents that live in step 1 (身份).
+
+    The Python tests cannot render the panel, so the card's own markup is
+    checked by the headless suite below; what is worth asserting here is
+    that the panel's locale files and the server agree on the feature.
+    """
+
+    def test_both_locales_carry_the_prediction_keys(self):
+        dashboard = os.path.join(REPO_ROOT, "site", "dashboard", "locales")
+        tables = {}
+        for name in ("zh-CN", "en"):
+            with open(os.path.join(dashboard, f"{name}.json"), encoding="utf-8") as fh:
+                tables[name] = json.load(fh)
+        for key in (
+            "sd.predict_title",
+            "sd.predict_note",
+            "sd.predict_direction",
+            "sd.predict_randomness",
+            "sd.predict_turbulence",
+            "sd.predict_start",
+            "sd.predict_regen",
+        ):
+            for name, table in tables.items():
+                self.assertIn(key, table, f"{name}.json has no {key}")
+
+    def test_the_panel_calls_the_documented_routes(self):
+        studio = os.path.join(REPO_ROOT, "site", "dashboard", "studio.js")
+        with open(studio, encoding="utf-8") as fh:
+            source = fh.read()
+        self.assertIn("/life-prediction", source)
+        self.assertIn("/life-prediction/jobs/", source)
+        self.assertIn("/life-prediction/download", source)
+
+    def test_headless_render_suite_passes(self):
+        """The card is rendered against a stubbed DOM: where it lives, the
+        three operator inputs, and the bilingual keys."""
+        result = subprocess.run(
+            ["node", "--test", os.path.join(REPO_ROOT, "site", "dashboard", "studio-docs.test.js")],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

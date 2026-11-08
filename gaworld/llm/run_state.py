@@ -101,9 +101,12 @@ class RunLedger:
         self._change(change)
 
     def wait(self, name: str) -> None:
+        from gaworld.llm.call_scope import check
+
         started = time.monotonic()
         try:
             while True:
+                check()
                 self.check()
                 until = self.snapshot()["providers"].get(name, {}).get("cooldown_until", 0)
                 remaining = until - time.time()

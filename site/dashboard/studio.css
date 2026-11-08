@@ -275,6 +275,20 @@ label.field, .field-row { margin-bottom: 12px; }
   font: inherit; font-size: 12px; width: 74px; background: var(--card); color: var(--ink);
 }
 
+/* --- Long-form documents (step 1): 自传 + 人生预测 ---------------------------
+ * The two 20k-character documents stack full width under the identity form
+ * instead of sharing a row: side by side they would each be squeezed into an
+ * unreadable sliver, and the prediction card carries a form (a text box and
+ * two sliders) that needs the width anyway. */
+.docs-block { margin-top: 16px; }
+.docs-block .card + .card { margin-top: 14px; }
+
+/* The output area of a long-form document: the status line, the download
+ * button and the rendered Markdown. */
+.autobio-out { margin-top: 12px; }
+.autobio-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.autobio-actions { margin-bottom: 10px; }
+
 /* --- Big Five card (step 2) ------------------------------------------------
  * A block of its own below the state sliders, not beside them: the two are
  * independent by construction and the layout should not suggest otherwise. */

@@ -348,6 +348,48 @@ def rebuild_knowledge(payload: dict[str, Any]) -> dict[str, Any]:
     return knowledge(bundle.slug)
 
 
+def region(ref: str) -> dict[str, Any]:
+    """The city's regional dossier plus the four channels it drives."""
+    from gaworld.city.region import load_region
+
+    bundle = resolve_city(ref)
+    dossier = load_region(bundle)
+    return {
+        "city": bundle.summary(),
+        "region": dossier.to_dict(),
+        "empty": dossier.is_empty,
+        # What the dossier actually does, so the panel can show effect not just data.
+        "channels": {
+            "prompt": dossier.prompt_block(),
+            "background": dossier.background(),
+            "events": {
+                "natural": dossier.natural_events(),
+                "social": dossier.social_events(),
+            },
+            "rag": dossier.rag_chunks(),
+        },
+    }
+
+
+def rebuild_region(payload: dict[str, Any]) -> dict[str, Any]:
+    from gaworld.city.context import clear_cache
+    from gaworld.city.create import place_from_manifest, refresh_environment
+    from gaworld.city.region import build_region
+
+    bundle = resolve_city(str(payload.get("city") or ""))
+    dossier = build_region(
+        bundle,
+        place_from_manifest(bundle),
+        offline=bool(payload.get("offline", False)),
+    )
+    # The weather events and the event generator's context are derived from
+    # the dossier, so they are rewritten with it.
+    refresh_environment(bundle, region=dossier)
+    bundle.save()
+    clear_cache()
+    return region(bundle.slug)
+
+
 def city_news(ref: str) -> dict[str, Any]:
     from gaworld.city.news import load as news_load
 
@@ -594,6 +636,11 @@ def handle_get(path: str, query: dict[str, Any]) -> tuple[dict[str, Any], int]:
             if not ref:
                 return {"error": "city is required"}, 400
             return knowledge(ref), 200
+        if path in ("/api/city/region", "/api/city/region/"):
+            ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
+            if not ref:
+                return {"error": "city is required"}, 400
+            return region(ref), 200
         if path in ("/api/city/news", "/api/city/news/"):
             ref = (query.get("city") or [""])[0] if isinstance(query, dict) else ""
             if not ref:
@@ -615,6 +662,7 @@ _POST_ROUTES = {
     "/api/city/agent": add_one,
     "/api/city/migrate": migrate,
     "/api/city/knowledge": rebuild_knowledge,
+    "/api/city/region": rebuild_region,
     "/api/city/news": refresh_news,
     "/api/city/select": select,
     "/api/city/delete": remove,
@@ -647,4 +695,6 @@ __all__ = [
     "handle_post",
     "knowledge",
     "overview",
+    "rebuild_region",
+    "region",
 ]

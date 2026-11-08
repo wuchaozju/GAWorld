@@ -6,6 +6,12 @@ of natural / social events it samples from) and ``external_environment`` (whose
 Both are place-specific — a coastal subtropical town should get typhoons and a
 continental one should get blizzards — so we derive them from the latitude and
 scale that geocoding already gave us instead of shipping one global default.
+
+Latitude is a coarse instrument: it cannot tell a coastal city from a mountain
+town 300km inland, both of which land in the same band. When a city has a
+researched dossier (:mod:`gaworld.city.region`), its own hazards and seasonal
+phenomena replace the band list outright — "台风外围环流" is false for a place
+that has never seen a typhoon, and no amount of latitude says otherwise.
 """
 
 from __future__ import annotations
@@ -121,16 +127,46 @@ def climate_of(lat: float) -> str:
     return "polar"
 
 
-def describe(place: Place) -> str:
+def describe(place: Place, region: Any = None) -> str:
     """The prompt context an LLM uses to invent plausible events here."""
     climate = CLIMATE_LABEL_ZH[climate_of(place.lat)]
     scale = SCALE_LABEL_ZH.get(place.scale, "城市")
     where = f"{place.country}的" if place.country else ""
     population = f"常住人口约 {place.population:,} 人；" if place.population else ""
-    return (
+    text = (
         f"{where}{place.name}，{scale}，{climate}气候，季节性天气变化明显；{population}"
         f"当地经济与就业结构随规模而定，居民对物价、就业与公共服务变化敏感。"
     )
+    return text + _region_context(region)
+
+
+def _region_context(region: Any) -> str:
+    """The dossier's weather-relevant half, as prompt context.
+
+    Only the fields that change what an *event* looks like: terrain (a flood
+    is a hillside flash-flood in a mountain town), the climate summary, the
+    hazards that actually recur here, and the seasonal rhythm. Customs and
+    diet are the residents' business, not the weather's.
+    """
+    if region is None:
+        return ""
+    bits: list[str] = []
+    terrain = str(getattr(region, "terrain", "") or "").strip()
+    if terrain:
+        bits.append(f"地形：{terrain}")
+    water = str(getattr(region, "water", "") or "").strip()
+    if water:
+        bits.append(f"水系：{water}")
+    climate = str(getattr(region, "climate", "") or "").strip()
+    if climate:
+        bits.append(f"气候：{climate}")
+    hazards = list(getattr(region, "hazards", ()) or ())
+    if hazards:
+        bits.append("本地常有的天气风险：" + "、".join(hazards[:3]))
+    seasons = list(getattr(region, "seasons", ()) or ())
+    if seasons:
+        bits.append("季节节律：" + "、".join(seasons[:3]))
+    return ("本地情况：" + "；".join(bits) + "。") if bits else ""
 
 
 def background_for(place: Place) -> str:
@@ -150,7 +186,12 @@ def background_for(place: Place) -> str:
 
 
 def build_environment(
-    place: Place, *, enabled: bool = True, seed: int | None = None, note: str = ""
+    place: Place,
+    *,
+    enabled: bool = True,
+    seed: int | None = None,
+    note: str = "",
+    region: Any = None,
 ) -> dict[str, Any]:
     """The ``environment.json`` fragment for a city bundle.
 
@@ -162,6 +203,11 @@ def build_environment(
     background and the event generator's context, because a city whose defining
     feature is a volcano should have residents who know that and weather that
     reflects it.
+
+    ``region`` is the researched dossier (:mod:`gaworld.city.region`). When it
+    carries real weather evidence, its hazards and seasonal phenomena become
+    this city's event pools instead of the latitude band's, and the generator
+    context gains the terrain and climate the dossier actually found.
     """
     climate = climate_of(place.lat)
     social_bucket = SCALE_TO_SOCIAL.get(place.scale, "medium")
@@ -169,6 +215,20 @@ def build_environment(
     # appending unconditionally gives "……为生。。".
     summary = str(note).strip()
     extra = (summary if summary[-1:] in "。.!?！？" else summary + "。") if summary else ""
+
+    natural = list(NATURAL_EVENTS[climate])
+    social = list(SOCIAL_EVENTS[social_bucket])
+    if region is not None:
+        # A region with two or more real events replaces the band list: one
+        # genuine local hazard is worth more than five plausible ones from the
+        # wrong latitude.
+        regional_natural = list(region.natural_events())
+        if len(regional_natural) >= 2:
+            natural = regional_natural
+        regional_social = list(region.social_events())
+        if len(regional_social) >= 2:
+            social = regional_social
+
     return {
         "city": place.name,
         "climate": climate,
@@ -177,8 +237,8 @@ def build_environment(
             "enabled": bool(enabled),
             "event_chance": 0.6,
             "max_events_per_tick": 2,
-            "natural_events": list(NATURAL_EVENTS[climate]),
-            "social_events": list(SOCIAL_EVENTS[social_bucket]),
+            "natural_events": natural,
+            "social_events": social,
         },
         "external_environment": {
             "enabled": bool(enabled),
@@ -187,7 +247,7 @@ def build_environment(
             "generator": {
                 "mode": "llm",
                 "history_days": 3,
-                "description": describe(place) + extra,
+                "description": describe(place, region) + extra,
             },
         },
     }

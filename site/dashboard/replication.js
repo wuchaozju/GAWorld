@@ -20,7 +20,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     no_human_effect: "rw-verdict-unmeasured",
   };
   var VERDICT_TEXT = {
-    replicated: "复现：方向一致且显著",
+    replicated: "方向一致且显著（不代表效应等价）",
     same_direction: "方向一致，但不显著",
     not_replicated: "未复现：方向不一致，也不显著",
     reversed: "方向相反且显著",
@@ -78,7 +78,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       });
   }
 
-  var state = { providers: [], cities: [], runs: [], spec: null, run: null, maxSample: 500 };
+  var state = { providers: [], cities: [], runs: [], spec: null, run: null, maxSample: 500, running:false };
 
   function setUrl(runId) {
     var query = new URLSearchParams(window.location.search);
@@ -259,6 +259,13 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
 
   function setSpec(spec) {
     state.spec = spec;
+    if (spec) {
+      spec.bias_checks = spec.bias_checks || {order:false, wording:false};
+      spec.human_design = spec.human_design || "unknown";
+      spec.sampling_probe = spec.sampling_probe || {enabled:false,repeats:3};
+      spec.interaction_probe = spec.interaction_probe || {enabled:false,rounds:1,group_size:4};
+      spec.identity_probe = spec.identity_probe || {enabled:false,template:"",a:"",b:""};
+    }
     $("rpSpecCard").hidden = !spec;
     $("rpRunCard").hidden = !spec;
     renderSpec();
@@ -423,6 +430,36 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     });
     html += '<button type="button" class="btn ghost tiny" data-add-group="1">' + esc(t("rp_add_group", "＋ 添加分组")) + "</button>";
 
+    html += '<div class="rp-block"><h4>' + esc(t("check_settings", "结果检查设置（在运行前确认）")) + '</h4>' +
+      '<label>' + esc(t("check_human_design", "文献中真人的条件分配")) + '<select data-path="human_design">' +
+      [['unknown',t("check_unknown","未报告 / 未确认")],['between',t("check_between","独立组")],['paired',t("check_paired","同一人重复作答")]].map(function(o){
+        return '<option value="' + o[0] + '"' + (spec.human_design === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+      }).join('') + '</select></label>' +
+      '<label class="ps-check"><input type="checkbox" data-bias-check="order"' + (spec.bias_checks.order ? ' checked' : '') + '>' +
+      esc(t("check_order_opt", "复验单选题的选项顺序（额外一组调用）")) + '</label>' +
+      '<label class="ps-check"><input type="checkbox" data-bias-check="wording"' + (spec.bias_checks.wording ? ' checked' : '') + '>' +
+      esc(t("check_wording_opt", "用下方填写的等义问法复验（额外一组调用）")) + '</label>' +
+      '<p class="rw-hint">' + esc(t("check_margin_note", "容许误差使用题目原始单位，须按实际意义在运行前填写；留空不判断等价。请自行确认改写保持原意。")) + '</p></div>';
+    html += '<div class="rp-block"><label class="ps-check"><input type="checkbox" data-sampling-enabled' +
+      (spec.sampling_probe.enabled ? ' checked' : '') + '>' + esc(t("check_sampling_opt", "重复回答，检查随机波动")) + '</label>' +
+      '<div id="rpSamplingFields"><p class="rw-hint">' + esc(t("check_sampling_note", "对原题与已启用的顺序、问法、身份版本各增加独立重复回答，按种子打乱顺序。只用额外重复回答计算每位居民的均值，再比较版本差异；多次回答不算多个居民。不重复互动轮次。")) + '</p>' +
+      field(t("check_sampling_repeats", "每版额外重复次数（2–5）"), "sampling_probe.repeats", spec.sampling_probe.repeats, 'type="number" min="2" max="5" step="1"') +
+      '<p id="rpSamplingError" class="rw-hint" role="alert"></p></div></div>';
+    html += '<div class="rp-block"><label class="ps-check"><input type="checkbox" data-interaction-enabled' +
+      (spec.interaction_probe.enabled ? ' checked' : '') + '>' + esc(t("check_interaction_opt", "检查同伴反馈与短期记忆（每轮额外四组调用）")) + '</label>' +
+      '<div id="rpInteractionFields"><p class="rw-hint">' + esc(t("check_interaction_note", "同一批居民分别在无历史、只看自己、只看同伴、两者都看四种条件下重新回答，每轮同步更新。按独立小组统计，不写入居民长期记忆；更一致不等于更正确。每个条件至少两人，无法分成每组至少两人的情况会在调用前报错。")) + '</p>' +
+      field(t("check_interaction_rounds", "互动轮数（1–3）"), "interaction_probe.rounds", spec.interaction_probe.rounds, 'type="number" min="1" max="3" step="1"') +
+      field(t("check_interaction_size", "每组人数上限（2–8）"), "interaction_probe.group_size", spec.interaction_probe.group_size, 'type="number" min="2" max="8" step="1"') +
+      '<p id="rpInteractionError" class="rw-hint" role="alert"></p></div></div>';
+    html += '<div class="rp-block"><label class="ps-check"><input type="checkbox" data-identity-enabled' +
+      (spec.identity_probe.enabled ? ' checked' : '') + '>' + esc(t("check_identity_opt", "检查材料中的身份线索（额外两组调用）")) + '</label>' +
+      '<div id="rpIdentityFields"><p class="rw-hint">' + esc(t("check_identity_note", "同一居民分别回答 A、B 两份材料，只替换其中的身份线索，居民自身档案不变。请确认原题和条件材料没有矛盾身份，两个版本仍适合回答同一题。差异不自动等于不公正。")) + '</p>' +
+      area(tf("check_identity_template", "共同材料（在替换处写 {token}，只写一次）", {token:"{{identity}}"}), "identity_probe.template", spec.identity_probe.template, 3) +
+      field(t("check_identity_a", "A 的身份线索"), "identity_probe.a", spec.identity_probe.a) +
+      field(t("check_identity_b", "B 的身份线索"), "identity_probe.b", spec.identity_probe.b) +
+      '<p id="rpIdentityError" class="rw-warn" role="status"></p>' +
+      '<div class="rp-identity-preview"><b>' + esc(t("check_identity_preview_a", "A 版补充材料")) + '</b><pre id="rpIdentityPreviewA"></pre>' +
+      '<b>' + esc(t("check_identity_preview_b", "B 版补充材料")) + '</b><pre id="rpIdentityPreviewB"></pre></div></div></div>';
     html += "<h4>" + esc(tf("rp_items", "题目与真人结果（{n} 题）", { n: spec.items.length })) + "</h4>";
     spec.items.forEach(function (item, i) {
       var rows = spec.conditions.map(function (c) {
@@ -440,11 +477,56 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         '<div class="rp-block"><div class="rp-block-head"><b>' + esc(item.id) + '</b><span class="rw-badge">' +
         esc(kindLabel(item)) + "</span></div>" +
         field(t("rp_f_question", "题目"), "items." + i + ".text", item.text) + options +
+        field(t("check_wording_input", "用于复验的等义问法（可选）"), "items." + i + ".audit_wording", item.audit_wording || "") +
+        (item.kind === "choice" ? "" : field(t("check_margin_input", "等价性容许误差（原始单位，可选）"), "items." + i + ".equivalence_margin", item.equivalence_margin, 'type="number" min="0" step="any"')) +
+        (item.kind === "choice" ? "" : '<div class="rp-sampling-margin">' + field(t("check_sampling_margin", "重复均值对照容许误差（原始单位，可选）"), "items." + i + ".sampling_margin", item.sampling_margin, 'type="number" min="0" step="any"') + '</div>') +
+        (item.kind === "choice" ? "" : '<div class="rp-interaction-margin">' + field(t("check_interaction_margin", "互动对照容许误差（原始单位，可选）"), "items." + i + ".interaction_margin", item.interaction_margin, 'type="number" min="0" step="any"') + '</div>') +
+        (item.kind === "choice" ? "" : '<div class="rp-identity-margin">' + field(t("check_identity_margin", "身份对照容许误差（原始单位，可选）"), "items." + i + ".identity_margin", item.identity_margin, 'type="number" min="0" step="any"') + '</div>') +
         '<table class="rw-table rp-results"><thead><tr><th>' + esc(t("rp_col_condition", "条件")) + "</th><th>" +
         esc(item.kind === "choice" ? t("rp_human_dist", "真人各选项比例（%）") : t("rp_human_mean", "真人均值 / SD")) +
         " · n · " + esc(t("rp_source", "出处")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
     });
     host.innerHTML = gwHTML(html);
+    syncIdentity();
+  }
+
+  function syncIdentity() {
+    var view = window.GAWorldIdentityChecks.inspect(state.spec && state.spec.identity_probe);
+    if ($("rpIdentityFields")) {
+      $("rpIdentityFields").hidden = !view.enabled;
+      $("rpIdentityPreviewA").textContent = view.a;
+      $("rpIdentityPreviewB").textContent = view.b;
+      var errors = {template:tf("check_identity_error_template", "共同材料必须包含且仅包含一个 {token}。", {token:"{{identity}}"}),
+        values:t("check_identity_error_values", "请填写两个不同且非空的身份线索，线索内不要再写占位符。"),
+        length:t("check_identity_error_length", "共同材料最多 2000 字符，身份线索最多 100 字符，均须为文字。")};
+      $("rpIdentityError").textContent = view.error ? errors[view.error] : '';
+      document.querySelectorAll('.rp-identity-margin').forEach(function(el){el.hidden = !view.enabled;});
+    }
+    $("rpRun").disabled = state.running || !!view.error || !!syncInteraction().error || !!syncSampling().error;
+    return view;
+  }
+
+  function syncSampling() {
+    var settings = (state.spec || {}).sampling_probe || {};
+    var enabled = settings.enabled === true;
+    var valid = Number.isInteger(settings.repeats) && settings.repeats >= 2 && settings.repeats <= 5;
+    var view = {enabled:enabled,error:enabled && !valid, multiplier:enabled && valid ? 1 + settings.repeats : 1};
+    if ($("rpSamplingFields")) {
+      $("rpSamplingFields").hidden = !enabled;
+      $("rpSamplingError").textContent = view.error ? t("check_sampling_error", "额外重复次数须为 2–5 的整数。") : '';
+      document.querySelectorAll('.rp-sampling-margin').forEach(function(el){el.hidden = !enabled;});
+    }
+    return view;
+  }
+
+  function syncInteraction() {
+    var view = window.GAWorldInteractionChecks.inspect(state.spec && state.spec.interaction_probe);
+    if ($("rpInteractionFields")) {
+      $("rpInteractionFields").hidden = !view.enabled;
+      $("rpInteractionError").textContent = view.error ? t("check_interaction_error", "轮数须为 1–3 的整数，每组人数上限须为 2–8 的整数。") : '';
+      document.querySelectorAll('.rp-interaction-margin').forEach(function(el){el.hidden = !view.enabled;});
+    }
+    return view;
   }
 
   function setPath(path, raw, isNumber) {
@@ -481,10 +563,15 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
 
   function onSpecInput(event) {
     var el = event.target;
-    if (el.hasAttribute("data-path")) setPath(el.getAttribute("data-path"), el.value, el.type === "number");
+    if (el.hasAttribute("data-sampling-enabled")) state.spec.sampling_probe.enabled = el.checked;
+    else if (el.hasAttribute("data-interaction-enabled")) state.spec.interaction_probe.enabled = el.checked;
+    else if (el.hasAttribute("data-identity-enabled")) state.spec.identity_probe.enabled = el.checked;
+    else if (el.hasAttribute("data-bias-check")) state.spec.bias_checks[el.getAttribute("data-bias-check")] = el.checked;
+    else if (el.hasAttribute("data-path")) setPath(el.getAttribute("data-path"), el.value, el.type === "number");
     else if (el.hasAttribute("data-cell")) setCell(el.getAttribute("data-cell"), el.getAttribute("data-field"), el.value);
     else return;
     syncJson();
+    syncCost();
   }
 
   /* Adding or deleting a group changes the results grid, so the editor is redrawn. */
@@ -531,15 +618,20 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     var n = Number($("rpSample").value) || 50;
     var paired = (document.querySelector("input[name=rpDesign]:checked") || {}).value === "paired";
     var calls = paired ? n * state.spec.conditions.length : n;
-    $("rpCost").textContent = tf("rp_cost", "约 {calls} 次模型调用（不超过城市里符合年龄的居民数）", { calls: calls });
+    var checks = state.spec.bias_checks || {};
+    var variants = (checks.order && state.spec.items.some(function(i){return i.kind === "choice";}) ? 1 : 0) +
+      (checks.wording && state.spec.items.some(function(i){return !!i.audit_wording;}) ? 1 : 0) + syncIdentity().extraCalls;
+    calls = calls * ((1 + variants) * syncSampling().multiplier + syncInteraction().extraCalls) + ($("rpInterpret").checked ? 1 : 0);
+    $("rpCost").textContent = tf("rp_cost", "预计 {calls} 次模型调用（按所选样本量估算，实际人数受符合条件的居民数限制）", { calls: calls });
   }
 
   /* ------------------------------------------------------------------ run */
 
   function start() {
-    if (!state.spec) return;
+    if (!state.spec || state.running || syncIdentity().error || syncInteraction().error || syncSampling().error) return;
     var city = $("rpCity").value;
     var seed = $("rpSeed").value.trim();
+    state.running = true;
     $("rpRun").disabled = true;
     setProgress("rpProgress", t("rp_running", "居民正在作答…"), "live");
     api("POST", "/api/research/replication/run", {
@@ -560,19 +652,22 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
             setProgress("rpProgress", msg, "live");
           },
           function (result) {
-            $("rpRun").disabled = false;
+            state.running = false;
+            syncCost();
             setProgress("rpProgress", t("rp_done", "完成。"), "");
             openRun(result.run_id);
             refreshRuns();
           },
           function (error) {
-            $("rpRun").disabled = false;
+            state.running = false;
+            syncCost();
             setProgress("rpProgress", error, "error");
           }
         );
       })
       .catch(function (err) {
-        $("rpRun").disabled = false;
+        state.running = false;
+        syncCost();
         setProgress("rpProgress", err.message, "error");
       });
   }
@@ -737,6 +832,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       '</div></div><div class="rw-actions">' +
       '<button class="btn ghost tiny" id="rpReuse">' + esc(t("rp_reuse", "用这份设计再跑")) + "</button>" +
       '<button class="btn ghost tiny" id="rpExport">' + esc(t("download", "下载 Markdown")) + "</button>" +
+      '<button class="btn ghost tiny" id="rpEvidence">' + esc(t("check_download", "下载完整检查记录")) + "</button>" +
       '<button class="btn ghost tiny danger" id="rpDelete">' + esc(t("delete", "删除")) + "</button></div></div>";
     if (run.residents.length < run.requested_sample) {
       html += '<p class="rw-hint rw-warn">' + esc(tf("rp_capped", "请求 {asked} 位，城市里符合年龄范围的居民只有 {eligible} 位，已全部使用。", {
@@ -746,21 +842,27 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     if (run.spec.citation || run.spec.population) {
       html += '<p class="rw-hint">' + esc(run.spec.citation) + (run.spec.population ? " · " + esc(t("rp_f_population", "真人受访者")) + "：" + esc(run.spec.population) : "") + "</p>";
     }
+    html += window.GAWorldResultChecks.render(run.comparison.result_checks);
     html +=
-      '<div class="rp-tiles">' +
+      '<div class="rp-tiles">'  +
       tile(t("rp_score", "拟合度分"), s.score == null ? "—" : num(s.score, 1), "/ 100") +
       tile(t("rp_level", "水平准确度"), num(s.level_accuracy, 3), tf("rp_cells_n", "{n} 个单元格", { n: s.cells_compared })) +
       tile(t("rp_within", "真人值落在 95% 区间"), pct(s.within_ci_rate), "") +
       tile(t("rp_level_r", "单元格相关 r"), num(s.level_r, 2), "") +
       (s.effects_judged
         ? tile(t("rp_direction", "效应方向一致"), pct(s.direction_rate), tf("rp_effects_n", "{n} 个效应", { n: s.effects_judged })) +
-          tile(t("rp_replication", "显著复现"), pct(s.replication_rate), "") +
+          tile(t("rp_replication", "方向一致且显著"), pct(s.replication_rate), "") +
           tile(t("rp_effect_r", "效应相关 r"), num(s.effect_r, 2), "")
         : "") +
       "</div>" +
       '<p class="rw-hint">' + esc(t("rp_score_note", "拟合度分 = 100 ×（有处理效应时：50% 水平准确度 + 50% 效应方向一致率；只有调查时：水平准确度）。水平准确度 = 1 − 平均误差。")) + "</p>";
+    html += '<p class="rw-hint">' + esc(t("check_legacy_note", "拟合度、方向一致和真人均值落入 AI 区间均不证明效应等价；请查看逐项真人参照检查。")) + '</p>';
     if (run.comparison.effects.length) html += "<h4>" + esc(t("rp_effects", "处理效应：智能体复现了文献的发现吗")) + "</h4>" + effectsTable(run);
     html += "<h4>" + esc(t("rp_cells", "逐题对照")) + "</h4>" + cellsTable(run);
+    html += '<h4>' + esc(t("check_rows", "逐项结果检查")) + '</h4>';
+    ["cells", "effects", "group_cells", "group_gaps"].forEach(function(key){
+      (run.comparison[key] || []).forEach(function(row){html += window.GAWorldResultChecks.render(row.result_checks);});
+    });
     html += answersBlock(run);
     html += '<p class="rw-hint">' + esc(t("rp_disclaimer", "居民回答由大模型按每位居民的档案扮演生成。拟合度衡量这批居民与文献中真人的接近程度——文献人群和城市居民不同（国家、年龄、职业），差异一部分来自人群本身。")) + "</p>";
     host.innerHTML = gwHTML(html);
@@ -771,6 +873,16 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       $("rpSpecCard").scrollIntoView({ behavior: "smooth" });
     });
     $("rpExport").addEventListener("click", exportRun);
+    $("rpEvidence").addEventListener("click", function () {
+      var url = URL.createObjectURL(new Blob([JSON.stringify(run, null, 2)], {type:"application/json;charset=utf-8"}));
+      var link = document.createElement("a");
+      link.href = url;
+      link.download = run.id + "-checks.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
     $("rpDelete").addEventListener("click", deleteRun);
   }
 
@@ -839,6 +951,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     $("rpSpec").addEventListener("click", onSpecClick);
     $("rpJsonApply").addEventListener("click", applyJson);
     $("rpSample").addEventListener("change", syncCost);
+    $("rpInterpret").addEventListener("change", syncCost);
     document.querySelectorAll("input[name=rpDesign]").forEach(function (radio) {
       radio.addEventListener("change", syncCost);
     });

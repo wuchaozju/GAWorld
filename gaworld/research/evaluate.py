@@ -58,6 +58,7 @@ from gaworld.core.comparability import describe as describe_epoch
 from gaworld.core.comparability import same_epoch
 from gaworld.parallel.analysis import metric_label
 from gaworld.parallel.causal import ALPHA, RNG_SEED, bh_qvalues, bootstrap_ci, sign_flip_p, t_interval
+from gaworld.research import result_checks as rc
 from gaworld.research import survey as survey_mod
 from gaworld.research.measures import direction_only, registry
 from gaworld.research.protocol import Protocol
@@ -455,6 +456,9 @@ def evaluate(protocol: Protocol, runs: list[dict[str, Any]]) -> dict[str, Any]:
                 "reasons": reasons,
             }
         )
+
+    for row in hypotheses:
+        row["result_checks"] = rc.hypothesis_card(row, {"protocol": protocol.to_dict() if hasattr(protocol, "to_dict") else str(protocol), "row": row})
 
     summary = {verdict: sum(1 for item in hypotheses if item["verdict"] == verdict) for verdict in VERDICTS}
     return {

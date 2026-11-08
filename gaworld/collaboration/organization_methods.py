@@ -8,6 +8,11 @@ import json
 VERSION = "organization-method-1"
 KINDS = {"random": "随机网络", "full": "全员互联", "hierarchy": "层级组织", "independent": "独立作答后汇总"}
 
+#: A built-in method is named by its communication structure, not by a saved
+#: record: its role slots are decided by the team that runs it.
+BUILTIN_PREFIX = "builtin:"
+BUILTIN_VERSION = 1
+
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -40,6 +45,33 @@ _TOPOLOGY_TEXT = {
     "independent": "独立作答后汇总：成员各自独立完成并提交终稿，彼此不交换中间结果。",
     "custom": "自定义通信：成员只在完整规则指定的有向边上交换上一轮的结果。",
 }
+
+
+def topology_text(kind):
+    """How one communication structure works, in the words members are told."""
+    return _TOPOLOGY_TEXT.get(kind, _TOPOLOGY_TEXT["full"])
+
+
+def builtin_id(kind):
+    """The stable id of a built-in basic organization method."""
+    if kind not in KINDS:
+        raise ValueError("不支持的基本组织方式")
+    return f"{BUILTIN_PREFIX}{kind}"
+
+
+def parse_builtin(identifier):
+    """The kind of a built-in method id, or None when the id names a saved one."""
+    if not isinstance(identifier, str) or not identifier.startswith(BUILTIN_PREFIX):
+        return None
+    kind = identifier[len(BUILTIN_PREFIX) :]
+    return kind if kind in KINDS else None
+
+
+def builtin_method(kind, slots):
+    """A built-in method sized to a team of ``slots`` members."""
+    method = baseline(kind, slots)
+    method["description"] = topology_text(kind)
+    return method
 
 
 def instructions(method) -> list[str]:
