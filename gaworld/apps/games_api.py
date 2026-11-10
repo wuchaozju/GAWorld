@@ -199,7 +199,7 @@ def list_agents(city: str) -> list[dict[str, Any]]:
     ``residence`` is the 小区 they live in — the rumor game groups the picker
     by it, because ties (and therefore a rumor) travel through addresses.
     """
-    from gaworld.interview.roster import load_population
+    from gaworld.interview.roster import recruitment_population
 
     return [
         {
@@ -209,16 +209,18 @@ def list_agents(city: str) -> list[dict[str, Any]]:
             "gender": person["gender"],
             "job": person["job"],
             "residence": person["residence"],
+            "education": person.get("education", "未知"),
+            "student_status": person.get("student_status", "未知"),
         }
-        for person in load_population(city)
+        for person in recruitment_population(city)
     ]
 
 
 def load_persona(city: str, agent_id: int) -> dict[str, Any]:
     """Persona card for one resident: the CSV row plus their profile block."""
-    from gaworld.interview.roster import load_population, profile_block
+    from gaworld.interview.roster import recruitment_population, recruitment_profile
 
-    people = {int(person["id"]): person for person in load_population(city)}
+    people = {int(person["id"]): person for person in recruitment_population(city)}
     person = people.get(int(agent_id))
     if person is None:
         raise ValueError(f"城市 {city or '默认世界'} 里没有 #{agent_id} 这个人")
@@ -228,7 +230,7 @@ def load_persona(city: str, agent_id: int) -> dict[str, Any]:
         "age": person["age"],
         "gender": person["gender"],
         "job": person["job"],
-        "profile_md": profile_block(city, int(agent_id)),
+        "profile_md": recruitment_profile(city, int(agent_id)),
     }
 
 

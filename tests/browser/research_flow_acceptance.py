@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from gaworld.research import reading, workbench  # noqa: E402
+from gaworld.research import assessment, reading, workbench  # noqa: E402
 from gaworld.research.evaluate import evaluate  # noqa: E402
 from gaworld.research.report import render_study_markdown  # noqa: E402
 from tests.test_research_study import PLAN, make_protocol, runs_for, series  # noqa: E402
@@ -28,6 +28,9 @@ plan["designs"] = [
     dict(PLAN["design"], name="机制检验"),
     dict(PLAN["design"], name="情境延伸", population="40 人"),
 ]
+plan["assessment"] = assessment.normalize_assessment({"dimensions": []})
+plan["material_source"] = assessment.material_source("受控论文文本", 80000)
+plan["original_design"] = assessment.normalize_original_design({"sample": "未说明"})
 plan["recommended_design"] = 0
 plan["reading"] = reading.plan_summary(plan)
 plan["reading_designs"] = [reading.plan_summary(plan, i) for i in range(2)]
@@ -43,7 +46,18 @@ study = {
     "active_job_id": "run-fixture",
     "protocol": protocol,
     "runs": [],
-    "preflight": {"ok": True},
+    "preflight": {
+        "ok": True,
+        "budget": {"estimated_calls": 600, "limit": 50000, "http_budget": 50000, "maximum": 1000000},
+        "modes": {
+            "tick": {"compatible": True, "estimated_calls": 80000},
+            "daily_brief": {
+                "compatible": False,
+                "estimated_calls": 600,
+                "errors": ["social_need 需要日内模式"],
+            },
+        },
+    },
     "evaluation": evaluate(
         make_protocol(), runs_for((42, series(0.5, 0.3, 0.5)), (43, series(0.5, 0.3, 0.5)))
     ),
@@ -226,6 +240,7 @@ try:
     check('document.querySelector("#rwResult .rw-reading").textContent.includes("机制检验")')
     ab("click", 'button.rw-design-tab[data-index="1"]')
     check('document.querySelector("#rwResult .rw-reading").textContent.includes("40 人")')
+    check('document.getElementById("rwResult").textContent.includes("量表")')
     ab("click", "#rwToStudy")
     ab("wait", "--text", "编译协议中")
     check('document.getElementById("rwToStudy").disabled')
@@ -238,6 +253,8 @@ try:
     check('document.querySelector("#rwStudy .rw-reading").textContent.includes("统计已完成")')
     check('!document.querySelector("#rwStudy .rw-log-panel").open')
     check('document.getElementById("rwRunLabel").textContent.includes("统计完成")')
+    check('document.getElementById("rwStudy").textContent.includes("social_need")')
+    check('document.getElementById("rwStudy").textContent.includes("HTTP")')
     assert "study_id=Sfixture-0001" in ab("get", "url")
     results = []
     for width, theme in [(1440, "light"), (390, "light"), (390, "dark")]:

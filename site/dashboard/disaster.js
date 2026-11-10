@@ -274,11 +274,15 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     const overall = (run.stats || {}).overall || {};
     $("#dOverall").innerHTML = gwHTML([
       metric(t("disaster.m_panic", "平均恐慌"), overall.avg_panic, "/ 5"),
-      metric(t("disaster.m_help", "互助率"), Math.round((overall.help_rate || 0) * 100) + "%", ""),
-      metric(t("disaster.m_reactions", "反应数"), overall.n, ""),
+      metric(t("disaster.m_help", "互助率"), rate(overall.help_rate), ""),
+      metric(t("disaster.m_reactions", "反应人次"), overall.n, ""),
+      metric(t("disaster.valid_panic", "有效恐慌评分"), overall.panic_n, ""),
+      metric(t("disaster.help_fraction", "互助人次 / 有效回答"), overall.help_n == null ? "—" : `${overall.helpers}/${overall.help_n}`, ""),
+      metric(t("disaster.invalid", "解析失败"), overall.invalid_n, ""),
       metric(t("disaster.m_top", "最多的选择"), topAction(overall.actions), ""),
     ].join(""));
 
+    $("#dMethod").innerHTML = gwHTML(methodBlock(run));
     const stages = (run.stats || {}).per_stage || [];
     $("#dTimeline").innerHTML = gwHTML(stages.map((stage, index) => stageBlock(run, stage, index)).join(""));
   }
@@ -296,7 +300,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   }
 
   function stageBlock(run, stage, index) {
-    const total = stage.n || 1;
+    const total = stage.action_n || stage.n || 1;
     const bars = Object.entries(stage.actions || {})
       .sort((a, b) => b[1] - a[1])
       .map(([action, n]) => `<div class="disaster-bar">
@@ -313,12 +317,16 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         return `<article class="disaster-card">
           <header>
             <span class="name">#${person.agent_id} ${esc(person.name)}</span>
-            <span class="tag">${esc(r.action)}</span>
+            <span class="tag">${esc(r.valid_action === false ? t("disaster.unparsed", "未解析") : r.action)}</span>
           </header>
-          <p class="detail">${esc(r.detail)}</p>
+          <p class="detail">${esc(r.detail || (r.parse_status === "invalid" ? t("disaster.invalid_reply", "回答未解析，未计入有效指标") : ""))}</p>
+          ${(r.secondary_actions || []).length ? `<p class="detail">${esc(t("disaster.secondary", "同时还会"))}：${esc(r.secondary_actions.join("、"))}</p>` : ""}
+          ${r.raw ? `<details><summary>${esc(t("disaster.diagnostics", "解析诊断（原始回答）"))} · ${esc(r.parse_status)}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.raw)}</pre></details>` : ""}
+          ${(r.observations || []).length ? `<details><summary>${esc(t("disaster.observations", "收到的熟人消息"))} (${r.observations.length})</summary>${r.observations.map(e => `<p>#${e.from} ${esc(e.name)} · ${esc(e.label)} · ${esc(t("disaster.source_" + e.source, e.source))} · ${esc(t("disaster.channel_" + e.channel, e.channel))}：${esc(e.say || e.detail)}</p>`).join("")}</details>` : ""}
           ${r.say ? `<p class="say">「${esc(r.say)}」</p>` : ""}
           <footer>
-            <span class="panic" title="${esc(t("disaster.panic", "恐慌值"))}">${"●".repeat(r.panic)}${"○".repeat(5 - r.panic)}</span>
+            <span class="panic" title="${esc(t("disaster.panic", "恐慌值"))}">${r.panic == null ? "—" : "●".repeat(r.panic) + "○".repeat(5 - r.panic)}</span>
+            ${r.help == null ? `<span>${esc(t("disaster.help_missing", "互助回答缺失"))}</span>` : ""}
             ${r.help ? `<span class="help">${esc(t("disaster.helping", "🤝 顾得上别人"))}</span>` : ""}
           </footer>
         </article>`;
@@ -328,12 +336,38 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     return `<section class="disaster-stage">
       <header class="stage-head">
         <h4>${esc(t("disaster.stage", "第"))}${index + 1}${esc(t("disaster.stage_suffix", "幕"))}</h4>
-        <span class="stage-meta">${esc(t("disaster.m_panic", "平均恐慌"))} ${stage.avg_panic} · ${esc(t("disaster.m_help", "互助率"))} ${Math.round((stage.help_rate || 0) * 100)}%</span>
+        <span class="stage-meta">${esc(t("disaster.m_panic", "平均恐慌"))} ${stage.avg_panic == null ? "—" : stage.avg_panic} · ${esc(t("disaster.m_help", "互助率"))} ${rate(stage.help_rate)}</span>
       </header>
+      <p class="disaster-hint">${esc(qualityLine(stage))}</p>
       <p class="stage-text">${esc(stage.text || (run.stages || [])[index] || "")}</p>
       <div class="disaster-bars">${bars}</div>
       <div class="disaster-cards">${cards}</div>
     </section>`;
+  }
+
+  function rate(value) { return value == null ? "—" : Math.round(value * 100) + "%"; }
+
+  function qualityLine(stats) {
+    if (stats.help_n == null) return t("disaster.legacy", "旧版结果未记录有效分母，可能含默认补值。");
+    return `${t("disaster.help_fraction", "互助人次 / 有效回答")} ${stats.helpers}/${stats.help_n} · ${t("disaster.valid_panic", "有效恐慌评分")} ${stats.panic_n} · ${t("disaster.invalid", "解析失败")} ${stats.invalid_n || 0} · ${t("disaster.partial", "字段缺失")} ${stats.partial_n || 0} · ${t("disaster.repaired", "容错恢复")} ${stats.repaired_n || 0}`;
+  }
+
+  function methodBlock(run) {
+    const definitions = run.metric_definitions || {};
+    const context = run.context || {};
+    const basis = Object.values(context.basis || {}).map(v => Array.isArray(v) ? v.join("、") : v).join("；");
+    const edges = run.edges || [];
+    return `<details open><summary>${esc(t("disaster.methods", "指标口径与地域、关系机制"))}</summary>
+      ${Object.entries(definitions).map(([k,v]) => `<p>${esc(t("disaster.definition_" + k, v))}</p>`).join("")}
+      ${!run.metric_definitions ? `<p>${esc(t("disaster.legacy", "旧版结果未记录有效分母，可能含默认补值。"))}</p>` : ""}
+      <p>${esc(t("disaster.scenario_note", "情境依据已有地域资料构造；缺资料使用通用假想情境，自定义剧本保留原文。不是实际灾情。"))} ${esc(basis || context.note || "")}</p>
+      <p>${esc(t("disaster.region_source", "地域资料来源"))}：${esc(context.source || "—")}</p>
+      ${(context.sources || []).map(source => `<p>${esc(typeof source === "string" ? source : [source.title, source.url].filter(Boolean).join(" · "))}</p>`).join("")}
+      <p>${esc(t("disaster.network_note", "消息只沿关系边传递上一阶段内容；断网时远程渠道中断。同住址可见接触是一项简化假设，推断关系不代表现实关系。"))}</p>
+      <ul>${edges.map(e => `<li>#${e.a} ↔ #${e.b} · ${esc(e.label)} · ${esc(t("disaster.source_" + e.source, e.source))} · ${esc(t("disaster.channel_" + e.channel, e.channel))}</li>`).join("")}</ul>
+      <p>${esc(t("disaster.blocked", "因通信中断未送达的消息"))}：${(run.blocked_transmissions || []).length}</p>
+      ${(run.blocked_transmissions || []).map(e => `<p>#${e.from} → #${e.to} · ${esc(t("disaster.stage", "第"))}${e.stage + 1}${esc(t("disaster.stage_suffix", "幕"))}</p>`).join("")}
+    </details>`;
   }
 
   function setStatus(message, isError) {

@@ -609,72 +609,68 @@
     "mean_degree": 12.0,
     "max_degree": 20,
     "isolated": 0,
-    "clustering": 0.20970230569224377,
+    "clustering": 0.21054542249975686,
     "random_clustering": 0.12,
-    "mean_path_length": 2.138047138047138,
+    "mean_path_length": 2.1175084175084176,
     "random_path_length": 1.8532568160582539,
-    "small_world_sigma": 1.5147476578488566,
+    "small_world_sigma": 1.5355890918435515,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
-        "degree": 5,
-        "count": 2
-      },
-      {
         "degree": 6,
-        "count": 2
-      },
-      {
-        "degree": 7,
-        "count": 2
-      },
-      {
-        "degree": 8,
-        "count": 10
-      },
-      {
-        "degree": 9,
-        "count": 14
-      },
-      {
-        "degree": 10,
         "count": 6
       },
       {
-        "degree": 11,
-        "count": 9
+        "degree": 7,
+        "count": 6
       },
       {
-        "degree": 12,
-        "count": 10
-      },
-      {
-        "degree": 13,
-        "count": 12
-      },
-      {
-        "degree": 14,
-        "count": 9
-      },
-      {
-        "degree": 15,
-        "count": 8
-      },
-      {
-        "degree": 16,
-        "count": 8
-      },
-      {
-        "degree": 17,
+        "degree": 8,
         "count": 3
       },
       {
+        "degree": 9,
+        "count": 11
+      },
+      {
+        "degree": 10,
+        "count": 12
+      },
+      {
+        "degree": 11,
+        "count": 8
+      },
+      {
+        "degree": 12,
+        "count": 12
+      },
+      {
+        "degree": 13,
+        "count": 4
+      },
+      {
+        "degree": 14,
+        "count": 8
+      },
+      {
+        "degree": 15,
+        "count": 11
+      },
+      {
+        "degree": 16,
+        "count": 11
+      },
+      {
+        "degree": 17,
+        "count": 4
+      },
+      {
         "degree": 18,
-        "count": 1
+        "count": 3
       },
       {
         "degree": 20,
-        "count": 4
+        "count": 1
       }
     ]
   },
@@ -702,5 +698,148 @@
         "count": 1
       }
     ]
+  },
+  "spec": {
+    "size": 100,
+    "seed": 915436577,
+    "preset": "cn_county_town",
+    "name": "芝加哥",
+    "demography": {
+      "median_age": 36.0,
+      "share_under_18": 0.16,
+      "share_over_65": 0.14,
+      "sex_ratio_m_per_100f": 104.0,
+      "migrant_share": 0.38,
+      "min_agent_age": 6
+    },
+    "household": {
+      "mean_size": 2.6,
+      "share_single_person": 0.25,
+      "share_multigen": 0.18,
+      "share_shared_rental": 0.12,
+      "max_size": 6,
+      "spouse_age_gap_mean": 2.0,
+      "fertility_children_mean": 1.1
+    },
+    "education_work": {
+      "tertiary_rate": 0.35,
+      "employment_rate": 0.68,
+      "unemployment_rate": 0.05,
+      "gig_platform_share": 0.1,
+      "industry_mix": {
+        "tech": 0.18,
+        "finance": 0.08,
+        "medical": 0.07,
+        "education": 0.09,
+        "service": 0.38,
+        "trade": 0.2
+      }
+    },
+    "income": {
+      "median_monthly": 6500.0,
+      "gini": 0.42,
+      "pareto_tail_alpha": 2.2,
+      "tail_threshold_pct": 0.95
+    },
+    "geography": {
+      "district_weights": {
+        "Mandell": 0.0136986301369863,
+        "South Lawndale": 0.0136986301369863,
+        "Cheltenham": 0.0136986301369863,
+        "Bricktown": 0.0136986301369863,
+        "Gold Coast": 0.0136986301369863,
+        "Ravenswood": 0.0136986301369863,
+        "Fuller Park": 0.0136986301369863,
+        "Archer Limits": 0.0136986301369863,
+        "Woodlawn": 0.0136986301369863,
+        "Irving Park": 0.0136986301369863,
+        "Hamlin Park": 0.0136986301369863,
+        "Brighton Park": 0.0136986301369863,
+        "Archer Heights": 0.0136986301369863,
+        "Becks Park": 0.0136986301369863,
+        "Moreland": 0.0136986301369863,
+        "Edgewater": 0.0136986301369863,
+        "McKinley Park": 0.0136986301369863,
+        "West Garfield Park": 0.0136986301369863,
+        "Winchester-Hood Garden Homes": 0.0136986301369863,
+        "New City": 0.0136986301369863,
+        "Forest Hill": 0.0136986301369863,
+        "Lincoln Park": 0.0136986301369863,
+        "West Englewood": 0.0136986301369863,
+        "East Ravenswood": 0.0136986301369863,
+        "West Edgewater": 0.0136986301369863,
+        "Cornell": 0.0136986301369863,
+        "Back of the Yards": 0.0136986301369863,
+        "South Commons": 0.0136986301369863,
+        "North Park": 0.0136986301369863,
+        "Sleepy Hollow": 0.0136986301369863,
+        "South Branch Addition": 0.0136986301369863,
+        "Kenwood": 0.0136986301369863,
+        "Maplewood": 0.0136986301369863,
+        "Oakland": 0.0136986301369863,
+        "华埠": 0.0136986301369863,
+        "Hermosa": 0.0136986301369863,
+        "Logan Square": 0.0136986301369863,
+        "Mid-North District": 0.0136986301369863,
+        "South Englewood": 0.0136986301369863,
+        "Kelvyn Grove": 0.0136986301369863,
+        "Windsor Park": 0.0136986301369863,
+        "Granville Gardens": 0.0136986301369863,
+        "Chicago Lawn": 0.0136986301369863,
+        "Park Manor": 0.0136986301369863,
+        "Avondale": 0.0136986301369863,
+        "Hyde Park": 0.0136986301369863,
+        "South Lynn": 0.0136986301369863,
+        "Grand Boulevard": 0.0136986301369863,
+        "Bowmanville": 0.0136986301369863,
+        "Englewood": 0.0136986301369863,
+        "Albany Park": 0.0136986301369863,
+        "Elsdon": 0.0136986301369863,
+        "West Elsdon": 0.0136986301369863,
+        "East Garfield Park": 0.0136986301369863,
+        "West Town": 0.0136986301369863,
+        "Cicero": 0.0136986301369863,
+        "Halsted Street": 0.0136986301369863,
+        "Kedzie": 0.0136986301369863,
+        "Clybourn": 0.0136986301369863,
+        "Western Avenue": 0.0136986301369863,
+        "Museum Campus/11th Street": 0.0136986301369863,
+        "Stony Island": 0.0136986301369863,
+        "Bryn Mawr": 0.0136986301369863,
+        "South Shore": 0.0136986301369863,
+        "79th Street (Cheltenham)": 0.0136986301369863,
+        "83rd Street (South Chicago)": 0.0136986301369863,
+        "Grayland": 0.0136986301369863,
+        "Wrightwood": 0.0136986301369863,
+        "McCormick Place": 0.0136986301369863,
+        "51st-53rd Street (Hyde Park)": 0.0136986301369863,
+        "55th-56th-57th Street": 0.0136986301369863,
+        "59th Street (University of Chicago)": 0.0136986301369863,
+        "Chicago Union Station": 0.0136986301369863
+      }
+    },
+    "psychology": {
+      "state_means": {
+        "emotion": 0.58,
+        "stress": 0.55,
+        "econ_security": 0.52,
+        "city_identity": 0.55,
+        "policy_sensitivity": 0.5,
+        "platform_dependence": 0.5,
+        "risk_preference": 0.45,
+        "voice_propensity": 0.45,
+        "mobility_intent": 0.45
+      },
+      "state_sd": 0.12,
+      "couple_states_to_attributes": true
+    },
+    "social_network": {
+      "mean_degree": 12.0,
+      "homophily_strength": 0.55,
+      "geo_decay": 0.35,
+      "rewire_p": 0.1,
+      "workplace_size_alpha": 2.0,
+      "dunbar_weak_cap": 150
+    }
   }
 }

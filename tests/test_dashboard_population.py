@@ -27,10 +27,25 @@ import unittest
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
+from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from gaworld.apps import population_api
+
+
+def setUpModule():
+    """Durable job tests must not write into the operator's actual run root."""
+    global _job_directory, _job_path_patch
+    _job_directory = tempfile.TemporaryDirectory()
+    _job_path_patch = patch.object(population_api.job_store, "root", lambda: Path(_job_directory.name))
+    _job_path_patch.start()
+
+
+def tearDownModule():
+    _job_path_patch.stop()
+    _job_directory.cleanup()
 
 
 def _wait(job_id: str, timeout: float = 60.0) -> dict:
@@ -148,7 +163,8 @@ class JobTests(unittest.TestCase):
         population_api._run_in_background(job_id, boom)
         record = _wait(job_id, timeout=10)
         self.assertEqual("error", record["status"])
-        self.assertIn("deliberate", record["message"])
+        self.assertEqual("task_failed", record["error"]["code"])
+        self.assertNotIn("deliberate", json.dumps(record))
         self.assertIsNotNone(record["error"])
 
     def test_finished_jobs_are_evicted_but_running_ones_are_not(self):

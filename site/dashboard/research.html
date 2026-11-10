@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/site/brand.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
+  <link rel="stylesheet" href="/site/dashboard/resident-filters.css" />
 </head>
 <body class="studio-body">
   <main class="studio-shell">
@@ -334,6 +335,29 @@
             </label>
             <button class="btn" id="rpExtract" data-i18n="research.rp_extract">抽取研究设计</button>
           </div>
+          <p class="rw-hint" id="rpModelInfo"></p>
+          <details class="rw-material" id="rpGenBox">
+            <summary data-i18n="research.rp_gen_title">生成参数：温度与 max tokens</summary>
+            <p class="rw-hint" data-i18n="research.rp_gen_hint">温度与 max tokens 属于实验协议的一部分，不是部署设置。改动会被记进运行记录，并随数据包一起导出；模型名只是标识，模型版本还要看端点与配置指纹。</p>
+            <div class="rp-gen-grid">
+              <div class="rp-gen-row">
+                <span class="rp-gen-stage" data-i18n="research.rp_gen_extract">读取文献</span>
+                <label class="rw-field"><span data-i18n="research.rp_gen_temp">温度</span><input id="rpGenExtractTemp" type="number" min="0" max="2" step="0.1" /></label>
+                <label class="rw-field"><span data-i18n="research.rp_gen_tokens">max tokens</span><input id="rpGenExtractMax" type="number" min="32" max="32000" step="100" /></label>
+              </div>
+              <div class="rp-gen-row">
+                <span class="rp-gen-stage" data-i18n="research.rp_gen_answer">居民作答</span>
+                <label class="rw-field"><span data-i18n="research.rp_gen_temp">温度</span><input id="rpGenAnswerTemp" type="number" min="0" max="2" step="0.1" /></label>
+                <label class="rw-field"><span data-i18n="research.rp_gen_tokens">max tokens</span><input id="rpGenAnswerMax" type="number" min="32" max="32000" step="100" /></label>
+              </div>
+              <div class="rp-gen-row">
+                <span class="rp-gen-stage" data-i18n="research.rp_gen_interpret">解读偏差</span>
+                <label class="rw-field"><span data-i18n="research.rp_gen_temp">温度</span><input id="rpGenInterpretTemp" type="number" min="0" max="2" step="0.1" /></label>
+                <label class="rw-field"><span data-i18n="research.rp_gen_tokens">max tokens</span><input id="rpGenInterpretMax" type="number" min="32" max="32000" step="100" /></label>
+              </div>
+            </div>
+            <p class="rw-hint" id="rpGenError" aria-live="polite"></p>
+          </details>
           <p class="rw-progress" id="rpExtractProgress" aria-live="polite"></p>
         </div>
 
@@ -364,6 +388,7 @@
               <input id="rpSeed" type="number" min="1" data-i18n-placeholder="research.sg_auto" placeholder="自动" />
             </label>
           </div>
+          <p id="rpEligible" class="resident-filter-count" role="status"></p>
           <div class="rw-kind" role="radiogroup" data-i18n-aria="research.rp_design_label" aria-label="分配方式">
             <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="between" checked /><span data-i18n="research.rp_design_between">组间：每人随机分到一个条件（同文献）</span></label>
             <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="paired" /><span data-i18n="research.rp_design_paired">配对：每人分别作答每个条件（更省样本）</span></label>
@@ -386,7 +411,7 @@
         </div>
         <div class="rw-side-card">
           <h3 data-i18n="research.how_title">它是怎么工作的</h3>
-          <p class="rw-hint" data-i18n="research.rp_how_body">每位居民每个条件一次模型调用，按题目的量表或选项作答，超出范围的回答记为无效、不会被截断。比较全部由代码完成：每题每条件的误差按题目自身量程归一到 0–1（单选题用分布的总变差距离），并看真人数值是否落在居民的 95% 区间内；实验还比较每个处理相对对照组的效应方向与显著性。拟合度分 = 50% 水平准确度 + 50% 效应方向一致率（只有调查时就是水平准确度）。记录存放在 output/research/replication/。</p>
+          <p class="rw-hint" data-i18n="research.rp_how_body">每位居民每个条件一次模型调用，按题目的量表或选项作答，超出范围的回答记为无效、不会被截断。比较全部由代码完成：每题每条件的误差按题目自身量程归一到 0–1（单选题用分布的总变差距离），离散度误差按居民 SD 与真人 SD 之比算（居民是不是比真人更一致），并看真人数值是否落在居民的 95% 区间内；实验还比较每个处理相对对照组的效应方向与显著性。拟合度分 = 35% 水平准确度 + 30% 离散度准确度 + 35% 效应方向一致率，算不出的分量不计入、剩下的权重重新分配。记录存放在 output/research/replication/。</p>
         </div>
       </aside>
     </section>
@@ -552,6 +577,8 @@
   <script src="/site/dashboard/result-checks.js"></script>
   <script src="/site/dashboard/interaction-checks.js"></script>
   <script src="/site/dashboard/identity-checks.js"></script>
+  <script src="/site/dashboard/research-assessment.js"></script>
+  <script src="/site/dashboard/research-admission.js"></script>
   <script src="/site/dashboard/research.js"></script>
   <script src="/site/dashboard/research-batches.js"></script>
   <script src="/site/dashboard/organization-intelligence.js"></script>
@@ -560,6 +587,7 @@
   <script src="/site/dashboard/organization-comparison.js"></script>
   <script src="/site/dashboard/serious-game.js"></script>
   <script src="/site/dashboard/policy-sim.js"></script>
+  <script src="/site/dashboard/resident-filters.js"></script>
   <script src="/site/dashboard/replication.js"></script>
   <script src="/site/dashboard/worlds.js"></script>
 </body>

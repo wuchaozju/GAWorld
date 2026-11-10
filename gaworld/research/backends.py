@@ -253,6 +253,7 @@ def default_seed_runner(
             "id": manifest["id"],
             "status": runner.manifest.get("status", "unknown"),
             "world_status": dict(runner.manifest.get("world_status") or {}),
+            "world_outcomes": runner.snapshot()["worlds"],
             "report": result,
             "execution_mode": spec.execution_mode or ("lean_tick" if spec.fast else "tick"),
             "actual_provider": spec.llm_provider,

@@ -18,6 +18,8 @@ PLAN_FIELDS = {
     "research_questions": list,
     "hypotheses": list,
     "paper_digest": dict,
+    "original_design": dict,
+    "assessment": dict,
     "feasibility": dict,
     "capability_map": list,
     "design": dict,
@@ -69,6 +71,35 @@ def plan_edit(current: dict[str, Any], changes: Any) -> dict[str, Any]:
         if not 0 <= index < len(result["designs"]):
             raise ValueError("推荐设计编号超出范围")
         result["design"] = copy.deepcopy(result["designs"][index])
+    from gaworld.research.assessment import normalize_assessment, normalize_original_design
+
+    if "original_design" in changes:
+        result["original_design"] = normalize_original_design(
+            result["original_design"], result.get("material", ""), confirmed=True
+        )
+    if "assessment" in changes:
+        result["assessment"] = normalize_assessment(result["assessment"])
+    if set(changes) & {
+        "material",
+        "design",
+        "designs",
+        "hypotheses",
+        "research_questions",
+        "original_design",
+    }:
+        result["assessment"] = normalize_assessment({"dimensions": []})
+        for design in result.get("designs") or []:
+            design["assessment"] = normalize_assessment({"dimensions": []})
+    if "material" in changes:
+        from gaworld.research.assessment import material_source
+
+        result["material_original"] = changes["material"]
+        result["material_source"] = material_source(changes["material"], 80_000)
+        result["material"] = changes["material"][:80_000]
+        result["material_truncated"] = result["material_source"]["truncated"]
+        result["original_design"] = normalize_original_design(
+            result.get("original_design"), result["material"], confirmed=True
+        )
     history = copy.deepcopy(current.get("revisions") or [])
     history.append({k: v for k, v in current.items() if k not in {"revisions", "markdown"}})
     result["revisions"] = history
@@ -83,6 +114,11 @@ def protocol_edit(current: dict[str, Any], changes: Any) -> Protocol:
     for key in ("sample", "validity", "survey"):
         if not isinstance(data.get(key, {}), dict):
             raise ValueError(f"{key} 必须是对象")
+    from gaworld.research.budget import positive_budget
+
+    for key in ("call_budget", "http_budget"):
+        if data.get(key) is not None:
+            data[key] = positive_budget(data[key], key)
     for key in ("conditions", "hypotheses", "measures"):
         if not isinstance(data.get(key), list) or any(not isinstance(v, dict) for v in data[key]):
             raise ValueError(f"{key} 必须是对象列表")

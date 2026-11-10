@@ -303,7 +303,7 @@ def deploy(payload: dict[str, Any]) -> dict[str, Any]:
     body = agent_payload(profile)
     overrides = (payload or {}).get("identity") or {}
     for key in ("name", "gender", "age", "hukou", "residence", "job", "personality",
-                "daily_life", "values", "education_income", "social_network"):
+                "daily_life", "values", "education_income", "social_network", "education", "student_status"):
         value = overrides.get(key)
         if value not in (None, ""):
             body[key] = value

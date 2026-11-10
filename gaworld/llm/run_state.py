@@ -22,6 +22,23 @@ _PROVIDER: contextvars.ContextVar[str] = contextvars.ContextVar("research_provid
 _LEDGER_PATH: contextvars.ContextVar[str] = contextvars.ContextVar("research_ledger_path", default="")
 
 
+class ResearchRunAborted(RuntimeError):
+    """Keep a persisted terminal reason when another worker observes it."""
+
+    def __init__(self, reason: str, *, reason_code: str = "") -> None:
+        super().__init__(reason)
+        self.reason_code = reason_code
+
+
+class ResearchBudgetExceeded(ResearchRunAborted):
+    """No more requests may be dispatched for this approved research attempt."""
+
+    reason_code = "budget_exhausted"
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason, reason_code=self.reason_code)
+
+
 def retry_delay(exc: BaseException, *, now: float | None = None) -> float:
     response = getattr(exc, "response", None)
     raw = response.headers.get("Retry-After", "") if response is not None else ""
@@ -78,20 +95,75 @@ class RunLedger:
             "total_latency_ms": 0,
             "http_attempts": 0,
             "http_failures": 0,
+            "http_budget": None,
+            "http_reserved": 0,
             "cooldown_seconds": 0,
             "providers": {},
             "aborted": False,
             "reason": "",
+            "reason_code": "",
         }
         return {**defaults, **data}
 
     def check(self) -> None:
         state = self.snapshot()
         if state["aborted"]:
-            raise RuntimeError(state["reason"])
+            if state.get("reason_code") == "budget_exhausted":
+                raise ResearchBudgetExceeded(state["reason"])
+            raise ResearchRunAborted(state["reason"], reason_code=state.get("reason_code", ""))
 
-    def abort(self, reason: str) -> None:
-        self._change(lambda data: data.update(aborted=True, reason=reason))
+    def abort(self, reason: str, *, reason_code: str = "") -> None:
+        def change(data: dict[str, Any]) -> None:
+            if not data.get("aborted"):
+                data.update(aborted=True, reason=reason, reason_code=reason_code)
+
+        self._change(change)
+
+    def configure_http_budget(self, limit: int) -> None:
+        """Bind a fresh attempt to its approved cap; peers can only repeat it."""
+        if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+            raise ValueError("HTTP 请求硬预算须为正整数")
+
+        def change(data: dict[str, Any]) -> None:
+            prior = data.get("http_budget")
+            if prior is not None and prior != limit:
+                raise ValueError("运行请求预算已经固定，请创建新的尝试后重新批准")
+            if prior is None and (data.get("http_reserved", 0) or data.get("http_attempts", 0)):
+                raise ValueError("运行已有请求，不能补写或改变批准预算")
+            data["http_budget"] = limit
+
+        self._change(change)
+
+    def reserve_http_attempt(self) -> bool:
+        """Atomically admit one actual send across all subprocesses and retries."""
+        denied = False
+
+        def change(data: dict[str, Any]) -> None:
+            nonlocal denied
+            if data.get("aborted"):
+                denied = True
+                return
+            limit = data.get("http_budget")
+            reserved = data.get("http_reserved", 0)
+            if limit is not None and reserved >= limit:
+                data.update(
+                    aborted=True,
+                    reason_code="budget_exhausted",
+                    reason=f"budget_exhausted：实际 HTTP 请求已达到批准硬预算 {limit:,}；已停止后续提交。",
+                )
+                denied = True
+                return
+            data["http_reserved"] = reserved + 1
+
+        state = self._change(change)
+        if denied:
+            if state.get("reason_code") == "budget_exhausted":
+                raise ResearchBudgetExceeded(state["reason"])
+            raise ResearchRunAborted(
+                state.get("reason") or "研究已停止，未继续提交请求",
+                reason_code=state.get("reason_code", ""),
+            )
+        return state.get("http_budget") is not None
 
     def cooldown(self, name: str, seconds: float) -> None:
         def change(data: dict[str, Any]) -> None:
@@ -116,7 +188,9 @@ class RunLedger:
                     remaining + time.monotonic() - started + self.snapshot()["cooldown_seconds"]
                     > self.wait_budget
                 ):
-                    self.abort("provider 等待预算已超出；未继续提交请求")
+                    self.abort(
+                        "provider 等待预算已超出；未继续提交请求", reason_code="provider_wait_exhausted"
+                    )
                     raise RuntimeError("provider 等待预算已超出；遵循 Retry-After，未继续重试")
                 time.sleep(min(0.25, remaining))
         finally:
@@ -153,16 +227,22 @@ class RunLedger:
             data["requests_failed"] = data.get("requests_failed", 0) + int(not ok)
             data["requests_fell_back"] = data.get("requests_fell_back", 0) + int(fell_back)
             data["consecutive_failures"] = 0 if ok else data.get("consecutive_failures", 0) + 1
-            if data["consecutive_failures"] >= self.failure_budget:
-                data.update(aborted=True, reason="provider 连续失败预算已耗尽；请检查限流、配额或本地连接")
+            if data["consecutive_failures"] >= self.failure_budget and not data.get("aborted"):
+                data.update(
+                    aborted=True,
+                    reason_code="provider_failures_exhausted",
+                    reason="provider 连续失败预算已耗尽；请检查限流、配额或本地连接",
+                )
 
         self._change(change)
 
     def note_error(self, name: str, exc: BaseException) -> None:
+        from gaworld.llm.diagnostics import classify_error, is_quota_error
+
         response = getattr(exc, "response", None)
-        is_quota = response is not None and response.status_code == 429 and "2062" in response.text
+        is_quota = is_quota_error(exc)
         category = (
-            "token_plan_2062"
+            "quota_exhausted"
             if is_quota
             else "rate_limit"
             if response is not None and response.status_code == 429
@@ -172,10 +252,19 @@ class RunLedger:
         def change(data: dict[str, Any]) -> None:
             entry = data.setdefault("providers", {}).setdefault(name, {})
             entry["last_error"] = category
+            entry["diagnostic"] = classify_error(
+                exc, stage="model_request", provider=name, attempts=getattr(exc, "llm_attempts", None)
+            )
+            if not data.get("aborted"):
+                data["last_diagnostic"] = entry["diagnostic"]
             if is_quota:
                 data["quota_failures"] = data.get("quota_failures", 0) + 1
-                if data["quota_failures"] >= self.failure_budget:
-                    data.update(aborted=True, reason="Token Plan 2062 失败预算已耗尽；等待配额恢复或检查套餐")
+                if not data.get("aborted"):
+                    data.update(
+                        aborted=True,
+                        reason_code="quota_exhausted",
+                        reason="模型配额已耗尽；未盲目重试，请检查服务商额度或套餐。",
+                    )
 
         self._change(change)
 
@@ -185,6 +274,7 @@ class RunLedger:
             if data["invalid_briefs"] >= self.failure_budget and not data.get("aborted"):
                 data.update(
                     aborted=True,
+                    reason_code="output_format",
                     reason=(
                         f"研究简报失败预算已耗尽：{data['invalid_briefs']} 次简报在格式修复后仍不可用；"
                         "已停止后续世界，请查看简报解析日志。已生成的部分数据保留，但不能据此认定研究成功。"
@@ -249,7 +339,9 @@ def research_retry(exc: BaseException, name: str, delay: float) -> bool:
     seconds = retry_delay(exc) if response is not None and response.status_code == 429 else delay
     ledger.cooldown(name, seconds)
     if seconds > ledger.wait_budget:
-        ledger.abort("provider 等待预算已超出；服务商 Retry-After 未被缩短")
+        ledger.abort(
+            "provider 等待预算已超出；服务商 Retry-After 未被缩短", reason_code="provider_wait_exhausted"
+        )
         raise RuntimeError("provider 等待预算已超出；服务商 Retry-After 未被缩短") from exc
     ledger.wait(name)
     return True

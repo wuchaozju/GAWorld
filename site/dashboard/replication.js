@@ -78,7 +78,87 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       });
   }
 
-  var state = { providers: [], cities: [], runs: [], spec: null, run: null, maxSample: 500, running:false };
+  var state = { providers: [], cities: [], runs: [], spec: null, run: null, maxSample: 500, running:false, educationSchema:{}, eligible:null, generation:null, extraction:null };
+  var eligibilityTimer = null, eligibilitySequence = 0;
+
+  /* ----------------------------------------------------------------- 模型参数
+     温度与 max tokens 是实验协议的一部分。这里读出界面上填的三个阶段的参数，
+     并在越界时说清楚，而不是把它悄悄改掉——一个没到模型的温度比一个被拒绝的
+     温度更糟。 */
+
+  var GEN_FIELDS = {
+    extract: { temp: "rpGenExtractTemp", max: "rpGenExtractMax" },
+    answer: { temp: "rpGenAnswerTemp", max: "rpGenAnswerMax" },
+    interpret: { temp: "rpGenInterpretTemp", max: "rpGenInterpretMax" },
+  };
+
+  function fillGeneration(defaults) {
+    if (!defaults) return;
+    state.generation = defaults;
+    Object.keys(GEN_FIELDS).forEach(function (stage) {
+      var values = defaults[stage] || {};
+      var fields = GEN_FIELDS[stage];
+      if (values.temperature != null && $(fields.temp)) $(fields.temp).value = values.temperature;
+      if (values.max_tokens != null && $(fields.max)) $(fields.max).value = values.max_tokens;
+    });
+  }
+
+  function generationPayload() {
+    var out = {};
+    var problem = "";
+    Object.keys(GEN_FIELDS).forEach(function (stage) {
+      var fields = GEN_FIELDS[stage];
+      var temp = Number($(fields.temp) && $(fields.temp).value);
+      var max = Number($(fields.max) && $(fields.max).value);
+      if (!isFinite(temp) || temp < 0 || temp > 2) {
+        problem = tf("rp_gen_bad_temp", "{stage}的温度要在 0–2 之间", { stage: stage });
+      } else if (!isFinite(max) || max < 32 || max > 32000) {
+        problem = tf("rp_gen_bad_tokens", "{stage}的 max tokens 要在 32–32000 之间", { stage: stage });
+      } else {
+        out[stage] = { temperature: temp, max_tokens: Math.round(max) };
+      }
+    });
+    var box = $("rpGenError");
+    if (box) {
+      box.textContent = problem;
+      box.classList.toggle("is-error", !!problem);
+    }
+    return problem ? null : out;
+  }
+
+  function renderModelInfo() {
+    var host = $("rpModelInfo");
+    if (!host) return;
+    var name = ($("rpProvider") || {}).value || "";
+    var found = state.providers.filter(function (p) { return p.name === name; })[0];
+    if (!name) {
+      host.textContent = t("rp_model_route", "按配置路由：会用默认模型，具体是哪一个在运行记录里写明。");
+      return;
+    }
+    host.textContent = found && found.model
+      ? tf("rp_model_known", "当前模型：{model}{type}", {
+          model: found.model,
+          type: found.type ? " · " + found.type : "",
+        })
+      : tf("rp_model_unknown", "当前模型：{name}（配置里没有写明版本）", { name: name });
+  }
+
+  function refreshEligibility() {
+    clearTimeout(eligibilityTimer);
+    var sequence = ++eligibilitySequence;
+    if (!state.spec) return;
+    state.eligible = null;
+    eligibilityTimer = setTimeout(function () {
+      api("POST", "/api/research/replication/check", {spec:state.spec, city:$("rpCity").value}).then(function (data) {
+        if (sequence !== eligibilitySequence) return;
+        state.eligible = data.eligible;
+        $("rpEligible").textContent = GAWorldResidentFilters.count(data.eligible, data.total) + (data.eligible < Number($("rpSample").value) ? " · " + t("rp_sample_short", "样本不足，将使用全部符合条件者；可在智能体工作台补充学生样本。") : "");
+        syncCost();
+      }).catch(function (err) {
+        if (sequence === eligibilitySequence) $("rpEligible").textContent = err.message;
+      });
+    }, 250);
+  }
 
   function setUrl(runId) {
     var query = new URLSearchParams(window.location.search);
@@ -146,6 +226,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         );
       }).join(""));
     select.value = previous;
+    renderModelInfo();
   }
 
   function fillCities(selected) {
@@ -179,6 +260,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     return api("GET", "/api/research/replication").then(function (data) {
       state.runs = data.runs || [];
       state.maxSample = data.max_sample || state.maxSample;
+      fillGeneration(data.generation || null);
       renderRuns();
     });
   }
@@ -226,10 +308,17 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     }
     $("rpExtract").disabled = true;
     setProgress("rpExtractProgress", t("rp_extracting", "正在阅读文献…"), "live");
+    var generation = generationPayload();
+    if (!generation) {
+      $("rpExtract").disabled = false;
+      setProgress("rpExtractProgress", t("rp_gen_bad", "生成参数不合法，请改正后再抽取。"), "error");
+      return;
+    }
     api("POST", "/api/research/replication/extract", {
       text: text,
       title: $("rpTitle").value.trim(),
       provider: $("rpProvider").value,
+      generation: generation,
     })
       .then(function (data) {
         pollJob(
@@ -240,6 +329,9 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
           function (result) {
             $("rpExtract").disabled = false;
             setProgress("rpExtractProgress", t("rp_extracted", "已抽取，请在下方核对。"), "");
+            // Which model read the paper travels with the run: it may differ
+            // from the one that later plays the residents.
+            state.extraction = { generation: result.generation || null, model: result.model || {} };
             setSpec(result.spec);
             $("rpSpecCard").scrollIntoView({ behavior: "smooth" });
           },
@@ -271,6 +363,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     renderSpec();
     syncJson();
     syncCost();
+    refreshEligibility();
   }
 
   function syncJson() {
@@ -312,6 +405,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     else if (g.age_min != null) parts.push(g.age_min + " " + t("rp_age_up", "岁以上"));
     else if (g.age_max != null) parts.push(g.age_max + " " + t("rp_age_down", "岁以下"));
     if (g.hukou) parts.push(g.hukou + t("rp_hukou_suffix", "户籍"));
+    ["education", "student_status", "job"].forEach(function (key) { if (g[key]) parts.push(GAWorldResidentFilters.label(key) + ": " + GAWorldResidentFilters.valueLabel(g[key])); });
     return parts.join(" · ");
   }
 
@@ -398,9 +492,9 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       field(t("rp_f_population", "真人受访者"), "population", spec.population) +
       '<div class="rw-row">' +
       field(t("rp_f_human_n", "真人总样本"), "human_n", spec.human_n, 'type="number" min="0"') +
-      field(t("rp_f_age_min", "最小年龄（居民按此筛选）"), "age_min", spec.age_min, 'type="number" min="0"') +
-      field(t("rp_f_age_max", "最大年龄"), "age_max", spec.age_max, 'type="number" min="0"') +
       "</div>" +
+      GAWorldResidentFilters.controls(state.educationSchema, spec, "replication", {query:false}) +
+      '<p class="rw-hint">' + esc(t("rp_education_note", "入选条件取交集。已获学历与在读阶段不同；未知信息不匹配指定条件。大学生包含大专与本科在读。")) + '</p>' +
       area(t("rp_f_intro", "所有受访者看到的说明"), "intro", spec.intro, 3);
 
     html += "<h4>" + esc(tf("rp_conditions", "实验条件（{n} 个，第一个是对照组）", { n: spec.conditions.length })) + "</h4>";
@@ -425,6 +519,9 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         field(t("rp_f_g_age_min", "年龄 ≥"), base + "age_min", g.age_min, 'type="number" min="0"') +
         field(t("rp_f_g_age_max", "年龄 ≤"), base + "age_max", g.age_max, 'type="number" min="0"') +
         select(t("rp_f_hukou", "户籍"), base + "hukou", g.hukou, anyOption.concat([["本地", t("rp_local", "本地")], ["外地", t("rp_nonlocal", "外地")]])) +
+        select(GAWorldResidentFilters.label("education"), base + "education", g.education, anyOption.concat(["未知"].concat(state.educationSchema.education_levels || []).map(function(v) { return [v, GAWorldResidentFilters.valueLabel(v)]; }))) +
+        select(GAWorldResidentFilters.label("student_status"), base + "student_status", g.student_status, anyOption.concat((state.educationSchema.student_statuses || []).map(function(v) { return [v, GAWorldResidentFilters.valueLabel(v)]; }))) +
+        field(GAWorldResidentFilters.label("job"), base + "job", g.job) +
         '<button type="button" class="btn ghost tiny danger" data-del-group="' + i + '">' + esc(t("delete", "删除")) + "</button>" +
         "</div></div>";
     });
@@ -502,7 +599,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       $("rpIdentityError").textContent = view.error ? errors[view.error] : '';
       document.querySelectorAll('.rp-identity-margin').forEach(function(el){el.hidden = !view.enabled;});
     }
-    $("rpRun").disabled = state.running || !!view.error || !!syncInteraction().error || !!syncSampling().error;
+    $("rpRun").disabled = state.running || state.eligible === 0 || !!view.error || !!syncInteraction().error || !!syncSampling().error;
     return view;
   }
 
@@ -563,7 +660,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
 
   function onSpecInput(event) {
     var el = event.target;
-    if (el.hasAttribute("data-sampling-enabled")) state.spec.sampling_probe.enabled = el.checked;
+    if (el.hasAttribute("data-rf")) state.spec[el.dataset.rf] = el.value === "" ? null : el.dataset.rf.indexOf("age_") === 0 ? Number(el.value) : el.value;
+    else if (el.hasAttribute("data-sampling-enabled")) state.spec.sampling_probe.enabled = el.checked;
     else if (el.hasAttribute("data-interaction-enabled")) state.spec.interaction_probe.enabled = el.checked;
     else if (el.hasAttribute("data-identity-enabled")) state.spec.identity_probe.enabled = el.checked;
     else if (el.hasAttribute("data-bias-check")) state.spec.bias_checks[el.getAttribute("data-bias-check")] = el.checked;
@@ -572,6 +670,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     else return;
     syncJson();
     syncCost();
+    refreshEligibility();
   }
 
   /* Adding or deleting a group changes the results grid, so the editor is redrawn. */
@@ -631,6 +730,11 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     if (!state.spec || state.running || syncIdentity().error || syncInteraction().error || syncSampling().error) return;
     var city = $("rpCity").value;
     var seed = $("rpSeed").value.trim();
+    var generation = generationPayload();
+    if (!generation) {
+      setProgress("rpProgress", t("rp_gen_bad", "生成参数不合法，请改正后再运行。"), "error");
+      return;
+    }
     state.running = true;
     $("rpRun").disabled = true;
     setProgress("rpProgress", t("rp_running", "居民正在作答…"), "live");
@@ -644,6 +748,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       provider: $("rpProvider").value,
       interpret: $("rpInterpret").checked,
       language: language(),
+      generation: generation,
+      extraction_model: (state.extraction || {}).model || {},
     })
       .then(function (data) {
         pollJob(
@@ -695,6 +801,85 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     );
   }
 
+  function scoreNote(s) {
+    if (!s || (s.score_version || 1) < 2) {
+      return t(
+        "rp_score_note_old",
+        "拟合度分 = 100 ×（有处理效应时：50% 水平准确度 + 50% 效应方向一致率；只有调查时：水平准确度）。" +
+          "本记录按旧公式计分，没有计入离散度——居民是不是比真人更一致，这个分数看不出来。"
+      );
+    }
+    var weights = s.score_weights || {};
+    var labels = { level: "rp_level", spread: "rp_spread", direction: "rp_direction" };
+    var fallbacks = { level: "水平准确度", spread: "离散度准确度", direction: "效应方向一致率" };
+    var parts = [];
+    ["level", "spread", "direction"].forEach(function (key) {
+      if (weights[key] == null) return;
+      parts.push(Math.round(weights[key] * 100) + "% " + t(labels[key], fallbacks[key]));
+    });
+    var note =
+      t(
+        "rp_score_note",
+        "拟合度分 = 100 ×（水平准确度、离散度准确度、效应方向一致率按权重相加）；" +
+          "算不出的分量（文献未报离散度、或没有处理效应）不计入，剩下的权重按比例重新分配。" +
+          "水平准确度 = 1 − 平均误差；离散度准确度 = 1 − 平均离散度误差。"
+      ) + (parts.length ? " " + tf("rp_score_weights", "本次权重：{parts}", { parts: parts.join(" + ") }) : "");
+    if ((s.score_version || 1) >= 3 && s.degenerate_ci_cells) {
+      note +=
+        " " +
+        tf(
+          "rp_score_collapse_note",
+          "其中 {n} 个单元格的居民 95% 区间退化成一个点（全员同答）且未覆盖真人均值；文献未报离散度时，这一项已计入水平准确度。",
+          { n: s.degenerate_ci_cells }
+        );
+    }
+    return note;
+  }
+
+  /* What this run's seed covered. A seed fixes which residents answer and how
+     their answers are grouped — always reproducible. Whether the model's own
+     sampling repeats is the provider's business, so the note says which of
+     the two the seed can speak for rather than implying the score repeats. */
+  function seedScopeNote(run) {
+    var scope = run.seed_scope;
+    if (!scope) return "";
+    if (scope.provider_supports_seed) {
+      return (
+        '<p class="rw-hint">' +
+        esc(
+          t(
+            "rp_seed_scope_seeded",
+            "种子固定了抽哪些居民、怎么分组，并给每次模型调用派了一个格子种子；本次模型的接口接受 seed，已据此请求同一次抽样——但托管端点不承诺逐字复现，同一种子重复运行的拟合度分仍可能有小幅差异。"
+          )
+        ) +
+        "</p>"
+      );
+    }
+    return (
+      '<p class="rw-hint">' +
+      esc(
+        t(
+          "rp_seed_scope_unseeded",
+          "种子固定了抽哪些居民、怎么分组，并给每次模型调用派了一个格子种子；但本次模型的接口不接受 seed，作答本身无法复现——同一种子重复运行的拟合度分可能不同。"
+        )
+      ) +
+      "</p>"
+    );
+  }
+
+  /* Why the "human value inside the 95% interval" rate is what it is. A rate of
+     0% caused by collapsed intervals (every resident answered the same thing)
+     says something about the crowd, not about the humans — a bare 0% would not. */
+  function withinNote(s) {
+    var collapsed = s.collapsed_ci_cells || 0;
+    if (!collapsed) return "";
+    var missed = s.degenerate_ci_cells || 0;
+    return tf("rp_ci_collapsed_note", "{n} 个单元格的区间退化（居民全员同答），其中 {m} 个未覆盖真人均值", {
+      n: collapsed,
+      m: missed,
+    });
+  }
+
   function dist(distribution) {
     if (!distribution) return "—";
     return Object.keys(distribution).map(function (k) {
@@ -741,21 +926,39 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       var inside = cell.within_ci == null ? "" : cell.within_ci
         ? '<span class="ps-good">' + esc(t("rp_yes", "是")) + "</span>"
         : '<span class="rw-warn">' + esc(t("rp_no", "否")) + "</span>";
+      // A collapsed interval means every resident answered the same thing, so
+      // the human mean could not land inside it. That is a defect of the crowd,
+      // not a statement about the humans, and the cell has to say which it is.
+      if (cell.ci_degenerate) {
+        inside += ' <small class="rw-warn">' + esc(t("rp_ci_collapsed", "区间退化（全员同答）")) + "</small>";
+      }
+      var spread = cell.spread_error == null
+        ? (cell.sd_ratio == null ? "—" : " <small>SD ×" + num(cell.sd_ratio, 2) + "</small>")
+        : num(cell.spread_error, 3) + (cell.sd_ratio == null ? "" : " <small>SD ×" + num(cell.sd_ratio, 2) + "</small>");
+      // A leaked cell means the residents were handed this question's answer, so
+      // whatever they said back says nothing about them: the cell stays visible,
+      // but it is marked as outside the score.
+      var leak = cell.leak
+        ? ' <small class="rw-warn">' + esc(t("rp_cell_leak", "（材料含真人结果，不计入评分）")) + "</small>"
+        : "";
       return (
         "<tr><td><b>" + esc(item.id) + "</b> " + esc(item.text) + "</td><td>" + esc(labels[cell.condition]) + "</td><td>" +
         (human ? humanText : '<span class="rw-hint">' + esc(t("rp_unreported", "未报告")) + "</span>") + "</td><td>" + agentText +
         " <small>n=" + cell.agent.n + "</small>" + rangeBar(item, cell) + "</td><td>" +
-        (cell.diff == null ? "—" : num(cell.diff, 2)) + "</td><td>" + (cell.error == null ? "—" : num(cell.error, 3)) +
-        (cell.tvd != null && item.kind !== "choice" ? " <small>TVD " + num(cell.tvd, 3) + "</small>" : "") + "</td><td>" + inside + "</td></tr>"
+        (cell.diff == null ? "—" : num(cell.diff, 2)) + "</td><td>" + (cell.error == null ? "—" : num(cell.error, 3)) + leak +
+        (cell.tvd != null && item.kind !== "choice" ? " <small>TVD " + num(cell.tvd, 3) + "</small>" : "") + "</td><td>" + spread +
+        "</td><td>" + inside + "</td></tr>"
       );
     });
     return (
-      '<div class="rw-table-scroll"><table class="rw-table"><thead><tr><th>' + esc(t("rp_col_item", "题目")) + "</th><th>" +
+      '<div class="rw-table-scroll"><table class="rw-table rw-rep-cells"><thead><tr><th>' + esc(t("rp_col_item", "题目")) + "</th><th>" +
       esc(t("rp_col_condition", "条件")) + "</th><th>" + esc(t("rp_col_human", "真人")) + "</th><th>" +
       esc(t("rp_col_agent", "智能体")) + "</th><th>" + esc(t("rp_col_diff", "差值")) + "</th><th>" +
-      esc(t("rp_col_error", "误差 0–1")) + "</th><th>" + esc(t("rp_col_inside", "真人值在 95% 区间内")) +
+      esc(t("rp_col_error", "误差 0–1")) + "</th><th>" + esc(t("rp_col_spread", "离散度误差")) +
+      "</th><th>" + esc(t("rp_col_inside", "真人值在 95% 区间内")) +
       "</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>" +
-      '<p class="rw-hint">' + esc(t("rp_bar_note", "条形：浅色带 = 居民均值的 95% 区间，深色 = 居民均值，红线 = 真人均值。")) + "</p>"
+      '<p class="rw-hint">' + esc(t("rp_bar_note", "条形：浅色带 = 居民均值的 95% 区间，深色 = 居民均值，红线 = 真人均值。")) + "</p>" +
+      '<p class="rw-hint">' + esc(t("rp_spread_note", "离散度误差按两个标准差之比算：0 = 居民和真人一样分散，1 = 完全对不上；SD × 是居民 SD ÷ 真人 SD。")) + "</p>"
     );
   }
 
@@ -814,6 +1017,102 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     );
   }
 
+  function scopeNote(s) {
+    var scope = s.score_scope;
+    if (!scope) return "/ 100";
+    var cover = s.coverage || {};
+    var partial = cover.cells_with_human != null && cover.cells_with_human < cover.cells_possible;
+    if (!partial && !s.leaked_cells) return "/ 100";
+    return "/ 100 · " + tf("rp_scope_note", "仅覆盖 {scope}", { scope: scope });
+  }
+
+  function coverageBanner(s) {
+    var cover = s.coverage || {};
+    var warnings = cover.warnings || [];
+    var leaks = s.leak_findings || [];
+    if (!warnings.length && !leaks.length) return "";
+    var lines = warnings.slice();
+    leaks.forEach(function (leak) {
+      lines.push(
+        tf(
+          "rp_leak_line",
+          "材料泄漏：{item}/{condition} 的真人{kind} {value} 出现在{where}里（{excerpt}）——居民拿到了答案，这一格不计入评分",
+          {
+            item: leak.item,
+            condition: leak.condition,
+            kind: leak.kind,
+            value: leak.value,
+            where: leak.where,
+            excerpt: leak.excerpt,
+          }
+        )
+      );
+    });
+    var head = cover.cells_possible
+      ? tf("rp_scope_head", "这个分数只覆盖 {compared}/{possible} 个单元格（题目×条件）", {
+          compared: s.cells_compared || 0,
+          possible: cover.cells_possible,
+        })
+      : "";
+    return (
+      '<p class="rw-hint rw-warn">' + esc(head) + "</p>" +
+      '<ul class="rw-list rw-warn">' + lines.map(function (line) { return "<li>" + esc(line) + "</li>"; }).join("") + "</ul>"
+    );
+  }
+
+  /* What answered, and with which parameters. A model name is a label, not a
+     version: the endpoint and config fingerprints are what say whether this
+     run can be compared with another one, so they are shown next to it. */
+  function modelBlock(run) {
+    var model = run.model || ((run.check_protocol || {}).model) || {};
+    var generation = run.generation || {};
+    var stages = [
+      { key: "extract", label: t("rp_gen_extract", "读取文献") },
+      { key: "answer", label: t("rp_gen_answer", "居民作答") },
+      { key: "interpret", label: t("rp_gen_interpret", "解读偏差") },
+    ];
+    var rows = stages.map(function (stage) {
+      var values = generation[stage.key];
+      if (!values) return "";
+      return (
+        '<div class="rp-model-row"><span>' + esc(stage.label) + "</span><b>" +
+        esc(tf("rp_gen_values", "温度 {temp} · max tokens {max}", {
+          temp: values.temperature, max: values.max_tokens,
+        })) + "</b></div>"
+      );
+    }).join("");
+    var version = model.model || t("rp_model_unknown_name", "未记录模型名");
+    var provider = model.provider || "";
+    var line = provider ? provider + " · " + version : version;
+    // The model that read the paper may differ from the one that played the
+    // residents; the record keeps both, so the page shows both.
+    var reader = run.extraction_model || {};
+    var readerLine = "";
+    if (reader.model || reader.provider) {
+      readerLine =
+        '<div class="rp-model-row"><span>' + esc(t("rp_run_reader", "读文献的模型")) + "</span><b>" +
+        esc((reader.provider || "") + (reader.provider && reader.model ? " · " : "") + (reader.model || "")) +
+        "</b></div>";
+    }
+    return (
+      '<div class="rp-model"><h4>' + esc(t("rp_run_model_title", "本次运行的模型与参数")) + "</h4>" +
+      '<div class="rp-model-row"><span>' + esc(t("rp_run_model", "模型")) + "</span><b>" + esc(line) + "</b></div>" +
+      readerLine +
+      (model.backend_type
+        ? '<div class="rp-model-row"><span>' + esc(t("rp_run_backend", "后端")) + "</span><b>" + esc(model.backend_type) + "</b></div>"
+        : "") +
+      (model.endpoint_hash
+        ? '<div class="rp-model-row"><span>' + esc(t("rp_run_endpoint", "端点指纹")) + "</span><b>" + esc(model.endpoint_hash) + "</b></div>"
+        : "") +
+      (model.config_hash
+        ? '<div class="rp-model-row"><span>' + esc(t("rp_run_config", "配置指纹")) + "</span><b>" + esc(model.config_hash) + "</b></div>"
+        : "") +
+      rows +
+      '<p class="rw-hint">' + esc(t("rp_run_model_hint", "模型名只是标识；端点与配置指纹用来核对两次运行是否用了同一个模型版本。参数随数据包一起导出。")) + "</p>" +
+      "</div>"
+    );
+  }
+
   function render() {
     var host = $("rpResult");
     var run = state.run;
@@ -832,6 +1131,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       '</div></div><div class="rw-actions">' +
       '<button class="btn ghost tiny" id="rpReuse">' + esc(t("rp_reuse", "用这份设计再跑")) + "</button>" +
       '<button class="btn ghost tiny" id="rpExport">' + esc(t("download", "下载 Markdown")) + "</button>" +
+      '<button class="btn ghost tiny" id="rpBundle">' + esc(t("rp_export_bundle", "下载完整数据包（ZIP）")) + "</button>" +
       '<button class="btn ghost tiny" id="rpEvidence">' + esc(t("check_download", "下载完整检查记录")) + "</button>" +
       '<button class="btn ghost tiny danger" id="rpDelete">' + esc(t("delete", "删除")) + "</button></div></div>";
     if (run.residents.length < run.requested_sample) {
@@ -839,15 +1139,19 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         asked: run.requested_sample, eligible: run.eligible,
       })) + "</p>";
     }
+    html += seedScopeNote(run);
+    html += modelBlock(run);
     if (run.spec.citation || run.spec.population) {
       html += '<p class="rw-hint">' + esc(run.spec.citation) + (run.spec.population ? " · " + esc(t("rp_f_population", "真人受访者")) + "：" + esc(run.spec.population) : "") + "</p>";
     }
     html += window.GAWorldResultChecks.render(run.comparison.result_checks);
+    html += coverageBanner(s);
     html +=
       '<div class="rp-tiles">'  +
-      tile(t("rp_score", "拟合度分"), s.score == null ? "—" : num(s.score, 1), "/ 100") +
+      tile(t("rp_score", "拟合度分"), s.score == null ? "—" : num(s.score, 1), scopeNote(s)) +
       tile(t("rp_level", "水平准确度"), num(s.level_accuracy, 3), tf("rp_cells_n", "{n} 个单元格", { n: s.cells_compared })) +
-      tile(t("rp_within", "真人值落在 95% 区间"), pct(s.within_ci_rate), "") +
+      tile(t("rp_spread", "离散度准确度"), num(s.spread_accuracy, 3), tf("rp_spread_n", "{n} 个可比单元格", { n: s.spread_cells_compared || 0 })) +
+      tile(t("rp_within", "真人值落在 95% 区间"), pct(s.within_ci_rate), withinNote(s)) +
       tile(t("rp_level_r", "单元格相关 r"), num(s.level_r, 2), "") +
       (s.effects_judged
         ? tile(t("rp_direction", "效应方向一致"), pct(s.direction_rate), tf("rp_effects_n", "{n} 个效应", { n: s.effects_judged })) +
@@ -855,7 +1159,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
           tile(t("rp_effect_r", "效应相关 r"), num(s.effect_r, 2), "")
         : "") +
       "</div>" +
-      '<p class="rw-hint">' + esc(t("rp_score_note", "拟合度分 = 100 ×（有处理效应时：50% 水平准确度 + 50% 效应方向一致率；只有调查时：水平准确度）。水平准确度 = 1 − 平均误差。")) + "</p>";
+      '<p class="rw-hint">' + esc(scoreNote(s)) + "</p>";
     html += '<p class="rw-hint">' + esc(t("check_legacy_note", "拟合度、方向一致和真人均值落入 AI 区间均不证明效应等价；请查看逐项真人参照检查。")) + '</p>';
     if (run.comparison.effects.length) html += "<h4>" + esc(t("rp_effects", "处理效应：智能体复现了文献的发现吗")) + "</h4>" + effectsTable(run);
     html += "<h4>" + esc(t("rp_cells", "逐题对照")) + "</h4>" + cellsTable(run);
@@ -873,6 +1177,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       $("rpSpecCard").scrollIntoView({ behavior: "smooth" });
     });
     $("rpExport").addEventListener("click", exportRun);
+    $("rpBundle").addEventListener("click", exportBundle);
     $("rpEvidence").addEventListener("click", function () {
       var url = URL.createObjectURL(new Blob([JSON.stringify(run, null, 2)], {type:"application/json;charset=utf-8"}));
       var link = document.createElement("a");
@@ -893,6 +1198,30 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         var link = document.createElement("a");
         link.href = gwURL(URL.createObjectURL(blob));
         link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(link.href);
+        }, 1000);
+      })
+      .catch(function (err) {
+        window.alert(err.message);
+      });
+  }
+
+  /* The whole run as a ZIP: the report, the per-resident answers, the personas,
+     the model-call log and the distribution charts. */
+  function exportBundle() {
+    api("GET", "/api/research/replication/" + encodeURIComponent(state.run.id) + "/bundle")
+      .then(function (data) {
+        var binary = atob(data.bytes_base64 || "");
+        var bytes = new Uint8Array(binary.length);
+        for (var index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+        var blob = new Blob([bytes], { type: "application/zip" });
+        var link = document.createElement("a");
+        link.href = gwURL(URL.createObjectURL(blob));
+        link.download = data.filename || "replication-data.zip";
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -948,14 +1277,17 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     });
     $("rpExtract").addEventListener("click", extract);
     $("rpSpec").addEventListener("input", onSpecInput);
+    $("rpSpec").addEventListener("change", onSpecInput);
     $("rpSpec").addEventListener("click", onSpecClick);
     $("rpJsonApply").addEventListener("click", applyJson);
-    $("rpSample").addEventListener("change", syncCost);
+    $("rpSample").addEventListener("change", function () { syncCost(); refreshEligibility(); });
+    $("rpCity").addEventListener("change", refreshEligibility);
     $("rpInterpret").addEventListener("change", syncCost);
     document.querySelectorAll("input[name=rpDesign]").forEach(function (radio) {
       radio.addEventListener("change", syncCost);
     });
     $("rpRun").addEventListener("click", start);
+    $("rpProvider").addEventListener("change", renderModelInfo);
     $("rpRuns").addEventListener("click", function (event) {
       var item = event.target.closest("[data-run]");
       if (item) openRun(item.getAttribute("data-run"));
@@ -967,6 +1299,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       render();
     });
     fillCities("");
+    api("GET", "/api/population/schema").then(function (schema) { state.educationSchema = schema; renderSpec(); }).catch(function () {});
     api("GET", "/api/research/context")
       .then(function (context) {
         state.providers = context.providers || [];

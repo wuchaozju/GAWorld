@@ -117,6 +117,16 @@ class PartitionTests(unittest.TestCase):
         members = [m for c in cohorts for m in c.members]
         self.assertEqual(len(self.agents), len(set(members)))
 
+    def test_repeated_merges_mark_each_mixed_axis_once(self):
+        agents = [
+            {"id": i, "age": 25, "gender": "女", "hukou": "本地", "district": f"区{i:03}"} for i in range(50)
+        ]
+        cohorts = partition_cohorts(agents, axes=("age_band", "hukou", "gender", "district"))
+        self.assertEqual(len(cohorts), 1)
+        self.assertEqual(cohorts[0].members, list(range(50)))
+        self.assertEqual(cohorts[0].key, ("18-34", "本地", "女", "区000/…"))
+        self.assertLess(len(cohorts[0].label()), 100)
+
     def test_unknown_axis_raises_rather_than_silently_coarsening(self):
         with self.assertRaises(ValueError):
             partition_cohorts(self.agents, axes=("age_band", "not_an_axis"))

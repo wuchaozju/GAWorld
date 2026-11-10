@@ -1,4 +1,4 @@
-"""Byte-range delivery for the public homepage film, after normal access checks."""
+"""Byte-range delivery for the public homepage and documentation films, after normal access checks."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import re
 from urllib.parse import unquote, urlsplit
 
 INTRO_VIDEO = "/site/home/media/gaworld-intro-zh-music.mp4"
+DOCS_INTRO_VIDEO = "/site/home/docs/_static/media/gaworld-introduction-zh.mp4"
+PUBLIC_VIDEOS = frozenset((INTRO_VIDEO, DOCS_INTRO_VIDEO))
 
 
 class _RangeFile(io.FileIO):
@@ -24,7 +26,7 @@ class PublicMediaMixin:
     """Keep inherited GET/HEAD behavior while bounding video response bodies."""
 
     def send_head(self):
-        if unquote(urlsplit(self.path).path) != INTRO_VIDEO:
+        if unquote(urlsplit(self.path).path) not in PUBLIC_VIDEOS:
             return super().send_head()
         try:
             stream = _RangeFile(self.translate_path(self.path), "r")

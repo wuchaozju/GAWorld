@@ -82,12 +82,15 @@ function bootDocs(locale, extraStore) {
         profile_text: "",
       },
       detail: null,
+      educationSchema: {education_levels:["高中/中专", "本科"], student_statuses:["未知", "非在读", "本科", "硕士"]},
+      studentSample: {count:30, seed:42, student_status:"本科"},
     },
     extraStore || {}
   );
   const factory = new Function(
-    "store", "esc", "__", "__f", "renderMarkdown", "field", "radarSVG", "profileCard",
-    `${slice(DOCS_START, DOCS_END)}
+    "store", "esc", "__", "__f", "renderMarkdown", "field", "radarSVG", "profileCard", "GAWorldResidentFilters",
+    `${slice("function educationSelect", "function bindStudentSamples")}
+     ${slice(DOCS_START, DOCS_END)}
      return { stepIdentity, autobiographyCard, lifePredictionCard, predictSlider };`
   );
   return factory(
@@ -95,7 +98,8 @@ function bootDocs(locale, extraStore) {
     (md) => "<md>" + String(md || "") + "</md>",
     (label, html) => `<label>${label}${html}</label>`,
     () => "<svg/>",
-    () => "<profile/>"
+    () => "<profile/>",
+    require("./resident-filters.js")
   );
 }
 

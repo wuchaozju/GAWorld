@@ -143,6 +143,8 @@ WORLD_WRITES_EXACT = {
     "/api/run/schedule",
     "/api/run/schedule/cancel",
     "/api/agents",
+    "/api/population/students/preview",
+    "/api/population/students/append",
 }
 WORLD_WRITES_PREFIX = ("/api/interventions/", "/api/organizations/")
 WORLD_AGENT_WRITES = ("profile", "state", "goals", "memory", "finance", "relationships", "big5")

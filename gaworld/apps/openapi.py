@@ -374,6 +374,8 @@ AGENT_FIELDS = {
     "daily_life": STR,
     "values": STR,
     "education_income": STR,
+    "education": STR,
+    "student_status": STR,
     "social_network": STR,
     "state": _d(OBJ, "Initial nine-dimension state"),
 }
@@ -648,7 +650,7 @@ def _simulation() -> dict[str, Any]:
         },
         "/api/agents/{agent_id}/state": {
             "get": _op("agents", "Nine-dimension state", errors=agent_404),
-            "post": _op("agents", "Write the state", body=_obj(state=OBJ, age=INT)),
+            "post": _op("agents", "Write state, identity and education", body=_obj(**AGENT_FIELDS)),
         },
         "/api/agents/{agent_id}/big5": {
             "get": _op("agents", "Big Five traits", errors=agent_404),
@@ -1306,6 +1308,7 @@ def _cities() -> dict[str, Any]:
                     job=STR,
                     hukou=STR,
                     education=STR,
+                    student_status=STR,
                     income=STR,
                     residence=STR,
                 ),
@@ -1364,6 +1367,8 @@ def _cities() -> dict[str, Any]:
         "/api/city/delete": {"post": _op("city", "Delete a city bundle", body=_obj(("city",), city=STR))},
         "/api/population/schema": {"get": _op("population", "Population spec schema")},
         "/api/population/jobs/{job_id}": _job("population"),
+        "/api/population/recover": {"get": _op("population", "Recover the same scoped submission",
+            query=[_q("request_id", "Original submission identifier", STR)])},
         "/api/population/export": {
             "get": _op(
                 "population",
@@ -1374,6 +1379,12 @@ def _cities() -> dict[str, Any]:
         "/api/population/last": {"get": _op("population", "Size of the last generated population")},
         "/api/population/preview": {
             "post": _op("population", "Marginals a spec would produce", body=_obj(spec=OBJ))
+        },
+        "/api/population/students/preview": {
+            "post": _op("population", "Preview fictional students for the active world without writes", body=_obj(count=INT, seed=INT, student_status=STR)),
+        },
+        "/api/population/students/append": {
+            "post": _op("population", "Append the reviewed student sample; reject stale previews", body=_obj(("preview_token",), count=INT, seed=INT, student_status=STR, preview_token=STR)),
         },
         "/api/population/generate": {
             "post": _started(
@@ -1681,7 +1692,7 @@ def _studies() -> dict[str, Any]:
             "post": _started(
                 "serious-games",
                 "Design a game from a description",
-                _obj(("description",), description=STR, roles=_arr(OBJ), rounds=INT, provider=STR),
+                _obj(("description",), description=STR, roles=INT, rounds=INT, provider=STR),
             )
         },
         "/api/research/games/sessions": {
@@ -1691,7 +1702,8 @@ def _studies() -> dict[str, Any]:
                 body=_obj(
                     ("game_id",),
                     game_id=STR,
-                    seats=_d(OBJ, "role → agent id or `human`"),
+                    seats=_arr(OBJ),
+                    seed=INT, casting_mode=STR, assumptions=OBJ, step_mode=BOOL, preview_hash=STR,
                     city=STR,
                     provider=STR,
                 ),
@@ -1710,7 +1722,7 @@ def _studies() -> dict[str, Any]:
         },
         "/api/research/games/sessions/{session_id}/act": {
             "post": _op(
-                "serious-games", "A human seat's move", body=_obj(("seat",), seat=STR, action=STR, choice=STR)
+                "serious-games", "A human seat's move", body=_obj(("seat",), seat=STR, action=STR, choice=STR, decision=OBJ)
             )
         },
         "/api/research/games/sessions/{session_id}/resolve": {
@@ -1722,6 +1734,12 @@ def _studies() -> dict[str, Any]:
         "/api/research/games/{game_id}": {
             "get": _op("serious-games", "One game design", errors={"404": "Unknown game"})
         },
+        "/api/research/games/{game_id}/preview": {
+            "post": _op("serious-games", "Preview eligible unique residents", body=_obj((), seats=_arr(OBJ), city=STR, seed=INT, casting_mode=STR, assumptions=OBJ))
+        },
+        **{f"/api/research/games/sessions/{{session_id}}/{action}": {
+            "post": _op("serious-games", summary, body=OBJ)
+        } for action, summary in {"pause": "Pause at next round boundary", "resume": "Continue from boundary", "finish": "End observation and debrief", "intervene": "Queue a host intervention or external role"}.items()},
         "/api/research/games/{game_id}/update": {
             "post": _op("serious-games", "Edit a game design", body=_obj(("spec",), spec=OBJ))
         },
@@ -1750,17 +1768,28 @@ def _studies() -> dict[str, Any]:
         },
         "/api/research/policy/{run_id}/export": {"get": _op("policy-sim", "A run as Markdown")},
         "/api/research/policy/{run_id}/delete": {"post": _op("policy-sim", "Delete a run")},
-        "/api/research/replication": {"get": _op("replication", "Fidelity runs and sample limits")},
+        "/api/research/replication": {
+            "get": _op(
+                "replication",
+                "Fidelity runs, sample limits, the generation parameters and the configured models",
+            )
+        },
         "/api/research/replication/jobs/{job_id}": _job("replication"),
         "/api/research/replication/extract": {
             "post": _started(
                 "replication",
                 "Read a paper into a study spec with its human results",
-                _obj(("text",), text=_d(STR, "Paper text"), title=STR, provider=STR),
+                _obj(
+                    ("text",),
+                    text=_d(STR, "Paper text"),
+                    title=STR,
+                    provider=STR,
+                    generation=_d(OBJ, "Per-stage temperature and max tokens"),
+                ),
             )
         },
         "/api/research/replication/check": {
-            "post": _op("replication", "Validate an edited spec", body=_obj(("spec",), spec=OBJ))
+            "post": _op("replication", "Validate a spec and count eligible residents when city is supplied", body=_obj(("spec",), spec=OBJ, city=STR))
         },
         "/api/research/replication/run": {
             "post": _started(
@@ -1777,6 +1806,7 @@ def _studies() -> dict[str, Any]:
                     provider=STR,
                     interpret=_d(BOOL, "Read the deviations with one model call afterwards (default true)"),
                     language=STR,
+                    generation=_d(OBJ, "Per-stage temperature and max tokens"),
                 ),
             )
         },
@@ -1784,11 +1814,19 @@ def _studies() -> dict[str, Any]:
             "get": _op("replication", "One run", errors={"404": "Unknown replication run"})
         },
         "/api/research/replication/{run_id}/export": {"get": _op("replication", "A run as Markdown")},
+        "/api/research/replication/{run_id}/bundle": {
+            "get": _op("replication", "The whole run as a ZIP data package")
+        },
         "/api/research/replication/{run_id}/interpret": {
             "post": _started(
                 "replication",
                 "A model's reading of where the agents deviate",
-                _obj((), provider=STR, language=_d(STR, "`zh-CN` or `en`")),
+                _obj(
+                    (),
+                    provider=STR,
+                    language=_d(STR, "`zh-CN` or `en`"),
+                    generation=_d(OBJ, "Per-stage temperature and max tokens"),
+                ),
             )
         },
         "/api/research/replication/{run_id}/delete": {"post": _op("replication", "Delete a run")},

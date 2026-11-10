@@ -111,6 +111,16 @@ class TestDistillJob(PersonaApiCase):
 
 
 class TestDeploy(PersonaApiCase):
+    def test_operator_education_overrides_survive_deployment(self):
+        result, status = persona_api.handle_post(
+            "/api/persona/deploy",
+            {"slug":"li-mou", "identity":{"age":24, "education":"本科", "student_status":"硕士", "job":"硕士研究生"}},
+        )
+        self.assertEqual(status, 200)
+        state = residents.agent_state(result["agent_id"])
+        self.assertEqual(state["education"], "本科")
+        self.assertEqual(state["student_status"], "硕士")
+
     def test_deploy_creates_a_resident_with_the_distilled_seeds(self):
         result, status = persona_api.handle_post("/api/persona/deploy", {"slug": "li-mou"})
         self.assertEqual(200, status)

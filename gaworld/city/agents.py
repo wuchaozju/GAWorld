@@ -485,7 +485,8 @@ def add_agent(
     job: str = "自由职业",
     hukou: str = "本地",
     residence: str | None = None,
-    education: str = "本科",
+    education: str = "未知",
+    student_status: str = "未知",
     income_monthly: float = 0.0,
     education_income: str = "",
     personality: str = "性格平和，情绪起伏不大，遇事偏向先观察再行动。",
@@ -499,6 +500,11 @@ def add_agent(
     label = str(name or "").strip()
     if not label:
         raise AgentError("an agent name is required")
+    from gaworld.population.education import normalize_filters, sync_profile, validate_education
+
+    attributes = normalize_filters({"education": education, "student_status": student_status})
+    attributes = {key: value or "未知" for key, value in attributes.items() if key != "job"}
+    validate_education(attributes["education"], attributes["student_status"], int(age))
 
     rng = random.Random(seed if seed is not None else hash(label) & 0xFFFFFFFF)
     if not residence:
@@ -519,6 +525,8 @@ def add_agent(
             "age": str(int(age)),
             "hukou": hukou,
             "residence": residence,
+            **attributes,
+            "job": job,
             **{key: f"{resolved_state[key]:.2f}" for key in STATE_VAR_KEYS},
         }
     )
@@ -548,7 +556,7 @@ def add_agent(
         "social_network": social_network,
         "state": resolved_state,
     }
-    block = _render_single_profile(agent_id, fields)
+    block = sync_profile(_render_single_profile(agent_id, fields), attributes)
     if city.profiles_md_path.exists():
         city.profiles_md_path.write_text(
             city.profiles_md_path.read_text(encoding="utf-8").rstrip("\n") + "\n" + block,

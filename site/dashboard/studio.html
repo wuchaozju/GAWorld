@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/site/brand.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
+  <link rel="stylesheet" href="/site/dashboard/resident-filters.css" />
 </head>
 <body class="studio-body">
   <main class="studio-shell">
@@ -59,6 +60,8 @@
             <select id="agentSelect"></select>
           </label>
         </div>
+        <details><summary data-i18n="sample.filter_title">筛选居民</summary><div id="studioFilters"></div></details>
+        <p id="studioFilterCount" class="resident-filter-count" role="status"></p>
         <div class="avatar-wrap">
           <img id="subjectAvatar" class="subject-avatar" alt="" />
           <span class="idle-dot"><span></span>Idle</span>
@@ -101,6 +104,7 @@
   <script src="/site/dashboard/city-agents.js"></script>
   <script src="/site/dashboard/persona-view.js"></script>
   <script src="/site/dashboard/persona.js"></script>
+  <script src="/site/dashboard/resident-filters.js"></script>
   <script src="/site/dashboard/studio.js"></script>
   <script src="/site/dashboard/import.js"></script>
 </body>

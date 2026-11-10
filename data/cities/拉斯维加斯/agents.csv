@@ -28,7 +28,7 @@
 27,Brooks Christopher,男,41,本市,Symphony Park·合租住宅,employed,service,9123,0.62,0.69,0.56,0.40,0.08,0.46,0.37,0.42,0.59
 28,Brooks Bruce,男,71,外州,Rancho·独栋住宅,not_in_labor_force,none,1820,0.61,0.65,0.40,0.35,0.37,0.30,0.46,0.25,0.61
 29,Williams Teresa,女,64,本市,Charleston Heights Southwest·酒店式公寓,not_in_labor_force,none,0,0.18,0.71,0.62,0.37,0.66,0.41,0.35,0.23,0.31
-30,Morales Bryan,男,55,本市,The Pueblo·独栋住宅,not_in_labor_force,none,0,0.50,0.43,0.48,0.60,0.53,0.31,0.33,0.35,0.33
+30,Morales Bryan,男,55,本市,Meadows Village·酒店式公寓,not_in_labor_force,none,0,0.50,0.43,0.48,0.60,0.53,0.31,0.33,0.35,0.33
 31,Cox Brian,男,21,外州,Whitney Ranch·郊区住宅,employed,trade,1262,0.68,0.68,0.16,0.39,0.54,0.69,0.53,0.65,0.64
 32,Scott Emery,女,23,本州,Charleston Heights Southwest·出租公寓,not_in_labor_force,none,0,0.70,0.58,0.27,0.42,0.53,0.49,0.51,0.28,0.78
 33,Watson Martha,女,53,本市,Buffalo Ranch·合租住宅,employed,service,6765,0.63,0.67,0.58,0.37,0.58,0.51,0.30,0.72,0.41
@@ -76,8 +76,8 @@
 75,Thompson Rylee,女,77,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,1820,0.37,0.52,0.39,0.62,0.65,0.28,0.49,0.35,0.41
 76,Campbell Diane,女,56,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,0,0.37,0.72,0.33,0.36,0.62,0.13,0.36,0.31,0.64
 77,Young Jules,女,38,外州,Aliante·合租住宅,employed,tech,7427,0.55,0.44,0.73,0.52,0.63,0.41,0.47,0.40,0.65
-78,Kim Bobby,男,82,本市,Midtown UNLV·新建商品房,not_in_labor_force,none,1820,0.68,0.37,0.45,0.34,0.43,0.27,0.45,0.17,0.06
-79,Thompson Paul,男,53,本市,Midtown UNLV·新建商品房,employed,service,8198,0.51,0.47,0.61,0.70,0.55,0.40,0.35,0.63,0.54
+78,Kim Bobby,男,82,本市,Aliante·郊区住宅,not_in_labor_force,none,1820,0.68,0.37,0.45,0.34,0.43,0.27,0.45,0.17,0.06
+79,Thompson Paul,男,53,本市,Aliante·郊区住宅,employed,service,8198,0.51,0.47,0.61,0.70,0.55,0.40,0.35,0.63,0.54
 80,Young Julia,女,20,外州,Pioneer Park·郊区住宅,employed,tech,3130,0.64,0.44,0.45,0.35,0.49,0.30,0.39,0.64,0.79
 81,Martinez Jules,女,58,本市,The Villages at Tule Springs·活动 Adult 55+ 社区,not_in_labor_force,none,0,0.67,0.44,0.56,0.34,0.48,0.17,0.23,0.40,0.27
 82,Gray Brenda,女,34,外州,Spanish Trail·合租住宅,employed,service,2463,0.61,0.65,0.45,0.23,0.38,0.54,0.39,0.43,0.58
@@ -94,7 +94,7 @@
 93,Alvarez Chloe,女,10,外州,Flamingo Heights·联排住宅,not_in_labor_force,none,0,0.52,0.53,0.43,0.39,0.44,0.62,0.67,0.46,0.66
 94,White Brooklyn,女,21,本市,Sunrise Manor·合租住宅,employed,trade,1519,0.60,0.67,0.39,0.46,0.48,0.59,0.49,0.48,0.58
 95,Ramos George,男,57,本市,Rancho Oakey·独栋住宅,employed,trade,5200,0.64,0.59,0.42,0.80,0.35,0.37,0.57,0.36,0.37
-96,Taylor Peyton,女,56,本市,Midtown UNLV·新建商品房,employed,service,9665,0.54,0.73,0.75,0.46,0.40,0.42,0.49,0.24,0.51
+96,Taylor Peyton,女,56,本市,The Pueblo·独栋住宅,employed,service,9665,0.54,0.73,0.75,0.46,0.40,0.42,0.49,0.24,0.51
 97,Gutierrez Karen,女,26,本州,Rancho·独栋住宅,not_in_labor_force,none,0,0.52,0.86,0.46,0.47,0.50,0.67,0.39,0.31,0.93
 98,Green Amy,女,56,本市,Rancho Oakey·独栋住宅,employed,service,4770,0.62,0.38,0.64,0.55,0.34,0.41,0.22,0.73,0.26
 99,Allen Taylor,女,38,外州,Inner Northwest·合租住宅,employed,service,4372,0.56,0.67,0.50,0.28,0.39,0.48,0.45,0.20,0.35

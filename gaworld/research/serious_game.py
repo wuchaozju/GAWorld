@@ -38,7 +38,11 @@ dashboard delegate (:mod:`gaworld.apps.serious_game_api`) drives it.
 
 from __future__ import annotations
 
+import copy
+import difflib
+import hashlib
 import json
+import math
 import re
 import secrets
 import time
@@ -48,6 +52,7 @@ from pathlib import Path
 from typing import Any
 
 from gaworld.logging_setup import get_logger
+from gaworld.research import game_casting, game_negotiation, game_rules
 
 _LOG = get_logger("gaworld.research.serious_game")
 
@@ -66,7 +71,7 @@ SCORE_MAX = 5
 SEAT_KINDS = ("agent", "human")
 #: Session lifecycle. ``acting`` = the round is open; ``resolving`` and
 #: ``debriefing`` = a model call is in flight; ``finished`` / ``failed`` are final.
-STATUSES = ("acting", "resolving", "debriefing", "finished", "failed")
+STATUSES = ("acting", "resolving", "debriefing", "finished", "failed", "paused")
 
 LLMFn = Callable[[str], str]
 
@@ -99,7 +104,8 @@ def _dict(value: Any) -> dict[str, Any]:
 
 def _num(value: Any, default: float) -> float:
     try:
-        return float(value)
+        number = float(value)
+        return number if math.isfinite(number) else default
     except (TypeError, ValueError):
         return default
 
@@ -140,7 +146,7 @@ _SPEC_SCHEMA = """{
 def design_prompt(description: str, *, rounds: int = 0, roles: int = 0) -> str:
     wants = []
     if rounds:
-        wants.append(f"正好 {rounds} 轮")
+        wants.append(f"最多 {rounds} 轮")
     if roles:
         wants.append(f"正好 {roles} 个角色")
     shape = (
@@ -159,7 +165,21 @@ def design_prompt(description: str, *, rounds: int = 0, roles: int = 0) -> str:
         "参与者可能是真人，也可能是模拟城市里的居民智能体，文字要让普通人一读就懂。\n\n"
         f"【研究者的描述】\n{description}\n\n"
         "只输出一个 JSON 对象，不要任何解释，结构如下：\n"
-        f"{_SPEC_SCHEMA}"
+        f"{_SPEC_SCHEMA}\n"
+        '新版必须增加 "schema_version": 2 和 "game_type": "negotiation" 或 "scenario"。'
+        "协商型回合只是预算，不预写危机、妥协、签约或和解的结局；第一轮事件给出初始问题即可。"
+        '各角色增加 eligibility（[{"field":"job","op":"contains","value":"工程师"}]），'
+        "preferences（同结构的软偏好）、required_facts（缺少证据须研究者补充的字段名）。"
+        "资格必须由议题必要性决定；不要把年龄当住房或业主资格，不推断未知事实。"
+        '角色可增加 private_state（{"cost":{"value":10,"unit":"万元","source":"模型建议，待研究者确认"}}），'
+        'private_facts（[{"id":"f1","text":"某条私有信息","disclosable":false}]），goal_public。'
+        "指标增加 concept_id、definition_version、unit、direction、method；含义不同不得只换名当同一指标，"
+        "不得预设公平与利润必然负相关。method 为 model_estimate 或 registered_rules。"
+        '增加 negotiation: {"required_roles":["角色id"],"issues":["main"],"withdrawal_roles":["角色id"]}。'
+        '可增加 rules: [{"id":"r1","actor":"角色id","intent":"accept","target":"indicator:指标id",'
+        '"delta":1,"op":"add","source":"模型建议，待确认","once":true}]。'
+        "私人目标、退出选项与风险可先写在private中，数值无依据时留空，不编造真实参数。"
+        "学习目标和评分允许合理拒绝、延期、搁置与协商破裂，不以签约为默认优秀。"
     )
 
 
@@ -256,7 +276,7 @@ def normalize_spec(data: dict[str, Any]) -> dict[str, Any]:
     if not scoring:
         scoring = [{"criterion": "达成目标", "description": "离自己角色的目标有多近"}]
 
-    return {
+    result = {
         "title": _text(data.get("title"), 80) or "未命名的严肃游戏",
         "summary": _text(data.get("summary"), 400),
         "learning_objectives": _texts(data.get("learning_objectives"), limit=8),
@@ -267,6 +287,64 @@ def normalize_spec(data: dict[str, Any]) -> dict[str, Any]:
         "scoring": scoring[:6],
         "debrief_questions": _texts(data.get("debrief_questions"), limit=8),
     }
+    version = int(data.get("schema_version", 1))
+    if version not in (1, 2):
+        raise ValueError("不支持的游戏设计版本")
+    result["schema_version"] = version
+    if version == 2:
+        result["mechanism_version"] = "negotiation-2.0"
+        result["game_type"] = str(data.get("game_type", "negotiation"))
+        if result["game_type"] not in {"negotiation", "scenario"}:
+            raise ValueError("游戏类型无效")
+        valid_raw = [
+            r
+            for r in raw_roles
+            if isinstance(r, dict) and _text(r.get("name") or r.get("title") or r.get("role"))
+        ]
+        raw_by_id = {r["id"]: raw for r, raw in zip(roles, valid_raw, strict=False)}
+        for role in roles:
+            raw = raw_by_id[role["id"]]
+            role["eligibility"] = game_casting.validate_conditions(raw.get("eligibility", []))
+            role["preferences"] = game_casting.validate_conditions(raw.get("preferences", []))
+            role["required_facts"] = _texts(raw.get("required_facts", []), chars=60)
+            role["private_state"] = game_rules.private_state(raw.get("private_state", {}))
+            role["goal_public"] = bool(raw.get("goal_public", False))
+            facts = raw.get("private_facts", [])
+            if not isinstance(facts, list) or len(facts) > 20:
+                raise ValueError("私密事实须为最多20项的列表")
+            role["private_facts"] = []
+            for fact in facts:
+                if not isinstance(fact, dict) or not fact.get("id") or not fact.get("text"):
+                    raise ValueError("私密事实需要id与内容")
+                if fact["id"] in {f["id"] for f in role["private_facts"]}:
+                    raise ValueError("私密事实id重复")
+                role["private_facts"].append(
+                    {
+                        "id": _text(fact["id"], 40),
+                        "text": _text(fact["text"], 600),
+                        "disclosable": bool(fact.get("disclosable", False)),
+                    }
+                )
+        ids = [i["id"] for i in indicators]
+        if len(set(ids)) != len(ids):
+            raise ValueError("指标id重复")
+        raw_indicators = [
+            i for i in data.get("indicators", []) if isinstance(i, dict) and _text(i.get("name"))
+        ]
+        for ind, raw in zip(indicators, raw_indicators, strict=False):
+            for key, default in (
+                ("concept_id", ""),
+                ("definition_version", ""),
+                ("unit", "points"),
+                ("method", "model_estimate"),
+                ("direction", "contextual"),
+            ):
+                ind[key] = _text(raw.get(key, default), 200)
+            for key in ("initial", "min", "max"):
+                game_rules.finite(raw.get(key, ind[key]))
+        result["negotiation"] = game_negotiation.normalize_policy(data.get("negotiation", {}), roles)
+        result["rules"] = game_rules.normalize_rules(data.get("rules", []), roles, indicators)
+    return result
 
 
 def design_game(
@@ -300,7 +378,7 @@ def design_game(
             problem = "没有返回可解析的 JSON"
             continue
         try:
-            spec = normalize_spec(payload)
+            spec = normalize_spec({**payload, "schema_version": 2})
             break
         except ValueError as exc:
             problem = str(exc)
@@ -333,6 +411,11 @@ def new_session(
     city: str = "",
     provider: str = "",
     persona_fn: Callable[[str, int | None], dict[str, Any]] | None = None,
+    seed: int = 0,
+    casting_mode: str = "matched",
+    assumptions: dict[str, Any] | None = None,
+    step_mode: bool = False,
+    population: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Seat every role and open round one. No model call.
 
@@ -341,8 +424,32 @@ def new_session(
     resolves ``(city, agent_id or None)`` to a persona card and is injected
     so tests need no city bundle.
     """
-    spec = game["spec"]
+    spec = copy.deepcopy(game["spec"])
     by_role = {str(s.get("role_id") or ""): s for s in seats if isinstance(s, dict)}
+    matches = {}
+    if spec.get("schema_version", 1) >= 2 and persona_fn is None:
+        agent_roles = [r for r in spec["roles"] if by_role.get(r["id"], {}).get("kind", "agent") == "agent"]
+        if agent_roles:
+            if population is None:
+                from gaworld.interview.roster import recruitment_population
+
+                population = recruitment_population(city)
+            selected = {
+                rid: int(s["agent_id"])
+                for rid, s in by_role.items()
+                if s.get("kind", "agent") == "agent" and s.get("agent_id") not in (None, "")
+            }
+            matches = {
+                m["role_id"]: m
+                for m in game_casting.match_roles(
+                    agent_roles,
+                    population,
+                    seed=seed,
+                    selected=selected,
+                    mode=casting_mode,
+                    assumptions=assumptions,
+                )
+            }
     taken: set[int] = set()
     seated: list[dict[str, Any]] = []
     for role in spec["roles"]:
@@ -356,11 +463,17 @@ def new_session(
         else:
             raw_agent = wanted.get("agent_id")
             agent_id = int(raw_agent) if raw_agent not in (None, "") else None
+            match = matches.get(role["id"])
+            if match:
+                agent_id = match["agent_id"]
+                seat["casting"] = match
             if persona_fn is None:
                 persona = resident_persona(city, agent_id, taken=taken)
             else:
                 persona = persona_fn(city, agent_id)
             if persona.get("agent_id") is not None:
+                if int(persona["agent_id"]) in taken and (persona_fn is None or agent_id is not None):
+                    raise ValueError("同一居民不能重复入座")
                 taken.add(int(persona["agent_id"]))
             seat["persona"] = persona
             seat["player_name"] = str(persona.get("name") or role["name"])
@@ -384,6 +497,36 @@ def new_session(
         "created_at": time.time(),
         "updated_at": time.time(),
     }
+    if spec.get("schema_version", 1) >= 2:
+        session.update(
+            schema_version=2,
+            mechanism_version=spec["mechanism_version"],
+            seed=int(seed),
+            casting_mode=casting_mode,
+            assumptions=copy.deepcopy(assumptions or {}),
+            step_mode=bool(step_mode),
+            pause_requested=False,
+            proposals={},
+            outcome={"kind": "ongoing", "agreements": [], "unresolved_issues": []},
+            private_state={r["id"]: copy.deepcopy(r["private_state"]) for r in spec["roles"]},
+            disclosed_facts={},
+            intervention_queue=[],
+            interventions=[],
+            applied_rules=[],
+        )
+        session["frozen_input"] = copy.deepcopy(
+            {
+                "spec": spec,
+                "seats": [{k: v for k, v in seat.items() if k != "token"} for seat in seated],
+                "seed": seed,
+                "city": city,
+                "casting_mode": casting_mode,
+                "assumptions": assumptions or {},
+            }
+        )
+        session["input_hash"] = hashlib.sha256(
+            json.dumps(session["frozen_input"], sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
     return session
 
 
@@ -419,7 +562,16 @@ def seat_by_token(session: dict[str, Any], token: str) -> dict[str, Any] | None:
 def current_round(session: dict[str, Any]) -> dict[str, Any] | None:
     rounds = session["spec"]["rounds"]
     index = session["round_index"]
-    return rounds[index] if 0 <= index < len(rounds) else None
+    if not 0 <= index < len(rounds):
+        return None
+    if session.get("schema_version") == 2 and session["spec"].get("game_type") == "negotiation":
+        return {
+            "title": f"第 {index + 1} 轮 · 议题协商",
+            "event": rounds[0]["event"] if index == 0 else "根据已经公开的行动和提案继续协商。",
+            "prompt": "回应未解决问题或提出具体条件；也可维持立场、拒绝、延期、搁置或退出。",
+            "options": [],
+        }
+    return rounds[index]
 
 
 def pending_seats(session: dict[str, Any], kind: str | None = None) -> list[dict[str, Any]]:
@@ -434,12 +586,24 @@ def pending_seats(session: dict[str, Any], kind: str | None = None) -> list[dict
 
 
 def record_action(
-    session: dict[str, Any], role_id: str, action: str, *, choice: str = "", thought: str = ""
+    session: dict[str, Any],
+    role_id: str,
+    action: str,
+    *,
+    choice: str = "",
+    thought: str = "",
+    decision: dict[str, Any] | None = None,
 ) -> None:
     if session["status"] != "acting":
         raise ValueError("这一轮已经结束，等下一轮开始")
     if role_id in session["actions"]:
         raise ValueError("这一轮你已经行动过了")
+    role_of(session, role_id)
+    if role_id not in {seat["role_id"] for seat in session["seats"]}:
+        raise ValueError("角色尚未入座")
+    clean_decision = (
+        game_negotiation.decision(decision, session, role_id) if session.get("schema_version") == 2 else None
+    )
     action = _text(action, MAX_ACTION_CHARS)
     if not action and not choice:
         raise ValueError("写下你这一轮的行动")
@@ -449,6 +613,14 @@ def record_action(
         "thought": _text(thought, 300),
         "at": time.time(),
     }
+    if clean_decision is not None:
+        session["actions"][role_id]["decision"] = clean_decision
+        previous = [r["actions"][role_id]["action"] for r in session["rounds"] if role_id in r["actions"]][
+            -2:
+        ]
+        session["actions"][role_id]["repeated_action"] = any(
+            difflib.SequenceMatcher(None, old, action).ratio() >= 0.92 for old in previous
+        )
     session["updated_at"] = time.time()
 
 
@@ -483,6 +655,53 @@ def _roster(session: dict[str, Any]) -> str:
     return "\n".join(f"- {r['name']}：{r['public']}" for r in session["spec"]["roles"])
 
 
+def _decision_context(session: dict[str, Any], seat: dict[str, Any]) -> str:
+    if session.get("schema_version") != 2:
+        return ""
+    from gaworld.research.game_interventions import visible
+
+    rid = seat["role_id"]
+    role = role_of(session, rid)
+    previous = [r["actions"][rid]["action"] for r in session["rounds"] if rid in r["actions"]][-3:]
+    events = visible(session["interventions"], rid)
+    return (
+        "【决策要求】回应具体对象、未解决问题与提案条件，动作描写可省略；不要反复颤巍巍、抹冷汗、指图纸。"
+        "允许维持立场、拒绝、延期、搁置或退出；不要因最后一轮而迎合和解。不要擅自公开私密卡，"
+        "选择披露时列出可披露事实id和理由；受限制的事实不得透露。人格口吻不改变角色职责。\n"
+        + "【你近期的发言】"
+        + json.dumps(previous, ensure_ascii=False)
+        + "\n【上轮未生效的决定】"
+        + json.dumps(session.get("decision_errors", []), ensure_ascii=False)
+        + "\n【当前提案及签署】"
+        + json.dumps(session["proposals"], ensure_ascii=False)
+        + "\n【仅你的收益、风险与事实】"
+        + json.dumps(
+            {"state": session["private_state"][rid], "facts": role["private_facts"]}, ensure_ascii=False
+        )
+        + "\n【已披露事实】"
+        + json.dumps(session["disclosed_facts"], ensure_ascii=False)
+        + "\n【你可见的干预】"
+        + json.dumps(
+            [{k: v for k, v in e.items() if k not in {"seat", "role"}} for e in events], ensure_ascii=False
+        )
+    )
+
+
+def _decision_schema(session: dict[str, Any]) -> str:
+    if session["spec"]["game_type"] != "negotiation":
+        return ""
+    return (
+        '\n在同一JSON中增加 "decision": {"intent": "propose|accept|reject|ask|respond|maintain|defer|shelve|withdraw", '
+        '"target_role_id": "回应对象id，可空", "proposal_id": "提案id", "proposal_version": 1, '
+        '"issue": "议题id", "terms": "具体条款", "disclose_fact_ids": []}。'
+        "提案需id/issue/terms；接受或拒绝需已存在提案的当前版本，不得接受本轮尚未公开的新提案。"
+        + "有效角色id："
+        + json.dumps([r["id"] for r in session["spec"]["roles"]])
+        + "；登记议题："
+        + json.dumps(session["spec"]["negotiation"]["issues"], ensure_ascii=False)
+    )
+
+
 def agent_prompt(session: dict[str, Any], seat: dict[str, Any]) -> str:
     from gaworld.apps.games_api import persona_block
 
@@ -499,6 +718,7 @@ def agent_prompt(session: dict[str, Any], seat: dict[str, Any]) -> str:
         f"{persona_block(seat.get('persona') or {})}\n\n"
         f"你现在在参加一个叫「{spec['title']}」的情景推演，你扮演的角色是【{role['name']}】。"
         "用你自己的性格、经历和说话方式来演这个角色——你会怎么做就怎么做，不要演成教科书里的标准答案。\n\n"
+        f"{_decision_context(session, seat)}\n"
         f"【背景】{spec['setting']}\n\n"
         f"【在场的角色】\n{_roster(session)}\n\n"
         f"【你的角色】{role['public']}\n【你的目标】{role['goal']}\n"
@@ -510,6 +730,7 @@ def agent_prompt(session: dict[str, Any], seat: dict[str, Any]) -> str:
         "只输出一个 JSON 对象：\n"
         '{"choice": "选了哪个做法（没有选项就留空）", "action": "你做了什么、说了什么", '
         '"thought": "一句心里话，不会公开"}'
+        + (_decision_schema(session) if session.get("schema_version") == 2 else "")
     )
 
 
@@ -522,7 +743,10 @@ def parse_agent_action(raw: str, options: list[str]) -> dict[str, str]:
         choice = next((o for o in options if choice in o or o in choice), choice)
     if not action and not choice:
         action = _text(raw, MAX_ACTION_CHARS) or "（没有行动）"
-    return {"action": action, "choice": choice, "thought": thought}
+    result = {"action": action, "choice": choice, "thought": thought}
+    if isinstance(payload.get("decision"), dict):
+        result["decision"] = payload["decision"]
+    return result
 
 
 def resolve_prompt(session: dict[str, Any]) -> str:
@@ -539,13 +763,23 @@ def resolve_prompt(session: dict[str, Any]) -> str:
         f"你是情景推演「{spec['title']}」的主持人，要公正、具体地裁定这一轮的结果。\n\n"
         f"【背景】{spec['setting']}\n\n"
         f"【角色】\n"
-        + "\n".join(f"- {r['name']}：{r['public']}；目标：{r['goal']}" for r in spec["roles"])
+        + "\n".join(
+            f"- {r['name']}：{r['public']}"
+            + (f"；目标：{r['goal']}" if session.get("schema_version") != 2 or r.get("goal_public") else "")
+            for r in spec["roles"]
+        )
         + "\n\n"
         f"【当前指标】\n{_indicator_lines(session)}\n\n"
         f"【之前的回合】\n{_history(session)}\n\n"
         f"【本轮：{rnd.get('title', '')}】{rnd.get('event', '')}\n"
         f"【本轮各角色的行动】（同时发生）\n{moves}\n\n"
-        "根据这些行动的合理后果裁定：发生了什么、各方得失、指标怎么变（变化量为正数或负数，"
+        + (
+            "【主持边界】不得预设冲突—妥协—和解，不代替任何角色接受条款；指标没有默认负相关，未触及保持不变。"
+            "私人收益由登记规则计算，不得虚构。\n"
+            if session.get("schema_version") == 2
+            else ""
+        )
+        + "根据这些行动的合理后果裁定：发生了什么、各方得失、指标怎么变（变化量为正数或负数，"
         "不要让指标越界；行动没有触及的指标保持 0）。叙述 150 字以内，像新闻简报一样具体。\n"
         "只输出一个 JSON 对象：\n"
         f'{{"narration": "本轮结果", "indicator_changes": {{{ind_schema}}}, "role_outcomes": {{{role_schema}}}}}'
@@ -557,11 +791,23 @@ def apply_resolution(session: dict[str, Any], raw: str) -> dict[str, Any]:
     payload = parse_json(raw)
     spec = session["spec"]
     rnd = current_round(session) or {"title": ""}
+    if session.get("schema_version") == 2 and spec.get("game_type") == "negotiation":
+        game_negotiation.settle(session)
+    before_values = dict(session["indicators"])
+    rule_audit = game_rules.apply_rules(session) if session.get("schema_version") == 2 else []
+    authoritative = {
+        rule["target"].split(":")[1]
+        for rule in spec.get("rules", [])
+        if rule["target"].startswith("indicator:")
+    }
+    authoritative |= {i["id"] for i in spec["indicators"] if i.get("method") == "registered_rules"}
     changes: dict[str, float] = {}
     raw_changes = _dict(payload.get("indicator_changes"))
     for ind in spec["indicators"]:
         delta = _num(raw_changes.get(ind["id"]), 0.0)
-        before = session["indicators"].get(ind["id"], ind["initial"])
+        before = before_values.get(ind["id"], ind["initial"])
+        if ind["id"] in authoritative:
+            delta = session["indicators"][ind["id"]] - before
         after = min(ind["max"], max(ind["min"], before + delta))
         changes[ind["id"]] = round(after - before, 2)
         session["indicators"][ind["id"]] = round(after, 2)
@@ -576,10 +822,35 @@ def apply_resolution(session: dict[str, Any], raw: str) -> dict[str, Any]:
         "indicators_after": dict(session["indicators"]),
         "role_outcomes": {r["id"]: _text(outcomes_raw.get(r["id"]), 300) for r in spec["roles"]},
     }
+    if session.get("schema_version") == 2:
+        record["rule_audit"] = rule_audit
+        record["decision_errors"] = copy.deepcopy(session.get("decision_errors", []))
+        record["outcome"] = copy.deepcopy(session["outcome"])
+        record["proposals"] = copy.deepcopy(session["proposals"])
+        record["indicator_sources"] = {
+            i["id"]: "registered_rules" if i["id"] in authoritative else "model_estimate"
+            for i in spec["indicators"]
+        }
     session["rounds"].append(record)
     session["actions"] = {}
     session["round_index"] += 1
     session["status"] = "acting" if session["round_index"] < len(spec["rounds"]) else "debriefing"
+    if session.get("schema_version") == 2:
+        kind = session["outcome"]["kind"]
+        if kind in {"agreement", "breakdown", "shelved"}:
+            session["status"] = "debriefing"
+        elif kind == "deferred":
+            session["status"] = "paused"
+        elif session["status"] == "debriefing":
+            if kind != "partial":
+                session["outcome"]["kind"] = "unresolved"
+        elif kind == "deferred" or session["step_mode"] or session["pause_requested"]:
+            session["status"] = "paused"
+        else:
+            from gaworld.research.game_interventions import apply_queued
+
+            apply_queued(session)
+        record["outcome"] = copy.deepcopy(session["outcome"])
     session["updated_at"] = time.time()
     return record
 
@@ -589,7 +860,8 @@ def debrief_prompt(session: dict[str, Any]) -> str:
     seats = {s["role_id"]: s for s in session["seats"]}
     players = "\n".join(
         f"- {r['name']}（{'真人' if seats[r['id']]['kind'] == 'human' else '居民智能体'}·"
-        f"{seats[r['id']]['player_name']}）：目标是{r['goal']}"
+        f"{seats[r['id']]['player_name']}）"
+        + (f"：目标是{r['goal']}" if session.get("schema_version") != 2 or r.get("goal_public") else "")
         for r in spec["roles"]
     )
     criteria = "\n".join(f"- {c['criterion']}：{c['description']}" for c in spec["scoring"])
@@ -600,7 +872,14 @@ def debrief_prompt(session: dict[str, Any]) -> str:
         + "\n".join(f"- {o}" for o in spec["learning_objectives"])
         + f"\n\n【参与者】\n{players}\n\n【全部回合】\n{_history(session, limit=MAX_ROUNDS)}\n\n"
         f"【最终指标】\n{_indicator_lines(session)}\n\n【评分维度】\n{criteria}\n\n"
-        "请依据各角色在回合中的实际行动做复盘：给每个角色按每个维度打分并说明依据，"
+        + (
+            "【已由代码判定的结局】"
+            + json.dumps(session.get("outcome"), ensure_ascii=False)
+            + "。不得改判。合理拒绝/延期/退出也可能体现良好决策；不以签约率评价优劣。\n"
+            if session.get("schema_version") == 2
+            else ""
+        )
+        + "请依据各角色在回合中的实际行动做复盘：给每个角色按每个维度打分并说明依据，"
         "逐条评估学习目标是否达成，回答复盘问题，最后给出研究者可以带走的洞见。\n"
         "复盘问题：\n" + "\n".join(f"- {q}" for q in spec["debrief_questions"]) + "\n\n"
         "只输出一个 JSON 对象：\n"
@@ -682,6 +961,11 @@ def public_view(session: dict[str, Any], *, seat_token: str = "", host: bool = F
         if host or (me and me["role_id"] == role["id"]):
             card["goal"] = role["goal"]
             card["private"] = role["private"]
+            if session.get("schema_version") == 2:
+                card["private_state"] = copy.deepcopy(session["private_state"][role["id"]])
+                card["private_facts"] = copy.deepcopy(role["private_facts"])
+        elif role.get("goal_public"):
+            card["goal"] = role["goal"]
         roles.append(card)
     seats = []
     for seat in session["seats"]:
@@ -696,15 +980,28 @@ def public_view(session: dict[str, Any], *, seat_token: str = "", host: bool = F
             entry["agent"] = {k: persona.get(k) for k in ("agent_id", "name", "age", "gender", "job")}
         if host:
             entry["token"] = seat["token"]
+            if "casting" in seat:
+                entry["casting"] = copy.deepcopy(seat["casting"])
         seats.append(entry)
     rounds = []
     for record in session["rounds"]:
-        copy = dict(record)
-        copy["actions"] = {
-            rid: (move if host else {k: v for k, v in move.items() if k != "thought"})
+        record_view = dict(record)
+        record_view["actions"] = {
+            rid: (move if host else {k: v for k, v in move.items() if k not in {"thought", "diagnostics"}})
             for rid, move in record["actions"].items()
         }
-        rounds.append(copy)
+        if session.get("schema_version") == 2 and not host:
+            record_view["role_outcomes"] = {
+                rid: text
+                for rid, text in record.get("role_outcomes", {}).items()
+                if me and rid == me["role_id"]
+            }
+            record_view["rule_audit"] = [
+                a
+                for a in record.get("rule_audit", [])
+                if a["target"].startswith("indicator:") and not a.get("from")
+            ]
+        rounds.append(record_view)
     view: dict[str, Any] = {
         "id": session["id"],
         "game_id": session["game_id"],
@@ -729,6 +1026,34 @@ def public_view(session: dict[str, Any], *, seat_token: str = "", host: bool = F
         "updated_at": session["updated_at"],
         "host": host,
     }
+    if session.get("schema_version") == 2:
+        from gaworld.research.game_interventions import visible
+
+        rid = me["role_id"] if me else ""
+        view.update(
+            schema_version=2,
+            game_type=spec["game_type"],
+            mechanism_version=session["mechanism_version"],
+            casting_mode=session["casting_mode"],
+            seed=session["seed"],
+            input_hash=session["input_hash"],
+            proposals=copy.deepcopy(session["proposals"]),
+            outcome=copy.deepcopy(session["outcome"]),
+            disclosed_facts=copy.deepcopy(session["disclosed_facts"]),
+            interventions=visible(session["interventions"], rid, host=host),
+            step_mode=session["step_mode"],
+            pause_requested=session["pause_requested"],
+            negotiation=copy.deepcopy(spec["negotiation"]),
+        )
+        # Roles/seats inside intervention records contain new-seat secrets. Never return them wholesale.
+        for event in view["interventions"]:
+            event.pop("seat", None)
+            event.pop("role", None)
+        if host:
+            view["intervention_queue"] = [
+                {k: v for k, v in e.items() if k not in {"seat", "role"}}
+                for e in session["intervention_queue"]
+            ]
     if me is not None:
         view["me"] = {
             "role_id": me["role_id"],
@@ -755,6 +1080,29 @@ def export_markdown(session: dict[str, Any]) -> str:
         who = ("真人 · " if seat.get("kind") == "human" else "居民 · ") + str(seat.get("player_name", ""))
         out.append(f"| {role['name']} | {who} | {role['public']} | {role['goal']} |")
     out.append("")
+    if session.get("schema_version") == 2:
+        out += [
+            "## 冻结实验配置",
+            "",
+            f"机制：{session['mechanism_version']}；身份安排：{session['casting_mode']}；种子：{session['seed']}",
+            f"输入摘要：{session['input_hash']}",
+            "",
+            "### 指标字典",
+            "",
+        ]
+        for ind in spec["indicators"]:
+            out.append(
+                f"- {ind['name']}（{ind['concept_id']} / {ind['definition_version']}）：{ind['description']}；单位：{ind['unit']}；方法：{ind['method']}；方向：{ind['direction']}"
+            )
+        out += [
+            "",
+            "### 私人收益与风险（主持导出）",
+            "",
+            "```json",
+            json.dumps(session["private_state"], ensure_ascii=False, indent=2),
+            "```",
+            "",
+        ]
     for record in session["rounds"]:
         out += [f"## {record['title']}", "", f"> {record['event']}", ""]
         for role_id, move in record["actions"].items():
@@ -765,6 +1113,34 @@ def export_markdown(session: dict[str, Any]) -> str:
         if moved:
             ind_names = {i["id"]: i["name"] for i in spec["indicators"]}
             out += ["指标变化：" + "，".join(f"{ind_names.get(k, k)} {v:+g}" for k, v in moved.items()), ""]
+    if session.get("schema_version") == 2:
+        out += [
+            "## 协商结局（代码判定）",
+            "",
+            json.dumps(session["outcome"], ensure_ascii=False),
+            "",
+            "## 规则、干预与完整冻结快照（主持导出）",
+            "",
+            "```json",
+            json.dumps(
+                {
+                    "spec": spec,
+                    "frozen_input": session.get("frozen_input"),
+                    "budget_amendments": session.get("budget_amendments", []),
+                    "seed": session["seed"],
+                    "seats": [{k: v for k, v in seat.items() if k != "token"} for seat in session["seats"]],
+                    "interventions": [
+                        {k: v for k, v in e.items() if k != "seat"} for e in session["interventions"]
+                    ],
+                    "proposals": session["proposals"],
+                    "audit": [r.get("rule_audit", []) for r in session["rounds"]],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            "```",
+            "",
+        ]
     debrief = session.get("debrief")
     if debrief:
         out += ["## 复盘", "", debrief["summary"], ""]
@@ -800,7 +1176,11 @@ def export_markdown(session: dict[str, Any]) -> str:
 
 
 def games_root() -> Path:
-    return PROJECT_ROOT / GAMES_DIRNAME
+    from gaworld.apps import world_paths
+
+    if world_paths.current_world():
+        return Path(world_paths.world_file("research", "serious_games"))
+    return Path(world_paths.REPO_ROOT) / GAMES_DIRNAME
 
 
 def _safe_id(value: str) -> str:

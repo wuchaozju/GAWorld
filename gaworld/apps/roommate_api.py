@@ -55,6 +55,8 @@ from typing import Any
 
 from gaworld.accounts import ownership
 from gaworld.apps.games_api import first_json_object, load_persona, persona_block
+from gaworld.apps import roommate_engagement
+from gaworld.apps.roommate_context import context_block, contradiction, remember
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.roommate_api")
@@ -66,8 +68,6 @@ _LOG = get_logger("gaworld.dashboard.roommate_api")
 #: :class:`Event` to the session's event log when the model replies (or
 #: silently drops it on failure).
 _INTERACTION_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="roommate")
-_INTERACTION_LOCK = threading.Lock()
-_PENDING_FUTURES: list[Future[Any]] = []
 
 #: How long a single model call may hang before we cut it off and surface
 #: a placeholder event. Most providers return in under 30 s; we give 90 s
@@ -75,91 +75,6 @@ _PENDING_FUTURES: list[Future[Any]] = []
 #: would otherwise stall the event log indefinitely (the player sees no
 #: bubbles, no relationship updates, just endless movement).
 _INTERACTION_TIMEOUT = 90.0
-
-#: Generic placeholder content used when the model call times out. It is
-#: not a real conversation — the dashboard marks it as a *fallback* so the
-#: player can tell, and the mood / relationship deltas are zero so it does
-#: not poison the simulation.
-_FALLBACK_DIALOGUE = "{a}:…\n{b}:…"
-_FALLBACK_THOUGHT = "{a}:(在想要说什么)\n{b}:(在想要说什么)"
-
-
-def _gc_pending_futures() -> None:
-    """Drop finished futures so the list does not grow without bound."""
-    with _INTERACTION_LOCK:
-        kept = [f for f in _PENDING_FUTURES if not f.done()]
-        _PENDING_FUTURES.clear()
-        _PENDING_FUTURES.extend(kept)
-
-
-def _cancel_stale_futures() -> None:
-    """Cancel any interaction that has been running past
-    ``_INTERACTION_TIMEOUT``. ``add_done_callback`` will then run on the
-    cancel path and emit a fallback event."""
-    cutoff = time.time() - _INTERACTION_TIMEOUT
-    with _INTERACTION_LOCK:
-        alive = []
-        for fut in _PENDING_FUTURES:
-            if fut.done():
-                continue
-            submitted = getattr(fut, "_submit_time", None) or cutoff
-            if submitted < cutoff:
-                fut.cancel()
-            else:
-                alive.append(fut)
-        _PENDING_FUTURES.clear()
-        _PENDING_FUTURES.extend(alive)
-
-
-def _maybe_emit_fallback(
-    session_id: str,
-    a_id: int,
-    b_id: int,
-    room: str,
-    tick_idx: int,
-    fut: Future[Any],
-) -> None:
-    """Callback run when an interaction future resolves. If the worker
-    failed (exception or cancellation), or if it hung past the deadline
-    and got cancelled, drop a placeholder event so the dashboard still
-    shows *something*. The fallback marks the event with ``note="fallback"``
-    so the renderer can render it as dimmer / without bubble content."""
-    try:
-        exc = fut.exception()
-    except Exception:
-        exc = None
-    cancelled = fut.cancelled()
-    # If the worker succeeded, ``_run_interaction_worker`` already wrote
-    # the real event. Check the session's events to see whether this
-    # interaction is already there — if so, do not double-write.
-    try:
-        session = _require(session_id)
-    except KeyError:
-        return
-    already = any(
-        e.actor_ids == [a_id, b_id] and e.tick == tick_idx and e.kind == "interact" for e in session.events
-    )
-    if already and not cancelled and exc is None:
-        return
-    a = next((r for r in session.residents if r.agent_id == a_id), None)
-    b = next((r for r in session.residents if r.agent_id == b_id), None)
-    if a is None or b is None:
-        return
-    event = Event(
-        seq=0,
-        tick=tick_idx,
-        at=time.time(),
-        kind="interact",
-        actor_ids=[a_id, b_id],
-        room=room,
-        dialogue=_FALLBACK_DIALOGUE.format(a=a.name, b=b.name),
-        thought=_FALLBACK_THOUGHT.format(a=a.name, b=b.name),
-        mood_delta=0.0,
-        relationship_delta={str(b_id): 0.0, str(a_id): 0.0},
-        note="fallback",
-    )
-    _append_event(session, event)
-
 
 #: Residents in one session. Two is "roommates", six is "a share house".
 MIN_AGENTS = 2
@@ -439,6 +354,7 @@ class Event:
     mood_delta: float = 0.0
     relationship_delta: dict[str, float] = field(default_factory=dict)
     note: str = ""
+    virtual_clock: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -463,6 +379,7 @@ class Event:
                 for k, v in self.relationship_delta.items()
             },
             "note": self.note,
+            "virtual_clock": self.virtual_clock,
         }
 
 
@@ -497,12 +414,24 @@ class RoommateSession:
     #: diffing lists.
     last_seq: int = 0
     owner_id: int | None = field(default_factory=lambda: ownership.stamp().get("owner_id"))
+    conversation_facts: dict[tuple[int, int], dict[str, Any]] = field(default_factory=dict)
+    lock: Any = field(default_factory=threading.RLock, repr=False)
+    pending_tick: int | None = None
+    pending_since: float = 0.0
+    pending_actors: list[int] = field(default_factory=list)
+    pending_room: str = ""
+    engagement_last_attempt: int = 0
+    pending_future: Future[Any] | None = field(default=None, repr=False)
 
     @property
     def settled(self) -> bool:
         return self.finished_at is not None
 
     def to_dict(self) -> dict[str, Any]:
+        with self.lock:
+            return self._snapshot()
+
+    def _snapshot(self) -> dict[str, Any]:
         clock_hour = (self.virtual_clock_minutes // 60) % 24
         is_night = clock_hour >= NIGHT_HOUR or clock_hour < DAWN_HOUR
         # ``night_progress`` ramps from 0 (no night) to 1 (full night) so
@@ -515,8 +444,7 @@ class RoommateSession:
                 ramp = ((24 - NIGHT_HOUR) + clock_hour + self.virtual_clock_minutes % 60 / 60) / 4
             night_progress = max(0.0, min(1.0, ramp))
         else:
-            ramp = (clock_hour - DAWN_HOUR + self.virtual_clock_minutes % 60 / 60) / (NIGHT_HOUR - DAWN_HOUR)
-            night_progress = max(0.0, min(1.0, 1 - ramp))
+            night_progress = 0.0
         return {
             "id": self.id,
             "city": self.city,
@@ -536,6 +464,10 @@ class RoommateSession:
             "residents": [r.to_dict() for r in self.residents],
             "events": [e.to_dict() for e in self.events[-MAX_EVENTS:]],
             "events_truncated": len(self.events) > MAX_EVENTS,
+            "engagement_version": roommate_engagement.VERSION,
+            "interaction_status": "generating"
+            if self.pending_tick is not None
+            else ("failed" if self.events and self.events[-1].note.startswith("fallback") else "waiting"),
             # Each entry is the full record (3 dims + stage + history)
             # so the front-end can render a relationship matrix, a
             # stage badge, and a recent-events tooltip without further
@@ -729,6 +661,7 @@ def _relationship_decay(session: RoommateSession) -> None:
     Old fixtures that stored a plain float instead of a record are
     silently upgraded to the new shape on first decay."""
     decay = RELATIONSHIP_DECAY_PER_TICK
+    seen: set[int] = set()
     for _a_id, pairs in list(session.relationships.items()):
         for b_id, value in list(pairs.items()):
             if not isinstance(value, dict):
@@ -737,6 +670,9 @@ def _relationship_decay(session: RoommateSession) -> None:
                 # shape the rest of the code now expects.
                 pairs[b_id] = _empty_rel_record()
                 continue
+            if id(value) in seen:
+                continue
+            seen.add(id(value))
             for dim in REL_DIMENSIONS:
                 v = float(value.get(dim, 0.0))
                 if abs(v) <= decay:
@@ -969,15 +905,15 @@ def _day_phase(hour: int) -> str:
 
 
 def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: RoommateSession) -> str:
-    persona_a = {"name": a.name, "age": a.age, "gender": a.gender, "job": a.job, "profile_md": a.profile_md}
-    persona_b = {"name": b.name, "age": b.age, "gender": b.gender, "job": b.job, "profile_md": b.profile_md}
+    persona_a = {"name": a.name, "age": a.age, "gender": a.gender, "job": a.job, "profile_md": ""}
+    persona_b = {"name": b.name, "age": b.age, "gender": b.gender, "job": b.job, "profile_md": ""}
     clock_str = _format_clock(session.virtual_clock_minutes) if session else "08:00"
     hour = _current_hour(session)
     phase = _day_phase(hour)
     rel = session.relationships.get(a.agent_id, {}).get(b.agent_id) if session else None
     rel_stage = (rel or {}).get("stage", "初识")
     rel_summary = (
-        f"当前关系: {rel_stage}"
+        f"关系感受分数阶段（不代表已确认关系身份）: {rel_stage}"
         + (
             f", 好感 {rel.get('affinity', 0):.0f}, 信任 {rel.get('trust', 0):.0f}, 亲密 {rel.get('closeness', 0):.0f}"
             if rel
@@ -989,16 +925,23 @@ def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: Ro
     return (
         f"{persona_block(persona_a)}\n\n"
         f"{persona_block(persona_b)}\n\n"
+        # Keep the full dossier: the shared games preamble truncates long profiles.
+        f"【{a.name}完整档案】\n{a.profile_md}\n【{b.name}完整档案】\n{b.profile_md}\n"
+        "年龄、职业、经历以居民档案为准；氛围设定、旧对话不能改写身份。"
+        "不得擅自改变就学状态，不要编造未记录的实习、婚育或工作经历。"
+        "档案未写明的经历不要当成已发生的自传事实。\n"
         f"现在是虚拟时间 **{clock_str} ({phase})**。{a.name}和{b.name}在公寓的「{_room_label(room)}」碰上了。"
         f"两人刚才各自在：{a.activity} / {b.activity}。\n"
         f"公寓的氛围：{vibe or '几个合得来的朋友住在同一间公寓里。'}\n"
         f"{rel_summary}。\n\n"
+        f"{context_block(session, a, b)}\n"
         "请扮演**这场相遇的导演**:以这两人的身份写一段真实、自然、**符合时段**的日常对话"
         "(可以寒暄、可以聊今天的新闻/工作/感情、可以拌嘴、可以沉默),"
         "然后告诉他们各自心里在想什么。\n\n"
-        "**时间一致性硬要求**:早 6 点前不要谈「还没休息」「熬夜」;"
-        "中午别提「早餐 / 晚饭」;晚上 9 点后别说「明天早起 / 早安 / 早上好」。"
-        "对话内容必须和时段自洽。\n\n"
+        "**时间一致性硬要求**:以本场相遇时间为准。凌晨是深夜，可以聊熬夜、还没休息，"
+        "不能当成正常起床吃早餐；早安、早啊、早上好只用于清晨或上午的当面问候。"
+        "中午和下午不要互道早安；夜晚可说明天早起，但不能把当前当清晨。"
+        "可以回忆早饭或约明天早餐，但要明确过去或未来，不能当成此刻正在发生。\n\n"
         "请严格用以下 JSON 输出(不要解释、不要 Markdown):\n"
         "{\n"
         '  "room": "房间id",\n'
@@ -1015,9 +958,19 @@ def _interact_prompt(a: Resident, b: Resident, room: str, vibe: str, session: Ro
         '    "affinity": -15 到 15,   // 好感:聊得开心/臭味相投就 +,吵架/互相烦就 -\n'
         '    "trust":    -10 到 10,   // 信任:愿不愿意把心里话/后背交给他\n'
         '    "closeness":-10 到 10    // 亲密:肢体/情感距离的远近\n'
-        "  }\n"
+        "  },\n"
+        '  "memory_updates": [{"key":"relationship", "value":"partners",'
+        ' "evidence_a":"a_name 确认关系的逐字原话", "evidence_b":"b_name 同意的逐字原话"},'
+        f' {{"key":"address_{a.agent_id}", "evidence":"称呼约定的逐字原话"}}]\n'
         "}\n\n"
         "要求:\n"
+        f"- lines.who 只用真实姓名：{a.name}或{b.name}，不得新增人物\n"
+        f"- memory_updates 只记录本轮明确发生的变化，无变化填 []。key 用 relationship、address_{a.agent_id}、"
+        f"address_{b.agent_id}（对应居民被称呼的名字）、agreement_1 至 agreement_99。"
+        "同一约定沿用旧 key。relationship 的 value 只用 partners（双方确认恋爱）、separated（明确分手）。"
+        "必须分别提供两位居民的 evidence_a 和 evidence_b 原话，包含关系提议与明确同意。"
+        "其余约定只用 evidence 原话，不要编造摘要。不得仅凭好感分数推断恋爱，不得把单方面表白当成双方确认。"
+        "关系变化须双方明确同意；称呼须明确约定；evidence 必须逐字摘录本轮对话。\n"
         "- 对话生活化,符合两人各自的职业、年龄、口吻\n"
         "- 内心独白是「他/她没说出口的话」,反映真实想法而不是客套\n"
         "- 心情和关系的小数请如实反映事件强度:一次普通寒暄 心情 ±0.05, 认真聊天 ±0.2, 冲突 ±0.4\n"
@@ -1177,6 +1130,7 @@ def _parse_interaction(raw: str, default_room: str) -> dict[str, Any]:
         # Legacy field, kept for backwards-compat with older test fixtures
         # and the existing ``Event.relationship_delta`` shape.
         "rel_delta": rel_deltas.get("affinity", 0.0),
+        "memory_updates": parsed.get("memory_updates", []),
     }
 
 
@@ -1276,9 +1230,13 @@ def end_session(session_id: str) -> dict[str, Any] | None:
         session = _require(session_id)
     except KeyError:
         return None
-    if not session.settled:
-        session.finished_at = time.time()
-        session.running = False
+    with session.lock:
+        session.pending_tick = None
+        if session.pending_future is not None:
+            session.pending_future.cancel()
+        if not session.settled:
+            session.finished_at = time.time()
+            session.running = False
     return session.to_dict()
 
 
@@ -1344,83 +1302,84 @@ def direct_resident(
         session = _require(session_id)
     except KeyError:
         return None
-    if session.settled:
-        raise ValueError("同居已结束,不能再指令")
-    aid = int(agent_id)
-    resident = next((r for r in session.residents if r.agent_id == aid), None)
-    if resident is None:
-        raise ValueError(f"房间里没有 #{aid} 这位居民")
-    activity = str(activity or "").strip()
-    if activity not in _DIRECT_ACTIVITIES:
-        raise ValueError(f"活动 '{activity}' 没法在这间公寓里做")
-    # Use the caller's reaction_fn if given; otherwise fall back to the
-    # one stashed on the session at start time (tests inject there).
-    if reaction_fn is None:
-        reaction_fn = getattr(session, "_reaction_fn", None)
-    target_room = (room or _activity_to_room(activity, resident) or "").strip() or resident.room
-    if not any(r["id"] == target_room for r in ROOMS):
-        raise ValueError(f"房间 '{target_room}' 不存在")
-    old_room = resident.room
-    resident.activity = activity
-    resident.room = target_room
+    with session.lock:
+        if session.settled:
+            raise ValueError("同居已结束,不能再指令")
+        aid = int(agent_id)
+        resident = next((r for r in session.residents if r.agent_id == aid), None)
+        if resident is None:
+            raise ValueError(f"房间里没有 #{aid} 这位居民")
+        activity = str(activity or "").strip()
+        if activity not in _DIRECT_ACTIVITIES:
+            raise ValueError(f"活动 '{activity}' 没法在这间公寓里做")
+        # Use the caller's reaction_fn if given; otherwise fall back to the
+        # one stashed on the session at start time (tests inject there).
+        if reaction_fn is None:
+            reaction_fn = getattr(session, "_reaction_fn", None)
+        target_room = (room or _activity_to_room(activity, resident) or "").strip() or resident.room
+        if not any(r["id"] == target_room for r in ROOMS):
+            raise ValueError(f"房间 '{target_room}' 不存在")
+        old_room = resident.room
+        resident.activity = activity
+        resident.room = target_room
 
-    # If a reaction_fn is injected (tests), let the model add a one-liner;
-    # otherwise we just write the player's intent back as the bubble.
-    turn_text = ""
-    thought_text = ""
-    if reaction_fn is not None:
-        try:
-            prompt = (
-                f"{resident.name}正在去公寓的「{_room_label(target_room)}」{activity}。"
-                f"玩家刚刚指令他/她这么做。请用一句话写出他/她会说的话,真实而口语化。\n"
-                "请严格用 JSON 输出(不要解释、不要 Markdown):\n"
-                '{"say":"一句中文","think":"一句中文内心独白"}\n'
-            )
-            raw = reaction_fn(prompt)
-            parsed = first_json_object(raw) if isinstance(raw, str) else {}
-            turn_text = str(parsed.get("say") or "").strip()
-            thought_text = str(parsed.get("think") or "").strip()
-        except Exception as exc:  # pragma: no cover - provider failure
-            _LOG.warning("direct_resident reaction failed for %s: %s", aid, exc)
-    if not turn_text:
-        turn_text = f"{resident.name} 走去{_room_label(target_room)}{activity}"
-    if not thought_text:
-        thought_text = f"({resident.name}按玩家的意思做了这件事)"
-    turns = [{"who": resident.name, "text": turn_text}]
-    event = Event(
-        seq=0,
-        tick=session.tick_index,
-        at=time.time(),
-        kind="direct",
-        actor_ids=[aid],
-        room=target_room,
-        dialogue=f"{resident.name}:{turn_text}",
-        thought=f"{resident.name}:{thought_text}",
-        turns=turns,
-        note=(note or f"玩家让 {resident.name} 去{_room_label(target_room)}{activity}"),
-    )
-    if old_room != target_room:
-        # Also append a move event so the side panel reads like a journal:
-        # the player sees "X 去厨房做早餐" (move) followed by "X: …" (direct).
-        _append_event(
-            session,
-            Event(
-                seq=0,
-                tick=session.tick_index,
-                at=time.time(),
-                kind="move",
-                actor_ids=[aid],
-                room=target_room,
-                note=f"{resident.name} 去{_room_label(target_room)}{activity}",
-            ),
+        # If a reaction_fn is injected (tests), let the model add a one-liner;
+        # otherwise we just write the player's intent back as the bubble.
+        turn_text = ""
+        thought_text = ""
+        if reaction_fn is not None:
+            try:
+                prompt = (
+                    f"{resident.name}正在去公寓的「{_room_label(target_room)}」{activity}。"
+                    f"玩家刚刚指令他/她这么做。请用一句话写出他/她会说的话,真实而口语化。\n"
+                    "请严格用 JSON 输出(不要解释、不要 Markdown):\n"
+                    '{"say":"一句中文","think":"一句中文内心独白"}\n'
+                )
+                raw = reaction_fn(prompt)
+                parsed = first_json_object(raw) if isinstance(raw, str) else {}
+                turn_text = str(parsed.get("say") or "").strip()
+                thought_text = str(parsed.get("think") or "").strip()
+            except Exception as exc:  # pragma: no cover - provider failure
+                _LOG.warning("direct_resident reaction failed for %s: %s", aid, exc)
+        if not turn_text:
+            turn_text = f"{resident.name} 走去{_room_label(target_room)}{activity}"
+        if not thought_text:
+            thought_text = f"({resident.name}按玩家的意思做了这件事)"
+        turns = [{"who": resident.name, "text": turn_text}]
+        event = Event(
+            seq=0,
+            tick=session.tick_index,
+            at=time.time(),
+            kind="direct",
+            actor_ids=[aid],
+            room=target_room,
+            dialogue=f"{resident.name}:{turn_text}",
+            thought=f"{resident.name}:{thought_text}",
+            turns=turns,
+            note=(note or f"玩家让 {resident.name} 去{_room_label(target_room)}{activity}"),
         )
-    _append_event(session, event)
-    # Bump mood a tiny amount — being directed is mildly annoying
-    # (autonomy loss) but doing an activity you chose is mildly pleasant.
-    resident.mood = max(-1.0, min(1.0, resident.mood - 0.02))
-    # Mark running so the next tick still works after a direct.
-    session.running = True
-    return session.to_dict()
+        if old_room != target_room:
+            # Also append a move event so the side panel reads like a journal:
+            # the player sees "X 去厨房做早餐" (move) followed by "X: …" (direct).
+            _append_event(
+                session,
+                Event(
+                    seq=0,
+                    tick=session.tick_index,
+                    at=time.time(),
+                    kind="move",
+                    actor_ids=[aid],
+                    room=target_room,
+                    note=f"{resident.name} 去{_room_label(target_room)}{activity}",
+                ),
+            )
+        _append_event(session, event)
+        # Bump mood a tiny amount — being directed is mildly annoying
+        # (autonomy loss) but doing an activity you chose is mildly pleasant.
+        resident.mood = max(-1.0, min(1.0, resident.mood - 0.02))
+        # Mark running so the next tick still works after a direct.
+        session.running = True
+        return session.to_dict()
 
 
 def tick(session_id: str, *, steps: int = 1) -> dict[str, Any] | None:
@@ -1446,11 +1405,17 @@ def tick(session_id: str, *, steps: int = 1) -> dict[str, Any] | None:
     deadline = session.opening_clock_minutes + session.max_hours * 60
 
     for _ in range(steps):
-        _advance_one_tick(session, rng=rng, reaction_fn=reaction_fn)
-        if session.virtual_clock_minutes >= deadline:
-            session.running = False
-            session.finished_at = time.time()
-            break
+        with session.lock:
+            if session.settled:
+                break
+            _advance_one_tick(session, rng=rng, reaction_fn=reaction_fn)
+            if session.virtual_clock_minutes >= deadline:
+                session.running = False
+                session.finished_at = time.time()
+                session.pending_tick = None
+                if session.pending_future is not None:
+                    session.pending_future.cancel()
+                break
     return session.to_dict()
 
 
@@ -1475,19 +1440,48 @@ def _advance_one_tick(
 
     # 3) every co-present pair *may* spark an interaction — dispatched
     # to a worker pool so a slow LLM does not block the front-end tick.
-    _gc_pending_futures()
-    _cancel_stale_futures()
-    for a, b, room in _co_present_pairs(session):
+    if session.virtual_clock_minutes >= session.opening_clock_minutes + session.max_hours * 60:
+        return
+    if session.pending_tick is not None:
+        if time.monotonic() - session.pending_since <= _INTERACTION_TIMEOUT:
+            return
+        _append_event(
+            session,
+            Event(
+                seq=0,
+                tick=session.pending_tick,
+                at=time.time(),
+                kind="interact",
+                actor_ids=session.pending_actors,
+                room=session.pending_room,
+                note="fallback: 对话生成超时",
+            ),
+        )
+        session.pending_tick = None
+        if session.pending_future is not None:
+            session.pending_future.cancel()
+    invitation = roommate_engagement.invite(session)
+    encounters = [invitation] if invitation else _co_present_pairs(session)
+    for a, b, room in encounters:
         prob = _interaction_probability(a, b, room)
         # Nudge probability up when they already like each other.
         rel = _pair_score(session, a.agent_id, b.agent_id)
         prob = min(0.95, prob + max(-0.2, min(0.2, rel / 200.0)))
-        if rng.random() > prob:
+        if not invitation and rng.random() > prob:
             continue
+        if reaction_fn is not None:
+            _trigger_interaction(session, a, b, room, reaction_fn=reaction_fn)
+            continue
+        session.pending_tick = session.tick_index
+        session.pending_since = time.monotonic()
+        session.pending_actors = [a.agent_id, b.agent_id]
+        session.pending_room = room
         # Capture locals now — the worker cannot reach the live session
         # object safely without the session lock.
         fn = reaction_fn or _default_reaction_llm
         prompt = _interact_prompt(a, b, room, session.vibe, session)
+        if invitation:
+            prompt += "\n【共同事务邀请】两人不必在同一房间：通过合租群或隔房呼唤，邀请商量公共空间清洁。可拒绝或稍后回应；不得默认答应，不虚构已经碰面或达成安排。"
         a_id, b_id = a.agent_id, b.agent_id
         tick_idx = session.tick_index
         vibe = session.vibe
@@ -1502,19 +1496,11 @@ def _advance_one_tick(
             fn,
             tick_idx,
             vibe,
+            True,
+            session.virtual_clock_minutes,
         )
-        future._submit_time = time.time()  # type: ignore[attr-defined]
-        with _INTERACTION_LOCK:
-            _PENDING_FUTURES.append(future)
-        # Watchdog: if the worker does not finish in ``timeout`` seconds,
-        # cancel the future and emit a placeholder event so the dashboard
-        # keeps moving. ``add_done_callback`` runs on the worker thread
-        # once the future resolves, cancelled or not.
-        future.add_done_callback(
-            lambda f, sid=session.id, ai=a_id, bi=b_id, r=room, t=tick_idx: _maybe_emit_fallback(
-                sid, ai, bi, r, t, f
-            )
-        )
+        session.pending_future = future
+        break  # Next encounter must read the completed conversation state.
 
 
 def _run_interaction_worker(
@@ -1526,6 +1512,8 @@ def _run_interaction_worker(
     fn: Callable[[str], str],
     tick_idx: int,
     vibe: str,
+    managed: bool = False,
+    clock_minutes: int | None = None,
 ) -> None:
     """Run one interaction end-to-end in a worker thread, then write the
     result back into the session under its lock."""
@@ -1534,53 +1522,90 @@ def _run_interaction_worker(
     except Exception as exc:  # pragma: no cover - provider failure
         _LOG.warning("roommate reaction failed for %s/%s: %s", a_id, b_id, exc)
         raw = ""
-    parsed = _parse_interaction(raw, default_room=room)
     try:
         session = _require(session_id)
     except KeyError:
         return
-    a = next((r for r in session.residents if r.agent_id == a_id), None)
-    b = next((r for r in session.residents if r.agent_id == b_id), None)
-    if a is None or b is None:
-        return
-    # Distinguish a real reply from a provider failure / hang: ``raw`` is
-    # non-empty only when the model actually answered. Empty ``raw`` means
-    # we hit an exception, and we should not paint a bubble from that.
-    # The dashboard will keep showing the previous (real) bubble instead.
-    if not raw and not parsed.get("thought_a") and not parsed.get("thought_b"):
-        _LOG.warning("roommate interaction %s/%s produced no content; skipping event", a_id, b_id)
+    with session.lock:
+        if session.settled or (managed and session.pending_tick != tick_idx):
+            return  # Timed out, ended or replaced: a late reply cannot mutate memory.
+        a = next((r for r in session.residents if r.agent_id == a_id), None)
+        b = next((r for r in session.residents if r.agent_id == b_id), None)
+        if a is None or b is None:
+            return
+        clock = (
+            clock_minutes
+            if clock_minutes is not None
+            else (session.opening_clock_minutes + tick_idx * session.tick_minutes)
+        )
+        try:
+            _apply_interaction(session, a, b, room, raw, tick_idx, clock)
+        finally:
+            if managed:
+                session.pending_tick = None
+
+
+def _apply_interaction(
+    session: RoommateSession,
+    a: Resident,
+    b: Resident,
+    room: str,
+    raw: str,
+    tick_idx: int,
+    clock: int,
+) -> None:
+    """Commit dialogue, mood, relationship and durable facts as one state change."""
+    parsed = _parse_interaction(raw, default_room=room)
+    lines = parsed.get("lines") or []
+    # Older model outputs use the schema's a_name / b_name placeholders.
+    aliases = {"a": a.name, "a_name": a.name, "b": b.name, "b_name": b.name}
+    for line in lines:
+        line["who"] = aliases.get(line.get("who", ""), line.get("who", ""))
+    reason = contradiction(lines, a, b, clock)
+    if not lines or reason:
+        _append_event(
+            session,
+            Event(
+                seq=0,
+                tick=tick_idx,
+                at=time.time(),
+                kind="interact",
+                actor_ids=[a.agent_id, b.agent_id],
+                room=room,
+                note="fallback: " + (reason or "未生成有效对话"),
+                virtual_clock=_format_clock(clock),
+            ),
+        )
         return
     a.mood = max(-1.0, min(1.0, a.mood + parsed["mood_delta_a"]))
     b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
-    rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
+    rel_deltas = parsed["rel_deltas"]
     _bump_relationship(
         session,
-        a_id,
-        b_id,
+        a.agent_id,
+        b.agent_id,
         rel_deltas,
-        note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
+        note=_format_dialogue(lines)[:80],
         tick=tick_idx,
     )
-    lines = parsed.get("lines") or []
-    event = Event(
-        seq=0,
-        tick=tick_idx,
-        at=time.time(),
-        kind="interact",
-        actor_ids=[a_id, b_id],
-        room=parsed["room"] or room,
-        dialogue=_format_dialogue(lines),
-        thought=f"{a.name}:{parsed['thought_a']} | {b.name}:{parsed['thought_b']}",
-        turns=[{"who": t.get("who", ""), "text": t.get("text", "")} for t in lines],
-        mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
-        # 3-dim relationship deltas on the event; old scalar field
-        # preserved as ``affinity`` for the legacy UI strip.
-        relationship_delta={
-            str(b_id): rel_deltas,
-            str(a_id): rel_deltas,
-        },
+    remember(session, a, b, parsed, tick_idx)
+    _append_event(
+        session,
+        Event(
+            seq=0,
+            tick=tick_idx,
+            at=time.time(),
+            kind="interact",
+            actor_ids=[a.agent_id, b.agent_id],
+            room=room,
+            dialogue=_format_dialogue(lines),
+            thought=f"{a.name}:{parsed['thought_a']} | {b.name}:{parsed['thought_b']}",
+            turns=lines,
+            mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
+            relationship_delta={str(b.agent_id): rel_deltas, str(a.agent_id): rel_deltas},
+            virtual_clock=_format_clock(clock),
+        ),
     )
-    _append_event(session, event)
 
 
 def _trigger_interaction(
@@ -1591,49 +1616,21 @@ def _trigger_interaction(
     *,
     reaction_fn: Callable[[str], str] | None,
 ) -> None:
-    """Synchronous variant kept for tests that inject a fake ``reaction_fn``
-    and want the event appended before the assertion runs."""
+    """Synchronous injected reactions use the same commit path as workers."""
     fn = reaction_fn or _default_reaction_llm
-    try:
-        raw = fn(_interact_prompt(a, b, room, session.vibe, session))
-    except Exception as exc:  # pragma: no cover - provider failure
-        _LOG.warning("roommate reaction failed for %s/%s: %s", a.agent_id, b.agent_id, exc)
-        return
-    parsed = _parse_interaction(raw, default_room=room)
-
-    a.mood = max(-1.0, min(1.0, a.mood + parsed["mood_delta_a"]))
-    b.mood = max(-1.0, min(1.0, b.mood + parsed["mood_delta_b"]))
-    rel_deltas = parsed.get("rel_deltas") or {"affinity": 0.0, "trust": 0.0, "closeness": 0.0}
-    _bump_relationship(
-        session,
-        a.agent_id,
-        b.agent_id,
-        rel_deltas,
-        note=(_format_dialogue(parsed.get("lines") or [])[:80] or "一次互动"),
-        tick=session.tick_index,
-    )
-
-    lines = parsed.get("lines") or []
-    event = Event(
-        seq=0,
-        tick=session.tick_index,
-        at=time.time(),
-        kind="interact",
-        actor_ids=[a.agent_id, b.agent_id],
-        room=parsed["room"] or room,
-        dialogue=_format_dialogue(lines),
-        thought=f"{a.name}:{parsed['thought_a']} | {b.name}:{parsed['thought_b']}",
-        turns=[{"who": t.get("who", ""), "text": t.get("text", "")} for t in lines],
-        mood_delta=(parsed["mood_delta_a"] + parsed["mood_delta_b"]) / 2,
-        relationship_delta={
-            str(b.agent_id): rel_deltas,
-            str(a.agent_id): rel_deltas,
-        },
-    )
-    _append_event(session, event)
+    with session.lock:
+        clock, tick_idx = session.virtual_clock_minutes, session.tick_index
+        try:
+            raw = fn(_interact_prompt(a, b, room, session.vibe, session))
+        except Exception as exc:  # pragma: no cover - provider failure
+            _LOG.warning("roommate reaction failed for %s/%s: %s", a.agent_id, b.agent_id, exc)
+            return
+        _apply_interaction(session, a, b, room, raw, tick_idx, clock)
 
 
 def _append_event(session: RoommateSession, event: Event) -> None:
+    if not event.virtual_clock:
+        event.virtual_clock = _format_clock(session.opening_clock_minutes + event.tick * session.tick_minutes)
     session.last_seq += 1
     event.seq = session.last_seq
     session.events.append(event)
@@ -1682,7 +1679,7 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
                 "max_ticks_per_request": MAX_TICKS_PER_REQUEST,
                 "rooms": list(ROOMS),
                 "activities": list(ACTIVITIES),
-                "mood_labels": [{"threshold": t, "label": l} for t, l in MOOD_LABELS],
+                "mood_labels": [{"threshold": threshold, "label": label} for threshold, label in MOOD_LABELS],
             }, 200
         if path == "/api/games/roommate/sessions":
             return {"sessions": list_sessions()}, 200

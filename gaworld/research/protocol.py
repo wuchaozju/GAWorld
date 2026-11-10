@@ -92,6 +92,9 @@ class Protocol:
     #: Model the *simulation* runs on; blank = routed by config. Distinct from
     #: the model that compiled the protocol.
     sim_provider: str = ""
+    #: Requested planning allowance and actual HTTP-attempt cap, reviewed together.
+    call_budget: int | None = None
+    http_budget: int | None = None
     conditions: list[dict[str, Any]] = field(default_factory=list)
     measures: list[dict[str, Any]] = field(default_factory=list)
     hypotheses: list[dict[str, Any]] = field(default_factory=list)
@@ -571,6 +574,12 @@ def apply_overrides(protocol: Protocol, payload: dict[str, Any]) -> Protocol:
         protocol.max_parallel = _int(payload.get("max_parallel"), protocol.max_parallel, low=1, high=4)
     if "sim_provider" in payload:
         protocol.sim_provider = _text(payload.get("sim_provider"), 64)
+    for key in ("call_budget", "http_budget"):
+        if key in payload:
+            from gaworld.research.budget import positive_budget
+
+            value = payload[key]
+            setattr(protocol, key, None if value in (None, "") else positive_budget(value, key))
     return protocol
 
 
@@ -673,7 +682,7 @@ def preflight(
     }
     if calls > call_budget:
         errors.append(
-            f"估算模型调用量 {calls:,} 超过上限 {call_budget:,}：减少居民、天数、种子或条件，或打开快速模式"
+            f"估算模型调用量 {calls:,} 超过上限 {call_budget:,}：请审阅预算或规模；切换运行方式前核对指标与机制兼容性"
         )
     return {"ok": not errors, "errors": errors, "warnings": warnings, "budget": dict(protocol.budget)}
 

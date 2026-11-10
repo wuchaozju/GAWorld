@@ -17,13 +17,26 @@ import json
 import math
 import os
 import re
+import threading
 from copy import deepcopy
+from functools import wraps
 
 from gaworld.apps import world_paths as paths
 from gaworld.logging_setup import get_logger
+from gaworld.population import education as edu
 from gaworld.settings import CONFIG
 
 _LOG = get_logger("gaworld.dashboard")
+SEED_LOCK = threading.RLock()
+
+
+def _seed_write(fn):
+    @wraps(fn)
+    def locked(*args, **kwargs):
+        with SEED_LOCK:
+            return fn(*args, **kwargs)
+
+    return locked
 
 
 SKILLS_DIR = os.path.join(paths.REPO_ROOT, CONFIG.get("skills", {}).get("global_dir", "data/skills"))
@@ -64,27 +77,38 @@ def profile_sections():
     for index, match in enumerate(matches):
         start = match.start()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        sections.append({
-            "id": int(match.group(1)),
-            "name": match.group(2).strip(),
-            "start": start,
-            "end": end,
-            "text": text[start:end].strip() + "\n",
-        })
+        sections.append(
+            {
+                "id": int(match.group(1)),
+                "name": match.group(2).strip(),
+                "start": start,
+                "end": end,
+                "text": text[start:end].strip() + "\n",
+            }
+        )
     return text, sections
 
 
 def agents_summary():
     _, sections = profile_sections()
+    _, rows = read_state_rows()
+    by_id = {row_id(row): row for row in rows}
     configured = set(int(item) for item in paths.effective_config().get("agent_ids", []))
-    return [
-        {
-            "id": section["id"],
-            "name": section["name"],
-            "configured": section["id"] in configured,
-        }
-        for section in sections
-    ]
+    summaries = []
+    for section in sections:
+        row = by_id.get(section["id"], {})
+        job = re.search(r"\*\*职业与工作节奏\*\*[：:]([^\n]*)", section["text"])
+        summaries.append(
+            {
+                "id": section["id"],
+                "name": section["name"],
+                "configured": section["id"] in configured,
+                **{key: row.get(key, "") for key in ("age", "gender", "residence")},
+                **edu.education_attributes(row, section["text"]),
+                "job": str(row.get("job") or (job[1].strip() if job else "")),
+            }
+        )
+    return summaries
 
 
 def agent_profile(agent_id):
@@ -95,6 +119,7 @@ def agent_profile(agent_id):
     return None
 
 
+@_seed_write
 def save_agent_profile(agent_id, profile_text):
     full_text, sections = profile_sections()
     target = None
@@ -105,7 +130,41 @@ def save_agent_profile(agent_id, profile_text):
     if not target:
         raise ValueError(f"Profile {agent_id} not found")
     new_block = str(profile_text).strip() + "\n\n"
-    updated = full_text[:target["start"]] + new_block + full_text[target["end"]:]
+    fieldnames, rows = read_state_rows()
+    row = next((item for item in rows if row_id(item) == int(agent_id)), None)
+    if row is not None:
+        # Confirmed prose edits are another editor for these same fields.
+        old_attributes = edu.education_attributes({}, target["text"])
+        new_attributes = edu.education_attributes({}, new_block)
+
+        def without_canonical(text):
+            return re.sub(r"^\*\*教育背景\*\*[：:].*$", "", text, flags=re.MULTILINE)
+
+        old_legacy = edu.education_attributes({}, without_canonical(target["text"]))
+        new_legacy = edu.education_attributes({}, without_canonical(new_block))
+        if (
+            new_attributes["education"] == old_attributes["education"]
+            and new_legacy["education"] != old_legacy["education"]
+            and new_legacy["education"] != "未知"
+        ):
+            new_attributes["education"] = new_legacy["education"]
+        old_job = re.search(r"\*\*职业与工作节奏\*\*[：:]([^\n]*)", target["text"])
+        new_job = re.search(r"\*\*职业与工作节奏\*\*[：:]([^\n]*)", new_block)
+        changes = {key: value for key, value in new_attributes.items() if value != old_attributes[key]}
+        if (new_job[1] if new_job else "") != (old_job[1] if old_job else ""):
+            changes["job"] = new_job[1].strip() if new_job else ""
+        if changes:
+            attributes = {**edu.education_attributes(row, target["text"]), **changes}
+            edu.validate_education(
+                attributes["education"], attributes["student_status"], int(float(row.get("age") or 0))
+            )
+            for key, value in changes.items():
+                if key not in fieldnames:
+                    fieldnames.append(key)
+                row[key] = value
+            new_block = edu.sync_profile(new_block, attributes)
+            _atomic_write_state(fieldnames, rows)
+    updated = full_text[: target["start"]] + new_block + full_text[target["end"] :]
     with open(paths.profile_path(), "w", encoding="utf-8") as f:
         f.write(updated)
     return agent_profile(agent_id)
@@ -140,6 +199,9 @@ def _state_row_to_payload(row):
         age = int(float(row.get("age")))
     except (TypeError, ValueError):
         age = None
+    profile = agent_profile(row_id(row)) or {}
+    text = profile.get("text", "")
+    job_match = re.search(r"\*\*职业与工作节奏\*\*[：:]([^\n]*)", text)
     return {
         "id": row_id(row),
         "name": (row.get("name") or "").strip(),
@@ -147,6 +209,8 @@ def _state_row_to_payload(row):
         "age": age,
         "hukou": (row.get("hukou") or "").strip(),
         "residence": (row.get("residence") or "").strip(),
+        **edu.education_attributes(row, text),
+        "job": str(row.get("job") or (job_match[1].strip() if job_match else "")),
         "state": {key: _num(row.get(key)) for key in STATE_VAR_KEYS},
     }
 
@@ -170,6 +234,7 @@ def _atomic_write_state(fieldnames, rows):
     os.replace(tmp_path, target)
 
 
+@_seed_write
 def save_agent_state(agent_id, payload):
     fieldnames, rows = read_state_rows()
     if not fieldnames:
@@ -177,6 +242,32 @@ def save_agent_state(agent_id, payload):
     target = next((row for row in rows if row_id(row) == int(agent_id)), None)
     if target is None:
         raise ValueError(f"Agent {agent_id} not found in state CSV")
+    education_changed = any(key in payload for key in ("education", "student_status", "job"))
+    if payload.get("age") not in (None, "") and not education_changed:
+        current = _state_row_to_payload(target)
+        edu.validate_education(current["education"], current["student_status"], int(payload["age"]))
+    if education_changed:
+        current = _state_row_to_payload(target)
+        attributes = edu.normalize_filters(
+            {key: payload.get(key, current[key]) for key in ("education", "student_status")}
+        )
+        attributes = {key: value or "未知" for key, value in attributes.items() if key != "job"}
+        if any(attributes[key] != current[key] for key in attributes) or (
+            payload.get("age") not in (None, "") and int(payload["age"]) != int(target["age"])
+        ):
+            edu.validate_education(
+                attributes["education"],
+                attributes["student_status"],
+                int(payload["age"] if payload.get("age") not in (None, "") else target["age"]),
+            )
+        for key, value in attributes.items():
+            if key not in fieldnames:
+                fieldnames.append(key)
+            target[key] = value
+        if "job" in payload:
+            if "job" not in fieldnames:
+                fieldnames.append("job")
+            target["job"] = str(payload.get("job") or "").strip()[:200]
     for key in ("name", "gender", "hukou", "residence"):
         if payload.get(key) not in (None, ""):
             target[key] = str(payload[key])
@@ -187,6 +278,15 @@ def save_agent_state(agent_id, payload):
         if incoming.get(key) is not None:
             target[key] = round(max(0.0, min(1.0, float(incoming[key]))), 4)
     _atomic_write_state(fieldnames, rows)
+    if education_changed:
+        profile = agent_profile(agent_id)
+        if profile:
+            save_agent_profile(
+                agent_id,
+                edu.sync_profile(
+                    profile["text"], attributes, target.get("job") if "job" in payload else None
+                ),
+            )
     result = agent_state(agent_id)
     try:
         _sync_profile_state_lines(agent_id, result["state"])
@@ -212,7 +312,13 @@ def _sync_profile_state_lines(agent_id, state):
         f"econ_security {state['econ_security']:.2f}｜city_identity {state['city_identity']:.2f}"
     )
     new_text = re.sub(r"\*\*核心状态变量\*\*：.*", core, text)
-    for key in ("policy_sensitivity", "platform_dependence", "risk_preference", "voice_propensity", "mobility_intent"):
+    for key in (
+        "policy_sensitivity",
+        "platform_dependence",
+        "risk_preference",
+        "voice_propensity",
+        "mobility_intent",
+    ):
         new_text = re.sub(rf"^- {key}：.*$", f"- {key}：{state[key]:.2f}", new_text, flags=re.MULTILINE)
     if new_text != text:
         save_agent_profile(agent_id, new_text)
@@ -231,15 +337,17 @@ def _social_snapshot(agent_id):
         if tier in tier_counts:
             tier_counts[tier] += 1
         profile = item.get("profile") if isinstance(item.get("profile"), dict) else {}
-        relations.append({
-            "id": key,
-            "name": profile.get("name") or str(key),
-            "role": item.get("role") or "",
-            "kind": item.get("kind") or "agent",
-            "tier": tier,
-            "closeness": _num(item.get("closeness"), 0.0),
-            "trust": _num(item.get("trust"), 0.0),
-        })
+        relations.append(
+            {
+                "id": key,
+                "name": profile.get("name") or str(key),
+                "role": item.get("role") or "",
+                "kind": item.get("kind") or "agent",
+                "tier": tier,
+                "closeness": _num(item.get("closeness"), 0.0),
+                "trust": _num(item.get("trust"), 0.0),
+            }
+        )
     relations.sort(key=lambda r: r["closeness"], reverse=True)
     return {"count": len(relations), "tier_counts": tier_counts, "relations": relations[:40]}
 
@@ -381,29 +489,33 @@ def _memory_items(memory):
         text = str(raw).strip()
         if not text:
             continue
-        rows.append({
-            "index": index,
-            "text": text[:MEMORY_TEXT_MAX_CHARS],
-            "rag": text.startswith(RAG_TAG_PREFIX),
-        })
+        rows.append(
+            {
+                "index": index,
+                "text": text[:MEMORY_TEXT_MAX_CHARS],
+                "rag": text.startswith(RAG_TAG_PREFIX),
+            }
+        )
     return rows[-MEMORY_LIST_LIMIT:]
 
 
 def _habit_rows(habits):
     """Flatten the ``{phase}|{scope}|{activity}`` habit map into sorted rows."""
     rows = []
-    for key, item in (habits.items() if isinstance(habits, dict) else []):
+    for key, item in habits.items() if isinstance(habits, dict) else []:
         if not isinstance(item, dict):
             continue
         parts = str(key).split("|")
-        rows.append({
-            "key": str(key),
-            "phase": parts[0] if parts else "",
-            "activity": parts[-1] if len(parts) > 1 else "",
-            "preferred_action": str(item.get("preferred_action") or ""),
-            "strength": _num(item.get("strength"), 0.0),
-            "last_updated_day": item.get("last_updated_day"),
-        })
+        rows.append(
+            {
+                "key": str(key),
+                "phase": parts[0] if parts else "",
+                "activity": parts[-1] if len(parts) > 1 else "",
+                "preferred_action": str(item.get("preferred_action") or ""),
+                "strength": _num(item.get("strength"), 0.0),
+                "last_updated_day": item.get("last_updated_day"),
+            }
+        )
     rows.sort(key=lambda row: row["strength"], reverse=True)
     return rows[:60]
 
@@ -413,10 +525,12 @@ def _schedule_rows(schedule):
     for item in schedule if isinstance(schedule, list) else []:
         if not isinstance(item, dict):
             continue
-        rows.append({
-            "time": str(item.get("time") or ""),
-            "activity": str(item.get("activity") or ""),
-        })
+        rows.append(
+            {
+                "time": str(item.get("time") or ""),
+                "activity": str(item.get("activity") or ""),
+            }
+        )
     return rows[:80]
 
 
@@ -606,7 +720,8 @@ def _cognition_snapshot(capabilities, growth, memory_counts, rag):
     growth_items = (growth or {}).get("items", []) or []
     avg_level = (
         sum(_num(item.get("level"), 0.0) for item in growth_items) / len(growth_items)
-        if growth_items else 0.0
+        if growth_items
+        else 0.0
     )
     memory_total = sum(v for v in memory_counts.values() if isinstance(v, (int, float)))
     components = {
@@ -647,7 +762,9 @@ def _agent_card(identity, capabilities, private_skills, growth, openclaw):
         "id": identity["id"],
         "name": identity["name"],
         "description": " · ".join(
-            str(part) for part in (identity.get("gender"), f"{identity.get('age')}岁", identity.get("residence")) if part
+            str(part)
+            for part in (identity.get("gender"), f"{identity.get('age')}岁", identity.get("residence"))
+            if part
         ),
         "job_label": caps.get("job_label") or "",
         "skills": skills,
@@ -707,7 +824,11 @@ BIG5_POLES = {
 
 
 BIG5_NAMES_ZH = {
-    "o": "开放性", "c": "尽责性", "e": "外向性", "a": "宜人性", "n": "神经质",
+    "o": "开放性",
+    "c": "尽责性",
+    "e": "外向性",
+    "a": "宜人性",
+    "n": "神经质",
 }
 
 
@@ -716,22 +837,32 @@ BIG5_NAMES_ZH = {
 #: in the payload and the client picks, rather than the server guessing from an
 #: Accept-Language header the dashboard never sets.
 BIG5_POLES_EN = {
-    "o": ("sticks to familiar routes, rarely changes a settled approach",
-          "seeks out what is new, likes trying what they have not tried"),
-    "c": ("plans slip, things get put off",
-          "orders things in advance, picks them back up after an interruption"),
-    "e": ("avoids crowded occasions, recovers energy alone",
-          "starts conversations, gets restless alone for long"),
-    "a": ("speaks directly, does not bend much for others",
-          "thinks of others first, finds it hard to refuse"),
-    "n": ("steady, unhurried when others panic",
-          "assumes the worst, large swings of mood"),
+    "o": (
+        "sticks to familiar routes, rarely changes a settled approach",
+        "seeks out what is new, likes trying what they have not tried",
+    ),
+    "c": (
+        "plans slip, things get put off",
+        "orders things in advance, picks them back up after an interruption",
+    ),
+    "e": (
+        "avoids crowded occasions, recovers energy alone",
+        "starts conversations, gets restless alone for long",
+    ),
+    "a": (
+        "speaks directly, does not bend much for others",
+        "thinks of others first, finds it hard to refuse",
+    ),
+    "n": ("steady, unhurried when others panic", "assumes the worst, large swings of mood"),
 }
 
 
 BIG5_NAMES_EN = {
-    "o": "Openness", "c": "Conscientiousness", "e": "Extraversion",
-    "a": "Agreeableness", "n": "Neuroticism",
+    "o": "Openness",
+    "c": "Conscientiousness",
+    "e": "Extraversion",
+    "a": "Agreeableness",
+    "n": "Neuroticism",
 }
 
 
@@ -962,6 +1093,7 @@ def agent_detail(agent_id):
         "age": state["age"],
         "hukou": state["hukou"],
         "residence": state["residence"],
+        **{key: state.get(key) for key in ("education", "student_status", "job")},
     }
     memory_counts = {
         "long_term": _count(memory.get("memory")),
@@ -1029,6 +1161,7 @@ def _next_agent_id():
     return (max(ids) + 1) if ids else 1
 
 
+@_seed_write
 def create_agent(payload):
     from gaworld.sim.agents_loader import _clip_state_value, _format_imported_profile_block
 
@@ -1060,9 +1193,16 @@ def create_agent(payload):
         "social_network": str(payload.get("social_network") or "待补充"),
         "state": state,
     }
+    attributes = edu.education_attributes(payload)
+    if any(key in payload for key in ("education", "student_status")):
+        edu.normalize_filters(payload)
+        edu.validate_education(attributes["education"], attributes["student_status"], profile_payload["age"])
     fieldnames, rows = read_state_rows()
     if not fieldnames:
         raise ValueError("State CSV is missing or empty")
+    for key in ("education", "student_status", "job", "employment", "industry", "monthly_income"):
+        if key not in fieldnames:
+            fieldnames.append(key)
     new_row = {
         "id": agent_id,
         "name": profile_payload["name"],
@@ -1070,13 +1210,16 @@ def create_agent(payload):
         "age": profile_payload["age"],
         "hukou": profile_payload["hukou"],
         "residence": profile_payload["residence"],
+        **attributes,
+        "job": profile_payload["job"],
+        **{key: payload.get(key, "") for key in ("employment", "industry", "monthly_income")},
     }
     new_row.update({key: state[key] for key in STATE_VAR_KEYS})
     rows.append({key: new_row.get(key, "") for key in fieldnames})
     _atomic_write_state(fieldnames, rows)
 
     with open(paths.profile_path(), "a", encoding="utf-8") as f:
-        f.write(_format_imported_profile_block(agent_id, profile_payload))
+        f.write(edu.sync_profile(_format_imported_profile_block(agent_id, profile_payload), attributes))
 
     return {"id": agent_id, "name": profile_payload["name"], "state": agent_state(agent_id)}
 
@@ -1108,8 +1251,11 @@ def _employment_payload(agent_id):
     if not isinstance(econ, dict) or not econ:
         return {}
     job = str(econ.get("job") or "")
-    history = [row for row in econ.get("shock_log", [])
-               if isinstance(row, dict) and row.get("type") in _EMPLOYMENT_RECORD_TYPES]
+    history = [
+        row
+        for row in econ.get("shock_log", [])
+        if isinstance(row, dict) and row.get("type") in _EMPLOYMENT_RECORD_TYPES
+    ]
     return {
         "job": job,
         "status": "unemployed" if job == UNEMPLOYED_JOB_TEXT else "employed",

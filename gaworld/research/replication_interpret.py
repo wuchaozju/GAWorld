@@ -36,6 +36,7 @@ RATIO_BAND = 1.5
 
 PATTERNS = {
     "homogeneity": "回答过于一致",
+    "spread": "离散度不符（居民比真人更一致或更分散）",
     "central": "趋向中间",
     "extreme": "趋向极端",
     "prosocial": "更亲社会 / 社会期许",
@@ -56,6 +57,8 @@ _PROMPT = """你是一位社会科学方法学家。下面是一次「拟合度�
 - explanation 写可能的原因，并区分三类：文献人群与居民样本的差别（国家、年龄、教育、时代）、题目与材料在翻译或情境上的差别、
   模型扮演本身的偏差（回答过于一致、社会期许、风险厌恶、缺少真实激励等）；拿不准就说拿不准；
 - 小样本只能作为线索；方向一致且显著不等于效应等价；检查为未检验或证据不足时不得断言无偏。只在真人参照检查为 stable 时说在指定范围内接近；
+- 分数只覆盖文献报告了真人结果的那几格：文献没报告的题目没有参照，不能说整项研究重现了，只能说在这几格上如何；
+  被排除的格（材料里含真人结果数字，居民等于拿到了答案）不能用来评价居民，也不能拿它当居民表现好的证据；
 - 社会期许、训练对齐只能作为待验证解释，不能根据单次回答判为机制事实；
 - 身份检查只比较共同材料中的 A/B 身份线索；差值为 B − A，不代表受访居民自身身份的因果效应，
   也不自动证明不公正或现实歧视。身份 stable 只对该线索和容许误差成立，不能当作真人等价；
@@ -75,7 +78,8 @@ _PROMPT = """你是一位社会科学方法学家。下面是一次「拟合度�
 ## 汇总（由代码计算）
 {summary}
 
-## 逐题对照（误差按量程归一到 0–1；SD 比 = 居民 SD / 真人 SD，小于 1 表示居民比真人更一致）
+## 逐题对照（误差按量程归一到 0–1；离散度误差按两个标准差之比算，0 表示离散度完全吻合、1 表示完全对不上；
+## SD 比 = 居民 SD / 真人 SD，小于 1 表示居民比真人更一致）
 {cells}
 
 ## 处理效应（处理 − 对照，按量程归一）
@@ -167,16 +171,18 @@ def build_prompt(run: dict[str, Any], language: str = "zh-CN") -> str:
     summary = comparison["summary"]
 
     cells = [
-        "| ref | 题目 | 条件 | 真人 | 居民 | 差值 | 误差 | 真人值在居民 95% 区间内 | SD 比 |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| ref | 题目 | 条件 | 真人 | 居民 | 差值 | 误差 | 离散度误差 | SD 比 | 真人值在居民 95% 区间内 | 备注 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for cell in comparison["cells"][:MAX_ROWS]:
         item = items[cell["item"]]
         h, a = _cell_text(item, cell)
         inside = "—" if "within_ci" not in cell else ("是" if cell["within_ci"] else "否")
+        note = "材料含真人结果，不计入评分" if cell.get("leak") else ""
         cells.append(
             f"| {cell['ref']} | {item['text'][:40]} | {labels[cell['condition']]} | {h} | {a}，n={cell['agent']['n']} | "
-            f"{_fmt(cell.get('diff'), 2)} | {_fmt(cell.get('error'))} | {inside} | {_fmt(cell.get('sd_ratio'), 2)} |"
+            f"{_fmt(cell.get('diff'), 2)} | {_fmt(cell.get('error'))} | "
+            f"{_fmt(cell.get('spread_error'), 3)} | {_fmt(cell.get('sd_ratio'), 2)} | {inside} | {note} |"
         )
 
     def contrast_rows(rows: list[dict[str, Any]], name: Callable[[dict[str, Any]], str]) -> str:
@@ -203,11 +209,31 @@ def build_prompt(run: dict[str, Any], language: str = "zh-CN") -> str:
         )
     summary_lines = [
         f"- 拟合度分 {summary.get('score')}；水平准确度 {_fmt(summary.get('level_accuracy'))}；"
+        f"离散度准确度 {_fmt(summary.get('spread_accuracy'))}"
+        f"（{summary.get('spread_cells_compared', 0)} 个单元格）；"
         f"真人值落在居民 95% 区间内 {_fmt(summary.get('within_ci_rate'))}；单元格相关 r {_fmt(summary.get('level_r'))}；"
         f"平均 SD 比 {_fmt(summary.get('mean_sd_ratio'), 2)}",
         f"- 效应方向一致率 {_fmt(summary.get('direction_rate'))}，方向一致且显著比例 {_fmt(summary.get('replication_rate'))}"
         f"（{summary.get('effects_judged')} 个效应），效应相关 r {_fmt(summary.get('effect_r'))}",
     ]
+    cover = summary.get("coverage") or {}
+    if cover:
+        scope = (
+            summary.get("score_scope")
+            or f"{summary.get('cells_compared', 0)}/{cover.get('cells_possible', 0)}"
+        )
+        summary_lines.append(
+            f"- 评分口径：{scope}（研究共 {cover.get('items_total')} 道题 × "
+            f"{cover.get('conditions_total')} 个条件 = {cover.get('cells_possible')} 个单元格，"
+            f"文献报告了真人结果的有 {cover.get('cells_with_human')} 个）"
+        )
+        for text in cover.get("warnings") or []:
+            summary_lines.append(f"- ⚠ {text}")
+    for leak in summary.get("leak_findings") or []:
+        summary_lines.append(
+            f"- ⚠ 材料泄漏：{leak['item']}/{leak['condition']} 的真人{leak['kind']} {leak['value']} "
+            f"出现在{leak['where']}里（{leak['excerpt']}）——居民拿到了答案，这一格不计入评分"
+        )
     if summary.get("group_cells_compared"):
         summary_lines.append(
             f"- 分组水平准确度 {_fmt(summary.get('group_level_accuracy'))}；分组差异方向一致率 "
@@ -283,6 +309,10 @@ def _pattern_check(pattern: str, kind: str, row: dict[str, Any], item: dict[str,
         return "ok" if row["verdict"] not in ("replicated",) else "conflict"
     if contrast:
         return "unchecked"
+    if pattern == "spread":
+        if row.get("spread_error") is None:
+            return "unchecked"
+        return "ok" if row["spread_error"] > 0.15 else "conflict"
     if pattern == "homogeneity":
         if row.get("sd_ratio") is not None:
             return "ok" if row["sd_ratio"] < 1 else "conflict"

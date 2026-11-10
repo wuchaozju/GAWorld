@@ -98,7 +98,27 @@
       "locale": "en-US",
       "seed": 1175457236,
       "replace": false
+    },
+    {
+      "at": "2026-11-09T07:24:26+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_county_town",
+      "locale": "en-US",
+      "seed": 1175457236,
+      "replace": true
+    },
+    {
+      "at": "2026-11-09T07:25:43+00:00",
+      "action": "population.add",
+      "added": 100,
+      "total": 100,
+      "preset": "cn_county_town",
+      "locale": "en-US",
+      "seed": 1175457236,
+      "replace": true
     }
   ],
-  "updated_at": "2026-10-25T10:59:43+00:00"
+  "updated_at": "2026-11-09T07:25:43+00:00"
 }

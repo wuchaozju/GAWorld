@@ -29,8 +29,11 @@ def execute(spec, variants, answer, prompt_fn, parse_fn, canonical, persona, con
     for name, index in jobs:
         variant = spec if name == "main" else variants[name]
         prompt = prompt_fn(persona, variant, condition)
+        # Each repetition is its own draw, so each gets its own seed: the point
+        # of the probe is that repeated answers differ.
+        repeat_seed = rc.derive_seed(seed, agent_id, condition["id"], name, index)
         try:
-            raw = str(answer(prompt))
+            raw = str(rc.call_with_seed(answer, prompt, repeat_seed))
             record = canonical(parse_fn(variant, raw), variant, spec)
             if not record["ok"]:
                 record["error"] = "无法解析有效回答"

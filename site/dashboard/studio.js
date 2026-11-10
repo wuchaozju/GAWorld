@@ -37,6 +37,10 @@ const poleHi = (v) => __(`st.hi.${v.key}`);
 const BEHAVIOR_KEYS = ["mobility_intent", "voice_propensity", "risk_preference", "platform_dependence", "policy_sensitivity"];
 
 const store = {
+  educationSchema: {},
+  filters: {},
+  studentSample: {count:30, seed:42, student_status:"本科"},
+  studentPreview: null,
   agents: [],
   currentId: null,
   detail: null,
@@ -185,12 +189,71 @@ function radarSVG(stateObj, withLabels) {
 async function loadAgents() {
   const payload = await api("/api/agents");
   store.agents = payload.agents || [];
-  const sel = $("#agentSelect");
-  sel.innerHTML = gwHTML(store.agents.map((a) => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)}</option>`).join(""));
+  renderAgentOptions();
   if (store.agents.length && store.currentId == null) {
     store.currentId = store.agents[0].id;
   }
-  sel.value = String(store.currentId);
+  $("#agentSelect").value = String(store.currentId);
+}
+
+function renderAgentOptions() {
+  const filtered = store.agents.filter(a => GAWorldResidentFilters.matches(a, store.filters));
+  const currentIncluded = filtered.some(a => String(a.id) === String(store.currentId));
+  $("#agentSelect").innerHTML = gwHTML((!currentIncluded ? `<option value="">${esc(__("sample.choose"))}</option>` : "") + filtered.map(a => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)} · ${esc(a.student_status || "")}</option>`).join(""));
+  $("#agentSelect").value = currentIncluded ? String(store.currentId) : "";
+  const count = $("#studioFilterCount");
+  if (count) count.textContent = GAWorldResidentFilters.count(filtered.length, store.agents.length);
+}
+
+function educationSelect(key, value) {
+  const list = key === "education" ? ["未知", ...(store.educationSchema.education_levels || [])] : (store.educationSchema.student_statuses || ["未知"]);
+  return `<select data-idt="${key}">${[...new Set([...list, value || "未知"])].map(v => `<option value="${esc(v)}"${v === (value || "未知") ? " selected" : ""}>${esc(GAWorldResidentFilters.valueLabel(v))}</option>`).join("")}</select>`;
+}
+
+function studentSamplesCard() {
+  const s = store.studentSample;
+  return `<details class="card"><summary>${esc(__("sample.append_title"))}</summary>
+    <p class="section-note">${esc(__("sample.append_note"))}</p>
+    <div class="grid2">
+      ${field(__("sample.student_status"), `<select id="studentStage">${["大专", "本科", "硕士", "博士"].map(v => `<option value="${v}"${v === s.student_status ? " selected" : ""}>${esc(GAWorldResidentFilters.valueLabel(v))}</option>`).join("")}</select>`)}
+      ${field(__("sample.number"), `<input id="studentCount" type="number" min="1" max="200" value="${s.count}">`)}
+      ${field(__("sample.seed"), `<input id="studentSeed" type="number" min="0" max="2147483647" value="${s.seed}">`)}
+    </div>
+    <button type="button" class="button" id="studentPreviewBtn">${esc(__("sample.preview"))}</button>
+    <div class="student-sample-preview" id="studentPreviewList" role="status"></div>
+    <button type="button" class="button primary" id="studentAppendBtn" disabled>${esc(__("sample.append"))}</button>
+  </details>`;
+}
+
+function bindStudentSamples() {
+  const previewBtn = $("#studentPreviewBtn"), appendBtn = $("#studentAppendBtn");
+  if (!previewBtn) return;
+  store.studentPreview = null;
+  const invalidate = () => {
+    store.studentSample = {count:Number($("#studentCount").value), seed:Number($("#studentSeed").value), student_status:$("#studentStage").value};
+    store.studentPreview = null; appendBtn.disabled = true; $("#studentPreviewList").textContent = "";
+  };
+  ["studentCount", "studentSeed", "studentStage"].forEach(id => ["input", "change"].forEach(event => $("#" + id).addEventListener(event, invalidate)));
+  previewBtn.addEventListener("click", withBusy(previewBtn, async () => {
+    invalidate();
+    try {
+      const request = {...store.studentSample};
+      const preview = await api("/api/population/students/preview", {method:"POST", body:JSON.stringify(request)});
+      if (JSON.stringify(request) !== JSON.stringify(store.studentSample)) return;
+      store.studentPreview = {...request, preview_token:preview.preview_token};
+      $("#studentPreviewList").innerHTML = gwHTML(preview.people.map(p => `<p>#${p.id} ${esc(p.name)} · ${p.age} · ${esc(GAWorldResidentFilters.valueLabel(p.education))} / ${esc(GAWorldResidentFilters.valueLabel(p.student_status))}</p>`).join(""));
+      appendBtn.disabled = false;
+    } catch (err) { foot(err.message, "err"); }
+  }));
+  appendBtn.addEventListener("click", withBusy(appendBtn, async () => {
+    if (!store.studentPreview) return;
+    try {
+      const result = await api("/api/population/students/append", {method:"POST", body:JSON.stringify(store.studentPreview)});
+      invalidate();
+      await loadAgents();
+      foot(__f("sample.appended", {count:result.count}), "ok");
+    } catch (err) { invalidate(); foot(err.message, "err"); }
+  }));
 }
 
 function draftFromDetail(d) {
@@ -207,7 +270,7 @@ function blankDraft() {
   STATE_VARS.forEach((v) => (state[v.key] = v.key === "emotion" ? 0.55 : 0.5));
   /* i18n-exempt-start: seed values written into the state CSV, not UI text */
   return {
-    identity: { id: null, name: "", gender: "女", age: 30, hukou: "本地", residence: "杭州" },
+    identity: { id: null, name: "", gender: "女", age: 30, hukou: "本地", residence: "杭州", education:"未知", student_status:"未知", job:"" },
     /* i18n-exempt-end */
     state,
     profile_text: "",
@@ -367,6 +430,9 @@ async function browseAgent(id) {
 
 /** Buttons that write are pointless (and misleading) while browsing. */
 function setEditingChrome(editable) {
+  const filters = $("#studioFilters");
+  if (filters) filters.closest("details").hidden = !editable;
+  if ($("#studioFilterCount")) $("#studioFilterCount").hidden = !editable;
   ["saveBtn", "runBtn", "newAgentBtn", "distillBtn"].forEach((id) => {
     const btn = document.getElementById(id);
     if (btn) btn.disabled = !editable;
@@ -607,14 +673,21 @@ function stepIdentity() {
           ${field(__("sd.name"), `<input data-idt="name" value="${esc(i.name)}">`)}
           <div class="grid2">
             ${field(__("sd.gender"), `<input data-idt="gender" value="${esc(i.gender)}">`)}
-            ${field(__("sd.age"), `<input data-idt="age" type="number" min="16" max="90" value="${esc(i.age)}">`)}
+            ${field(__("sd.age"), `<input data-idt="age" type="number" min="0" max="110" value="${esc(i.age)}">`)}
           </div>
           <div class="grid2">
             ${field(__("sd.hukou"), `<input data-idt="hukou" value="${esc(i.hukou)}">`)}
             ${field(__("sd.residence"), `<input data-idt="residence" value="${esc(i.residence)}">`)}
           </div>
+          <div class="grid2">
+            ${field(__("sample.education"), educationSelect("education", i.education))}
+            ${field(__("sample.student_status"), educationSelect("student_status", i.student_status))}
+          </div>
+          ${field(__("sample.job"), `<input data-idt="job" value="${esc(i.job || "")}">`)}
+          <p class="section-note">${esc(__("sample.education_note"))}</p>
         </div>
         ${extra}
+        ${studentSamplesCard()}
       </div>
       <div class="card">
         <h3>${esc(__("sd.state_glance"))}</h3>
@@ -656,8 +729,9 @@ async function confirmProfile() {
     await api(`/api/agents/${store.currentId}/profile`, {
       method: "POST", body: JSON.stringify({ text: store.profileEdit }),
     });
-    store.draft.profile_text = store.profileEdit;
-    if (store.detail) store.detail.profile_text = store.profileEdit;
+    store.detail = await api(`/api/agents/${store.currentId}/detail`);
+    store.draft.profile_text = store.detail.profile_text;
+    ["education", "student_status", "job"].forEach(key => { store.draft.identity[key] = store.detail.identity[key]; });
     store.profileEditing = false;
     foot(__("sd.profile_saved"), "ok");
     renderStep();
@@ -2015,11 +2089,12 @@ function agentCardBlock(detail) {
 /* ---------- step event binding ---------- */
 function bindStep() {
   $("#stepBody").querySelectorAll("[data-idt]").forEach((el) => {
-    el.addEventListener("input", () => {
+    const update = () => {
       const key = el.dataset.idt;
       store.draft.identity[key] = key === "age" ? Number(el.value) : el.value;
       renderSubject();
-    });
+    };
+    ["input", "change"].forEach(event => el.addEventListener(event, update));
   });
   const pEdit = $("#stepBody").querySelector("[data-profile-edit]");
   if (pEdit) pEdit.addEventListener("input", () => { store.profileEdit = pEdit.value; });
@@ -2103,6 +2178,7 @@ function bindStep() {
   });
   const sg = $("#saveGoalsBtn"); if (sg) sg.addEventListener("click", withBusy(sg, saveGoals, "sd.goals_saving", "保存目标…"));
   bindMemoryStep();
+  bindStudentSamples();
   bindSocialStep();
   bindFinanceStep();
   bindMoltbookStep();
@@ -2239,7 +2315,8 @@ async function save() {
     foot(__("sd.saving"));
     if (store.creating) {
       const body = { name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
-        state: store.draft.state, job: store.draft.narrative.job, personality: store.draft.narrative.personality };
+        education:i.education, student_status:i.student_status,
+        state: store.draft.state, job: i.job || store.draft.narrative.job, personality: store.draft.narrative.personality };
       /* A distilled draft is created through /api/persona/deploy instead: it
        * writes the same identity and state, plus the distilled thinking
        * framework into the profile and the OCEAN seeds into the Big Five CSV,
@@ -2257,11 +2334,14 @@ async function save() {
       await selectAgent(newId);
       return true;
     }
-    await api(`/api/agents/${store.currentId}/state`, { method: "POST", body: JSON.stringify({
-      name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence, state: store.draft.state }) });
     if (store.detail && store.draft.profile_text && store.draft.profile_text !== store.detail.profile_text) {
       await api(`/api/agents/${store.currentId}/profile`, { method: "POST", body: JSON.stringify({ text: store.draft.profile_text }) });
     }
+    await api(`/api/agents/${store.currentId}/state`, { method: "POST", body: JSON.stringify({
+      name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
+      education:i.education, student_status:i.student_status, job:i.job, state: store.draft.state }) });
+    store.detail = await api(`/api/agents/${store.currentId}/detail`);
+    store.draft.profile_text = store.detail.profile_text;
     $("#saveHint").textContent = __("sd.saved_tick");
     foot(__("sd.saved_csv_profile"), "ok");
     // refresh options label in case name changed
@@ -2516,12 +2596,13 @@ function init() {
   }));
   $("#citySelect").addEventListener("change", (e) => pickCity(e.target.value).catch((err) => foot(err.message, "err")));
   $("#agentSelect").addEventListener("change", (e) => {
+    if (!e.target.value) return;
     const pick = store.browsing ? browseAgent(e.target.value) : selectAgent(e.target.value);
     pick.catch((err) => foot(err.message, "err"));
   });
-  withBusy($("#newAgentBtn"), startCreate, "studio.new", "新建中…");
-  withBusy($("#saveBtn"), save, "sd.saving", "保存中…");
-  withBusy($("#runBtn"), runSim, "studio.run", "运行中…");
+  $("#newAgentBtn").addEventListener("click", withBusy($("#newAgentBtn"), startCreate, "studio.new", "新建中…"));
+  $("#saveBtn").addEventListener("click", withBusy($("#saveBtn"), save, "sd.saving", "保存中…"));
+  $("#runBtn").addEventListener("click", withBusy($("#runBtn"), runSim, "studio.run", "运行中…"));
   document.addEventListener("persona:fill", (ev) => applyPersona(ev.detail));
   // Deploying straight from the panel skips the form, so the list it was
   // opened over is now one resident short of the truth.
@@ -2536,7 +2617,12 @@ function init() {
   const wantedCity = params.get("city");
   const wantedAgent = params.get("agent");
 
-  loadCities()
+  Promise.all([loadCities(), api("/api/population/schema").then(schema => {
+    store.educationSchema = schema;
+    const host = $("#studioFilters");
+    host.innerHTML = gwHTML(GAWorldResidentFilters.controls(schema, store.filters, "studio"));
+    ["input", "change"].forEach(event => host.addEventListener(event, () => { store.filters = GAWorldResidentFilters.read(host); renderAgentOptions(); }));
+  })])
     .then(() => {
       if (wantedCity != null && wantedCity !== store.runningCity) {
         store.cityRef = wantedCity;

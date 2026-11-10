@@ -4,6 +4,22 @@ GAWorld 是生成式多智能体社会仿真平台。你可以创建城市与居
 
 ![版本 0.2.1](_static/badges/version.svg) ![Python 3.11 或更高版本](_static/badges/python.svg) [![GitHub 源码](_static/badges/source.svg)](https://github.com/wuchaozju/GAWorld)
 
+## 三分钟了解 GAWorld
+
+通过真实系统录屏与截图，了解城市与居民构建、社会仿真、群体采访、研究工作台和回放分析。
+
+<figure class="intro-video">
+  <video controls playsinline preload="none" poster="_static/media/gaworld-introduction-zh.jpg" aria-label="GAWorld 平台介绍视频，中文旁白与字幕">
+    <source src="_static/media/gaworld-introduction-zh.mp4" type="video/mp4">
+    您的浏览器不支持在线播放，请使用下方链接下载视频。
+  </video>
+  <figcaption>3 分 9 秒 · 1080p · 中文合成旁白 · 画面内含中文字幕</figcaption>
+</figure>
+
+[下载视频（MP4，约 11 MB）](_static/media/gaworld-introduction-zh.mp4) · [下载字幕（SRT）](_static/media/gaworld-introduction-zh.srt)
+
+多人章节采用真实入口与功能示意图，拍摄环境未启用多人账号；其余章节使用系统实拍。
+
 ## 从一次仿真开始
 
 [安装 GAWorld](installation.md)，创建工作区并启动控制台：

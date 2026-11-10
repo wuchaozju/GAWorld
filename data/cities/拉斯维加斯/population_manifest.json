@@ -607,20 +607,24 @@
     "mean_degree": 12.0,
     "max_degree": 21,
     "isolated": 0,
-    "clustering": 0.2176284853777114,
+    "clustering": 0.21642571738546967,
     "random_clustering": 0.12,
-    "mean_path_length": 2.1313131313131315,
+    "mean_path_length": 2.125252525252525,
     "random_path_length": 1.8532568160582539,
-    "small_world_sigma": 1.5769678481663936,
+    "small_world_sigma": 1.5727246180123966,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
-        "degree": 3,
+        "degree": 4,
+        "count": 1
+      },
+      {
+        "degree": 5,
         "count": 1
       },
       {
         "degree": 6,
-        "count": 4
+        "count": 1
       },
       {
         "degree": 7,
@@ -632,19 +636,19 @@
       },
       {
         "degree": 9,
-        "count": 13
+        "count": 10
       },
       {
         "degree": 10,
-        "count": 10
+        "count": 12
       },
       {
         "degree": 11,
-        "count": 7
+        "count": 13
       },
       {
         "degree": 12,
-        "count": 10
+        "count": 13
       },
       {
         "degree": 13,
@@ -652,11 +656,11 @@
       },
       {
         "degree": 14,
-        "count": 11
+        "count": 6
       },
       {
         "degree": 15,
-        "count": 6
+        "count": 7
       },
       {
         "degree": 16,
@@ -664,14 +668,18 @@
       },
       {
         "degree": 17,
-        "count": 5
+        "count": 2
       },
       {
         "degree": 18,
-        "count": 6
+        "count": 3
       },
       {
         "degree": 19,
+        "count": 4
+      },
+      {
+        "degree": 20,
         "count": 1
       },
       {
@@ -696,5 +704,131 @@
         "count": 1
       }
     ]
+  },
+  "spec": {
+    "size": 100,
+    "seed": 1175457236,
+    "preset": "cn_county_town",
+    "name": "拉斯维加斯",
+    "demography": {
+      "median_age": 35.8,
+      "share_under_18": 0.21,
+      "share_over_65": 0.12,
+      "sex_ratio_m_per_100f": 104.0,
+      "migrant_share": 0.58,
+      "min_agent_age": 6
+    },
+    "household": {
+      "mean_size": 2.6,
+      "share_single_person": 0.25,
+      "share_multigen": 0.18,
+      "share_shared_rental": 0.12,
+      "max_size": 6,
+      "spouse_age_gap_mean": 2.0,
+      "fertility_children_mean": 1.1
+    },
+    "education_work": {
+      "tertiary_rate": 0.36,
+      "employment_rate": 0.69,
+      "unemployment_rate": 0.05,
+      "gig_platform_share": 0.1,
+      "industry_mix": {
+        "tech": 0.18,
+        "finance": 0.08,
+        "medical": 0.07,
+        "education": 0.09,
+        "service": 0.38,
+        "trade": 0.2
+      }
+    },
+    "income": {
+      "median_monthly": 5200.0,
+      "gini": 0.44,
+      "pareto_tail_alpha": 2.2,
+      "tail_threshold_pct": 0.95
+    },
+    "geography": {
+      "district_weights": {
+        "Eastland Heights": 0.017857142857142856,
+        "Bonanza Village": 0.017857142857142856,
+        "East Las Vegas": 0.017857142857142856,
+        "Winchester": 0.017857142857142856,
+        "Enterprise": 0.017857142857142856,
+        "Whitney": 0.017857142857142856,
+        "Spring Valley": 0.017857142857142856,
+        "Green Valley": 0.017857142857142856,
+        "Midtown UNLV": 0.017857142857142856,
+        "Twin Lakes": 0.017857142857142856,
+        "Inner Northwest": 0.017857142857142856,
+        "Desert Shores": 0.017857142857142856,
+        "Centennial Hills": 0.017857142857142856,
+        "Chinatown": 0.017857142857142856,
+        "The Pueblo": 0.017857142857142856,
+        "Cultural Corridor": 0.017857142857142856,
+        "John S. Park": 0.017857142857142856,
+        "18b: The Las Vegas Arts District": 0.017857142857142856,
+        "Sunrise Manor": 0.017857142857142856,
+        "Paradise": 0.017857142857142856,
+        "Whitney Ranch": 0.017857142857142856,
+        "Buffalo Ranch": 0.017857142857142856,
+        "Flamingo Heights": 0.017857142857142856,
+        "Aliante": 0.017857142857142856,
+        "Winterwood": 0.017857142857142856,
+        "Craig Ranch": 0.017857142857142856,
+        "The Villages at Tule Springs": 0.017857142857142856,
+        "Charleston Heights": 0.017857142857142856,
+        "West Las Vegas": 0.017857142857142856,
+        "Downtown Las Vegas": 0.017857142857142856,
+        "Rancho Charleston": 0.017857142857142856,
+        "Buffalo": 0.017857142857142856,
+        "Michael Way": 0.017857142857142856,
+        "Pioneer Park": 0.017857142857142856,
+        "Angel Park": 0.017857142857142856,
+        "Sunrise": 0.017857142857142856,
+        "Huntridge": 0.017857142857142856,
+        "Downtown East": 0.017857142857142856,
+        "Las Vegas Medical District": 0.017857142857142856,
+        "Meadows Village": 0.017857142857142856,
+        "Charleston Heights Southwest": 0.017857142857142856,
+        "Rancho": 0.017857142857142856,
+        "Nellis Air Force Base": 0.017857142857142856,
+        "Fremont East Entertainment District": 0.017857142857142856,
+        "Filipino Town": 0.017857142857142856,
+        "Las Vegas High School Historic District": 0.017857142857142856,
+        "Las Vegas High School Neighborhood Historic District": 0.017857142857142856,
+        "Symphony Park": 0.017857142857142856,
+        "Green Valley North": 0.017857142857142856,
+        "Nevada Ranch": 0.017857142857142856,
+        "Spanish Trail": 0.017857142857142856,
+        "Downtown North Las Vegas": 0.017857142857142856,
+        "Rancho Oakey": 0.017857142857142856,
+        "Gibson Springs": 0.017857142857142856,
+        "Midway": 0.017857142857142856,
+        "D Gates - Blue Line": 0.017857142857142856
+      }
+    },
+    "psychology": {
+      "state_means": {
+        "emotion": 0.58,
+        "stress": 0.55,
+        "econ_security": 0.52,
+        "city_identity": 0.55,
+        "policy_sensitivity": 0.5,
+        "platform_dependence": 0.5,
+        "risk_preference": 0.45,
+        "voice_propensity": 0.45,
+        "mobility_intent": 0.45
+      },
+      "state_sd": 0.12,
+      "couple_states_to_attributes": true
+    },
+    "social_network": {
+      "mean_degree": 12.0,
+      "homophily_strength": 0.55,
+      "geo_decay": 0.35,
+      "rewire_p": 0.1,
+      "workplace_size_alpha": 2.0,
+      "dunbar_weak_cap": 150
+    }
   }
 }

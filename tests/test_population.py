@@ -542,6 +542,90 @@ class WriterTests(unittest.TestCase):
             self.assertIn("report", manifest)
 
 
+class HouseholdNarrativeTests(unittest.TestCase):
+    """The household line on a profile must describe the *resident*.
+
+    A household type names the unit, not the person in it, so stamping the
+    type onto every member produced a fourteen-year-old student whose card
+    read "与配偶及子女同住" — a sentence no fourteen-year-old can be the
+    subject of. These tests pin the sentence to the resident's role.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result = _generate(size=400, seed=5)
+        cls.by_id = {p.id: p for p in cls.result.people}
+        cls.households = {h.id: h for h in cls.result.households}
+
+    def _social_line(self, person):
+        import re
+
+        markdown = render_profiles_markdown(self.result.spec, self.result.people, self.result.households)
+        block = re.search(rf"## Profile {person.id:02d}｜.*?\*\*社交网络情况\*\*：(.+?)。", markdown, re.S)
+        self.assertIsNotNone(block, person.id)
+        return block.group(1)
+
+    def test_no_minor_is_described_as_having_a_spouse_or_children(self):
+        offenders = []
+        for person in self.result.people:
+            if person.age > 17:
+                continue
+            line = self._social_line(person)
+            if "配偶" in line or "子女" in line:
+                offenders.append((person.id, person.age, line))
+        self.assertEqual([], offenders)
+
+    def test_every_minor_names_the_generation_above_them(self):
+        for person in self.result.people:
+            if person.age > 17:
+                continue
+            line = self._social_line(person)
+            self.assertTrue(
+                any(word in line for word in ("父母", "单亲家长", "家人")),
+                f"{person.id} ({person.age}岁) 的家庭描述没有说明与谁同住：{line}",
+            )
+
+    def test_a_minor_is_never_the_head_or_the_spouse_of_a_household(self):
+        offenders = [
+            (p.id, p.age, p.household_role)
+            for p in self.result.people
+            if p.age <= 17 and p.household_role in ("head", "spouse")
+        ]
+        self.assertEqual([], offenders)
+
+    def test_a_couple_household_really_holds_two_adults(self):
+        for household in self.result.households:
+            if household.type not in ("couple", "nuclear", "multigen"):
+                continue
+            adults = [self.by_id[i] for i in household.member_ids if self.by_id[i].age > 17]
+            self.assertGreaterEqual(len(adults), 2, household)
+
+    def test_the_household_line_follows_the_residents_role(self):
+        seen = set()
+        for person in self.result.people:
+            household = self.households[person.household_id]
+            members = [self.by_id[i] for i in household.member_ids]
+            children = [m for m in members if m.age <= 17]
+            elders = [m for m in members if m.age >= 65]
+            line = self._social_line(person)
+            if person.household_role == "child":
+                self.assertNotIn("配偶", line, person.id)
+                self.assertNotIn("独居", line, person.id)
+            if person.household_role == "spouse":
+                self.assertIn("配偶", line, person.id)
+            if person.household_role == "roommate":
+                self.assertIn("合租", line, person.id)
+            if person.household_role == "grandparent":
+                self.assertTrue(
+                    "子女" in line,
+                    f"同住的老人应说明与子女同住：{line}",
+                )
+            if not children and not elders and person.household_role == "head":
+                self.assertIn("独居", line, person.id)
+            seen.add(person.household_role)
+        self.assertTrue({"child", "spouse", "head"}.issubset(seen), seen)
+
+
 class CliTests(unittest.TestCase):
     def test_check_mode_writes_nothing_and_succeeds(self):
         from gaworld.population.__main__ import main

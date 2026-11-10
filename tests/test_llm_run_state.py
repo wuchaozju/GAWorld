@@ -42,7 +42,7 @@ def test_oversized_server_wait_is_not_shortened_or_retried(tmp_path, monkeypatch
 
     def fail():
         calls.append(1)
-        raise http_error(headers={"Retry-After": "900"})
+        raise http_error(headers={"Retry-After": "900"}, body='{"error":"rate_limit"}')
 
     with pytest.raises(RuntimeError, match="等待预算"):
         providers._retrying(fail, provider="test", attempts=3)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 from typing import Any
@@ -36,6 +37,42 @@ def fingerprint(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, ensure_ascii=False, default=str).encode()
     ).hexdigest()
+
+
+#: The largest seed a provider is guaranteed to take.
+MAX_SEED = 2**31 - 1
+
+
+def derive_seed(*parts: Any) -> int:
+    """A stable seed derived from the parts that identify one call.
+
+    The same parts give the same seed on every run, and two different calls
+    never share one. This is what lets a research run ask the same cell the
+    same question the same way twice.
+    """
+    key = "|".join(str(part) for part in parts)
+    return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], "big") % MAX_SEED
+
+
+def call_with_seed(answer: Any, prompt: str, seed: int | None) -> str:
+    """Call the model, passing the seed when the callable takes one.
+
+    An injected answer callable may still have the older one-argument
+    signature — that is what a test double looks like — so the seed is an
+    extra, never a requirement.
+    """
+    if seed is None:
+        return str(answer(prompt))
+    try:
+        signature = inspect.signature(answer)
+    except (TypeError, ValueError):
+        return str(answer(prompt))
+    parameters = signature.parameters
+    if "seed" not in parameters and not any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()
+    ):
+        return str(answer(prompt))
+    return str(answer(prompt, seed=seed))
 
 
 def check(key: str, status: str = "untested", detail: str = "尚无相应对照证据", **evidence: Any) -> dict:

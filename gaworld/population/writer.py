@@ -22,7 +22,13 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from gaworld.population.network import HouseholdRecord, WorkplaceRecord
+from gaworld.population.education import ENROLLED_STAGES, education_line
+from gaworld.population.network import (
+    CHILD_MAX_AGE,
+    ELDER_MIN_AGE,
+    HouseholdRecord,
+    WorkplaceRecord,
+)
 from gaworld.population.schema import CSV_COLUMNS, STATE_VAR_KEYS, PopulationSpec
 from gaworld.population.synth import Person
 
@@ -107,8 +113,62 @@ def _region_values(traits: dict[str, Any] | None) -> str:
     return f"受{culture[0]}影响，公共事务上的态度也带着本地色彩。"
 
 
+def _household_description(
+    person: Person,
+    household: HouseholdRecord,
+    by_id: dict[int, Person],
+) -> str:
+    """Say who *this* resident lives with — from their own seat.
+
+    A household *type* names the unit ("core family", "three generations
+    under one roof"), not the person inside it. Stamping the type onto every
+    member produced cards like a fourteen-year-old student reading "与配偶及
+    子女同住" — a sentence no fourteen-year-old can be the subject of, and
+    the fastest way to make a whole population look fabricated.
+
+    So the wording follows the resident's role in the household, and the
+    type only settles the *shape* of the family around them: a lone parent
+    says so, a child names the generation above them, a spouse says who is
+    under the same roof.
+    """
+    members = [by_id[i] for i in household.member_ids if i in by_id]
+    children = [m for m in members if m.age <= CHILD_MAX_AGE]
+    elders = [m for m in members if m.age >= ELDER_MIN_AGE]
+    role = person.household_role or "head"
+
+    if role == "child":
+        if elders:
+            return "与父母及祖辈同住"
+        if household.type == "single_parent":
+            return "与单亲家长同住"
+        return "与父母同住"
+    if role == "spouse":
+        if children and elders:
+            return "与配偶、子女及父母同住"
+        if children:
+            return "与配偶及子女同住"
+        if elders:
+            return "与配偶及父母同住"
+        return "与配偶同住"
+    if role == "grandparent":
+        return "与子女及孙辈同住" if children else "与子女同住"
+    if role == "roommate":
+        return "与室友合租"
+    # ``head``: the one adult the household rests on.
+    if children and elders:
+        return "与子女及父母同住"
+    if children:
+        return "单亲家庭，与子女同住"
+    if elders:
+        return "与父母同住"
+    return "独居"
+
+
 def _profile_block(
-    person: Person, household: HouseholdRecord | None, traits: dict[str, Any] | None = None
+    person: Person,
+    household: HouseholdRecord | None,
+    traits: dict[str, Any] | None = None,
+    by_id: dict[int, Person] | None = None,
 ) -> str:
     """One ``## Profile NN｜Name`` block matching the existing corpus format."""
     state = person.state
@@ -116,7 +176,7 @@ def _profile_block(
         _PERSONALITY["high_stress"] if state["stress"] > 0.6 else _PERSONALITY["low_stress"],
         _PERSONALITY["outgoing"] if state["voice_propensity"] > 0.5 else _PERSONALITY["reserved"],
     ]
-    if person.age < 18:
+    if person.student_status in ENROLLED_STAGES or person.age < 18:
         daily_key = "student"
     elif person.employment == "employed":
         daily_key = "gig" if person.is_gig else "employed"
@@ -133,14 +193,7 @@ def _profile_block(
         income_text = "目前没有工资性收入"
 
     if household is not None:
-        household_label = {
-            "single": "独居",
-            "couple": "与伴侣同住",
-            "nuclear": "与配偶及子女同住",
-            "single_parent": "单亲家庭，与子女同住",
-            "multigen": "三代同堂",
-            "shared_rental": "与室友合租",
-        }.get(household.type, "与家人同住")
+        household_label = _household_description(person, household, by_id or {})
         social_text = (
             f"{household_label}（{len(household.member_ids)} 人户）；"
             f"当前在模拟内共有 {len(person.relationships)} 条社会关系。"
@@ -163,6 +216,7 @@ def _profile_block(
         f"**基础信息**：{person.gender}，{person.age}岁，{person.hukou}户籍，"
         f"居住于{person.residence}。\n\n"
         f"**教育与收入背景**：{person.education}学历，{income_text}。\n\n"
+        f"{education_line(person.education, person.student_status)}\n\n"
         f"**职业与工作节奏**：{person.job}\n\n"
         f"**性格与情绪特征**：{''.join(personality_bits)}\n\n"
         f"**日常生活与生活习惯**：{daily_text}\n\n"
@@ -194,6 +248,9 @@ def render_state_csv(people: list[Person]) -> str:
                 person.age,
                 person.hukou,
                 person.residence,
+                person.education,
+                person.student_status,
+                person.job,
                 person.employment,
                 person.industry,
                 f"{person.income_monthly:.0f}",
@@ -217,6 +274,7 @@ def render_profiles_markdown(
     the city layer, and omitted entirely for a city with no dossier.
     """
     household_by_id = {h.id: h for h in households}
+    by_id = {p.id: p for p in people}
     header = (
         f"# {spec.name} 生成式智能体 Profiles（{len(people)}人）\n\n"
         f"> 由 `gaworld.population` 依据参数化人口规格自动生成"
@@ -224,7 +282,9 @@ def render_profiles_markdown(
         f"> 结构与 `data/hangzhou_profiles_with_names.md` 一致，可直接被 `build_agent` 读取。\n\n"
         f"---\n"
     )
-    blocks = [_profile_block(person, household_by_id.get(person.household_id), traits) for person in people]
+    blocks = [
+        _profile_block(person, household_by_id.get(person.household_id), traits, by_id) for person in people
+    ]
     return header + "".join(blocks)
 
 
@@ -239,7 +299,7 @@ def build_manifest(
     """Reproducibility record: spec, seeds, fit quality, validation outcome."""
     return {
         "generator": "gaworld.population",
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "spec": spec.to_dict(),
         "counts": {
             "people": len(people),

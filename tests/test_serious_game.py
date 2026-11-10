@@ -127,7 +127,7 @@ class SpecTest(unittest.TestCase):
 
     def test_design_prompt_carries_the_requested_shape(self) -> None:
         prompt = sg.design_prompt("社区议事", rounds=3, roles=4)
-        self.assertIn("正好 3 轮", prompt)
+        self.assertIn("最多 3 轮", prompt)
         self.assertIn("正好 4 个角色", prompt)
         self.assertIn("社区议事", prompt)
 

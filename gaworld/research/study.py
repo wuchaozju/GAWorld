@@ -65,6 +65,8 @@ class Study:
     runtime: dict[str, Any] = field(default_factory=dict)
     protocol: dict[str, Any] = field(default_factory=dict)
     preflight: dict[str, Any] = field(default_factory=dict)
+    approval: dict[str, Any] = field(default_factory=dict)
+    diagnostic: dict[str, Any] = field(default_factory=dict)
     runs: list[dict[str, Any]] = field(default_factory=list)
     evaluation: dict[str, Any] = field(default_factory=dict)
     interpretation: dict[str, Any] = field(default_factory=dict)

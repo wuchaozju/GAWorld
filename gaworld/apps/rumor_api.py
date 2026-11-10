@@ -52,7 +52,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from gaworld.apps.game_jobs import JobStore
-from gaworld.apps.games_api import first_json_object
+from gaworld.apps.game_reactions import reply_object
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.rumor_api")
@@ -101,6 +101,7 @@ BELIEVE_AT = 50
 ACTIONS: tuple[str, ...] = ("转发", "私下求证", "辟谣", "不管")
 #: Where an off-vocabulary answer lands; never offered as a choice.
 OTHER_ACTION = "其他"
+MOTIVES = ("相信内容", "提醒亲友", "娱乐玩梗", "社交互动", "表达情绪", "求证", "纠正信息", "不参与", "未说明")
 
 #: Jobs that group people without making them colleagues. Without this,
 #: "无业，家庭照料为主" (a quarter of a typical bundle) becomes one big office.
@@ -276,9 +277,9 @@ def _adjacency(edges: list[dict[str, Any]]) -> dict[int, list[dict[str, Any]]]:
 
 def load_people(city: str, agent_ids: list[int]) -> list[dict[str, Any]]:
     """Roster rows for the picked residents, in the order they were picked."""
-    from gaworld.interview.roster import load_population
+    from gaworld.interview.roster import recruitment_population
 
-    by_id = {int(p["id"]): p for p in load_population(city)}
+    by_id = {int(p["id"]): p for p in recruitment_population(city)}
     people = []
     for agent_id in agent_ids:
         person = by_id.get(int(agent_id))
@@ -356,7 +357,7 @@ def _source_line(node: Node, messages: list[dict[str, Any]], nodes: dict[int, No
     }.get(first.get("kind", "rumor"), "转给你的")
     return (
         f"是{sender.name}（{first.get('label', '熟人')}，{_closeness_word(first.get('closeness', 0.5))}）"
-        f"{kind}。"
+        f"{kind}。" + "\n".join(f"收到#{m.get('sender')}的转述：{m.get('text', '')}" for m in messages)
     )
 
 
@@ -391,16 +392,17 @@ def _reaction_prompt(
         f"{history}\n"
         "请按你自己的判断来：你有多信这条？你会怎么处理？"
         "考虑你自己的见识、消息渠道、跟告诉你的人有多熟、这件事跟你有多大关系。\n"
-        "**不是每个人都会先去核实。** 有人在群里看到顺手就转出去了，尤其当这事关系到自家的钱、"
-        "孩子、饭碗，或者身边人都在传的时候；有人看一眼就划过去，懒得管；也有人是真会去查。"
-        "请严格按你这个人的性格和习惯选，不要因为『谨慎求证』听起来更得体就选它——"
-        "城里多数人并不谨慎。\n"
+        "相信程度和传播行为是两个独立判断。不相信也可能为了娱乐玩梗、调侃、社交互动或提醒亲友而转发；"
+        "相信也可能保持沉默。也可以求证或辟谣，不要求出现任何固定比例。"
+        "请依据你的处境和性格选择动机，不要仅为显得谨慎或活跃而选。"
+        "你收到的可能是玩笑、求证或辟谣，不能把这些都当作事实背书。\n"
         f"从这四种做法里选**一个**：{actions}。"
         "（转发＝发到群里或告诉几个熟人；私下求证＝只去问最信得过的那个人；"
         "辟谣＝主动告诉别人这是假的；不管＝看到了但不做声）\n"
         "只输出一个 JSON 对象，不要任何解释：\n"
         '{"belief": 0-100 的整数（你有多信）, "action": "上面四种中的一个", '
-        '"say": "你会说出口的一句话，第一人称"}'
+        f'"motive": "从 {" / ".join(MOTIVES)} 选一个", '
+        '"say": "你实际会传给熟人的完整话语，保留调侃或疑问语气；不说话可留空"}'
     )
 
 
@@ -413,13 +415,13 @@ def _summary_prompt(rumor: dict[str, Any], run: dict[str, Any]) -> str:
                 f"- {node['name']}（{node.get('job') or '—'}，信 {node['belief']}%）：{node['say']}"
             )
     return (
-        "你是一名社会学观察者，下面是一条传闻在一座城的熟人网络里扩散后的记录。\n"
+        "你是一名社会学观察者，下面是智能体在假想熟人网络中传播传闻的记录。\n"
         "请写一段 150 字以内的简报：它是怎么扩散的，在哪里被挡住了，谁放大了它，"
-        "什么样的人更容易信。要具体，不要空话，不要罗列要点。\n\n"
+        "区分相信而转发与不信但玩梗转发，不以转发证明相信，不将模型结果当作真实人群结论。要具体，不要空话，不要罗列要点。\n\n"
         f"传闻：{rumor['title']}——{rumor['text']}\n"
         f"涉及 {stats['total']} 人，最终 {stats['reached']} 人听说，{stats['believers']} 人相信，"
         f"{stats['debunkers']} 人辟谣，{stats['silent']} 人没往下传。\n"
-        f"平均相信程度：{stats['avg_belief']}%。\n"
+        f"平均相信程度：{stats['avg_belief']}%。娱乐转发 {stats['entertainment_forwarders']} 人，不相信仍转发 {stats['nonbelieving_forwarders']} 人。\n"
         f"几个人的原话：\n" + "\n".join(voices)
     )
 
@@ -431,6 +433,8 @@ def _summary_prompt(rumor: dict[str, Any], run: dict[str, Any]) -> str:
 
 def _coerce_action(value: Any) -> str:
     text = str(value or "").strip()
+    if not text:
+        return OTHER_ACTION
     if text in ACTIONS:
         return text
     for action in ACTIONS:
@@ -446,17 +450,18 @@ def parse_reaction(raw: str) -> dict[str, Any]:
     onward spread — a rumor never propagates through a parse failure.
     """
     text = str(raw or "").strip()
-    payload = first_json_object(text)
+    payload, _ = reply_object(text)
     if not payload:
-        return {"belief": 0, "action": OTHER_ACTION, "say": text[:120]}
+        return {"belief": 0, "action": OTHER_ACTION, "say": "", "motive": "未说明"}
     try:
         belief = int(float(payload.get("belief", 0)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         belief = 0
     return {
         "belief": max(0, min(100, belief)),
         "action": _coerce_action(payload.get("action")),
-        "say": str(payload.get("say") or "").strip()[:200],
+        "say": payload["say"].strip()[:200] if isinstance(payload.get("say"), str) else "",
+        "motive": payload.get("motive") if payload.get("motive") in MOTIVES else "未说明",
     }
 
 
@@ -517,6 +522,8 @@ class Node:
     belief: int | None = None
     action: str = ""
     say: str = ""
+    motive: str = "未说明"
+    events: list[dict[str, Any]] = field(default_factory=list)
     acts: int = 0
     spoke_rounds: list[int] = field(default_factory=list)
     #: Belief after each turn. Two entries only for a believer who was then
@@ -539,6 +546,8 @@ class Node:
             "belief": self.belief,
             "action": self.action,
             "say": self.say,
+            "motive": self.motive,
+            "events": list(self.events),
             "believes": self.believes,
             "spoke_rounds": list(self.spoke_rounds),
             "beliefs": list(self.beliefs),
@@ -547,7 +556,7 @@ class Node:
 
 def _nodes_from_people(city: str, people: list[dict[str, Any]]) -> dict[int, Node]:
     from gaworld.apps.games_api import persona_block
-    from gaworld.interview.roster import profile_block
+    from gaworld.interview.roster import recruitment_profile
 
     nodes: dict[int, Node] = {}
     for person in people:
@@ -558,7 +567,7 @@ def _nodes_from_people(city: str, people: list[dict[str, Any]]) -> dict[int, Nod
             "age": person["age"],
             "gender": person["gender"],
             "job": person["job"],
-            "profile_md": profile_block(city, agent_id),
+            "profile_md": recruitment_profile(city, agent_id),
         }
         nodes[agent_id] = Node(
             agent_id=agent_id,
@@ -632,8 +641,6 @@ def run_rumor(
 
     transmissions: list[dict[str, Any]] = []
     per_round: list[dict[str, Any]] = []
-    spreading = 0  # people currently passing it on — the social-proof numerator
-    debunking = 0
     # The seeds "find" it themselves: no sender, no tie, round 0.
     inbox: dict[int, list[dict[str, Any]]] = {aid: [{"sender": None, "kind": "rumor"}] for aid in seed_ids}
     budget = len(nodes) * MAX_ACTS
@@ -644,6 +651,7 @@ def run_rumor(
             break
         next_inbox: dict[int, list[dict[str, Any]]] = {}
         spoke: list[int] = []
+        previous_actions = {aid: node.action for aid, node in nodes.items()}
         for agent_id in sorted(inbox):
             node = nodes[agent_id]
             messages = inbox[agent_id]
@@ -662,9 +670,12 @@ def run_rumor(
             progress(min(0.92, spent / max(1, budget)), f"第 {round_index + 1} 轮 · {node.name}")
             prompt = _reaction_prompt(
                 node,
-                rumor,
+                {**rumor, "text": "\n".join(m.get("text") or rumor["text"] for m in messages)},
                 _source_line(node, messages, nodes),
-                _social_proof(spreading, debunking),
+                _social_proof(
+                    sum(previous_actions.get(p["peer"]) == "转发" for p in adjacency.get(agent_id, [])),
+                    sum(previous_actions.get(p["peer"]) == "辟谣" for p in adjacency.get(agent_id, [])),
+                ),
                 correcting,
             )
             try:
@@ -674,22 +685,15 @@ def run_rumor(
                 raw = ""
             reaction = parse_reaction(raw)
 
-            was_spreading = node.action == "转发"
-            was_debunking = node.action == "辟谣"
             node.belief = reaction["belief"]
             node.beliefs.append(reaction["belief"])
             node.action = reaction["action"]
             node.say = reaction["say"]
+            node.motive = reaction["motive"]
+            node.events.append({"round": round_index, **reaction, "received": [dict(m) for m in messages]})
             node.acts += 1
             node.spoke_rounds.append(round_index)
             spoke.append(agent_id)
-
-            if node.action == "转发" and not was_spreading:
-                spreading += 1
-            if node.action == "辟谣" and not was_debunking:
-                debunking += 1
-            if was_spreading and node.action != "转发":
-                spreading -= 1
 
             for target in _targets(node, adjacency, nodes):
                 transmissions.append(
@@ -699,11 +703,15 @@ def run_rumor(
                         "round": round_index,
                         "kind": target["kind"],
                         "label": target["label"],
+                        "text": node.say or messages[0].get("text") or rumor["text"],
+                        "motive": node.motive,
                     }
                 )
                 next_inbox.setdefault(target["peer"], []).append(
                     {
                         "sender": agent_id,
+                        "text": node.say or messages[0].get("text") or rumor["text"],
+                        "motive": node.motive,
                         "kind": target["kind"],
                         "label": target["label"],
                         "closeness": target["closeness"],
@@ -716,6 +724,7 @@ def run_rumor(
     run = {
         "run_id": uuid.uuid4().hex[:8],
         "city": str(city or ""),
+        "mechanism_version": "rumor-2",
         "rumor": dict(rumor),
         "seeds": seed_ids,
         "nodes": [nodes[aid].to_dict() for aid in sorted(nodes)],
@@ -785,6 +794,16 @@ def _overall_stats(nodes: dict[int, Node], transmissions: list[dict[str, Any]]) 
         if node.action:
             actions[node.action] = actions.get(node.action, 0) + 1
     return {
+        "entertainment_forwarders": sum(
+            any(e["action"] == "转发" and e["motive"] == "娱乐玩梗" for e in n.events) for n in nodes.values()
+        ),
+        "belief_forwarders": sum(
+            any(e["action"] == "转发" and e["motive"] == "相信内容" for e in n.events) for n in nodes.values()
+        ),
+        "nonbelieving_forwarders": sum(
+            any(e["action"] == "转发" and e["belief"] < BELIEVE_AT for e in n.events) for n in nodes.values()
+        ),
+        "motives": {m: sum(n.motive == m for n in reached) for m in MOTIVES},
         "total": len(nodes),
         "reached": len(reached),
         "believers": sum(1 for n in reached if n.believes),

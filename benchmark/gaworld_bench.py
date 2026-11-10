@@ -826,20 +826,12 @@ def _fact_conformity(games: list[dict]) -> tuple[int, int, dict, bool]:
 
 
 def _fact_panic(games: list[dict]) -> tuple[int, int, dict, bool]:
-    n = extreme = helped = eligible = 0
-    for record in games:
-        reactions = [r for agent in record["result"].get("agents") or []
-                     for r in agent.get("reactions") or [] if r.get("action") != DISASTER_OTHER]
-        if not reactions:
-            continue
-        eligible += 1
-        n += len(reactions)
-        extreme += sum(1 for r in reactions if r.get("panic") == 5)
-        helped += sum(1 for r in reactions if r.get("help"))
-    share = extreme / n if n else None
-    rate = helped / n if n else None
-    values = {"extreme_share": None if share is None else round(share, 4),
-              "help_rate": None if rate is None else round(rate, 4)}
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from gaworld.apps.game_measurements import disaster_measurements
+
+    eligible, n, values = disaster_measurements(games)
+    share, rate = values["extreme_share"], values["help_rate"]
     return eligible, n, values, bool(n) and share <= PANIC_EXTREME_MAX and rate >= HELP_RATE_MIN
 
 
@@ -882,10 +874,22 @@ _FACT_FNS = {
 
 def track_b_games(games_dir: Path) -> dict:
     """Track B (games level): the pre-registered facts over every archived game."""
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from gaworld.apps.game_measurements import mechanism_versions
+
     games, unreadable = load_games(games_dir)
     facts = []
     for spec in B_FACTS:
-        eligible, units, values, ok = _FACT_FNS[spec["id"]](games.get(spec["kind"], []))
+        records = games.get(spec["kind"], [])
+        versions = mechanism_versions(records)
+        if len(versions) > 1:
+            facts.append({**spec, "grade": "c", "games": len(records), "units": 0,
+                          "values": {"mechanism_versions": versions}, "reproduced": None,
+                          "abstain": "机制版本不一致，禁止合并：" + ", ".join(versions)})
+            continue
+        eligible, units, values, ok = _FACT_FNS[spec["id"]](records)
+        values["mechanism_versions"] = versions
         if eligible < MIN_GAMES:
             reproduced, abstain = None, f"可用对局 {eligible}/{MIN_GAMES}"
         elif units < spec["min_units"]:
@@ -1330,9 +1334,9 @@ def _fact_detail(f: dict) -> str:
     if f["id"] == "referendum_conformity":
         return f"朝多数 {v.get('toward')} / 背离 {v.get('away')}" + ("" if v.get("p") is None else f"，p={v['p']:.3g}")
     if f["id"] == "disaster_panic_rare":
-        if v.get("extreme_share") is None:
+        if v.get("extreme_share") is None or v.get("help_rate") is None:
             return "无反应"
-        return f"极度恐慌 {v['extreme_share']:.0%}，互助 {v['help_rate']:.0%}（{f['units']} 条反应）"
+        return f"极度恐慌 {v['extreme_share']:.0%}，互助 {v['help_rate']:.0%}（有效恐慌 {v.get('panic_n', f['units'])}，有效互助 {v.get('help_n', f['units'])} 人次）"
     if v.get("before") is None:
         return "无被辟谣的相信者"
     return (f"{f['units']} 人：下降 {v.get('down')} / 上升 {v.get('up')}"

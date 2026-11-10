@@ -1154,7 +1154,8 @@ def test_failed_model_call_marks_the_study_job(stubbed_api, monkeypatch):
     body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"]})
     record = _await_job(body["job_id"])
     assert record["status"] == "error"
-    assert "model down" in record["message"]
+    assert record["diagnostic"]["code"] == "task_failed"
+    assert "model down" not in record["message"]
 
 
 def test_failed_interpretation_does_not_fail_the_study(stubbed_api, monkeypatch):

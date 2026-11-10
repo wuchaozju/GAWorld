@@ -22,24 +22,26 @@ third convention.
 
 from __future__ import annotations
 
+import copy
 import json
 import threading
 import time
-import traceback
 import uuid
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.accounts.context import USER, WORLD
 from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
+from gaworld.population import jobs as job_store
 
 _LOG = get_logger("gaworld.dashboard.population")
 
 #: job id → job record. Bounded by :data:`_MAX_JOBS`; a dashboard left open for
 #: a week should not accumulate every population it ever generated.
 _JOBS: dict[str, dict[str, Any]] = {}
-_JOBS_LOCK = threading.Lock()
+_JOBS_LOCK = threading.RLock()
 _MAX_JOBS = 20
 
 
@@ -48,31 +50,54 @@ _MAX_JOBS = 20
 # ---------------------------------------------------------------------------
 
 
+def _job_stamp() -> dict[str, Any]:
+    return {**ownership.stamp(), "world_id": str((WORLD.get() or {}).get("id") or "")}
+
+
+def _job_visible(record: dict[str, Any] | None) -> bool:
+    return bool(
+        ownership.visible(record)
+        and str((record or {}).get("world_id") or "") == str((WORLD.get() or {}).get("id") or "")
+    )
+
+
 def _new_job(kind: str) -> str:
+    job_id, _ = _claim_job(kind, {})
+    return job_id
+
+
+def _claim_job(kind: str, payload: dict[str, Any]) -> tuple[str, bool]:
+    request_id = job_store.validate_request_id(payload.get("request_id"))
     job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
     with _JOBS_LOCK:
-        _JOBS[job_id] = {
+        record = {
             "id": job_id,
             "kind": kind,
+            "request_id": request_id,
+            "fingerprint": job_store.fingerprint(kind, payload),
+            "population_job_id": payload.get("population_job_id"),
             "status": "running",
             "progress": 0.0,
             "message": "启动中…",
             "started_at": time.time(),
+            "updated_at": time.time(),
             "finished_at": None,
             "result": None,
             "error": None,
+            **_job_stamp(),
         }
-        # Drop the oldest finished jobs once we exceed the cap. Running jobs are
-        # never evicted — losing the handle to work still in flight would leave
-        # the UI polling an id that no longer exists.
+        reserved_id, created = job_store.reserve(record)
+        if not created:
+            return reserved_id, False
+        _JOBS[job_id] = record
         finished = [
-            (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
+            (entry["started_at"], key) for key, entry in _JOBS.items() if entry["status"] != "running"
         ]
         while len(_JOBS) > _MAX_JOBS and finished:
             finished.sort()
             _, oldest = finished.pop(0)
             _JOBS.pop(oldest, None)
-    return job_id
+    return job_id, True
 
 
 def _update_job(job_id: str, **fields: Any) -> None:
@@ -80,6 +105,8 @@ def _update_job(job_id: str, **fields: Any) -> None:
         record = _JOBS.get(job_id)
         if record is not None:
             record.update(fields)
+            record["updated_at"] = time.time()
+            job_store.save(record)
 
 
 def _run_in_background(job_id: str, work: Any) -> None:
@@ -95,12 +122,16 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
         except Exception as exc:
+            from gaworld.llm.diagnostics import classify_error
+
             _LOG.exception("population/group job %s failed", job_id)
+            record = _JOBS.get(job_id) or {}
+            diagnostic = classify_error(exc, stage=str(record.get("kind") or "population"))
             _update_job(
                 job_id,
                 status="error",
-                message=str(exc),
-                error={"type": type(exc).__name__, "detail": traceback.format_exc(limit=5)},
+                message=diagnostic["message"],
+                error={**diagnostic, "job_id": job_id},
                 finished_at=time.time(),
             )
 
@@ -110,14 +141,42 @@ def _run_in_background(job_id: str, work: Any) -> None:
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
-        if not record:
+        if record is None:
+            record = job_store.load(job_id, result=False)
+            if record is None or not _job_visible(record):
+                return None
+            if record.get("status") == "running":
+                record.update(
+                    status="error",
+                    finished_at=time.time(),
+                    updated_at=time.time(),
+                    message="任务已中断（服务重启或工作线程退出），已有结果保留，请新建尝试。",
+                    error={
+                        "code": "service_restarted",
+                        "stage": record.get("kind"),
+                        "retryable": False,
+                        "next_action": "检查历史结果后，新建一次尝试。",
+                    },
+                )
+                job_store.save(record)
+        if not _job_visible(record):
             return None
-        # `parse_constant` turns NaN/Infinity into null. Not cosmetic: the L2
-        # detail carries a ratio of two Moran's I values that is NaN whenever
-        # the reference signal sits under the noise floor, and Python emits a
-        # bare `NaN` token that `JSON.parse` rejects outright — so one such key
-        # made the browser throw away the *entire* verdict response.
-        return json.loads(json.dumps(record, ensure_ascii=False), parse_constant=lambda _: None)
+        public = job_store.safe_json(record)
+        if public.get("result_ready") or (public.get("status") == "done" and public.get("result") is None):
+            public["result"] = (job_store.load(job_id) or {}).get("result")
+        if public.get("kind") == "pop" and public.get("status") == "done":
+            current = _last_population()
+            if current.get("job_id") != job_id:
+                generated = job_store.load_population(job_id)
+                if generated is not None:
+                    _remember_population(job_id, generated, persist=False)
+        public.pop("fingerprint", None)
+        return public
+
+
+def recover_job(request_id: str) -> dict[str, Any] | None:
+    job_id = job_store.recover(request_id, _job_stamp())
+    return job_status(job_id) if job_id else None
 
 
 # ---------------------------------------------------------------------------
@@ -144,10 +203,12 @@ def population_schema() -> dict[str, Any]:
     defaults = pop_schema.normalize_spec({})
     return {
         "version": "1.0",
+        "scope": _job_stamp(),
         "presets": sorted(pop_schema.PRESETS),
         "state_var_keys": list(pop_schema.STATE_VAR_KEYS),
         "industries": list(pop_schema.INDUSTRIES),
         "education_levels": list(pop_schema.EDUCATION_LEVELS),
+        "student_statuses": list(pop_schema.STUDENT_STATUSES),
         "hukou_labels": list(pop_schema.HUKOU_LABELS),
         "cohort_axes": sorted(_cohort_axes()),
         "cohort_axis_labels": COHORT_AXIS_LABELS,
@@ -245,6 +306,10 @@ LABELS: dict[str, dict[str, str]] = {
     "migrant_share": {"zh": "外地户籍占比", "en": "migrant_share"},
     "employment_rate": {"zh": "就业率", "en": "employment_rate"},
     "tertiary_rate": {"zh": "大专以上学历", "en": "tertiary_rate"},
+    "adult_student_rate": {
+        "zh": "成年在校生比例（18岁以上人口）",
+        "en": "Adult tertiary enrollment (18+ population)",
+    },
     "income_median": {"zh": "月收入中位数", "en": "income_median"},
     "income_gini": {"zh": "收入差距（基尼）", "en": "income_gini"},
     "household_mean_size": {"zh": "户均人数", "en": "household_mean_size"},
@@ -346,7 +411,17 @@ def start_population_job(payload: dict[str, Any]) -> dict[str, Any]:
     # discovers by polling. Validation that happens inside the worker is
     # validation the client cannot act on.
     resolved_out = _output_dir(payload) if payload.get("write") else None
-    job_id = _new_job("pop")
+    job_id, created = _claim_job(
+        "pop",
+        {
+            "spec": spec.to_dict(),
+            "write": bool(resolved_out),
+            "out_dir": resolved_out,
+            "request_id": payload.get("request_id"),
+        },
+    )
+    if not created:
+        return {"job_id": job_id, "status": "existing"}
 
     def work(report: Any) -> dict[str, Any]:
         from gaworld.population.generate import generate_population
@@ -371,6 +446,8 @@ def start_population_job(payload: dict[str, Any]) -> dict[str, Any]:
                     "hukou": p.hukou,
                     "residence": p.residence,
                     "job": p.job,
+                    "education": p.education,
+                    "student_status": p.student_status,
                     "industry": p.industry,
                     "employment": p.employment,
                     "income_monthly": p.income_monthly,
@@ -400,7 +477,6 @@ def _output_dir(payload: dict[str, Any]) -> str:
     """
     import os
 
-
     raw = str(payload.get("out_dir") or "output/population").strip()
     root = os.path.realpath(world_paths.REPO_ROOT)
     target = os.path.realpath(os.path.join(root, raw))
@@ -424,7 +500,6 @@ def _describe_written(written: dict[str, Any]) -> list[dict[str, Any]]:
     immediately after "where is it?".
     """
     import os
-
 
     root = os.path.realpath(world_paths.REPO_ROOT)
     labels = {
@@ -474,36 +549,63 @@ def _preview_lines(path: str) -> str:
 #: The most recent generated population, kept so a group run can follow a
 #: generation without the browser shipping 500 agent records back to us.
 _LAST_POPULATION: dict[str, Any] = {}
+_SCOPED_POPULATIONS: dict[tuple[str, str], dict[str, Any]] = {}
 
 
-def _remember_population(job_id: str, result: Any) -> None:
-    _LAST_POPULATION.clear()
-    _LAST_POPULATION.update(
-        {
-            "job_id": job_id,
-            # The whole result, kept so a download can be rendered later
-            # (:func:`export_population`) without regenerating the population —
-            # the flattened ``agents`` below drop the education, job, household
-            # and relationship fields the profile Markdown is built from.
-            "generated": result,
-            "agents": [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "age": p.age,
-                    "gender": p.gender,
-                    "hukou": p.hukou,
-                    "industry": p.industry,
-                    "employment": p.employment,
-                    "residence": p.residence,
-                    "district": p.district,
-                    "state": dict(p.state),
-                }
-                for p in result.people
-            ],
-            "neighbours": {int(k): list(v) for k, v in result.neighbours.items()},
-        }
-    )
+def _last_population() -> dict[str, Any]:
+    user, world = USER.get(), WORLD.get()
+    if user is None and world is None:
+        return _LAST_POPULATION
+    key = (str((user or {}).get("id") or ""), str((world or {}).get("id") or ""))
+    return _SCOPED_POPULATIONS.setdefault(key, {})
+
+
+def _remember_population(job_id: str, result: Any, *, persist: bool = True) -> None:
+    if persist:
+        job_store.save_population(job_id, result)
+    with _JOBS_LOCK:
+        population = _last_population()
+        population.clear()
+        population.update(
+            {
+                "job_id": job_id,
+                # The whole result, kept so a download can be rendered later
+                # (:func:`export_population`) without regenerating the population —
+                # the flattened ``agents`` below drop the education, job, household
+                # and relationship fields the profile Markdown is built from.
+                "generated": result,
+                "agents": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "age": p.age,
+                        "gender": p.gender,
+                        "hukou": p.hukou,
+                        "industry": p.industry,
+                        "employment": p.employment,
+                        "residence": p.residence,
+                        "district": p.district,
+                        "state": dict(p.state),
+                    }
+                    for p in result.people
+                ],
+                "neighbours": {int(k): list(v) for k, v in result.neighbours.items()},
+            }
+        )
+
+
+def _population_snapshot(job_id: Any = None) -> dict[str, Any]:
+    """Select, authorize and freeze one population before admitting follow-on work."""
+    with _JOBS_LOCK:
+        selected = str(job_id or "")
+        if selected:
+            previous = job_status(selected)
+            if not previous or previous.get("kind") != "pop" or previous.get("status") != "done":
+                raise ValueError("所选人口任务不存在、未完成或无权访问")
+        population = _last_population()
+        if selected and population.get("job_id") != selected:
+            raise ValueError("所选人口任务的完整人口产物不可用，请查看任务历史")
+        return copy.deepcopy(population)
 
 
 # ---------------------------------------------------------------------------
@@ -536,7 +638,7 @@ def export_population(fmt: str) -> dict[str, Any]:
         render_state_csv,
     )
 
-    result = _LAST_POPULATION.get("generated")
+    result = _last_population().get("generated")
     if result is None:
         raise ValueError("还没有生成人口，请先在「人口结构」步骤生成。")
     if fmt not in _EXPORT_FORMATS:
@@ -580,7 +682,8 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
     from gaworld.population.schema import normalize_spec
 
     source = str(payload.get("source") or "last")
-    if source == "last" and not _LAST_POPULATION.get("agents"):
+    frozen_population = _population_snapshot(payload.get("population_job_id"))
+    if source == "last" and not frozen_population.get("agents"):
         return {"error": "还没有生成人口，请先在「人口结构」步骤生成。"}
 
     spec = normalize_spec(payload.get("spec") or {})
@@ -593,7 +696,13 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
     axes = payload.get("cohort_axes") or None
     focal = [int(i) for i in (payload.get("focal_ids") or []) if str(i).strip()]
 
-    job_id = _new_job("group")
+    submission = {
+        **payload,
+        "population_job_id": frozen_population.get("job_id") if source == "last" else None,
+    }
+    job_id, created = _claim_job("group", submission)
+    if not created:
+        return {"job_id": job_id, "status": "existing"}
 
     def work(report: Any) -> dict[str, Any]:
         import copy
@@ -601,8 +710,8 @@ def start_group_job(payload: dict[str, Any]) -> dict[str, Any]:
         from gaworld.group.driver import GroupRunConfig, render_day_block, run_group_simulation
 
         if source == "last":
-            agents = copy.deepcopy(_LAST_POPULATION["agents"])
-            neighbours = _LAST_POPULATION["neighbours"]
+            agents = copy.deepcopy(frozen_population["agents"])
+            neighbours = frozen_population["neighbours"]
         else:
             report(0.05, "正在合成人口…")
             from gaworld.population.generate import generate_population
@@ -699,16 +808,19 @@ def start_validation_job(payload: dict[str, Any]) -> dict[str, Any]:
     days = max(1, min(60, int(payload.get("days", 14) or 14)))
     budget = max(0, min(500, int(payload.get("materialization_budget", 20) or 0)))
     coupling = max(0.0, min(2.0, float(payload.get("network_coupling", 0.0) or 0.0)))
-    job_id = _new_job("validate")
+    frozen_population = _population_snapshot(payload.get("population_job_id"))
+    job_id, created = _claim_job(
+        "validate", {**payload, "population_job_id": frozen_population.get("job_id")}
+    )
+    if not created:
+        return {"job_id": job_id, "status": "existing"}
 
     def work(report: Any) -> dict[str, Any]:
         from gaworld.group.validate import render_verdict, run_validation
 
-        if _LAST_POPULATION.get("agents"):
-            import copy
-
-            agents = copy.deepcopy(_LAST_POPULATION["agents"])
-            neighbours = _LAST_POPULATION["neighbours"]
+        if frozen_population.get("agents"):
+            agents = copy.deepcopy(frozen_population["agents"])
+            neighbours = frozen_population["neighbours"]
         else:
             report(0.05, "正在合成人口…")
             from gaworld.population.generate import generate_population
@@ -754,6 +866,14 @@ def start_validation_job(payload: dict[str, Any]) -> dict[str, Any]:
 def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str, Any], int]:
     if path == "/api/population/schema":
         return population_schema(), 200
+    if path == "/api/population/recover":
+        raw = (query or {}).get("request_id") or ""
+        request_id = str(raw[0] if isinstance(raw, list) else raw)
+        try:
+            record = recover_job(request_id)
+            return (record, 200) if record else ({"error": "Unknown submission"}, 404)
+        except ValueError as exc:
+            return {"error": str(exc)}, 400
     if path.startswith("/api/population/jobs/"):
         record = job_status(path.rsplit("/", 1)[-1])
         if record is None:
@@ -768,8 +888,9 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         except ValueError as exc:
             return {"error": str(exc)}, 400
     if path == "/api/population/last":
-        agents = _LAST_POPULATION.get("agents") or []
-        return {"count": len(agents), "job_id": _LAST_POPULATION.get("job_id")}, 200
+        population = _last_population()
+        agents = population.get("agents") or []
+        return {"count": len(agents), "job_id": population.get("job_id")}, 200
     return {"error": "Unknown endpoint"}, 404
 
 

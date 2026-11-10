@@ -15,6 +15,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   "use strict";
 
   var POLL_MS = 1500;
+  function viewLanguage() { return document.documentElement.lang.indexOf("en") === 0 ? "en" : "zh-CN"; }
 
   function t(key, fallback) {
     if (typeof window.__ !== "function") return fallback;
@@ -401,6 +402,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
               pages: data.pages,
               n: (data.text || "").length,
             });
+            if ((data.warnings || []).length) hint.textContent += " · " + data.warnings.join(" · ");
             if (!$("rwTitle").value) $("rwTitle").value = file.name.replace(/\.pdf$/i, "");
             var paper = document.querySelector("input[name=rwKind][value=paper]");
             if (paper) {
@@ -522,6 +524,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       if (digest.source.text.trim() !== $("rwText").value.trim()) html += "<p class=\"rw-hint rw-warn\">" + esc(t("digest_source_changed", "当前材料已改变。请使用解读时的材料，或重新解读当前材料，再设计实验。")) + "</p>";
     }
     if (digest.truncated) html += "<p class=\"rw-hint rw-warn\">" + esc(t("truncated", "（已截断）")) + "</p>";
+    if (window.GAWorldResearchAssessment) html += window.GAWorldResearchAssessment.renderSource(digest.material_source, {language:viewLanguage()});
+    html += digestField("rwDgOriginal", t("original_design", "原研究设计与来源（JSON，可核对修改；未报告项保留未说明）"), JSON.stringify(digest.original_design || {}, null, 2), 12);
     html += digestField("rwDgTheory", t("theory", "理论框架"), paper.theory, 3);
     html += digestField("rwDgMethod", t("method", "方法与数据"), paper.method, 3);
     html += digestField("rwDgVariables", t("variables", "关键变量"), (paper.key_variables || []).join("\n"), 3);
@@ -535,13 +539,19 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if ($("rwRestoreMaterial")) $("rwRestoreMaterial").addEventListener("click", function () { restoreMaterial(digest.source); renderDigest(); });
     $("rwRedigest").addEventListener("click", runDigest);
     $("rwDesignFromDigest").addEventListener("click", function () {
-      runAnalysis(readDigest());
+      try { runAnalysis(readDigest()); }
+      catch (err) { setProgress(t("original_json_error", "原研究设计 JSON 格式有误：") + err.message, "error"); }
     });
     setBusy(state.busy);
   }
 
   function readDigest() {
+    var original = JSON.parse($("rwDgOriginal").value || "{}");
+    Object.keys(original).forEach(function (key) {
+      if (original[key] && typeof original[key] === "object" && JSON.stringify(original[key]) !== JSON.stringify((state.digest.original_design || {})[key])) original[key].manual_edited = true;
+    });
     return {
+      original_design: original,
       paper_digest: {
         theory: $("rwDgTheory").value.trim(),
         method: $("rwDgMethod").value.trim(),
@@ -919,6 +929,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       agent_ids: $("rwKnobAgents").value,
       sim_provider: $("rwKnobSimProvider").value,
       max_parallel: $("rwKnobParallel").value,
+      call_budget: $("rwKnobBudget").value,
+      http_budget: $("rwKnobHttpBudget").value,
     });
   }
 
@@ -1027,7 +1039,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "<p class=\"rw-run-hint\" id=\"rwRunHint\"></p></div>" +
       "<p class=\"rw-progress\" id=\"rwStudyProgress\" aria-live=\"polite\"></p>";
     html += readingSummary(study.reading);
-    if (study.error) html += "<p class=\"rw-rationale rw-warn\">" + esc(briefFailureMessage(study.error)) + "</p>";
+    if (window.ResearchAdmission) html += window.ResearchAdmission.renderDiagnostic(study.diagnostic, {language:viewLanguage()});
+    if (study.error && !(study.diagnostic || {}).code) html += "<p class=\"rw-rationale rw-warn\">" + esc(briefFailureMessage(study.error)) + "</p>";
     if (editable && !preflight.ok) html += "<p class=\"rw-rationale rw-warn\">" + esc(t("approval_blocked", "批准被阻止：请编辑运行方案或重新检查。") + " " + (preflight.errors || []).join("；")) + "</p>";
     if (Object.keys(study.source_plan || {}).length > 1) html += "<details class=\"rw-source-plan\"><summary>" + esc(t("source_plan_snapshot", "查看编译时的实施方案（历史版本）")) + "</summary><pre>" + esc(study.source_plan.markdown || JSON.stringify(study.source_plan, null, 2)) + "</pre></details>";
     if (protocol.purpose === "exploratory" || executionMode(protocol) === "daily_brief") {
@@ -1065,6 +1078,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     (preflight.warnings || []).forEach(function (item) {
       pf += "<div class=\"rw-gap rw-gap-warn\">" + esc(item) + "</div>";
     });
+    if (window.ResearchAdmission) pf += window.ResearchAdmission.renderChecks(preflight, {language:viewLanguage(),editable:editable});
     html += section(t("preflight", "跑前检查"), pf);
 
     if (editable) {
@@ -1079,6 +1093,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         ["tick", "lean_tick"].concat(executionMode(protocol) === "daily_brief" ? ["daily_brief"] : []).map(function (mode) {
           return "<option value=\"" + mode + "\"" + (executionMode(protocol) === mode ? " selected" : "") + ">" + esc(modeLabel(mode)) + "</option>";
         }).join("") + "</select></label>" +
+        "<label class=\"rw-field\"><span>" + esc(t("call_budget", "申请研究预算上限")) + "</span><input id=\"rwKnobBudget\" type=\"number\" min=\"1\" value=\"" + esc(protocol.call_budget || budget.limit || 50000) + "\" /></label>" +
+        "<label class=\"rw-field\"><span>" + esc(t("http_budget", "实际 HTTP 请求硬上限（含重试）")) + "</span><input id=\"rwKnobHttpBudget\" type=\"number\" min=\"1\" value=\"" + esc(protocol.http_budget || budget.http_budget || budget.limit || 50000) + "\" /></label>" +
         "<button class=\"btn tiny ghost\" id=\"rwRecheck\">" + esc(t("recheck", "重新检查")) + "</button></div>";
     } else {
       html += section(t("prereg", "预注册"), dl([
@@ -1222,6 +1238,18 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       var el = $(id);
       if (el) el.addEventListener("click", fn);
     };
+    host.querySelectorAll("[data-budget-candidate]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var candidate = (preflight.candidates || [])[Number(button.dataset.budgetCandidate)];
+        if (candidate) studyAction("update", candidate.overrides);
+      });
+    });
+    host.querySelectorAll(".rw-knobs input, .rw-knobs select").forEach(function (input) {
+      input.addEventListener("input", function () {
+        ["rwApprove", "rwApproveRun"].forEach(function (id) { if ($(id)) $(id).disabled = true; });
+        setStudyProgress(t("knobs_dirty", "参数已改变，请先重新检查，再批准运行。"), "");
+      });
+    });
     bind("rwApprove", function () { studyAction("approve", {}); });
     bind("rwCreateBatch", function () { document.dispatchEvent(new CustomEvent("research-batch-open")); });
     bind("rwApproveRun", function () { studyAction("approve", { run: true }); });
@@ -1358,7 +1386,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "<span class=\"rw-badge\">" + esc(t("model", "模型") + "：" + (plan.provider || t("route_by_config_short", "按配置路由"))) + "</span>",
       "<span class=\"rw-badge\">" + esc(fmtTime(plan.created_at)) + "</span>",
     ];
-    if (feas.verdict) {
+    if (feas.verdict && (!plan.assessment || plan.assessment.status === "legacy")) {
       var score = typeof feas.score === "number" && feas.score >= 0 ? " " + feas.score + "/100" : "";
       badges.push("<span class=\"rw-badge feas-" + esc(feas.verdict) + "\">" + esc(verdictLabel(feas.verdict) + score) + "</span>");
     }
@@ -1375,6 +1403,15 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "</div></div>";
     html += readingSummary((plan.reading_designs || [])[state.designIndex] || plan.reading);
     if (plan.summary) html += "<p class=\"rw-summary\">" + esc(plan.summary) + "</p>";
+    if (window.GAWorldResearchAssessment) {
+      var assessmentView = window.GAWorldResearchAssessment;
+      var selectedDesign = (plan.designs || [])[state.designIndex] || {};
+      html += assessmentView.render(selectedDesign.assessment || plan.assessment, {language:viewLanguage()});
+      html += assessmentView.renderSource(plan.material_source, {language:viewLanguage()});
+      html += assessmentView.renderOriginalDesign(plan.original_design, {language:viewLanguage()});
+      html += assessmentView.renderPreservation(selectedDesign.preservation, {language:viewLanguage()});
+      html += '<p class="rw-hint">' + esc(t("execution_pending", "平台执行检查：编译为运行协议后，由代码检查预算和指标；方法建议分不代表执行通过。")) + '</p>';
+    }
     if (feas.rationale) html += "<p class=\"rw-rationale\"><b>" + esc(t("feasibility", "可行性")) + "：</b>" + esc(feas.rationale) + "</p>";
 
     var digest = plan.paper_digest || {};
@@ -1442,7 +1479,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     }
     if (plan.material) {
       html += "<details class=\"rw-material\"><summary>" + esc(t("material", "原始材料")) +
-        (plan.material_truncated ? " " + esc(t("truncated", "（已截断）")) : "") + "</summary><pre>" + esc(plan.material) + "</pre></details>";
+        (plan.material_truncated ? " " + esc(t("truncated", "（已截断）")) : "") + "</summary><pre>" + esc(plan.material_original || plan.material) + "</pre></details>";
     }
 
     host.innerHTML = gwHTML(html);

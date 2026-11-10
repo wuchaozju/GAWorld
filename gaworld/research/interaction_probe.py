@@ -84,7 +84,9 @@ def execute(*, spec, groups, baseline, personas, answer, prompt_fn, parse_fn, se
                     + "\n【作答要求】\n请重新独立判断并回答原问题；空值表示没有可用回答，按原 JSON 格式输出。"
                 )
                 try:
-                    raw = str(answer(prompt))
+                    raw = str(
+                        rc.call_with_seed(answer, prompt, rc.derive_seed(seed, member, cid, number, arm))
+                    )
                     parsed = parse_fn(spec, raw)
                     if not parsed["ok"]:
                         parsed["error"] = "无法解析有效回答"

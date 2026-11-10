@@ -20,6 +20,8 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Literal
 
+from gaworld.population.education import EDUCATION_LEVELS, STUDENT_STATUSES
+
 # ---------------------------------------------------------------------------
 # Category vocabularies
 # ---------------------------------------------------------------------------
@@ -38,14 +40,6 @@ AGE_BAND_RANGES: dict[str, tuple[int, int]] = {
 
 SEXES: tuple[str, ...] = ("男", "女")
 
-EDUCATION_LEVELS: tuple[str, ...] = (
-    "小学及以下",
-    "初中",
-    "高中/中专",
-    "大专",
-    "本科",
-    "硕士及以上",
-)
 #: Education levels that count towards ``education_work.tertiary_rate``.
 TERTIARY_LEVELS: frozenset[str] = frozenset({"大专", "本科", "硕士及以上"})
 
@@ -89,6 +83,9 @@ CSV_COLUMNS: tuple[str, ...] = (
     "age",
     "hukou",
     "residence",
+    "education",
+    "student_status",
+    "job",
     "employment",
     "industry",
     "monthly_income",
@@ -168,6 +165,8 @@ class Household:
 
 @dataclass(frozen=True)
 class EducationWork:
+    #: Share of adults enrolled in tertiary education; capacity may limit the result.
+    adult_student_rate: float = 0.08
     #: Share of adults (18+) holding a 大专 or higher qualification.
     tertiary_rate: float = 0.35
     #: Share of the *working-age* population (18-64) that holds a job — the
@@ -330,6 +329,7 @@ PRESETS: dict[str, dict[str, Any]] = {
             "migrant_share": 0.62,
         },
         "education_work": {
+            "adult_student_rate": 0.35,
             "tertiary_rate": 0.80,
             "employment_rate": 0.35,
             "industry_mix": {
@@ -423,6 +423,7 @@ def normalize_spec(raw: Mapping[str, Any] | None = None) -> PopulationSpec:
 
     ew_raw = _section(merged, "education_work")
     education_work = EducationWork(
+        adult_student_rate=_clamp(ew_raw.get("adult_student_rate"), 0.0, 1.0, 0.08),
         tertiary_rate=_clamp(ew_raw.get("tertiary_rate"), 0.0, 1.0, 0.35),
         employment_rate=_clamp(ew_raw.get("employment_rate"), 0.0, 1.0, 0.68),
         unemployment_rate=_clamp(ew_raw.get("unemployment_rate"), 0.0, 0.40, 0.05),
@@ -743,6 +744,7 @@ __all__ = [
     "PRESETS",
     "SEXES",
     "STATE_VAR_KEYS",
+    "STUDENT_STATUSES",
     "TERTIARY_LEVELS",
     "Demography",
     "EducationWork",

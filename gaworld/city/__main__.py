@@ -109,7 +109,8 @@ def _build_parser() -> argparse.ArgumentParser:
     one.add_argument("--gender", default="女")
     one.add_argument("--job", default="自由职业")
     one.add_argument("--hukou", default="本地")
-    one.add_argument("--education", default="本科")
+    one.add_argument("--education", default="未知")
+    one.add_argument("--student-status", default="未知")
     one.add_argument("--income", type=float, default=0.0)
     one.add_argument("--residence", help="Defaults to a random district of this city")
 
@@ -245,6 +246,7 @@ def _cmd_add_agent(args: argparse.Namespace) -> int:
         job=args.job,
         hukou=args.hukou,
         education=args.education,
+        student_status=args.student_status,
         income_monthly=args.income,
         residence=args.residence,
     )

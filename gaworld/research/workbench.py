@@ -34,6 +34,7 @@ from typing import Any, Callable
 
 from gaworld.city.knowledge import _parse_json_object, _utcnow
 from gaworld.logging_setup import get_logger
+from gaworld.research import assessment as assessment_mod
 
 _LOG = get_logger("gaworld.research.workbench")
 
@@ -56,6 +57,7 @@ VERDICTS = ("high", "medium", "low")
 #: references and appendices, and the model's context is better spent on the
 #: catalogue than on a bibliography.
 MAX_MATERIAL_CHARS = 80_000
+MAX_SOURCE_CHARS = 2_000_000
 MAX_CATALOGUE_CHARS = 60_000
 MAX_TITLE_CHARS = 160
 
@@ -65,13 +67,17 @@ MAX_TITLE_CHARS = 160
 PLAN_MAX_TOKENS = 12_000
 
 #: The paper read-through is a fraction of a plan: no catalogue, no design.
-DIGEST_MAX_TOKENS = 3_000
+DIGEST_MAX_TOKENS = 6_000
 
 #: A plan offers a few alternative designs, one of them recommended. More
 #: than this and the model starts padding them out with near-duplicates.
 MAX_DESIGNS = 4
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{4,64}$")
+
+
+class _NormalizedRequest(dict[str, Any]):
+    """Internal marker: JSON callers cannot forge trusted normalization."""
 
 
 class ResearchError(ValueError):
@@ -108,6 +114,10 @@ class ResearchPlan:
     #: be re-read next to what it answered.
     material: str = ""
     material_truncated: bool = False
+    material_original: str = ""
+    material_source: dict[str, Any] = field(default_factory=dict)
+    original_design: dict[str, Any] = field(default_factory=dict)
+    assessment: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -115,7 +125,10 @@ class ResearchPlan:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ResearchPlan":
         known = set(cls.__dataclass_fields__)
-        return cls(**{key: value for key, value in (data or {}).items() if key in known})
+        values = {key: value for key, value in (data or {}).items() if key in known}
+        if not values.get("assessment"):
+            values["assessment"] = assessment_mod.normalize_assessment(None, legacy=values.get("feasibility"))
+        return cls(**values)
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +174,7 @@ _PROMPT = """你是 GAWorld 平台的研究方法顾问，熟悉社会科学的�
   "research_questions": ["研究问题 1", "研究问题 2"],
   "hypotheses": ["H1：…", "H2：…"],
   "paper_digest": {{"theory": "理论框架", "method": "原研究方法与数据", "key_variables": ["自变量", "因变量", "调节/中介变量"], "findings": "主要发现"}},
-  "feasibility": {{"score": 0到100的整数, "verdict": "high|medium|low", "rationale": "依据（100 字以内）"}},
+  "feasibility": {{"rationale": "方法建议的适用范围与缺口（100 字以内），不要自行给总分或可执行评级"}},
   "capability_map": [
     {{"need": "研究需要什么", "feature": "功能目录里的功能名", "how": "怎么用它满足这个需要", "entry": "CLI / 页签 / 配置项"}}
   ],
@@ -195,7 +208,7 @@ _PROMPT = """你是 GAWorld 平台的研究方法顾问，熟悉社会科学的�
 _CONFIRMED = """
 ## 已确认的论文解读（研究者已审阅，以此为准）
 {digest}
-paper_digest、research_questions、hypotheses 三项请原样沿用上面的内容，实验设计要围绕这些假设展开。
+paper_digest、research_questions、hypotheses 和 original_design 请原样沿用上面的内容，实验设计要围绕这些假设展开。
 """
 
 _DIGEST_PROMPT = """你是社会科学方法论专家。请仔细阅读下面这篇论文，为后续用代理人仿真复现它做准备，提炼出它的核心内容。
@@ -246,6 +259,8 @@ def load_catalogue(root: Path | None = None) -> str:
 
 def normalize_request(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate a workbench request, raising :class:`ResearchError` on bad input."""
+    if isinstance(payload, _NormalizedRequest):
+        return payload
     payload = payload if isinstance(payload, dict) else {}
     kind = str(payload.get("kind") or "idea").strip().lower()
     if kind not in KINDS:
@@ -253,6 +268,10 @@ def normalize_request(payload: dict[str, Any]) -> dict[str, Any]:
     material = str(payload.get("text") or "").strip()
     if not material:
         raise ResearchError("请先写下研究想法，或粘贴论文内容")
+    if len(material) > MAX_SOURCE_CHARS:
+        raise ResearchError(f"原始材料过长（上限 {MAX_SOURCE_CHARS} 字符），请拆分材料后上传")
+    original_text = material
+    source = assessment_mod.material_source(material, MAX_MATERIAL_CHARS)
     truncated = len(material) > MAX_MATERIAL_CHARS
     if truncated:
         material = material[:MAX_MATERIAL_CHARS]
@@ -260,28 +279,38 @@ def normalize_request(payload: dict[str, Any]) -> dict[str, Any]:
     if language not in LANGUAGES:
         language = "zh-CN"
     title = str(payload.get("title") or "").strip().replace("\n", " ")[:MAX_TITLE_CHARS]
-    return {
+    return _NormalizedRequest({
         "kind": kind,
         "title": title,
         "text": material,
+        "original_text": original_text,
         "truncated": truncated,
+        "material_source": source,
         "language": language,
         "provider": str(payload.get("provider") or "").strip()[:64],
         # Only a paper has a read-through to confirm; an idea's is ignored.
-        "digest": _confirmed_digest(payload.get("digest")) if kind == "paper" else None,
-    }
+        "digest": _confirmed_digest(payload.get("digest"), material=material, confirmed=True)
+        if kind == "paper" else None,
+    })
 
 
-def _confirmed_digest(value: Any) -> dict[str, Any] | None:
+def _confirmed_digest(
+    value: Any, *, material: str = "", confirmed: bool = False
+) -> dict[str, Any] | None:
     """A digest the user reviewed, or ``None`` when there is nothing in it."""
     if not isinstance(value, dict):
         return None
-    confirmed = {
+    result = {
         "paper_digest": _paper_digest(value.get("paper_digest")),
         "research_questions": _strings(value.get("research_questions")),
         "hypotheses": _strings(value.get("hypotheses")),
     }
-    return confirmed if any(confirmed.values()) else None
+    original = assessment_mod.normalize_original_design(
+        value.get("original_design"), material, confirmed=confirmed
+    )
+    if original:
+        result["original_design"] = original
+    return result if any(result.values()) else None
 
 
 def _digest_text(digest: dict[str, Any]) -> str:
@@ -295,6 +324,8 @@ def _digest_text(digest: dict[str, Any]) -> str:
     for label, key in (("研究问题", "research_questions"), ("假设", "hypotheses")):
         if digest.get(key):
             parts.append(f"{label}：\n" + "\n".join(f"- {item}" for item in digest[key]))
+    if digest.get("original_design"):
+        parts.append("original_design：" + json.dumps(digest["original_design"], ensure_ascii=False))
     return "\n".join(parts)
 
 
@@ -308,20 +339,20 @@ def build_prompt(request: dict[str, Any], catalogue: str) -> str:
         catalogue=catalogue or "（功能目录不可用：请只依据平台概况作答，并在 gaps 中说明。）",
         kind_label=_KIND_LABELS.get(request["kind"], request["kind"]),
         title=title,
-        material=request["text"],
+        material=assessment_mod.located_material(request["text"]),
         truncated_note=truncated_note,
         confirmed=_CONFIRMED.format(digest=_digest_text(request["digest"])) if request.get("digest") else "",
         language_label=_LANGUAGE_LABELS.get(request.get("language", "zh-CN"), "简体中文"),
-    )
+    ) + assessment_mod.assessment_prompt() + assessment_mod.original_design_prompt()
 
 
 def build_digest_prompt(request: dict[str, Any]) -> str:
     return _DIGEST_PROMPT.format(
         title=request.get("title") or "（未命名）",
-        material=request["text"],
+        material=assessment_mod.located_material(request["text"]),
         truncated_note=_TRUNCATED_NOTE.format(n=MAX_MATERIAL_CHARS) if request.get("truncated") else "",
         language_label=_LANGUAGE_LABELS.get(request.get("language", "zh-CN"), "简体中文"),
-    )
+    ) + assessment_mod.original_design_prompt()
 
 
 def digest_paper(payload: dict[str, Any], *, llm_fn: Callable[[str], str]) -> dict[str, Any]:
@@ -332,7 +363,7 @@ def digest_paper(payload: dict[str, Any], *, llm_fn: Callable[[str], str]) -> di
     three designs have been built on it. Nothing is saved; the confirmed
     digest travels with the analyse request and lands in the plan.
     """
-    request = normalize_request({**(payload if isinstance(payload, dict) else {}), "kind": "paper"})
+    request = normalize_request(payload) if isinstance(payload, _NormalizedRequest) and payload["kind"] == "paper" else normalize_request({**(payload if isinstance(payload, dict) else {}), "kind": "paper"})
     try:
         raw = llm_fn(build_digest_prompt(request))
     except Exception as exc:  # surfaced to the user as-is
@@ -340,13 +371,14 @@ def digest_paper(payload: dict[str, Any], *, llm_fn: Callable[[str], str]) -> di
     answer = _parse_json_object(raw)
     if not answer:
         raise ResearchError("模型没有返回可解析的论文解读")
-    digest = _confirmed_digest(answer)
+    digest = _confirmed_digest(answer, material=request["text"])
     if digest is None:
         raise ResearchError("模型没有从论文里读出内容")
     return {
         "title": _text(answer.get("title"), MAX_TITLE_CHARS) or request["title"],
         **digest,
         "truncated": request["truncated"],
+        "material_source": request["material_source"],
     }
 
 
@@ -434,6 +466,10 @@ def _designs(answer: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
                 "weaknesses": _text(item.get("weaknesses"), 800),
                 **_design(item),
             }
+            if isinstance(item.get("assessment"), dict):
+                design["assessment"] = assessment_mod.normalize_assessment(item["assessment"])
+            if isinstance(item.get("preservation"), list):
+                design["preservation"] = assessment_mod.normalize_preservation(item["preservation"])
             if any(design.values()):
                 out.append(design)
     if not out:
@@ -496,6 +532,28 @@ def plan_from_answer(
     designs, recommended = _designs(answer)
     # A digest the user confirmed outranks the model's restatement of it.
     confirmed = request.get("digest") or {}
+    original = assessment_mod.normalize_original_design(
+        confirmed.get("original_design") or answer.get("original_design"),
+        request["text"], confirmed=bool(confirmed.get("original_design")),
+    ) if request["kind"] == "paper" else {}
+    missing_constraints = request["kind"] == "paper" and (
+        not original or bool((request.get("material_source") or {}).get("truncated"))
+        or any(
+            item.get("status") == "unknown"
+            or not (item.get("manual_edited") or item.get("source", {}).get("verified"))
+            for item in original.values()
+        )
+    )
+    for design in designs:
+        if design.get("assessment"):
+            design["assessment"] = assessment_mod.normalize_assessment(
+                design["assessment"], missing_constraints=missing_constraints,
+            )
+    selected = designs[recommended].get("assessment") if designs else None
+    assessment = assessment_mod.normalize_assessment(
+        selected or answer.get("assessment"), legacy=_feasibility(answer.get("feasibility")),
+        missing_constraints=missing_constraints,
+    )
     return ResearchPlan(
         id=plan_id or new_plan_id(),
         kind=request["kind"],
@@ -520,6 +578,10 @@ def plan_from_answer(
         estimated_cost={"llm_calls": _text(cost.get("llm_calls"), 600), "note": _text(cost.get("note"), 600)},
         material=request["text"],
         material_truncated=bool(request.get("truncated")),
+        material_original=request.get("original_text") or request["text"],
+        material_source=dict(request.get("material_source") or {}),
+        original_design=original,
+        assessment=assessment,
     )
 
 
@@ -640,6 +702,26 @@ def render_markdown(plan: ResearchPlan) -> str:
         lines += [f"## {L['summary']}", "", plan.summary, ""]
     if feas.get("rationale"):
         lines += [f"**{L['feasibility']}**: {feas['rationale']}", ""]
+    advice = plan.assessment or assessment_mod.normalize_assessment(None, legacy=feas)
+    lines += [assessment_mod.assessment_markdown(advice, plan.language), ""]
+    if plan.material_source:
+        source = plan.material_source
+        label = "Material coverage" if plan.language == "en" else "材料覆盖范围"
+        lines += [f"**{label}**: {source.get('used_chars')} / {source.get('input_chars')} · {source.get('coverage')}",
+                  f"SHA256: {source.get('sha256')}", ""]
+    if plan.original_design:
+        lines += ["## Original design and sources" if plan.language == "en" else "## 原研究设计与来源", ""]
+        for key, zh, en in assessment_mod.ORIGINAL_FIELDS:
+            item = plan.original_design.get(key) or {}
+            source = item.get("source") or {}
+            checked = ("quote located" if source.get("verified") else "unverified source") if plan.language == "en" else ("片段已定位" if source.get("verified") else "来源未验证")
+            value = ("Not reported" if plan.language == "en" else "未说明") if item.get("status") == "unknown" else item.get("value", "")
+            lines.append(f"- **{en if plan.language == 'en' else zh}**: {value}")
+            if source.get("locator") or source.get("quote"):
+                lines.append(f"  {source.get('locator', '')} · {checked}: {source.get('quote', '')}")
+            if item.get("manual_edited"):
+                lines.append("  Manually edited" if plan.language == "en" else "  研究者已修订")
+        lines.append("")
 
     digest = plan.paper_digest or {}
     if digest:
@@ -679,6 +761,13 @@ def render_markdown(plan: ResearchPlan) -> str:
                 if index == plan.recommended_design:
                     head += f"（{L['recommended']}）" if plan.language != "en" else f" ({L['recommended']})"
                 lines += [head, ""]
+            if design.get("assessment"):
+                lines += [assessment_mod.assessment_markdown(design["assessment"], plan.language), ""]
+            if design.get("preservation"):
+                lines += ["**Design preservation**" if plan.language == "en" else "**原设计保留情况**", ""]
+                for item in design["preservation"]:
+                    lines.append(f"- {item['field']} · {item['status']}: {item['original']} → {item['proposed']}; {item['consequence']}")
+                lines.append("")
             _render_design(lines, design, L)
     if plan.steps:
         lines += [f"## {L['steps']}", ""]
@@ -757,7 +846,11 @@ def load_plan(plan_id: str) -> dict[str, Any] | None:
     except (OSError, json.JSONDecodeError):
         _LOG.warning("unreadable research plan %s", path, exc_info=True)
         return None
-    return data if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        return None
+    if not data.get("assessment"):
+        data["assessment"] = assessment_mod.normalize_assessment(None, legacy=data.get("feasibility"))
+    return data
 
 
 def list_plans() -> list[dict[str, Any]]:
@@ -782,6 +875,9 @@ def list_plans() -> list[dict[str, Any]]:
                 "created_at": data.get("created_at") or "",
                 "verdict": (data.get("feasibility") or {}).get("verdict") or "",
                 "score": (data.get("feasibility") or {}).get("score"),
+                "assessment": data.get("assessment") or assessment_mod.normalize_assessment(
+                    None, legacy=data.get("feasibility")
+                ),
                 "steps": len(data.get("steps") or []),
                 "designs": len(data.get("designs") or []) or (1 if data.get("design") else 0),
                 "owner_id": data.get("owner_id"),
@@ -806,6 +902,7 @@ __all__ = [
     "LANGUAGES",
     "MAX_DESIGNS",
     "MAX_MATERIAL_CHARS",
+    "MAX_SOURCE_CHARS",
     "PLAN_MAX_TOKENS",
     "ResearchError",
     "ResearchPlan",

@@ -535,7 +535,7 @@ class RoommateApiTests(unittest.TestCase):
             return json.dumps({
                 "lines": [
                     {"who": "闫然", "text": "早啊"},
-                    {"who": "王彬", "text": "早"},
+                    {"who": "林佳", "text": "早"},
                     {"who": "闫然", "text": "今天吃啥"},
                 ],
                 "thought_a": "累", "thought_b": "嗯",
@@ -556,7 +556,7 @@ class RoommateApiTests(unittest.TestCase):
         # Order matters — the front-end animates them in this sequence.
         self.assertEqual(
             [t["who"] for t in interact["turns"]],
-            ["闫然", "王彬", "闫然"],
+            ["闫然", "林佳", "闫然"],
         )
         self.assertEqual(interact["turns"][2]["text"], "今天吃啥")
         # Backwards-compat: ``dialogue`` is still a packed string.

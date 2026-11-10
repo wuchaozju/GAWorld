@@ -403,6 +403,10 @@ def render_study_markdown(study: dict[str, Any]) -> str:
 
     if protocol.get("notes"):
         lines += [f"## {L['notes']}", "", protocol["notes"], ""]
+    diagnostic = study.get("diagnostic") or {}
+    if diagnostic:
+        lines += ["", "**Diagnostic**: " + _cell(diagnostic.get("code")),
+                  "- " + _cell(diagnostic.get("message")), "- " + _cell(diagnostic.get("next_action")), ""]
     if study.get("error"):
         lines += ["", f"**Error**: {study['error']}", ""]
     return "\n".join(lines).rstrip() + "\n"

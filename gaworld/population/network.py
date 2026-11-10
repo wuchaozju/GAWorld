@@ -166,6 +166,11 @@ def build_households(spec: PopulationSpec, people: list[Person]) -> list[Househo
         members += eligible
         if not eligible:
             kind = "couple" if len(members) >= 2 else "single"
+        # A "nuclear family" with only one adult is a single-parent household.
+        # Calling it a core family would put "与配偶及子女同住" on the one
+        # adult's card — a claim about a spouse the household does not have.
+        if kind == "nuclear" and len(_adults(members, by_id)) < 2:
+            kind = "single_parent"
         if kind == "multigen" and elders:
             members += take(elders, 1 if rng.random() < 0.6 else min(2, len(elders)))
         elif kind == "multigen":
@@ -186,7 +191,14 @@ def build_households(spec: PopulationSpec, people: list[Person]) -> list[Househo
         if candidates:
             candidates[index % len(candidates)].member_ids.append(child_id)
         elif families:
-            families[index % len(families)].member_ids.append(child_id)
+            # No household is old enough to be this child's parent. Home them
+            # with the *oldest* families available rather than an arbitrary
+            # one: it is the least-wrong address, and the validator reports
+            # the remaining age gap instead of hiding it. Rotating over the
+            # oldest few keeps one household from absorbing every orphan.
+            oldest = max(oldest_adult_age(h) for h in families)
+            oldest_families = [h for h in families if oldest_adult_age(h) == oldest]
+            oldest_families[index % len(oldest_families)].member_ids.append(child_id)
         elif adults:
             new_household("single_parent", [take(adults, 1)[0], child_id])
         else:
@@ -216,7 +228,16 @@ def build_households(spec: PopulationSpec, people: list[Person]) -> list[Househo
         for _ in range(max(0, multigen_wanted)):
             if len(adult_pool) < 2 or not elder_pool or remaining_households <= 1:
                 break
-            members = [adult_pool.pop(0), adult_pool.pop(0), elder_pool.pop(0)]
+            # The two adults must be a couple, not two strangers who happen
+            # to share a roof: the household line on their cards says
+            # "与配偶…同住", and a spouse the household does not contain is
+            # exactly the kind of claim that makes a profile absurd.
+            anchor = adult_pool.pop(0)
+            partner = pick_partner(adult_pool, anchor)
+            if partner is None:
+                adult_pool.insert(0, anchor)
+                break
+            members = [anchor, partner, elder_pool.pop(0)]
             new_household("multigen", members)
             for member_id in members:
                 rest.remove(member_id)
@@ -300,14 +321,25 @@ def build_households(spec: PopulationSpec, people: list[Person]) -> list[Househo
     return households
 
 
+def _adults(member_ids: list[int], by_id: dict[int, Person]) -> list[Person]:
+    """The working-age adults in a household."""
+    return [by_id[i] for i in member_ids if i in by_id and CHILD_MAX_AGE < by_id[i].age < ELDER_MIN_AGE]
+
+
 def _household_role(person: Person, record: HouseholdRecord, by_id: dict[int, Person]) -> str:
+    """This person's seat in their household.
+
+    The role is what the profile line is written from, so it has to be true
+    rather than merely plausible: a minor is never the head of a household
+    and never somebody's spouse.
+    """
     if record.type == "shared_rental":
         return "roommate"
     if person.age <= CHILD_MAX_AGE:
         return "child"
     if person.age >= ELDER_MIN_AGE and record.type == "multigen":
         return "grandparent"
-    adults = [by_id[i] for i in record.member_ids if CHILD_MAX_AGE < by_id[i].age < ELDER_MIN_AGE]
+    adults = _adults(record.member_ids, by_id)
     if len(record.member_ids) == 1:
         return "head"
     if len(adults) >= 2:

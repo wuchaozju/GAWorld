@@ -41,11 +41,18 @@
 
 .sv-panel { min-width: 0; display: grid; gap: 16px; }
 
+/* The rail is sticky, so it must not be taller than the window: a sticky
+   column longer than the viewport pins its top and hides its bottom, and the
+   entries below the fold can no longer be reached without scrolling the
+   whole page to the bottom. */
 .sv-side {
   display: grid;
   gap: 12px;
   position: sticky;
   top: 12px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .sv-side-card,
@@ -237,7 +244,7 @@
 
 .sv-person input,
 .sv-cohort input { grid-area: box; margin: 2px 0 0; }
-.sv-person-name { grid-area: name; font-weight: 600; }
+.sv-person-name { grid-area: name; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .sv-person-meta { grid-area: meta; font-size: 11px; color: var(--muted, #6b7280); }
 .sv-person-job {
   grid-area: job;
@@ -403,7 +410,9 @@
 .sv-cost-list { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.9; }
 .sv-cost-list b { font-size: 14px; }
 
-.sv-history { display: grid; gap: 6px; }
+/* The history list scrolls on its own, like the basket above it: the list
+   grows with every session and would otherwise push the whole page down. */
+.sv-history { display: grid; gap: 6px; max-height: 260px; overflow-y: auto; scrollbar-width: thin; }
 .sv-history-row { display: grid; gap: 1px; }
 .sv-history-row .btn { text-align: left; }
 

@@ -250,6 +250,11 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   };
 
   async function init() {
+    const filterHost = $("#roommateFilters");
+    fetch("/api/population/schema").then(resp => resp.json()).then(schema => {
+      filterHost.innerHTML = gwHTML(GAWorldResidentFilters.controls(schema, {}, "roommate", {query:false}));
+    }).catch(err => { $("#roommateFilterCount").textContent = String(err); });
+    ["input", "change"].forEach(event => filterHost.addEventListener(event, () => { renderAgents(); }));
     $("#rStartBtn").addEventListener("click", startSession);
     $("#rPickRandom").addEventListener("click", pickRandom);
     $("#rPickNone").addEventListener("click", () => { state.picked.clear(); renderAgents(); });
@@ -334,15 +339,19 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     }
   }
 
+  function matchingAgents() {
+    const host = $("#roommateFilters");
+    const filters = host ? GAWorldResidentFilters.read(host) : {};
+    filters.query = state.filter;
+    return state.agents.filter(a => GAWorldResidentFilters.matches(a, filters));
+  }
+
   function renderAgents() {
     const list = $("#rAgents");
     const max = (state.catalogue && state.catalogue.max_agents) || 6;
     const filter = state.filter;
-    const filtered = state.agents.filter((a) => {
-      if (!filter) return true;
-      const hay = ((a.name || "") + " " + (a.job || "") + " #" + a.id).toLowerCase();
-      return hay.indexOf(filter) >= 0;
-    });
+    const filtered = matchingAgents();
+    $("#roommateFilterCount").textContent = GAWorldResidentFilters.count(filtered.length, state.agents.length);
     if (!filtered.length) {
       list.innerHTML = gwHTML('<li class="roommate-empty">' + esc(filter ? "没有匹配的居民" : "这座城市暂无居民") + '</li>');
       $("#rPicked").textContent = String(state.picked.size);
@@ -350,7 +359,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     }
     list.innerHTML = gwHTML(filtered
       .map((a) => {
-        const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || ""].filter(Boolean).join(" · ");
+        const meta = [a.age ? a.age + "岁" : "", a.gender || "", a.job || "", GAWorldResidentFilters.valueLabel(a.education || "未知"), GAWorldResidentFilters.valueLabel(a.student_status || "未知")].filter(Boolean).join(" · ");
         const picked = state.picked.has(a.id);
         const on = picked ? " checked" : "";
         const cls = picked ? " is-picked" : "";
@@ -386,7 +395,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   }
 
   function pickRandom() {
-    const pool = state.agents.slice();
+    const pool = matchingAgents().slice();
     for (let i = pool.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -2366,10 +2375,10 @@ function play() {
   // the server computes from the virtual clock.
   function paintNightOverlay() {
     const ctx = getCtx();
-    if (!ctx || !state.session) return;
-    const p = state.session.night_progress || 0;
+    if (!ctx || !state.session || !state.session.is_night) return;
+    const p = Math.max(0, Math.min(1, Number(state.session.night_progress) || 0));
     if (p <= 0) return;
-    ctx.fillStyle = "rgba(15, 22, 50, " + (0.55 * p).toFixed(3) + ")";
+    ctx.fillStyle = "rgba(15, 22, 50, " + (0.28 * p).toFixed(3) + ")";
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   }
 
@@ -2569,15 +2578,15 @@ function play() {
       box.innerHTML = gwHTML('<p class="conv-empty">还没人开口 — 时间走起来,他们碰到一起就会开聊。</p>');
       return;
     }
-    // Take the latest exchange's turns in reverse-order (newest first).
+    // Preserve spoken order; each exchange carries its own simulation time.
     const last = events[events.length - 1];
-    const turns = Array.isArray(last.turns) ? last.turns.slice().reverse() : [];
+    const turns = Array.isArray(last.turns) ? last.turns : [];
     if (!turns.length) {
-      box.innerHTML = gwHTML('<p class="conv-empty">这段对话没有内容。</p>');
+      box.innerHTML = gwHTML('<p class="conv-empty">' + esc(last.note || "这段对话没有内容。") + '</p>');
       return;
     }
     const roomLabel = roomLabelById(state.session, last.room) || "";
-    const head = '<div class="conv-room">🕒 ' + esc(state.session.virtual_clock || "")
+    const head = '<div class="conv-room">🕒 ' + esc(last.virtual_clock || "时间未记录")
       + ' · ' + esc(roomLabel) + '</div>';
     const rows = turns.map((t) => {
       const name = String(t.who || "");
@@ -2622,15 +2631,25 @@ function play() {
     if (e.kind === "interact") {
       const delta = e.mood_delta || 0;
       const rel = Object.values(e.relationship_delta || {})[0] || 0;
+      const dimensions = typeof rel === "object" ? [
+        ["好感", rel.affinity], ["信任", rel.trust], ["亲密", rel.closeness]
+      ] : [["好感", rel]];
+      const relationHtml = dimensions.map(([label, value]) => {
+        const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+        return '<span class="delta-rel ' + (amount >= 0 ? "pos" : "neg") + '">'
+          + (amount >= 0 ? "↑" : "↓") + label + ' ' + Math.abs(amount).toFixed(1) + '</span>';
+      }).join("");
       return '<li class="event-interact">'
         + '<header>'
-        + '<b>' + esc(who) + '</b> 在' + esc(roomLabel) + '聊上了 · <span class="muted">第' + e.tick + '刻</span>'
+        + '<b>' + esc(who) + '</b> 在' + esc(roomLabel) + ' · <span class="muted">'
+        + esc(e.virtual_clock || "时间未记录") + ' · 第' + e.tick + '刻</span>'
         + '<span class="event-deltas">'
         + '<span class="delta-mood ' + (delta >= 0 ? "pos" : "neg") + '">' + (delta >= 0 ? "↑" : "↓") + '心情 ' + (Math.abs(delta) * 100).toFixed(0) + '</span>'
-        + '<span class="delta-rel ' + (rel >= 0 ? "pos" : "neg") + '">' + (rel >= 0 ? "↑" : "↓") + '关系 ' + Math.abs(rel).toFixed(1) + '</span>'
+        + relationHtml
         + '</span>'
         + '</header>'
         + '<pre class="event-dialogue">' + esc(e.dialogue || "") + '</pre>'
+        + (e.note ? '<p class="muted">' + esc(e.note) + '</p>' : "")
         + (e.thought ? '<p class="event-thought">💭 ' + esc(e.thought) + '</p>' : "")
         + '</li>';
     }
@@ -2733,7 +2752,8 @@ function play() {
     const phase = state.session.day_phase || "";
     const clock = state.session.virtual_clock || "";
     const prefix = clock ? clock + " · " + phase : phase;
-    line.textContent = (prefix ? prefix + " · " : "") + "各自在:" + items.join(" · ");
+    const interactionStatus = {generating:"对话生成中", failed:"最近一次对话未生成，请查看事件", waiting:"等待碰面或共同事务邀请"}[state.session.interaction_status] || "";
+    line.textContent = (prefix ? prefix + " · " : "") + "各自在:" + items.join(" · ") + (interactionStatus ? " · " + interactionStatus : "");
   }
 
   // -- export -------------------------------------------------------------

@@ -130,6 +130,9 @@ def test_frozen_inputs_and_parameters_reach_actual_world_manifests(env, monkeypa
         def __init__(self, manifest, *a, **kw):
             self.manifest = manifest
 
+        def snapshot(self):
+            return {"worlds": []}
+
         def run(self, report):
             self.manifest["status"] = "done"
             return {}

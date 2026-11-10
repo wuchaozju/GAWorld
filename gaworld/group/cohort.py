@@ -228,9 +228,10 @@ def _merge_small_cohorts(
         )
         target.members.extend(stray.members)
         # A merged cohort no longer matches its own key on every axis; mark it
-        # so prompts and reports do not overstate how homogeneous it is.
+        # once so prompts and reports do not overstate its homogeneity. More
+        # merges must not grow an already mixed label into a chain of /….
         target.key = tuple(
-            existing if existing == other else f"{existing}/…"
+            existing if existing == other or existing.endswith("/…") else f"{existing}/…"
             for existing, other in zip(target.key, stray.key, strict=True)
         )
     for keeper in keepers:

@@ -30,6 +30,7 @@ from typing import Any
 from gaworld.group.cohort import MIN_COHORT_SIZE, partition_cohorts
 from gaworld.interview.schema import Respondent
 from gaworld.logging_setup import get_logger
+from gaworld.population.education import education_attributes
 from gaworld.population.schema import STATE_VAR_KEYS
 
 _LOG = get_logger("gaworld.interview.roster")
@@ -127,6 +128,10 @@ def profile_block(slug: str, agent_id: int) -> str:
     renders that as "no profile" rather than failing the whole read.
     """
     _csv_path, md_path = city_paths(slug)
+    return _profile_from_path(md_path, agent_id)
+
+
+def _profile_from_path(md_path: Path, agent_id: int) -> str:
     try:
         text = md_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -148,9 +153,44 @@ def load_population(slug: str) -> list[dict[str, Any]]:
     same rows serve both the individual picker and the cohort partition.
     """
     csv_path, md_path = city_paths(slug)
+    return _population_from_paths(csv_path, md_path)
+
+
+def _recruitment_paths(slug: str) -> tuple[Path, Path] | None:
+    from gaworld.apps import world_paths
+
+    # A specific other city remains a bundle browse. The default/current-city
+    # picker in a user's world must see its edited seed, including additions.
+    if world_paths.current_world() and (not slug or slug == world_paths.effective_config().get("city", "")):
+        return Path(world_paths.state_csv_path()), Path(world_paths.profile_path())
+    return None
+
+
+def recruitment_population(slug: str) -> list[dict[str, Any]]:
+    paths = _recruitment_paths(slug)
+    return _population_from_paths(*paths) if paths else load_population(slug)
+
+
+def recruitment_profile(slug: str, agent_id: int) -> str:
+    paths = _recruitment_paths(slug)
+    return _profile_from_path(paths[1], agent_id) if paths else profile_block(slug, agent_id)
+
+
+def _population_from_paths(csv_path: Path, md_path: Path) -> list[dict[str, Any]]:
     if not csv_path.exists():
         return []
     jobs = _jobs_by_id(md_path)
+    try:
+        profile_text = md_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        profile_text = ""
+    matches = list(_PROFILE_SPLIT_RE.finditer(profile_text))
+    profiles = {
+        int(match[1]): profile_text[
+            match.start() : matches[index + 1].start() if index + 1 < len(matches) else len(profile_text)
+        ]
+        for index, match in enumerate(matches)
+    }
     people: list[dict[str, Any]] = []
     # utf-8-sig: every population CSV in this repo carries a BOM, and reading
     # it as plain utf-8 turns the first column name into "﻿id".
@@ -178,7 +218,8 @@ def load_population(slug: str) -> list[dict[str, Any]]:
                     "age": age,
                     "hukou": str(row.get("hukou") or "未知").strip(),
                     "residence": str(row.get("residence") or "").strip(),
-                    "job": jobs.get(agent_id, ""),
+                    "job": str(row.get("job") or jobs.get(agent_id, "")),
+                    **education_attributes(row, profiles.get(agent_id, "")),
                     "state": state,
                 }
             )

@@ -336,6 +336,9 @@
 .rw-study .rw-result-head > div { min-width: 0; max-width: 100%; }
 .rw-study .rw-badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .rw-table-scroll { max-width: 100%; overflow-x: auto; }
+/* 逐题对照：表头与「离散度误差 / SD ×」不折行，窄屏时整表横向滚动。 */
+.rw-rep-cells th { white-space: nowrap; }
+.rw-rep-cells td small { white-space: nowrap; }
 
 .rw-run-status {
   margin: 16px 0;
@@ -574,6 +577,22 @@
 .rp-bar-agent { background: var(--green, #13795b); }
 .rp-bar-human { background: #c0392b; }
 @media (max-width: 720px) { .rp-grid { grid-template-columns: 1fr; } }
+/* Generation parameters and the model a run used. Both are protocol facts:
+   they belong next to the score, not in a config file nobody reads. */
+.rp-gen-grid { display: grid; gap: 10px; margin: 10px 0 4px; }
+.rp-gen-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+.rp-gen-row .rw-field { margin-bottom: 0; }
+.rp-gen-stage { font-size: 12px; color: var(--muted, #6b7280); padding-bottom: 6px; }
+.rp-model { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; background: var(--surface); }
+.rp-model h4 { margin: 0 0 8px; }
+.rp-model-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; padding: 3px 0; font-size: 13px; }
+.rp-model-row span { color: var(--muted, #6b7280); }
+.rp-model-row b { color: var(--ink, #14201b); font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .rp-gen-row { grid-template-columns: 1fr; }
+  .rp-gen-stage { padding-bottom: 0; }
+  .rp-model-row { grid-template-columns: 1fr; }
+}
 .rp-group-row td { background: rgba(19, 121, 91, 0.04); }
 .rp-group-row td:first-child { padding-left: 18px; }
 .rp-ref { font-size: 11px; color: var(--muted, #6b7280); background: rgba(107, 114, 128, 0.1); padding: 0 4px; border-radius: 4px; }
@@ -645,3 +664,14 @@
   .rw-reading { padding: 14px; }
   .rw-reading-facts { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Serious-game controls reuse the workbench's paper and ink tokens. */
+.sg-config-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:14px 0; }
+.sg-editor, .sg-negotiation { border-top:1px solid var(--line); margin:16px 0; padding:14px 0; }
+.sg-editor fieldset { border:1px solid var(--line); margin:12px 0; padding:12px; border-radius:var(--radius-sm); min-width:0; }
+.sg-editor textarea, .sg-config-grid input, .sg-config-grid select { width:100%; box-sizing:border-box; }
+.sg-editor #sgSpec { min-height:350px; font-family:monospace; }
+.sg-proposal { padding:12px; margin:8px 0; background:var(--sunken); border:1px solid var(--line); border-radius:var(--radius-sm); overflow-wrap:anywhere; }
+.sg-proposal p { white-space:pre-wrap; }
+.sg-negotiation details { margin:12px 0; }
+@media(max-width:640px) { .sg-config-grid { grid-template-columns:minmax(0,1fr); } .sg-seat-table { display:block; overflow-x:auto; } }

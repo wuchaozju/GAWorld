@@ -232,3 +232,18 @@ data/moltbook_accounts.json
 # Agent tool scratch: Playwright CLI page snapshots, brainstorm / delivery pages
 /.playwright-cli/
 /.superpowers/
+
+# Keep the documentation introduction media with its source and generated site.
+!/site/documentation/
+/site/documentation/*
+!/site/documentation/_static/
+/site/documentation/_static/*
+!/site/documentation/_static/media/
+!/site/documentation/_static/media/**
+!/site/home/docs/
+/site/home/docs/*
+!/site/home/docs/_static/
+/site/home/docs/_static/*
+!/site/home/docs/_static/media/
+!/site/home/docs/_static/media/**
+/site/**/.DS_Store

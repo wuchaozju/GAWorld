@@ -84,36 +84,49 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     const overall = (run.stats || {}).overall || {};
     const perStage = (run.stats || {}).per_stage || [];
     const agents = run.agents || [];
-
+    const missing = (x) => x == null ? "—" : x;
+    const helpRate = (x) => x == null ? "—" : pct(x);
+    const quality = (x) => x.help_n == null ? "旧版结果：未记录字段有效数，可能包含旧版默认值。" :
+      `互助 ${x.helpers}/${x.help_n}（有效互助回答人次）；有效恐慌 ${x.panic_n}；有效主行动 ${x.action_n}；解析失败 ${x.invalid_n || 0}；字段缺失 ${x.partial_n || 0}；容错恢复 ${x.repaired_n || 0}。`;
     const sections = [
       run.summary ? `## 城市简报\n\n${run.summary.trim()}` : "",
       "## 总览\n\n" + [
-        `- 平均恐慌：${overall.avg_panic == null ? "—" : overall.avg_panic} / 5`,
-        `- 互助率：${pct(overall.help_rate)}`,
-        `- 反应数：${overall.n == null ? "—" : overall.n}`,
+        `- 平均恐慌：${missing(overall.avg_panic)} / 5`,
+        `- 互助率：${helpRate(overall.help_rate)}`,
+        `- 反应数：${overall.n == null ? "—" : overall.n} 人次`,
         `- 选择分布：${counts(overall.actions)}`,
+        `- ${quality(overall)}`,
       ].join("\n"),
+      "## 指标口径\n\n" + Object.values(run.metric_definitions || {
+        legacy:"旧版：反应数为居民×阶段人次；互助率为help=true人次/全部反应人次；恐慌为模型角色自报。旧版可能将解析失败补为3分及不互助。"
+      }).join("\n\n"),
     ];
-
+    const context = run.context;
+    if (context) sections.push("## 地域情境\n\n" + [context.note, `类型：${context.kind}；地域资料来源：${context.source || "未记录"}`, ...(context.sources || []).map(source => typeof source === "string" ? source : [source.title,source.url].filter(Boolean).join(" · ")), ...Object.entries(context.basis || {}).map(([k,v]) => `${k}：${Array.isArray(v) ? v.join("、") : v}`)].join("\n\n"));
+    if (run.edges) sections.push("## 社会关系\n\n" + table(["居民A", "居民B", "关系", "关系来源", "渠道"], run.edges.map(e => [e.a,e.b,e.label,e.source,e.channel])) + "\n\nexplicit=种子已有关系；inferred=档案推断；face_to_face=同住址可见接触假设；remote=远程联络。只传播上一阶段消息。种子关系也不是现实关系的验证。");
     perStage.forEach((stage, i) => {
       const rows = agents.map((p) => {
         const r = (p.reactions || [])[i];
-        return r ? [who(p.agent_id, p.name), r.action, `${r.panic}/5`, r.help ? "是" : "否", r.detail, r.say ? `「${one(r.say)}」` : ""] : null;
+        return r ? [who(p.agent_id, p.name), r.valid_action === false ? "未解析" : r.action, r.panic == null ? "—" : `${r.panic}/5`,
+          r.help == null ? "—" : r.help ? "是" : "否", r.detail, r.say ? `「${one(r.say)}」` : "",
+          (r.secondary_actions || []).join("、"), r.parse_status || "旧版未记录"] : null;
       }).filter(Boolean);
       sections.push([
-        `## 第 ${i + 1} 幕`,
-        quote(stage.text || (run.stages || [])[i] || ""),
-        `平均恐慌 ${stage.avg_panic} · 互助率 ${pct(stage.help_rate)} · ${counts(stage.actions)}`,
-        table(["居民", "行动", "恐慌", "顾得上别人", "经过", "原话"], rows),
+        `## 第 ${i + 1} 幕`, quote(stage.text || (run.stages || [])[i] || ""),
+        `平均恐慌 ${missing(stage.avg_panic)} · 互助率 ${helpRate(stage.help_rate)} · ${counts(stage.actions)}`,
+        quality(stage),
+        table(["居民", "行动", "恐慌", "顾得上别人", "经过", "原话", "次要行动", "数据状态"], rows),
       ].join("\n\n"));
     });
-
-    return doc(
-      `灾害模式：${d.emoji || ""} ${d.name || ""}`.trim(),
-      [run.city ? `城市：${run.city}` : "", `${agents.length} 人`, `${(run.stages || []).length} 幕`],
-      sections,
-      now
-    );
+    if (run.transmissions) sections.push("## 信息传递\n\n" + table(["接收幕", "来自", "传给", "渠道", "关系来源", "内容"], run.transmissions.map(e => [e.stage + 1,e.from,e.to,e.channel,e.source, e.say || e.detail])));
+    if ((run.blocked_transmissions || []).length) sections.push("## 未送达信息\n\n" + table(["幕", "来自", "传给", "原因"],run.blocked_transmissions.map(e => [e.stage+1,e.from,e.to,e.reason])));
+    const diagnostics = [];
+    agents.forEach(p => (p.reactions || []).forEach((r,i) => {
+      if (r.raw) diagnostics.push(`### ${who(p.agent_id,p.name)} · 第${i+1}幕 · ${r.parse_status}\n\n${quote(r.raw)}`);
+    }));
+    if (diagnostics.length) sections.push("## 解析诊断（原始回答，不计作居民原话）\n\n" + diagnostics.join("\n\n"));
+    return doc(`灾害模式：${d.emoji || ""} ${d.name || ""}`.trim(),
+      [run.city ? `城市：${run.city}` : "", `${agents.length} 人`, `${(run.stages || []).length} 幕`, run.mechanism_version || "旧版"], sections, now);
   }
 
   // -- 传闻扩散 -------------------------------------------------------------
@@ -128,19 +141,19 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
 
     const rounds = (run.rounds || []).map((x) => [`第 ${x.round + 1} 轮`, x.reached, x.believers]);
     const hops = (run.transmissions || []).map((h) => [
-      `第 ${h.round + 1} 轮`, who(h.from, names[h.from]), who(h.to, names[h.to]), h.label || h.kind,
+      `第 ${h.round + 1} 轮`, who(h.from, names[h.from]), who(h.to, names[h.to]), h.label || h.kind, h.motive || "未说明", h.text || "",
     ]);
     const people = nodes.slice()
       .sort((a, b) => (a.heard_round == null ? 99 : a.heard_round) - (b.heard_round == null ? 99 : b.heard_round))
       .map((n) => n.heard_round == null
-        ? [who(n.agent_id, n.name), "没听说", "—", "—", "—", ""]
+        ? [who(n.agent_id, n.name), "没听说", "—", "—", "—", "", ""]
         : [
           who(n.agent_id, n.name),
           `第 ${n.heard_round + 1} 轮`,
           n.heard_from != null ? names[n.heard_from] : "自己刷到的",
           n.action,
           `${n.belief}%${n.believes ? "（信）" : "（存疑）"}`,
-          n.say ? `「${one(n.say)}」` : "",
+          n.say ? `「${one(n.say)}」` : "", n.motive || "未说明",
         ]);
 
     return doc(
@@ -152,11 +165,13 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
         "## 总览\n\n" + [
           `- 触达：${stats.reached}/${stats.total}（${stats.total ? Math.round((stats.reached / stats.total) * 100) : 0}%）`,
           `- 相信：${stats.believers} 人，平均信任度 ${stats.avg_belief}%`,
+          `- 娱乐玩梗转发：${stats.entertainment_forwarders == null ? "未记录" : stats.entertainment_forwarders} 人；不相信仍转发：${stats.nonbelieving_forwarders == null ? "未记录" : stats.nonbelieving_forwarders} 人；因相信内容转发：${stats.belief_forwarders == null ? "未记录" : stats.belief_forwarders} 人（均为至少一次、去重人数，可重叠）`,
           `- 最大传播者：${sup ? `${sup.name} ×${sup.n}` : "—"}`,
         ].join("\n"),
         rounds.length ? "## 逐轮\n\n" + table(["轮次", "累计听说", "累计相信"], rounds) : "",
-        "## 每个人\n\n" + table(["居民", "何时听说", "来自", "反应", "信任度", "原话"], people),
-        hops.length ? "## 传播路径\n\n" + table(["轮次", "谁", "传给", "方式"], hops) : "",
+        "## 每个人\n\n" + table(["居民", "何时听说", "来自", "反应", "信任度", "原话", "最后动机"], people),
+        (run.nodes || []).some(n => (n.events || []).length) ? "## 每轮发言\n\n" + table(["居民", "轮次", "相信程度", "行动", "动机", "原话"], nodes.flatMap(n => (n.events || []).map(e => [who(n.agent_id,n.name), e.round+1,e.belief,e.action,e.motive,e.say]))) : "",
+        hops.length ? "## 传播路径\n\n" + table(["轮次", "谁", "传给", "方式", "传播动机", "传播内容"], hops) : "",
       ],
       now
     );

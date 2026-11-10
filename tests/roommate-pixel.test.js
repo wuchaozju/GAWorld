@@ -16,7 +16,7 @@ function load() {
     createElement:()=>({getContext:()=>ctx})},window:{addEventListener(){}},performance:{now:()=>1000},console};
   const file=path.join(__dirname,'../site/dashboard/roommate.js');
   const source=fs.readFileSync(file,'utf8').replace(/\}\)\(\);\s*$/,`window.testApi={CANVAS_W,CANVAS_H,ROOMS,ROOM_DOORS,ROOM_SPOTS,SPRITES,state,
-    pickRoomSpot,computePath,pickPose,drawResident,getCtx,paintApartmentOnce,retargetSprites,
+    pickRoomSpot,computePath,pickPose,drawResident,getCtx,paintApartmentOnce,retargetSprites,paintNightOverlay,renderConversation,eventItemHtml,
     hitTestFurniture,_refreshGeometry,bubbleAnchor,
     roomWalkPath,SOLID_FURNITURE,paintApartment,SPRITE_DRAW,positionBubble,appearance:typeof residentAppearance==='function'?residentAppearance:null};})();`);
   vm.runInNewContext(source,sandbox);
@@ -159,4 +159,33 @@ test('a redirected walking resident routes from its physical room',()=>{
   api.retargetSprites();
   assert.ok(api.state.sprites[1].path.some(p=>p.x===api.ROOM_DOORS.kitchen.x && p.y===api.ROOM_DOORS.kitchen.y));
   assert.ok(!api.state.sprites[1].path.some(p=>p.x===api.ROOM_DOORS.second.x && p.y===api.ROOM_DOORS.second.y));
+});
+
+
+test('daytime cannot acquire a night overlay and night remains readable',()=>{
+  const {api,calls}=load();
+  api.state.session={is_night:false,night_progress:0.9};api.paintNightOverlay();
+  assert.equal(calls.filter(c=>c.key==='fillRect').length,0);
+  api.state.session={is_night:true,night_progress:1};api.paintNightOverlay();
+  const shade=calls.find(c=>c.key==='fillRect');
+  assert.ok(shade);assert.ok(Number(shade.color.match(/([\d.]+)\)$/)[1])<=0.3);
+});
+
+test('conversation uses event time and keeps turns in spoken order',()=>{
+  const {api,canvas}=load();
+  api.state.session={virtual_clock:'03:20 第2天',residents:[],rooms:[],events:[
+    {kind:'interact',room:'kitchen',virtual_clock:'08:05',turns:[
+      {who:'小林',text:'先开口'}, {who:'阿陈',text:'后回答'}]}]};
+  api.renderConversation();
+  assert.ok(canvas.innerHTML.includes('08:05'));
+  assert.ok(!canvas.innerHTML.includes('03:20'));
+  assert.ok(canvas.innerHTML.indexOf('先开口')<canvas.innerHTML.indexOf('后回答'));
+});
+
+test('three-dimensional relationship events never render NaN',()=>{
+  const {api}=load(); api.state.session={residents:[],rooms:[]};
+  for(const delta of [{1:{affinity:3,trust:2,closeness:1}},{1:3},{1:{affinity:'bad'}}]) {
+    const html=api.eventItemHtml({kind:'interact',actor_ids:[],relationship_delta:delta});
+    assert.ok(!html.includes('NaN'));
+  }
 });

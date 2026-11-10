@@ -518,7 +518,8 @@ def add_one(payload: dict[str, Any]) -> dict[str, Any]:
         gender=str(payload.get("gender") or "女"),
         job=str(payload.get("job") or "自由职业"),
         hukou=str(payload.get("hukou") or "本地"),
-        education=str(payload.get("education") or "本科"),
+        education=str(payload.get("education") or "未知"),
+        student_status=str(payload.get("student_status") or "未知"),
         income_monthly=float(payload.get("income") or 0.0),
         residence=str(payload.get("residence") or "") or None,
     )
