@@ -49,6 +49,7 @@ REAL_MAP_NAME = "map.geojson"
 ENVIRONMENT_NAME = "environment.json"
 KNOWLEDGE_NAME = "knowledge.json"
 LOCALE_NAME = "locale.json"
+REGION_NAME = "region.json"
 NEWS_NAME = "news.json"
 STATE_CSV_NAME = "agents.csv"
 PROFILES_MD_NAME = "profiles.md"
@@ -143,10 +144,14 @@ class CityBundle:
         return self.directory / LOCALE_NAME
 
     @property
+    def region_path(self) -> Path:
+        """The region's dossier: terrain, weather, customs, daily habits."""
+        return self.directory / REGION_NAME
+
+    @property
     def news_path(self) -> Path:
         """Recent local news, refreshed on real-world time, not sim time."""
         return self.directory / NEWS_NAME
-
     @property
     def state_csv_path(self) -> Path:
         return self.directory / STATE_CSV_NAME
@@ -243,6 +248,7 @@ def new_manifest(
         "scale": scale,
         "map": {"mode": "virtual", "virtual": VIRTUAL_MAP_NAME},
         "environment": ENVIRONMENT_NAME,
+        "region": REGION_NAME,
         "population": {"count": 0},
         "history": [],
     }

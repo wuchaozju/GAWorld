@@ -4,14 +4,20 @@ Mirrors the ``home_environment`` plugin's writer: the plugin writes
 ``output/home/agent_<id>.json`` + ``output/home/agent_<id>.jsonl``, and
 ``home_api.handle_get`` reads them. We don't run the simulation here — we
 just stage the files and check what the endpoints return.
+
+A resident the last run never touched has no file to read. The endpoint
+rebuilds their flat from the roster instead (a home is a procedural design),
+and says so with ``source="preview"``.
 """
 
 from __future__ import annotations
 
+import csv
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from gaworld.apps import home_api
 
@@ -138,6 +144,85 @@ class TestHomeGet(unittest.TestCase):
             home_api._output_root = lambda: Path(tmp) / "home"
             _payload, status = home_api.handle_get("/api/foo", {})
             self.assertEqual(status, 404)
+
+
+class TestHomePreview(unittest.TestCase):
+    """A resident the last run never touched still has a home."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.roster = self.root / "agents.csv"
+        with self.roster.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=["id", "name", "monthly_income", "residence"],
+            )
+            writer.writeheader()
+            writer.writerow({"id": "3", "name": "阿三", "monthly_income": "8000", "residence": "西湖·文新"})
+        self.patchers = [
+            patch.object(home_api, "_output_root", lambda: self.root / "home"),
+            patch.object(home_api.world_paths, "state_csv_path", lambda: str(self.roster)),
+            patch.object(
+                home_api.world_paths,
+                "effective_config",
+                lambda: {"home": {"enabled": True, "seed": 42}},
+            ),
+        ]
+        for patcher in self.patchers:
+            patcher.start()
+        self.addCleanup(self.tmp.cleanup)
+        for patcher in self.patchers:
+            self.addCleanup(patcher.stop)
+
+    def test_rebuilds_the_flat_of_a_resident_who_never_ran(self):
+        payload, status = home_api.handle_get("/api/home/3", {})
+        self.assertEqual(status, 200)
+        self.assertTrue(payload["has_home"])
+        self.assertEqual(payload["source"], "preview")
+        rooms = payload["design"]["rooms"]
+        self.assertTrue(rooms)
+        # The flat is the one the resident has: same rules the plugin uses.
+        self.assertEqual(payload["design"]["home_id"], "agent_3")
+        self.assertIn("living_room", rooms)
+        self.assertEqual(payload["observation_count"], 0)
+
+    def test_the_preview_is_deterministic(self):
+        first, _ = home_api.handle_get("/api/home/3", {})
+        second, _ = home_api.handle_get("/api/home/3", {})
+        self.assertEqual(first["design"], second["design"])
+
+    def test_the_income_tier_decides_the_rooms(self):
+        payload, _ = home_api.handle_get("/api/home/3", {})
+        # 8000 a month → the middle tier: a dining room and a study, no balcony.
+        rooms = payload["design"]["rooms"]
+        self.assertEqual(payload["design"]["ambiance_quality"], "comfortable")
+        self.assertIn("dining_room", rooms)
+        self.assertIn("study", rooms)
+        self.assertNotIn("balcony", rooms)
+
+    def test_a_resident_outside_the_roster_has_no_home(self):
+        payload, status = home_api.handle_get("/api/home/404", {})
+        self.assertEqual(status, 404)
+        self.assertFalse(payload["has_home"])
+        self.assertEqual(payload["reason"], "no_home_design")
+
+    def test_no_home_when_the_plugin_is_off(self):
+        with patch.object(
+            home_api.world_paths,
+            "effective_config",
+            lambda: {"home": {"enabled": False, "seed": 42}},
+        ):
+            payload, status = home_api.handle_get("/api/home/3", {})
+        self.assertEqual(status, 404)
+        self.assertEqual(payload["reason"], "no_home_design")
+
+    def test_a_run_design_wins_over_the_preview(self):
+        root = self.root / "home"
+        _write_home(root, 3)
+        payload, _ = home_api.handle_get("/api/home/3", {})
+        self.assertEqual(payload["source"], "run")
+        self.assertEqual(payload["design"]["home_node"], "Lakeview Tower")
 
 
 class TestHomeResilience(unittest.TestCase):

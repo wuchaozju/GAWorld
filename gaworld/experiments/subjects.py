@@ -30,11 +30,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from gaworld.economy.finance import _engel_params, _job_income_band
+from gaworld.experiments.stimulus import Product
+from gaworld.population.schema import CSV_COLUMNS, STATE_VAR_KEYS
 from gaworld.settings import CONFIG
 from gaworld.sim.agents_loader import parse_profile
-from gaworld.experiments.stimulus import Product
 
 _PROFILE_BLOCK = re.compile(r"## Profile (\d+)｜.*?(?=\n## Profile |\Z)", re.S)
+_RESIDENT_ATTRIBUTES = frozenset(CSV_COLUMNS) - frozenset(STATE_VAR_KEYS)
 
 
 @dataclass(frozen=True)
@@ -141,9 +143,7 @@ def load_subjects(
                 continue
             profile = parse_profile(block)
             state = {
-                key: float(value)
-                for key, value in row.items()
-                if key not in {"id", "name", "gender", "age", "hukou", "residence"} and value
+                key: float(value) for key, value in row.items() if key not in _RESIDENT_ATTRIBUTES and value
             }
             econ_security = state.get("econ_security", 0.5)
             # Per-subject stream: income must not shift when the catalog or

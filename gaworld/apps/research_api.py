@@ -29,9 +29,9 @@ from __future__ import annotations
 import base64
 import copy
 import json
+import re
 import threading
 import time
-import traceback
 import uuid
 from functools import wraps
 from pathlib import Path
@@ -41,6 +41,7 @@ from gaworld.accounts import ownership
 from gaworld.accounts.context import USER
 from gaworld.apps import world_paths
 from gaworld.logging_setup import get_logger
+from gaworld.research import jobs as job_store
 from gaworld.research import workspaces
 from gaworld.research.progress import RunTiming
 
@@ -48,7 +49,7 @@ _LOG = get_logger("gaworld.dashboard.research")
 
 #: job id → record. One table per delegate, matching ``interview_api``.
 _JOBS: dict[str, dict[str, Any]] = {}
-_JOBS_LOCK = threading.Lock()
+_JOBS_LOCK = threading.RLock()
 _MAX_JOBS = 10
 
 #: Uploaded PDFs are decoded server-side; past this the file is a scanned
@@ -62,16 +63,18 @@ MAX_UPLOAD_B64 = 30_000_000
 # ---------------------------------------------------------------------------
 
 
-def _new_job(kind: str) -> str:
+def _new_job(kind: str, request_id: str = "") -> str:
     job_id = f"{kind}-{uuid.uuid4().hex[:8]}"
     with _JOBS_LOCK:
         _JOBS[job_id] = {
             "id": job_id,
             "kind": kind,
+            "request_id": request_id,
             "status": "running",
             "progress": 0.0,
             "message": "启动中…",
             "started_at": time.time(),
+            "updated_at": time.time(),
             "finished_at": None,
             "result": None,
             "error": None,
@@ -81,6 +84,7 @@ def _new_job(kind: str) -> str:
             "_events": [],
             **workspaces.stamp(),
         }
+        job_store.save(_JOBS[job_id])
         finished = [
             (record["started_at"], key) for key, record in _JOBS.items() if record["status"] != "running"
         ]
@@ -89,6 +93,27 @@ def _new_job(kind: str) -> str:
             _, oldest = finished.pop(0)
             _JOBS.pop(oldest, None)
     return job_id
+
+
+def _claim_job(kind: str, payload: dict[str, Any]) -> tuple[str, bool]:
+    """Reserve a submission once, including when its POST reply was lost."""
+    request_id = str(payload.get("request_id") or "")
+    if request_id and not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_id):
+        raise ValueError("非法的提交标识，请刷新页面后重试")
+    with _JOBS_LOCK:
+        if request_id:
+            stamp = workspaces.stamp()
+            records = [*_JOBS.values(), *job_store.recent()]
+            for record in records:
+                if (
+                    record.get("kind") == kind
+                    and record.get("request_id") == request_id
+                    and record.get("owner_id") == stamp.get("owner_id")
+                    and record.get("world_id") == stamp.get("world_id")
+                    and workspaces.visible(record)
+                ):
+                    return record["id"], False
+        return _new_job(kind, request_id), True
 
 
 def _update_job(job_id: str, **fields: Any) -> None:
@@ -126,6 +151,8 @@ def _update_job(job_id: str, **fields: Any) -> None:
             if "progress" in fields:
                 fields["progress"] = max(record.get("progress", 0.0), min(1.0, fields["progress"]))
             record.update(fields)
+            record["updated_at"] = time.time()
+            job_store.save(record)
 
 
 def _run_in_background(job_id: str, work: Any) -> None:
@@ -149,12 +176,18 @@ def _run_in_background(job_id: str, work: Any) -> None:
                 finished_at=time.time(),
             )
         except Exception as exc:
-            _LOG.exception("research job %s failed", job_id)
+            from gaworld.llm.diagnostics import classify_error
+
+            record = _JOBS.get(job_id) or {}
+            diagnostic = classify_error(exc, stage=str(record.get("kind") or "research"))
+            diagnostic.update(task_id=job_id, last_activity=record.get("updated_at"))
+            _LOG.error("research job %s failed: %s", job_id, diagnostic["code"])
             _update_job(
                 job_id,
                 status="error",
-                message=str(exc),
-                error={"type": type(exc).__name__, "detail": traceback.format_exc(limit=5)},
+                message=diagnostic["message"],
+                error={"type": type(exc).__name__, "detail": diagnostic["message"]},
+                diagnostic=diagnostic,
                 paused=False,
                 stopping=False,
                 finished_at=time.time(),
@@ -166,12 +199,23 @@ def _run_in_background(job_id: str, work: Any) -> None:
 def job_status(job_id: str) -> dict[str, Any] | None:
     with _JOBS_LOCK:
         record = _JOBS.get(job_id)
+        if record is None:
+            record = job_store.load(job_id)
+            if record and workspaces.visible(record) and record.get("status") == "running":
+                record.update(
+                    status="error",
+                    message="任务已中断（服务已重启）；请重新生成，已有研究和结果仍保留。",
+                    finished_at=time.time(),
+                )
+                job_store.save(record)
         if not record or not workspaces.visible(record):
             return None
         snapshot = {key: value for key, value in record.items() if not key.startswith("_")}
         timing = record.get("_timing")
         if timing is not None:
             snapshot.update(timing.snapshot(float(record.get("progress") or 0)))
+        if record.get("kind") != "run":
+            snapshot["remaining_seconds"] = None
         if record.get("stopping"):
             snapshot["remaining_seconds"] = None
         ledger_path = record.get("_ledger_path")
@@ -216,16 +260,16 @@ def _providers() -> list[dict[str, Any]]:
         return []
 
 
-def context() -> dict[str, Any]:
+def context(request_id: str = "") -> dict[str, Any]:
     """Everything the panel needs before its first render, in one request."""
     from gaworld import accounts
     from gaworld.accounts.context import USER
     from gaworld.research import measures, workbench
     from gaworld.research import study as study_mod
-    from gaworld.research.protocol import DEFAULT_CALL_BUDGET
 
     catalogue = workbench.load_catalogue()
     user = USER.get() or {}
+    budget_policy = _budget_policy(_base_config(), {})
     _heal_all()
     return {
         "providers": _providers(),
@@ -234,7 +278,12 @@ def context() -> dict[str, Any]:
             "chars": len(catalogue),
             "available": bool(catalogue),
         },
-        "limits": {"material_chars": workbench.MAX_MATERIAL_CHARS, "call_budget": DEFAULT_CALL_BUDGET},
+        "limits": {
+            "material_chars": workbench.MAX_MATERIAL_CHARS,
+            "source_chars": workbench.MAX_SOURCE_CHARS,
+            "call_budget": budget_policy["call_budget"],
+            "max_call_budget": budget_policy["maximum"],
+        },
         "plans": workspaces.owned(workbench.list_plans()),
         # Only admins start studies, so only they see them.
         "studies": workspaces.owned(study_mod.list_studies()),
@@ -242,8 +291,16 @@ def context() -> dict[str, Any]:
         "workspace": {
             "mode": "multi_user" if user or accounts.enabled_store(_repo_root()) else "single_user",
             "owner": user.get("nickname") or "",
+            "owner_id": user.get("id"),
             "world_id": workspaces.stamp()["world_id"],
         },
+        "jobs": [
+            {key: job.get(key) for key in ("id", "kind", "status", "request_id", "message", "started_at")}
+            for record in job_store.recent()
+            if workspaces.visible(record)
+            and (job := job_status(record["id"]))
+            and (not request_id or record.get("request_id") == request_id)
+        ][:10],
     }
 
 
@@ -258,7 +315,14 @@ def plan_detail(plan_id: str) -> dict[str, Any] | None:
     from gaworld.research import workbench
 
     plan = workbench.load_plan(plan_id)
-    return plan if workspaces.visible(plan) else None
+    if not workspaces.visible(plan):
+        return None
+    from gaworld.research.reading import plan_summary
+
+    plan["reading"] = plan_summary(plan)
+    plan["reading_designs"] = [plan_summary(plan, index) for index in range(len(plan.get("designs") or []))]
+    plan["markdown"] = workbench.render_markdown(workbench.ResearchPlan.from_dict(plan))
+    return plan
 
 
 def export_markdown(plan_id: str) -> dict[str, Any]:
@@ -296,10 +360,12 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
     # Validate before returning a job id: an empty textarea should come back
     # as a 400 the user can fix, not as a job that fails a second later.
     request = workbench.normalize_request(payload)
-    job_id = _new_job("plan")
+    job_id, created = _claim_job("plan", payload)
+    if not created:
+        return {"job_id": job_id, "kind": request["kind"], "truncated": request["truncated"]}
 
     def work(report: Any) -> dict[str, Any]:
-        from gaworld.llm.providers import call_llm, resolve_provider
+        from gaworld.llm.providers import resolve_provider
 
         provider = request["provider"] or None
         try:
@@ -309,12 +375,7 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
         report(0.1, f"正在用 {routed or '默认模型'} 分析…")
 
         def llm_fn(prompt: str) -> str:
-            return call_llm(
-                prompt,
-                task="research",
-                provider=provider,
-                max_tokens=workbench.PLAN_MAX_TOKENS,
-            )
+            return _llm(provider or "", workbench.PLAN_MAX_TOKENS)(prompt)
 
         plan = workbench.analyze(request, llm_fn=llm_fn, provider=routed)
         report(0.9, "正在保存方案…")
@@ -328,25 +389,30 @@ def start_analysis(payload: dict[str, Any]) -> dict[str, Any]:
 def start_digest(payload: dict[str, Any]) -> dict[str, Any]:
     """Step one for a paper: read it in the background, return the digest.
 
-    The digest is not saved — it is the job's result, which the panel shows
-    for editing and then sends back with ``/analyze``.
+    The digest and source stay in the scoped job record so a refresh can
+    recover both before sending the confirmed reading to ``/analyze``.
     """
     from gaworld.research import workbench
 
     request = workbench.normalize_request({**payload, "kind": "paper"})
-    job_id = _new_job("digest")
+    job_id, created = _claim_job("digest", payload)
+    if not created:
+        return {"job_id": job_id, "truncated": request["truncated"]}
 
     def work(report: Any) -> dict[str, Any]:
-        from gaworld.llm.providers import call_llm
-
         provider = request["provider"] or None
         report(0.1, "正在解读论文…")
-        return workbench.digest_paper(
+        digest = workbench.digest_paper(
             request,
-            llm_fn=lambda prompt: call_llm(
-                prompt, task="research", provider=provider, max_tokens=workbench.DIGEST_MAX_TOKENS
-            ),
+            llm_fn=_llm(provider or "", workbench.DIGEST_MAX_TOKENS),
         )
+        return {
+            **digest,
+            "source": {
+                **{key: request[key] for key in ("title", "kind", "provider", "language")},
+                "text": request["original_text"],
+            },
+        }
 
     _run_in_background(job_id, work)
     return {"job_id": job_id, "truncated": request["truncated"]}
@@ -385,10 +451,20 @@ def extract_text(payload: dict[str, Any]) -> dict[str, Any]:
             pages = [page.extract_text() or "" for page in reader.pages]
         except Exception as exc:  # a damaged PDF is a user-facing error
             raise ValueError(f"无法解析这个 PDF：{exc}") from exc
-        text = "\n\n".join(page.strip() for page in pages if page.strip())
-        if not text.strip():
+        if not any(page.strip() for page in pages):
             raise ValueError("这个 PDF 里没有可提取的文字（可能是扫描件），请粘贴文本")
-        return {"text": text, "pages": len(pages), "name": name}
+        text = "\n\n".join(f"[Page {index}]\n{page.strip()}" for index, page in enumerate(pages, 1))
+        empty = [index for index, page in enumerate(pages, 1) if not page.strip()]
+        return {
+            "text": text,
+            "pages": len(pages),
+            "name": name,
+            "text_pages": len(pages) - len(empty),
+            "empty_pages": empty,
+            "warnings": [f"以下页面没有抽出文字，尚未读取其内容：{', '.join(map(str, empty))}"]
+            if empty
+            else [],
+        }
 
     for encoding in ("utf-8", "gb18030", "latin-1"):
         try:
@@ -463,7 +539,17 @@ def _mutation(function: Any) -> Any:
 #: What a study's record says after the process that was running it died.
 INTERRUPTED_MESSAGE = "运行已中断（服务重启或进程退出）。重置后可以重新运行。"
 
-_OVERRIDE_KEYS = ("seeds", "sim_days", "fast", "agent_ids", "max_parallel", "sim_provider")
+_OVERRIDE_KEYS = (
+    "seeds",
+    "sim_days",
+    "fast",
+    "agent_ids",
+    "max_parallel",
+    "sim_provider",
+    "execution_mode",
+    "call_budget",
+    "http_budget",
+)
 
 
 def _repo_root() -> str:
@@ -488,8 +574,9 @@ def _base_config() -> dict[str, Any]:
 
 
 def _default_agents(config: dict[str, Any]) -> int:
-    ids = config.get("agent_ids")
-    return len(ids) if isinstance(ids, list) and ids else 5
+    from gaworld.research.budget import resolved_agent_ids
+
+    return len(resolved_agent_ids(config, _repo_root())) or 5
 
 
 def _load_study(study_id: str) -> Any:
@@ -511,6 +598,15 @@ def _member() -> bool:
     return user is not None and user.get("role") != "admin"
 
 
+def _budget_policy(config: dict[str, Any], protocol: dict[str, Any]) -> dict[str, Any]:
+    from gaworld import accounts
+    from gaworld.research.budget import resolve_budget
+
+    store = accounts.enabled_store(_repo_root()) if _member() else None
+    limit = store.get_setting("research_call_budget", 50_000) if store else None
+    return resolve_budget(config, protocol, member=_member(), member_limit=limit)
+
+
 def _preflight(protocol: Any, *, base_config: dict[str, Any] | None = None) -> dict[str, Any]:
     import copy
 
@@ -519,7 +615,31 @@ def _preflight(protocol: Any, *, base_config: dict[str, Any] | None = None) -> d
     from gaworld.research import protocol as protocol_mod
 
     source_config = _base_config() if base_config is None else base_config
-    check = protocol_mod.preflight(protocol, default_agents=_default_agents(source_config))
+    from gaworld.research.budget import budget_candidates, mode_checks
+
+    policy_error = ""
+    try:
+        budget_policy = _budget_policy(source_config, protocol.to_dict())
+    except ValueError as exc:
+        policy_error = str(exc)
+        budget_policy = _budget_policy(source_config, {})
+    agents = _default_agents(source_config)
+    check = protocol_mod.preflight(protocol, default_agents=agents, call_budget=budget_policy["call_budget"])
+    check["budget"].update(
+        http_budget=budget_policy["http_budget"],
+        maximum=budget_policy["maximum"],
+        policy_version=budget_policy["version"],
+    )
+    protocol.budget = dict(check["budget"])
+    if policy_error:
+        check["errors"].append(policy_error)
+    check["policy"] = budget_policy
+    check["modes"] = mode_checks(
+        protocol, source_config, agents=agents, call_budget=budget_policy["call_budget"]
+    )
+    check["candidates"] = budget_candidates(
+        protocol, source_config, call_budget=budget_policy["call_budget"], repo_root=_repo_root()
+    )
     if _member():
         # Model-generated patches are untrusted input, just like HTTP patches.
         def inspect(value: Any, path: str) -> None:
@@ -545,6 +665,25 @@ def _preflight(protocol: Any, *, base_config: dict[str, Any] | None = None) -> d
         check["errors"].append(str(exc))
     check["ok"] = not check["errors"]
     return check
+
+
+def _bind_approval(study: Any, config: dict[str, Any]) -> None:
+    """Server-owned approval; clients cannot forge the admission fingerprint."""
+    from gaworld.research.budget import approval_fingerprint
+    from gaworld.research.protocol import Protocol
+
+    protocol = Protocol.from_dict(study.protocol)
+    study.preflight = _preflight(protocol, base_config=config)
+    if not study.preflight["ok"]:
+        raise ValueError("跑前检查没有通过：" + "；".join(study.preflight["errors"]))
+    _check_runtime_compatibility(study, config)
+    study.protocol = protocol.to_dict()
+    study.approval = {
+        "fingerprint": approval_fingerprint(study.protocol, config, study.preflight["policy"], _repo_root()),
+        "policy": study.preflight["policy"],
+        "approved_by": (USER.get() or {}).get("id"),
+        "approved_at": time.time(),
+    }
 
 
 def _check_scope(study: Any) -> None:
@@ -597,7 +736,7 @@ def quick_study(study_id: str, payload: dict[str, Any] | None = None) -> dict[st
             "before": "parent study sample not reused",
             "after": "current_city_independent_pilot",
         }
-    check = protocols.preflight(protocol, default_agents=_default_agents(config))
+    check = _preflight(protocol, base_config=config)
     child = store.new_study(
         {"id": parent.plan_id, "language": parent.language},
         protocol.to_dict(),
@@ -791,6 +930,9 @@ def _heal_interrupted(study: Any) -> Any:
 
     if study.stage != "running" or _is_live(study.id):
         return study
+    from gaworld.llm.diagnostics import classify_error
+
+    study.diagnostic = classify_error(reason_code="service_restarted", stage="simulation")
     study.set_stage("error", error=INTERRUPTED_MESSAGE)
     study_mod.save_study(study)
     _LOG.info("study %s was left running by a dead process; marked interrupted", study.id)
@@ -811,10 +953,14 @@ def _heal_all() -> None:
 
 
 def _llm(provider: str, max_tokens: int) -> Any:
+    from gaworld.llm.call_scope import bounded_call, limit
     from gaworld.llm.providers import call_llm
 
     def call(prompt: str) -> str:
-        return call_llm(prompt, task="research", provider=provider or None, max_tokens=max_tokens)
+        with limit(300):
+            return bounded_call(
+                lambda: call_llm(prompt, task="research", provider=provider or None, max_tokens=max_tokens)
+            )
 
     return call
 
@@ -850,6 +996,9 @@ def study_detail(study_id: str) -> dict[str, Any]:
             job_id = max(matching, key=lambda job: job["started_at"])["id"] if matching else None
     detail["run_status"] = job_status(job_id) if job_id else None
     detail["runtime"]["telemetry"] = _telemetry(study)
+    from gaworld.research.reading import study_summary
+
+    detail["reading"] = study_summary(detail)
     return detail
 
 
@@ -857,7 +1006,7 @@ def export_study_report(study_id: str) -> dict[str, Any]:
     from gaworld.research.report import render_study_markdown
 
     study = _load_study(study_id)
-    markdown = study.report_markdown or render_study_markdown(study.to_dict())
+    markdown = render_study_markdown(study.to_dict())
     safe = "".join(char if char.isalnum() or char in "-_（）()" else "_" for char in study.title)[:40]
     return {
         "filename": f"{safe or 'study'}-{study.id}.md",
@@ -887,7 +1036,9 @@ def start_study(payload: dict[str, Any]) -> dict[str, Any]:
     provider = str(payload.get("provider") or "").strip()[:64]
     autopilot = bool(payload.get("autopilot"))
     overrides = {key: payload[key] for key in _OVERRIDE_KEYS if key in payload}
-    job_id = _new_job("study")
+    job_id, created = _claim_job("study", payload)
+    if not created:
+        return {"job_id": job_id, "plan_id": plan_id}
 
     def work(report: Any) -> dict[str, Any]:
         from gaworld.city.knowledge import _parse_json_object
@@ -925,6 +1076,7 @@ def start_study(payload: dict[str, Any]) -> dict[str, Any]:
         }
         # Autopilot skips the wait for a click, never the gate.
         if autopilot and check["ok"]:
+            _bind_approval(study, _base_config())
             study.set_stage("approved")
             study_mod.save_study(study)
             result["stage"] = study.stage
@@ -985,6 +1137,7 @@ def update_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         study.protocol_changes["excluded_hypotheses"] = dropped
     study.preflight = _preflight(protocol)
     study.protocol = protocol.to_dict()
+    study.approval = {}
     if study.protocol != previous:
         study.protocol_revisions.append(previous)
     study.title = protocol.title
@@ -1005,7 +1158,7 @@ def revise_study(study_id: str) -> dict[str, Any]:
     parent = _load_study(study_id)
     protocol = protocols.Protocol.from_dict(parent.protocol)
     protocol.title += " · 修订"
-    check = protocols.preflight(protocol, default_agents=_default_agents(_base_config()))
+    check = _preflight(protocol)
     child = store.new_study(
         {"id": parent.plan_id, "language": parent.language},
         protocol.to_dict(),
@@ -1028,20 +1181,9 @@ def approve_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     _check_scope(study)
     if study.stage not in ("protocol", "error"):
         raise ValueError(f"研究处于 {study.stage} 阶段，不需要批准")
-    from gaworld.research.protocol import Protocol, preflight
-
-    config = _base_config()
-    protocol = Protocol.from_dict(study.protocol)
-    if _member():
-        study.preflight = _preflight(protocol)
-        if payload.get("force"):
-            raise PermissionError("只有管理员可以强行批准；请先修正跑前检查中的问题。")
-    else:
-        study.preflight = preflight(protocol, default_agents=_default_agents(config))
-    study.protocol = protocol.to_dict()
-    _check_runtime_compatibility(study, config)
-    if not (study.preflight or {}).get("ok") and not payload.get("force"):
-        raise ValueError("跑前检查没有通过，先修正协议（或带 force 强行批准）")
+    if _member() and payload.get("force"):
+        raise PermissionError("只有管理员可以强行批准；请先修正跑前检查中的问题。")
+    _bind_approval(study, _base_config())
     study.set_stage("approved")
     study_mod.save_study(study)
     result: dict[str, Any] = {"study_id": study.id, "stage": study.stage}
@@ -1079,28 +1221,27 @@ def _launch_run(study_id: str, *, base_config: dict[str, Any] | None = None) -> 
         raise ValueError("研究已有运行任务，不能重复启动")
     if study.stage != "approved":
         raise ValueError(f"研究处于 {study.stage} 阶段，只有 approved 的研究能运行")
-    if _member():
-        from gaworld.research.protocol import Protocol
-
-        check = _preflight(
-            Protocol.from_dict(study.protocol),
-            **({"base_config": base_config} if base_config is not None else {}),
-        )
-        if not check["ok"]:
-            raise ValueError("跑前检查没有通过：" + "；".join(check["errors"]))
+    from gaworld.research.budget import approval_fingerprint, resolved_agent_ids
+    from gaworld.research.protocol import Protocol
     from gaworld.research.provider_check import inspect_provider
 
     config = copy.deepcopy(_base_config() if base_config is None else base_config)
-    identity = _check_runtime_compatibility(study, config)
-    from gaworld.research.protocol import Protocol, preflight
-
-    refreshed = preflight(Protocol.from_dict(study.protocol), default_agents=_default_agents(config))
-    if any("超过上限" in item for item in refreshed["errors"]):
+    refreshed = _preflight(Protocol.from_dict(study.protocol), base_config=config)
+    fingerprint = approval_fingerprint(study.protocol, config, refreshed["policy"], _repo_root())
+    if not study.approval or fingerprint != study.approval.get("fingerprint"):
         study.preflight = refreshed
+        study.approval = {}
         study.set_stage("protocol")
         study_mod.save_study(study)
-        raise ValueError("；".join(refreshed["errors"]))
+        raise ValueError("运行方案、人口、模型或预算策略已变化（或旧批准缺少预算凭据），请重新批准")
+    if not refreshed["ok"]:
+        study.preflight = refreshed
+        study.approval = {}
+        study.set_stage("protocol")
+        study_mod.save_study(study)
+        raise ValueError("跑前检查没有通过：" + "；".join(refreshed["errors"]))
     study.preflight = refreshed
+    identity = _check_runtime_compatibility(study, config)
     check = inspect_provider(config, str(study.protocol.get("sim_provider") or ""), local=True)
     if check["status"] in {"unconfigured", "missing_key", "connection_failed", "model_missing"}:
         raise ValueError(f"仿真模型跑前检查失败：{check['status']} · {check['primary']}")
@@ -1114,12 +1255,19 @@ def _launch_run(study_id: str, *, base_config: dict[str, Any] | None = None) -> 
     from gaworld.llm.run_state import RunLedger
 
     ledger = str(directory / "providers.sqlite")
-    RunLedger(ledger).check()
+    run_ledger = RunLedger(ledger)
+    run_ledger.configure_http_budget(refreshed["policy"]["http_budget"])
+    run_ledger.check()
+    if approval_fingerprint(study.protocol, config, refreshed["policy"], _repo_root()) != fingerprint:
+        study.approval = {}
+        study.set_stage("protocol")
+        study_mod.save_study(study)
+        raise ValueError("运行输入在启动期间发生改变，请重新批准")
     study.runtime = {
         "provider_check": check,
         "actual_provider": check["primary"],
         "actual_agent_ids": list(
-            study.protocol.get("sample", {}).get("agent_ids") or config.get("agent_ids") or []
+            study.protocol.get("sample", {}).get("agent_ids") or resolved_agent_ids(config, _repo_root())
         ),
         "actual_city": identity["city"],
         "seed_identity": identity,
@@ -1167,6 +1315,7 @@ def _launch_run(study_id: str, *, base_config: dict[str, Any] | None = None) -> 
 
 
 def _run_study(study_id: str, report: Any) -> dict[str, Any]:
+    from gaworld.llm.call_scope import ModelWaitTimeout, limit
     from gaworld.research import backends
     from gaworld.research import study as study_mod
     from gaworld.research.evaluate import evaluate, has_comparable_data
@@ -1215,15 +1364,17 @@ def _run_study(study_id: str, report: Any) -> dict[str, Any]:
         if not has_comparable_data(study.evaluation):
             raise ResearchError("运行失败：没有可用于判定假设的数据，请查看执行记录和运行日志。")
         study.set_stage("evaluated")
+        study.report_markdown = render_study_markdown(study.to_dict())
         study_mod.save_study(study)
-        report(0.9, "正在解读结果…")
+        report(0.9, "统计已完成，可先阅读结果；正在生成补充解读…")
         # A failed reading is a missing section, not a failed study: the
         # verdicts are already on disk and the report renders without it.
         try:
-            study.interpretation = interpret(
-                protocol, study.evaluation, llm_fn=_llm(study.provider, INTERPRET_MAX_TOKENS)
-            )
-        except ResearchError as exc:
+            with limit(90):
+                study.interpretation = interpret(
+                    protocol, study.evaluation, llm_fn=_llm(study.provider, INTERPRET_MAX_TOKENS)
+                )
+        except (ResearchError, ModelWaitTimeout) as exc:
             study.interpretation = {"error": str(exc)}
         checkpoint(check_provider=False)
         study.set_stage("reported")
@@ -1232,12 +1383,37 @@ def _run_study(study_id: str, report: Any) -> dict[str, Any]:
         study_mod.save_study(study)
         return {"study_id": study.id, "stage": study.stage, "summary": study.evaluation.get("summary")}
     except _StudyStopped:
+        from gaworld.llm.diagnostics import classify_error
+
+        study.diagnostic = classify_error(reason_code="user_stopped", stage="simulation")
         study.set_stage("error", error="已停止")
         study.report_markdown = ""
         study_mod.save_study(study)
         return {"study_id": study.id, "stage": study.stage, "stopped": True}
     except Exception as exc:
-        study.set_stage("error", error=str(exc))
+        from gaworld.llm.diagnostics import classify_error
+
+        telemetry = _telemetry(study)
+        exit_code = next(
+            (
+                w.get("returncode")
+                for run in study.runs
+                for w in run.get("world_outcomes", [])
+                if isinstance(w.get("returncode"), int) and w["returncode"] != 0
+            ),
+            None,
+        )
+        study.diagnostic = classify_error(
+            exc,
+            stage=study.stage,
+            provider=study.runtime.get("actual_provider", ""),
+            model=study.runtime.get("actual_model", ""),
+            attempts=telemetry.get("http_reserved"),
+            reason_code=telemetry.get("reason_code", ""),
+            exit_code=exit_code,
+        )
+        study.diagnostic.update(study_id=study.id, attempt=study.attempt, last_activity=time.time())
+        study.set_stage("error", error=study.diagnostic["message"])
         study.report_markdown = render_study_markdown(study.to_dict())
         study_mod.save_study(study)
         raise
@@ -1357,6 +1533,7 @@ def reset_study(study_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     study.interpretation = {}
     study.report_markdown = ""
     study.runtime = {}
+    study.diagnostic = {}
     approved = bool((study.preflight or {}).get("ok"))
     study.set_stage("approved" if approved else "protocol")
     study_mod.save_study(study)
@@ -1417,7 +1594,10 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
         return replication_api.handle_get(path, query)
     try:
         if path == "/api/research/context":
-            return context(), 200
+            request_id = (query or {}).get("request_id") or ""
+            if isinstance(request_id, list):
+                request_id = request_id[0] if request_id else ""
+            return context(str(request_id)), 200
         if path == "/api/research/plans":
             return plans(), 200
         if path.startswith("/api/research/jobs/"):

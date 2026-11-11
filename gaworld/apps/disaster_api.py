@@ -13,11 +13,10 @@ Two deliberate design choices:
   picked from a fixed action vocabulary, so the aggregate falls out of the
   answers themselves. A round therefore costs ``agents × stages + 1`` calls
   (the ``+1`` is the closing city digest).
-* **The crowd is part of the prompt from stage 2 on.** Each resident is told
-  what the others around them did in the previous stage — a single line built
-  from the statistics we already have, not another call. Without it every
-  stage is an independent draw and the interesting part of a disaster (people
-  copying each other, or refusing to) never shows up.
+* **Social messages follow recorded or explicitly inferred ties.** From stage
+  2 on, each resident receives the previous-stage utterances of reachable
+  contacts. Channel outages are recorded; global statistics are not presented
+  as personal knowledge. Regional scripts use existing dossier evidence.
 
 Conventions follow :mod:`gaworld.apps.arena_api`: a background job with
 progress, an in-memory store, and every LLM entry point injectable
@@ -34,8 +33,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from gaworld.apps import disaster_context
 from gaworld.apps.game_jobs import JobStore
-from gaworld.apps.games_api import first_json_object
+from gaworld.apps.game_reactions import boolean_answer, reply_object, scale_integer
 from gaworld.logging_setup import get_logger
 
 _LOG = get_logger("gaworld.dashboard.disaster_api")
@@ -58,6 +58,9 @@ ACTIONS: tuple[str, ...] = (
     "求助求援",
     "照常生活",
     "打探消息",
+    "保护家人",
+    "转移财产",
+    "等待官方通知",
 )
 #: Where an off-vocabulary answer lands. Kept out of ``ACTIONS`` so the model
 #: is never offered it as a choice.
@@ -226,23 +229,6 @@ def _default_summary_llm(prompt: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _crowd_line(previous: dict[str, Any] | None) -> str:
-    """What the neighbours did last stage, as one line of prompt.
-
-    Built from statistics we already computed, so herd behaviour costs no
-    extra LLM call. Returns ``""`` for the first stage, where there is no
-    crowd yet.
-    """
-    if not previous:
-        return ""
-    counts = previous.get("actions") or {}
-    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
-    if not ranked:
-        return ""
-    parts = "、".join(f"{n} 人{action}" for action, n in ranked[:3])
-    return f"你看到身边的人：{parts}。"
-
-
 def _reaction_prompt(
     persona_text: str,
     disaster: dict[str, Any],
@@ -254,7 +240,9 @@ def _reaction_prompt(
     history = ""
     if own_history:
         lines = "\n".join(
-            f"第 {item['stage'] + 1} 阶段，你{item['action']}：{item['detail']}" for item in own_history
+            f"第 {item['stage'] + 1} 阶段，你{item['action']}：{item['detail']}"
+            for item in own_history
+            if item.get("valid_action", True)
         )
         history = f"\n你之前做过的事：\n{lines}\n"
     actions = " / ".join(ACTIONS)
@@ -269,8 +257,8 @@ def _reaction_prompt(
         "不要给一个'正确'的标准答案，给你这个人真的会做的事。\n"
         f"从这几类行动里选**一个**最贴近的：{actions}。\n"
         "只输出一个 JSON 对象，不要任何解释：\n"
-        '{"action": "上面六类中的一个", "detail": "你具体要做什么，一句话", '
-        '"panic": 1-5 的整数（1=基本不慌，5=极度恐慌）, "help": true 或 false（是否顾得上帮别人）, '
+        '{"action": "上述类别中的一个", "secondary_actions": ["可选的其他行动"], "detail": "你具体要做什么，一句话", '
+        '"panic": 1-5 的整数（角色自报：1=平静能安排事务，2=担心但能按计划行动，3=焦虑影响判断，4=强烈恐惧难以集中，5=极度恐慌无法有序行动）, "help": true 或 false（是否正在帮助家庭以外的人；保护家人另记行动，不算此项）, '
         '"say": "此刻你会说出口的一句话，第一人称"}'
     )
 
@@ -288,13 +276,14 @@ def _summary_prompt(disaster: dict[str, Any], run: dict[str, Any]) -> str:
     # otherwise the model invents a second act that never happened.
     drift = "什么行为在后面的阶段被放大了" if len(run["stages"]) > 1 else "谁的反应最出人意料"
     return (
-        "你是一名社会学观察者，下面是一场灾难中若干居民的真实反应记录。\n"
+        "你是一名社会学观察者，下面是一场灾害沙箱中智能体生成的角色反应记录。\n"
         f"请写一段 150 字以内的简报：人群整体是怎么反应的，出现了哪几种分化，谁最脆弱，{drift}。"
         "要具体，不要空话，不要罗列要点。\n\n"
         f"灾难：{disaster['name']}\n"
         f"人数：{len(run['agents'])}，阶段数：{len(run['stages'])}\n"
         f"行动分布：{spread}\n"
-        f"平均恐慌值：{stats.get('avg_panic')}（1-5），互助率：{stats.get('help_rate')}\n"
+        f"平均恐慌值：{stats.get('avg_panic')}（1-5），互助率：{stats.get('help_rate')}（家庭外帮助人次/有效互助回答人次）\n"
+        f"总反应 {stats['n']} 人次；有效恐慌 {stats['panic_n']}；有效互助 {stats['help_n']}；解析失败 {stats['invalid_n']}。缺失不可视为平静或不互助。\n"
         f"其中几个人的原话：\n" + "\n".join(voices)
     )
 
@@ -307,6 +296,8 @@ def _summary_prompt(disaster: dict[str, Any], run: dict[str, Any]) -> str:
 def _coerce_action(value: Any) -> str:
     """Map a free-form action onto the vocabulary; unknown → ``其他``."""
     text = str(value or "").strip()
+    if not text:
+        return OTHER_ACTION
     if text in ACTIONS:
         return text
     for action in ACTIONS:
@@ -318,47 +309,70 @@ def _coerce_action(value: Any) -> str:
 def parse_reaction(raw: str) -> dict[str, Any]:
     """Read one resident's JSON reply, tolerating prose around the object.
 
-    A malformed reply never kills a round: it degrades to ``其他`` with a
-    neutral panic level, and the raw text is kept as the quote so the user
-    can see what actually came back.
+    A malformed reply never kills a round. Missing measurements remain null;
+    original text is retained only in diagnostics, never as resident speech.
     """
     text = str(raw or "").strip()
-    payload = first_json_object(text)
-    if not payload:
-        return {
-            "action": OTHER_ACTION,
-            "detail": text[:120] or "（没有返回有效内容）",
-            "panic": 3,
-            "help": False,
-            "say": text[:120],
-        }
-    try:
-        panic = int(float(payload.get("panic", 3)))
-    except (TypeError, ValueError):
-        panic = 3
+    payload, status = reply_object(text)
+    action = _coerce_action(payload.get("action"))
+    valid_action = isinstance(payload.get("action"), str) and bool(payload["action"].strip())
+    panic = scale_integer(payload.get("panic"), 1, 5)
+    help_ = boolean_answer(payload.get("help"))
+    issues = [
+        key
+        for key, valid in (
+            ("action", valid_action),
+            ("panic", panic is not None),
+            ("help", help_ is not None),
+        )
+        if not valid
+    ]
+    issues.extend(key for key in ("detail", "say") if key in payload and not isinstance(payload[key], str))
+    secondary = payload.get("secondary_actions")
+    if not isinstance(secondary, list):
+        secondary = []
     return {
-        "action": _coerce_action(payload.get("action")),
-        "detail": str(payload.get("detail") or "").strip()[:200],
-        "panic": max(1, min(5, panic)),
-        "help": bool(payload.get("help")),
-        "say": str(payload.get("say") or "").strip()[:200],
+        "action": action,
+        "valid_action": valid_action,
+        "secondary_actions": list(
+            dict.fromkeys(
+                value
+                for value in secondary
+                if isinstance(value, str) and value in ACTIONS and value != action
+            )
+        ),
+        "detail": payload["detail"].strip()[:200] if isinstance(payload.get("detail"), str) else "",
+        "panic": panic,
+        "help": help_,
+        "say": payload["say"].strip()[:200] if isinstance(payload.get("say"), str) else "",
+        "parse_status": "invalid" if status == "invalid" else ("partial" if issues else status),
+        "issues": issues,
+        "raw": text[:16000] if status != "ok" or issues else "",
     }
 
 
 def _aggregate(reactions: list[dict[str, Any]]) -> dict[str, Any]:
-    """Histogram + panic + altruism for one stage (or for the whole run)."""
+    """Field-specific denominators; failed replies never become measurements."""
     counts: dict[str, int] = {}
     for item in reactions:
-        counts[item["action"]] = counts.get(item["action"], 0) + 1
-    panics = [item["panic"] for item in reactions]
-    helpers = sum(1 for item in reactions if item["help"])
-    n = len(reactions)
+        if item.get("valid_action", True):
+            counts[item["action"]] = counts.get(item["action"], 0) + 1
+    panics = [item["panic"] for item in reactions if item.get("panic") is not None]
+    help_answers = [item["help"] for item in reactions if isinstance(item.get("help"), bool)]
+    helpers = sum(help_answers)
     return {
-        "n": n,
+        "n": len(reactions),
+        "action_n": sum(counts.values()),
+        "panic_n": len(panics),
+        "help_n": len(help_answers),
+        "helpers": helpers,
+        "invalid_n": sum(item.get("parse_status") == "invalid" for item in reactions),
+        "partial_n": sum(item.get("parse_status") == "partial" for item in reactions),
+        "repaired_n": sum(item.get("parse_status") == "repaired" for item in reactions),
         "actions": counts,
-        "avg_panic": round(statistics.mean(panics), 2) if panics else 0.0,
-        "max_panic": max(panics) if panics else 0,
-        "help_rate": round(helpers / n, 2) if n else 0.0,
+        "avg_panic": round(statistics.mean(panics), 2) if panics else None,
+        "max_panic": max(panics) if panics else None,
+        "help_rate": round(helpers / len(help_answers), 4) if help_answers else None,
     }
 
 
@@ -414,13 +428,13 @@ class Participant:
     reactions: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        panics = [r["panic"] for r in self.reactions]
+        panics = [r["panic"] for r in self.reactions if r.get("panic") is not None]
         return {
             "agent_id": self.agent_id,
             "name": self.name,
             "job": self.job,
             "reactions": list(self.reactions),
-            "avg_panic": round(statistics.mean(panics), 2) if panics else 0.0,
+            "avg_panic": round(statistics.mean(panics), 2) if panics else None,
             "helped": any(r["help"] for r in self.reactions),
         }
 
@@ -450,6 +464,8 @@ def run_disaster(
     custom: dict[str, Any] | None = None,
     stages: int = DEFAULT_STAGES,
     participants: list[Participant] | None = None,
+    region: dict[str, Any] | None = None,
+    edges: list[dict[str, Any]] | None = None,
     answer_fn: Callable[[str], str] | None = None,
     summary_fn: Callable[[str], str] | None = None,
     progress: Callable[[float, str], None] | None = None,
@@ -462,7 +478,15 @@ def run_disaster(
 
     disaster = resolve_disaster(disaster_id, custom)
     stage_count = max(1, min(int(stages or DEFAULT_STAGES), MAX_STAGES, len(disaster["stages"])))
-    stage_texts = list(disaster["stages"])[:stage_count]
+    if region is None or edges is None:
+        if participants is None:
+            loaded_region, loaded_edges = disaster_context.load_context(city, ids)
+        else:
+            loaded_region, loaded_edges = {}, []
+        region = loaded_region if region is None else region
+        edges = loaded_edges if edges is None else edges
+    local_stages, context = disaster_context.local_scenario(disaster, region)
+    stage_texts = local_stages[:stage_count]
 
     people = participants if participants is not None else _load_participants(city, ids)
     if not people:
@@ -472,15 +496,25 @@ def run_disaster(
     per_stage: list[dict[str, Any]] = []
     total_steps = max(1, len(people) * len(stage_texts))
     step = 0
+    transmissions: list[dict[str, Any]] = []
+    blocked_transmissions: list[dict[str, Any]] = []
 
     for stage_index, stage_text in enumerate(stage_texts):
-        crowd = _crowd_line(per_stage[-1] if per_stage else None)
+        inbox, blocked = disaster_context.stage_messages(
+            people, edges, stage_index, "\n".join(stage_texts[: stage_index + 1])
+        )
+        blocked_transmissions.extend(blocked)
         stage_reactions: list[dict[str, Any]] = []
         for person in people:
             step += 1
             progress(step / total_steps * 0.92, f"第 {stage_index + 1} 幕 · {person.name}")
             prompt = _reaction_prompt(
-                person.persona_text, disaster, stage_index, stage_text, person.reactions, crowd
+                person.persona_text,
+                disaster,
+                stage_index,
+                stage_text,
+                person.reactions,
+                disaster_context.observation_line(inbox[person.agent_id]),
             )
             try:
                 raw = answer(prompt)
@@ -489,6 +523,8 @@ def run_disaster(
                 raw = ""
             reaction = parse_reaction(raw)
             reaction["stage"] = stage_index
+            reaction["observations"] = inbox[person.agent_id]
+            transmissions.extend(inbox[person.agent_id])
             person.reactions.append(reaction)
             stage_reactions.append(reaction)
         summary = _aggregate(stage_reactions)
@@ -500,6 +536,12 @@ def run_disaster(
     run = {
         "run_id": uuid.uuid4().hex[:8],
         "city": str(city or ""),
+        "mechanism_version": "disaster-2",
+        "metric_definitions": disaster_context.METRIC_DEFINITIONS,
+        "context": context,
+        "edges": edges,
+        "transmissions": transmissions,
+        "blocked_transmissions": blocked_transmissions,
         "disaster": {"id": disaster["id"], "name": disaster["name"], "emoji": disaster["emoji"]},
         "stages": stage_texts,
         "agents": [person.to_dict() for person in people],

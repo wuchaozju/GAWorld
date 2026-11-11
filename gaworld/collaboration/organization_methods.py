@@ -8,6 +8,11 @@ import json
 VERSION = "organization-method-1"
 KINDS = {"random": "随机网络", "full": "全员互联", "hierarchy": "层级组织", "independent": "独立作答后汇总"}
 
+#: A built-in method is named by its communication structure, not by a saved
+#: record: its role slots are decided by the team that runs it.
+BUILTIN_PREFIX = "builtin:"
+BUILTIN_VERSION = 1
+
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -30,6 +35,115 @@ def baseline(kind="random", slots=3):
             "rounds": 0 if kind == "independent" else 2,
         }
     )
+
+
+#: How each communication structure works, told to every member of that method.
+_TOPOLOGY_TEXT = {
+    "random": "成员之间按通信结构随机连接：每轮讨论时，每位成员只接收与自己在通信结构中直接相连的成员上一轮的结果。",
+    "full": "全员互联：每轮讨论时，每位成员都能看到所有其他成员上一轮的结果。",
+    "hierarchy": "层级组织：编号最小的成员与所有其他成员双向交换信息，其他成员之间不直接通信。",
+    "independent": "独立作答后汇总：成员各自独立完成并提交终稿，彼此不交换中间结果。",
+    "custom": "自定义通信：成员只在完整规则指定的有向边上交换上一轮的结果。",
+}
+
+
+def topology_text(kind):
+    """How one communication structure works, in the words members are told."""
+    return _TOPOLOGY_TEXT.get(kind, _TOPOLOGY_TEXT["full"])
+
+
+def builtin_id(kind):
+    """The stable id of a built-in basic organization method."""
+    if kind not in KINDS:
+        raise ValueError("不支持的基本组织方式")
+    return f"{BUILTIN_PREFIX}{kind}"
+
+
+def parse_builtin(identifier):
+    """The kind of a built-in method id, or None when the id names a saved one."""
+    if not isinstance(identifier, str) or not identifier.startswith(BUILTIN_PREFIX):
+        return None
+    kind = identifier[len(BUILTIN_PREFIX) :]
+    return kind if kind in KINDS else None
+
+
+def builtin_method(kind, slots):
+    """A built-in method sized to a team of ``slots`` members."""
+    method = baseline(kind, slots)
+    method["description"] = topology_text(kind)
+    return method
+
+
+def instructions(method) -> list[str]:
+    """Operative instructions for one method: how it works, then its own rules.
+
+    Every method gets the structural description, so a comparison is never
+    between "an instructed team" and "an uninstructed team". A method's own
+    rules (extracted from a paper, or written by the user) are appended
+    after it and stay that method's alone.
+    """
+    topology = method.get("topology") or {}
+    kind = topology.get("kind", "full")
+    text = [_TOPOLOGY_TEXT.get(kind, _TOPOLOGY_TEXT["full"])]
+    rounds = int(method.get("rounds") or 0)
+    if kind == "independent" or rounds <= 0:
+        text.append("不进行多轮讨论，每位成员各自给出结果。")
+    else:
+        text.append(f"共进行 {rounds} 轮讨论，每一轮只使用上一轮的结果。")
+    if method.get("review"):
+        text.append("讨论结束后由下一位成员交叉审阅上一位的成果，指出具体错误并给出可执行的修改建议。")
+        revisions = int(method.get("revisions") or 0)
+        if revisions:
+            text.append(f"每位成员依据收到的审阅意见修订 {revisions} 次。")
+    decision = method.get("decision") or "auto"
+    if decision == "vote":
+        text.append(
+            "最终成果由成员投票产生：得票最多的答案生效；出现平票时由系统按固定顺序裁决，成员不得为此自行协商。"
+        )
+    elif decision == "synthesis":
+        text.append("最终成果由第一位成员汇总所有终稿、独立检查矛盾后给出唯一答案。")
+    else:
+        text.append("最终成果的产生方式按题型由系统决定：选择题按成员投票，其他题由第一位成员汇总。")
+    for rule in method.get("rules") or []:
+        body = str(rule.get("text", "")).strip()
+        if body:
+            text.append(body)
+    return text
+
+
+def estimate(method, slots=None) -> dict:
+    """Calls, prompt size and resource caps that fit one method's own shape.
+
+    The caps used to be fixed numbers, so a twelve-member team with six
+    discussion rounds could not fit a single prompt inside them and every
+    cell failed. They are derived from the method instead:
+
+    ``calls``        how many model requests one cell needs,
+    ``output_chars`` how much text one cell may produce in total,
+    ``prompt_chars`` the ceiling for a single prompt (base fields plus every
+                     answer that can be in flight),
+    ``input_chars``  the ceiling for one cell's total input: each produced
+                     answer is quoted in at most one prompt per member.
+    """
+    roles = method.get("roles") or []
+    count = int(slots or len(roles))
+    rounds = int(method.get("rounds") or 0)
+    review = bool(method.get("review"))
+    revisions = int(method.get("revisions") or 0) if review else 0
+    per_role = 1 + rounds + (1 if review else 0) + revisions
+    calls = count * per_role + 1  # +1 for a synthesizing decision
+    output_chars = calls * 4000
+    prompt_chars = 12000 + output_chars
+    return {
+        "slots": count,
+        "calls_per_cell": calls,
+        "limits": {
+            "calls": calls + 4,
+            "prompt_chars": prompt_chars,
+            "input_chars": count * output_chars + calls * 12000,
+            "output_chars": output_chars,
+        },
+    }
 
 
 def normalize_method(payload):

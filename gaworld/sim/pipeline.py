@@ -37,6 +37,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from gaworld.core.performance import measure
 from gaworld.hooks import HookBus
 from gaworld.logging_setup import get_logger
 
@@ -123,5 +124,6 @@ class StagePipeline:
         for name, fn in self.stages:
             if name in (step.get("_skip_stages") or ()):
                 continue
-            fn(agent, step, ctx)
+            with measure(f"stage.{name}"):
+                fn(agent, step, ctx)
         return step

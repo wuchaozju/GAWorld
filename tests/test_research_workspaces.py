@@ -83,6 +83,8 @@ def save_study(**fields):
     record.world_id = "world-alice"
     for key, value in fields.items():
         setattr(record, key, value)
+    if record.stage == "approved":
+        api._bind_approval(record, api._base_config())
     study.save_study(record)
     return record
 

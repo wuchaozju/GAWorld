@@ -407,6 +407,87 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     };
   }
 
+  // ------------------------------------------------------ regional dossier
+
+  function renderRegion(payload) {
+    var card = el("cityRegionCard");
+    var node = el("cityRegion");
+    if (!card || !node) return;
+    card.hidden = false;
+
+    var region = (payload && payload.region) || {};
+    el("cityRegionSource").textContent = payload && payload.empty
+      ? __("city.region_none")
+      : __("city.region_source_" + (region.source || "stub"));
+
+    if (!payload || payload.empty) {
+      node.innerHTML = gwHTML('<p class="city-hint">' + esc(__("city.region_empty")) + "</p>");
+      return;
+    }
+
+    var rows = [];
+    function add(label, value) {
+      if (!value) return;
+      var items = Array.isArray(value) ? value : [value];
+      if (!items.length) return;
+      rows.push("<p><em>" + esc(label) + "</em>" + esc(items.join("、")) + "</p>");
+    }
+    add(__("city.region_terrain"), region.terrain);
+    add(__("city.region_water"), region.water);
+    add(__("city.region_climate"), region.climate);
+    add(__("city.region_hazards"), region.hazards);
+    add(__("city.region_seasons"), region.seasons);
+    add(__("city.region_culture"), region.culture);
+    add(__("city.region_dialect"), region.dialect);
+    add(__("city.region_diet"), region.diet);
+    add(__("city.region_commuting"), region.commuting);
+    add(__("city.region_livelihood"), region.livelihood);
+    add(__("city.region_habits"), region.habits);
+
+    var sources = (region.sources || []).slice(0, 4).map(function (s) {
+      return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' +
+             esc(s.title || s.url) + "</a>";
+    }).join(" · ");
+    if (sources) rows.push('<p class="city-knowledge-sources">' + sources + "</p>");
+
+    node.innerHTML = gwHTML(rows.join(""));
+  }
+
+  async function loadRegion(slug) {
+    var card = el("cityRegionCard");
+    if (!slug) {
+      if (card) card.hidden = true;
+      return;
+    }
+    try {
+      renderRegion(await api("/api/city/region?city=" + encodeURIComponent(slug)));
+    } catch (err) {
+      if (card) card.hidden = false;
+      el("cityRegion").innerHTML = gwHTML('<p class="city-hint">' + esc(err.message) + "</p>");
+    }
+  }
+
+  function regionAction(path, body, busyKey) {
+    return async function (event) {
+      if (state.busy || !state.detail) return;
+      var node = el("cityRegionStatus");
+      var btn = event && (event.currentTarget || event.target);
+      state._lastPressedButton = (btn && btn.tagName === "BUTTON") ? btn : null;
+      setBusy(true, __(busyKey));
+      status(node, __(busyKey), "busy");
+      try {
+        var result = await post(path, Object.assign({ city: state.detail.slug }, body || {}));
+        if (result.region) renderRegion(result);
+        else await loadRegion(state.detail.slug);
+        status(node, __("city.region_done"), "ok");
+      } catch (err) {
+        status(node, err.message, "error");
+      } finally {
+        setBusy(false);
+      }
+    };
+  }
+
   // ---------------------------------------------------------- residents
 
   /* The list is read from the city's own bundle, so it works for a city that
@@ -501,6 +582,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     // building a real map server-side takes a moment.
     loadMap(slug);
     loadKnowledge(slug);
+    loadRegion(slug);
     loadAgents(slug);
   }
 
@@ -702,6 +784,8 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       "click", knowledgeAction("/api/city/knowledge", { offline: true }, "city.knowledge_building"));
     el("cityNewsRefresh").addEventListener(
       "click", knowledgeAction("/api/city/news", { force: true }, "city.news_fetching"));
+    el("cityRegionRebuild").addEventListener(
+      "click", regionAction("/api/city/region", {}, "city.region_building"));
 
     el("cityList").addEventListener("click", function (event) {
       var item = event.target.closest(".city-item");

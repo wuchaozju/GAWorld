@@ -1,4 +1,9 @@
-"""World-owned zero-provider studies with frozen, independently loaded workers."""
+"""Team handover: a world-owned, zero-provider study in a frozen bundle.
+
+The question is what happens to a team when all of its people are replaced
+and only the way of working and the records are kept. Nothing here calls a
+model, so the study runs in a frozen copy of the code, in its own process.
+"""
 
 import json
 import os
@@ -10,15 +15,17 @@ import uuid
 from gaworld.accounts.ownership import spawn
 from gaworld.research import workspaces
 from gaworld.research.organization_intelligence import store
-from gaworld.research.organization_intelligence.v2 import build, queue
+from gaworld.research.organization_intelligence.handover import build, queue
 
-PREFIX = "/api/research/organization-intelligence/v2"
+PREFIX = "/api/research/team-handover"
 _ACTIVE = set()
 _LOCK = threading.Lock()
 
 
 def root():
-    return store.root() / "v2"
+    """Where the handover studies live. The folder used to be called
+    ``v2``; it was renamed with the code, and the studies moved with it."""
+    return store.root() / "handover"
 
 
 def directory(identifier):

@@ -37,7 +37,14 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       seed: 1,
     },
     busy: false,
+    populationJobId: "",
   };
+  var taskRuntime = globalThis.GAWorldPopulationRuntime;
+  if (!taskRuntime && typeof require === "function") taskRuntime = require("./population-runtime.js");
+  var tracker = null, afterPopulation = null;
+  var request = taskRuntime && taskRuntime.createRequest({ timeoutMs: 20000 });
+
+  function tr(key, fallback) { return typeof __ === "function" ? __("pop." + key, fallback) : fallback; }
 
   function $(id) {
     return document.getElementById(id);
@@ -65,25 +72,11 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
    *  stuck true and every later click became a silent no-op — which looks
    *  exactly like "the button does nothing". */
   function api(method, path, body) {
-    return fetch(path, {
-      method: method,
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    })
-      .then(function (res) {
-        return res
-          .json()
-          .catch(function () {
-            return { error: __f("pop.not_json", { status: res.status }) };
-          })
-          .then(function (payload) {
-            if (!res.ok && !payload.error) payload.error = "HTTP " + res.status;
-            return payload;
-          });
-      })
-      .catch(function (err) {
-        return { error: __f("pop.no_backend", { error: (err && err.message) ? err.message : err }) };
-      });
+    return request(method, path, body).catch(function (err) {
+      return { error: err.code === "timeout" ? tr("request_timeout", "请求等待超时，后台任务可能仍在运行。")
+        : err.status ? err.message : __f("pop.no_backend", { error: (err && err.message) ? err.message : err }),
+        status: err.status, code: err.code };
+    });
   }
 
   function fail(message) {
@@ -360,6 +353,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       fieldSlider("household.share_single_person", __("pop.slider_single"), 0, 0.8, 0.01, pct) +
       fieldSlider("household.share_multigen", __("pop.slider_multigen"), 0, 0.6, 0.01, pct) +
       fieldSlider("education_work.tertiary_rate", __("pop.slider_tertiary"), 0, 1, 0.01, pct) +
+      fieldSlider("education_work.adult_student_rate", __("pop.slider_adult_student"), 0, 1, 0.01, pct) +
       fieldSlider("education_work.employment_rate", __("pop.slider_employment"), 0, 1, 0.01, pct) +
       fieldSlider("income.median_monthly", __("pop.slider_income"), 1000, 40000, 100, money) +
       fieldSlider("income.gini", __("pop.slider_gini"), 0.15, 0.65, 0.01) +
@@ -396,6 +390,10 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     var gapNote = gaps.length && gaps[0].relative_error > 0.05
       ? '<p class="pop-warn">' + esc(__("pop.gap_note")) + "</p>"
       : "";
+    var students = rep.fit && rep.fit.adult_students;
+    if (students && students.actual < students.requested) {
+      gapNote += '<p class="pop-warn">' + esc(__f("pop.student_capacity", students)) + '</p>';
+    }
 
     return (
       '<div class="pop-card"><h2>' + esc(__("pop.achieved_title")) + "</h2>" +
@@ -1191,112 +1189,114 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if (el) el.addEventListener("click", fn);
   }
 
-  function poll(jobId, onDone) {
-    function tick() {
-      api("GET", "/api/population/jobs/" + jobId).then(function (job) {
-        if (job.error || !job.status) {
-          return fail(job.error || __("pop.task_lost"));
-        }
-        setProgress(job.message, job.progress);
-        if (job.status === "running") {
-          setTimeout(tick, 600);
-          return;
-        }
-        state.busy = false;
-        if (job.status === "error") {
-          return fail(job.message);
-        }
-        setProgress("", 0);
-        onDone(job.result);
-      });
+  function showReconnect(message) {
+    setProgress(message, 0, true);
+    var progress = $("popProgress");
+    if (!progress) return;
+    var button = document.createElement("button");
+    button.className = "btn small ghost";
+    button.textContent = tr("reconnect", "重新连接任务");
+    button.addEventListener("click", function () {
+      state.busy = true; render(); tracker.reconnect();
+    });
+    progress.appendChild(button);
+  }
+
+  function finishJob(job, meta) {
+    state.busy = false;
+    var result = job.result;
+    if (!result) return fail(tr("result_missing", "任务结果不可用，请检查服务器日志。"));
+    if (meta.kind === "pop") {
+      state.population = result;
+      state.spec = result.spec || state.spec;
+      state.populationJobId = job.id || meta.job_id;
+      state.groupRun = null; state.verdict = null;
+      state.written = result.written || [];
+      state.roster = { query: "", limit: ROSTER_PAGE, open: null };
+      state.step = Math.max(2, state.step);
+      render(); setProgress("", 0);
+      var after = afterPopulation; afterPopulation = null;
+      if (after) after();
+    } else {
+      if (meta.kind === "group") { state.groupRun = result; state.step = 4; }
+      if (meta.kind === "validate") { state.verdict = result; state.step = 5; }
+      render(); setProgress("", 0);
+      if (!state.population && meta.population_job_id) {
+        api("GET", "/api/population/jobs/" + encodeURIComponent(meta.population_job_id)).then(function (prior) {
+          var active = tracker.snapshot();
+          if (!active || active.job_id !== meta.job_id || prior.error || !prior.result) return;
+          state.population = prior.result;
+          state.spec = prior.result.spec || state.spec;
+          state.populationJobId = prior.id;
+          render();
+        });
+      }
     }
-    tick();
+  }
+
+  function createTracker() {
+    var storage;
+    try { storage = globalThis.localStorage; } catch (_) { storage = null; }
+    var scope = (state.schema || {}).scope || {};
+    tracker = taskRuntime.create({ request: request, storage: storage,
+      storageKey: "gaworld.population.active." + encodeURIComponent(JSON.stringify([scope.owner_id || "", scope.world_id || ""])),
+      onProgress: function (job) { setProgress(job.message, job.progress); },
+      onDone: finishJob,
+      onRestoring: function () { state.busy = true; render(); setProgress(tr("restoring", "正在恢复原任务…"), 0); },
+      onError: function (message, detail, meta) {
+        afterPopulation = null;
+        var reason = [message, detail && detail.code, detail && detail.next_action,
+          meta && (meta.job_id || meta.request_id)].filter(Boolean).join(" · ");
+        fail(reason);
+      },
+      onReconnecting: function () { setProgress(tr("reconnecting", "连接暂时中断，正在重新查询原任务；后台任务可能仍在运行。"), 0); },
+      onDisconnected: function () {
+        // Keep task actions disabled until its status is known or the user reloads.
+        showReconnect(tr("disconnected", "暂时无法获取任务状态，自动重连已暂停。可手动重新连接原任务。"));
+      },
+    });
+    return tracker;
+  }
+
+  function submit(kind, path, payload) {
+    if (!tracker) createTracker();
+    return tracker.start(kind, path, payload);
   }
 
   function generate(after) {
     if (state.busy) return;
-    state.busy = true;
-    render();
-    setProgress(__f("pop.generating_n", { count: state.spec.size }), 0.1);
-    api("POST", "/api/population/generate", { spec: state.spec }).then(function (res) {
-      if (res.error) return fail(res.error);
-      poll(res.job_id, function (result) {
-        state.population = result;
-        state.groupRun = null;
-        state.verdict = null;
-        state.roster = { query: "", limit: ROSTER_PAGE, open: null };
-        render();
-        if (typeof after === "function") after();
-      });
-    });
+    state.busy = true; afterPopulation = after || null;
+    render(); setProgress(__f("pop.generating_n", { count: state.spec.size }), 0.1);
+    submit("pop", "/api/population/generate", { spec: state.spec });
   }
 
   function runGroup() {
     if (state.busy) return;
-    if (!state.population) {
-      // 自动补上缺的一步，而不是让用户对着一个不动的按钮发呆
-      generate(runGroup);
-      return;
-    }
-    state.busy = true;
-    render();
+    if (!state.population) { generate(runGroup); return; }
+    state.busy = true; render();
     setProgress(__f("pop.simulating_n", { days: state.run.days }), 0.1);
-    api("POST", "/api/population/group-run", {
-      source: "last",
-      days: state.run.days,
-      materialization_budget: state.run.budget,
-      audit_fraction: state.run.audit,
-      network_coupling: state.run.coupling,
-      use_llm: state.run.useLlm,
-      provider: state.run.provider,
-      seed: state.run.seed,
-    }).then(function (res) {
-      if (res.error) return fail(res.error);
-      poll(res.job_id, function (result) {
-        state.groupRun = result;
-        render();
-      });
+    submit("group", "/api/population/group-run", {
+      source: "last", population_job_id: state.populationJobId,
+      days: state.run.days, materialization_budget: state.run.budget,
+      audit_fraction: state.run.audit, network_coupling: state.run.coupling,
+      use_llm: state.run.useLlm, provider: state.run.provider, seed: state.run.seed,
     });
   }
 
   function runValidation() {
     if (state.busy) return;
-    state.busy = true;
-    render();
-    setProgress(__("pop.running_control"), 0.1);
-    api("POST", "/api/population/validate", {
-      days: 14,
-      materialization_budget: state.run.budget,
-      network_coupling: state.run.coupling,
-      seed: state.run.seed,
-    }).then(function (res) {
-      if (res.error) return fail(res.error);
-      poll(res.job_id, function (result) {
-        state.verdict = result;
-        render();
-      });
+    state.busy = true; render(); setProgress(__("pop.running_control"), 0.1);
+    submit("validate", "/api/population/validate", {
+      population_job_id: state.populationJobId,
+      days: 14, materialization_budget: state.run.budget,
+      network_coupling: state.run.coupling, seed: state.run.seed,
     });
   }
 
   function writePopulation() {
     if (state.busy) return;
-    state.busy = true;
-    render();
-    setProgress(__("pop.writing_files"), 0.1);
-    api("POST", "/api/population/generate", { spec: state.spec, write: true }).then(function (res) {
-      if (res.error) return fail(res.error);
-      poll(res.job_id, function (result) {
-        state.population = result;
-        state.written = result.written || [];
-        render();
-        setProgress(
-          state.written.length
-            ? __f("pop.saved_n", { count: state.written.length })
-            : __("pop.done"),
-          1
-        );
-      });
-    });
+    state.busy = true; render(); setProgress(__("pop.writing_files"), 0.1);
+    submit("pop", "/api/population/generate", { spec: state.spec, write: true });
   }
 
   /* ----------------------------------------------------------------- boot */
@@ -1324,6 +1324,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       }
       render();
       schedulePreview();
+      createTracker().restore();
     });
 
     bind("popPrev", function () {

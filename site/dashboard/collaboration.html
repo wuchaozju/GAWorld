@@ -71,12 +71,14 @@
               <div id="memberPicker" class="member-picker" role="group" aria-labelledby="memberPickerLabel"></div>
             </div>
 
-            <label class="field" for="organizationMethodSelect">
-              <span data-i18n="oi3.picker">组织方式</span>
-              <select id="organizationMethodSelect"><option value="" data-i18n="oi3.default">默认协作方式</option></select>
-            </label>
-            <p id="organizationMethodNote" class="field-note" role="status"></p>
-            <button id="organizationMethodRefresh" type="button" data-i18n="oi3.refresh">刷新组织方式</button>
+            <div class="field">
+              <label for="organizationMethodSelect"><span data-i18n="oi3.picker">组织方式</span></label>
+              <div class="picker-row">
+                <select id="organizationMethodSelect"><option value="" data-i18n="oi3.default">默认协作方式</option></select>
+                <button id="organizationMethodRefresh" class="quiet-action" type="button" data-i18n="oi3.refresh">刷新组织方式</button>
+              </div>
+              <p id="organizationMethodNote" class="field-note" role="status"></p>
+            </div>
 
             <label class="field" for="leaderSelect">
               <span><span data-i18n="collab.leader">任务负责人</span> <small data-i18n="collab.optional">可选</small></span>
@@ -348,7 +350,7 @@
 
   <script src="/site/dashboard/i18n.js"></script>
 
-  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/collaboration-core.js"></script><script src="/site/dashboard/organization-picker.js"></script><script src="/site/dashboard/collaboration.js"></script>
+  <script src="/site/dashboard/_button-busy.js"></script><script src="/site/dashboard/collaboration-core.js"></script><script src="/site/dashboard/organization-picker-core.js"></script><script src="/site/dashboard/organization-picker.js"></script><script src="/site/dashboard/collaboration.js"></script>
   <script src="/site/dashboard/crowdsourcing-core.js"></script><script src="/site/dashboard/crowdsourcing.js"></script>
 </body>
 </html>

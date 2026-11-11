@@ -152,6 +152,21 @@ def city_overrides(ref: str, root: Any = None) -> dict[str, Any]:
             if background:
                 patch["background"] = background
 
+    # The region's own paragraph — what this place looks like, how people live
+    # here. It is appended to the background so every cognition prompt sees it,
+    # and it is read at config time rather than baked into environment.json so
+    # a rebuilt dossier takes effect without rewriting the environment file.
+    if bundle.region_path.exists():
+        from gaworld.city.region import load_region
+
+        try:
+            paragraph = load_region(bundle).background()
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - defensive
+            paragraph = ""
+        if paragraph:
+            base = str(patch.get("background") or "").strip()
+            patch["background"] = f"{base} {paragraph}".strip() if base else paragraph
+
     # The city's industry profile biases what local work pays. This rides in as
     # a config override rather than a hook in the economy: `industry_conditions`
     # is already read from config, so a real city needs no new code path.

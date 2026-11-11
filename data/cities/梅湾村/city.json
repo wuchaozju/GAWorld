@@ -99,7 +99,27 @@
       "locale": "zh-CN",
       "seed": 1879686800,
       "replace": true
+    },
+    {
+      "at": "2026-11-09T07:24:26+00:00",
+      "action": "population.add",
+      "added": 250,
+      "total": 250,
+      "preset": "cn_county_town",
+      "locale": "zh-CN",
+      "seed": 1879686800,
+      "replace": true
+    },
+    {
+      "at": "2026-11-09T07:25:43+00:00",
+      "action": "population.add",
+      "added": 250,
+      "total": 250,
+      "preset": "cn_county_town",
+      "locale": "zh-CN",
+      "seed": 1879686800,
+      "replace": true
     }
   ],
-  "updated_at": "2026-09-27T16:59:25+00:00"
+  "updated_at": "2026-11-09T07:25:43+00:00"
 }

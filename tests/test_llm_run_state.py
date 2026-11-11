@@ -42,7 +42,7 @@ def test_oversized_server_wait_is_not_shortened_or_retried(tmp_path, monkeypatch
 
     def fail():
         calls.append(1)
-        raise http_error(headers={"Retry-After": "900"})
+        raise http_error(headers={"Retry-After": "900"}, body='{"error":"rate_limit"}')
 
     with pytest.raises(RuntimeError, match="等待预算"):
         providers._retrying(fail, provider="test", attempts=3)
@@ -117,7 +117,7 @@ def test_wire_retry_failures_are_counted_separately_from_router_chains(tmp_path,
         r._content_consumed = True
         return r
 
-    monkeypatch.setattr(providers.requests, "post", response)
+    monkeypatch.setattr(providers, "http_post", response)
     result = providers.OllamaProvider("http://localhost:11434/api/generate", "stub").call("test")
     assert result == "success"
     snapshot = RunLedger(path).snapshot()

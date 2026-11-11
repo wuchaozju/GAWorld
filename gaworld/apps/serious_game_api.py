@@ -30,8 +30,10 @@ from collections.abc import Callable
 from typing import Any
 
 from gaworld.accounts import ownership
+from gaworld.apps import serious_game_controls, world_paths
 from gaworld.apps.game_jobs import JobStore
 from gaworld.logging_setup import get_logger
+from gaworld.research import game_interventions, game_negotiation
 from gaworld.research import serious_game as sg
 
 _LOG = get_logger("gaworld.dashboard.serious_game_api")
@@ -135,6 +137,9 @@ def _get(session_id: str) -> dict[str, Any]:
             if session is None:
                 raise KeyError(session_id)
             _SESSIONS[session_id] = session
+        active_world = world_paths.current_world()
+        if session.get("world_id") != (active_world["id"] if active_world else None):
+            raise KeyError(session_id)
         return session
 
 
@@ -153,13 +158,24 @@ def _hosted(session_id: str) -> dict[str, Any]:
 
 def create_session(payload: dict[str, Any]) -> dict[str, Any]:
     game = _game(str(payload.get("game_id") or ""))
+    if (
+        payload.get("preview_hash")
+        and serious_game_controls.preview(game, payload)["preview_hash"] != payload["preview_hash"]
+    ):
+        raise ValueError("匹配预览已变化，请重新预览后开局")
     session = sg.new_session(
         game,
         list(payload.get("seats") or []),
         city=str(payload.get("city") or ""),
         provider=str(payload.get("provider") or ""),
+        seed=int(payload.get("seed", 0)),
+        casting_mode=str(payload.get("casting_mode", "matched")),
+        assumptions=payload.get("assumptions", {}),
+        step_mode=bool(payload.get("step_mode", False)),
     )
     session.update(ownership.stamp())
+    active_world = world_paths.current_world()
+    session["world_id"] = active_world["id"] if active_world else None
     with _LOCK:
         _SESSIONS[session["id"]] = session
         _save(session)
@@ -177,7 +193,11 @@ def view(session_id: str, *, seat: str = "", host: bool = False) -> dict[str, An
         raise KeyError(session_id)
     host = host and not by_seat
     with _LOCK:
-        stalled = session["status"] in ("resolving", "debriefing") and session_id not in _DRIVING
+        resumable = session["status"] in ("resolving", "debriefing") or (
+            session["status"] == "acting"
+            and (sg.pending_seats(session, "agent") or not sg.pending_seats(session, "human"))
+        )
+        stalled = bool(resumable) and session_id not in _DRIVING
         data = sg.public_view(session, seat_token=seat, host=host)
     if stalled:
         _kick(session_id)
@@ -198,6 +218,7 @@ def act(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             seat["role_id"],
             str(payload.get("action") or ""),
             choice=str(payload.get("choice") or ""),
+            decision=payload.get("decision"),
         )
         _save(session)
     _kick(session_id)
@@ -216,6 +237,40 @@ def force_resolve(session_id: str) -> dict[str, Any]:
             sg.record_action(session, seat["role_id"], "（这一轮没有行动）")
         _save(session)
     _kick(session_id)
+    return view(session_id, host=True)
+
+
+def control(session_id: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    session = _hosted(session_id)
+    with _LOCK:
+        if session.get("schema_version") != 2:
+            raise ValueError("旧版对局保持原规则；请从新版设计开新局")
+        if action == "pause":
+            if session["status"] not in {"acting", "resolving", "paused"}:
+                raise ValueError("对局已结束")
+            session["pause_requested"] = True
+            if session["status"] == "acting" and not session["actions"] and session_id not in _DRIVING:
+                session["status"] = "paused"
+        elif action == "resume":
+            game_interventions.resume(session, extra_rounds=int(payload.get("extra_rounds", 0)))
+        elif action == "finish":
+            if session["status"] != "paused":
+                raise ValueError("请先在回合边界暂停")
+            if session["outcome"]["kind"] not in {"deferred", "partial"}:
+                session["outcome"]["kind"] = "host_ended"
+            session["status"] = "debriefing"
+        elif action == "intervene":
+            # A duplicate id is a no-op before preparation (which may allocate a seat).
+            iid = payload.get("id")
+            if not any(e["id"] == iid for e in session["interventions"] + session["intervention_queue"]):
+                prepared = serious_game_controls.prepare_intervention(session, payload)
+                prepared["submitted_by"] = ownership.stamp().get("owner_id")
+                game_interventions.enqueue(session, prepared)
+        else:
+            raise ValueError("未知主持操作")
+        _save(session)
+    if action in {"resume", "finish"}:
+        _kick(session_id)
     return view(session_id, host=True)
 
 
@@ -283,6 +338,9 @@ def _step(session_id: str) -> bool:
     """One unit of progress; ``False`` when the session has to wait or is done."""
     session = _get(session_id)
     with _LOCK:
+        if session.get("pause_requested") and session["status"] == "acting" and not session["actions"]:
+            session["status"] = "paused"
+            _save(session)
         status = session["status"]
         provider = session["provider"]
         round_index = session["round_index"]
@@ -305,12 +363,37 @@ def _step(session_id: str) -> bool:
     if status == "acting" and agent_seat is not None:
         raw = _llm(provider, "act", temperature=0.8, max_tokens=500)(prompt)
         move = sg.parse_agent_action(raw, options)
+        diagnostics = []
+        if session.get("schema_version") == 2:
+            for attempt in range(2):
+                try:
+                    game_negotiation.decision(move.get("decision"), session, agent_seat["role_id"])
+                    break
+                except ValueError as exc:
+                    diagnostics.append({"error": str(exc), "raw": raw})
+                    if attempt == 0:
+                        raw = _llm(provider, "act", temperature=0.5, max_tokens=700)(
+                            prompt
+                            + "\n上次结构化决定无效："
+                            + str(exc)
+                            + "。保留真实立场，只纠正字段；不能凭空同意。"
+                        )
+                        move = sg.parse_agent_action(raw, options)
+                    else:
+                        move["decision"] = {"intent": "maintain"}
         with _LOCK:
             if session["round_index"] != round_index or agent_seat["role_id"] in session["actions"]:
                 return True
             sg.record_action(
-                session, agent_seat["role_id"], move["action"], choice=move["choice"], thought=move["thought"]
+                session,
+                agent_seat["role_id"],
+                move["action"],
+                choice=move["choice"],
+                thought=move["thought"],
+                decision=move.get("decision"),
             )
+            if diagnostics:
+                session["actions"][agent_seat["role_id"]]["diagnostics"] = diagnostics
             _save(session)
         return True
 
@@ -351,7 +434,10 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
     parts = _parts(path)
     try:
         if not parts:
-            return {"games": ownership.owned(sg.list_games()), "sessions": ownership.owned(sg.list_sessions())}, 200
+            return {
+                "games": ownership.owned(sg.list_games()),
+                "sessions": ownership.owned(sg.list_sessions()),
+            }, 200
         if parts[0] == "jobs" and len(parts) == 2:
             record = _JOBS.status(parts[1])
             return (record, 200) if record else ({"error": "Unknown job"}, 404)
@@ -383,8 +469,12 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
                 return act(session_id, payload), 200
             if action == "resolve":
                 return force_resolve(session_id), 200
+            if action in {"pause", "resume", "finish", "intervene"}:
+                return control(session_id, action, payload), 200
             if action == "delete":
                 return delete_session(session_id), 200
+        if len(parts) == 2 and parts[1] == "preview":
+            return serious_game_controls.preview(_game(parts[0]), payload), 200
         if len(parts) == 2 and parts[1] == "update":
             return update_game(parts[0], payload), 200
         if len(parts) == 2 and parts[1] == "delete":

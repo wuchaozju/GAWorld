@@ -88,6 +88,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       $("aMaxRuns").value = data.limits.max_concurrent_runs;
       $("aMaxPerUser").value = data.limits.max_runs_per_user;
       $("aQuota").value = data.limits.daily_llm_calls_per_user;
+      $("aResearchBudget").value = data.limits.research_call_budget || 50000;
     });
   }
 
@@ -96,6 +97,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       max_concurrent_runs: Number($("aMaxRuns").value),
       max_runs_per_user: Number($("aMaxPerUser").value),
       daily_llm_calls_per_user: Number($("aQuota").value),
+      research_call_budget: Number($("aResearchBudget").value),
     }).then(function () { say(t("admin.saved", "已保存")); }, fail);
   }, "admin.saving", "保存中…"));
 

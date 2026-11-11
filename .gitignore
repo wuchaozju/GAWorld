@@ -131,6 +131,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv*/
 /env/
 /venv/
 /ENV/
@@ -246,3 +247,17 @@ fos/test_results/
 # Runtime test outputs (never commit)
 /test_results/
 /data/gaworld_runs/
+# Keep the documentation introduction media with its source and generated site.
+!/site/documentation/
+/site/documentation/*
+!/site/documentation/_static/
+/site/documentation/_static/*
+!/site/documentation/_static/media/
+!/site/documentation/_static/media/**
+!/site/home/docs/
+/site/home/docs/*
+!/site/home/docs/_static/
+/site/home/docs/_static/*
+!/site/home/docs/_static/media/
+!/site/home/docs/_static/media/**
+/site/**/.DS_Store

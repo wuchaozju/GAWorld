@@ -30,6 +30,7 @@ from typing import Any
 
 import numpy as np
 
+from gaworld.population.education import EDUCATION_MIN_AGE
 from gaworld.population.locale import DEFAULT_LOCALE, LocaleProfile, compose_name
 from gaworld.population.schema import (
     AGE_BAND_RANGES,
@@ -576,6 +577,7 @@ class Person:
     #: fixed string.
     is_migrant: bool
     state: dict[str, float]
+    student_status: str = "未知"
     household_id: int = -1
     household_role: str = ""
     household_type: str = ""
@@ -682,6 +684,7 @@ def synthesize_people(
     indices = np.array(np.unravel_index(picks, _SHAPE)).T
 
     age_rng = derive_rng(spec.seed, "age")
+    student_rng = derive_rng(spec.seed, "student")
     hukou_rng = derive_rng(spec.seed, "hukou")
     geo_rng = derive_rng(spec.seed, "geo")
     job_rng = derive_rng(spec.seed, "job")
@@ -706,16 +709,45 @@ def synthesize_people(
             and industry in ("service", "trade")
             and job_rng.random() < spec.education_work.gig_platform_share
         )
+        education = EDUCATION_LEVELS[edu_i]
+        age_floor = max(low, EDUCATION_MIN_AGE.get(education, 0)) if low >= 18 else low
+        age = int(age_rng.integers(age_floor, high + 1))
+        status = "非在读"
+        if 6 <= age < 18:
+            status = "小学" if age < 12 else ("初中" if age < 15 else "高中/中专")
+            education = "小学及以下" if age < 15 else "初中"
         bits_list.append(
             {
-                "age": int(age_rng.integers(low, high + 1)),
+                "age": age,
                 "gender": SEXES[sex_i],
-                "education": EDUCATION_LEVELS[edu_i],
+                "education": education,
+                "student_status": status,
                 "employment": employment,
                 "industry": industry,
                 "is_gig": is_gig,
             }
         )
+
+    candidates = []
+    for index, bits in enumerate(bits_list):
+        age, education = bits["age"], bits["education"]
+        if bits["employment"] != "not_in_labor_force":
+            continue
+        stage = None
+        if 18 <= age <= 25 and education == "高中/中专":
+            stage = "大专" if student_rng.random() < 0.3 else "本科"
+        elif 21 <= age <= 25 and education == "大专":
+            stage = "本科"
+        elif 22 <= age <= 32 and education == "本科":
+            stage = "硕士"
+        elif 24 <= age <= 35 and education == "硕士及以上":
+            stage = "博士"
+        if stage:
+            candidates.append((index, stage))
+    requested = round(spec.education_work.adult_student_rate * sum(b["age"] >= 18 for b in bits_list))
+    student_rng.shuffle(candidates)
+    for index, stage in candidates[:requested]:
+        bits_list[index]["student_status"] = stage
 
     # Hukou: migrants skew young and working-age, so draw against an age tilt
     # rather than uniformly — otherwise the town gets implausible 80-year-old
@@ -769,9 +801,10 @@ def synthesize_people(
             job = str(titles[job_rng.integers(len(titles))])
             if bits["is_gig"]:
                 job = f"{job}（平台接单）"
-        elif bits["age"] < 18:
+        elif bits["student_status"] != "非在读":
             income = 0.0
-            job = NON_EMPLOYED_JOBS["student"][0]
+            stage = bits["student_status"]
+            job = f"{stage}学生" if stage not in ("硕士", "博士") else f"{stage}研究生（学生）"
         elif bits["age"] >= 65:
             income = spec.income.median_monthly * 0.35
             job = NON_EMPLOYED_JOBS["retired"][0]
@@ -810,10 +843,16 @@ def synthesize_people(
                 is_gig=bits["is_gig"],
                 is_migrant=bits["is_migrant"],
                 state=state,
+                student_status=bits["student_status"],
             )
         )
 
     report: dict[str, Any] = {
+        "adult_students": {
+            "requested": requested,
+            "available": len(candidates),
+            "actual": min(requested, len(candidates)),
+        },
         "ipf": ipf_report,
         "age_band_shares": age_shares,
         "median_age": {"target": spec.demography.median_age, "achieved": achieved_median_age},

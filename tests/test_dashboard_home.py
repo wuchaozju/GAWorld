@@ -72,6 +72,34 @@ class TestHomeFrontend(unittest.TestCase):
         # A manual click wins until another resident is picked.
         self.assertIn("sceneMode", app)
 
+    def test_the_first_resident_gets_a_home_too(self):
+        """The home card used to be empty on the first screen.
+
+        ``loadHome`` was only called from ``selectAgent`` — the click handler —
+        so the resident the console opens with never fetched ``/api/home/<id>``
+        and the card showed "no home record" for a resident who has one. The
+        boot sequence has to ask for it as well.
+        """
+        app = _read("app.js")
+        init = app[app.index("async function init()") :]
+        self.assertIn('["load.home", loadHome]', init)
+        # …and the click path still asks for it when another resident is picked.
+        self.assertIn("loadHome(id);", app)
+
+    def test_the_card_tells_three_empty_states_apart(self):
+        """Not loaded / no home / endpoint failed are three different things."""
+        card = _read("home.js")
+        self.assertIn("home.empty", card)
+        self.assertIn("home.not_in_run", card)
+        self.assertIn("home.load_failed", card)
+        # A flat rebuilt from the roster says so.
+        self.assertIn("home.preview_note", card)
+        app = _read("app.js")
+        # The reason the server gave survives the trip to the card.
+        self.assertIn("error.payload", app)
+        # A 404 without a reason in the body is still "no home", not a fault.
+        self.assertIn('error.status === 404 ? "no_home_design"', app)
+
     def test_the_indoor_view_draws_the_residents_own_flat(self):
         view = _read("indoor-view.js")
         self.assertIn("buildHomePlan", view)
@@ -89,6 +117,10 @@ class TestHomeFrontend(unittest.TestCase):
                 "home.now_room",
                 "home.now_activity",
                 "home.away",
+                "home.empty",
+                "home.not_in_run",
+                "home.load_failed",
+                "home.preview_note",
                 "indoor.possessive",
                 "indoor.rooms",
                 "indoor.at_home",
@@ -98,6 +130,7 @@ class TestHomeFrontend(unittest.TestCase):
             # A key with a placeholder must never be rendered through __().
             self.assertIn("{room}", data["home.now_room"])
             self.assertIn("{room}", data["home.now_activity"])
+            self.assertIn("{error}", data["home.load_failed"])
 
     def test_the_home_css_uses_theme_tokens(self):
         css = _read("home.css")

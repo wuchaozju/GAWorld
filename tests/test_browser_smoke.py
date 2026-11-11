@@ -15,6 +15,7 @@ Skipped unless Playwright and a Chromium it can launch are installed::
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import threading
@@ -148,6 +149,33 @@ class BrowserSmokeTest(unittest.TestCase):
             self.assertFalse(any("/api/analytics/system" in url for url in requested))
             self.assertEqual(errors, [])
             page.close()
+
+    def test_organization_comparison_offers_the_factors_and_says_what_differs(self):
+        page, errors = self._page()
+        context = {
+            "providers": [{"name": "fixture", "model": "fixture"}],
+            "default_provider": "fixture",
+            "members": [{"id": index, "name": f"resident {index}"} for index in (1, 2, 3)],
+            "baselines": ["random", "full", "hierarchy", "independent"],
+        }
+        page.route(
+            "**/organization-intelligence/comparisons/context",
+            lambda route: route.fulfill(
+                status=200, content_type="application/json", body=json.dumps(context)
+            ),
+        )
+        page.goto(self.base + "/site/dashboard/research.html?tab=organization-intelligence")
+        page.wait_for_selector("#ocExample")
+        page.click("#ocExample")
+        page.click("#ocAdopt")
+        page.wait_for_selector('[data-oc-factor="topology"]')
+        # Only the communication structure may differ by default, so a result
+        # can be attributed to one mechanism instead of a bundle.
+        self.assertTrue(page.locator('[data-oc-factor="topology"]').is_checked())
+        self.assertFalse(page.locator('[data-oc-factor="roles"]').is_checked())
+        page.wait_for_selector("#ocScopeNote:not(:empty)")
+        self.assertIn("通信结构", page.inner_text("#ocScopeNote"))
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

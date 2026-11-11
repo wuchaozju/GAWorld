@@ -31,7 +31,9 @@ def population_host(monkeypatch, tmp_path, request):
     for rel in [
         "site/dashboard/population.html",
         "site/dashboard/population.js",
+        "site/dashboard/population-runtime.js",
         "site/dashboard/population.css",
+        "site/dashboard/page-shell.css",
         "site/dashboard/styles.css",
         "site/dashboard/i18n.js",
         "site/dashboard/_button-busy.js",
@@ -190,6 +192,24 @@ def test_population_admission_is_bounded_per_owned_world(population_host, monkey
     assert post(host, "generate", {"spec": {"size": 24}}, a)[0].status == 202
     assert post(host, "generate", {"spec": {"size": 24}}, a)[0].status == 400
     assert post(host, "generate", {"spec": {"size": 24}}, b)[0].status == 202
+
+
+def test_idempotent_population_retry_keeps_world_and_server_admission_limits(population_host, monkeypatch):
+    host = population_host
+    monkeypatch.setattr(population_api, "_run_in_background", lambda *args: None)
+    a, b = login(host, "alice", "alice"), login(host, "bob", "bob")
+    payload = {"spec": {"size": 24}, "request_id": "member-population-request"}
+    response, first = post(host, "generate", payload, a)
+    assert response.status == 202
+    response, repeated = post(host, "generate", payload, a)
+    assert response.status == 202
+    assert repeated["job_id"] == first["job_id"]
+    assert post(host, "generate", {"spec": {"size": 25}}, a)[0].status == 400
+    response, other = post(host, "generate", payload, b)
+    assert response.status == 202
+    assert other["job_id"] != first["job_id"]
+    a2 = login(host, "alice", "alice2")
+    assert post(host, "generate", {"spec": {"size": 24}}, a2)[0].status == 400
 
 
 def test_population_model_call_uses_world_routing_and_accounts_for_usage(monkeypatch):

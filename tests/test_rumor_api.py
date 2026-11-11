@@ -435,7 +435,7 @@ class StatsTest(unittest.TestCase):
 class ParseTest(unittest.TestCase):
     def test_clean_json(self) -> None:
         got = rumor_api.parse_reaction(_say("辟谣", belief=5, text="别传了"))
-        self.assertEqual(got, {"belief": 5, "action": "辟谣", "say": "别传了"})
+        self.assertEqual(got, {"belief": 5, "action": "辟谣", "say": "别传了", "motive": "未说明"})
 
     def test_json_wrapped_in_prose(self) -> None:
         got = rumor_api.parse_reaction('嗯：\n{"belief": 70, "action": "转发"}\n就这样')

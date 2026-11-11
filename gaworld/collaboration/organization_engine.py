@@ -8,9 +8,19 @@ import time
 from collections import Counter
 
 from gaworld.collaboration._parsing import extract_json
-from gaworld.collaboration.organization_methods import digest, normalize_method
+from gaworld.collaboration.organization_methods import digest, estimate, instructions, normalize_method
+from gaworld.llm.failures import describe
 
-VERSION = "organization-engine-1"
+VERSION = "organization-engine-2"
+
+
+class ProtocolDrift(ValueError):
+    """The saved answers belong to different prompts than this engine sends.
+
+    Raised when a study is resumed under a different method, task, roster or
+    limit, or when the engine now builds a different prompt. The answer is
+    kept, but it cannot be mixed with answers to the new prompt.
+    """
 
 
 class BudgetExceeded(ValueError):
@@ -49,14 +59,24 @@ def edges(method, seed=0):
 
 
 def run_method(
-    method, members, task, llm, *, seed=0, limits=None, state=None, checkpoint=None, before_call=None
+    method,
+    members,
+    task,
+    llm,
+    *,
+    seed=0,
+    limits=None,
+    state=None,
+    checkpoint=None,
+    before_call=None,
+    before_request=None,
 ):
     method = normalize_method(method)
     if len(members) != len(method["roles"]):
         raise ValueError("所选居民人数与组织角色数量不符")
     if set(task) - {"id", "prompt", "options", "observations", "response_format"}:
         raise ValueError("执行输入包含未授权的评分或隐藏数据")
-    caps = {"calls": 200, "prompt_chars": 40000, "input_chars": 500000, "output_chars": 12000}
+    caps = dict(estimate(method, len(members))["limits"])
     if set(limits or {}) - set(caps):
         raise ValueError("不支持的资源上限")
     caps.update(limits or {})
@@ -64,11 +84,13 @@ def run_method(
         if type(value) is not int or value <= 0:
             raise ValueError(f"资源上限不合法：{key}")
     state = state if state is not None else {}
-    signature = digest(
-        {"method": method, "members": members, "task": task, "seed": seed, "limits": caps, "engine": VERSION}
-    )
+    # The engine version is deliberately not part of the signature: every
+    # request carries a hash of its own prompt, and a resume that would send
+    # a different prompt is refused there. Hashing the version would instead
+    # strand every half-finished study after any edit to this file.
+    signature = digest({"method": method, "members": members, "task": task, "seed": seed, "limits": caps})
     if state.get("signature", signature) != signature:
-        raise ValueError("恢复时组织、题目、成员或限制发生变化")
+        raise ProtocolDrift("恢复时组织、题目、成员或限制发生变化")
     state["signature"] = signature
     calls = state.setdefault("calls", [])
     attempts = state.setdefault("attempts", [])
@@ -93,6 +115,7 @@ def run_method(
             "task": {k: task[k] for k in ("id", "prompt", "options", "response_format") if k in task},
             "member": members[slot],
             "role": method["roles"][slot],
+            "instructions": instructions(method),
             "observation": observations[slot],
             "phase": phase,
             "messages": messages,
@@ -104,7 +127,7 @@ def run_method(
         if cursor < len(calls):
             item = calls[cursor]
             if item["prompt_hash"] != fingerprint:
-                raise ValueError("恢复调用与保存记录不一致")
+                raise ProtocolDrift("恢复调用与保存记录不一致")
         else:
             if (
                 len(attempts) >= caps["calls"]
@@ -112,6 +135,8 @@ def run_method(
                 or sum(c["input_chars"] for c in attempts) + len(prompt) > caps["input_chars"]
             ):
                 raise BudgetExceeded("本题已达到保存的调用或上下文上限")
+            if before_request:
+                before_request()
             started = time.monotonic()
             item = {
                 "prompt_hash": fingerprint,
@@ -130,7 +155,12 @@ def run_method(
             try:
                 raw = str(llm(prompt, agent_id=members[slot]["id"]))
             except Exception as exc:
-                item.update(status="failed", error=type(exc).__name__, elapsed=time.monotonic() - started)
+                item.update(
+                    status="failed",
+                    error=type(exc).__name__,
+                    error_info=describe(exc),
+                    elapsed=time.monotonic() - started,
+                )
                 if checkpoint:
                     checkpoint(state, item)
                 raise
@@ -141,8 +171,8 @@ def run_method(
             if checkpoint:
                 checkpoint(state, item)
         cursor += 1
-        if item["output_chars"] > caps["output_chars"]:
-            raise BudgetExceeded("模型回答超过保存的输出长度上限")
+        if sum(c.get("output_chars", 0) for c in attempts) > caps["output_chars"]:
+            raise BudgetExceeded("本题的累计回答长度超过保存的输出上限")
         try:
             parsed = extract_json(item["response"])
         except (ValueError, TypeError):

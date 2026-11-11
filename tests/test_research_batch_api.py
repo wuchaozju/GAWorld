@@ -31,7 +31,15 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(
         research_api,
         "_preflight",
-        lambda p, **kw: {"ok": True, "errors": [], "warnings": [], "budget": {"estimated_calls": 10}},
+        lambda p, **kw: {
+            "ok": True,
+            "errors": [],
+            "warnings": [],
+            "budget": {"estimated_calls": 10},
+            "policy": research_api._budget_policy(
+                kw.get("base_config") or research_api._base_config(), p.to_dict()
+            ),
+        },
     )
     who = USER.set({"id": "alice", "role": "member"})
     where = WORLD.set({"id": "alice-world"})

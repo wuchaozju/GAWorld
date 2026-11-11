@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/site/dashboard/games.css" />
   <link rel="stylesheet" href="/site/dashboard/roommate.css?v=20261004-pixel1" />
   <link rel="stylesheet" href="/site/brand.css" />
+  <link rel="stylesheet" href="/site/dashboard/resident-filters.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
 </head>
@@ -65,6 +66,8 @@
             <button class="button" id="rPickRandom">🎲 随机 4 人</button>
             <button class="button" id="rPickNone">清空</button>
           </div>
+          <details><summary data-i18n="sample.filter_title">筛选居民</summary><div id="roommateFilters"></div></details>
+          <p id="roommateFilterCount" class="resident-filter-count" role="status"></p>
           <ul id="rAgents" class="roommate-agent-list"></ul>
         </div>
       </div>
@@ -145,6 +148,7 @@
   </main>
 
   <script src="/site/dashboard/i18n.js"></script>
-  <script src="/site/dashboard/roommate.js?v=20261004-pixel1"></script>
+  <script src="/site/dashboard/resident-filters.js"></script>
+  <script src="/site/dashboard/roommate.js?v=20261110-continuity1"></script>
 </body>
 </html>

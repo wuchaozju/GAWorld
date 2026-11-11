@@ -446,7 +446,8 @@ def test_failed_model_call_marks_the_job(isolated_root, monkeypatch):
     body, _ = research_api.handle_post("/api/research/analyze", {"text": "x"})
     record = _await_job(body["job_id"])
     assert record["status"] == "error"
-    assert "model down" in record["message"]
+    assert record["diagnostic"]["code"] == "task_failed"
+    assert "model down" not in record["message"]
 
 
 def test_extract_decodes_plain_text():

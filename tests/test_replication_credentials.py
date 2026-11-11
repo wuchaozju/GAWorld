@@ -26,8 +26,8 @@ def personal_models(monkeypatch, tmp_path):
     monkeypatch.setattr(providers, "LLM_ROUTER", router)
     monkeypatch.setattr(replication_api, "_LLM_OVERRIDE", None)
     monkeypatch.setattr(rp, "replication_root", lambda: tmp_path / "runs")
-    monkeypatch.setattr("gaworld.interview.roster.load_population", lambda _: PEOPLE)
-    monkeypatch.setattr("gaworld.interview.roster.profile_block", lambda *_: "")
+    monkeypatch.setattr("gaworld.interview.roster.recruitment_population", lambda _: PEOPLE)
+    monkeypatch.setattr("gaworld.interview.roster.recruitment_profile", lambda *_: "")
     seen, usage = [], []
 
     def post(url, **kwargs):

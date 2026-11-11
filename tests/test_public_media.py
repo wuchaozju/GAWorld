@@ -11,9 +11,9 @@ import pytest
 from gaworld.apps.public_media import INTRO_VIDEO, PublicMediaMixin
 
 
-@pytest.fixture
-def media_server(tmp_path):
-    video = tmp_path / INTRO_VIDEO.lstrip("/")
+@pytest.fixture(params=[INTRO_VIDEO, "/site/home/docs/_static/media/gaworld-introduction-zh.mp4"])
+def media_server(tmp_path, request):
+    video = tmp_path / request.param.lstrip("/")
     video.parent.mkdir(parents=True)
     video.write_bytes(b"0123456789")
 
@@ -24,7 +24,7 @@ def media_server(tmp_path):
     server = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=tmp_path))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    yield f"http://127.0.0.1:{server.server_port}{INTRO_VIDEO}"
+    yield f"http://127.0.0.1:{server.server_port}{request.param}"
     server.shutdown()
     server.server_close()
     thread.join()

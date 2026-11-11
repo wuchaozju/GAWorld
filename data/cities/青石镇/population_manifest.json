@@ -674,5 +674,88 @@
         "count": 1
       }
     ]
+  },
+  "spec": {
+    "size": 40,
+    "seed": 1465869785,
+    "preset": "cn_county_town",
+    "name": "青石镇",
+    "demography": {
+      "median_age": 36.0,
+      "share_under_18": 0.16,
+      "share_over_65": 0.14,
+      "sex_ratio_m_per_100f": 104.0,
+      "migrant_share": 0.38,
+      "min_agent_age": 6
+    },
+    "household": {
+      "mean_size": 2.6,
+      "share_single_person": 0.25,
+      "share_multigen": 0.18,
+      "share_shared_rental": 0.12,
+      "max_size": 6,
+      "spouse_age_gap_mean": 2.0,
+      "fertility_children_mean": 1.1
+    },
+    "education_work": {
+      "tertiary_rate": 0.35,
+      "employment_rate": 0.68,
+      "unemployment_rate": 0.05,
+      "gig_platform_share": 0.1,
+      "industry_mix": {
+        "tech": 0.18,
+        "finance": 0.08,
+        "medical": 0.07,
+        "education": 0.09,
+        "service": 0.38,
+        "trade": 0.2
+      }
+    },
+    "income": {
+      "median_monthly": 6500.0,
+      "gini": 0.42,
+      "pareto_tail_alpha": 2.2,
+      "tail_threshold_pct": 0.95
+    },
+    "geography": {
+      "district_weights": {
+        "South Block": 0.07692307692307693,
+        "Central Block": 0.07692307692307693,
+        "Hill Block": 0.07692307692307693,
+        "Lake Block": 0.07692307692307693,
+        "East Block": 0.07692307692307693,
+        "University District": 0.07692307692307693,
+        "Industrial Park": 0.07692307692307693,
+        "Logistics Hub": 0.07692307692307693,
+        "Stadium": 0.07692307692307693,
+        "Riverside Park": 0.07692307692307693,
+        "Night Market": 0.07692307692307693,
+        "City Hall": 0.07692307692307693,
+        "Old Town": 0.07692307692307693
+      }
+    },
+    "psychology": {
+      "state_means": {
+        "emotion": 0.58,
+        "stress": 0.55,
+        "econ_security": 0.52,
+        "city_identity": 0.55,
+        "policy_sensitivity": 0.5,
+        "platform_dependence": 0.5,
+        "risk_preference": 0.45,
+        "voice_propensity": 0.45,
+        "mobility_intent": 0.45
+      },
+      "state_sd": 0.12,
+      "couple_states_to_attributes": true
+    },
+    "social_network": {
+      "mean_degree": 12.0,
+      "homophily_strength": 0.55,
+      "geo_decay": 0.35,
+      "rewire_p": 0.1,
+      "workplace_size_alpha": 2.0,
+      "dunbar_weak_cap": 150
+    }
   }
 }

@@ -13,10 +13,16 @@ def freeze_inputs(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     frozen = copy.deepcopy(config)
     evidence = {}
-    for key in ("csv_path", "md_path", "map_path"):
-        if not config.get(key):
+    from gaworld.research.batch_inputs import FILES
+
+    for key in sorted(FILES):
+        parts = key.split(".")
+        node = config
+        for part in parts:
+            node = node.get(part) if isinstance(node, dict) else None
+        if not node:
             continue
-        source = (Path(repo_root) / str(config[key])).resolve()
+        source = (Path(repo_root) / str(node)).resolve()
         if not source.is_file():
             if key == "csv_path":
                 raise ValueError("居民样本文件不存在")
@@ -29,6 +35,9 @@ def freeze_inputs(
             target.write_bytes(data)
         elif hashlib.sha256(target.read_bytes()).hexdigest() != digest:
             raise ValueError("运行输入快照已被修改")
-        frozen[key] = str(target)
+        destination = frozen
+        for part in parts[:-1]:
+            destination = destination[part]
+        destination[parts[-1]] = str(target)
         evidence[key] = {"source": str(source), "sha256": digest, "snapshot": str(target)}
     return frozen, evidence

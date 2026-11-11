@@ -1,4 +1,5 @@
 import atexit
+import heapq
 import json
 import math
 import os
@@ -8,11 +9,15 @@ import threading
 import time
 import zlib
 from collections import OrderedDict, deque
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 
-from gaworld.settings import CONFIG
+from gaworld.core.performance import timed
 from gaworld.logging_setup import get_logger
+from gaworld.memory.vector_cache import VECTOR_CACHE_SIZE, decode_vector, decode_vector_uncached
+from gaworld.settings import CONFIG
 
 _LOG = get_logger("gaworld.memory.store")
 
@@ -468,6 +473,7 @@ def _close_vector_db():
     _VECTOR_DB_LOCAL.conn = None
     _VECTOR_DB_LOCAL.path = None
     _VECTOR_DB_READY = False
+    decode_vector.cache_clear()
 
 
 def _init_vector_db():
@@ -613,34 +619,59 @@ def vector_db_add_entry(
     more (a strong emotional episode, a key bit of skill knowledge);
     when omitted, the DB defaults (0.5 / 0.0) apply.
     """
-    cleaned = _sanitize_memory_text(text)
-    if not cleaned:
-        return
-    _init_vector_db()
-    embedding = _embed_text(cleaned)
-    salience_val = 0.5 if salience is None else max(0.0, min(1.0, float(salience)))
-    emotion_val = 0.0 if emotion is None else max(-1.0, min(1.0, float(emotion)))
-    payload = (
-        int(agent_id),
-        str(entry_type),
-        cleaned,
-        int(sim_day) if sim_day is not None else None,
-        str(sim_time) if sim_time is not None else None,
-        time.time(),
-        json.dumps(embedding, ensure_ascii=False),
-        salience_val,
-        emotion_val,
+    vector_db_add_entries(
+        agent_id, [(entry_type, text)], sim_day, sim_time,
+        salience=salience, emotion=emotion,
     )
+
+
+@timed("memory.write")
+def vector_db_add_entries(
+    agent_id: Any,
+    entries: Iterable[tuple[Any, Any]],
+    sim_day: Any = None,
+    sim_time: Any = None,
+    *,
+    salience: float | None = None,
+    emotion: float | None = None,
+) -> None:
+    """Commit a small, contiguous group of memories in the supplied order.
+
+    Call without an existing transaction: embeddings are then prepared before
+    opening the write transaction. A successful return makes the whole group
+    visible; SQL errors roll back the group. Like the single-row API, this
+    commits the connection and must not be nested in a caller-owned transaction.
+    Do not group writes across a cognition/retrieval boundary.
+    """
+    payloads = []
+    for entry_type, text in entries:
+        cleaned = _sanitize_memory_text(text)
+        if not cleaned:
+            continue
+        if not payloads:
+            _init_vector_db()
+        embedding = _embed_text(cleaned)
+        salience_val = 0.5 if salience is None else max(0.0, min(1.0, float(salience)))
+        emotion_val = 0.0 if emotion is None else max(-1.0, min(1.0, float(emotion)))
+        payloads.append((
+            int(agent_id), str(entry_type), cleaned,
+            int(sim_day) if sim_day is not None else None,
+            str(sim_time) if sim_time is not None else None,
+            time.time(), json.dumps(embedding, ensure_ascii=False),
+            salience_val, emotion_val,
+        ))
+    if not payloads:
+        return
     conn = _vector_db_connect()
     with conn:
-        conn.execute(
+        conn.executemany(
             """
             INSERT INTO memory_entries
             (agent_id, entry_type, text, sim_day, sim_time, created_at,
              embedding, salience, emotion)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            payload,
+            payloads,
         )
 
 
@@ -656,6 +687,7 @@ def _memory_scoring_config() -> dict:
     return CONFIG.get("memory", {}) or {}
 
 
+@timed("memory.search")
 def vector_db_search(agent_id, query, top_k=VECTOR_DB_TOP_K, entry_types=None):
     """Retrieve top-k memories for ``query``.
 
@@ -711,7 +743,11 @@ def vector_db_search(agent_id, query, top_k=VECTOR_DB_TOP_K, entry_types=None):
     conn = _vector_db_connect()
     rows = conn.execute(sql, params).fetchall()
     scored = []
-    for row in rows:
+    database_path = os.path.abspath(VECTOR_DB_PATH)
+    embedding_column = 5 if weighted else 4
+    decode_vector.prepare(database_path, (row[embedding_column] for row in rows[:VECTOR_CACHE_SIZE]))
+    finite_scores = True
+    for index, row in enumerate(rows):
         if weighted:
             (row_id, entry_type, text, sim_day, sim_time, embedding_blob,
              created_at, salience, recall_count) = row
@@ -722,7 +758,13 @@ def vector_db_search(agent_id, query, top_k=VECTOR_DB_TOP_K, entry_types=None):
             salience = 0.5
             recall_count = 0
         try:
-            vec = np.array(json.loads(embedding_blob), dtype=np.float32)
+            # An oversized sequential scan must not evict its entire useful
+            # prefix before the next recall. Decode the tail without admission.
+            vec = (
+                decode_vector(database_path, embedding_blob)
+                if index < VECTOR_CACHE_SIZE
+                else decode_vector_uncached(embedding_blob)
+            )
         except (TypeError, json.JSONDecodeError):
             continue
         if vec.shape != qvec.shape:
@@ -738,6 +780,7 @@ def vector_db_search(agent_id, query, top_k=VECTOR_DB_TOP_K, entry_types=None):
             score = cos_sim * salience_factor * decay * recall_boost
         else:
             score = cos_sim
+        finite_scores = finite_scores and math.isfinite(score)
         hit = {
             "score": score,
             "type": entry_type,
@@ -748,8 +791,15 @@ def vector_db_search(agent_id, query, top_k=VECTOR_DB_TOP_K, entry_types=None):
         if weighted:
             hit["row_id"] = row_id
         scored.append(hit)
-    scored.sort(key=lambda x: x["score"], reverse=True)
-    top = scored[:max(1, int(top_k))]
+    count = max(1, int(top_k))
+    if finite_scores:
+        # nlargest preserves input order for equal keys, like the old stable
+        # full sort, while selecting a small top-k in O(n log k).
+        top = heapq.nlargest(count, scored, key=lambda x: x["score"])
+    else:
+        # Preserve the legacy ordering even for malformed NaN/inf vectors.
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        top = scored[:count]
     if weighted and top:
         ids_to_bump = [int(h["row_id"]) for h in top if h.get("row_id") is not None]
         if ids_to_bump:

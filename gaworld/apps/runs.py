@@ -137,7 +137,12 @@ DISPATCH_SECONDS = 2.0
 
 #: Admin-tunable classroom limits (account database `settings`), read on every
 #: check. A daily model-call quota of 0 means unlimited.
-LIMIT_DEFAULTS = {"max_concurrent_runs": 4, "max_runs_per_user": 1, "daily_llm_calls_per_user": 0}
+LIMIT_DEFAULTS = {
+    "max_concurrent_runs": 4,
+    "max_runs_per_user": 1,
+    "daily_llm_calls_per_user": 0,
+    "research_call_budget": 50_000,
+}
 
 
 def run_state():

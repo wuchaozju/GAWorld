@@ -175,6 +175,7 @@ def run(batch_id: str, handle: dict[str, Any]) -> None:
                     child.preflight = research._preflight(protocol, base_config=config)
                     if not child.preflight["ok"]:
                         raise ValueError("；".join(child.preflight["errors"]))
+                    research._bind_approval(child, config)
                     child.set_stage("approved")
                     study.save_study(child)
                     if cell.get("study_id"):

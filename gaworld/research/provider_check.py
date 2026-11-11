@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
@@ -62,6 +63,9 @@ def inspect_provider(
         usage.record("research_provider_probe")
         checked = probe_provider(bounded)
         result.update(
-            generation_tested=True, probe=checked, status="ready" if checked.get("ok") else "probe_failed"
+            generation_tested=True,
+            tested_at=time.time(),
+            probe=checked,
+            status="ready" if checked.get("ok") else "probe_failed",
         )
     return result

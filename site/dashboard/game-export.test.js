@@ -162,4 +162,32 @@ test("warzone: header, stats, day table, proposal/vote sections", () => {
   assert(md.includes("他们撑过了第一天。"));
 });
 
+test("disaster: field denominators, missing scores, context and diagnostic separation", () => {
+  const md = gx.disaster({disaster:{name:"洪水"}, stages:["山区山洪"],
+    mechanism_version:"disaster-2", metric_definitions:{help_rate:"家庭外帮助人次/有效互助回答人次"},
+    context:{note:"假想灾情",kind:"mountain",basis:{terrain:"山区"}}, edges:[{a:1,b:2,label:"邻居",source:"inferred",channel:"face_to_face"}],
+    stats:{overall:{n:2,panic_n:1,help_n:1,action_n:1,helpers:1,invalid_n:1,avg_panic:4,help_rate:1},
+      per_stage:[{n:2,panic_n:1,help_n:1,helpers:1,invalid_n:1,avg_panic:4,help_rate:1}]},
+    agents:[{agent_id:1,name:"甲",reactions:[{action:"其他",panic:null,help:null,say:"",detail:"",parse_status:"invalid",raw:"BROKEN_MODEL_REPLY"}]}],
+    transmissions:[{stage:1,from:1,to:2,say:"来帮你",channel:"face_to_face",source:"inferred"}], blocked_transmissions:[]}, NOW);
+  assert(md.includes("有效互助回答人次"));
+  assert(md.includes("1/1"));
+  assert(md.includes("解析失败"));
+  assert(!md.includes("null/5"));
+  assert(!md.includes("| 其他 | — | 否 |"));
+  assert(md.includes("山区"));
+  assert(md.includes("inferred"));
+  assert(md.includes("诊断"));
+  assert(md.indexOf("BROKEN_MODEL_REPLY") > md.indexOf("诊断"));
+});
+
+test("rumor: export motive, actual transmitted text and behavior counts", () => {
+  const md = gx.rumor({rumor:{title:"寒潮"},stats:{total:2,reached:2,believers:0,avg_belief:2,entertainment_forwarders:1,nonbelieving_forwarders:1},
+    nodes:[{agent_id:1,name:"甲",heard_round:0,belief:2,action:"转发",motive:"娱乐玩梗",say:"企鹅上班",events:[]}],
+    transmissions:[{round:0,from:1,to:2,kind:"rumor",label:"邻居",text:"企鹅上班",motive:"娱乐玩梗"}]},NOW);
+  assert(md.includes("娱乐玩梗"));
+  assert(md.includes("不相信仍转发"));
+  assert(md.includes("传播内容"));
+});
+
 console.log(`${passed} passed`);

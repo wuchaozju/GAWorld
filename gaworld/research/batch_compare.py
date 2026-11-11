@@ -8,6 +8,7 @@ import statistics
 from typing import Any
 
 from gaworld.parallel.causal import t_interval
+from gaworld.research import result_checks as rc
 
 
 def _number(value: Any) -> bool:
@@ -193,7 +194,38 @@ def compare(batch: dict[str, Any], selected: list[str] | None = None) -> dict[st
                     "note": "城市内处理效应均值之差；城市居民不配对，不作显著性判定",
                 }
             )
+    for row in contrasts:
+        row["result_checks"] = rc.card(
+            row["hypothesis"],
+            [
+                rc.check(
+                    "model" if row["kind"] == "model" else "mechanism",
+                    "observed",
+                    "运行层面描述性比较；区间未作多重比较校正，未指定等价范围，不能据此声称无偏或等价",
+                    difference=row["difference"],
+                    ci95=row["ci95"],
+                    paired_seeds=row["paired_seeds"],
+                    left=row["left"],
+                    right=row["right"],
+                )
+            ],
+            source={"batch": batch["id"], "selected": [c["id"] for c in cells], "groups": groups, "row": row},
+        )
     return {
+        "result_checks": rc.card(
+            "批次比较",
+            [
+                rc.check(
+                    "quality",
+                    "observed",
+                    "所有失败、排除和未完成运行均保留计数",
+                    selected=len(cells),
+                    planned=len(all_cells),
+                    issues=issues,
+                )
+            ],
+            source={"batch": batch["id"], "cells": cells},
+        ),
         "runtime_metrics": list(metrics.values()),
         "counts": {
             "planned": len(all_cells),
@@ -305,4 +337,6 @@ def markdown(batch: dict[str, Any], comparison: dict[str, Any]) -> str:
             "这些是指定模型与仿真配置下的结果，不能直接作为现实世界效力证据。",
         ]
     )
+    lines.append(rc.markdown(comparison.get("result_checks")))
+    lines.extend(rc.markdown(row.get("result_checks")) for row in comparison.get("contrasts", []))
     return "\n".join(lines) + "\n"

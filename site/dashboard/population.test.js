@@ -60,6 +60,7 @@ var SCHEMA = {
       fertility_children_mean: 1.1,
     },
     education_work: {
+      adult_student_rate: 0.08,
       tertiary_rate: 0.35, employment_rate: 0.68, unemployment_rate: 0.05,
       gig_platform_share: 0.1, industry_mix: {},
     },
@@ -177,8 +178,12 @@ global.document = {
 // debounced by 180ms) while keeping a real timer for the assertions, so they
 // observe the state *after* the debounced render rather than before it.
 var realSetTimeout = global.setTimeout;
-global.setTimeout = function (fn) { fn(); return 0; };
-global.clearTimeout = function () {};
+var realClearTimeout = global.clearTimeout;
+global.setTimeout = function (fn, delay) {
+  if (delay >= 1000) return realSetTimeout(fn, delay);
+  fn(); return 0;
+};
+global.clearTimeout = function (timer) { realClearTimeout(timer); };
 
 global.fetch = function (url) {
   var body = String(url).indexOf("/schema") >= 0 ? SCHEMA : PREVIEW;

@@ -64,7 +64,7 @@ GET_ROUTES = (
     Route("interview_api", "/api/interview/"),
     Route("organization_methods_api", "/api/collaboration/organization-methods/", bare=True),
     Route("organization_comparison_api", "/api/research/organization-intelligence/comparisons/", bare=True),
-    Route("organization_intelligence_v2_api", "/api/research/organization-intelligence/v2/", bare=True),
+    Route("team_handover_api", "/api/research/team-handover/", bare=True),
     Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),
     Route("research_api", "/api/research/"),
@@ -78,6 +78,7 @@ GET_ROUTES = (
 )
 
 POST_ROUTES = (
+    Route("student_samples_api", "/api/population/students/"),
     Route("community_api", "/api/community/"),
     Route("kernel_api", "/api/interventions/"),
     Route("organizations_api", "/api/organizations/", bare=True),
@@ -92,7 +93,7 @@ POST_ROUTES = (
     Route("interview_api", "/api/interview/"),
     Route("organization_methods_api", "/api/collaboration/organization-methods/", bare=True),
     Route("organization_comparison_api", "/api/research/organization-intelligence/comparisons/", bare=True),
-    Route("organization_intelligence_v2_api", "/api/research/organization-intelligence/v2/", bare=True),
+    Route("team_handover_api", "/api/research/team-handover/", bare=True),
     Route("organization_intelligence_api", "/api/research/organization-intelligence/", bare=True),
     Route("research_batches_api", "/api/research/batches", bare=True),
     Route("research_api", "/api/research/"),

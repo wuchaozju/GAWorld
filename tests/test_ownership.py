@@ -176,6 +176,7 @@ class StoresTest(unittest.TestCase):
             "owner_id": 2,
             "status": "acting",
             "seats": [{"role_id": "r1", "kind": "human", "token": "seat-tok"}],
+            "actions": {},
         }
         with (
             mock.patch.object(sg, "games_root", return_value=self.root),

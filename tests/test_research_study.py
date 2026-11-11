@@ -1154,7 +1154,8 @@ def test_failed_model_call_marks_the_study_job(stubbed_api, monkeypatch):
     body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"]})
     record = _await_job(body["job_id"])
     assert record["status"] == "error"
-    assert "model down" in record["message"]
+    assert record["diagnostic"]["code"] == "task_failed"
+    assert "model down" not in record["message"]
 
 
 def test_failed_interpretation_does_not_fail_the_study(stubbed_api, monkeypatch):
@@ -1172,3 +1173,31 @@ def test_failed_interpretation_does_not_fail_the_study(stubbed_api, monkeypatch)
     assert "interpreter down" in detail["interpretation"]["error"]
     assert "解读不可用" in detail["report_markdown"]
     assert detail["evaluation"]["summary"]["supported"] == 2
+
+
+def test_statistics_report_is_available_while_model_interpretation_waits(stubbed_api, monkeypatch):
+    import gaworld.research.interpret as interpret_mod
+
+    started, release = threading.Event(), threading.Event()
+
+    def slow_interpret(*args, **kwargs):
+        started.set()
+        assert release.wait(5)
+        return INTERPRETATION
+
+    monkeypatch.setattr(interpret_mod, "interpret", slow_interpret)
+    body, _ = research_api.handle_post("/api/research/studies", {"plan_id": PLAN["id"], "autopilot": True})
+    compiled = _await_job(body["job_id"])["result"]
+    try:
+        assert started.wait(5)
+        saved = study_mod.load_study(compiled["study_id"])
+        assert saved.stage == "evaluated"
+        assert saved.report_markdown
+        assert "先看结果与下一步" in saved.report_markdown
+        detail = research_api.study_detail(saved.id)
+        assert "统计已完成" in detail["reading"]["next"]
+        assert detail["reading"]["findings"]
+        assert research_api.export_study_report(saved.id)["markdown"]
+    finally:
+        release.set()
+    assert _await_job(compiled["run_job_id"])["status"] == "done"

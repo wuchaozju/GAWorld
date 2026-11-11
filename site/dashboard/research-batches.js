@@ -28,6 +28,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
       [t("planned", "计划运行"), c.planned], [t("selected", "已选"), c.selected], [t("done", "已完成"), c.done],
       [t("failed", "失败 / 中断"), c.failed], [t("pending", "待完成"), c.pending],
     ].map(function (item) { return '<div><span>' + esc(item[0]) + "</span><strong>" + esc(item[1] == null ? 0 : item[1]) + "</strong></div>"; }).join("") + "</div>";
+    if (root && root.GAWorldResultChecks) html += root.GAWorldResultChecks.render(data.result_checks);
     html += table([t("model", "模型"), t("city", "城市"), t("hypothesis", "假设"), t("version", "模式 / 版本"),
       t("valid", "有效运行"), t("effect", "平均效应"), t("sd", "标准差"), "95% CI", t("direction", "方向一致率")],
     (data.groups || []).map(function (g) { return [g.provider + " / " + g.model, g.city || t("current", "当前世界"), g.hypothesis,
@@ -37,6 +38,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     if ((data.contrasts || []).length) html += "<h4>" + esc(t("contrasts", "模型 / 城市差异（右侧减左侧）")) + "</h4>" + table(
       [t("dimension", "维度"), t("left", "左侧"), t("right", "右侧"), t("context", "比较范围"), t("hypothesis", "假设"), t("difference", "效应之差"), "95% CI"],
       data.contrasts.map(function (c) { return [c.kind, c.left, c.right, c.city || c.provider || "", c.hypothesis, num(c.difference), c.ci95 ? c.ci95.map(num).join(" ~ ") : "—"]; }));
+    if (root && root.GAWorldResultChecks) (data.contrasts || []).forEach(function(c){html += root.GAWorldResultChecks.render(c.result_checks);});
     if ((data.runtime_metrics || []).length) html += "<h4>" + esc(t("reliability", "运行可靠性与实测请求")) + "</h4>" + table(
       [t("model", "模型"), t("city", "城市"), t("planned", "计划运行"), t("task_failure", "任务失败率"), t("requests", "实测请求"), t("request_failure", "请求失败率")],
       data.runtime_metrics.map(function (m) { return [m.provider, m.city || t("current", "当前世界"), m.planned,

@@ -18,10 +18,10 @@ function harness(settings = {}) {
   const context = {document, location:{search:'', origin:'http://localhost:8767'}, history:{replaceState(){}}, URLSearchParams, URL, Blob, setTimeout(){}, clearTimeout(){}, console,
     fetch:async (url, options={}) => {
       requests.push({url,options});
-      let data = url.endsWith('/results') ? {analysis: settings.analysis || {complete:false,cells:[],contrasts:[]}} : options.method==='POST' ? record : url.endsWith('v2') ? {engine:{version:'OI-2.0',build_id:'server',workspace_matches:true,pid:1,...settings.engine},studies:[]} : record;
+      let data = url.endsWith('/results') ? {analysis: settings.analysis || {complete:false,cells:[],contrasts:[]}} : options.method==='POST' ? record : url.endsWith('team-handover') ? {engine:{version:'OI-2.0',build_id:'server',workspace_matches:true,pid:1,...settings.engine},studies:[]} : record;
       return {ok:true, json:async()=>data};
     }};
-  vm.runInNewContext(fs.readFileSync(__dirname+'/organization-intelligence-v2.js','utf8'),context);
+  vm.runInNewContext(fs.readFileSync(__dirname+'/team-handover.js','utf8'),context);
   return {nodes,requests,context,record};
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));

@@ -34,8 +34,14 @@ from pathlib import Path
 
 from gaworld.city.agents import AgentError, add_agent, add_population, migrate_agent
 from gaworld.city.bundle import CityNotFoundError, delete_city, list_cities, resolve_city
-from gaworld.city.create import CityCreationError, build_knowledge, create_city, default_search
-from gaworld.city.geocode import SCALE_BBOX_HALF_DEG, Place
+from gaworld.city.create import (
+    CityCreationError,
+    build_knowledge,
+    create_city,
+    default_search,
+    place_from_manifest,
+)
+from gaworld.city.geocode import SCALE_BBOX_HALF_DEG
 from gaworld.city.knowledge import CityProfile
 from gaworld.city.locale import build_locale, load_locale
 from gaworld.city.news import DEFAULT_TTL_HOURS
@@ -103,7 +109,8 @@ def _build_parser() -> argparse.ArgumentParser:
     one.add_argument("--gender", default="女")
     one.add_argument("--job", default="自由职业")
     one.add_argument("--hukou", default="本地")
-    one.add_argument("--education", default="本科")
+    one.add_argument("--education", default="未知")
+    one.add_argument("--student-status", default="未知")
     one.add_argument("--income", type=float, default=0.0)
     one.add_argument("--residence", help="Defaults to a random district of this city")
 
@@ -123,6 +130,11 @@ def _build_parser() -> argparse.ArgumentParser:
     loc = sub.add_parser("locale", help="Show or rebuild how a city's residents are named")
     loc.add_argument("city")
     loc.add_argument("--rebuild", action="store_true", help="Research the locale again")
+
+    reg = sub.add_parser("region", help="Show or rebuild a city's regional dossier")
+    reg.add_argument("city")
+    reg.add_argument("--rebuild", action="store_true", help="Research the region again")
+    reg.add_argument("--offline", action="store_true", help="Clear the dossier without researching")
 
     news_cmd = sub.add_parser("news", help="Show or refresh a city's local news")
     news_cmd.add_argument("city")
@@ -144,8 +156,13 @@ def _build_parser() -> argparse.ArgumentParser:
 #: Sketch extension → the media type a provider expects. Anything else is
 #: rejected rather than guessed: a mislabelled part fails at the API boundary
 #: with a message about the request, not about the file.
-_SKETCH_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                 ".gif": "image/gif", ".webp": "image/webp"}
+_SKETCH_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
 
 
 def _load_sketch(path: str | None) -> list[dict[str, str]] | None:
@@ -155,8 +172,7 @@ def _load_sketch(path: str | None) -> list[dict[str, str]] | None:
     media_type = _SKETCH_TYPES.get(source.suffix.lower())
     if media_type is None:
         raise CityCreationError(
-            f"unsupported sketch format {source.suffix!r}; use one of "
-            + ", ".join(sorted(_SKETCH_TYPES))
+            f"unsupported sketch format {source.suffix!r}; use one of " + ", ".join(sorted(_SKETCH_TYPES))
         )
     return [{"media_type": media_type, "data": base64.b64encode(source.read_bytes()).decode("ascii")}]
 
@@ -192,7 +208,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
         print(json.dumps([b.summary() for b in bundles], ensure_ascii=False, indent=2))
         return 0
     if not bundles:
-        print("no cities yet — create one with: python -m gaworld.city create \"<place name>\"")
+        print('no cities yet — create one with: python -m gaworld.city create "<place name>"')
         return 0
     print(f"{'SLUG':<24} {'SCALE':<8} {'MAP':<8} {'AGENTS':>6}  NAME")
     for bundle in bundles:
@@ -210,9 +226,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
 def _cmd_add_agents(args: argparse.Namespace) -> int:
     city = resolve_city(args.city)
-    result = add_population(
-        city, size=args.size, preset=args.preset, seed=args.seed, replace=args.replace
-    )
+    result = add_population(city, size=args.size, preset=args.preset, seed=args.seed, replace=args.replace)
     print(f"✓ {result['added']} residents added to {city.slug} (total {result['total']})")
     if result["added"] != result["requested"]:
         print(f"  note: asked for {result['requested']}; the sampler's range is 20–5000")
@@ -232,6 +246,7 @@ def _cmd_add_agent(args: argparse.Namespace) -> int:
         job=args.job,
         hukou=args.hukou,
         education=args.education,
+        student_status=args.student_status,
         income_monthly=args.income,
         residence=args.residence,
     )
@@ -262,20 +277,19 @@ def _cmd_migrate(args: argparse.Namespace) -> int:
 def _cmd_knowledge(args: argparse.Namespace) -> int:
     city = resolve_city(args.city)
     if args.rebuild:
-        place = Place(**{**(city.manifest.get("place") or {}), "bbox": tuple(
-            (city.manifest.get("place") or {}).get("bbox") or (0, 0, 0, 0))})
+        place = place_from_manifest(city)
         profile = build_knowledge(city, place, offline=args.offline)
         city.knowledge_path.write_text(
             json.dumps(profile.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
-        city.record("knowledge", source=profile.source,
-                    industries=[i.name for i in profile.top_industries()])
+        city.record("knowledge", source=profile.source, industries=[i.name for i in profile.top_industries()])
         city.save()
         print(f"✓ rebuilt ({profile.source})")
     else:
         profile = CityProfile.from_dict(
             json.loads(city.knowledge_path.read_text(encoding="utf-8"))
-            if city.knowledge_path.exists() else {}
+            if city.knowledge_path.exists()
+            else {}
         )
     if profile.is_empty:
         print(f"{city.slug}: no knowledge yet — run with --rebuild")
@@ -298,21 +312,10 @@ def _cmd_knowledge(args: argparse.Namespace) -> int:
     return 0
 
 
-def _place_from_manifest(city) -> Place:
-    """Rebuild the geocoded :class:`Place` a bundle was created from.
-
-    ``bbox`` round-trips through JSON as a list, and ``Place`` declares it a
-    tuple; the difference matters because the geocode helpers unpack it.
-    """
-    raw = dict(city.manifest.get("place") or {})
-    raw["bbox"] = tuple(raw.get("bbox") or (0, 0, 0, 0))
-    return Place(**raw)
-
-
 def _cmd_locale(args: argparse.Namespace) -> int:
     city = resolve_city(args.city)
     if args.rebuild:
-        locale = build_locale(city, _place_from_manifest(city))
+        locale = build_locale(city, place_from_manifest(city))
         city.save()
     else:
         locale = load_locale(city)
@@ -330,12 +333,65 @@ def _cmd_locale(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_region(args: argparse.Namespace) -> int:
+    from gaworld.city.create import place_from_manifest, refresh_environment
+    from gaworld.city.region import build_region, load_region
+
+    city = resolve_city(args.city)
+    if args.rebuild:
+        region = build_region(city, place_from_manifest(city), offline=args.offline)
+        # The weather events and the event generator's context are derived
+        # from the dossier, so they have to be rewritten with it.
+        refresh_environment(city, region=region)
+        city.save()
+    else:
+        region = load_region(city)
+    if region.is_empty:
+        print(f"{city.slug}: 还没有地区档案 — 用 --rebuild 调研一次")
+        return 0
+    print(f"{region.label or city.display_name}  [{region.source}]")
+    if region.summary:
+        print(f"  {region.summary}")
+    for label, value in (
+        ("地形", region.terrain),
+        ("水系", region.water),
+        ("气候", region.climate),
+        ("方言", region.dialect),
+        ("生计", region.livelihood),
+    ):
+        if value:
+            print(f"  {label}: {value}")
+    for label, items in (
+        ("灾害", region.hazards),
+        ("节律", region.seasons),
+        ("民风", region.culture),
+        ("饮食", region.diet),
+        ("出行", region.commuting),
+        ("节庆", region.festivals),
+        ("公共服务", region.services),
+    ):
+        if items:
+            print(f"  {label}: " + "、".join(items))
+    if region.habits:
+        print("  日常: " + "；".join(region.habits))
+    if region.work_habits:
+        print("  上工: " + "；".join(region.work_habits))
+    if region.suggested_overrides:
+        print("  人口建议: " + json.dumps(region.suggested_overrides, ensure_ascii=False))
+    for source in region.sources[:5]:
+        print(f"  · {source.get('title', '')} {source.get('url', '')}")
+    return 0
+
+
 def _cmd_news(args: argparse.Namespace) -> int:
     city = resolve_city(args.city)
     if args.refresh or args.force:
         cache = news_refresh(
-            city.news_path, city.name, search_fn=default_search,
-            ttl_hours=args.ttl_hours, force=args.force,
+            city.news_path,
+            city.name,
+            search_fn=default_search,
+            ttl_hours=args.ttl_hours,
+            force=args.force,
         )
     else:
         cache = news_load(city.news_path)
@@ -356,9 +412,7 @@ def _cmd_use(args: argparse.Namespace) -> int:
         bundle = resolve_city(args.city)
         config["city"] = bundle.slug
         message = f"set to {bundle.slug} ({bundle.display_name})"
-    DASHBOARD_CONFIG.write_text(
-        json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    DASHBOARD_CONFIG.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"✓ {DASHBOARD_CONFIG.name}: city {message}")
     return 0
 
@@ -380,6 +434,7 @@ _COMMANDS = {
     "migrate": _cmd_migrate,
     "knowledge": _cmd_knowledge,
     "locale": _cmd_locale,
+    "region": _cmd_region,
     "news": _cmd_news,
     "use": _cmd_use,
     "delete": _cmd_delete,

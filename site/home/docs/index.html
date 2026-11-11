@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=c92b6c3a" />
+    <link rel="stylesheet" type="text/css" href="_static/gaworld.css?v=3f3ffc63" />
     <link rel="stylesheet" type="text/css" href="_static/prompts.css?v=56adfc9f" />
     
     
@@ -320,7 +320,20 @@
 <p>GAWorld 是生成式多智能体社会仿真平台。你可以创建城市与居民，让居民在环境中行动、工作和建立关系，再通过事件、政策与对照实验研究个体和群体的变化。</p>
 <p><img alt="版本 0.2.1" src="_images/version.svg" /> <img alt="Python 3.11 或更高版本" src="_images/python.svg" /> <a class="reference external" href="https://github.com/wuchaozju/GAWorld"><img alt="GitHub 源码" src="_images/source.svg" /></a></p>
 <section id="id1">
-<h2>从一次仿真开始<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h2>
+<h2>三分钟了解 GAWorld<a class="headerlink" href="#id1" title="链接到此标题。">¶</a></h2>
+<p>通过真实系统录屏与截图，了解城市与居民构建、社会仿真、群体采访、研究工作台和回放分析。</p>
+<figure class="intro-video">
+  <video controls playsinline preload="none" poster="_static/media/gaworld-introduction-zh.jpg" aria-label="GAWorld 平台介绍视频，中文旁白与字幕">
+    <source src="_static/media/gaworld-introduction-zh.mp4" type="video/mp4">
+    您的浏览器不支持在线播放，请使用下方链接下载视频。
+  </video>
+  <figcaption>3 分 9 秒 · 1080p · 中文合成旁白 · 画面内含中文字幕</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="_downloads/f5c43c5baa2ceead38719d48eea8bae7/gaworld-introduction-zh.mp4"><span class="xref download myst">下载视频（MP4，约 11 MB）</span></a> · <a class="reference download internal" download="" href="_downloads/6930bfec0db9fd8c639949fb0e0f9437/gaworld-introduction-zh.srt"><span class="xref download myst">下载字幕（SRT）</span></a></p>
+<p>多人章节采用真实入口与功能示意图，拍摄环境未启用多人账号；其余章节使用系统实拍。</p>
+</section>
+<section id="id2">
+<h2>从一次仿真开始<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <p><a class="reference internal" href="installation.html"><span class="std std-doc">安装 GAWorld</span></a>，创建工作区并启动控制台：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"git+https://github.com/wuchaozju/GAWorld.git@main"</span>
 gaworld<span class="w"> </span>init<span class="w"> </span>./my-world
@@ -330,15 +343,15 @@ gaworld<span class="w"> </span>dashboard
 </div>
 <p>打开 <a class="reference external" href="http://127.0.0.1:8766">http://127.0.0.1:8766</a>，依次完成模型配置、城市与居民选择、运行和结果查看。<a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a> 给出完整操作步骤。</p>
 </section>
-<section id="id2">
-<h2>按照你选择你需要阅读的内容<a class="headerlink" href="#id2" title="链接到此标题。">¶</a></h2>
 <section id="id3">
-<h3>入门指南<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h3>
+<h2>按照你选择你需要阅读的内容<a class="headerlink" href="#id3" title="链接到此标题。">¶</a></h2>
+<section id="id4">
+<h3>入门指南<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
 <p>安装 GAWorld，理解工作区、城市与世界，完成第一次仿真。</p>
 <p><a class="reference internal" href="installation.html"><span class="std std-doc">安装</span></a> · <a class="reference internal" href="quickstart.html"><span class="std std-doc">第一次仿真</span></a> · <a class="reference internal" href="concepts.html"><span class="std std-doc">核心概念</span></a></p>
 </section>
-<section id="id4">
-<h3>用户指南<a class="headerlink" href="#id4" title="链接到此标题。">¶</a></h3>
+<section id="id5">
+<h3>用户指南<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
 <p>按任务学习配置模型、创建城市与居民、运行仿真和分析结果，再开展访谈、对照实验与政策推演。各章说明用途、操作步骤和对应的代码结构。</p>
 <ul class="simple">
 <li><p><strong>准备仿真</strong>：<a class="reference internal" href="models.html"><span class="std std-doc">模型配置</span></a> · <a class="reference internal" href="cities.html"><span class="std std-doc">城市与地图</span></a> · <a class="reference internal" href="residents.html"><span class="std std-doc">居民与 Agent Studio</span></a> · <a class="reference internal" href="skills-work.html"><span class="std std-doc">技能与真实工作</span></a></p></li>
@@ -347,14 +360,14 @@ gaworld<span class="w"> </span>dashboard
 <li><p><strong>管理与运行工具</strong>：<a class="reference internal" href="deployment.html"><span class="std std-doc">团队部署</span></a> · <a class="reference internal" href="cli.html"><span class="std std-doc">命令行</span></a></p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>开发者指南<a class="headerlink" href="#id5" title="链接到此标题。">¶</a></h3>
+<section id="id6">
+<h3>开发者指南<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h3>
 <p>了解代码组织与运行架构，编写插件，通过 Python 或 HTTP 接入 GAWorld，并参与项目开发。</p>
 <p><a class="reference internal" href="code-structure.html"><span class="std std-doc">代码结构</span></a> · <a class="reference internal" href="architecture.html"><span class="std std-doc">系统架构</span></a> · <a class="reference internal" href="plugins.html"><span class="std std-doc">编写插件</span></a> · <a class="reference internal" href="integration.html"><span class="std std-doc">接口集成</span></a> · <a class="reference internal" href="api/index.html"><span class="std std-doc">API 参考</span></a> · <a class="reference internal" href="development.html"><span class="std std-doc">开发与贡献</span></a></p>
 </section>
 </section>
-<section id="id6">
-<h2>城市、居民与世界<a class="headerlink" href="#id6" title="链接到此标题。">¶</a></h2>
+<section id="id7">
+<h2>城市、居民与世界<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
 <p><strong>城市</strong>保存地图、环境和初始人口。<strong>居民</strong>具有身份、人格、状态、记忆与社会关系。<strong>世界</strong>保存一组居民副本、运行配置和输出；一次<strong>运行</strong>按选定时间尺度推进居民行动。</p>
 <p>在同一套城市与居民基础上，你可以跟踪一次日常仿真，也可以建立多个实验条件，比较事件或配置改变后的轨迹。概念之间的关系见 <a class="reference internal" href="concepts.html"><span class="std std-doc">工作区、城市与世界</span></a>。</p>
 <div class="toctree-wrapper compound">
@@ -368,8 +381,8 @@ gaworld<span class="w"> </span>dashboard
 <div class="toctree-wrapper compound">
 </div>
 </section>
-<section id="id7">
-<h2>项目链接<a class="headerlink" href="#id7" title="链接到此标题。">¶</a></h2>
+<section id="id8">
+<h2>项目链接<a class="headerlink" href="#id8" title="链接到此标题。">¶</a></h2>
 <ul class="simple">
 <li><p><a href="../index.html">GAWorld 项目主页</a></p></li>
 <li><p><a class="reference external" href="https://github.com/wuchaozju/GAWorld">GitHub 仓库</a></p></li>
@@ -426,17 +439,18 @@ gaworld<span class="w"> </span>dashboard
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">GAWorld 文档</a><ul>
-<li><a class="reference internal" href="#id1">从一次仿真开始</a></li>
-<li><a class="reference internal" href="#id2">按照你选择你需要阅读的内容</a><ul>
-<li><a class="reference internal" href="#id3">入门指南</a></li>
-<li><a class="reference internal" href="#id4">用户指南</a></li>
-<li><a class="reference internal" href="#id5">开发者指南</a></li>
+<li><a class="reference internal" href="#id1">三分钟了解 GAWorld</a></li>
+<li><a class="reference internal" href="#id2">从一次仿真开始</a></li>
+<li><a class="reference internal" href="#id3">按照你选择你需要阅读的内容</a><ul>
+<li><a class="reference internal" href="#id4">入门指南</a></li>
+<li><a class="reference internal" href="#id5">用户指南</a></li>
+<li><a class="reference internal" href="#id6">开发者指南</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id6">城市、居民与世界</a><ul>
+<li><a class="reference internal" href="#id7">城市、居民与世界</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#id7">项目链接</a></li>
+<li><a class="reference internal" href="#id8">项目链接</a></li>
 </ul>
 </li>
 </ul>

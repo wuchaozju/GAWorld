@@ -16,7 +16,6 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     return data;
   }
   function fail(error) { $("oiError").textContent = error.message || String(error); }
-  function budget() { $("oiBudget").textContent = "当前城市：" + ($("oiForm").dataset.city || "加载中") + "。预计调用模型 " + (Number($("oiRepeats").value) * 109) + " 次，费用取决于模型服务。每两次调用至少间隔10秒。遇到服务限制时会保存进度；接着运行需要你点击开始，不会自动重试或更换模型。"; }
   function download(name, text, type) {
     var url = URL.createObjectURL(new Blob([text], { type: type || "text/plain;charset=utf-8" }));
     var a = document.createElement("a"); a.href = gwURL(url); a.download = name; a.click();
@@ -87,11 +86,6 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   }
   async function refresh() {
     var data = await api("");
-    var old = $("oiProvider").value;
-    $("oiProvider").innerHTML = gwHTML(data.providers.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name + " · " + p.model) + '</option>'; }).join(""));
-    $("oiProvider").value = old || data.default_provider;
-    $("oiForm").dataset.city = data.city;
-    budget();
     state.studies = data.studies;
     renderList();
   }
@@ -100,18 +94,13 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   }
   async function action(fn) {
     if (state.busy) return;
-    state.busy = true; $("oiError").textContent = ""; $("oiCreate").disabled = true;
+    state.busy = true; $("oiError").textContent = "";
     if (state.record) render(state.record);
     try { await fn(); await refresh(); } catch (error) { fail(error); }
-    finally { state.busy = false; $("oiCreate").disabled = false; if (state.record) render(state.record); }
+    finally { state.busy = false; if (state.record) render(state.record); }
   }
   function init() {
-    if (!$("oiForm")) return;
-    $("oiRepeats").addEventListener("input", budget);
-    $("oiForm").addEventListener("submit", function (event) { event.preventDefault(); action(async function () {
-      var record = await api("", { provider: $("oiProvider").value, repeats: Number($("oiRepeats").value), seed: Number($("oiSeed").value) });
-      await open(record.id, true);
-    }); });
+    if (!$("oiStudies")) return;
     $("oiRun").addEventListener("click", function () { action(async function () { await api("/" + state.record.id + "/run", {}); await open(state.record.id, false); }); });
     $("oiStop").addEventListener("click", function () { action(async function () { var id = state.record.id; await api("/" + id + "/stop", {}); await open(id, false); }); });
     $("oiRecover").addEventListener("click", function () { action(async function () { var recovered = await api("/" + state.record.id + "/recover", {}); await open(recovered.id, true); }); });

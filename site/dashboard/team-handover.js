@@ -1,11 +1,12 @@
 
 var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value) { return value; };
-/* OI-2 is an explicit zero-provider workflow; old OI-1 remains independently readable. */
+/* The team handover study is an explicit zero-provider workflow; the old
+   OI-1 records remain independently readable next to it. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
   if (!$('oi2Form')) return;
-  const base = '/api/research/organization-intelligence/v2';
+  const base = '/api/research/team-handover';
   const labels = {draft:'设置已保存，尚未开始',running:'正在做题',finalizing:'题目已做完，正在整理报告',paused:'已暂停，可以继续',blocked:'暂时无法继续，已完成内容已保存',completed:'实验已完成'};
   let runtime = null, current = null, timer = null, listTimer = null;
   async function request(path = '', body) {
@@ -132,7 +133,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     try {
       const record = await request('',{seeds:Number($('oi2Seeds').value),seed:Number($('oi2Seed').value),expected_build:runtime?.build_id});
       current={id:record.id};
-      history.replaceState(null,'',gwURL(`?tab=organization-intelligence&oi2=${record.id}`));
+      history.replaceState(null,'',gwURL(`?tab=organization-intelligence&handover=${record.id}`));
       await show(record.id); await refresh();
     } catch(exc) { error(exc); }
     finally { $('oi2Create').disabled = !runtime?.workspace_matches || runtime.version !== 'OI-2.0'; }
@@ -158,7 +159,7 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   if (new URLSearchParams(location.search).has('oi')) $('oiLegacy').open=true;
   budget();
   refresh().then(async()=>{
-    const id = new URLSearchParams(location.search).get('oi2');
+    const id = new URLSearchParams(location.search).get('handover') || new URLSearchParams(location.search).get('oi2');
     if (id) { current={id}; await show(id); }
   }).catch(exc=>{error(exc); $('oi2Ready').textContent='暂时无法检查实验服务，请确认服务正在运行，再刷新页面。';});
 })();

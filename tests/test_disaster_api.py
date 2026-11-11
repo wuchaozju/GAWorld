@@ -117,7 +117,8 @@ class RunTest(unittest.TestCase):
         self.assertNotIn("你看到身边的人", first)  # no crowd in the opening stage
 
         self.assertIn("第 1 阶段，你囤积物资", third)  # their own earlier action
-        self.assertIn("你看到身边的人：2 人囤积物资", third)  # what everyone else did
+        self.assertIn("本阶段没有收到参演熟人的消息", third)
+        self.assertNotIn("2 人囤积物资", third)  # No edges: no omniscient crowd.
 
     def test_a_broken_reply_degrades_one_reaction_only(self) -> None:
         answer = _replies("模型今天不想说话", _json("救助他人", panic=5, help_=True))
@@ -203,13 +204,13 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(got["action"], "救助他人")
         self.assertEqual(got["panic"], 4)
 
-    def test_panic_is_clamped_and_garbage_is_neutral(self) -> None:
-        self.assertEqual(disaster_api.parse_reaction('{"action": "照常生活", "panic": 99}')["panic"], 5)
-        self.assertEqual(disaster_api.parse_reaction('{"action": "照常生活", "panic": "高"}')["panic"], 3)
+    def test_invalid_panic_and_garbage_are_missing(self) -> None:
+        self.assertIsNone(disaster_api.parse_reaction('{"action": "照常生活", "panic": 99}')["panic"])
+        self.assertIsNone(disaster_api.parse_reaction('{"action": "照常生活", "panic": "高"}')["panic"])
         garbage = disaster_api.parse_reaction("完全不是 JSON")
         self.assertEqual(garbage["action"], disaster_api.OTHER_ACTION)
-        self.assertEqual(garbage["panic"], 3)
-        self.assertFalse(garbage["help"])
+        self.assertIsNone(garbage["panic"])
+        self.assertIsNone(garbage["help"])
 
 
 class CatalogueTest(unittest.TestCase):

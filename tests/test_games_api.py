@@ -278,6 +278,8 @@ class PersonaTest(unittest.TestCase):
                     "gender": "女",
                     "job": "教师",
                     "residence": "新亭村·自住房",
+                    "education": "未知",
+                    "student_status": "未知",
                 }
             ],
         )

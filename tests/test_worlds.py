@@ -458,7 +458,17 @@ class WorldsHttpTest(unittest.TestCase):
             self._req("POST", "/api/worlds/settings", {"max_concurrent_runs": 1}, [wang])[0].status, 403
         )
         resp, body = self._req("POST", "/api/worlds/settings", {"max_concurrent_runs": 1}, [teacher])
-        self.assertEqual(body["limits"], {"max_concurrent_runs": 1, "max_runs_per_user": 1, "daily_llm_calls_per_user": 0})
+        # The limits the server reports are the defaults it knows about; the
+        # research call budget is one of them.
+        self.assertEqual(
+            body["limits"],
+            {
+                "max_concurrent_runs": 1,
+                "max_runs_per_user": 1,
+                "daily_llm_calls_per_user": 0,
+                "research_call_budget": 50_000,
+            },
+        )
 
         wang_world, in_wang = self._new_world(wang, "甲")
         li_world, in_li = self._new_world(li, "乙")

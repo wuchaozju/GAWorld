@@ -127,7 +127,7 @@ class SpecTest(unittest.TestCase):
 
     def test_design_prompt_carries_the_requested_shape(self) -> None:
         prompt = sg.design_prompt("社区议事", rounds=3, roles=4)
-        self.assertIn("正好 3 轮", prompt)
+        self.assertIn("最多 3 轮", prompt)
         self.assertIn("正好 4 个角色", prompt)
         self.assertIn("社区议事", prompt)
 
@@ -333,6 +333,7 @@ class ApiTest(_StoreCase):
 
         self.assertEqual(research_api.handle_get("/api/research/games/sessions/nope")[1], 404)
         self.assertEqual(research_api.handle_post("/api/research/games/design", {})[1], 400)
+        self._wait(lambda: sid not in serious_game_api._DRIVING)
         deleted, _ = research_api.handle_post(f"/api/research/games/sessions/{sid}/delete", {})
         self.assertTrue(deleted["deleted"])
 

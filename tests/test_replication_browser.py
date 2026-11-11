@@ -33,7 +33,15 @@ def test_custom_sample_size_in_research_workbench(width):
                     if path == "/api/worlds":
                         data = {"mode": "accounts", "current": {"id": "owned-test-world"}}
                     elif path == "/api/research/replication":
-                        data = {"runs": [], "min_sample": 7, "max_sample": 75, "default_sample": 30}
+                        from gaworld.apps.replication_api import GENERATION_DEFAULTS
+
+                        data = {
+                            "runs": [],
+                            "min_sample": 7,
+                            "max_sample": 75,
+                            "default_sample": 30,
+                            "generation": GENERATION_DEFAULTS,
+                        }
                     elif path.endswith("/replication/extract"):
                         data = {"job_id": "extract-test"}
                     elif path.endswith("/replication/jobs/extract-test"):
@@ -82,6 +90,7 @@ def test_custom_sample_size_in_research_workbench(width):
             assert "{min}" not in hint and "{max}" not in hint
             if width == 390:
                 page.evaluate("window.setLocale('zh-CN', false)")
+            page.locator("#rpInterpret").uncheck()
             assert "37" in page.locator("#rpCost").inner_text()
             page.locator('input[name="rpDesign"][value="paired"]').check()
             assert "74" in page.locator("#rpCost").inner_text()

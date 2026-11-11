@@ -97,3 +97,8 @@ figure.guide-shot figcaption,figure.guide-diagram figcaption {text-align:left;fo
   width: 100%; height: auto; max-width: 240px;
   padding: 10px; border-radius: 4px; background: #f3f3e9;
 }
+
+/* Documentation introduction: native controls, responsive in both themes. */
+.intro-video {margin:1.5rem 0}
+.intro-video video {display:block;width:100%;height:auto;aspect-ratio:16/9;border:1px solid var(--color-background-border);border-radius:8px;background:var(--color-background-secondary)}
+.intro-video figcaption {margin-top:.65rem;font-size:.9rem;line-height:1.6;color:var(--color-foreground-secondary)}

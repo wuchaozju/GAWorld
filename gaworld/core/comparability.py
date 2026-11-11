@@ -96,6 +96,11 @@ EPOCHS: tuple[Epoch, ...] = (
           "不合时机的动作被降权，模型临时改程提出的新活动要过时间这一关",
           ("schedule", "action", "routine_change"),
           "gaworld/sim/_timefit.py; docs/proposals/2026-10-26-time-plausibility.md"),
+    Epoch(13, "2026-11-10",
+          "社会调查/实验拟合度：居民 95% 区间退化成一个点（全员同答）且未覆盖真人均值时，"
+          "文献未报离散度则这一项计入水平准确度（此前该塌缩在分数里完全不可见）",
+          ("replication", "fidelity_score", "survey"),
+          "gaworld/research/replication.py; tests/test_replication.py::DegenerateIntervalTest"),
 )
 
 #: The epoch of the code that is running now.

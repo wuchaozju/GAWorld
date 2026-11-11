@@ -36,12 +36,27 @@ def env(tmp_path, monkeypatch):
 
 
 def create(api):
+    """A frozen old study, written the way the old workbench wrote it.
+
+    New studies are started in the comparison workbench now, so this helper
+    writes the record straight into the store instead of asking the API.
+    """
+    from gaworld.research.organization_intelligence import protocol
+
+    payload = {"repeats": 1, "provider": "test"}
+    payload["city"] = str(research_api._base_config().get("city") or "")
+    spec = protocol.freeze(payload, api.population(), api.model_info("test"))
+    return api.save_draft(spec)
+
+
+def test_this_api_no_longer_creates_studies(env):
+    api, _, _ = env
     body, status = api.handle_post(api.PREFIX, {"repeats": 1, "provider": "test"})
-    assert status == 201, body
-    return body
+    assert status == 400
+    assert "对照实验" in body["error"]
 
 
-def test_create_freezes_protocol_without_model_call(env):
+def test_a_frozen_old_study_keeps_its_protocol_without_a_model_call(env):
     api, store, _ = env
     record = create(api)
     assert record["status"] == "draft"
@@ -338,6 +353,7 @@ def test_real_router_and_http_ledger_pause_on_mocked_minimax_2062(env, monkeypat
     import requests
 
     from gaworld.llm import providers
+    from gaworld.research.organization_intelligence import common
     from tests.test_organization_intelligence import fake
 
     api, store, config = env
@@ -358,8 +374,8 @@ def test_real_router_and_http_ledger_pause_on_mocked_minimax_2062(env, monkeypat
         response._content = json.dumps(body).encode()
         return response
 
-    monkeypatch.setattr(providers.requests, "post", post)
-    monkeypatch.setattr(api.usage, "record", lambda task: charged.append(task))
+    monkeypatch.setattr(providers, "http_post", post)
+    monkeypatch.setattr(common.usage, "record", lambda task: charged.append(task))
     monkeypatch.setattr(api.ownership, "spawn", lambda fn, *a, **kw: fn(*a))
     api.handle_post(api.PREFIX + "/" + record["id"] + "/run", {})
     result = store.load(record["id"])

@@ -81,6 +81,13 @@ python dashboard_server.py
 | POST | `/api/agents/{id}/big5` | `{values: {openness…neuroticism}}`，每项 0–1；非法 → 400 | `residents.save_agent_big5` |
 | GET | `/api/agents/{id}/detail` | 完整合成快照（profile + state + big5 + 关系 + 财务等） | `residents.agent_detail` |
 | GET | `/api/agents/{id}/autobiography` | 由记忆写成的自传（一次模型调用；失败 502） | `autobiography_api.handle_get` |
+| POST | `/api/agents/{id}/autobiography` | 排队写一篇自传，立刻返回 `{job_id}`（202）；同一居民已在跑 → 409 | `autobiography_api.handle_post` |
+| GET | `/api/agents/{id}/autobiography/jobs/{job_id}` | 自传任务进度（`status`/`progress`/`result`） | `autobiography_api.handle_get` |
+| GET | `/api/agents/{id}/autobiography/download` | 下载已保存的自传 Markdown | `autobiography_api.handle_download` |
+| GET | `/api/agents/{id}/life-prediction` | 盘上最新的人生预测（未来自传）；没有 → 404 | `life_prediction_api.handle_get` |
+| POST | `/api/agents/{id}/life-prediction` | 排队生成人生预测，立刻返回 `{job_id}`（202）。body：`{direction?, randomness?, turbulence?}`（后两项 0–100，默认 50）；同一居民已在跑 → 409 | `life_prediction_api.handle_post` |
+| GET | `/api/agents/{id}/life-prediction/jobs/{job_id}` | 人生预测任务进度 | `life_prediction_api.handle_get` |
+| GET | `/api/agents/{id}/life-prediction/download` | 下载已保存的人生预测 Markdown | `life_prediction_api.handle_download` |
 | GET | `/api/agents/{id}/memory` | 记忆列表 + 摘要 + 标签分布 | `residents.memory_payload` |
 | POST | `/api/agents/{id}/memory` | 追加一条记忆 `{text, kind?}` | `residents.append_agent_memory` |
 | GET | `/api/agents/{id}/goals` | 当前目标树 | `residents.agent_goals_payload` |

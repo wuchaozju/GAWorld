@@ -266,6 +266,120 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     return options.join("");
   }
 
+  function field(id, label, value, multiline) {
+    return '<label class="rw-field"><span>' + esc(label) + '</span>' + (multiline
+      ? '<textarea id="' + id + '" rows="3">' + esc(value) + '</textarea>'
+      : '<input id="' + id + '" value="' + esc(value) + '" />') + '</label>';
+  }
+
+  function setupControls(spec) {
+    return '<details class="sg-editor"><summary>' + esc(t('sg_edit_design', '编辑角色、指标与规则')) + '</summary>' +
+      '<p class="rw-hint">' + esc(t('sg_editor_hint', '先核对角色资格、私人利益和指标定义。保存只影响新对局；已有对局保留原设计。')) + '</p>' +
+      spec.roles.map(function (r, i) { return '<fieldset><legend>' + esc(r.name) + '</legend>' +
+        field('sgPublic' + i, t('sg_public', '对外身份与已知背景'), r.public, true) +
+        field('sgGoal' + i, t('sg_goal', '本角色目标'), r.goal, true) +
+        field('sgPrivate' + i, t('sg_private', '仅本角色知悉的信息与约束'), r.private, true) + '</fieldset>'; }).join('') +
+      '<details><summary>' + esc(t('sg_advanced', '高级实验配置：资格、收益、指标定义与规则')) + '</summary>' +
+      field('sgSpec', 'JSON', JSON.stringify(spec, null, 2), true) + '</details>' +
+      '<button class="btn ghost" id="sgSaveSpec">' + esc(t('sg_save_design', '保存设计')) + '</button><p id="sgEditStatus" role="status"></p></details>' +
+      '<div class="sg-config-grid"><label class="rw-field"><span>' + esc(t('sg_cast_mode', '身份安排')) + '</span><select id="sgCastMode"><option value="matched">' + esc(t('sg_matched', '按居民背景匹配')) + '</option><option value="roleplay">' + esc(t('sg_roleplay', '角色扮演（可跨背景）')) + '</option></select></label>' +
+      field('sgSeed', t('sg_seed', '匹配种子'), 0, false) +
+      '<label><input type="checkbox" id="sgStepMode" /> ' + esc(t('sg_step_mode', '每轮结束后暂停，便于干预')) + '</label></div>' +
+      '<details><summary>' + esc(t('sg_assumptions', '本局情境假设（独立于居民档案）')) + '</summary>' +
+      '<p class="rw-hint">' + esc(t('sg_assumptions_hint', '按角色 id 登记缺少的情境事实，例如 {"owner":{"owns_home":true}}；须有研究者依据。')) + '</p>' + field('sgAssumptions', 'JSON', '{}', true) + '</details>' +
+      '<button class="btn ghost" id="sgPreview">' + esc(t('sg_preview', '预览角色匹配')) + '</button><div id="sgMatchResult" role="status"></div>';
+  }
+
+  function sessionPayload() {
+    var seats = [];
+    document.querySelectorAll('.sg-seat').forEach(function (row) {
+      var kind = row.querySelector('input[type=radio]:checked').value;
+      seats.push({role_id: row.getAttribute('data-role'), kind: kind,
+        agent_id: kind === 'agent' ? row.querySelector('.sg-seat-agent').value : '',
+        player_name: kind === 'human' ? row.querySelector('.sg-seat-name').value : ''});
+    });
+    return {game_id: state.game.id, seats: seats, city: $('sgCity').value, provider: $('sgProvider').value,
+      seed: $('sgSeed') ? Number($('sgSeed').value) : 0,
+      casting_mode: $('sgCastMode') ? $('sgCastMode').value : 'roleplay',
+      step_mode: $('sgStepMode') ? $('sgStepMode').checked : false,
+      assumptions: $('sgAssumptions') ? JSON.parse($('sgAssumptions').value || '{}') : {}};
+  }
+
+  function previewCasting() {
+    var payload;
+    try { payload = sessionPayload(); } catch (e) { $('sgMatchResult').textContent = e.message; return; }
+    $('sgPreview').disabled = true;
+    api('POST', '/api/research/games/' + encodeURIComponent(state.game.id) + '/preview', payload).then(function (data) {
+      state.preview = data;
+      state.previewPayload = JSON.stringify(payload);
+      $('sgMatchResult').innerHTML = gwHTML('<ul class="rw-list">' + data.matches.map(function (m) {
+        return '<li><b>' + esc(m.role_id) + '</b> · ' + esc(m.resident.name || m.agent_id) + ' · ' + esc(m.resident.age || '') + ' · ' + esc(m.resident.job || '') + ' — ' + esc(m.reason) +
+          (Object.keys(m.assumptions || {}).length ? ' (' + esc(t('sg_assumed', '含本局假设')) + ')' : '') + '</li>';
+      }).join('') + '</ul>');
+    }).catch(function (e) { $('sgMatchResult').textContent = e.message; state.preview = null; }).finally(function () { if ($('sgPreview')) $('sgPreview').disabled = false; });
+  }
+
+  function saveDesign() {
+    var spec;
+    try {
+      spec = JSON.parse($('sgSpec').value);
+      // Natural-language cards take precedence when edited; advanced fields retain their values.
+      state.game.spec.roles.forEach(function (r, i) {
+        ['public', 'goal', 'private'].forEach(function (key) {
+          var prefix = {public:'sgPublic', goal:'sgGoal', private:'sgPrivate'}[key];
+          if ($(prefix+i).value !== r[key] && spec.roles[i]) spec.roles[i][key] = $(prefix+i).value;
+        });
+      });
+      spec.schema_version = 2;
+    } catch (e) { $('sgEditStatus').textContent = e.message; return; }
+    api('POST', '/api/research/games/' + encodeURIComponent(state.game.id) + '/update', {spec:spec}).then(function (game) {
+      state.game = game; state.preview = null; renderGame();
+    }).catch(function (e) { $('sgEditStatus').textContent = e.message; });
+  }
+
+  function outcomeLabel(kind) {
+    var labels = {ongoing:['sg_ongoing','尚在协商'], agreement:['sg_agreement','达成协议'], partial:['sg_partial','部分达成'],
+      deferred:['sg_deferred','延期'], shelved:['sg_shelved','搁置'], breakdown:['sg_breakdown','协商破裂'],
+      unresolved:['sg_unresolved','到达轮数上限，仍未解决'], host_ended:['sg_host_ended','主持提前结束']};
+    var entry = labels[kind] || ['sg_unknown','尚未确定']; return t(entry[0], entry[1]);
+  }
+
+  function negotiationBlock(session) {
+    if (session.schema_version !== 2) return '';
+    var html = '<section class="sg-negotiation"><h4>' + esc(t('sg_negotiation', '提案与协商状态')) + '</h4><p><b>' + esc(outcomeLabel((session.outcome || {}).kind)) + '</b></p>';
+    Object.keys(session.proposals || {}).forEach(function (id) {
+      var p = session.proposals[id];
+      html += '<div class="sg-proposal"><b>' + esc(id) + ' · v' + p.version + '</b><p>' + esc(p.terms) + '</p><small>' + esc(t('sg_signed', '已明确接受')) + ': ' + esc(p.accepted_by.map(function (r) {return roleName(session,r);}).join(', ') || '—') + '</small></div>';
+    });
+    html += session.roles.filter(function(r){return r.private_state || (session.host && r.private);}).map(function(r){
+      return '<details class="sg-private"><summary>'+esc(r.name)+' · '+esc(t('sg_private','仅本角色知悉的信息与约束'))+'</summary><p>'+esc(r.private || '')+'</p>'+Object.keys(r.private_state || {}).map(function(key){var item=r.private_state[key];return '<p><b>'+esc(key)+': '+esc(item.value)+' '+esc(item.unit)+'</b> · '+esc(item.description || '')+'<br><small>'+esc(item.source)+'</small></p>';}).join('')+'</details>';
+    }).join('');
+    html += (session.interventions || []).map(function (e) {return '<p class="rw-hint">' + esc(t('sg_intervention', '外部干预')) + ' · ' + esc(e.text) + '</p>';}).join('');
+    if (session.host && ['acting','resolving','paused'].indexOf(session.status) >= 0) {
+      html += '<div class="rw-actions">' + (session.status === 'paused'
+        ? field('sgExtraRounds',t('sg_extra_rounds','明确追加轮数（0表示沿用预算）'),0,false) + '<button class="btn" id="sgResume">' + esc(t('sg_resume','继续下一轮')) + '</button><button class="btn ghost" id="sgFinish">' + esc(t('sg_finish','结束观察并复盘')) + '</button>'
+        : '<button class="btn ghost" id="sgPause">' + esc(t('sg_pause','下一回合前暂停')) + '</button>') + '</div>' +
+        '<details id="sgInterventionDetails"><summary>' + esc(t('sg_intervention','外部干预')) + '</summary>' +
+        field('sgEventText',t('sg_event_text','事件或政策变化'),'',true) +
+        '<label class="rw-field"><span>' + esc(t('sg_visibility','可见范围')) + '</span><select id="sgEventScope"><option value="public">' + esc(t('sg_all','所有角色')) + '</option>' + session.roles.map(function(r){return '<option value="'+esc(r.id)+'">'+esc(r.name)+'</option>';}).join('') + '</select></label>' +
+        '<details><summary>' + esc(t('sg_advanced_intervention','资源变化或外部角色（高级配置）')) + '</summary>' + field('sgEventExtra','JSON','{}',true) + '</details>' +
+        '<button class="btn ghost" id="sgIntervene">' + esc(t('sg_queue_event','提交到回合边界')) + '</button></details><p id="sgControlStatus" role="status"></p>';
+    }
+    return html + '</section>';
+  }
+
+  function controlSession(action, payload) {
+    api('POST','/api/research/games/sessions/'+encodeURIComponent(state.session.id)+'/'+action,payload || {}).then(function(data){
+      state.session=data; renderSession();
+    }).catch(function(e){ if ($('sgControlStatus')) $('sgControlStatus').textContent=e.message; });
+  }
+
+  function decisionFields(session) {
+    if (session.schema_version !== 2 || session.game_type !== 'negotiation') return '';
+    var intents = [['maintain','维持立场'],['propose','提出方案'],['accept','接受指定版本'],['reject','拒绝指定版本'],['ask','提问'],['respond','回应'],['defer','提议延期'],['shelve','提议搁置'],['withdraw','退出协商']];
+    return '<div class="sg-config-grid"><label class="rw-field"><span>'+esc(t('sg_intent','本轮决定'))+'</span><select id="sgIntent">'+intents.map(function(i){return '<option value="'+i[0]+'">'+esc(t('sg_intent_'+i[0],i[1]))+'</option>';}).join('')+'</select></label>'+field('sgProposalId',t('sg_proposal_id','提案 id'),' ',false)+field('sgProposalVersion',t('sg_version','接受/拒绝的版本'),1,false)+field('sgIssue',t('sg_issue','议题'),(session.negotiation.issues || [])[0] || 'main',false)+'</div>'+field('sgTerms',t('sg_terms','提出或修改的具体条款'),'',true);
+  }
+
   function renderGame() {
     var host = $("sgGame");
     var game = state.game;
@@ -302,7 +416,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         '<label><input type="radio" name="sgKind-' + esc(r.id) + '" value="agent" checked /> ' + esc(t("sg_kind_agent", "居民智能体")) + "</label>" +
         '<label><input type="radio" name="sgKind-' + esc(r.id) + '" value="human" /> ' + esc(t("sg_kind_human", "真人")) + "</label>" +
         "</div>" +
-        '<select class="sg-seat-agent"><option value="">' + esc(t("sg_random_resident", "随机居民")) + "</option></select>" +
+        '<select class="sg-seat-agent"><option value="">' + esc(t("sg_random_resident", "自动匹配居民")) + "</option></select>" +
         '<input class="sg-seat-name" type="text" hidden placeholder="' + esc(t("sg_player_name", "玩家称呼（可选）")) + '" />' +
         "</div>"
       );
@@ -329,13 +443,15 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       '<p class="rw-hint">' + esc(t("sg_setup_hint", "每个角色选由谁来玩：居民智能体按自己的档案演这个角色；真人座位会生成一个链接，发给参与者在自己的浏览器里打开。")) + "</p>" +
       '<div class="rw-row"><label class="rw-field rw-field-model"><span>' + esc(t("sg_city", "居民来自")) +
       '</span><select id="sgCity">' + cityOptions(state.defaultCity || "") + "</select></label></div>" +
-      '<div class="sg-seats">' + seats + "</div>" +
+      '<div class="sg-seats">' + seats + "</div>" + setupControls(spec) +
       '<div class="rw-row"><button class="btn" id="sgStart">' + esc(t("sg_start", "开始对局")) + "</button></div>" +
       '<p class="rw-progress" id="sgStartProgress"></p></div>');
     host.hidden = false;
 
     $("sgDeleteGame").addEventListener("click", deleteGame);
     $("sgStart").addEventListener("click", startSession);
+    $("sgPreview").addEventListener("click", previewCasting);
+    $("sgSaveSpec").addEventListener("click", saveDesign);
     $("sgCity").addEventListener("change", fillResidentPickers);
     host.querySelectorAll(".sg-seat").forEach(function (row) {
       row.querySelectorAll("input[type=radio]").forEach(function (radio) {
@@ -352,7 +468,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   function fillResidentPickers() {
     var city = $("sgCity").value;
     loadResidents(city).then(function (people) {
-      var options = '<option value="">' + esc(t("sg_random_resident", "随机居民")) + "</option>" +
+      var options = '<option value="">' + esc(t("sg_random_resident", "自动匹配居民")) + "</option>" +
         people.map(function (p) {
           return '<option value="' + p.id + '">#' + p.id + " " + esc(p.name) + " · " + esc(p.age) + " · " + esc(p.job || "") + "</option>";
         }).join("");
@@ -376,25 +492,18 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   }
 
   function startSession() {
-    var seats = [];
-    document.querySelectorAll(".sg-seat").forEach(function (row) {
-      var kind = row.querySelector("input[type=radio]:checked").value;
-      seats.push({
-        role_id: row.getAttribute("data-role"),
-        kind: kind,
-        agent_id: kind === "agent" ? row.querySelector(".sg-seat-agent").value : "",
-        player_name: kind === "human" ? row.querySelector(".sg-seat-name").value : "",
-      });
-    });
+    var payload;
+    try {
+      payload = sessionPayload();
+      if (state.game.spec.schema_version === 2) {
+        if (!state.preview || state.previewPayload !== JSON.stringify(payload)) throw new Error(t('sg_preview_first','请先预览当前配置的角色匹配'));
+        payload.preview_hash = state.preview.preview_hash;
+      }
+    } catch (e) { $('sgStartProgress').textContent = e.message; return; }
     var button = $("sgStart");
     button.disabled = true;
     $("sgStartProgress").textContent = t("sg_starting", "正在入座…");
-    api("POST", "/api/research/games/sessions", {
-      game_id: state.game.id,
-      seats: seats,
-      city: $("sgCity").value,
-      provider: $("sgProvider").value,
-    })
+    api("POST", "/api/research/games/sessions", payload)
       .then(function (session) {
         button.disabled = false;
         $("sgStartProgress").textContent = "";
@@ -458,6 +567,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         return tf("sg_st_humans", "等待真人行动（还差 {n} 位）", { n: waiting.length });
       case "resolving":
         return t("sg_st_resolving", "主持人正在裁定本轮结果…");
+      case "paused":
+        return t("sg_paused", "已在回合边界暂停");
       case "debriefing":
         return t("sg_st_debriefing", "正在复盘…");
       case "finished":
@@ -517,7 +628,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     return (
       "<li><b>" + esc(roleName(session, roleId)) + "</b>：" +
       (move.choice ? '<span class="rw-badge">' + esc(move.choice) + "</span> " : "") + esc(move.action) +
-      (showThought && move.thought ? '<div class="sg-thought">💭 ' + esc(move.thought) + "</div>" : "") + "</li>"
+      (showThought && move.thought ? '<div class="sg-thought">' + esc(t('sg_thought','未公开的决策记录（模型生成）')) + '：' + esc(move.thought) + "</div>" : "") + "</li>"
     );
   }
 
@@ -526,7 +637,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     session.indicator_defs.forEach(function (d) {
       names[d.id] = d.name;
     });
-    return session.rounds.slice().reverse().map(function (r) {
+    return session.rounds.slice().sort(function (a,b) { return a.index - b.index; }).map(function (r) {
       var moved = Object.keys(r.indicator_changes || {}).filter(function (k) {
         return r.indicator_changes[k];
       }).map(function (k) {
@@ -544,6 +655,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         '<ul class="rw-list">' + Object.keys(r.actions).map(function (k) {
           return actionLine(session, k, r.actions[k], session.host);
         }).join("") + "</ul>" +
+        (r.decision_errors || []).map(function(e){return '<p class="rw-hint">'+esc(roleName(session,e.role_id))+': '+esc(e.reason)+'</p>';}).join('') +
         '<p class="sg-narration">' + esc(r.narration) + "</p>" + (moved ? "<p>" + moved + "</p>" : "") +
         (outcomes ? '<details><summary class="rw-hint">' + esc(t("sg_outcomes", "各方得失")) + '</summary><ul class="rw-list">' + outcomes + "</ul></details>" : "") +
         "</div>"
@@ -568,6 +680,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
           (round.options.length ? '<div class="sg-options">' + round.options.map(function (o) {
             return '<label class="rw-kind-opt"><input type="radio" name="sgChoice" value="' + esc(o) + '" /><span>' + esc(o) + "</span></label>";
           }).join("") + "</div>" : "") +
+          decisionFields(session) +
           '<label class="rw-field"><span>' + esc(t("sg_your_action", "你的行动或发言")) + '</span><textarea id="sgAction" rows="4" placeholder="' +
           esc(t("sg_action_ph", "用第一人称写：你做了什么、说了什么。")) + '"></textarea></label>' +
           '<button class="btn" id="sgSubmit">' + esc(t("sg_submit", "提交本轮行动")) + '</button> <span class="rw-progress" id="sgActProgress"></span>';
@@ -627,6 +740,11 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     }
     // Keep a half-typed action across re-renders triggered by polling.
     var draft = $("sgAction") ? $("sgAction").value : "";
+    var savedFields = {};
+    var focused = document.activeElement && document.activeElement.id;
+    host.querySelectorAll('input[id], textarea[id], select[id]').forEach(function(el){ savedFields[el.id] = el.value; });
+    var eventOpen = $('sgInterventionDetails') && $('sgInterventionDetails').open;
+    var scroll = window.scrollY;
     var me = session.me;
     var myRole = me ? session.roles.filter(function (r) { return r.id === me.role_id; })[0] : null;
     var live = session.status !== "finished" && session.status !== "failed";
@@ -646,12 +764,21 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
         : "") +
       indicatorBars(session) +
       seatsBlock(session) +
-      currentBlock(session) +
-      debriefBlock(session) +
-      (session.rounds.length ? "<h4>" + esc(t("sg_history", "回合记录")) + "</h4>" + historyBlock(session) : ""));
+      (session.rounds.length ? "<h4>" + esc(t("sg_history", "回合记录")) + "</h4>" + historyBlock(session) : "") +
+      currentBlock(session) + negotiationBlock(session) +
+      debriefBlock(session));
     host.hidden = false;
 
     if ($("sgAction")) $("sgAction").value = draft;
+    Object.keys(savedFields).forEach(function(id){if ($(id)) $(id).value=savedFields[id];});
+    if ($('sgInterventionDetails')) $('sgInterventionDetails').open=!!eventOpen;
+    if (focused && $(focused)) $(focused).focus({preventScroll:true});
+    window.scrollTo(0,scroll);
+    [['sgPause','pause'],['sgResume','resume'],['sgFinish','finish']].forEach(function(pair){if ($(pair[0])) $(pair[0]).addEventListener('click',function(){controlSession(pair[1],pair[1]==='resume'?{extra_rounds:Number($('sgExtraRounds').value)}:{});});});
+    if ($('sgIntervene')) $('sgIntervene').addEventListener('click',function(){
+      try { var extra=JSON.parse($('sgEventExtra').value || '{}'); controlSession('intervene',Object.assign({},extra,{id:crypto.randomUUID(),text:$('sgEventText').value,visibility:$('sgEventScope').value})); }
+      catch(e){$('sgControlStatus').textContent=e.message;}
+    });
     if ($("sgSubmit")) $("sgSubmit").addEventListener("click", submitAction);
     if ($("sgForce")) $("sgForce").addEventListener("click", forceResolve);
     if ($("sgExport")) $("sgExport").addEventListener("click", exportSession);
@@ -683,6 +810,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       seat: state.seat,
       action: action,
       choice: checked ? checked.value : "",
+      decision: $('sgIntent') ? {intent:$('sgIntent').value, proposal_id:$('sgProposalId').value.trim(),
+        proposal_version:Number($('sgProposalVersion').value), issue:$('sgIssue').value.trim(), terms:$('sgTerms').value.trim()} : undefined,
     })
       .then(function (data) {
         $("sgAction").value = "";

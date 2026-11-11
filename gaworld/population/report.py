@@ -167,6 +167,34 @@ def validate_population(
         impossible_parents,
     )
 
+    # The household *line* on a profile is written from the resident's role
+    # in the household, so the role itself has to be sound. A minor who is
+    # the head of the household would be described as the parent of the
+    # children under the same roof; a minor whose role says "spouse" would
+    # be described as living with a spouse.
+    add(
+        "error",
+        "minor_as_head_or_spouse",
+        "未成年人被记为户主或配偶",
+        [p.id for p in people if p.age <= CHILD_MAX_AGE and p.household_role in ("head", "spouse")],
+    )
+    # A couple, a core family and a three-generation household all imply two
+    # adults under the roof. One adult in such a household means the profile
+    # would claim a spouse (or a second parent) that does not exist.
+    partnerless: list[int] = []
+    for record in households:
+        if record.type not in ("couple", "nuclear", "multigen"):
+            continue
+        adults_here = [by_id[i] for i in record.member_ids if i in by_id and by_id[i].age > CHILD_MAX_AGE]
+        if len(adults_here) < 2:
+            partnerless.extend(m.id for m in adults_here)
+    add(
+        "error",
+        "household_without_partner",
+        "夫妻/核心/三代同堂户里不足两名成年人",
+        partnerless,
+    )
+
     # Residence must remain parseable by the map layer ("区·板块").
     add(
         "error",
@@ -269,6 +297,10 @@ def build_report(
     employed_income = [p.income_monthly for p in employed]
 
     achieved = {
+        "adult_student_rate": _delta(
+            spec.education_work.adult_student_rate,
+            sum(p.student_status in {"大专", "本科", "硕士", "博士"} for p in adults) / max(len(adults), 1),
+        ),
         "median_age": _delta(spec.demography.median_age, statistics.median(ages) if ages else 0),
         "share_under_18": _delta(
             spec.demography.share_under_18, sum(a <= CHILD_MAX_AGE for a in ages) / max(size, 1)
@@ -350,6 +382,7 @@ def build_report(
             "education": {
                 level: sum(1 for p in people if p.education == level) for level in EDUCATION_LEVELS
             },
+            "student_status": dict(Counter(p.student_status for p in people)),
             "age_bands": {
                 band: sum(1 for p in people if AGE_BAND_RANGES[band][0] <= p.age <= AGE_BAND_RANGES[band][1])
                 for band in AGE_BANDS

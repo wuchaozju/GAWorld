@@ -37,6 +37,10 @@ const poleHi = (v) => __(`st.hi.${v.key}`);
 const BEHAVIOR_KEYS = ["mobility_intent", "voice_propensity", "risk_preference", "platform_dependence", "policy_sensitivity"];
 
 const store = {
+  educationSchema: {},
+  filters: {},
+  studentSample: {count:30, seed:42, student_status:"本科"},
+  studentPreview: null,
   agents: [],
   currentId: null,
   detail: null,
@@ -69,6 +73,15 @@ const store = {
    * cache survives step switches because renderStep() rewrites the DOM. */
   autobioCache: null, // { markdown, length, length_cjk, from_cache, path } from /api/agents/<id>/autobiography
   autobioLoading: false, // guards the lazy fetch against retry loops
+  /* Life prediction. Same shape as the autobiography's cache (the panel
+   * hydrates from disk on every render so a saved document survives a step
+   * switch), plus the three operator inputs, which live in the draft so a
+   * re-render does not throw away a half-typed 人生大致走向. */
+  predictCache: null, // { markdown, length, length_cjk, from_cache, path } from /api/agents/<id>/life-prediction
+  predictLoading: false, // guards the lazy fetch against retry loops
+  predictDraft: null, // { direction, randomness, turbulence }
+  predictTimer: null, // polling handle for the running job
+  predictWatchdog: null, // gives up on a job that never finishes
   /* Cross-city browsing. `cities` is the catalogue, `runningCity` the slug the
    * simulator is pointed at, `cityRef` the one being looked at. They differ
    * only in browse mode (the 城市 page's hand-off), which is read-only. */
@@ -176,12 +189,71 @@ function radarSVG(stateObj, withLabels) {
 async function loadAgents() {
   const payload = await api("/api/agents");
   store.agents = payload.agents || [];
-  const sel = $("#agentSelect");
-  sel.innerHTML = gwHTML(store.agents.map((a) => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)}</option>`).join(""));
+  renderAgentOptions();
   if (store.agents.length && store.currentId == null) {
     store.currentId = store.agents[0].id;
   }
-  sel.value = String(store.currentId);
+  $("#agentSelect").value = String(store.currentId);
+}
+
+function renderAgentOptions() {
+  const filtered = store.agents.filter(a => GAWorldResidentFilters.matches(a, store.filters));
+  const currentIncluded = filtered.some(a => String(a.id) === String(store.currentId));
+  $("#agentSelect").innerHTML = gwHTML((!currentIncluded ? `<option value="">${esc(__("sample.choose"))}</option>` : "") + filtered.map(a => `<option value="${a.id}">${esc(a.id)} · ${esc(a.name)} · ${esc(a.student_status || "")}</option>`).join(""));
+  $("#agentSelect").value = currentIncluded ? String(store.currentId) : "";
+  const count = $("#studioFilterCount");
+  if (count) count.textContent = GAWorldResidentFilters.count(filtered.length, store.agents.length);
+}
+
+function educationSelect(key, value) {
+  const list = key === "education" ? ["未知", ...(store.educationSchema.education_levels || [])] : (store.educationSchema.student_statuses || ["未知"]);
+  return `<select data-idt="${key}">${[...new Set([...list, value || "未知"])].map(v => `<option value="${esc(v)}"${v === (value || "未知") ? " selected" : ""}>${esc(GAWorldResidentFilters.valueLabel(v))}</option>`).join("")}</select>`;
+}
+
+function studentSamplesCard() {
+  const s = store.studentSample;
+  return `<details class="card"><summary>${esc(__("sample.append_title"))}</summary>
+    <p class="section-note">${esc(__("sample.append_note"))}</p>
+    <div class="grid2">
+      ${field(__("sample.student_status"), `<select id="studentStage">${["大专", "本科", "硕士", "博士"].map(v => `<option value="${v}"${v === s.student_status ? " selected" : ""}>${esc(GAWorldResidentFilters.valueLabel(v))}</option>`).join("")}</select>`)}
+      ${field(__("sample.number"), `<input id="studentCount" type="number" min="1" max="200" value="${s.count}">`)}
+      ${field(__("sample.seed"), `<input id="studentSeed" type="number" min="0" max="2147483647" value="${s.seed}">`)}
+    </div>
+    <button type="button" class="button" id="studentPreviewBtn">${esc(__("sample.preview"))}</button>
+    <div class="student-sample-preview" id="studentPreviewList" role="status"></div>
+    <button type="button" class="button primary" id="studentAppendBtn" disabled>${esc(__("sample.append"))}</button>
+  </details>`;
+}
+
+function bindStudentSamples() {
+  const previewBtn = $("#studentPreviewBtn"), appendBtn = $("#studentAppendBtn");
+  if (!previewBtn) return;
+  store.studentPreview = null;
+  const invalidate = () => {
+    store.studentSample = {count:Number($("#studentCount").value), seed:Number($("#studentSeed").value), student_status:$("#studentStage").value};
+    store.studentPreview = null; appendBtn.disabled = true; $("#studentPreviewList").textContent = "";
+  };
+  ["studentCount", "studentSeed", "studentStage"].forEach(id => ["input", "change"].forEach(event => $("#" + id).addEventListener(event, invalidate)));
+  previewBtn.addEventListener("click", withBusy(previewBtn, async () => {
+    invalidate();
+    try {
+      const request = {...store.studentSample};
+      const preview = await api("/api/population/students/preview", {method:"POST", body:JSON.stringify(request)});
+      if (JSON.stringify(request) !== JSON.stringify(store.studentSample)) return;
+      store.studentPreview = {...request, preview_token:preview.preview_token};
+      $("#studentPreviewList").innerHTML = gwHTML(preview.people.map(p => `<p>#${p.id} ${esc(p.name)} · ${p.age} · ${esc(GAWorldResidentFilters.valueLabel(p.education))} / ${esc(GAWorldResidentFilters.valueLabel(p.student_status))}</p>`).join(""));
+      appendBtn.disabled = false;
+    } catch (err) { foot(err.message, "err"); }
+  }));
+  appendBtn.addEventListener("click", withBusy(appendBtn, async () => {
+    if (!store.studentPreview) return;
+    try {
+      const result = await api("/api/population/students/append", {method:"POST", body:JSON.stringify(store.studentPreview)});
+      invalidate();
+      await loadAgents();
+      foot(__f("sample.appended", {count:result.count}), "ok");
+    } catch (err) { invalidate(); foot(err.message, "err"); }
+  }));
 }
 
 function draftFromDetail(d) {
@@ -198,7 +270,7 @@ function blankDraft() {
   STATE_VARS.forEach((v) => (state[v.key] = v.key === "emotion" ? 0.55 : 0.5));
   /* i18n-exempt-start: seed values written into the state CSV, not UI text */
   return {
-    identity: { id: null, name: "", gender: "女", age: 30, hukou: "本地", residence: "杭州" },
+    identity: { id: null, name: "", gender: "女", age: 30, hukou: "本地", residence: "杭州", education:"未知", student_status:"未知", job:"" },
     /* i18n-exempt-end */
     state,
     profile_text: "",
@@ -225,6 +297,11 @@ async function selectAgent(id) {
   store.moltbook = null; // fetched lazily by moltbookCard() when step 7 renders
   store.autobioCache = null;
   store.autobioLoading = false;
+  store.predictCache = null;
+  store.predictLoading = false;
+  // The three prediction inputs belong to one resident: a new resident must
+  // not inherit the previous one's 人生大致走向.
+  store.predictDraft = { direction: "", randomness: 50, turbulence: 50 };
   $("#saveHint").textContent = __("sd.loaded");
   renderSubject();
   renderStep();
@@ -237,7 +314,9 @@ async function selectAgent(id) {
   store.big5Draft = null;
   store.big5Dirty = false;
   loadBig5().then(() => { if (store.step === 2) renderStep(); });
-  loadAutobiography().then(() => { if (store.step === 7) renderStep(); });
+  // Both long-form documents live in step 1 (身份), so they hydrate there.
+  loadAutobiography().then(() => { if (store.step === 1) renderStep(); });
+  loadLifePrediction().then(() => { if (store.step === 1) renderStep(); });
 }
 
 /* ---------- cross-city browsing ----------
@@ -351,6 +430,9 @@ async function browseAgent(id) {
 
 /** Buttons that write are pointless (and misleading) while browsing. */
 function setEditingChrome(editable) {
+  const filters = $("#studioFilters");
+  if (filters) filters.closest("details").hidden = !editable;
+  if ($("#studioFilterCount")) $("#studioFilterCount").hidden = !editable;
   ["saveBtn", "runBtn", "newAgentBtn", "distillBtn"].forEach((id) => {
     const btn = document.getElementById(id);
     if (btn) btn.disabled = !editable;
@@ -476,6 +558,103 @@ function renderStep() {
   bindStep();
 }
 
+/* ---------- long-form documents (自传 + 人生预测) ----------
+ *
+ * Two cards live in step 1 (身份), side by side in one column:
+ *
+ * * 生成自传 — what has already happened to this resident, written by the
+ *   resident from their own memories.
+ * * 人生预测 — what is still going to happen to them: the same first-person
+ *   voice, but narrated from the far end of the life, all the way to death.
+ *
+ * They belong together because they are two halves of one story: the
+ * autobiography is what the resident has lived, the prediction is what that
+ * same person, with the same Big Five, the same goals and the same wounds,
+ * will go on to live. Split across two steps, that pairing is invisible.
+ *
+ * Both are single long model calls served as background jobs, so both cards
+ * show the same three states: nothing written yet (Start), a document saved
+ * on disk (Regenerate), and a running job (the live progress line).
+ * ---------------------------------------------------------------------- */
+
+function autobiographyCard() {
+  const hasCache = !!store.autobioCache && !!store.autobioCache.markdown;
+  const btnLabel = hasCache ? __("sd.autobio_regen") : __("sd.autobio_start");
+  const btnClass = store.creating ? "" : "primary";
+  const cachedMeta = hasCache
+    ? __f("sd.autobio_loaded", { cjk: store.autobioCache.length_cjk || 0 })
+    : "";
+  /* Anchor to the server endpoint, not a Blob URL — Blob URLs die the moment
+   * the panel re-renders, so they are the typical cause of "download
+   * failed". The server streams the saved file with the right
+   * Content-Disposition header so the browser saves it directly. */
+  const dlHref = store.currentId == null
+    ? ""
+    : `/api/agents/${store.currentId}/autobiography/download`;
+  return `
+    <div class="card">
+      <h3>${esc(__("sd.autobio_title"))}</h3>
+      <p class="section-note">${esc(__("sd.autobio_note"))}</p>
+      <button id="autobioBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
+      <div class="autobio-out" id="autobioOut" ${hasCache ? "" : "hidden"}>
+        <div class="autobio-meta" id="autobioMeta">${esc(cachedMeta)}</div>
+        <div class="autobio-actions">
+          <a id="autobioDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-autobiography.md`)}">${esc(__("sd.autobio_download"))}</a>
+        </div>
+        <div class="profile-md md-body" id="autobioBody">${hasCache ? renderMarkdown(store.autobioCache.markdown) : ""}</div>
+      </div>
+    </div>`;
+}
+
+/* The operator's three inputs. The two knobs are 0–100 and carry a pole
+ * description at each end: a bare number tells the reader nothing, and the
+ * server turns the same number into a band of prose for the model (see
+ * ``gaworld/apps/life_prediction_api.py::_band``). */
+function ensurePredictDraft() {
+  if (!store.predictDraft) store.predictDraft = { direction: "", randomness: 50, turbulence: 50 };
+  return store.predictDraft;
+}
+
+function predictSlider(key, labelKey, loKey, hiKey) {
+  const draft = ensurePredictDraft();
+  const value = Number(draft[key]) || 0;
+  return `
+    <div class="slider-row" data-predict-row="${esc(key)}">
+      <div class="slabel"><span>${esc(__(labelKey))}</span><span class="val">${value}</span></div>
+      <input type="range" min="0" max="100" step="1" value="${value}" data-predict-scale="${esc(key)}">
+      <div class="poles"><span>${esc(__(loKey))}</span><span>${esc(__(hiKey))}</span></div>
+    </div>`;
+}
+
+function lifePredictionCard() {
+  const draft = ensurePredictDraft();
+  const hasCache = !!store.predictCache && !!store.predictCache.markdown;
+  const btnLabel = hasCache ? __("sd.predict_regen") : __("sd.predict_start");
+  const btnClass = store.creating ? "" : "primary";
+  const cachedMeta = hasCache
+    ? __f("sd.predict_loaded", { cjk: store.predictCache.length_cjk || 0 })
+    : "";
+  const dlHref = store.currentId == null
+    ? ""
+    : `/api/agents/${store.currentId}/life-prediction/download`;
+  return `
+    <div class="card">
+      <h3>${esc(__("sd.predict_title"))}</h3>
+      <p class="section-note">${esc(__("sd.predict_note"))}</p>
+      ${field(__("sd.predict_direction"), `<textarea id="predictDirection" placeholder="${esc(__("sd.predict_direction_ph"))}">${esc(draft.direction)}</textarea>`)}
+      ${predictSlider("randomness", "sd.predict_randomness", "sd.predict_randomness_lo", "sd.predict_randomness_hi")}
+      ${predictSlider("turbulence", "sd.predict_turbulence", "sd.predict_turbulence_lo", "sd.predict_turbulence_hi")}
+      <button id="predictBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
+      <div class="autobio-out" id="predictOut" ${hasCache ? "" : "hidden"}>
+        <div class="autobio-meta" id="predictMeta">${esc(cachedMeta)}</div>
+        <div class="autobio-actions">
+          <a id="predictDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-life-prediction.md`)}">${esc(__("sd.predict_download"))}</a>
+        </div>
+        <div class="profile-md md-body" id="predictBody">${hasCache ? renderMarkdown(store.predictCache.markdown) : ""}</div>
+      </div>
+    </div>`;
+}
+
 function stepIdentity() {
   const i = store.draft.identity;
   const extra = store.creating
@@ -494,19 +673,30 @@ function stepIdentity() {
           ${field(__("sd.name"), `<input data-idt="name" value="${esc(i.name)}">`)}
           <div class="grid2">
             ${field(__("sd.gender"), `<input data-idt="gender" value="${esc(i.gender)}">`)}
-            ${field(__("sd.age"), `<input data-idt="age" type="number" min="16" max="90" value="${esc(i.age)}">`)}
+            ${field(__("sd.age"), `<input data-idt="age" type="number" min="0" max="110" value="${esc(i.age)}">`)}
           </div>
           <div class="grid2">
             ${field(__("sd.hukou"), `<input data-idt="hukou" value="${esc(i.hukou)}">`)}
             ${field(__("sd.residence"), `<input data-idt="residence" value="${esc(i.residence)}">`)}
           </div>
+          <div class="grid2">
+            ${field(__("sample.education"), educationSelect("education", i.education))}
+            ${field(__("sample.student_status"), educationSelect("student_status", i.student_status))}
+          </div>
+          ${field(__("sample.job"), `<input data-idt="job" value="${esc(i.job || "")}">`)}
+          <p class="section-note">${esc(__("sample.education_note"))}</p>
         </div>
         ${extra}
+        ${studentSamplesCard()}
       </div>
       <div class="card">
         <h3>${esc(__("sd.state_glance"))}</h3>
         <div class="viz-wrap">${radarSVG(store.draft.state, true)}</div>
       </div>
+    </div>
+    <div class="docs-block">
+      ${autobiographyCard()}
+      ${lifePredictionCard()}
     </div>`;
 }
 
@@ -539,8 +729,9 @@ async function confirmProfile() {
     await api(`/api/agents/${store.currentId}/profile`, {
       method: "POST", body: JSON.stringify({ text: store.profileEdit }),
     });
-    store.draft.profile_text = store.profileEdit;
-    if (store.detail) store.detail.profile_text = store.profileEdit;
+    store.detail = await api(`/api/agents/${store.currentId}/detail`);
+    store.draft.profile_text = store.detail.profile_text;
+    ["education", "student_status", "job"].forEach(key => { store.draft.identity[key] = store.detail.identity[key]; });
     store.profileEditing = false;
     foot(__("sd.profile_saved"), "ok");
     renderStep();
@@ -621,6 +812,20 @@ async function loadAutobiography() {
     store.autobioCache = null;
   } finally {
     store.autobioLoading = false;
+  }
+}
+
+/* Hydrate the saved life prediction from disk, exactly like the
+ * autobiography above. */
+async function loadLifePrediction() {
+  if (store.creating || store.currentId == null || store.predictLoading) return;
+  store.predictLoading = true;
+  try {
+    store.predictCache = await api(`/api/agents/${store.currentId}/life-prediction`);
+  } catch (err) {
+    store.predictCache = null;
+  } finally {
+    store.predictLoading = false;
   }
 }
 
@@ -1835,24 +2040,6 @@ function stepReview() {
     .map(([k, v]) => `<div><span class="k">${esc(__(k))}</span><span class="v">${esc(v)}</span></div>`).join("");
   const stRows = STATE_VARS.map((v) => `<div><span class="k">${esc(varLabel(v))}</span><span class="v">${st[v.key].toFixed(2)}</span></div>`).join("");
   const finCard = financeCard();
-  /* The autobiography card has three visual states: nothing generated yet
-   * (Start), a saved essay on disk (cached body + Regenerate), and a running
-   * job (the live progress line — handled by runAutobiography() itself). The
-   * server is the source of truth for "have we ever written one?" so a hard
-   * refresh or a new tab shows the same content. */
-  const hasCache = !!store.autobioCache && !!store.autobioCache.markdown;
-  const btnLabel = hasCache ? __("sd.autobio_regen") : __("sd.autobio_start");
-  const btnClass = store.creating ? "" : "primary";
-  const cachedMeta = hasCache
-    ? __f("sd.autobio_loaded", { cjk: store.autobioCache.length_cjk || 0 })
-    : "";
-  /* Anchor to the server endpoint, not a Blob URL — Blob URLs die the moment
-   * the panel re-renders, so they are the typical cause of "download
-   * failed". The server streams the saved file with the right
-   * Content-Disposition header so the browser saves it directly. */
-  const dlHref = store.currentId == null
-    ? ""
-    : `/api/agents/${store.currentId}/autobiography/download`;
   return `
     <h2 class="section-title">${esc(__("sd.review_title"))}</h2>
     <p class="section-note">${esc(store.creating ? __("sd.review_create_note") : __("sd.review_save_note"))}</p>
@@ -1869,18 +2056,6 @@ function stepReview() {
         <input id="interviewQ" placeholder="${esc(__("sd.interview_ph"))}"></label>
       <button id="interviewBtn" class="button" ${store.creating ? "disabled" : ""}>${esc(__("sd.interview_start"))}</button>
       <div class="interview-out" id="interviewOut" hidden></div>
-    </div>
-    <div class="card">
-      <h3>${esc(__("sd.autobio_title"))}</h3>
-      <p class="section-note">${esc(__("sd.autobio_note"))}</p>
-      <button id="autobioBtn" class="button ${btnClass}" ${store.creating ? "disabled" : ""}>${esc(btnLabel)}</button>
-      <div class="autobio-out" id="autobioOut" ${hasCache ? "" : "hidden"}>
-        <div class="autobio-meta" id="autobioMeta">${esc(cachedMeta)}</div>
-        <div class="autobio-actions">
-          <a id="autobioDownload" class="button mini" href="${esc(dlHref)}" download="${esc(`agent-${store.currentId || 0}-autobiography.md`)}">${esc(__("sd.autobio_download"))}</a>
-        </div>
-        <div class="profile-md md-body" id="autobioBody">${hasCache ? renderMarkdown(store.autobioCache.markdown) : ""}</div>
-      </div>
     </div>
     <div class="deploy-actions">
       <button id="saveBtn2" class="button primary">${esc(store.creating ? __("sd.create_resident") : __("sd.save_changes"))}</button>
@@ -1914,11 +2089,12 @@ function agentCardBlock(detail) {
 /* ---------- step event binding ---------- */
 function bindStep() {
   $("#stepBody").querySelectorAll("[data-idt]").forEach((el) => {
-    el.addEventListener("input", () => {
+    const update = () => {
       const key = el.dataset.idt;
       store.draft.identity[key] = key === "age" ? Number(el.value) : el.value;
       renderSubject();
-    });
+    };
+    ["input", "change"].forEach(event => el.addEventListener(event, update));
   });
   const pEdit = $("#stepBody").querySelector("[data-profile-edit]");
   if (pEdit) pEdit.addEventListener("input", () => { store.profileEdit = pEdit.value; });
@@ -2002,11 +2178,24 @@ function bindStep() {
   });
   const sg = $("#saveGoalsBtn"); if (sg) sg.addEventListener("click", withBusy(sg, saveGoals, "sd.goals_saving", "保存目标…"));
   bindMemoryStep();
+  bindStudentSamples();
   bindSocialStep();
   bindFinanceStep();
   bindMoltbookStep();
   const iBtn = $("#interviewBtn"); if (iBtn) iBtn.addEventListener("click", withBusy(iBtn, runInterview, "sd.interview_running", "采访中…"));
   const aBtn = $("#autobioBtn"); if (aBtn) aBtn.addEventListener("click", withBusy(aBtn, runAutobiography, "sd.autobio_running", "自传生成中…"));
+  const pDir = $("#predictDirection");
+  if (pDir) pDir.addEventListener("input", () => { ensurePredictDraft().direction = pDir.value; });
+  $("#stepBody").querySelectorAll("[data-predict-scale]").forEach((el) => {
+    el.addEventListener("input", () => {
+      const key = el.dataset.predictScale;
+      ensurePredictDraft()[key] = Number(el.value);
+      const row = el.closest(".slider-row");
+      const val = row && row.querySelector(".val");
+      if (val) val.textContent = el.value;
+    });
+  });
+  const predBtn = $("#predictBtn"); if (predBtn) predBtn.addEventListener("click", withBusy(predBtn, runLifePrediction, "sd.predict_running", "人生预测生成中…"));
   const s2 = $("#saveBtn2"); if (s2) s2.addEventListener("click", withBusy(s2, save, "sd.saving", "保存中…"));
   const r2 = $("#runBtn2"); if (r2) r2.addEventListener("click", withBusy(r2, runSim, "studio.run", "运行中…"));
 }
@@ -2205,7 +2394,8 @@ async function save() {
     foot(__("sd.saving"));
     if (store.creating) {
       const body = { name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
-        state: store.draft.state, job: store.draft.narrative.job, personality: store.draft.narrative.personality };
+        education:i.education, student_status:i.student_status,
+        state: store.draft.state, job: i.job || store.draft.narrative.job, personality: store.draft.narrative.personality };
       /* A distilled draft is created through /api/persona/deploy instead: it
        * writes the same identity and state, plus the distilled thinking
        * framework into the profile and the OCEAN seeds into the Big Five CSV,
@@ -2223,11 +2413,14 @@ async function save() {
       await selectAgent(newId);
       return true;
     }
-    await api(`/api/agents/${store.currentId}/state`, { method: "POST", body: JSON.stringify({
-      name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence, state: store.draft.state }) });
     if (store.detail && store.draft.profile_text && store.draft.profile_text !== store.detail.profile_text) {
       await api(`/api/agents/${store.currentId}/profile`, { method: "POST", body: JSON.stringify({ text: store.draft.profile_text }) });
     }
+    await api(`/api/agents/${store.currentId}/state`, { method: "POST", body: JSON.stringify({
+      name: i.name, gender: i.gender, age: i.age, hukou: i.hukou, residence: i.residence,
+      education:i.education, student_status:i.student_status, job:i.job, state: store.draft.state }) });
+    store.detail = await api(`/api/agents/${store.currentId}/detail`);
+    store.draft.profile_text = store.detail.profile_text;
     $("#saveHint").textContent = __("sd.saved_tick");
     foot(__("sd.saved_csv_profile"), "ok");
     // refresh options label in case name changed
@@ -2375,6 +2568,105 @@ function finishAutobiography(result, meta) {
   foot(__f("sd.autobio_done", { length: result.length_cjk || 0 }), "ok");
 }
 
+/* Compose the predicted life: the resident's own narration of everything
+ * from now until death, steered by the three operator inputs.
+ *
+ * Same job shape as the autobiography (POST enqueues, GET polls), because
+ * the cost is the same — one 20k-character model call that runs for minutes.
+ * A synchronous handler would block the dashboard's request thread. */
+async function runLifePrediction() {
+  if (store.creating || store.currentId == null) {
+    foot(__("sd.predict_no_agent"), "err"); return;
+  }
+  const btn = $("#predictBtn");
+  const out = $("#predictOut");
+  const meta = $("#predictMeta");
+  const body = $("#predictBody");
+  if (!btn || !out) return;
+  const draft = ensurePredictDraft();
+  btn.disabled = true;
+  out.hidden = false;
+  body.innerHTML = gwHTML("");
+
+  /* Reset stuck handlers if a previous run died before this one started. */
+  if (store.predictTimer) { clearInterval(store.predictTimer); store.predictTimer = null; }
+
+  /* A knob that never got a number keeps the neutral middle instead of
+   * silently meaning "nothing can go wrong". */
+  const knob = (value) => (Number.isFinite(Number(value)) ? Math.round(Number(value)) : 50);
+
+  let job;
+  try {
+    job = await api(`/api/agents/${store.currentId}/life-prediction`, {
+      method: "POST",
+      body: JSON.stringify({
+        direction: draft.direction || "",
+        randomness: knob(draft.randomness),
+        turbulence: knob(draft.turbulence),
+      }),
+    });
+  } catch (err) {
+    btn.disabled = false;
+    meta.textContent = __("sd.predict_failed") + err.message;
+    foot(__("sd.predict_failed_short"), "err");
+    return;
+  }
+
+  meta.textContent = __("sd.predict_running");
+  foot(__("sd.predict_started"), "ok");
+
+  const startedMs = Date.now();
+  store.predictTimer = setInterval(async () => {
+    let res;
+    try {
+      res = await api(`/api/agents/${store.currentId}/life-prediction/jobs/${job.job_id}`);
+    } catch (err) {
+      // Network blip — keep polling until the watchdog kicks in.
+      return;
+    }
+    const elapsed = Math.round((Date.now() - startedMs) / 1000);
+    if (res.status === "done") {
+      finishLifePrediction(res.result);
+    } else if (res.status === "error") {
+      meta.textContent = __("sd.predict_failed") + (res.message || "");
+      body.innerHTML = gwHTML("");
+      foot(__("sd.predict_failed_short"), "err");
+      clearInterval(store.predictTimer); store.predictTimer = null;
+      btn.disabled = false;
+    } else {
+      // running: refresh progress line so the user sees the panel is alive.
+      meta.textContent = `${__("sd.predict_running")}（${elapsed}s · ${res.message || ""}）`;
+    }
+  }, 3000);
+
+  // Watchdog: if the backend never says done after 12 minutes, give up
+  // rather than spinning forever. 24k output tokens at the slowest model
+  // finishes inside that ceiling with plenty of margin.
+  store.predictWatchdog = setTimeout(() => {
+    if (!store.predictTimer) return;
+    clearInterval(store.predictTimer); store.predictTimer = null;
+    meta.textContent = __("sd.predict_timeout");
+    foot(__("sd.predict_failed_short"), "err");
+    btn.disabled = false;
+  }, 12 * 60 * 1000);
+}
+
+function finishLifePrediction(result) {
+  if (store.predictTimer) { clearInterval(store.predictTimer); store.predictTimer = null; }
+  if (store.predictWatchdog) { clearTimeout(store.predictWatchdog); store.predictWatchdog = null; }
+
+  /* Same trick as the autobiography: the cache survives the re-render, so
+   * the button flips to "Regenerate" and the body stays on screen. */
+  store.predictCache = {
+    markdown: result.markdown || "",
+    length: result.length || 0,
+    length_cjk: result.length_cjk || 0,
+    from_cache: false,
+  };
+  renderStep();
+  foot(__f("sd.predict_done", { length: result.length_cjk || 0 }), "ok");
+}
+
 /* ---------- wire up ---------- */
 function init() {
   document.querySelectorAll(".step").forEach((b) => b.addEventListener("click", () => {
@@ -2383,12 +2675,13 @@ function init() {
   }));
   $("#citySelect").addEventListener("change", (e) => pickCity(e.target.value).catch((err) => foot(err.message, "err")));
   $("#agentSelect").addEventListener("change", (e) => {
+    if (!e.target.value) return;
     const pick = store.browsing ? browseAgent(e.target.value) : selectAgent(e.target.value);
     pick.catch((err) => foot(err.message, "err"));
   });
-  withBusy($("#newAgentBtn"), startCreate, "studio.new", "新建中…");
-  withBusy($("#saveBtn"), save, "sd.saving", "保存中…");
-  withBusy($("#runBtn"), runSim, "studio.run", "运行中…");
+  $("#newAgentBtn").addEventListener("click", withBusy($("#newAgentBtn"), startCreate, "studio.new", "新建中…"));
+  $("#saveBtn").addEventListener("click", withBusy($("#saveBtn"), save, "sd.saving", "保存中…"));
+  $("#runBtn").addEventListener("click", withBusy($("#runBtn"), runSim, "studio.run", "运行中…"));
   document.addEventListener("persona:fill", (ev) => applyPersona(ev.detail));
   $("#generatePersonaBtn").addEventListener("click", () => {
     generateWithLLM().catch((err) => foot(err.message, "err"));
@@ -2406,7 +2699,12 @@ function init() {
   const wantedCity = params.get("city");
   const wantedAgent = params.get("agent");
 
-  loadCities()
+  Promise.all([loadCities(), api("/api/population/schema").then(schema => {
+    store.educationSchema = schema;
+    const host = $("#studioFilters");
+    host.innerHTML = gwHTML(GAWorldResidentFilters.controls(schema, store.filters, "studio"));
+    ["input", "change"].forEach(event => host.addEventListener(event, () => { store.filters = GAWorldResidentFilters.read(host); renderAgentOptions(); }));
+  })])
     .then(() => {
       if (wantedCity != null && wantedCity !== store.runningCity) {
         store.cityRef = wantedCity;

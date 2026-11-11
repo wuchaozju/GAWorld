@@ -355,6 +355,9 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     $("#rOverall").innerHTML = gwHTML([
       metric(t("rumor.m_reach", "触达"), stats.reached + "/" + stats.total, "· " + spread + "%"),
       metric(t("rumor.m_believers", "相信"), stats.believers, ""),
+      metric(t("rumor.entertainment", "娱乐玩梗转发"), stats.entertainment_forwarders, ""),
+      metric(t("rumor.nonbelieving", "不相信仍转发"), stats.nonbelieving_forwarders, ""),
+      metric(t("rumor.belief_forwarders", "因相信内容转发"), stats.belief_forwarders, ""),
       metric(t("rumor.m_belief", "平均信任度"), stats.avg_belief, "%"),
       metric(
         t("rumor.m_super", "最大传播者"),
@@ -515,6 +518,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
             <span class="tag">${esc(node.action)}</span>
           </header>
           <p class="detail">${esc(t("rumor.round", "第"))}${node.heard_round + 1}${esc(t("rumor.round_suffix", "轮"))}${esc(t("rumor.heard_from", "听说，来自"))}${esc(from)}</p>
+          <p class="detail">${esc(t("rumor.motive", "传播动机"))}：${esc(node.motive || t("rumor.unspecified", "未说明"))}</p>
+          ${(node.events || []).length ? `<details><summary>${esc(t("rumor.turns", "每轮发言与收到的消息"))}</summary>${node.events.map(e => `<p>${e.round+1} · ${esc(e.action)} · ${esc(e.motive)} · ${esc(e.say)}</p>${(e.received || []).map(m => `<p>#${m.sender == null ? "—" : m.sender}：${esc(m.text || "")} (${esc(m.motive || "")})</p>`).join("")}`).join("")}</details>` : ""}
           ${node.say ? `<p class="say">「${esc(node.say)}」</p>` : ""}
           <footer>
             <span class="belief ${node.believes ? "is-believer" : "is-doubter"}">${esc(t("rumor.belief", "信"))} ${node.belief}%</span>

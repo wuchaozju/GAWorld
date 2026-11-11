@@ -73,7 +73,7 @@ class TestFallbackChain(unittest.TestCase):
         response.status_code = 429
         response._content = b'{"error":"rate_limit_error"}'
         provider = AnthropicProvider("https://example.invalid", "m", api_key="test", attempts=2)
-        with mock.patch("gaworld.llm.providers.requests.post", return_value=response) as post:
+        with mock.patch("gaworld.llm.providers.http_post", return_value=response) as post:
             with mock.patch("gaworld.llm.providers.time.sleep"):
                 with self.assertRaises(requests.HTTPError) as ctx:
                     provider.call("hi")
@@ -193,13 +193,13 @@ class TestEmptyCompletionIsAnError(unittest.TestCase):
         }
         import gaworld.llm.providers as providers
 
-        original_post = providers.requests.post
-        providers.requests.post = lambda *a, **kw: _FakeResponse(payload)
+        original_post = providers.http_post
+        providers.http_post = lambda *a, **kw: _FakeResponse(payload)
         try:
             with self.assertRaises(EmptyCompletionError) as ctx:
                 provider.call("hi")
         finally:
-            providers.requests.post = original_post
+            providers.http_post = original_post
         message = str(ctx.exception)
         self.assertIn("max_tokens", message)
         self.assertIn("thinking", message)
@@ -220,12 +220,12 @@ class TestEmptyCompletionIsAnError(unittest.TestCase):
         }
         import gaworld.llm.providers as providers
 
-        original_post = providers.requests.post
-        providers.requests.post = lambda *a, **kw: _FakeResponse(payload)
+        original_post = providers.http_post
+        providers.http_post = lambda *a, **kw: _FakeResponse(payload)
         try:
             self.assertEqual("# 报告", provider.call("hi"))
         finally:
-            providers.requests.post = original_post
+            providers.http_post = original_post
 
 
 class TestOpenAIPayloadOverrides(unittest.TestCase):
@@ -242,12 +242,12 @@ class TestOpenAIPayloadOverrides(unittest.TestCase):
                 {"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]}
             )
 
-        original_post = providers.requests.post
-        providers.requests.post = _post
+        original_post = providers.http_post
+        providers.http_post = _post
         try:
             provider.call("hi", **kwargs)
         finally:
-            providers.requests.post = original_post
+            providers.http_post = original_post
         return captured
 
     def test_system_message_is_prepended(self):

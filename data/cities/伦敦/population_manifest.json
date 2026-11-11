@@ -607,66 +607,70 @@
     "nodes": 200,
     "edges": 1200,
     "mean_degree": 12.0,
-    "max_degree": 23,
+    "max_degree": 22,
     "isolated": 0,
-    "clustering": 0.13981298414908255,
+    "clustering": 0.13766593816400316,
     "random_clustering": 0.06,
-    "mean_path_length": 2.4547738693467336,
+    "mean_path_length": 2.4505862646566166,
     "random_path_length": 2.132199761709383,
-    "small_world_sigma": 2.0240099995163345,
+    "small_world_sigma": 1.9963337262203842,
     "largest_component_share": 1.0,
     "degree_histogram": [
       {
-        "degree": 5,
-        "count": 3
+        "degree": 4,
+        "count": 1
       },
       {
-        "degree": 6,
+        "degree": 5,
         "count": 2
       },
       {
+        "degree": 6,
+        "count": 3
+      },
+      {
         "degree": 7,
-        "count": 7
+        "count": 11
       },
       {
         "degree": 8,
-        "count": 15
+        "count": 7
       },
       {
         "degree": 9,
-        "count": 20
+        "count": 23
       },
       {
         "degree": 10,
-        "count": 22
+        "count": 15
       },
       {
         "degree": 11,
-        "count": 21
+        "count": 29
       },
       {
         "degree": 12,
-        "count": 32
+        "count": 23
       },
       {
         "degree": 13,
-        "count": 21
+        "count": 30
       },
       {
         "degree": 14,
-        "count": 16
+        "count": 17
       },
       {
         "degree": 15,
-        "count": 13
+        "count": 11
       },
       {
         "degree": 16,
-        "count": 8
+        "count": 10
       },
       {
         "degree": 17,
-        "count": 8
+        "count": 7
       },
       {
         "degree": 18,
@@ -677,11 +681,7 @@
         "count": 5
       },
       {
-        "degree": 20,
-        "count": 1
-      },
-      {
-        "degree": 23,
+        "degree": 22,
         "count": 2
       }
     ]
@@ -722,5 +722,95 @@
         "count": 1
       }
     ]
+  },
+  "spec": {
+    "size": 200,
+    "seed": 521085547,
+    "preset": "cn_county_town",
+    "name": "伦敦",
+    "demography": {
+      "median_age": 35.6,
+      "share_under_18": 0.21,
+      "share_over_65": 0.12,
+      "sex_ratio_m_per_100f": 104.0,
+      "migrant_share": 0.37,
+      "min_agent_age": 6
+    },
+    "household": {
+      "mean_size": 2.6,
+      "share_single_person": 0.25,
+      "share_multigen": 0.18,
+      "share_shared_rental": 0.12,
+      "max_size": 6,
+      "spouse_age_gap_mean": 2.0,
+      "fertility_children_mean": 1.1
+    },
+    "education_work": {
+      "tertiary_rate": 0.58,
+      "employment_rate": 0.68,
+      "unemployment_rate": 0.05,
+      "gig_platform_share": 0.1,
+      "industry_mix": {
+        "tech": 0.18,
+        "finance": 0.08,
+        "medical": 0.07,
+        "education": 0.09,
+        "service": 0.38,
+        "trade": 0.2
+      }
+    },
+    "income": {
+      "median_monthly": 28500.0,
+      "gini": 0.39,
+      "pareto_tail_alpha": 2.2,
+      "tail_threshold_pct": 0.95
+    },
+    "geography": {
+      "district_weights": {
+        "Mill Hill Broadway": 0.05,
+        "Catford": 0.05,
+        "Dalston Junction": 0.05,
+        "North Dulwich": 0.05,
+        "Walthamstow Queen's Road": 0.05,
+        "St. Helier": 0.05,
+        "Motspur Park": 0.05,
+        "South Merton": 0.05,
+        "Hendon": 0.05,
+        "West Croydon": 0.05,
+        "Harringay": 0.05,
+        "Streatham Hill": 0.05,
+        "Battersea Park": 0.05,
+        "Haggerston": 0.05,
+        "Rotherhithe": 0.05,
+        "Surrey Quays": 0.05,
+        "Wapping": 0.05,
+        "Denmark Hill": 0.05,
+        "Wandsworth Road": 0.05,
+        "Clapham High Street": 0.05
+      }
+    },
+    "psychology": {
+      "state_means": {
+        "emotion": 0.58,
+        "stress": 0.55,
+        "econ_security": 0.52,
+        "city_identity": 0.55,
+        "policy_sensitivity": 0.5,
+        "platform_dependence": 0.5,
+        "risk_preference": 0.45,
+        "voice_propensity": 0.45,
+        "mobility_intent": 0.45
+      },
+      "state_sd": 0.12,
+      "couple_states_to_attributes": true
+    },
+    "social_network": {
+      "mean_degree": 12.0,
+      "homophily_strength": 0.55,
+      "geo_decay": 0.35,
+      "rewire_p": 0.1,
+      "workplace_size_alpha": 2.0,
+      "dunbar_weak_cap": 150
+    }
   }
 }
