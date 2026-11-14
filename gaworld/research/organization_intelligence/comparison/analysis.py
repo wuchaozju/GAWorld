@@ -56,9 +56,15 @@ def _arm_stats(arm, values, unmeasured):
             "elapsed": 0,
             "tokens": None,
             "unmeasured": len([r for r in unmeasured if r["arm"] == arm]),
+            "reach": None,
         }
+    reach = [r["reach"] for r in values if isinstance(r.get("reach"), dict)]
     return {
         "mean": statistics.mean(r["score"] for r in values),
+        # How often the answer was well formed — not how often it was right.
+        # The two were reported under one name, and a column called
+        # "completion rate" that reads 100% next to a score of 0.5 hides
+        # the only number a reader needs.
         "completion_rate": statistics.mean(bool(r["valid"]) for r in values),
         "calls": sum(r.get("metrics", {}).get("calls", 0) for r in values),
         "input_chars": sum(r.get("metrics", {}).get("input_chars", 0) for r in values),
@@ -66,6 +72,12 @@ def _arm_stats(arm, values, unmeasured):
         "elapsed": sum(r.get("metrics", {}).get("elapsed", 0) for r in values),
         "tokens": None,
         "unmeasured": len([r for r in unmeasured if r["arm"] == arm]),
+        "reach": {
+            "complete": statistics.mean(r["complete"] / r["members"] for r in reach),
+            "coverage": statistics.mean(r["coverage"] for r in reach),
+        }
+        if reach
+        else None,
     }
 
 
@@ -213,6 +225,64 @@ def _scope_factors(spec, arm):
     return scope or []
 
 
+def _arm_method(spec, arm):
+    """The method one arm runs, from the frozen protocol."""
+    for item in spec.get("arms") or []:
+        if item.get("id") == arm:
+            return item.get("method") or {}
+    return spec.get("candidate") if arm == PRIMARY else spec.get("baseline") or {}
+
+
+def _mechanism_line(spec, arm):
+    """The mechanisms one arm really runs, in one line."""
+    method = _arm_method(spec, arm)
+    topology = (method.get("topology") or {}).get("kind", "full")
+    parts = [
+        f"通信结构 {topology}",
+        f"讨论 {method.get('rounds', 0)} 轮",
+        "有前置表决" if method.get("prior_vote") else "无前置表决",
+        (f"交叉审阅并修订 {method.get('revisions', 0)} 次" if method.get("review") else "无交叉审阅"),
+        f"决策方式 {method.get('decision', 'auto')}",
+    ]
+    return "；".join(parts)
+
+
+def _fidelity_notes(spec, labels):
+    """The rules an arm's own material asks for that the arm does not do."""
+    from gaworld.research.organization_intelligence.comparison import protocol
+
+    lines = []
+    for arm in spec.get("arms") or []:
+        method = arm.get("method") or {}
+        issues = (arm.get("fidelity") or {}).get("issues") or protocol.fidelity(method)["issues"]
+        for issue in issues:
+            lines.append(
+                f"- 「{labels.get(arm.get('id'), arm.get('id'))}」{issue}——"
+                "这条规则来自材料，但执行器没有照它做，这次比较也没有检验它。"
+            )
+    return lines
+
+
+def _failure_lines(record, labels):
+    """Every cell that did not reach a full score, counted."""
+    failed = [
+        r
+        for r in record["rows"]
+        if not r.get("measured", True) or r.get("score") is None or r.get("score", 1) < 1
+    ]
+    if not failed:
+        return ["未记录失败案例。"]
+    lines = [f"共 {len(failed)} 个实验单元没有得到满分（满分 1.0）："]
+    lines.extend(
+        f"- {r['task_id']} / {labels.get(r.get('arm'), r.get('arm'))} / 重复{r['repeat'] + 1}："
+        f"{r.get('error') or '最终答案错误或不符合要求'}"
+        for r in failed[:20]
+    )
+    if len(failed) > 20:
+        lines.append(f"- 其余 {len(failed) - 20} 个未逐条列出（导出 CSV 可查全部）。")
+    return lines
+
+
 def report(record):
     spec, result = record["protocol"], record["analysis"]
     labels = _arm_labels(spec)
@@ -234,6 +304,7 @@ def report(record):
         "rounds": "讨论轮数",
         "review": "审阅与修订",
         "decision": "决策方式",
+        "prior_vote": "前置表决",
     }
     for arm in candidates:
         factors = _scope_factors(spec, arm)
@@ -246,7 +317,7 @@ def report(record):
     lines.extend(
         [
             "",
-            "| 组织 | 平均成绩 | 完成率 | 实际调用 | 输入字符 | 输出字符 | 调用耗时（秒） | 未测量 |",
+            "| 组织 | 平均成绩（正确率） | 格式合规率 | 实际调用 | 输入字符 | 输出字符 | 调用耗时（秒） | 未测量 |",
             "|---|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
@@ -256,6 +327,30 @@ def report(record):
         lines.append(
             f"| {labels.get(arm, arm)} | {mean} | {rate} | {values['calls']} | {values.get('input_chars', 0)} | "
             f"{values.get('output_chars', 0)} | {values.get('elapsed', 0):.2f} | {values.get('unmeasured', 0)} |"
+        )
+    lines.append("")
+    lines.append(
+        "格式合规率只说明最终答案的格式合法（选择题答了一个选项字母），不代表答案正确；"
+        "正确率就是平均成绩。两者不可互相替代。"
+    )
+    reach_rows = [
+        (arm, values.get("reach")) for arm, values in result.get("arms", {}).items() if values.get("reach")
+    ]
+    if reach_rows:
+        lines.extend(
+            [
+                "",
+                "## 信息可达性",
+                "",
+                "题目把信息拆给不同成员；只有把各份信息送到同一个人手里，他才能算出答案。"
+                "下面是这个实验里信息实际到达的程度。",
+                "",
+                *[
+                    f"- {labels.get(arm, arm)}：平均 {reach['complete']:.0%} 的成员拿到了全部分项，"
+                    f"平均数据覆盖率 {reach['coverage']:.0%}。"
+                    for arm, reach in reach_rows
+                ],
+            ]
         )
     if len(candidates) > 1:
         lines.extend(["", "## 每个候选与对照的比较", ""])
@@ -307,10 +402,10 @@ def report(record):
             "",
             f"比较范围：{'、'.join(factor_labels.get(f, f) for f in _scope_factors(spec, PRIMARY)) or '整套组织方式'}。"
             f"双方任务预算：{spec['limits']}。",
-            f"材料：{spec['candidate']['source']['title'] or '用户自定义'}。",
+            f"材料：{(spec.get('candidate') or {}).get('source', {}).get('title') or '用户自定义'}。",
             *[
                 f"- {r['text']}（{r['origin']}）" + (f"\n  原文：{r['quote']}" if r.get("quote") else "")
-                for r in spec["candidate"]["rules"]
+                for r in (spec.get("candidate") or {}).get("rules") or []
             ],
             "",
             "### 每一臂收到的做事规则",
@@ -322,17 +417,19 @@ def report(record):
                 for arm in result.get("arms", {})
             ],
             "",
+            "### 每一臂实际执行的机制",
+            "",
+            "规则是材料写的，机制是执行器做的。下面是每一臂真正跑起来的那一套。",
+            "",
+            *[
+                f"- **{labels.get(arm, arm)}**：{_mechanism_line(spec, arm)}"
+                for arm in result.get("arms", {})
+            ],
+            *_fidelity_notes(spec, labels),
+            "",
             "## 失败与错误案例",
             "",
-            *(
-                [
-                    f"- {r['task_id']} / {labels.get(r.get('arm'), r.get('arm'))} / 重复{r['repeat'] + 1}："
-                    f"{r.get('error') or '最终答案错误或不符合要求'}"
-                    for r in record["rows"]
-                    if not r.get("measured", True) or r.get("score") is None or r.get("score", 1) < 1
-                ][:10]
-                or ["未记录失败案例。"]
-            ),
+            *_failure_lines(record, labels),
             "",
             "## 实验范围与限制",
             "",

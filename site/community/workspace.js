@@ -151,10 +151,19 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
     } catch (err) { C.error(err); } finally { b.disabled = false; }
   });
   C.ready.then(async function (me) {
-    if (!me.user) { app.innerHTML = gwHTML(C.empty('请以账号登录', me.mode === 'single' ? '当前部署尚未启用账号。管理员初始化后可使用个人工作空间。' : '登录后进入自己的研究与仿真工作台。') + '<a class="button" href="/login">登录</a>'); return; }
+    if (C.redirecting) return;
+    if (me.mode === 'single' || (me.user && me.user.role === 'admin' && !me.user.id)) {
+      app.replaceChildren(document.getElementById(view === 'overview' ? 'localWorkspace' : 'accountWorkspace').content.cloneNode(true));
+      var note = app.querySelector('.workspace-local-note');
+      if (note && me.mode !== 'single') {
+        note.dataset.i18n = 'workspace.operator_note';
+        note.textContent = '当前以管理员身份访问，尚未关联个人账号。你可以继续使用研究和仿真工具。';
+      }
+      if (window.applyTranslations) window.applyTranslations();
+      return;
+    }
+    if (!me.user) { app.innerHTML = gwHTML(C.empty('请以账号登录', '登录后进入自己的研究与仿真工作台。') + '<a class="button" href="/login">登录</a>'); return; }
     state = await C.api('GET','/api/workspace/overview'); await C.bindWorld(state.current_world);
-    document.getElementById('moderationLink').hidden = !(state.user.role === 'admin' || state.user.moderator);
-    document.querySelectorAll('[data-view]').forEach(function (a) { a.classList.toggle('active',a.dataset.view === view); });
     var renderers = { overview:overview,research:research,worlds:worlds,publish:publishForm,publications:publications,bookmarks:bookmarks,notifications:notifications,account:account,moderation:moderation };
     await (renderers[view] || overview)();
   }).catch(function (err) { app.innerHTML = gwHTML(C.empty('工作空间暂不可用',err.message)); });

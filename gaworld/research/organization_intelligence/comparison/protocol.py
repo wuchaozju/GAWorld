@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 
 from gaworld.collaboration import organization_engine, organization_methods
@@ -33,8 +34,9 @@ CONTROL_ID = "baseline"
 #: ``roles`` is the role *wording* two teams both work under; ``topology`` is
 #: who talks to whom; ``rounds`` is how long they talk; ``review`` covers
 #: cross-review and the revisions that follow; ``decision`` is how the final
-#: answer is produced.
-FACTORS = ("roles", "topology", "rounds", "review", "decision")
+#: answer is produced; ``prior_vote`` is whether the members answer and vote
+#: once before the discussion starts.
+FACTORS = ("roles", "topology", "rounds", "review", "decision", "prior_vote")
 
 #: By default only the communication structure differs. Every other mechanism
 #: is held equal, so a result can be attributed instead of being a bundle.
@@ -44,7 +46,50 @@ DEFAULT_FACTORS = {
     "rounds": "same",
     "review": "same",
     "decision": "same",
+    "prior_vote": "same",
 }
+
+#: What an arm's own rules ask for about the order of the vote and the
+#: discussion. A rule that says "先各自解决并表决，再进行讨论" asks for a
+#: vote before the discussion; one that says "讨论之后再进行决策和表决"
+#: asks for the opposite. Both are read from the rule text, because the
+#: order is the whole point of a comparison between the two organizations.
+_VOTE_FIRST = re.compile(
+    r"表决[^。；\n]{0,16}(?:再|之后|后)[^。；\n]{0,16}讨论"
+    r"|先[^。；\n]{0,16}表决"
+    r"|先[^。；\n]{0,16}(?:解决|作答|投票)[^。；\n]{0,16}表决"
+)
+_DISCUSSION_FIRST = re.compile(
+    r"讨论[^。；\n]{0,16}(?:之后|后再|后)[^。；\n]{0,16}(?:表决|投票|决策|决定)"
+    r"|讨论后[^。；\n]{0,16}表决"
+)
+
+
+def vote_order(method):
+    """The order the arm's own rules ask for: vote first, discussion first, or neither."""
+    text = " ".join(str(rule.get("text", "")) for rule in method.get("rules") or [])
+    if _VOTE_FIRST.search(text):
+        return "vote_first"
+    if _DISCUSSION_FIRST.search(text):
+        return "discussion_first"
+    return "unspecified"
+
+
+def fidelity(method):
+    """Whether an arm runs the mechanisms its own rules ask for.
+
+    A comparison whose arms do not do what their material says is not a
+    comparison of those organizations. The issues are stated in words, so
+    the report can show them and the plan can warn before the run.
+    """
+    order = vote_order(method)
+    issues = []
+    if order == "vote_first" and not method.get("prior_vote"):
+        issues.append("规则要求先表决再讨论，但该臂执行时没有前置表决")
+    if order == "discussion_first" and method.get("prior_vote"):
+        issues.append("规则要求讨论之后再表决，但该臂执行时在讨论之前就进行了前置表决")
+    return {"vote_order": order, "issues": issues}
+
 
 _LIMIT_MAX = {
     "calls": 400,
@@ -92,6 +137,8 @@ def apply_factors(candidate, control, factors, *, align_roles=True):
         result["revisions"] = candidate["revisions"]
     if factors["decision"] == "same":
         result["decision"] = candidate["decision"]
+    if factors["prior_vote"] == "same":
+        result["prior_vote"] = candidate["prior_vote"]
     return result
 
 
@@ -110,6 +157,8 @@ def differing_factors(candidate, control):
         changed.append("review")
     if candidate["decision"] != control["decision"]:
         changed.append("decision")
+    if bool(candidate.get("prior_vote")) != bool(control.get("prior_vote")):
+        changed.append("prior_vote")
     return changed
 
 
@@ -291,6 +340,8 @@ def prepare(payload, members):
     changed_by_arm = {
         arm["id"]: ([] if arm["is_control"] else differing_factors(arm["method"], control)) for arm in arms
     }
+    for arm in arms:
+        arm["fidelity"] = fidelity(arm["method"])
     bank = payload.get("benchmark")
     if not isinstance(bank, dict):
         bank = benchmarks.builtin(
@@ -341,6 +392,12 @@ def prepare(payload, members):
             )
     if not plan["sufficient"]:
         plan["warnings"].append("每题调用次数上限不足以完成一次实验单元，无法开始。")
+    for arm in arms:
+        for issue in (arm.get("fidelity") or {}).get("issues", []):
+            hint = ""
+            if arm["id"] == CONTROL_ID and factors.get("prior_vote") == "same":
+                hint = "；该机制在本次设置中被对齐到候选臂，这次比较没有检验它"
+            plan["warnings"].append(f"「{arm['label']}」{issue}{hint}。")
     for arm in candidates[1:]:
         # The control is one method. If this candidate asked for a mechanism
         # to be held equal that the shared control does not hold equal, the

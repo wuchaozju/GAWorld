@@ -18,51 +18,69 @@
     </button>
     <a class="brand" href="/" data-i18n-title="console.home_title" title="返回首页">
       <span class="brand-mark brand-logo" aria-hidden="true"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="36" height="36" /></span>
-      <span class="brand-name">GAWorld Console</span>
+      <span class="brand-name">GAWorld</span>
     </a>
     <div class="crumb" id="crumb" aria-live="polite">
       <span class="crumb-group" id="crumbGroup"></span>
       <span class="crumb-sep" aria-hidden="true">/</span>
       <strong class="crumb-view" id="crumbView"></strong>
     </div>
+    <span class="world-chip" id="worldChip" hidden>
+      <select id="worldSelect" data-i18n-aria="world.label" aria-label="世界"></select>
+      <button type="button" class="open-new" id="worldManageBtn" data-i18n="world.manage">管理世界</button>
+    </span>
     <div class="bar-right">
-      <select id="themeMode" aria-label="外观" title="外观">
-        <option value="system">跟随系统</option>
-        <option value="light">浅色</option>
-        <option value="dark">深色</option>
-      </select>
-      <span class="world-chip" id="worldChip" hidden>
-        <select id="worldSelect" data-i18n-aria="world.label" aria-label="世界"></select>
-        <button type="button" class="open-new" id="worldManageBtn" data-i18n="world.manage">管理世界</button>
-      </span>
-      <span class="user-chip" id="userChip" hidden>
-        <a class="open-new" id="userName" href="#account"></a>
-        <button type="button" class="open-new" id="logoutBtn" data-i18n="console.logout">退出登录</button>
-      </span>
-      <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
-      <div class="lang-switch" role="group" data-i18n-aria="lang.switch_label" aria-label="切换语言">
-        <button type="button" class="lang-btn" id="lang-zh-btn" lang="zh-CN" aria-pressed="true">中文</button>
-        <button type="button" class="lang-btn" id="lang-en-btn" lang="en" aria-pressed="false">EN</button>
-      </div>
+      <details class="console-tools" id="consoleTools">
+        <summary data-i18n-aria="console.tools" aria-label="工具与账号">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          <span data-i18n="console.tools_short">工具</span>
+        </summary>
+        <div class="console-tools-panel">
+          <div class="tool-preference">
+            <label for="themeMode" data-i18n="console.appearance">外观</label>
+            <select id="themeMode">
+              <option value="system" data-i18n="console.theme_system">跟随系统</option>
+              <option value="light" data-i18n="console.theme_light">浅色</option>
+              <option value="dark" data-i18n="console.theme_dark">深色</option>
+            </select>
+          </div>
+          <div class="tool-preference">
+            <span data-i18n="console.language">语言</span>
+            <div class="lang-switch" role="group" data-i18n-aria="lang.switch_label" aria-label="切换语言">
+              <button type="button" class="lang-btn" id="lang-zh-btn" lang="zh-CN" aria-pressed="true">中文</button>
+              <button type="button" class="lang-btn" id="lang-en-btn" lang="en" aria-pressed="false">EN</button>
+            </div>
+          </div>
+          <a class="open-new" id="openNew" href="#" target="_blank" rel="noopener" data-i18n-title="console.open_new_title" title="在新窗口打开当前视图"><span data-i18n="console.open_new">在新窗口打开</span> ↗</a>
+          <div class="user-chip" id="userChip" hidden>
+            <a class="open-new" id="userName" href="#account"></a>
+            <button type="button" class="open-new" id="logoutBtn" data-i18n="console.logout">退出登录</button>
+          </div>
+        </div>
+      </details>
     </div>
   </header>
 
   <div class="console-body">
     <!-- The views, grouped by the stage of a study they belong to. The same
          five groups, in the same order, are the landing page's 功能入口. -->
-    <nav class="sidebar" id="sidebar" aria-label="views">
+    <nav class="sidebar" id="sidebar" data-i18n-aria="console.navigation" aria-label="功能导航">
+      <div class="sidebar-heading">
+        <p class="sidebar-title" data-i18n="console.navigation">功能导航</p>
+        <button type="button" id="navClose" class="nav-close" data-i18n-aria="console.close_nav" aria-label="关闭导航">×</button>
+      </div>
       <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical">
-        <section class="nav-group" id="workspaceNav" hidden>
+        <section class="nav-group" id="workspaceNav">
           <h2 class="nav-group-label"><span data-i18n="nav.group_workspace">我的工作空间</span><span class="en">Workspace</span></h2>
           <button class="tab" role="tab" data-tab="workspace">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
             <span class="tab-text"><span data-i18n="nav.workspace">空间总览</span><span class="en">Overview</span></span>
           </button>
-          <button class="tab" role="tab" data-tab="myresearch">
+          <button class="tab" role="tab" data-tab="myresearch" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
             <span class="tab-text"><span data-i18n="nav.myresearch">我的研究</span><span class="en">My research</span></span>
           </button>
-          <button class="tab" role="tab" data-tab="myworlds">
+          <button class="tab" role="tab" data-tab="myworlds" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
             <span class="tab-text"><span data-i18n="nav.myworlds">我的仿真世界</span><span class="en">My worlds</span></span>
           </button>

@@ -43,6 +43,11 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   var backdropEl = document.getElementById("navBackdrop");
   var tabsEl = document.getElementById("tabs");
   var tabButtons = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var sidebarEl = document.getElementById("sidebar");
+  var toolsEl = document.getElementById("consoleTools");
+  var toolsSummary = toolsEl.querySelector("summary");
+  var drawerBackground = [framesEl, document.querySelector(".console-bar .brand"), crumbGroupEl.parentElement,
+    document.getElementById("worldChip"), document.querySelector(".bar-right")];
   var phone = window.matchMedia("(max-width: 860px)");
 
   var frames = {}; // id -> iframe element (lazily created)
@@ -135,6 +140,8 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       ? document.body.classList.contains("nav-open")
       : !collapsed;
     navToggleEl.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (toggleText !== toggleKey) navToggleEl.setAttribute("aria-label", toggleText);
+    sidebarEl.inert = phone.matches && !expanded;
   }
 
   function setCollapsed(on) {
@@ -143,16 +150,37 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     syncChrome();
   }
 
+  function closeTools(restoreFocus) {
+    var wasOpen = toolsEl.open;
+    toolsEl.open = false;
+    if (wasOpen && restoreFocus) toolsSummary.focus();
+  }
+
+  function focusTab(button) {
+    tabButtons.forEach(function (btn) { btn.tabIndex = btn === button ? 0 : -1; });
+    button.focus();
+  }
+
   function openDrawer() {
+    closeTools(false);
     document.body.classList.add("nav-open");
     backdropEl.hidden = false;
+    drawerBackground.forEach(function (el) { el.inert = true; });
     syncChrome();
+    var selected = buttonById(activeId);
+    if (!selected || selected.closest("[hidden]")) {
+      selected = tabButtons.find(function (btn) { return !btn.closest("[hidden]"); });
+    }
+    if (selected) focusTab(selected);
   }
 
   function closeDrawer() {
+    var wasOpen = document.body.classList.contains("nav-open");
     document.body.classList.remove("nav-open");
     backdropEl.hidden = true;
+    drawerBackground.forEach(function (el) { el.inert = false; });
     syncChrome();
+    if (wasOpen) navToggleEl.focus();
   }
 
   /* -------------------------------------------------------------- activate */
@@ -217,7 +245,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     else if (event.key === "End") next = n - 1;
     if (next === null) return;
     event.preventDefault();
-    visibleButtons[next].focus();
+    focusTab(visibleButtons[next]);
   });
 
   navToggleEl.addEventListener("click", function () {
@@ -229,14 +257,47 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   });
 
   backdropEl.addEventListener("click", closeDrawer);
+  document.getElementById("navClose").addEventListener("click", closeDrawer);
+  document.addEventListener("click", function (event) {
+    if (!toolsEl.contains(event.target)) closeTools(false);
+  });
+  toolsEl.addEventListener("click", function (event) {
+    if (event.target.closest("a")) closeTools(true);
+  });
+  toolsEl.addEventListener("focusout", function () {
+    setTimeout(function () {
+      if (!toolsEl.contains(document.activeElement)) closeTools(false);
+    }, 0);
+  });
+  window.addEventListener("blur", function () {
+    setTimeout(function () {
+      if (document.activeElement && document.activeElement.tagName === "IFRAME") closeTools(false);
+    }, 0);
+  });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && document.body.classList.contains("nav-open")) closeDrawer();
+    var drawerOpen = document.body.classList.contains("nav-open");
+    if (event.key === "Escape") {
+      if (drawerOpen) { event.preventDefault(); closeDrawer(); }
+      else if (toolsEl.open) { event.preventDefault(); closeTools(true); }
+    }
+    if (event.key === "Tab" && drawerOpen) {
+      var stops = Array.prototype.slice.call(sidebarEl.querySelectorAll("button"))
+        .filter(function (el) { return el.tabIndex >= 0 && !el.disabled && el.getClientRects().length; });
+      var first = stops[0], last = stops[stops.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
   });
 
   // Crossing the phone breakpoint: the drawer never stays open, and the
   // collapsed rail only means something on a desktop.
-  var onPhoneChange = function () { closeDrawer(); };
+  var onPhoneChange = function () {
+    var focused = sidebarEl.contains(document.activeElement);
+    closeTools(toolsEl.contains(document.activeElement));
+    closeDrawer();
+    if (phone.matches && focused) navToggleEl.focus();
+  };
   if (typeof phone.addEventListener === "function") phone.addEventListener("change", onPhoneChange);
   else if (typeof phone.addListener === "function") phone.addListener(onPhoneChange);
 
@@ -268,8 +329,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     .then(function (resp) { return resp.ok ? resp.json() : null; })
     .then(function (me) {
       if (!me || me.mode !== "accounts" || !me.user) return;
-      document.getElementById('workspaceNav').hidden = !me.user.id;
-      navigation.tabs.filter(function (tab) { return tab.personal && tab.id !== 'moderation'; }).forEach(function (tab) {
+      navigation.tabs.filter(function (tab) { return tab.personal && tab.id !== 'moderation' && tab.id !== 'workspace'; }).forEach(function (tab) {
         buttonById(tab.id).hidden = !me.user.id;
       });
       document.getElementById('communityNav').hidden = false;

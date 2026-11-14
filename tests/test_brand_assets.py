@@ -70,12 +70,19 @@ def test_primary_brand_slots_use_the_selected_symbol():
         "site/dashboard/research.html",
         "site/dashboard/studio.html",
         "site/dashboard/games.html",
-        "site/simviz/index.html",
     ):
         html = (ROOT / name).read_text(encoding="utf-8")
         assert re.search(r'<img[^>]+src="' + re.escape(SYMBOL) + '"', html), name
         assert 'href="' + SYMBOL + '"' in html, name
         assert "/site/brand.css" in html, name
+
+
+def test_legacy_replay_entry_forwards_to_the_branded_results_page():
+    redirect = (ROOT / "site/simviz/index.html").read_text(encoding="utf-8")
+    assert "location.replace('/site/dashboard/analytics.html' + location.search + location.hash)" in redirect
+    destination = (ROOT / "site/dashboard/analytics.html").read_text(encoding="utf-8")
+    assert 'href="' + SYMBOL + '"' in destination
+    assert "/site/brand.css" in destination
 
 
 def test_local_page_scripts_styles_and_images_are_committed_assets():

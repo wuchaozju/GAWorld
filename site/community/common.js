@@ -29,6 +29,11 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   });
   C.user = null;
   C.world = null;
+  var entryPath = window.GAWorldURL ? window.GAWorldURL.path(location.pathname) : location.pathname;
+  C.redirecting = !C.embedded && (entryPath === '/workspace' || entryPath === '/workspace/' || entryPath === '/site/community/workspace.html');
+  if (C.redirecting) {
+    location.replace(gwURL(window.GAWorldNavigation.consoleUrl(entryPath.replace(/\/$/, '') + location.search + location.hash)));
+  }
   C.bindWorld = async function (world) {
     if (C.embedded && window.parent.GAWorldConsole.worldReady) {
       var expected = await window.parent.GAWorldConsole.worldReady;
@@ -54,7 +59,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   C.author = function (author) { return '<a href="/people/' + encodeURIComponent(author.public_id || "") + '">' + C.esc(author.display_name || "研究者") + '</a>'; };
   C.card = function (p) { return '<article class="card"><div><span class="status">' + C.esc(C.status[p.result_status] || "方案") + '</span><span class="muted hint">' + C.esc(C.kind[p.kind]) + ' · v' + Number(p.version) + '</span></div><h3><a href="/publications/' + encodeURIComponent(p.id) + '">' + C.esc(p.title) + '</a></h3><p class="summary">' + C.esc(p.summary || p.body.slice(0, 200)) + '</p><div class="tags">' + (p.tags || []).map(function (t) { return '<a class="tag" href="/explore?tag=' + encodeURIComponent(t) + '">' + C.esc(t) + '</a>'; }).join("") + '</div><div class="card-footer">' + C.author(p.author || {}) + '<span>' + C.date(p.published_at) + '</span></div></article>'; };
   C.loginRequired = function () { if (C.user) return true; C.navigate("/login?next=" + encodeURIComponent(window.GAWorldNavigation.consoleUrl(location.pathname + location.search) || location.pathname + location.search)); return false; };
-  C.ready = C.api("GET", "/api/auth/me").then(function (me) {
+  C.ready = C.redirecting ? Promise.resolve({redirecting:true}) : C.api("GET", "/api/auth/me").then(function (me) {
     C.user = me.user || null;
     // Keep old workspace/share URLs valid while giving members one Dashboard.
     if (C.user && !C.embedded) {
@@ -62,6 +67,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       if (target) { location.replace(gwURL(target)); return me; }
     }
     var nav = document.getElementById("accountNav");
+    if (!nav) return me;
     if (C.user) {
       nav.innerHTML = gwHTML('<a href="/workspace?view=notifications">消息</a><a href="/workspace?view=account">' + C.esc(C.user.display_name || C.user.nickname) + '</a>');
     } else {

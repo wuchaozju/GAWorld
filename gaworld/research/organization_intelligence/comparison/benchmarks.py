@@ -12,7 +12,7 @@ import random
 from gaworld.collaboration._parsing import extract_json
 from gaworld.collaboration.organization_methods import digest, integer
 
-VERSION = "organization-benchmark-1"
+VERSION = "organization-benchmark-2"
 
 
 def validate(tasks, name="导入题库", scorer="exact"):
@@ -142,6 +142,16 @@ def import_data(text, fmt="jsonl", mapping=None, *, name="导入题库", scorer=
 
 
 def builtin(kind="information", count=30, slots=3, seed=20261026):
+    """The built-in task banks.
+
+    Both banks hand every member a *part* of the task and require the parts
+    to be put together. The part is named as a part: a member that receives
+    ``{"方案": "A", "分项": 3}`` cannot read it as "A is worth 3", which is
+    what a bare ``{"A": 3}`` invites every member to conclude. A task whose
+    members each mistake their own share for the total is not a hard task,
+    it is an impossible one, and both arms of a comparison then measure the
+    same misreading.
+    """
     integer(count, "题数", 1, 1000)
     integer(slots, "人数", 2, 12)
     if kind not in {"information", "allocation"}:
@@ -156,11 +166,20 @@ def builtin(kind="information", count=30, slots=3, seed=20261026):
                 {
                     "id": f"info-{i}",
                     "category": "分散信息整合",
-                    "prompt": "选择总收益最高的方案，收益为各成员掌握的分项之和。并列取字母最小。answer填写选项字母。",
+                    "prompt": (
+                        "每个方案的总收益由全体成员各自掌握的分项相加得到。"
+                        "你只掌握每个方案的一部分分项，其他成员各持有一部分；"
+                        "必须从同伴那里取得分项后才能比较各方案的总收益。"
+                        "选择总收益最高的方案，总收益并列时取字母最小。answer填写选项字母。"
+                    ),
                     "options": labels,
                     "reference": labels[best],
                     "observations": [
-                        json.dumps({labels[j]: values[j][k] for j in range(4)}) for k in range(slots)
+                        json.dumps(
+                            [{"方案": labels[j], "分项": values[j][k]} for j in range(4)],
+                            ensure_ascii=False,
+                        )
+                        for k in range(slots)
                     ],
                 }
             )
@@ -185,16 +204,21 @@ def builtin(kind="information", count=30, slots=3, seed=20261026):
                 {
                     "id": f"allocation-{i}",
                     "category": "约束资源分配",
-                    "prompt": f"从编号0–4的项目中选择若干个，在预算{capacity}内最大化收益。每项目最多一次。answer填写项目编号列表。",
+                    "prompt": (
+                        f"从编号0–4的项目中选择若干个，在预算{capacity}内最大化收益，每个项目最多选一次。"
+                        "各项目的成本与收益由成员分散掌握：每位成员只知道一部分项目的成本与收益，"
+                        "必须汇总同伴掌握的项目才能算出最优组合。answer填写项目编号列表。"
+                    ),
                     "reference": best,
                     "constraints": constraints,
                     "observations": [
                         json.dumps(
-                            {
-                                str(j): {"cost": costs[j], "value": values[j]}
+                            [
+                                {"项目": str(j), "成本": costs[j], "收益": values[j]}
                                 for j in range(5)
                                 if j % slots == k
-                            }
+                            ],
+                            ensure_ascii=False,
                         )
                         for k in range(slots)
                     ],

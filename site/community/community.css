@@ -6,6 +6,11 @@
 @media(prefers-reduced-motion:no-preference){.card{transition:border-color .15s,transform .15s}.card:hover{transform:translateY(-2px)}}
 
 /* Personal and community views share the existing Dashboard navigation and tokens. */
+.workspace-welcome { padding: 28px 32px; border: 1px solid var(--line); border-left: 3px solid var(--steel, var(--accent)); background: var(--surface); border-radius: var(--radius, 4px); }
+.workspace-welcome .toolbar { margin-bottom: 0; }
+.workspace-start .card { text-decoration: none; }
+.workspace-card-link { margin-top: auto; padding-top: 14px; color: var(--accent); font-size: 13px; }
+.workspace-local-note { margin: 28px 0 0; font-size: 12px; color: var(--muted); }
 html.is-embedded { --body: var(--font-sans); --serif: var(--font-sans); --lime: var(--green-soft); }
 .is-embedded .topbar, .is-embedded .work-nav, .is-embedded .site-footer { display: none; }
 .is-embedded body { font-size: 14px; }
@@ -24,6 +29,7 @@ html.is-embedded { --body: var(--font-sans); --serif: var(--font-sans); --lime: 
 .is-embedded .article h1 { font-size: 30px; }
 .is-embedded .article-body { font-size: 15px; }
 @media (max-width: 680px) {
+  .workspace-welcome { padding: 22px 20px; }
   .is-embedded .work-main, .is-embedded .shell { padding: 22px 18px 48px; }
   .is-embedded .hero { grid-template-columns: 1fr; gap: 20px; }
   .is-embedded .hero h1, .is-embedded .work-main h1 { font-size: 25px; }

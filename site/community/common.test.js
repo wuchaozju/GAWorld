@@ -3,13 +3,14 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const navigation = require('./navigation');
-function page({user=null, embedded=false}={}) {
-  const location = {pathname:'/explore',search:'',hash:'',href:'',replace(target) { this.href=target; },reload() { this.reloaded=true; }};
+function page({user=null, embedded=false, path='/explore', mode='accounts'}={}) {
+  const url = new URL(path, 'http://local.test');
+  const location = {pathname:url.pathname,search:url.search,hash:url.hash,href:'',replace(target) { this.href=target; },reload() { this.reloaded=true; }};
   const nodes = {accountNav:{},notice:{}};
   const document = {documentElement:{classList:{add(){}}},createElement(){return {};},head:{appendChild(){}},getElementById(id){return nodes[id];},addEventListener(){}};
   const window = {location,GAWorldNavigation:navigation};
   window.parent = embedded ? {location:{},history:{replaceState(a,b,target){ this.target=target; }},GAWorldConsole:true} : window;
-  const context={window,document,location,URL,URLSearchParams,setTimeout,clearTimeout,fetch:async()=>({ok:true,json:async()=>({mode:'accounts',user})})};
+  const context={window,document,location,URL,URLSearchParams,setTimeout,clearTimeout,fetch:async()=>({ok:true,json:async()=>({mode,user})})};
   vm.runInNewContext(fs.readFileSync(require.resolve('./common'),'utf8'),context);
   return window;
 }
@@ -45,4 +46,19 @@ test('a lazy personal view rejects a different world from another browser tab',a
   assert.equal(w.Community.world,null);
   await w.Community.bindWorld('world-a');
   assert.equal(w.Community.world,'world-a');
+});
+
+test('single-user workspace always enters the same shell and preserves its selected view', async()=>{
+  for (const path of ['/workspace?view=research&copied=p1', '/site/community/workspace.html?view=research&copied=p1']) {
+    const w=page({path,mode:'single'}); await w.Community.ready;
+    assert.equal(w.location.href,'/console#myresearch?copied=p1');
+    assert.equal(w.Community.redirecting,true);
+  }
+});
+
+test('embedded single-user workspace stays inside its existing shell', async()=>{
+  const w=page({path:'/workspace',mode:'single',embedded:true}); await w.Community.ready;
+  assert.equal(w.location.href,'');
+  w.Community.navigate('/console#research');
+  assert.equal(w.parent.location.href,'/console#research');
 });

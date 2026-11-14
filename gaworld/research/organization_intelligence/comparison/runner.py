@@ -274,6 +274,7 @@ def run(db, identifier, llm):
             "answer": outcome["answer"],
             "metrics": outcome["metrics"],
             "edges": outcome["edges"],
+            "reach": outcome.get("reach"),
             "error": error,
         }
         db.update(identifier, lambda r, row=row: r["rows"].append(row))

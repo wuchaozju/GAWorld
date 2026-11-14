@@ -1,4 +1,21 @@
-"""Recipient-enforced synchronous execution with resumable per-call checkpoints."""
+"""Recipient-enforced synchronous execution with resumable per-call checkpoints.
+
+Two things a discussion has to do, and that this engine used to do only
+half-way:
+
+* **Carry the task data.** Each member owns a private piece of the task
+  (``observations``). A discussion that passes only conclusions and small talk
+  cannot integrate anything: the members keep their own half and vote on it.
+  The engine therefore delivers the raw data along the communication
+  structure, one hop per discussion round, and labels every piece with the
+  member who owns it. Only the graph carries it — the cross-review ring
+  exchanges published work only, so it cannot become a channel around the
+  structure being compared.
+* **Vote before it talks.** A method may declare that its members answer and
+  vote first and discuss afterwards. That vote is the anchor the discussion
+  starts from, and it is made by the engine from the first round's answers
+  and shown to every member before the first discussion round.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +28,7 @@ from gaworld.collaboration._parsing import extract_json
 from gaworld.collaboration.organization_methods import digest, estimate, instructions, normalize_method
 from gaworld.llm.failures import describe
 
-VERSION = "organization-engine-2"
+VERSION = "organization-engine-3"
 
 
 class ProtocolDrift(ValueError):
@@ -58,6 +75,25 @@ def edges(method, seed=0):
     return pairs
 
 
+def tally(answers):
+    """The vote of one round of answers: every distinct answer and its votes.
+
+    The answers are compared as they are, so two members that answered the
+    same thing vote for the same thing. The order is fixed — most votes
+    first, then the fixed order of the answer itself — so a tie is broken
+    the same way every time.
+    """
+    counts = Counter()
+    for value in answers:
+        if value is None:
+            continue
+        counts[json.dumps(value, sort_keys=True, ensure_ascii=False)] += 1
+    return [
+        {"answer": json.loads(key), "votes": count}
+        for key, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def run_method(
     method,
     members,
@@ -99,18 +135,61 @@ def run_method(
     observations = task.get("observations") or [""] * len(members)
     if len(observations) != len(members):
         raise ValueError("局部信息数量必须等于组织角色数量")
+    # What each member holds of the task data: who owns which piece. A
+    # member starts with its own piece and receives one hop of the pieces
+    # its neighbours had, once per discussion round.
+    known = [{i} for i in range(len(members))]
+    prior_vote = None
 
-    def ask(slot, phase, messages, own=None):
+    def facts(owners):
+        """The raw data of the given owners, each labelled with its owner."""
+        return [
+            {"member": members[owner]["id"], "value": observations[owner]}
+            for owner in sorted(owners)
+            if observations[owner]
+        ]
+
+    def ask(slot, phase, messages, own=None, data=()):
         nonlocal cursor
         if before_call:
             before_call()
-        instruction = "按自己的角色和可见信息完成任务。仅输出JSON：answer（最终答案或结构化对象）、message（给团队的简短说明）。"
+        if not data and phase in {"review", "revise"}:
+            # A member keeps what it has gathered: the review and the
+            # revision show it its own knowledge, so that it works from
+            # everything it holds and not from the piece it started with.
+            # What it may hold is still only what the communication
+            # structure gave it.
+            data = facts(known[slot] - {slot})
+        instruction = (
+            "按自己的角色和可见信息完成任务。observation 是你独占掌握的那一部分数据，"
+            "其他成员可能掌握完成任务所需的其他部分，不要把它当成完整答案。"
+            "仅输出JSON：answer（最终答案或结构化对象）、message（给团队的简短说明）。"
+            "message 只写你的推理结论，不要整段复制原始数据：原始数据由系统按通信结构单独送达。"
+        )
         if phase == "review":
-            instruction = "审阅 messages 中提交的成果，指出具体错误和可执行的修改建议。仅输出JSON：answer（建议答案）、message（审阅意见）。"
+            instruction = (
+                "审阅 messages 中提交的成果，指出具体错误和可执行的修改建议。"
+                "审阅环节不送达原始数据，你只能依据作者公开的成果与说明。"
+                "仅输出JSON：answer（建议答案）、message（审阅意见）。"
+            )
         elif phase == "revise":
-            instruction = "根据 messages 的审阅意见修订 own 中的成果。仅输出JSON：answer（修订后的答案）、message（修改说明）。"
+            instruction = (
+                "根据 messages 的审阅意见修订 own 中的成果。"
+                "仅输出JSON：answer（修订后的答案）、message（修改说明）。"
+            )
         elif phase == "synthesis":
-            instruction = "汇总 messages 中的成员终稿，独立检查矛盾后给出唯一最终成果，不再追问。仅输出JSON：answer（完整最终答案或成果）、message（汇总说明）。"
+            instruction = (
+                "汇总 messages 中的成员终稿，独立检查矛盾后给出唯一最终成果，不再追问。"
+                "仅输出JSON：answer（完整最终答案或成果）、message（汇总说明）。"
+            )
+        elif phase == "communicate":
+            instruction = (
+                "按自己的角色和可见信息完成任务。data 是系统按通信结构送达给你的原始数据，"
+                "value 是该成员独占掌握的那一部分，把它与你的 observation 合起来才是完整信息。"
+                "信息齐全就重新计算，信息不齐就说明还缺哪一部分。"
+                "仅输出JSON：answer（最终答案或结构化对象）、message（给团队的简短说明）。"
+                "message 只写你的推理结论，不要整段复制原始数据。"
+            )
         payload = {
             "task": {k: task[k] for k in ("id", "prompt", "options", "response_format") if k in task},
             "member": members[slot],
@@ -118,10 +197,13 @@ def run_method(
             "instructions": instructions(method),
             "observation": observations[slot],
             "phase": phase,
+            "data": list(data),
             "messages": messages,
             "own": own,
             "instruction": instruction,
         }
+        if prior_vote is not None and phase == "communicate":
+            payload["prior_vote"] = prior_vote
         prompt = json.dumps(payload, ensure_ascii=False, sort_keys=True)
         fingerprint = digest(prompt)
         if cursor < len(calls):
@@ -180,17 +262,36 @@ def run_method(
         return {"answer": parsed.get("answer"), "message": str(parsed.get("message", ""))[:4000]}
 
     current = [ask(i, "private", []) for i in range(len(members))]
+    if method.get("prior_vote"):
+        # The vote the material asks for: every member answers alone, the
+        # engine counts the answers, and the result is on the table before
+        # anyone talks. It is the anchor the discussion starts from.
+        prior_vote = {"tally": tally([value["answer"] for value in current])}
+        prior_vote["leading"] = prior_vote["tally"][0]["answer"] if prior_vote["tally"] else None
     for _ in range(method["rounds"]):
         previous = current
+        # One hop of data per round: a member receives what its neighbours
+        # held at the end of the previous round. What it holds afterwards is
+        # what the next round sees it working from.
+        incoming = []
+        for i in range(len(members)):
+            reach = set()
+            for j in range(len(members)):
+                if (j, i) in graph:
+                    reach |= known[j]
+            incoming.append(reach)
         current = [
             ask(
                 i,
                 "communicate",
                 [{"sender": members[j]["id"], **previous[j]} for j in range(len(members)) if (j, i) in graph],
                 previous[i],
+                facts((known[i] | incoming[i]) - {i}),
             )
             for i in range(len(members))
         ]
+        for i in range(len(members)):
+            known[i] |= incoming[i]
     if method["review"]:
         reviews = [
             ask((i + 1) % len(members), "review", [{"sender": members[i]["id"], **current[i]}])
@@ -217,13 +318,25 @@ def run_method(
         answer = {"answer": json.loads(winner)}
     else:
         answer = ask(
-            0, "synthesis", [{"sender": members[i]["id"], **value} for i, value in enumerate(current)]
+            0,
+            "synthesis",
+            [{"sender": members[i]["id"], **value} for i, value in enumerate(current)],
+            data=facts(known[0] - {0}),
         )
+    reach = None
+    if any(observations):
+        total = len(members) * len(members)
+        reach = {
+            "members": len(members),
+            "complete": sum(1 for i in range(len(members)) if len(known[i]) >= len(members)),
+            "coverage": sum(len(known[i]) for i in range(len(members))) / total,
+        }
     return {
         "answer": answer,
         "edges": [list(x) for x in graph],
         "engine_version": VERSION,
         "method_hash": digest(method),
+        "reach": reach,
         "metrics": {
             "calls": len(attempts),
             "input_chars": sum(c["input_chars"] for c in attempts),

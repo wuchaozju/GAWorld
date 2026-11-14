@@ -19,6 +19,8 @@ def extract(text, title, llm, *, slots=None):
         "roles为2–12个角色槽位；topology.kind只能是random/full/hierarchy/independent/custom。"
         "自定义有向edges用从0开始的槽位对。rounds为0–6，decision为auto/vote/synthesis，"
         "review为布尔值，revisions为0–2（必须开启review）。"
+        "prior_vote为布尔值：材料要求成员先各自作答并表决、再开始讨论时为true；"
+        "材料要求讨论之后再表决时为false；材料没有说到先后顺序时为false。"
         "每条rules包含text、quote、origin；原文明确规则origin=source且quote逐字引用原文，"
         "补充规则origin=inferred。材料不充分处补充可运行建议并明确标注。"
         "只支持逐题重置记忆。需要跨题学习、成员更替或无法实现的机制列入unsupported；不可掩盖。"

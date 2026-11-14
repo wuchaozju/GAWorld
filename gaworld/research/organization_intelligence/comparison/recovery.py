@@ -118,6 +118,14 @@ def _prepare_locked(db, source):
         except organization_engine.BudgetExceeded:
             if cell in rows and rows[cell].get("measured", True):
                 raise ValueError("预算失败与原成绩不一致") from None
+        except organization_engine.ProtocolDrift as exc:
+            # The engine now sends a different prompt than the one the saved
+            # answers were produced with. The answers cannot be mixed with
+            # new ones, and the reader is told that plainly.
+            raise ValueError(
+                "执行器发出的提示词与保存的回答不一致，无法保留进度继续；"
+                "本次改动改变了成员收到的内容，请新建一次实验。"
+            ) from exc
         else:
             if cell in rows and rows[cell].get("measured", True):
 

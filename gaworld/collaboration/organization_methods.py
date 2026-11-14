@@ -90,6 +90,12 @@ def instructions(method) -> list[str]:
         text.append("不进行多轮讨论，每位成员各自给出结果。")
     else:
         text.append(f"共进行 {rounds} 轮讨论，每一轮只使用上一轮的结果。")
+    if method.get("prior_vote"):
+        # The vote is made by the engine from the first round's answers and
+        # is on the table before the first discussion round.
+        text.append(
+            "第一轮各自独立作答后先表决一次，表决结果在讨论开始前公布给全体成员；讨论从这份表决结果出发。"
+        )
     if method.get("review"):
         text.append("讨论结束后由下一位成员交叉审阅上一位的成果，指出具体错误并给出可执行的修改建议。")
         revisions = int(method.get("revisions") or 0)
@@ -164,6 +170,7 @@ def normalize_method(payload):
         "decision",
         "review",
         "revisions",
+        "prior_vote",
         "rules",
         "source",
         "unsupported",
@@ -225,6 +232,7 @@ def normalize_method(payload):
         "decision": decision,
         "review": bool(payload.get("review", False)),
         "revisions": integer(payload.get("revisions", 0), "修订次数", 0, 2),
+        "prior_vote": bool(payload.get("prior_vote", False)),
         "memory": "reset",
         "rules": clean_rules,
         "source": {"title": str(source.get("title", ""))[:500], "text": str(source.get("text", ""))[:60000]},

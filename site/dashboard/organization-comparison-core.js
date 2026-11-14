@@ -52,9 +52,10 @@
     ['topology', '通信结构', 'Communication structure'],
     ['rounds', '讨论轮数', 'Discussion rounds'],
     ['review', '审阅与修订', 'Review and revision'],
-    ['decision', '决策方式', 'Decision']
+    ['decision', '决策方式', 'Decision'],
+    ['prior_vote', '前置表决（先表决后讨论）', 'Vote before the discussion']
   ];
-  const DEFAULT_FACTORS = {roles:'same', topology:'candidate', rounds:'same', review:'same', decision:'same'};
+  const DEFAULT_FACTORS = {roles:'same', topology:'candidate', rounds:'same', review:'same', decision:'same', prior_vote:'same'};
   function factorTable(state) {
     const chosen = (state && state.factors) || DEFAULT_FACTORS;
     const table = {};
@@ -70,6 +71,7 @@
     if (table.rounds === 'same') value.rounds = candidate.rounds;
     if (table.review === 'same') { value.review = candidate.review; value.revisions = candidate.revisions; }
     if (table.decision === 'same') value.decision = candidate.decision;
+    if (table.prior_vote === 'same') value.prior_vote = Boolean(candidate.prior_vote);
     return value;
   }
   function differingFactors(candidate, control) {
@@ -81,6 +83,7 @@
     if (Boolean(candidate.review) !== Boolean(control.review)
       || Number(candidate.revisions || 0) !== Number(control.revisions || 0)) changed.push('review');
     if (candidate.decision !== control.decision) changed.push('decision');
+    if (Boolean(candidate.prior_vote) !== Boolean(control.prior_vote)) changed.push('prior_vote');
     return changed;
   }
   function factorLabel(name, en) {

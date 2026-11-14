@@ -23,42 +23,45 @@
     >
     <header class="header brand-on-dark">
       <div class="nav-wrap">
-        <a aria-label="GAWorld" class="brand" href="#top"
-          ><span class="brand-mark brand-logo" aria-hidden="true"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="44" height="44" /></span>GAWorld<span class="brand-lab">SOCIAL LAB</span></a
-        ><button
-          aria-controls="main-nav"
-          aria-expanded="false"
-          class="menu-toggle"
-          data-en="Menu"
-          id="menu-toggle"
-          type="button"
-        >
-          菜单
-        </button>
-        <nav aria-label="主导航" id="main-nav">
-          <a data-en="The world" href="#story">认识这个世界</a
-          ><a data-en="Question to evidence" href="#research">从问题到证据</a
-          ><a data-en="The tools" href="#platform">探索功能</a
-          ><a data-en="Docs ↗" href="/site/home/docs/">文档 ↗</a>
-        </nav>
-        <div class="nav-actions">
-          <label class="sr-only" data-en="Color theme" for="themeMode"
-            >颜色主题</label
-          ><select id="themeMode">
-            <option data-en="Auto" value="system">自动</option>
-            <option data-en="Light" value="light">浅色</option>
-            <option data-en="Dark" value="dark">深色</option></select
-          ><button aria-label="Switch to English" id="language" type="button">
-            EN</button
-          ><a href="https://github.com/wuchaozju/GAWorld" target="_blank" rel="noopener noreferrer">GitHub ↗</a
-          ><a data-en="Research community" href="/explore">研究社区</a
-          ><a data-en="Log in" href="/login">登录</a
-          ><a data-en="Register" href="/register">注册</a
-          ><a class="nav-console" href="/console#dashboard"
-            ><span data-en="Enter the lab">进入实验室</span
-            ><span aria-hidden="true">↗</span></a
-          >
+        <a aria-label="GAWorld" class="brand" href="#top">
+          <span class="brand-mark brand-logo" aria-hidden="true"><img class="gaworld-logo" src="/site/auth/brand/gaworld-symbol-a.png" alt="" width="44" height="44" /></span>
+          GAWorld<span class="brand-lab">SOCIAL LAB</span>
+        </a>
+        <div class="navigation-panel" id="navigation-panel">
+          <nav aria-label="主导航" id="main-nav">
+            <a data-en="About GAWorld" href="#story">了解 GAWorld</a>
+            <a data-en="Explore tools" href="#platform">探索功能</a>
+            <a data-en="Community" href="/explore">研究社区</a>
+            <a data-en="Docs ↗" href="/site/home/docs/">文档 ↗</a>
+          </nav>
+          <a class="nav-login" data-en="Log in" href="/login">登录</a>
+          <details class="home-tools" id="homeTools">
+            <summary><span data-en="More">更多</span><span aria-hidden="true">⌄</span></summary>
+            <div class="home-tools-panel">
+              <div class="nav-preference">
+                <label data-en="Appearance" for="themeMode">外观</label>
+                <select id="themeMode">
+                  <option data-en="Auto" value="system">自动</option>
+                  <option data-en="Light" value="light">浅色</option>
+                  <option data-en="Dark" value="dark">深色</option>
+                </select>
+              </div>
+              <div class="nav-preference">
+                <span data-en="Language">语言</span>
+                <button aria-label="Switch to English" id="language" type="button">EN</button>
+              </div>
+              <a href="https://github.com/wuchaozju/GAWorld" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+              <a data-en="Create an account ↗" href="/register">注册账号 ↗</a>
+            </div>
+          </details>
         </div>
+        <a class="nav-console" href="/console#workspace">
+          <span data-en="Enter the lab">进入实验室</span><span aria-hidden="true">↗</span>
+        </a>
+        <button aria-controls="navigation-panel" aria-expanded="false" class="menu-toggle" id="menu-toggle" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <span class="sr-only" data-en="Menu">菜单</span>
+        </button>
       </div>
     </header>
     <main id="top">
@@ -82,7 +85,7 @@
               赋予个体记忆，让生活彼此交织。<br />观察一个社会如何形成，探索规则改变后的可能。
             </p>
             <div class="hero-actions">
-              <a class="button acid" href="/console#dashboard"
+              <a class="button acid" href="/console#workspace"
                 ><span data-en="Create your world">进入你的世界</span
                 ><span aria-hidden="true">↗</span></a
               ><a class="hero-secondary" href="#story"

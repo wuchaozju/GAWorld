@@ -36,24 +36,30 @@ class PageLinks(HTMLParser):
 def test_homepage_links_directly_to_feature_views(name):
     page = PageLinks()
     page.feed((ROOT / name).read_text())
-    for view in ("dashboard", "city", "studio", "survey", "games", "research", "worlds"):
+    for view in ("workspace", "dashboard", "city", "studio", "survey", "games", "research", "worlds"):
         assert f"/console#{view}" in page.links, (name, view)
     console = (ROOT / "site/console/console.js").read_text()
     for link in page.links:
         if link.startswith("/console#"):
             view = urlsplit(link).fragment
-            if view == "worlds":
+            if view in {"worlds", "simviz", "workspace"}:
+                expected_id, expected_src = {
+                    "worlds": ("research", "/site/dashboard/research.html?tab=worlds"),
+                    "simviz": ("analytics", "/site/dashboard/analytics.html"),
+                    "workspace": ("workspace", "/workspace"),
+                }[view]
                 result = subprocess.run(
                     [
                         "node",
                         "-e",
                         "const assert = require('node:assert/strict');"
                         "const navigation = require('./site/community/navigation.js');"
-                        "const route = navigation.resolve('worlds',"
+                        f"const route = navigation.resolve('{view}',"
                         "[{id:'dashboard',src:'/dashboard'},"
-                        "{id:'research',src:'/site/dashboard/research.html'}]);"
-                        "assert.equal(route.id, 'research');"
-                        "assert.equal(route.src, '/site/dashboard/research.html?tab=worlds');",
+                        "{id:'analytics',src:'/site/dashboard/analytics.html'},"
+                        "{id:'research',src:'/site/dashboard/research.html'}].concat(navigation.tabs));"
+                        f"assert.equal(route.id, '{expected_id}');"
+                        f"assert.equal(route.src, '{expected_src}');",
                     ],
                     cwd=ROOT,
                     capture_output=True,
