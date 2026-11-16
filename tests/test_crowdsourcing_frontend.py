@@ -164,6 +164,7 @@ def test_the_crowd_controller_calls_the_documented_endpoints():
 
 def test_every_crowd_i18n_key_the_controller_uses_is_translated():
     source = (DASHBOARD / "crowdsourcing.js").read_text(encoding="utf-8")
+    source += (DASHBOARD / "collaboration.html").read_text(encoding="utf-8")
     locale = _locale()
     english = json.loads(EN_LOCALE_PATH.read_text(encoding="utf-8"))
 

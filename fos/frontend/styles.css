@@ -1,0 +1,7 @@
+@import "./styles/system/tokens.css";
+@import "./styles/system/base.css";
+@import "./styles/system/primitives.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

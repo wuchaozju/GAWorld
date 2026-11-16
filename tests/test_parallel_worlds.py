@@ -606,11 +606,11 @@ class ApiTests(unittest.TestCase):
             token = ds._WORLD.set(world)
             try:
                 started = api.start({**BASIC_PAYLOAD, "seeds": [1, 2, 3]})
+                deadline = time.time() + 5
+                while api.job_status(started["job_id"])["status"] == "running" and time.time() < deadline:
+                    time.sleep(0.02)
             finally:
                 ds._WORLD.reset(token)
-            deadline = time.time() + 5
-            while api.job_status(started["job_id"])["status"] == "running" and time.time() < deadline:
-                time.sleep(0.02)
         self.assertEqual(seen, ["output/worlds/w0123abcd/memory"] * 3)
 
     def test_routing_rejects_unknown_endpoints(self):

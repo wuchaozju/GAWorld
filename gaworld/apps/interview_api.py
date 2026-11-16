@@ -115,6 +115,19 @@ def job_status(job_id: str) -> dict[str, Any] | None:
         return json.loads(json.dumps(record, ensure_ascii=False), parse_constant=lambda _: None)
 
 
+def active_jobs() -> dict[str, Any]:
+    """Recover a caller's running job without exposing another member's interview."""
+    fields = ("id", "status", "progress", "message", "started_at")
+    with _JOBS_LOCK:
+        rows = [
+            {key: record.get(key) for key in fields}
+            for record in _JOBS.values()
+            if record["status"] == "running" and ownership.visible(record)
+        ]
+    rows.sort(key=lambda row: row["started_at"], reverse=True)
+    return {"jobs": rows}
+
+
 # ---------------------------------------------------------------------------
 # Reads
 # ---------------------------------------------------------------------------
@@ -291,6 +304,8 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
             return roster(query), 200
         if path == "/api/interview/sessions":
             return sessions(), 200
+        if path == "/api/interview/jobs":
+            return active_jobs(), 200
         if path.startswith("/api/interview/jobs/"):
             record = job_status(path.rsplit("/", 1)[-1])
             if record is None:

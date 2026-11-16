@@ -99,6 +99,7 @@ class GAWorldClient:
         data = json.dumps(body if body is not None else {}).encode("utf-8") if method == "POST" else None
         request = urllib.request.Request(url, data=data, method=method)
         request.add_header("Accept", "application/json")
+        request.add_header("User-Agent", "GAWorldClient/1.0")
         if data is not None:
             request.add_header("Content-Type", "application/json")
         if self.token:

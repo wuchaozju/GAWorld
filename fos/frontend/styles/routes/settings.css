@@ -1,0 +1,9 @@
+/*
+ * This file groups the settings page styles into one route-level stylesheet.
+ */
+
+@import "../llm-console.css";
+@import "../pages/product-pages.css";
+@import "../pages/provider-management.css";
+
+@tailwind components;

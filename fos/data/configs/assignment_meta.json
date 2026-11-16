@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-04T14:37:21.748153+00:00",
+  "assignment_seed": 42,
+  "execution_order_seed": 12345,
+  "attempts": 1,
+  "threshold_used": "0.10 SD",
+  "num_runs": 126,
+  "num_configs": 18,
+  "num_proposals": 7,
+  "num_populations": 6
+}

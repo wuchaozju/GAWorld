@@ -258,7 +258,11 @@
     map.setTrace(null); if (indoor) indoor.setTrace(null);
     message(''); renderRuns(); renderSummary(); renderRoster(); renderMetrics(); renderEvents(); renderFrame();
     $('timeJump').innerHTML = '';
-    if (!run) { state.loading = false; message(t('no_runs')); renderFrame(); return; }
+    if (!run) { state.loading = false; message(t('no_runs')); renderFrame();
+      // Even with nothing selectable, the overview KPIs describe the current
+      // world — render them instead of leaving the pane skeleton forever.
+      if (window.GAWorldAnalytics && window.GAWorldAnalytics.load) window.GAWorldAnalytics.load();
+      return; }
     try {
       const trace = await json(run.trace_url,traceRequest.signal);
       if (request !== state.request) return;

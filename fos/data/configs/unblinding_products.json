@@ -1,0 +1,205 @@
+{
+  "_comment": "The 40 Table A.1 rows of Gui & Toubia (2025), Web Appendix A (RESULT-1474 \u00a73.1.4): one top-selling Walmart.com product per CPG category with its regular price (~April 2024). Verbatim product names (ASCII apostrophes; PDF quirks preserved, e.g. 'Cold Remedies -Adult'). This registry replaces the drifted 10- and 7-product sets.",
+  "products": [
+    {
+      "category": "Fruit Juice",
+      "product": "Capri Sun Variety Pack with Fruit Punch, Strawberry Kiwi & Pacific Cooler Juice Box Pouches, 30 ct Box, 6 fl oz Pouches",
+      "regular_price": 9.43
+    },
+    {
+      "category": "Fruit Drinks",
+      "product": "Kool Aid Jammers Variety Pack with Tropical Punch, Grape & Cherry Kids Drink 0% Juice Box Pouches, 30 Ct Box, 6 fl oz Pouches",
+      "regular_price": 7.27
+    },
+    {
+      "category": "Baby Milk and Milk Flavoring",
+      "product": "Horizon Organic Shelf-Stable Whole Milk Boxes, 8 oz., 12 Pack",
+      "regular_price": 13.98
+    },
+    {
+      "category": "Soup",
+      "product": "Maruchan Ramen Noodle Chicken Flavor Soup, 3 Oz, 12 Count Shelf Stable Package",
+      "regular_price": 9.97
+    },
+    {
+      "category": "Cat Food - Wet Type",
+      "product": "Purina Fancy Feast Chicken Feast Classic Grain Free Wet Cat Food Pate - 3 oz. Can",
+      "regular_price": 0.88
+    },
+    {
+      "category": "Pet Supplies - Dog Food",
+      "product": "Purina Dog Chow Complete, Dry Dog Food for Adult Dogs High Protein, Real Chicken, 44 lb Bag",
+      "regular_price": 29.17
+    },
+    {
+      "category": "Snacks - Potato Chips",
+      "product": "Lay's Classic Potato Snack Chips, Party Size, 13 oz Bag",
+      "regular_price": 5.44
+    },
+    {
+      "category": "Snacks - Tortilla Chips",
+      "product": "Doritos Nacho Cheese Tortilla Snack Chips, Party Size, 14.5 oz Bag",
+      "regular_price": 5.94
+    },
+    {
+      "category": "Cereal - Ready to Eat",
+      "product": "Cinnamon Toast Crunch Breakfast Cereal, Crispy Cinnamon Cereal, Family Size, 18.8 oz",
+      "regular_price": 4.93
+    },
+    {
+      "category": "Cookies",
+      "product": "Little Debbie Oatmeal Creme Pies, 12 ct, 16.2 oz",
+      "regular_price": 2.68
+    },
+    {
+      "category": "Ground and Whole Bean Coffee",
+      "product": "Folgers Classic Roast Ground Coffee, Medium Roast, 40.3-Ounce Canister",
+      "regular_price": 13.24
+    },
+    {
+      "category": "Soft Drinks - Carbonated",
+      "product": "Coca-Cola Soda Pop, 12 fl oz, 12 Pack Cans",
+      "regular_price": 8.26
+    },
+    {
+      "category": "Bottled Water",
+      "product": "OZARKA Brand 100% Natural Spring Water, 16.9-ounce plastic bottles (Pack of 35)",
+      "regular_price": 19.96
+    },
+    {
+      "category": "Candy - Chocolate",
+      "product": "Hershey's Milk Chocolate Candy, Bars 1.55 oz, 6 Count",
+      "regular_price": 6.48
+    },
+    {
+      "category": "Candy - Non-Chocolate",
+      "product": "HARIBO Goldbears Original Gummy Bears, 28.8oz Stand Up Bag",
+      "regular_price": 6.48
+    },
+    {
+      "category": "Soft Drinks - Low Calorie",
+      "product": "Coca-Cola Zero Sugar Soda Pop, 16.9 fl oz, 6 Pack Cans",
+      "regular_price": 5.18
+    },
+    {
+      "category": "Frozen Italian Entrees",
+      "product": "Smart Ones Three Cheese Ziti Marinara Frozen Meal, 9 Oz Box",
+      "regular_price": 2.26
+    },
+    {
+      "category": "Frozen Foods",
+      "product": "Great Value All Natural Chicken Wing Sections, 4 lb (Frozen)",
+      "regular_price": 12.98
+    },
+    {
+      "category": "Ice Cream",
+      "product": "Haagen Dazs Coffee Ice Cream, Gluten Free, Kosher, 14.0 oz",
+      "regular_price": 4.18
+    },
+    {
+      "category": "Frozen Novelties",
+      "product": "Pop-Ice Assorted Fruit Freezer Ice Pops, Gluten-Free Snack, 1.5 oz, 80 Count Fruit Pops",
+      "regular_price": 6.17
+    },
+    {
+      "category": "Lunchmeat - Sliced - Refrigerated",
+      "product": "Oscar Mayer Chopped Ham & Water product Deli Lunch Meat, 16 Oz Package",
+      "regular_price": 4.33
+    },
+    {
+      "category": "Frankfurters - Refrigerated",
+      "product": "Oscar Mayer Classic Uncured Beef Franks Hot Dogs, 10 ct Pack",
+      "regular_price": 3.94
+    },
+    {
+      "category": "Refrigerated Bacon",
+      "product": "Oscar Mayer Fully Cooked Original Bacon, 2.52 oz Box",
+      "regular_price": 4.27
+    },
+    {
+      "category": "Refrigerated Entrees",
+      "product": "John Soules Foods Chicken Breast Fajita Strips, Refrigerated, 16oz, 18g Protein per 3oz Serving Size",
+      "regular_price": 5.98
+    },
+    {
+      "category": "Dairy Products",
+      "product": "Land O Lakes Salted Stick Butter, 16 oz, 4 Sticks",
+      "regular_price": 5.28
+    },
+    {
+      "category": "Yogurt - Refrigerated",
+      "product": "Chobani Non-Fat Greek Yogurt, Vanilla Blended 32 oz, Plastic",
+      "regular_price": 5.58
+    },
+    {
+      "category": "Refrigerated Deli Meats",
+      "product": "Goya Cooked Ham 16 oz",
+      "regular_price": 29.99
+    },
+    {
+      "category": "Dairy - Milk - Refrigerated",
+      "product": "Great Value Milk Whole Vitamin D Gallon",
+      "regular_price": 3.92
+    },
+    {
+      "category": "Bakery - Fresh Cakes",
+      "product": "Little Debbie Zebra Cakes, 13 oz",
+      "regular_price": 2.68
+    },
+    {
+      "category": "Fresh Eggs",
+      "product": "Eggland's Best Classic Extra Large White Eggs, 12 count",
+      "regular_price": 3.18
+    },
+    {
+      "category": "Fresh Fruit",
+      "product": "Fresh Raspberries, 12 oz Container",
+      "regular_price": 4.74
+    },
+    {
+      "category": "Beer",
+      "product": "Stella Artois Lager, 12 Pack, 11.2 fl oz Glass Bottles, 5% ABV, Domestic Beer",
+      "regular_price": 15.73
+    },
+    {
+      "category": "Light Beer (Low Calorie/Alcohol)",
+      "product": "Bud Light Beer, 24 Pack, 12 fl oz Aluminum Cans, 4.2% ABV, Domestic Lager",
+      "regular_price": 20.98
+    },
+    {
+      "category": "Detergents - Heavy Duty - Liquid",
+      "product": "Purex Liquid Laundry Detergent Plus OXI, Stain Defense Technology, 128 Fluid Ounces, 85 Wash Loads",
+      "regular_price": 9.97
+    },
+    {
+      "category": "Cleaning Supplies",
+      "product": "ARM & HAMMER Pure Baking Soda, For Baking, Cleaning & Deodorizing, 1 lb Box",
+      "regular_price": 1.54
+    },
+    {
+      "category": "Toilet Tissue",
+      "product": "Angel Soft Toilet Paper, 9 Mega Rolls, Soft and Strong Toilet Tissue",
+      "regular_price": 6.68
+    },
+    {
+      "category": "Paper Towels",
+      "product": "Bounty Select-a-Size Paper Towels, 12 Double Rolls, White",
+      "regular_price": 22.18
+    },
+    {
+      "category": "Batteries",
+      "product": "Duracell Coppertop AA Battery, Long Lasting Double A Batteries, 16 Pack",
+      "regular_price": 15.97
+    },
+    {
+      "category": "Pain Remedies - Headache",
+      "product": "Tylenol Extra Strength Caplets with 500 mg Acetaminophen, 100 Ct",
+      "regular_price": 10.97
+    },
+    {
+      "category": "Cold Remedies -Adult",
+      "product": "Equate Value Size Honey Lemon Cough Drops with Menthol, 160 Count",
+      "regular_price": 4.68
+    }
+  ]
+}

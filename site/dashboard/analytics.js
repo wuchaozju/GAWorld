@@ -1285,6 +1285,9 @@ var gwURL = globalThis.GAWorldURL ? globalThis.GAWorldURL.url : function (value)
   }
   window.GAWorldAnalytics = {
     clear: clear,
+    // The workbench exposes load() for the no-runs case: the overview KPIs
+    // describe the current world even when nothing is selectable.
+    load: load,
     loadRun: async function (id, agentId, residents) {
       clear();
       state.runId = id;

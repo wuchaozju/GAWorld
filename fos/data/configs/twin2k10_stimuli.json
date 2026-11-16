@@ -1,0 +1,719 @@
+[
+ {
+  "qid": "QID192",
+  "experiment": "allais",
+  "arm": "form1",
+  "question_text": "Choose between:",
+  "options": [
+   "One million dollars for sure",
+   "89% probability of one million dollars 10% probablity of five miillion dollars 1% probability of nothing"
+  ],
+  "question_type": "MC",
+  "block_name": "Allais Form 1",
+  "csv_columns": [
+   "QID192"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Option A = sure $1M; option B = 89% $1M / 10% $5M / 1% nothing. Option text contains verbatim typos 'probablity' and 'miillion' (catalog original; reproduce as-is). EUT-consistent pair across forms = (Form1 A, Form2 A) or (Form1 B, Form2 B).",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID193",
+  "experiment": "allais",
+  "arm": "form2",
+  "question_text": "Choose between:",
+  "options": [
+   "11% probability of one million dollars 89% probability of nothing",
+   "10% probablity of five miillion dollars 90% probability of nothing"
+  ],
+  "question_type": "MC",
+  "block_name": "Allais Form 2",
+  "csv_columns": [
+   "QID193"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Option A = 11% $1M / 89% nothing; option B = 10% $5M / 90% nothing. Verbatim typos 'probablity'/'miillion' in option B (original). Allais common-ratio pair: same two prospects as Form 1 with the 89% common consequence removed.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID160",
+  "experiment": "linda",
+  "arm": "conjunction",
+  "question_text": "Linda is 31 years old, single, outspoken, and very bright. She majored in philosophy. As a student, she was deeply concerned with issues of discrimination and social justice, and also participated in anti-nuclear demonstrations. Please complete the statements below.",
+  "options": null,
+  "question_type": "Matrix",
+  "block_name": "Linda-conjunction",
+  "csv_columns": [
+   "QID160_1",
+   "QID160_2",
+   "QID160_3"
+  ],
+  "response_kind": "multi_numeric",
+  "labels": null,
+  "notes": "3 statements rated (not rank-ordered!) on the same 6-point probability scale; csv col suffix = row number (QID160_1..3). Col 3 = CRITICAL conjunction statement ('bank teller and is active in the feminist movement'); cols 1-2 are fillers identical to the no_conjunction arm. Scale verbatim quirk: 6 points, labels jump 'Very improbable' (2) -> 'Somewhat probable' (3); there is NO 'Somewhat improbable'. Codes 1-6 = column position.",
+  "settings": {
+   "Selector": "Likert",
+   "SubSelector": "SingleAnswer",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "rows": [
+   "It is ___ that Linda is a teacher in an elementary school",
+   "It is ___ that Linda works in a bookstore and takes Yoga classes",
+   "It is ___ that Linda is a bank teller and is active in the feminist movement"
+  ],
+  "columns": [
+   "Extremely improbable",
+   "Very improbable",
+   "Somewhat probable",
+   "Moderately probable",
+   "Very probable",
+   "Extremely probable"
+  ]
+ },
+ {
+  "qid": "QID159",
+  "experiment": "linda",
+  "arm": "no_conjunction",
+  "question_text": "Linda is 31 years old, single, outspoken, and very bright. She majored in philosophy. As a student, she was deeply concerned with issues of discrimination and social justice, and also participated in anti-nuclear demonstrations. Please complete the statements below.",
+  "options": null,
+  "question_type": "Matrix",
+  "block_name": "Linda -no conjunction ",
+  "csv_columns": [
+   "QID159_1",
+   "QID159_2",
+   "QID159_3"
+  ],
+  "response_kind": "multi_numeric",
+  "labels": null,
+  "notes": "Same 3-statement rating task; col 3 = plain 'bank teller' (no conjunction). Cols 1-2 identical to conjunction arm. Codes 1-6 = 6-point scale position (see quirk note on QID160).",
+  "settings": {
+   "Selector": "Likert",
+   "SubSelector": "SingleAnswer",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "rows": [
+   "It is ___ that Linda is a teacher in an elementary school",
+   "It is ___ that Linda works in a bookstore and takes Yoga classes",
+   "It is ___ that Linda is a bank teller"
+  ],
+  "columns": [
+   "Extremely improbable",
+   "Very improbable",
+   "Somewhat probable",
+   "Moderately probable",
+   "Very probable",
+   "Extremely probable"
+  ]
+ },
+ {
+  "qid": "QID154",
+  "experiment": "base_rate",
+  "arm": "30_engineers",
+  "question_text": "A panel of psychologist have interviewed and administered personality tests to 30 engineers and 70 lawyers, all successful in their respective fields. On the basis of this information, thumbnail descriptions of the 30 engineers and 70 lawyers have been written. Below is one description, chosen at random from the 100 available descriptions. Jack is a 45-year-old man. He is married and has four children. He is generally conservative, careful, and ambitious. He shows no interest in political and social issues and spends most of his free time on his many hobbies which include home carpentry, sailing, and mathematical puzzles. The probability that Jack is one of the 30 engineers in the sample of 100 is ___%. Please indicate the probability on a scale from 0 to 100.",
+  "options": null,
+  "question_type": "Slider",
+  "block_name": "Base-rate 30 engineers ",
+  "csv_columns": [
+   "QID154"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Slider 0-100 (Ticks 10), single statement. Same Jack description in both arms; only stated base rate differs (30 engineers/70 lawyers). Catalog block name in wave-1 flow: 'Base rate - 30 Engineer'.",
+  "settings": {
+   "Selector": "HSLIDER",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "statements": [
+   ""
+  ],
+  "range": {
+   "Min": 0,
+   "Max": 100,
+   "Ticks": 10
+  }
+ },
+ {
+  "qid": "QID156",
+  "experiment": "base_rate",
+  "arm": "70_engineers",
+  "question_text": "A panel of psychologist have interviewed and administered personality tests to 70 engineers and 30 lawyers, all successful in their respective fields. On the basis of this information, thumbnail descriptions of the 70 engineers and 30 lawyers have been written. Below is one description, chosen at random from the 100 available descriptions. Jack is a 45-year-old man. He is married and has four children. He is generally conservative, careful, and ambitious. He shows no interest in political and social issues and spends most of his free time on his many hobbies which include home carpentry, sailing, and mathematical puzzles. The probability that Jack is one of the 70 engineers in the sample of 100 is ___%. Please indicate the probability on a scale from 0 to 100.",
+  "options": null,
+  "question_type": "Slider",
+  "block_name": "Base-rate 70 engineers",
+  "csv_columns": [
+   "QID156"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Slider 0-100 (Ticks 10). 70 engineers/30 lawyers version; otherwise identical to QID154.",
+  "settings": {
+   "Selector": "HSLIDER",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "statements": [
+   ""
+  ],
+  "range": {
+   "Min": 0,
+   "Max": 100,
+   "Ticks": 10
+  }
+ },
+ {
+  "qid": "QID167",
+  "experiment": "anchoring_redwood",
+  "arm": "low",
+  "question_text": "Is the tallest redwood tree in the world more or less than 85 feet tall?",
+  "options": [
+   "more",
+   "less"
+  ],
+  "question_type": "MC",
+  "block_name": "Anchoring - redwood low",
+  "csv_columns": [
+   "QID167"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Comparative anchor question, asked FIRST (before the numeric estimate QID168). Anchor value = 85 feet. Options: A=more, B=less.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID168",
+  "experiment": "anchoring_redwood",
+  "arm": "low",
+  "question_text": "How tall do you think the tallest redwood tree in the world is? Enter a number of feet.",
+  "options": null,
+  "question_type": "TE",
+  "block_name": "Anchoring - redwood low",
+  "csv_columns": [
+   "QID168_TEXT"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Absolute numeric estimate (feet), TE ValidNumber, second question of the arm. csv column QID168_TEXT; all values numeric-parseable.",
+  "settings": {
+   "Selector": "SL",
+   "ForceResponse": "ON",
+   "ContentType": "ValidNumber"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID169",
+  "experiment": "anchoring_redwood",
+  "arm": "high",
+  "question_text": "Is the tallest redwood tree in the world more or less than 1000 feet tall?",
+  "options": [
+   "more",
+   "less"
+  ],
+  "question_type": "MC",
+  "block_name": "Anchoring - redwood high",
+  "csv_columns": [
+   "QID169"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Comparative anchor question, asked FIRST. Anchor value = 1000 feet. Options: A=more, B=less.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID170",
+  "experiment": "anchoring_redwood",
+  "arm": "high",
+  "question_text": "How tall do you think the tallest redwood tree in the world is? Enter a number of feet.",
+  "options": null,
+  "question_type": "TE",
+  "block_name": "Anchoring - redwood high",
+  "csv_columns": [
+   "QID170_TEXT"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Absolute numeric estimate (feet), TE ValidNumber, second question of the arm. csv column QID170_TEXT.",
+  "settings": {
+   "Selector": "SL",
+   "ForceResponse": "ON",
+   "ContentType": "ValidNumber"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID163",
+  "experiment": "anchoring_african",
+  "arm": "low",
+  "question_text": "Do you think there are more or fewer than 12 African countries in the United Nations?",
+  "options": [
+   "more",
+   "fewer"
+  ],
+  "question_type": "MC",
+  "block_name": "Anchoring - African countries low ",
+  "csv_columns": [
+   "QID163"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Comparative anchor question, asked FIRST. Anchor value = 12 countries. Options: A=more, B=fewer (NOTE: 'fewer', unlike redwood's 'less').",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID164",
+  "experiment": "anchoring_african",
+  "arm": "low",
+  "question_text": "How many African countries do you think are in the United Nations?",
+  "options": null,
+  "question_type": "TE",
+  "block_name": "Anchoring - African countries low ",
+  "csv_columns": [
+   "QID164_TEXT"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Absolute numeric estimate (count of countries), TE ValidNumber, second question. csv column QID164_TEXT.",
+  "settings": {
+   "Selector": "SL",
+   "ForceResponse": "ON",
+   "ContentType": "ValidNumber"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID165",
+  "experiment": "anchoring_african",
+  "arm": "high",
+  "question_text": "Do you think there are more or fewer than 65 African countries in the United Nations?",
+  "options": [
+   "more",
+   "fewer"
+  ],
+  "question_type": "MC",
+  "block_name": "Anchoring - African countries high",
+  "csv_columns": [
+   "QID165"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Comparative anchor question, asked FIRST. Anchor value = 65 countries. Options: A=more, B=fewer.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID166",
+  "experiment": "anchoring_african",
+  "arm": "high",
+  "question_text": "How many African countries do you think are in the United Nations?",
+  "options": null,
+  "question_type": "TE",
+  "block_name": "Anchoring - African countries high",
+  "csv_columns": [
+   "QID166_TEXT"
+  ],
+  "response_kind": "numeric",
+  "labels": null,
+  "notes": "Absolute numeric estimate, TE ValidNumber, second question. csv column QID166_TEXT.",
+  "settings": {
+   "Selector": "SL",
+   "ForceResponse": "ON",
+   "ContentType": "ValidNumber"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID161",
+  "experiment": "outcome_bias",
+  "arm": "success",
+  "question_text": "A 55-year-old man had a heart condition. He had to stop working because of chest pain. He enjoyed his work and did not want to stop. His pain also interfered with other things, such as travel and recreation. A type of bypass operation would relieve his pain and increase his life expectancy from age 65 to age 70. However, 8% of the people who have this operation die from the operation itself. His physician decided to go ahead with the operation. The operation succeeded. Evaluate the physician's decision to go ahead with the operation.",
+  "options": [
+   "Incorrect, a very bad decision",
+   "Incorrect, all things considered",
+   "Incorrect, but not unreasonable",
+   "The decision and its opposite are equally good",
+   "Correct, but the opposite would be reasonable too",
+   "Correct, all things considered",
+   "Clearly correct, an excellent decision"
+  ],
+  "question_type": "MC",
+  "block_name": "Outcome bias - success ",
+  "csv_columns": [
+   "QID161"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E",
+   "F",
+   "G"
+  ],
+  "notes": "Success arm: 8% mortality risk AND the operation succeeded (worse prior odds + good outcome). 7-point evaluation; A-C=Incorrect variants, D=equally good, E-G=Correct variants.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID162",
+  "experiment": "outcome_bias",
+  "arm": "failure",
+  "question_text": "A 55-year-old man had a heart condition. He had to stop working because of chest pain. He enjoyed his work and did not want to stop. His pain also interfered with other things, such as travel and recreation. A type of bypass operation would relieve his pain and increase his life expectancy from age 65 to age 75. However, 2% of the people who have this operation die from the operation itself. His physician decided to go ahead with the operation. The operation did not succeed and the patient died. Evaluate the physician's decision to go ahead with the operation.",
+  "options": [
+   "Incorrect, a very bad decision",
+   "Incorrect, all things considered",
+   "Incorrect, but not unreasonable",
+   "The decision and its opposite are equally good",
+   "Correct, but the opposite would be reasonable too",
+   "Correct, all things considered",
+   "Clearly correct, an excellent decision"
+  ],
+  "question_type": "MC",
+  "block_name": "Outcome bias - failure",
+  "csv_columns": [
+   "QID162"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E",
+   "F",
+   "G"
+  ],
+  "notes": "Failure arm: 2% mortality risk AND the patient died (better prior odds + bad outcome). Same 7 options as success arm.",
+  "settings": {
+   "Selector": "SAVR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID194",
+  "experiment": "myside",
+  "arm": "ford",
+  "question_text": "According to a comprehensive study by the U.S. Department of Transportation, Ford Explorers are 8 times more likely than a typical family car to kill occupants of another car in a crash. The Department of Transportation in Germany is considering recommending a ban on the sale of the Ford Explorer in Germany. Do you think that Germany should ban the sale of the Ford Explorer?",
+  "options": [
+   "definitely no",
+   "no",
+   "probably no",
+   "probably yes",
+   "yes",
+   "definitely yes"
+  ],
+  "question_type": "MC",
+  "block_name": "Myside Ford",
+  "csv_columns": [
+   "QID194"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E",
+   "F"
+  ],
+  "notes": "Ford Explorer (US brand) is the dangerous car; Germany considers a ban. 6-point: A=definitely no ... F=definitely yes. SAHR.",
+  "settings": {
+   "Selector": "SAHR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID195",
+  "experiment": "myside",
+  "arm": "german",
+  "question_text": "According to a comprehensive study by the U.S. Department of Transportation, a particular German car is 8 times more likely than a typical family car to kill occupants of another car in a crash. The U.S. Department of Transportation is considering recommending a ban on the sale of this German car. Do you think that the U.S. should ban the sale of the German car?",
+  "options": [
+   "definitely no",
+   "no",
+   "probably no",
+   "probably yes",
+   "yes",
+   "definitely yes"
+  ],
+  "question_type": "MC",
+  "block_name": "Myside German",
+  "csv_columns": [
+   "QID195"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E",
+   "F"
+  ],
+  "notes": "An unnamed German car is the dangerous car; the U.S. considers a ban. Same 6-point scale. Wave-4 flow branch label for this arm is 'Germany'.",
+  "settings": {
+   "Selector": "SAHR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID198",
+  "experiment": "prob_matching",
+  "arm": "problem1",
+  "question_text": "Consider the following hypothetical situation: A deck with 10 cards is randomly shuffled 10 separate times. The 10 cards are composed of 7 cards with the number “1” on the down side and 3 cards with the number “2” on the down side. Each time the 10 cards are reshuffled, your task is to predict the number on the down side of the top card. Imagine that you will receive $100 for each downside number you correctly predict, and that you want to earn as much money as possible. What would you predict after ...",
+  "options": null,
+  "question_type": "Matrix",
+  "block_name": "Probability matching vs. maximizing - Problem 1",
+  "csv_columns": [
+   "QID198_1",
+   "QID198_2",
+   "QID198_3",
+   "QID198_4",
+   "QID198_5",
+   "QID198_6",
+   "QID198_7",
+   "QID198_8",
+   "QID198_9",
+   "QID198_10"
+  ],
+  "response_kind": "multi_numeric",
+  "labels": null,
+  "notes": "10 trials (shuffle #1-#10), each a binary choice: columns ['1','2'] = card numbers; code = 1-based column position (1='1'-card, 2='2'-card). 7/10 cards are '1' => code 1 = majority/maximizing choice. csv cols QID198_1..QID198_10.",
+  "settings": {
+   "Selector": "Likert",
+   "SubSelector": "SingleAnswer",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "rows": [
+   "shuffle #1",
+   "shuffle #2",
+   "shuffle #3",
+   "shuffle #4",
+   "shuffle #5",
+   "shuffle #6",
+   "shuffle #7",
+   "shuffle #8",
+   "shuffle #9",
+   "shuffle #10"
+  ],
+  "columns": [
+   "1",
+   "2"
+  ]
+ },
+ {
+  "qid": "QID203",
+  "experiment": "prob_matching",
+  "arm": "problem2",
+  "question_text": "Consider the following situation: A die with 4 red faces and 2 green faces will be rolled 6 times. Before each roll you will be asked to predict which color (red or green) will show up once the die is rolled. Which color is most likely to show up after ...",
+  "options": null,
+  "question_type": "Matrix",
+  "block_name": "Probability matching vs. maximizing - Problem 2",
+  "csv_columns": [
+   "QID203_1",
+   "QID203_2",
+   "QID203_3",
+   "QID203_4",
+   "QID203_5",
+   "QID203_6"
+  ],
+  "response_kind": "multi_numeric",
+  "labels": null,
+  "notes": "6 trials (roll #1-#6), binary choice red/green; code 1=red (4/6 faces, majority), code 2=green. csv cols QID203_1..QID203_6. Problem 1 and Problem 2 are BETWEEN-SUBJECT arms (disjoint pid sets).",
+  "settings": {
+   "Selector": "Likert",
+   "SubSelector": "SingleAnswer",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "rows": [
+   "roll #1",
+   "roll #2",
+   "roll #3",
+   "roll #4",
+   "roll #5",
+   "roll #6"
+  ],
+  "columns": [
+   "red",
+   "green"
+  ]
+ },
+ {
+  "qid": "QID183",
+  "experiment": "abs_relative",
+  "arm": "calculator",
+  "question_text": "Imagine that you go to purchase a calculator for $30. The calculator salesperson informs you that the calculator you wish to buy is on sale for $20 at the other branch of the store which is ten minutes away by car. Would you drive to the other store?",
+  "options": [
+   "Yes",
+   "No"
+  ],
+  "question_type": "MC",
+  "block_name": "Absolute vs. relative - calculator",
+  "csv_columns": [
+   "QID183"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Cheap item ($25->... $30 calculator on sale $20; saving $10). Options: A=Yes, B=No. SAHR.",
+  "settings": {
+   "Selector": "SAHR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID184",
+  "experiment": "abs_relative",
+  "arm": "jacket",
+  "question_text": "Imagine that you go to purchase a jacket for $250. The jacket salesperson informs you that the jacket you wish to buy is on sale for $240 at the other branch of the store which is ten minutes away by car. Would you drive to the other store?",
+  "options": [
+   "Yes",
+   "No"
+  ],
+  "question_type": "MC",
+  "block_name": "Absolute vs. relative - jacket",
+  "csv_columns": [
+   "QID184"
+  ],
+  "response_kind": "choice",
+  "labels": [
+   "A",
+   "B"
+  ],
+  "notes": "Expensive item ($250 jacket on sale $240; same $10 saving). Options: A=Yes, B=No.",
+  "settings": {
+   "Selector": "SAHR",
+   "SubSelector": "TX",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A"
+ },
+ {
+  "qid": "QID287",
+  "experiment": "false_consensus",
+  "arm": "all",
+  "question_text": "Would you support or oppose...",
+  "options": null,
+  "question_type": "Matrix",
+  "block_name": "False consensus ",
+  "csv_columns": [
+   "QID287_1",
+   "QID287_2",
+   "QID287_3",
+   "QID287_4",
+   "QID287_5",
+   "QID287_6",
+   "QID287_7",
+   "QID287_10",
+   "QID287_11",
+   "QID287_12"
+  ],
+  "response_kind": "multi_numeric",
+  "labels": null,
+  "notes": "WITHIN-SUBJECT: every participant rates OWN support for all 10 policies on a 5-point scale (A=Strongly oppose ... E=Strongly support). RowsID non-contiguous ['1'..'7','10','11','12'] -> csv cols skip QID287_8/QID287_9. Companion 'perceived others' measure NOT in this QID: wave-1 raw block 'False cons. others _1..12' (raw_data only) and wave-4 QID290 (0-100 slider, same 10 StatementsID) provide it.",
+  "settings": {
+   "Selector": "Likert",
+   "SubSelector": "SingleAnswer",
+   "ForceResponse": "ON"
+  },
+  "source": "wave4_Q_wave1_3_A",
+  "rows": [
+   "Placing a tax on carbon emissions?",
+   "Ensuring 40% of all new clean energy infrastructure development spending goes to low-income communities?",
+   "Federal investments to ensure a carbon-pollution free electricity sector by 2035?",
+   "A ‘Medicare for All’ system in which all Americans would get healthcare from a government-run plan?",
+   "A ‘public option’, which would allow Americans to buy into a government-run healthcare plan if they choose to do so?",
+   "Immigration reforms that would provide a path to U.S. citizenship for undocumented immigrants currently in the United States?",
+   "A law that requires companies to provide paid family leave for parents?",
+   "A 2% tax on the assets of individuals with a net worth of more than $50 million?",
+   "Increasing deportations for those in the US illegally?",
+   "Offering seniors healthcare vouchers to purchase private healthcare plans in place of traditional medicare coverage?"
+  ],
+  "rowsid": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "10",
+   "11",
+   "12"
+  ],
+  "columns": [
+   "Strongly oppose",
+   "Somewhat oppose",
+   "Neither oppose nor support",
+   "Somewhat support",
+   "Strongly support"
+  ]
+ }
+]

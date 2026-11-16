@@ -1,0 +1,10 @@
+# This file installs everything needed to run the complete automated test suite.
+#
+# Runtime and CI packages come from requirements-ci.txt. The extra packages
+# below support test helpers and generated research fixtures.
+
+-r requirements-ci.txt
+
+requests==2.32.5
+reportlab==4.4.9
+ruff==0.14.10

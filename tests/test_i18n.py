@@ -86,6 +86,12 @@ class TestLocaleFileConsistency(unittest.TestCase):
         self.assertEqual(set(), only_in_en, f"Keys only in en.json: {only_in_en}")
         self.assertEqual(set(), only_in_zh, f"Keys only in zh-CN.json: {only_in_zh}")
 
+    def test_locale_keys_are_unique(self):
+        for name in ("en.json", "zh-CN.json"):
+            with open(os.path.join(_LOCALE_DIR, name), encoding="utf-8") as handle:
+                pairs = json.load(handle, object_pairs_hook=list)
+            self.assertEqual(len(pairs), len(dict(pairs)), f"Duplicate translation keys in {name}")
+
     def test_en_keys_are_sorted(self):
         keys = list(self.en.keys())
         if keys != sorted(keys):

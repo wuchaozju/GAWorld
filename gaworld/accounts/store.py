@@ -170,6 +170,9 @@ class AccountStore:
         from .community import migrate
 
         migrate(self)
+        from .api_tokens import migrate as migrate_api_tokens
+
+        migrate_api_tokens(self)
 
     # -- users ------------------------------------------------------------
 
@@ -252,6 +255,10 @@ class AccountStore:
         with self._db() as db:
             db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, user_id))
             db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+            db.execute(
+                "UPDATE api_tokens SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL",
+                (time.time(), user_id),
+            )
 
     def set_can_create_city(self, user_id: int, allow: bool) -> dict[str, Any]:
         with self._db() as db:

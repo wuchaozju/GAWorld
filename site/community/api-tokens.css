@@ -1,0 +1,13 @@
+.api-tokens { min-width: 0; }
+.api-tokens .form { display: grid; gap: 10px; width: 100%; max-width: 520px; }
+.api-tokens .form > input, .api-tokens .form > select { width: 100%; box-sizing: border-box; }
+.api-tokens .form > label { margin-top: 10px; }
+.api-tokens .form > button { justify-self: start; }
+.api-tokens .list-row p { margin: 6px 0; }
+.api-tokens fieldset { border: 0; padding: 0; margin: 0; }
+.api-tokens fieldset label { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.api-tokens input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 18px; }
+.api-tokens .list-row { flex-wrap: wrap; gap: 12px; }
+.api-tokens .list-row > div { min-width: 0; overflow-wrap: anywhere; }
+.api-tokens textarea { width: 100%; box-sizing: border-box; resize: vertical; overflow-wrap: anywhere; }
+.api-tokens [hidden] { display: none; }

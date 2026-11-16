@@ -19,12 +19,14 @@ between the simulator's read and write would be silently dropped.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import json
 import os
 import time
 import uuid
 from typing import Any
+
+from gaworld.kernel import proclive
+from gaworld.kernel.filelock import file_lock
 
 DEFAULT_PATH = os.path.join("output", "kernel", "interventions.json")
 _APPLIED_KEEP = 100
@@ -38,13 +40,8 @@ def path_for(config: dict | None) -> str:
 
 @contextlib.contextmanager
 def _locked(path: str):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path + ".lock", "a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(lock, fcntl.LOCK_UN)
+    with file_lock(path + ".lock"):
+        yield
 
 
 def read(path: str) -> dict[str, Any]:
@@ -78,13 +75,7 @@ def is_running(data: dict[str, Any]) -> bool:
     pid = data.get("pid")
     if not data.get("active") or not isinstance(pid, int):
         return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+    return proclive.pid_exists(pid)
 
 
 # -- simulator side ----------------------------------------------------------

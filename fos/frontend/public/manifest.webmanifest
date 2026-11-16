@@ -1,0 +1,16 @@
+{
+  "name": "FOS - Social Simulation Platform",
+  "short_name": "FOS",
+  "start_url": "/css/fos/",
+  "scope": "/css/fos/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/css/fos/assets/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

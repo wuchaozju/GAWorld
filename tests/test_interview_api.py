@@ -64,6 +64,28 @@ def test_unknown_job_is_404():
     assert status == 404
 
 
+def test_active_jobs_only_recover_the_callers_running_interviews(monkeypatch):
+    from gaworld.accounts.context import USER
+
+    monkeypatch.setattr(
+        interview_api,
+        "_JOBS",
+        {
+            "owned": {"id": "owned", "owner_id": 8, "status": "running", "started_at": 1},
+            "foreign": {"id": "foreign", "owner_id": 11, "status": "running", "started_at": 2},
+            "finished": {"id": "finished", "owner_id": 8, "status": "done", "started_at": 3},
+        },
+    )
+    token = USER.set({"id": 8, "role": "member"})
+    try:
+        payload, status = interview_api.handle_get("/api/interview/jobs")
+        assert status == 200
+        assert [job["id"] for job in payload["jobs"]] == ["owned"]
+        assert "owner_id" not in payload["jobs"][0]
+    finally:
+        USER.reset(token)
+
+
 # ---------------------------------------------------------------------------
 # Roster
 # ---------------------------------------------------------------------------

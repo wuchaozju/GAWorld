@@ -38,12 +38,16 @@ ADMIN_READS = (
     "/api/auth/audit",
     "/api/auth/usage",
     "/api/analytics/system",
+    # Crowd sessions share a service/store and are not yet owner-scoped.
+    "/api/crowdsourcing/",
 )
 
 #: Requests that start model calls: refused once a member's daily quota is used
 #: up (the dashboard checks; admins are exempt). Saving config, stopping a run
 #: or deleting something never is.
 QUOTA_GATED_EXACT = {
+    "/api/parallel-worlds/start",
+    "/api/parallel-worlds/interpret",
     "/api/settings/llm/test",
     "/api/run/start",
     "/api/run/schedule",
@@ -102,6 +106,9 @@ def quota_gated(path: str) -> bool:
 
 
 MEMBER_WRITES_EXACT = {
+    "/api/auth/tokens",
+    "/api/auth/tokens/revoke",
+    "/api/population/preview",
     "/api/settings/llm/credential",
     "/api/settings/llm/test",
     "/api/todos/create",
@@ -137,6 +144,10 @@ OWNER_DELETES = {"/api/interview/delete", "/api/research/delete", "/api/persona/
 #: through the world-aware config (the Big Five table is the world's own copy
 #: under ``seed/``). Life events still read global files and so stay admin-only.
 WORLD_WRITES_EXACT = {
+    "/api/population/generate",
+    "/api/population/group-run",
+    "/api/population/validate",
+    "/api/settings/llm/routing",
     "/api/config",
     "/api/run/start",
     "/api/run/stop",

@@ -70,7 +70,11 @@ _PROVIDER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 #: env var *name* instead and reports whether it is set.
 _PROVIDER_FIELDS: dict[str, dict[str, str]] = {
     "ollama": {
-        "url": "str", "model": "str", "timeout": "int", "think": "bool", "num_ctx": "int",
+        "url": "str",
+        "model": "str",
+        "timeout": "int",
+        "think": "bool",
+        "num_ctx": "int",
     },
     "openai": {
         "base_url": "str",
@@ -136,11 +140,16 @@ def _override_layers() -> dict[str, dict[str, Any]]:
     """
     defaults = build_default_config()
     env_file_path = defaults.get("environment_config_path")
-    return {
+    layers = {
         "dashboard": world_paths.dashboard_config(),
-        "env": load_env_override(),
-        "env_file": load_environment_config(env_file_path),
     }
+    world = world_paths.current_world()
+    if world:
+        from gaworld import worlds
+
+        layers["world"] = _redact(worlds.read_config(world_paths.REPO_ROOT, world["id"]))
+    layers.update(env=load_env_override(), env_file=load_environment_config(env_file_path))
+    return layers
 
 
 def _source_map() -> dict[str, str]:
@@ -359,9 +368,9 @@ def _choice_map(tree: dict[str, Any]) -> dict[str, list[str]]:
         return {}
     routing = (tree.get("llm") or {}).get("routing") or {}
     choices = {"llm.routing.default": names}
-    for task in (routing.get("tasks") or {}):
+    for task in routing.get("tasks") or {}:
         choices[f"llm.routing.tasks.{task}"] = names
-    for agent in (routing.get("agents") or {}):
+    for agent in routing.get("agents") or {}:
         choices[f"llm.routing.agents.{agent}"] = names
     return choices
 
@@ -543,6 +552,8 @@ def save_credential(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def overview() -> dict[str, Any]:
+    from gaworld.apps import model_routing_api
+
     effective = world_paths.effective_config()
     defaults = build_default_config()
     index = config_docs.section_index()
@@ -578,6 +589,8 @@ def overview() -> dict[str, Any]:
             "provider_types": sorted(_PROVIDER_FIELDS),
             "can_manage_credentials": credentials.enabled() and bool((USER.get() or {}).get("id")),
             "can_edit_config": USER.get() is None or USER.get().get("role") == "admin",
+            "can_edit_model_routing": model_routing_api.can_edit(),
+            "model_routing_world": (world_paths.current_world() or {}).get("id"),
             "env": _env_snapshot(),
             "files": _raw_files(),
         }
@@ -625,9 +638,7 @@ def save_config(payload: dict[str, Any]) -> dict[str, Any]:
     blocked = _reject_read_only(patch)
     patch = {key: value for key, value in patch.items() if value not in ({}, None)}
     if not patch:
-        return _wire_safe(
-            {"saved": False, "dropped": dropped, "blocked": blocked, **overview()}
-        )
+        return _wire_safe({"saved": False, "dropped": dropped, "blocked": blocked, **overview()})
     current = world_paths.dashboard_config()
     world_paths.deep_update(current, patch)
     world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
@@ -673,11 +684,7 @@ def reset_paths(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(paths, list):
         raise ValueError("paths must be a list of dotted config paths")
     current = world_paths.dashboard_config()
-    removed = [
-        path
-        for path in paths
-        if isinstance(path, str) and path and _prune(current, path.split("."))
-    ]
+    removed = [path for path in paths if isinstance(path, str) and path and _prune(current, path.split("."))]
     if removed:
         world_paths.atomic_write_json(world_paths.DASHBOARD_CONFIG_PATH, current)
         _LOG.info("settings override reset: %s", removed)
@@ -705,6 +712,10 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
 
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     try:
+        if path == "/api/settings/llm/routing":
+            from gaworld.apps import model_routing_api
+
+            return model_routing_api.save(payload), 200
         if path == "/api/settings/save":
             return save_config(payload.get("config", payload)), 200
         if path == "/api/settings/reset":
