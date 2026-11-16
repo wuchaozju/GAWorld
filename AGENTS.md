@@ -18,7 +18,7 @@ GAWorld/
 │   ├── economy/              # 经济模块（finance.py + plugin.py）
 │   ├── public_sector/        # 公共部门（policy/plugin：政府与政策 → 改写经济规则 + 转移支付 + 居民简报；换届；默认关）
 │   ├── env/                  # 环境系统（system.py）
-│   ├── events/               # 生命事件（life.py + plugin.py）
+│   ├── events/               # 生命事件（life.py + plugin.py）+ 事件影响级联（impact/appraisal/cascade）
 │   ├── family/               # 家庭与户（assign/overrides/ties/duties/finance/events + plugin.py）
 │   ├── infosources/          # 外部信息源（registry/channels/feed/diet/search + plugin.py：新闻/社交/专业站 → 每人信息食谱）
 │   ├── interview/            # 群体采访（schema/roster/prompt/runner/aggregate/report/store/session；__main__ 为按城市的子进程）
@@ -226,6 +226,10 @@ There is no build step beyond installing Python dependencies.
     arguments to check uncommitted work.
   - `black .` (line length 110).
   - `mypy gaworld` (strict typing on the new `gaworld/` tree, advisory elsewhere).
+- **Never run the formatter over a directory here.** The repo carries hundreds of files that
+  are not ruff-format clean, so `ruff format gaworld/` rewrites ~150 unrelated files and buries
+  the real change. Format (or `ruff check --fix`) only the files you actually touched, then
+  check the result with `python scripts/lint_ratchet.py`.
 - All new code goes into `gaworld/` sub-packages. No new root-level modules.
 - Import from `gaworld.*` directly; the `legacy/` shims are deprecated and excluded from the build.
 - Dashboard pages (`site/dashboard/`): the house tokens in `site/tokens.css` flip under

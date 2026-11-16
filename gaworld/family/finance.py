@@ -212,17 +212,21 @@ def household_state_effects(
     *,
     partner_earns: bool,
     config: dict[str, Any] | None = None,
+    day: int | None = None,
 ) -> dict[str, float]:
     """Daily state deltas from the household's economics.
 
     A second earner buys security; carrying dependants alone costs calm.
     Both are small per-day nudges — the point is a persistent tilt over
     hundreds of days, not a shock.
+
+    ``day`` lets a *temporary* event-driven caregiving burden expire: without
+    it the overlay counts forever.
     """
     if not record:
         return {}
     cfg = family_config(config).get("finance", {})
-    load = care_load(record, config)
+    load = care_load(record, config, day=day)
     effects: dict[str, float] = {}
     if partner_earns:
         effects["econ_security"] = float(cfg.get("dual_income_security_bonus", 0.004))

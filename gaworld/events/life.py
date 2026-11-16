@@ -4,6 +4,7 @@ import re
 import time
 import uuid
 from contextlib import contextmanager
+from typing import Any
 
 from gaworld.settings import CONFIG
 
@@ -250,6 +251,458 @@ LIFE_EVENT_TEMPLATES = [
 
 _TEMPLATES_BY_KEY = {item["key"]: item for item in LIFE_EVENT_TEMPLATES}
 
+
+#: 客观影响池：每个模板在现实里会波及哪些领域。
+#:
+#: 这些是**客观**后果——「生病」客观上要花钱、要占掉半天、家人要照料——与
+#: 谁摊上它无关。个人差异由 :mod:`gaworld.events.appraisal` 的主体预估叠加上去，
+#: 实际影响 = 客观池 × 主体预估。参数含义见 :mod:`gaworld.events.impact`。
+TEMPLATE_IMPACTS: dict[str, list[dict[str, Any]]] = {
+    "illness": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "healthcare", "amount": 800.0},
+            "note": "看病要花钱",
+        },
+        {
+            "domain": "economy",
+            "kind": "income_change",
+            "params": {"fraction": -0.3, "days": 2},
+            "note": "看病期间误工",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "开会", "通勤"],
+                "replacement": "就医",
+                "window_minutes": 360,
+            },
+            "note": "当天的工作让位给看病",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.15, "duty": "照顾生病的家人"},
+            "note": "家里人要照顾他",
+        },
+    ],
+    "lottery": [
+        {
+            "domain": "economy",
+            "kind": "bonus",
+            "params": {"category": "lottery", "amount": 20000.0},
+            "note": "奖金到账",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_add",
+            "params": {"activity": "处理这笔奖金", "minutes": 60},
+            "note": "突然多出来的钱要安排",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.05, "duty": "商量这笔钱怎么用"},
+            "note": "家里要一起商量这笔钱",
+        },
+    ],
+    "framed": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "legal", "amount": 500.0},
+            "note": "解释与善后要花钱花时间",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "开会", "社交"],
+                "replacement": "处理麻烦",
+                "window_minutes": 300,
+            },
+            "note": "上班时间被占去处理这件事",
+        },
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "reputation", "label": "被卷进误会，周围的人开始侧目"},
+            "note": "周围人的态度变了",
+        },
+    ],
+    "promotion": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["休息", "时间", "娱乐", "社交"],
+                "replacement": "准备升职",
+                "window_minutes": 300,
+            },
+            "note": "要额外投入精力准备",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_add",
+            "params": {"activity": "准备竞聘材料", "minutes": 90},
+            "note": "多了一件要做的事",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.05, "duty": "配合他这几天的节奏"},
+            "note": "家里要配合他的加班",
+        },
+    ],
+    "family_emergency": [
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.2, "duty": "处理家里的急事"},
+            "note": "家庭责任突然压过来",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "娱乐", "购物", "社交"],
+                "replacement": "处理家事",
+                "window_minutes": 360,
+            },
+            "note": "原定的安排让位给家事",
+        },
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "family", "amount": 300.0},
+            "note": "临时要垫一笔开销",
+        },
+    ],
+    "job_change": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["通勤", "上班", "工作"],
+                "replacement": "适应新岗位",
+                "window_minutes": 300,
+            },
+            "note": "通勤与作息要重新适应",
+        },
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "new_job", "label": "换了新工作，日常节奏整个换了一套"},
+            "note": "工作环境变了",
+        },
+    ],
+    "unemployment": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "开会"],
+                "replacement": "找工作",
+                "window_minutes": 480,
+            },
+            "note": "接下来一段时间主要在找工作",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_add",
+            "params": {"activity": "投简历", "minutes": 60},
+            "note": "多了一件每天都要做的事",
+        },
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "job_search", "amount": 150.0},
+            "note": "找工作本身也要花钱",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.1, "duty": "一起撑过没收入的日子"},
+            "note": "家里要一起扛",
+        },
+    ],
+    "relocation": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "housing", "amount": 3000.0},
+            "note": "搬家是一笔开销",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["通勤", "买菜", "购物", "办事", "散步"],
+                "replacement": "收拾搬家",
+                "window_minutes": 420,
+            },
+            "note": "原来的动线全部作废",
+        },
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "new_district", "label": "搬到了新片区，熟悉的街区要重新认识"},
+            "note": "生活环境变了",
+        },
+    ],
+    "further_study": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "娱乐", "社交"],
+                "replacement": "上课学习",
+                "window_minutes": 480,
+            },
+            "note": "一大块时间被学习占住",
+        },
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "education", "amount": 5000.0},
+            "note": "学费与资料开销",
+        },
+        {
+            "domain": "economy",
+            "kind": "income_change",
+            "params": {"fraction": -0.3, "days": 90},
+            "note": "求学期间收入下降",
+        },
+    ],
+    "entrepreneurship": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["上班", "工作", "开会"],
+                "replacement": "筹备自己的事",
+                "window_minutes": 480,
+            },
+            "note": "整天都是自己的事",
+        },
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "business", "amount": 8000.0},
+            "note": "起步要垫钱",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.08, "duty": "接受他这段时间的不确定"},
+            "note": "家里的收入也随他的投入起伏",
+        },
+    ],
+    "chronic_condition": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "healthcare", "amount": 3000.0},
+            "note": "长期医疗开销",
+        },
+        {
+            "domain": "economy",
+            "kind": "income_change",
+            "params": {"fraction": -0.15, "days": 180},
+            "note": "长期影响收入",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "开会"],
+                "replacement": "复诊",
+                "window_minutes": 180,
+            },
+            "note": "定期要去医院",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.15, "duty": "陪他复诊、盯着吃药"},
+            "note": "家人要陪着他管这件事",
+        },
+    ],
+    "marriage": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "wedding", "amount": 8000.0},
+            "note": "成家的开销",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.12, "duty": "一起把家安顿好"},
+            "note": "两个人的事要一起办",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "娱乐", "社交"],
+                "replacement": "筹备婚礼",
+                "window_minutes": 300,
+            },
+            "note": "接下来几个月要筹备",
+        },
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "marriage", "label": "成了家，日常安排要多一个人商量"},
+            "note": "生活结构变了",
+        },
+    ],
+    "childbirth": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "childcare", "amount": 5000.0},
+            "note": "养育开销",
+        },
+        {
+            "domain": "economy",
+            "kind": "income_change",
+            "params": {"fraction": -0.2, "days": 180},
+            "note": "照看孩子挤掉工作时间",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.3, "duty": "夜里要起来照看孩子"},
+            "note": "全家的作息都被打乱",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "社交", "娱乐"],
+                "replacement": "照顾孩子",
+                "window_minutes": 480,
+            },
+            "note": "原来的安排围着新成员重排",
+        },
+    ],
+    "bereavement": [
+        {
+            "domain": "economy",
+            "kind": "expense",
+            "params": {"category": "funeral", "amount": 3000.0},
+            "note": "丧事开销",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.1, "duty": "一起处理家里的事"},
+            "note": "家里的分工被打乱",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "娱乐", "社交"],
+                "replacement": "处理丧事",
+                "window_minutes": 420,
+            },
+            "note": "这段时间什么都不想干",
+        },
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "bereavement", "label": "家里少了一个熟悉的人，屋里安静得不一样"},
+            "note": "家里的氛围变了",
+        },
+    ],
+    "retirement": [
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["工作", "上班", "开会"],
+                "replacement": "过退休生活",
+                "window_minutes": 480,
+            },
+            "note": "白天的时间整个空出来",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_add",
+            "params": {"activity": "安排退休后的生活", "minutes": 60},
+            "note": "要重新安排一天到晚做什么",
+        },
+        {
+            "domain": "family",
+            "kind": "care_load",
+            "params": {"delta": 0.05, "duty": "多出时间帮着照看家里人"},
+            "note": "多出来的精力给了家里",
+        },
+    ],
+    "relationship_break": [
+        {
+            "domain": "environment",
+            "kind": "condition",
+            "params": {"key": "relationship_break", "label": "和重要的人闹翻了，最近的来往断了"},
+            "note": "关系圈出现空缺",
+        },
+        {
+            "domain": "schedule",
+            "kind": "activity_replace",
+            "params": {
+                "targets": ["社交", "聚会", "娱乐"],
+                "replacement": "自己待着",
+                "window_minutes": 240,
+            },
+            "note": "不想见人的时段",
+        },
+    ],
+}
+
+#: 一件事在居民身上留多久（天）。没有它，每条影响都只有一天那么长，
+#: 一次失业的影响会在第二天消失——那不是事件，是噪音。
+TEMPLATE_DURATION: dict[str, int] = {
+    "illness": 3,
+    "lottery": 30,
+    "framed": 14,
+    "promotion": 30,
+    "family_emergency": 3,
+    "job_change": 30,
+    "unemployment": 90,
+    "relocation": 30,
+    "further_study": 365,
+    "entrepreneurship": 180,
+    "chronic_condition": 365,
+    "marriage": 60,
+    "childbirth": 180,
+    "bereavement": 30,
+    "retirement": 365,
+    "relationship_break": 14,
+}
+
+# 每个模板带上它的客观影响池。放在模板表之后，是为了让上面那张影响表
+# 读起来像一张表，而不是被打散进十六个字典里。
+LIFE_EVENT_TEMPLATES = [
+    {
+        **template,
+        "impacts": [
+            {
+                **impact,
+                "duration_days": impact.get("duration_days", TEMPLATE_DURATION.get(template["key"], 1)),
+            }
+            for impact in TEMPLATE_IMPACTS.get(template["key"], [])
+        ],
+    }
+    for template in LIFE_EVENT_TEMPLATES
+]
+
+_TEMPLATES_BY_KEY = {item["key"]: item for item in LIFE_EVENT_TEMPLATES}
+
 STATE_EFFECT_KEYS = {
     "emotion",
     "stress",
@@ -483,6 +936,13 @@ def _clean_tags(value):
     return out
 
 
+def _clean_impacts(value):
+    """Raw impact specs into plain dicts (the queue is persisted as JSON)."""
+    from gaworld.events.impact import normalize_impacts
+
+    return [impact.to_dict() for impact in normalize_impacts(value)]
+
+
 def normalize_life_event(payload, current_frame=None):
     payload = payload if isinstance(payload, dict) else {}
     template_key = str(payload.get("template_key") or payload.get("template") or "").strip()
@@ -524,6 +984,9 @@ def normalize_life_event(payload, current_frame=None):
         "time": event_time,
         "impact_tags": _clean_tags(payload.get("impact_tags", template.get("impact_tags", []))),
         "state_effects": _clean_state_effects(state_effects),
+        # The event's own objective impact pool, as plain dicts: the queue is
+        # persisted as JSON, so Impact objects cannot ride along here.
+        "impacts": _clean_impacts(payload.get("impacts")),
         # Destination job for a 换工作 event; empty means "let the economy pick".
         "new_job": str(payload.get("new_job") or "").strip()[:60],
         "created_at": str(payload.get("created_at") or _now_text()),

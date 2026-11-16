@@ -30,3 +30,41 @@ class EconomyPlugin(Plugin):
         ctx.bus.on("on_agent_post_step", finance.on_agent_post_step)
         ctx.bus.on("on_day_end", finance.on_day_end)
         ctx.bus.on("on_simulation_end", finance.on_simulation_end)
+        # K3f+: the economy owns the money, so it is the economy that applies
+        # event impacts that cost or earn money (see
+        # docs/proposals/2026-11-15-event-impact-cascade.md).
+        ctx.bus.on("event.impact.apply", self._apply_impact)
+
+    def _apply_impact(self, hook_ctx):
+        """Book an event impact that lands on money."""
+        from gaworld.economy import finance
+
+        impact = hook_ctx.get("impact")
+        agent = hook_ctx.get("agent")
+        if impact is None or not isinstance(agent, dict):
+            return
+        if getattr(impact, "domain", "") != "economy":
+            return
+        params = getattr(impact, "params", {}) or {}
+        scale = float(hook_ctx.get("scale", 1.0) or 1.0)
+        severity = float(hook_ctx.get("objective_severity", 1.0) or 1.0)
+        kind = getattr(impact, "kind", "")
+        context = {
+            "config": getattr(hook_ctx.get("sim"), "config", {}),
+            "day": hook_ctx.get("day"),
+            "agents": [agent],
+        }
+
+        if kind == "expense":
+            # Amounts are quoted at severity 1.0; a milder event costs less.
+            amount = float(params.get("amount", 0.0) or 0.0) * severity * scale
+            finance.charge_external_expense(
+                agent, str(params.get("category", "event")), amount, context=context
+            )
+        elif kind == "bonus":
+            amount = float(params.get("amount", 0.0) or 0.0) * severity * scale
+            finance.credit_event_bonus(agent, str(params.get("category", "bonus")), amount, context=context)
+        elif kind == "income_change":
+            fraction = float(params.get("fraction", 0.0) or 0.0) * scale
+            days = int(params.get("days", 1) or 1)
+            finance.apply_event_income_change(agent, fraction, days, config=context["config"])

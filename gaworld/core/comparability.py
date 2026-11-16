@@ -101,6 +101,11 @@ EPOCHS: tuple[Epoch, ...] = (
           "文献未报离散度则这一项计入水平准确度（此前该塌缩在分数里完全不可见）",
           ("replication", "fidelity_score", "survey"),
           "gaworld/research/replication.py; tests/test_replication.py::DegenerateIntervalTest"),
+    Epoch(14, "2026-11-15",
+          "事件影响级联：事件真的改写经济、家庭、日程与环境，且居民对同一事件的预估"
+          "按人格/状态/处境分个体（此前事件的全部后果只有一组固定的心理状态增量）",
+          ("events", "schedule", "economy", "family", "environment", "cognition"),
+          "docs/proposals/2026-11-15-event-impact-cascade.md; gaworld/events/impact.py"),
 )
 
 #: The epoch of the code that is running now.

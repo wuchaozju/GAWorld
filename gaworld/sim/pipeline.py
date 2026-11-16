@@ -17,7 +17,7 @@ Key conventions on the step dict:
 The stage order is configuration::
 
     CONFIG["pipeline"]["agent_step"] = [
-        "prepare", "perceive", "interrupts", "plan", "adjust_activity",
+        "prepare", "appraise", "perceive", "interrupts", "plan", "adjust_activity",
         "move", "select_action", "reflect", "update_state",
         "broadcast", "memorize", "record",
     ]
@@ -45,6 +45,7 @@ _LOG = get_logger("gaworld.sim.pipeline")
 
 DEFAULT_AGENT_STEP_ORDER: tuple[str, ...] = (
     "prepare",
+    "appraise",
     "perceive",
     "interrupts",
     "plan",

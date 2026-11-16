@@ -418,6 +418,29 @@ def simulation_settings() -> dict[str, Any]:
             # every fallback (those decisions used heuristic defaults).
             "degraded_failure_share": 0.05,
         },
+        # 事件影响级联：事件不再只是一行提示词，而会真的改写环境、家庭、经济与日程；
+        # 居民对同一件事的预估由人格、状态与处境决定（实际影响 = 客观影响 × 主体预估）。
+        "event_impact": {
+            "enabled": True,
+            # 评估层：规则层永远运行；模型层只在严重度达到门槛时调用一次。
+            "appraisal": {
+                "enabled": True,
+                "llm_enabled": True,
+                # 低于这个严重度只走规则层，不浪费模型调用。
+                "llm_min_severity": 0.55,
+                # 一个 tick 内每个居民最多评估几个事件。
+                "max_events_per_step": 2,
+            },
+            # 级联层：把影响池缩放筛选后落到各领域。
+            "cascade": {
+                "enabled": True,
+                # 每个事件最多落地几条影响。
+                "max_impacts_per_event": 4,
+            },
+            # 事件应对记录（思考 / 预估 / 计划 / 实际落地）。留空则写到插件自己的
+            # 目录（output/event_impact/）。
+            "output_dir": "",
+        },
         # 时间合理性：居民的行为要对得上钟点。日程里时间与活动对不上的项会被挪回
         # 合理窗口，动作层面不合时机的动作会被降权（不是删除，所以仍有可能发生），
         # 模型临时改程时提出的新活动也要过这一关。默认开启；关掉即回到旧行为。

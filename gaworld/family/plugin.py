@@ -93,6 +93,10 @@ class FamilyPlugin(Plugin):
         # Marriage / childbirth / bereavement land here once the life-events
         # plugin has applied them.
         ctx.bus.on("life.event.applied", self._apply_life_transition)
+        # Event impacts that land on the household: the family owns the
+        # household, so the family applies them (see
+        # docs/proposals/2026-11-15-event-impact-cascade.md).
+        ctx.bus.on("event.impact.apply", self._apply_impact)
 
     # -- construction -------------------------------------------------------
 
@@ -139,6 +143,67 @@ class FamilyPlugin(Plugin):
 
     def _record_for(self, ctx, agent) -> dict[str, Any]:
         return ctx.agent_ext(agent, self.id)
+
+    # -- event impacts ------------------------------------------------------
+
+    def _apply_impact(self, hook_ctx):
+        """Apply an event impact that lands on this household.
+
+        Two things live on the household record as *overlays* on top of the
+        structural picture: a temporary caregiving burden and a list of extra
+        duties. Both expire — an event that lifted the burden forever would
+        be a permanent change wearing an event's clothes.
+        """
+        impact = hook_ctx.get("impact")
+        agent = hook_ctx.get("agent")
+        if impact is None or not isinstance(agent, dict):
+            return
+        if getattr(impact, "domain", "") != "family":
+            return
+        sim = hook_ctx.get("sim")
+        record = self._record_for(sim, agent)
+        if not record:
+            return
+        params = getattr(impact, "params", {}) or {}
+        kind = getattr(impact, "kind", "")
+        scale = float(hook_ctx.get("scale", 1.0) or 1.0)
+        day = hook_ctx.get("day")
+        try:
+            day_int = int(day)
+        except (TypeError, ValueError):
+            day_int = 0
+        duration = max(1, int(getattr(impact, "duration_days", 1) or 1))
+        until = day_int + duration
+
+        if kind == "care_load":
+            delta = float(params.get("delta", 0.0) or 0.0) * scale
+            overlay = record.get("_event_care")
+            if not isinstance(overlay, dict):
+                overlay = {"delta": 0.0, "until": until}
+            overlay["delta"] = round(float(overlay.get("delta", 0.0)) + delta, 4)
+            overlay["until"] = until
+            record["_event_care"] = overlay
+            self._add_event_duty(record, str(params.get("duty", "") or ""), until)
+        elif kind == "member_state":
+            role = str(params.get("role", "") or "").strip()
+            state = str(params.get("state", "") or "").strip()
+            if role and state:
+                for member in record.get("members") or []:
+                    if isinstance(member, dict) and member.get("role") == role:
+                        member["state"] = state
+                        break
+            self._add_event_duty(record, str(params.get("duty", "") or ""), until)
+
+    def _add_event_duty(self, record: dict[str, Any], text: str, until: int) -> None:
+        text = str(text or "").strip()
+        if not text:
+            return
+        duties = record.setdefault("_event_duties", [])
+        for item in duties:
+            if isinstance(item, dict) and item.get("text") == text:
+                item["until"] = max(int(item.get("until", 0) or 0), int(until))
+                return
+        duties.append({"text": text, "until": int(until)})
 
     def _promote_members(self, hook_ctx):
         """Make co-resident school-age children and elders residents.
@@ -723,7 +788,8 @@ class FamilyPlugin(Plugin):
                     continue
                 partner_earns = self._partner_earns(record, agents_by_id)
                 effects = family_finance.household_state_effects(
-                    record, partner_earns=partner_earns, config=getattr(ctx, "config", None)
+                    record, partner_earns=partner_earns, config=getattr(ctx, "config", None),
+                    day=day,
                 )
                 state = agent.setdefault("state", {})
                 for key, delta in effects.items():

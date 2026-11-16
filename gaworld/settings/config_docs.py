@@ -1186,6 +1186,31 @@ MANUAL_HELP_EN: dict[str, str] = {
         "The wake of a severe event persists for several days, decaying daily, and enters "
         "later plans as a “you have not recovered yet” constraint."
     ),
+    "event_impact": (
+        "Events change the world, and each resident reads the same event differently: the "
+        "event's objective impacts are scaled by that person's appraisal of them."
+    ),
+    "event_impact.enabled": (
+        "Off = events stay a line of prompt text plus a fixed set of state deltas."
+    ),
+    "event_impact.appraisal": (
+        "How an event is read: the rule layer always runs, the model layer only above a "
+        "severity floor."
+    ),
+    "event_impact.appraisal.llm_min_severity": (
+        "Below this severity the model is not asked at all — the rule layer answers on its "
+        "own. Small things are not worth a model call."
+    ),
+    "event_impact.appraisal.max_events_per_step": (
+        "How many events one resident may be assessed against in a single step."
+    ),
+    "event_impact.cascade.max_impacts_per_event": (
+        "How many impacts one event may land. The most strongly felt ones win."
+    ),
+    "event_impact.output_dir": (
+        "Where the event responses are recorded (thought, appraisal, plan, what actually "
+        "landed). Empty = the plugin's own directory."
+    ),
     "routine_change": "How likely a resident is to deviate from their schedule.",
     "routine_change.enabled": (
         "Off means everyone follows their schedule exactly, as if wound up."
@@ -2316,6 +2341,13 @@ MANUAL_HELP: dict[str, str] = {
     "life_events.severity_state_amplify": "事件严重度对状态冲击的放大系数。0 = 不论多严重，状态影响都一样。",
     "life_events.reshape": "严重事件当天直接改写后面的日程，而不是只掷一次「要不要改计划」的骰子——不然一个高承诺度的活动总会赢，出了大事人还在照常上班。",
     "life_events.aftermath": "严重事件的余波会延续好几天并逐日衰减，作为「你还没缓过来」写进后面几天的计划约束。",
+    "event_impact": "事件影响级联：事件真的改写经济、家庭、日程与环境；同一件事对不同居民的后果不同，因为预估由人格、状态与处境决定。",
+    "event_impact.enabled": "关掉后事件退回旧行为：只有一行提示词加一组固定的心理状态增量。",
+    "event_impact.appraisal": "怎么读这件事：规则层永远跑，模型层只在严重度过线时才问。",
+    "event_impact.appraisal.llm_min_severity": "低于这个严重度就不问模型，只由规则层作答——小事不值得一次模型调用。",
+    "event_impact.appraisal.max_events_per_step": "一个居民每步最多被评估几个事件。",
+    "event_impact.cascade.max_impacts_per_event": "一个事件最多落地几条影响，命中最深的优先。",
+    "event_impact.output_dir": "事件应对记录（思考、预估、计划、实际落地）写到哪里；留空则写插件自己的目录。",
     "routine_change": "居民有多大概率临时偏离既定日程。",
     "routine_change.enabled": "关掉后所有人严格照日程执行，像上了发条。",
     "routine_change.base_chance": "没有任何事发生时，每个时刻临时改计划的基础概率。",

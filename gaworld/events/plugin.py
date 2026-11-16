@@ -282,11 +282,23 @@ class LifeEventsPlugin(Plugin):
         daily_logs = hook_ctx.get("daily_logs")
         moves_by_agent = hook_ctx.get("moves_by_agent") or {}
         due = self._impl.drain_due_life_events(day, "23:59", sim.config)
+        # Publish what this step consumed, so a later handler (the event-impact
+        # cascade) can assess the same events instead of draining the queue a
+        # second time — a second drain would find them already consumed and
+        # the events would be applied to nobody.
+        plugin_state = sim.plugin_state(self.id)
+        plugin_state["due"] = list(due)
+        # Per agent, including the digest's life moves (which never pass
+        # through the queue): those are real events too, and the cascade
+        # should see them.
+        step_events = plugin_state.setdefault("step_events", {})
+        step_events.clear()
         for agent in hook_ctx.get("agents", []) or []:
             events = list(self._impl.life_events_for_agent(due, agent["id"]))
             events.extend(self._events_from_moves(moves_by_agent.get(agent["id"]), agent))
             if not events:
                 continue
+            step_events[int(agent["id"])] = list(events)
             self._record_for_agent(agent, events, day, time_str, daily_logs)
             step_ctx = {
                 "sim": sim, "agent": agent, "day": day, "time_str": time_str,

@@ -239,6 +239,63 @@ def _stage_prepare(agent, step, sim, *, scope):
     step["_env_context"] = step_env_context
 
 
+def _activity_at(schedule, time_str):
+    """The activity at ``time_str``, tolerating both schedule shapes.
+
+    ``schedule_map`` holds ``(time, activity)`` tuples, but two places in the
+    simulator write the dict form instead — and ``get_activity_for_time``
+    only reads tuples (a dict iterates as its keys, so every entry is
+    skipped and the resident comes out as "个人时间"). This reads both.
+    """
+    items = []
+    for item in schedule or []:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            items.append((str(item[0]), str(item[1])))
+        elif isinstance(item, dict):
+            items.append((str(item.get("time", "")), str(item.get("activity", ""))))
+    return get_activity_for_time(items, time_str)
+
+
+def _stage_appraise(agent, step, sim, *, scope):
+    """Assess this resident's events before they act on them.
+
+    The ``appraisal.compose`` filter is where the event-impact plugin turns an
+    event into a *reading* of that event: how severe it is for this person,
+    which parts of their life it touches, how they will cope, what they will
+    do about it. The stage runs before ``perceive`` so that the perception,
+    the plan and the action choice all see the same reading — an agent that
+    decided it did not care would otherwise act on a prompt that said the
+    opposite.
+
+    The stage is optional: with no producer registered the filter returns
+    ``None`` and the step behaves exactly as before.
+    """
+    appraisal = scope.hook_bus.filter(
+        "appraisal.compose",
+        None,
+        agent=agent,
+        step=step,
+        day=scope.day,
+        time_str=scope.time_str,
+        schedule_map=scope.schedule_map,
+        daily_logs=scope.daily_logs,
+    )
+    if not appraisal:
+        return
+    step["_appraisal"] = appraisal
+    # The cascade may have bent the day's schedule (an event that sends the
+    # resident to hospital). The activity this step acts on was read before
+    # that, so it is re-read here — otherwise the day would go on as planned
+    # while the record says otherwise.
+    events = appraisal.get("events") or []
+    if any(ev.get("schedule_changes") for ev in events):
+        schedule = scope.schedule_map.get(agent["id"]) or []
+        updated = _activity_at(schedule, scope.time_str)
+        if updated:
+            step["scheduled_activity"] = updated
+            step["activity"] = updated
+
+
 def _stage_perceive(agent, step, sim, *, scope):
     scheduled_activity = step.get("scheduled_activity", "")
     social_context = step.get("social_context", "")
@@ -1171,6 +1228,7 @@ def builtin_stages(scope: StepScope) -> dict[str, Callable]:
     """The built-in stages by name, bound to *scope*."""
     stages = {
         "prepare": _stage_prepare,
+        "appraise": _stage_appraise,
         "perceive": _stage_perceive,
         "interrupts": _stage_interrupts,
         "plan": _stage_plan,

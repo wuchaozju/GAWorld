@@ -1109,6 +1109,19 @@ def _check_daily_shocks(agent, econ, cfg, macro_state, event_layoff=False, secto
             "out_of_pocket": out_of_pocket,
         })
 
+    # --- Event-driven income countdown ---
+    # A life event may hold a resident's income off its baseline for a while
+    # (a study break, a sick day). The baseline is restored when the
+    # countdown runs out, so the change is temporary rather than permanent.
+    overlay = econ.get("_event_income")
+    if isinstance(overlay, dict):
+        remaining = int(_to_float(overlay.get("days_remaining", 0), 0))
+        if remaining > 0:
+            overlay["days_remaining"] = remaining - 1
+            if remaining - 1 <= 0:
+                _restore_event_income(econ)
+                events.append({"type": "event_income_restored"})
+
     # --- Layoff recovery countdown ---
     remaining = econ.get("_layoff_days_remaining", 0)
     if remaining > 0:
@@ -1718,6 +1731,87 @@ def charge_external_expense(agent, category, amount, context=None):
     sectors = _economy_state(context).get("sectors") if isinstance(context, dict) else None
     _record_expense(econ, category, value, sectors)
     return value
+
+
+def credit_event_bonus(agent, category, amount, context=None):
+    """Book a *one-off inflow* from outside the daily economy (e.g. a lottery win).
+
+    The money has to come from somewhere or the currency loop breaks: it is
+    taken out of the government pool, because the state runs the lottery. The
+    agent's savings account grows by the same amount, so
+    ``_system_total`` (agents + sector pools) does not move.
+
+    Deliberately *not* booked as daily income: a prize is a windfall, not a
+    wage, and pushing it through ``daily_income`` would distort the Engel
+    coefficient and the savings rate that the same day settles.
+    """
+    econ = agent.get("economy") if isinstance(agent, dict) else None
+    if not isinstance(econ, dict) or "daily_expense_by_category" not in econ:
+        return 0.0
+    value = round(max(0.0, _to_float(amount, 0.0)), 2)
+    if value <= 0:
+        return 0.0
+    sectors = _economy_state(context).get("sectors") if isinstance(context, dict) else None
+    accounts = econ.get("accounts", {})
+    accounts["savings"] = round(_to_float(accounts.get("savings", 0), 0) + value, 2)
+    _sector_add(sectors, "government", -value)
+    _sync_balance(econ)
+    record = {"type": "event_bonus", "category": str(category or "bonus"), "amount": value}
+    econ.setdefault("shock_log", []).append(record)
+    return value
+
+
+def apply_event_income_change(agent, fraction, days, config=None):
+    """A temporary change to a resident's income, caused by a life event.
+
+    Positive fractions raise the wage (a windfall period), negative ones cut it
+    (a study break, a sick day). The change is applied to
+    ``base_hourly_income`` — which the daily settlement reads — and is undone
+    after ``days`` days by the countdown in :func:`_check_daily_shocks`.
+
+    Only one such overlay is active at a time: a new one restores the previous
+    baseline first, so two overlapping events cannot compound into a wage that
+    nobody set.
+    """
+    econ = agent.get("economy") if isinstance(agent, dict) else None
+    if not isinstance(econ, dict):
+        return None
+    try:
+        factor = float(fraction)
+    except (TypeError, ValueError):
+        return None
+    days = max(1, int(_to_float(days, 1)))
+    cfg = _get_cfg({"config": config or {}})
+    floor = _to_float(cfg.get("min_hourly_income", 8.0), 8.0)
+    _restore_event_income(econ)
+    old_hourly = _to_float(econ.get("base_hourly_income", 0.0), 0.0)
+    new_hourly = round(max(floor, old_hourly * (1.0 + factor)), 2)
+    econ["base_hourly_income"] = new_hourly
+    econ["_event_income"] = {
+        "old_hourly": old_hourly,
+        "factor": round(1.0 + factor, 4),
+        "days_remaining": days,
+    }
+    record = {
+        "type": "event_income_change",
+        "fraction": round(factor, 4),
+        "days": days,
+        "from_hourly": old_hourly,
+        "to_hourly": new_hourly,
+    }
+    econ.setdefault("shock_log", []).append(record)
+    return record
+
+
+def _restore_event_income(econ):
+    """Undo an event-driven income overlay."""
+    overlay = econ.get("_event_income")
+    if not isinstance(overlay, dict):
+        return
+    old_hourly = _to_float(overlay.get("old_hourly", 0.0), 0.0)
+    if old_hourly > 0:
+        econ["base_hourly_income"] = old_hourly
+    econ.pop("_event_income", None)
 
 
 def credit_paid_leave(agent, context=None, *, day, days_per_year=5):

@@ -32,6 +32,7 @@ def builtin_plugins():
     from gaworld.collaboration.plugin import CollaborationPlugin
     from gaworld.crowdsourcing.plugin import CrowdsourcingPlugin
     from gaworld.economy.plugin import EconomyPlugin
+    from gaworld.events.impact_plugin import EventImpactPlugin
     from gaworld.events.plugin import LifeEventsPlugin
     from gaworld.family.plugin import FamilyPlugin
     from gaworld.goals_plugin import GoalsPlugin
@@ -75,6 +76,11 @@ def builtin_plugins():
         InterestsPlugin(),
         GoalsPlugin(),
         LifeEventsPlugin(),
+        # Assesses events and lands their impacts on economy / family /
+        # schedule / environment. Registered after LifeEvents because it
+        # reads the events that plugin drained; the impacts it emits are
+        # applied by whichever plugin owns that domain, whenever it runs.
+        EventImpactPlugin(),
         EconomyPlugin(),
         # Rewrites the economy's config from the government in office and pays
         # its transfers; its hooks carry explicit priorities around Economy's.

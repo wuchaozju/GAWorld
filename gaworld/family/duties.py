@@ -25,8 +25,7 @@ from gaworld.family.schema import family_config
 
 def _children(record: dict[str, Any]) -> list[dict[str, Any]]:
     return [
-        m
-        for m in (record or {}).get("members", []) or []
+        m for m in (record or {}).get("members", []) or []
         if m.get("role") == "child" and m.get("coresident")
     ]
 
@@ -54,12 +53,19 @@ def _partner(record: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-def care_load(record: dict[str, Any] | None, config: dict[str, Any] | None = None) -> float:
+def care_load(
+    record: dict[str, Any] | None, config: dict[str, Any] | None = None, day: int | None = None
+) -> float:
     """0..1 caregiving burden.
 
     A partner *reduces* the load (the work is shared) but does not erase it;
     a single parent carries the whole thing, which is the point of modelling
     single-parent households separately at all.
+
+    ``day`` enables the *event overlay*: a life event (a child falling ill, a
+    new baby) adds a temporary burden on top of the structural one. Without a
+    day the overlay always counts — it is only filtered out once it has
+    expired.
     """
     if not record:
         return 0.0
@@ -84,7 +90,52 @@ def care_load(record: dict[str, Any] | None, config: dict[str, Any] | None = Non
     partner = _partner(record)
     if partner and partner.get("coresident"):
         load *= 0.62
+    load += _event_care_delta(record, day)
     return max(0.0, min(1.0, load))
+
+
+def _event_care_delta(record: dict[str, Any] | None, day: int | None = None) -> float:
+    """The temporary caregiving burden an event added, if it still applies."""
+    if not isinstance(record, dict):
+        return 0.0
+    overlay = record.get("_event_care")
+    if not isinstance(overlay, dict):
+        return 0.0
+    until = overlay.get("until")
+    if day is not None and until is not None:
+        try:
+            if int(day) > int(until):
+                return 0.0
+        except (TypeError, ValueError):
+            pass
+    try:
+        return max(0.0, float(overlay.get("delta", 0.0) or 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _event_duties(record: dict[str, Any] | None, day: int | None = None) -> list[str]:
+    """Extra duties an event put on this household, most recent first."""
+    if not isinstance(record, dict):
+        return []
+    out: list[str] = []
+    for item in record.get("_event_duties") or []:
+        if isinstance(item, dict):
+            text = str(item.get("text", "") or "").strip()
+            until = item.get("until")
+        else:
+            text = str(item or "").strip()
+            until = None
+        if not text:
+            continue
+        if day is not None and until is not None:
+            try:
+                if int(day) > int(until):
+                    continue
+            except (TypeError, ValueError):
+                pass
+        out.append(text)
+    return out
 
 
 def daily_duties(
@@ -112,7 +163,9 @@ def daily_duties(
     children = _children(record)
     has_helper = bool(partner and partner.get("coresident")) or bool(elders)
 
-    duties: list[str] = []
+    # Event-driven duties come first: they are the reason the day went the
+    # way it did, and they must not be truncated away by the per-day cap.
+    duties: list[str] = _event_duties(record, day)
     for child in sorted(children, key=lambda c: int(c.get("age", 0) or 0)):
         age = int(child.get("age", 0) or 0)
         name = str(child.get("name", "孩子"))

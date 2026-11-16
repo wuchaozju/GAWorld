@@ -95,6 +95,8 @@ class RumorPlugin(Plugin):
 | `env.events.compose` | **collect** | `agent` `day` `time_str` `step` `daily_logs`（事件生产者在此贡献 per-agent 环境事件，与当日/当 tick 环境流合并——life_events 插件用这里） |
 | `env.events.tick` | **collect** | `day` `time_str`（tick 级环境事件贡献，供可视化帧合并等 tick 级消费者） |
 | `state.effects` | observe | `agent` `step` `day` `time_str`（update_state 阶段内、社会影响之前——插件在此施加自己的状态增量） |
+| `appraisal.compose` | **filter**（value=`None`） | `agent` `step` `day` `time_str` `schedule_map` `daily_logs`（认知管线的 `appraise` 阶段问一次：这件事对**这个人**有多重？返回评估结果 dict；返回 `None` 表示没人在评估。事件影响级联插件用这里） |
+| `event.impact.apply` | observe | `agent` `impact` `scale` `objective_severity` `source_event` `day` `time_str`（一条事件影响要落地时发出——**拥有该领域的插件自己接**：经济接钱、家庭接照料、日程由编排插件就地改写、环境由编排插件维护） |
 
 内置参考实现：`gaworld/policy/plugin.py`（InterventionPlugin，K3a 迁移的
 第一个内置子系统——感知注入 + post_step 指标落盘 + agents.built 播种，
@@ -102,10 +104,10 @@ class RumorPlugin(Plugin):
 
 ## 认知管线（K2）：替换 / 插入 / 消融阶段
 
-agent 每步认知是 12 个命名阶段的序列（`gaworld/sim/pipeline.py`）：
+agent 每步认知是 13 个命名阶段的序列（`gaworld/sim/pipeline.py`）：
 
 ```
-prepare → perceive → interrupts → plan → adjust_activity → move →
+prepare → appraise → perceive → interrupts → plan → adjust_activity → move →
 select_action → reflect → update_state → broadcast → memorize → record
 ```
 
@@ -113,13 +115,16 @@ select_action → reflect → update_state → broadcast → memorize → record
 
 ```python
 CONFIG["pipeline"]["agent_step"] = [
-    "prepare", "perceive",
+    "prepare", "appraise", "perceive",
     "my_pkg.stages:deliberate",          # 插入自定义阶段（三思型 agent）
     "interrupts", "plan", "adjust_activity", "move",
     "select_action",                      # "reflect" 被省略 = 消融反思
     "update_state", "broadcast", "memorize", "record",
 ]
 ```
+
+`appraise` 阶段问一次「这件事对这个人有多重」（`appraisal.compose` 过滤器），
+结果进 `step["_appraisal"]`，并在事件改写了当天日程时重算当前活动。
 
 自定义阶段签名 `fn(agent, step, ctx)`：`step` 是本步数据总线（dict——
 hook 可见键沿用旧名，阶段间工作键以下划线开头，如 `_perception` /
