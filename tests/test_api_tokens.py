@@ -352,6 +352,13 @@ def test_mount_and_quota_and_python_client(service, monkeypatch):
     monkeypatch.setenv("GAWORLD_URL_PREFIX", "/GAWorld")
     token = s.mint()["token"]
     client = GAWorldClient(s.base + "/GAWorld", token=token)
+    open_request = client._opener.open
+
+    def identified_request(request, **kwargs):
+        assert request.get_header("User-agent") == "GAWorldClient/1.0"
+        return open_request(request, **kwargs)
+
+    monkeypatch.setattr(client._opener, "open", identified_request)
     assert client.me()["user"]["id"] == s.alice["id"]
     assert client.call("post_parallel_worlds_preview", body=SPEC)["spec"]["sim_days"] == 1
     s.store.set_setting("daily_llm_calls_per_user", 1)

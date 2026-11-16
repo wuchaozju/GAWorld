@@ -49,6 +49,8 @@
 以下 URL 需要已上线本次版本。内网直接访问时，将 BASE 换成 `http://10.72.74.13:8766`。
 公网必须使用 HTTPS；反向代理须保留 `Authorization` 请求头和 `/GAWorld/` 子路径。
 外部项目应由自己的后端调用，不将令牌嵌入公开网页；本次没有开放任意跨域浏览器 CORS。
+公网入口实测会拦截 Python 默认 User-Agent 并返回 HTML 403。本仓库 Python 客户端已发送
+`User-Agent: GAWorldClient/1.0`；自写 urllib 客户端也应明确设置应用标识，不能将 HTML 403 当作 JSON 解析。
 
 ```bash
 export GAWORLD_BASE_URL='https://mo.zju.edu.cn/GAWorld'
