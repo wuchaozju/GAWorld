@@ -1,0 +1,24 @@
+{
+  "seed": 20261010,
+  "bootstrap_draws": 10000,
+  "input_dir": "/home/justin/work/research/T2K10-FIGURES",
+  "output_dir": "../results/unblinding/T2K10-20260923T034851/final_audit",
+  "exclusions": ["base_rate", "false_consensus"],
+  "primary_feature": "objective_equivalence",
+  "paradigm_families": {
+    "anchoring": ["anchoring_redwood", "anchoring_african"],
+    "proportion_dominance": ["fire_extinguisher", "seatbelt"],
+    "valuation_reference": ["wta_wtp", "sunk_cost", "abs_relative"],
+    "probability_risk": ["allais", "prob_matching"],
+    "judgment_inference": ["linda", "outcome_bias", "myside", "false_consensus"],
+    "disease": ["disease"]
+  },
+  "inputs": {
+    "registry": "experiment_registry.json",
+    "llm_means": "llm_arm_means.json",
+    "experiment_codebook": "experiment_feature_codebook.csv",
+    "contrast_codebook": "contrast_feature_codebook.csv",
+    "contrast_error_reference": "contrast_error_complete.csv",
+    "profile_error": "profile_error_complete.csv"
+  }
+}

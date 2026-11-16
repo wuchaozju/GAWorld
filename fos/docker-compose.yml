@@ -1,0 +1,161 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: fos-db
+    environment:
+      POSTGRES_DB: fos
+      POSTGRES_USER: fos
+      POSTGRES_PASSWORD: "${FOS_DB_PASSWORD:?FOS_DB_PASSWORD must be set in .env}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    tmpfs:
+      - /var/run/postgresql
+    runtime: runc
+    networks:
+      - backend
+
+  app:
+    env_file:
+      - .env
+    build:
+      context: .
+      args:
+        FRONTEND_BASE_URL: "${FRONTEND_BASE_URL:-/}"
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-/api}"
+        VITE_BILIBILI_VIDEO_BVID: "${VITE_BILIBILI_VIDEO_BVID:-}"
+        HTTP_PROXY: ""
+        HTTPS_PROXY: ""
+        http_proxy: ""
+        https_proxy: ""
+        NO_PROXY: "*"
+        no_proxy: "*"
+    environment:
+      FOS_DATABASE_URL: "${FOS_DATABASE_URL:-postgresql+psycopg://fos:fos@db:5432/fos}"
+      FOS_BACKEND_HOST: "${FOS_BACKEND_HOST:-0.0.0.0}"
+      FOS_BACKEND_PORT: "${FOS_BACKEND_PORT:-8000}"
+      # SECURITY: FOS_JWT_SIGNING_KEY must be set in .env — never use the default in production
+      FOS_JWT_SIGNING_KEY: "${FOS_JWT_SIGNING_KEY:?FOS_JWT_SIGNING_KEY must be set in .env}"
+      FOS_APP_BASE_URL: "${FOS_APP_BASE_URL:-http://0.0.0.0:8090}"
+      FOS_FRONTEND_DIST_PATH: /app/frontend/dist
+      FOS_UPLOAD_DIR: /app/uploads
+      UPLOAD_DIR: /app/uploads
+      ADMIN_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL must be set in .env}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:?ADMIN_USERNAME must be set in .env}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}"
+      ADMIN_FULL_NAME: "${ADMIN_FULL_NAME:-}"
+      ADMIN_ORGANIZATION: "${ADMIN_ORGANIZATION:-}"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      FOS_EMBEDDING_DEVICE: cuda
+      FOS_EMBEDDING_BACKEND: ollama
+      FOS_OLLAMA_EMBED_MODEL: nomic-embed-text:latest
+      OLLAMA_BASE_URL: http://fos-ollama:11434
+      LLM_TIMEOUT_S: "${LLM_TIMEOUT_S:-120}"
+      LLM_MAX_CONCURRENT_PER_CLIENT: "${LLM_MAX_CONCURRENT_PER_CLIENT:-2}"
+      FOS_LLM_CONCURRENCY: "${FOS_LLM_CONCURRENCY:-2}"
+      FOS_UVICORN_WORKERS: "${FOS_UVICORN_WORKERS:-1}"
+      FOS_SIMTREE_IDLE_TTL_SECONDS: "${FOS_SIMTREE_IDLE_TTL_SECONDS:-3600}"
+      FOS_SIMTREE_CLEANUP_INTERVAL_SECONDS: "${FOS_SIMTREE_CLEANUP_INTERVAL_SECONDS:-300}"
+      HOME: /tmp
+      HF_HOME: /tmp/huggingface
+      TORCH_HOME: /tmp/torch
+      TRANSFORMERS_CACHE: /tmp/huggingface/transformers
+      GAWORLD_PATH: /opt/gaworld
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    ports:
+      - "8090:8000"
+    healthcheck:
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready')\"" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    volumes:
+      # Writable runtime directories required by the current app branch.
+      - ./uploads:/app/uploads
+      - ./templates:/app/templates
+      - ./chroma_db:/app/chroma_db
+      - ../GAWorld:/opt/gaworld
+    networks:
+      - default
+      - backend
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    runtime: nvidia
+    gpus: all
+    deploy:
+      resources:
+        limits:
+          memory: "${FOS_APP_MEMORY_LIMIT:-16G}"
+        reservations:
+          memory: 8G
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: fos-ollama
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      OLLAMA_NUM_PARALLEL: "${OLLAMA_NUM_PARALLEL:-2}"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - backend
+      - default
+    restart: unless-stopped
+    runtime: nvidia
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "11434:11434"
+
+volumes:
+  postgres_data:
+    external: true
+    name: fos_postgres_data
+  ollama_data:
+    driver: local
+
+networks:
+  backend:
+    internal: true
+  default:

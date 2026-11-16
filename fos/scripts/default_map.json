@@ -1,0 +1,109 @@
+{
+    "width": 20,
+    "height": 20,
+    "locations": [
+        {
+            "name": "village_center",
+            "x": 10,
+            "y": 10,
+            "type": "landmark",
+            "description": "Village center where people gather; a public well stands here."
+        },
+        {
+            "name": "house_1",
+            "x": 8,
+            "y": 8,
+            "type": "building",
+            "description": "Farmer's house",
+            "capacity": 2
+        },
+        {
+            "name": "house_2",
+            "x": 12,
+            "y": 8,
+            "type": "building",
+            "description": "Merchant's house",
+            "capacity": 2
+        },
+        {
+            "name": "house_3",
+            "x": 8,
+            "y": 12,
+            "type": "building",
+            "description": "Blacksmith's house",
+            "capacity": 2
+        },
+        {
+            "name": "farm",
+            "x": 5,
+            "y": 10,
+            "type": "resource",
+            "description": "Farm where crops can be grown and harvested",
+            "resources": {
+                "apple": 10,
+                "wheat": 15
+            }
+        },
+        {
+            "name": "market",
+            "x": 15,
+            "y": 10,
+            "type": "building",
+            "description": "Market for trading",
+            "capacity": 10
+        },
+        {
+            "name": "blacksmith",
+            "x": 10,
+            "y": 15,
+            "type": "building",
+            "description": "Blacksmith shop",
+            "capacity": 3
+        },
+        {
+            "name": "forest",
+            "x": 3,
+            "y": 5,
+            "type": "resource",
+            "description": "Forest for gathering wood",
+            "resources": {
+                "wood": 20
+            }
+        },
+        {
+            "name": "lake",
+            "x": 17,
+            "y": 5,
+            "type": "resource",
+            "description": "Lake for fishing",
+            "resources": {
+                "fish": 8
+            }
+        },
+        {
+            "name": "mine",
+            "x": 3,
+            "y": 17,
+            "type": "resource",
+            "description": "Mine for extracting ore",
+            "resources": {
+                "iron": 12,
+                "stone": 25
+            }
+        },
+        {
+            "name": "ancient_ruins",
+            "x": 12,
+            "y": 16,
+            "type": "landmark",
+            "description": "Crumbling stone arches and carvings; villagers report a faint humming after dusk."
+        },
+        {
+            "name": "waterfall",
+            "x": 2,
+            "y": 4,
+            "type": "landmark",
+            "description": "A hidden waterfall behind thick brush, near the forest's edge."
+        }
+    ]
+}

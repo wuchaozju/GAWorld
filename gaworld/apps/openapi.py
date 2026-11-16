@@ -393,6 +393,18 @@ def _core() -> dict[str, Any]:
         },
         "/api/openapi.json": {"get": _op("meta", "This document")},
         # accounts (gaworld/apps/accounts_api.py)
+        "/api/auth/tokens": {
+            "get": _op("auth", "List own API token metadata (session only)", ok=_obj(tokens=_arr(OBJ), scopes=STR_LIST)),
+            "post": _op("auth", "Create a world-bound personal token; secret returned only once", status="201",
+                        body=_obj(("name", "world_id", "scopes", "password"), name=STR, world_id=STR,
+                                  scopes={"type": "array", "items": {"type": "string", "enum": ["parallel:read", "parallel:run"]}},
+                                  expires_days={"type": "integer", "minimum": 1, "maximum": 365, "default": 30},
+                                  password={"type": "string", "format": "password", "writeOnly": True}),
+                        ok=_obj(token=STR, record=OBJ)),
+        },
+        "/api/auth/tokens/revoke": {
+            "post": _op("auth", "Revoke an own API token (session only)", body=_obj(("id",), id=STR), ok=_obj(revoked=BOOL)),
+        },
         "/api/auth/me": {
             "get": _op(
                 "auth",
@@ -1222,6 +1234,10 @@ def _panels() -> dict[str, Any]:
             "settings", "Write-only personal credential scoped to the signed-in account; never returned",
             body=_obj(("name",), name=STR, action=_d(STR, "save or delete"),
                       api_key={"type": "string", "format": "password", "writeOnly": True}))},
+        "/api/settings/llm/routing": {"post": _op(
+            "settings", "Select registered model backends in the active owned world",
+            body=_obj(("routing",), routing=OBJ),
+            errors={"400": "Invalid routing or unknown model", "403": "Select an owned world"})},
         "/api/external-systems/overview": {"get": _op("external-systems", "Economy, environment and services")},
         "/api/external-systems/health": {"get": _op("external-systems", "Reachability of external services")},
         "/api/external-systems/interventions": {
@@ -1372,11 +1388,11 @@ def _cities() -> dict[str, Any]:
         "/api/population/export": {
             "get": _op(
                 "population",
-                "Export the last generated population",
+                "Export the current user's last generated population in this world",
                 query=[_q("format", "csv | json", {"type": "string", "default": "csv"})],
             )
         },
-        "/api/population/last": {"get": _op("population", "Size of the last generated population")},
+        "/api/population/last": {"get": _op("population", "Size of the current user's last population in this world")},
         "/api/population/preview": {
             "post": _op("population", "Marginals a spec would produce", body=_obj(spec=OBJ))
         },
@@ -1389,8 +1405,8 @@ def _cities() -> dict[str, Any]:
         "/api/population/generate": {
             "post": _started(
                 "population",
-                "Generate a population",
-                _obj(spec=OBJ, write=_d(BOOL, "Also write files"), out_dir=STR),
+                "Generate a population in the active owned world",
+                _obj(spec=OBJ, write=_d(BOOL, "Also write files in this world's population directory"), out_dir=STR),
             )
         },
         "/api/population/group-run": {
@@ -1489,6 +1505,7 @@ def _studies() -> dict[str, Any]:
             "get": _op("interview", "One session", errors={"404": "Unknown session"})
         },
         "/api/interview/sessions/{session_id}/export": {"get": _op("interview", "A session as Markdown")},
+        "/api/interview/jobs": {"get": _op("interview", "Recover the caller's active interview jobs")},
         "/api/interview/jobs/{job_id}": _job("interview"),
         "/api/interview/plan": {
             "post": _op("interview", "Check a round and say who will be asked", body=interview_spec)
@@ -1855,6 +1872,21 @@ def _studies() -> dict[str, Any]:
             )
         },
         "/api/persona/delete": {"post": _op("persona", "Delete a portrait", body=_obj(("slug",), slug=STR))},
+        "/api/persona-generate": {
+            "post": _started(
+                "persona",
+                "Author or enrich residents with an LLM (structural facts locked)",
+                _obj(
+                    ("scope",),
+                    scope=_d(STR, "`fast` (templated, zero LLM calls) | `selected` | `focal_n` | `all`"),
+                    seed=_d(OBJ, "Structural seed for a new resident: name/gender/age/hukou/residence/job/…"),
+                    ids=_d(INT_LIST, "Resident ids for `selected`"),
+                    n=_d(INT, "How many residents for `focal_n`"),
+                    provider=_d(STR, "Explicit provider (beats task routing)"),
+                ),
+            )
+        },
+        "/api/persona-generate/jobs/{job_id}": _job("persona"),
     }
 
 
@@ -1873,6 +1905,12 @@ def _parallel() -> dict[str, Any]:
     root_q = _q("root", "Experiment root from /experiments", required=True)
     baseline_q = _q("baseline", "Baseline world (default: the spec's)")
     return {
+        "/api/analysis/compare": {"post": _op(
+            "analysis", "Run the Parallel-Worlds analysis over a supplied manifest (no simulation)",
+            body=_obj(("manifest",), manifest=OBJ),
+            ok=_obj(("report", "artifacts_dir"), report=OBJ,
+                    artifacts_dir=_d(STR, "output/comparisons/<comparison-id>")),
+            errors={"400": "Invalid manifest, path outside the repository, or missing state history"})},
         "/api/parallel-worlds/overview": {"get": _op("parallel-worlds", "Current experiment and its worlds")},
         "/api/parallel-worlds/experiments": {"get": _op("parallel-worlds", "Finished experiments")},
         "/api/parallel-worlds/experiment": {
@@ -2310,6 +2348,7 @@ TAGS = (
     "parallel-worlds",
     "games",
     "arena",
+    "analysis",
 )
 
 _PARAM = re.compile(r"\{([^}]+)\}")
@@ -2345,6 +2384,11 @@ def _finish(paths: dict[str, Any]) -> dict[str, Any]:
             op["operationId"] = operation_id(method, template)
             if op["tags"] != ["cluster-node"]:
                 op["x-gaworld-access"] = policy.required(method.upper(), _sample(template))
+                from gaworld.accounts.api_token_guard import scope_for
+
+                scope = scope_for(method.upper(), _sample(template))
+                if scope:
+                    op["x-gaworld-token-scope"] = scope
             if method == "post" and policy.quota_gated(_sample(template)):
                 op["x-gaworld-quota"] = True
             op["responses"].setdefault("default", _err("Error"))
@@ -2364,7 +2408,12 @@ Every route of the GAWorld dashboard (default port 8766). Conventions:
   token) or an account database (sign in with `POST /api/auth/login`, then send the `gaworld_session`
   cookie). `x-gaworld-access` is the level an account needs; `x-gaworld-quota` marks requests refused
   once a member's daily model quota is used up.
-* With accounts, every route reads and writes the active world, chosen by `POST /api/worlds/select`
+* Personal API tokens are created with a signed-in account at `POST /api/auth/tokens` (current
+  password required). Send `Authorization: Bearer gaw_pat_...`. They are bound to one owned world,
+  expire, and support only `x-gaworld-token-scope` routes plus `/api/auth/me` and `/api/openapi.json`.
+  They cannot manage accounts or tokens, inherit admin powers, or select another world via cookies.
+  Revoking a token or changing/resetting the account password prevents subsequent authentication.
+* With browser sessions, routes read and write the active world, chosen by `POST /api/worlds/select`
   (the `gaworld_world` cookie).
 * `gaworld.client.GAWorldClient` calls any operation by its `operationId`.
 """
@@ -2404,7 +2453,7 @@ def spec() -> dict[str, Any]:
                 "bearer": {
                     "type": "http",
                     "scheme": "bearer",
-                    "description": "The operator token, GAWORLD_DASHBOARD_TOKEN",
+                    "description": "A scoped personal API token (gaw_pat_...), or the separately managed operator token GAWORLD_DASHBOARD_TOKEN",
                 },
                 "cookie": {
                     "type": "apiKey",

@@ -41,6 +41,11 @@ def handle_get(store: AccountStore | None, user: dict[str, Any] | None, path: st
         return {"mode": "accounts", "user": user}, 200, None
     if store is None:
         return {"error": "账号功能未开启"}, 404, None
+    from gaworld.apps.account_tokens_api import handle
+
+    result = handle(store, user, "GET", path)
+    if result is not None:
+        return result
     if path == "/api/auth/users":
         return {"users": store.list_users()}, 200, None
     if path == "/api/auth/invites":
@@ -88,6 +93,11 @@ def _post(
     from gaworld.apps.community_auth import post
 
     result = post(store, user, path, payload, session)
+    if result is not None:
+        return result
+    from gaworld.apps.account_tokens_api import handle
+
+    result = handle(store, user, "POST", path, payload)
     if result is not None:
         return result
     if path == "/api/auth/login":

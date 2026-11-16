@@ -1,0 +1,1659 @@
+{
+  "error": {
+    "simulation": {
+      "not_found": "Simulation not found"
+    },
+    "ai_scientist": {
+      "model_empty_output": "Model returned empty output",
+      "model_output_no_json": "Model output does not contain JSON object",
+      "model_json_not_object": "Model JSON root must be an object",
+      "model_json_repair_failed": "Unable to repair model JSON output",
+      "model_analysis_not_object": "Model analysis output must be an object"
+    },
+    "research_ingest": {
+      "command_failed": "Command failed: {cmd} ({detail})",
+      "ghostscript_not_available": "Ghostscript is not available for PDF rendering",
+      "ghostscript_no_pages": "Ghostscript did not render any PDF pages",
+      "tesseract_not_available": "Tesseract is not available"
+    },
+    "proposals": {
+      "schema_version_mismatch": "Expected schema_version 1.0.0, got {schema_version}",
+      "proposal_count_mismatch": "Expected 7 proposals, got {count}",
+      "ids_order_mismatch": "Proposal IDs must match PROPOSAL_IDS in order. Got: {ids}",
+      "duplicate_ids": "Duplicate proposal IDs: {ids}",
+      "empty_statement": "Proposal {proposal_id} has empty statement",
+      "invalid_domain": "Proposal {proposal_id}: invalid domain '{domain}'",
+      "invalid_statement_type": "Proposal {proposal_id}: invalid statement_type '{statement_type}'",
+      "word_count_mismatch": "Proposal {proposal_id}: word_count {word_count} doesn't match computed {computed_word_count}",
+      "pilot_excl_share_mismatch": "Proposal {proposal_id}: stored pilot_yes_share_excl_abstain {stored_excl} differs from recomputed {recomputed_excl}",
+      "pilot_incl_share_mismatch": "Proposal {proposal_id}: stored pilot_yes_share_incl_abstain {stored_incl} differs from recomputed {recomputed_incl}",
+      "unknown_proposal_id": "Unknown proposal id '{proposal_id}'. Valid ids: {valid_ids}"
+    },
+    "clients": {
+      "resident_model_mismatch": "Resident model mismatch on {base_url}: expected router name '{expected_router_name}' not found in resident model id '{resident}'",
+      "no_llm_client": "FOS_EXPERIMENT_LLM is not set — no LLM client available"
+    },
+    "results": {
+      "attribution_gate_failed": "attribution gate failed: {mismatches} speak-action prompts do not contain their agent's bio (positional attribution broken)",
+      "neighbour_context_gate_failed": "neighbour-context gate failed for agents with degree > 2: {problems}"
+    },
+    "runner": {
+      "manager_url_not_set": "FOS_MODEL_MANAGER_URL is not set. Set it to http://127.0.0.1:8081 in .env before running experiments.",
+      "manager_status_http": "Model manager at {mm_url} returned HTTP {status_code} on /status",
+      "manager_unreachable": "Model manager at {mm_url} is not reachable: {error}",
+      "unknown_run": "Unknown run {run_id}",
+      "run_id_not_in_matrix": "run_id {run_id} not in run matrix",
+      "population_no_sha256": "population {population_id} has no sha256 field",
+      "population_sha256_mismatch": "population {population_id} sha256 mismatch: stored {stored}, recomputed {recomputed}",
+      "unknown_proposal_id": "unknown proposal id {proposal_id}"
+    },
+    "scene_builder": {
+      "simtree_root_none": "SimTree root is None — cannot proceed"
+    },
+    "confederates": {
+      "sample_too_large": "Cannot sample {total} confederates from {count} agents",
+      "unknown_stance": "Unknown confederate stance: {stance}",
+      "no_recorded_vote": "Confederate {agent_id} (stance={stance}) has no recorded vote. Vote interception failed — run is invalid.",
+      "vote_mismatch": "Confederate {agent_id}: recorded vote is {recorded} but assigned stance is {stance}. Vote interception failed — run is invalid."
+    },
+    "randomization": {
+      "unsupported_distribution": "Unsupported randomization distribution: {distribution}",
+      "unsupported_expected": "expected must be one of: {supported}",
+      "unsupported_persona_depth": "Unsupported persona depth: {depth}; choose one of: {supported}",
+      "unsupported_stage": "Stage must be an integer 1..12, got {stage}"
+    },
+    "sweep_kit": {
+      "unsupported_fillin_kind": "Unsupported covariate fill-in kind: {kind}",
+      "response_format_invalid": "response_format must be '<positive>/<negative>' (e.g. 'yes/no') or None; got {value}"
+    },
+    "personas": {
+      "unsupported_depth": "Unsupported persona depth: {depth}; choose one of: {supported}"
+    },
+    "twin_covariates": {
+      "unsupported_stage": "stage must be an integer 1..12, got {stage}",
+      "respondent_not_in_panel": "respondent {respondent_id} is not in the panel",
+      "empty_stage_pool": "stage {stage} has an empty pool",
+      "score_cell_missing": "{column} missing for respondent {respondent_id} in {wave_name}"
+    }
+  },
+  "agent": {
+    "joined": "{name} joined the simulation"
+  },
+  "scenario": {
+    "category": {
+      "game_theory": "Game Theory",
+      "social_dynamics": "Social Dynamics",
+      "discussion": "Discussion",
+      "grid_world": "Grid World",
+      "social_deduction": "Social Deduction",
+      "sociology": "Sociology"
+    }
+  },
+  "actions": {
+    "comply_publicly": {
+      "description": "Visibly accept and follow the norm or directive",
+      "execute": "{agent_name} publicly complied with the norm"
+    },
+    "comply_covertly_resist": {
+      "description": "Formally comply but privately circumvent",
+      "execute": "{agent_name} covertly resisted while appearing to comply"
+    },
+    "resist_openly": {
+      "description": "Openly refuse or challenge the norm",
+      "execute": "{agent_name} openly resisted the norm"
+    },
+    "persuade_others": {
+      "description": "Convince others to adopt your position",
+      "execute": "{agent_name} attempted to persuade others"
+    },
+    "form_coalition": {
+      "description": "Organize with like-minded others",
+      "execute": "{agent_name} formed a coalition"
+    },
+    "express_opinion": {
+      "description": "Share your current viewpoint",
+      "execute": "{agent_name} expressed their opinion"
+    },
+    "reinforce_ingroup": {
+      "description": "Engage with and amplify similar viewpoints",
+      "execute": "{agent_name} reinforced in-group views"
+    },
+    "challenge_outgroup": {
+      "description": "Actively argue against opposing views",
+      "execute": "{agent_name} challenged out-group views"
+    },
+    "seek_common_ground": {
+      "description": "Find shared values across opinion divides",
+      "execute": "{agent_name} sought common ground"
+    },
+    "share_content": {
+      "description": "Share information reinforcing your position",
+      "execute": "{agent_name} shared content"
+    },
+    "disengage": {
+      "description": "Withdraw from engagement with opposing views",
+      "execute": "{agent_name} disengaged"
+    },
+    "share_resources": {
+      "description": "Give some of your resources to another agent",
+      "execute": "{agent_name} shared resources"
+    },
+    "hoard": {
+      "description": "Keep all resources for yourself",
+      "execute": "{agent_name} hoarded resources"
+    },
+    "propose_trade": {
+      "description": "Offer to exchange resources",
+      "execute": "{agent_name} proposed a trade"
+    },
+    "form_contract": {
+      "description": "Propose a formal cooperative agreement",
+      "execute": "{agent_name} formed a contract"
+    },
+    "honor_contract": {
+      "description": "Fulfill an existing agreement",
+      "execute": "{agent_name} honored their contract"
+    },
+    "defect_from_contract": {
+      "description": "Break an agreement for personal gain",
+      "execute": "{agent_name} defected from their contract"
+    },
+    "transmit_faithfully": {
+      "description": "Pass the policy on exactly as received",
+      "execute": "{agent_name} transmitted the policy faithfully"
+    },
+    "reinterpret_downward": {
+      "description": "Adapt the policy when passing it down",
+      "execute": "{agent_name} reinterpreted the policy"
+    },
+    "comply_directive": {
+      "description": "Accept and implement the instruction from above",
+      "execute": "{agent_name} complied with the directive"
+    },
+    "resist_quietly": {
+      "description": "Formally comply but avoid real implementation",
+      "execute": "{agent_name} quietly resisted"
+    },
+    "report_up": {
+      "description": "Escalate an obstacle to a higher authority",
+      "execute": "{agent_name} reported up the chain"
+    },
+    "create_workaround": {
+      "description": "Build an informal path around the official rule",
+      "execute": "{agent_name} created a workaround"
+    }
+  },
+  "api": {
+    "errors": {
+      "missing_nodes": "Missing node_a or node_b in request body",
+      "invalid_node_ids": "Invalid node id(s); must be integers",
+      "node_not_found": "node_not_found",
+      "agent_memory_unavailable": "Agent memory not available. Provide a valid node_id from a running simulation.",
+      "llm_disabled_large_diff": " (Note: Large diff detected, LLM summary disabled to save resources)",
+      "llm_no_client": " (No LLM client configured)",
+      "llm_quota_exhausted": " (Note: User LLM quota exhausted, LLM summary disabled)",
+      "simulation_not_found": "Simulation not found",
+      "invalid_credentials": "Invalid credentials",
+      "admin_only": "Admin access required",
+      "user_not_found": "User not found",
+      "provider_not_found": "LLM provider not found or does not belong to current user",
+      "provider_not_configured": "LLM provider not configured",
+      "provider_invalid": "Invalid LLM provider dialect",
+      "provider_api_key_required": "LLM API key required",
+      "ollama_unreachable": "Ollama is not reachable at {base_url}: {detail}",
+      "ollama_models_missing": "Missing Ollama models: {models}",
+      "simtree_root_missing": "SimTree root was not created",
+      "legacy_chat_client_missing": "No chat client is available for legacy agent processing",
+      "contribution_amount_not_numeric": "Expected numeric 'amount' parameter, got {type_name}: {value}",
+      "council_runner_not_initialized": "Council runner was not initialized",
+      "provider_model_required": "LLM model required",
+      "missing_bearer_token": "Missing bearer token",
+      "tree_node_not_found": "Tree node not found",
+      "advance_in_progress": "Node {parent} is already advancing",
+      "provider_not_authorized": "Not authorized to access this provider",
+      "provider_test_failed": "Provider test failed. Check your configuration and credentials.",
+      "template_not_found": "Template not found",
+      "access_denied": "Access denied",
+      "experiment_not_found": "Experiment not found",
+      "experiment_not_found_after_creation": "Experiment not found after creation",
+      "invalid_role": "Invalid role",
+      "no_llm_client_available": "No LLM client available",
+      "message_required": "message is required",
+      "inject_message_experiment_only": "inject-message only supported for experiment simulations",
+      "content_required": "Content is required",
+      "invalid_node_id_param": "Invalid 'node_id' query parameter: expected an integer.",
+      "simulator_not_found": "Simulator not found",
+      "simulation_tree_not_loaded": "Simulation tree not loaded",
+      "receivers_empty": "receivers cannot be empty when provided",
+      "invalid_event_metadata": "Event metadata must be a JSON object",
+      "external_event_not_found": "External event not found",
+      "external_event_wrong_simulation": "External event does not belong to this simulation",
+      "external_event_save_failed": "Failed to save external event",
+      "smtp_not_configured": "SMTP host or port not configured",
+      "cuda_not_available": "FOS_EMBEDDING_DEVICE=cuda but CUDA is not available",
+      "ollama_embed_model_required": "FOS_OLLAMA_EMBED_MODEL is required for Ollama embeddings",
+      "pdf_empty_text": "PDF extraction returned empty text",
+      "docx_empty_text": "DOCX extraction returned empty text",
+      "txt_empty_text": "TXT extraction returned empty text",
+      "no_llm_provider_configured": "No LLM provider configured",
+      "template_validation_failed": "Template validation failed: {error}",
+      "scene_build_failed": "Failed to build scene: {error}",
+      "branch_operation_failed": "Branch operation failed: {error}",
+      "invalid_file_type": "Invalid file type. Allowed: {extensions}",
+      "file_too_large": "File too large. Max size: {max_mb}MB",
+      "sentence_transformers_missing": "Document processing requires 'sentence-transformers' package. Please install it: pip install sentence-transformers",
+      "document_processing_failed": "Document processing failed: {error}",
+      "agent_not_found": "Agent '{agent_name}' not found",
+      "document_not_found": "Document '{doc_id}' not found",
+      "agent_id_not_found": "Agent with id/name '{agent_id}' not found",
+      "node_export_not_found": "Node {node_id} not found",
+      "global_knowledge_not_found": "Global knowledge item '{kw_id}' not found",
+      "too_many_frontier_nodes": "Too many frontier nodes ({count}). Maximum is {max}.",
+      "too_many_turns": "Too many turns ({turns}). Maximum is {max}.",
+      "too_many_parallel_advances": "Too many parallel advances ({count}). Maximum is {max}.",
+      "too_many_chain_steps": "Too many chain steps ({steps}). Maximum is {max}.",
+      "ai_scientist_selected_provider_not_found": "Selected provider was not found",
+      "ai_scientist_no_active_provider": "No active provider found. Configure an LLM provider before running document recognition.",
+      "ai_scientist_llm_recognition_failed": "LLM recognition failed. Check the configured provider and model output format. {error}",
+      "auth": {
+        "smtp_missing": "Email verification enabled but SMTP settings are missing",
+        "app_url_missing": "Email verification enabled but APP base URL is missing",
+        "email_registered": "Email already registered",
+        "username_registered": "Username already registered",
+        "user_disabled": "User disabled",
+        "email_not_verified": "Email address not verified",
+        "invalid_expired_token": "Invalid or expired token",
+        "account_missing": "Account missing",
+        "invalid_refresh_token": "Invalid refresh token",
+        "invalid_token_type": "Invalid token type",
+        "invalid_token_subject": "Invalid token subject",
+        "token_revoked": "Token revoked",
+        "token_expired": "Token expired",
+        "could_not_validate": "Could not validate credentials",
+        "inactive_user": "Inactive user"
+      },
+      "uploads": {
+        "invalid_data_url": "Invalid data URL",
+        "invalid_base64_payload": "Invalid base64 payload",
+        "pdfplumber_not_installed": "pdfplumber not installed for PDF extraction",
+        "tesseract_not_available": "Tesseract not available for OCR",
+        "pytesseract_not_installed": "pytesseract not installed for OCR",
+        "python_docx_not_installed": "python-docx not installed for DOC/DOCX extraction",
+        "rate_limit_exceeded": "Rate limit exceeded: maximum {max_requests} uploads per {window} seconds",
+        "invalid_upload_backend": "Invalid upload_backend",
+        "file_or_data_url_required": "file or data_url required",
+        "content_type_not_allowed": "Only JPEG/PNG/GIF/WEBP/MP3/WAV/OGG/MP4/WEBM/PDF/DOC/DOCX are allowed",
+        "file_signature_mismatch": "File content does not match declared type {content_type}",
+        "file_exceeds_size_limit": "File exceeds {limit_mb}MB limit",
+        "empty_file": "Empty file",
+        "upload_directory_not_found": "Upload directory not found",
+        "file_not_found": "File not found",
+        "failed_to_delete": "Failed to delete file: {error}"
+      },
+      "llm": {
+        "provider_not_found": "LLM provider not found or does not belong to current user",
+        "agent_generation_validation_failed": "Agent generation validation failed: {error}",
+        "llm_agent_generation_failed": "LLM agent generation failed: {error}",
+        "unexpected_agent_generation_error": "Unexpected error during agent generation: {error}",
+        "failed_to_generate_agents": "Failed to generate agents: {error}",
+        "timeout": "LLM timed out for archetype '{archetype}' after {timeout} seconds",
+        "call_failed": "LLM call failed for archetype '{archetype}': {error}",
+        "no_response": "LLM returned no response for archetype '{archetype}'",
+        "empty_response": "LLM returned an empty response for archetype '{archetype}'",
+        "no_json_in_response": "LLM response did not contain valid JSON for archetype '{archetype}'",
+        "invalid_json": "LLM returned invalid JSON for archetype '{archetype}': {error}",
+        "missing_field": "LLM response is missing required field '{field}' for archetype '{archetype}'",
+        "routing_missing_default": "LLM routing config is missing a default provider assignment",
+        "routing_unknown_provider": "LLM routing references unknown provider {name}"
+      },
+      "simtree": {
+        "unsupported_scene_type": "Unsupported scene type: {scene_type}",
+        "deliberation_rounds_required": "deliberation_rounds parameter is required for council experiment. Got parameters: {params}",
+        "voting_threshold_required": "voting_threshold parameter is required for council experiment. Got parameters: {params}",
+        "proposal_text_required": "proposal_text parameter is required for council experiment. Got parameters: {params}",
+        "deliberation_rounds_required_keys": "deliberation_rounds parameter is required for council experiment. Got config keys: {keys}",
+        "voting_threshold_required_keys": "voting_threshold parameter is required for council experiment. Got config keys: {keys}",
+        "proposal_text_required_keys": "proposal_text parameter is required for council experiment. Got config keys: {keys}",
+        "no_persisted_state": "No persisted state for simulation"
+      },
+      "data_source_not_found": "Data source not found",
+      "gaworld_path_not_set": "GAWorld path is not configured. Set GAWORLD_PATH on the server.",
+      "gaworld_unavailable": "GAWorld is unavailable. Make sure the GAWorld dashboard is running.",
+      "invalid_roster": "The selected resident roster contains residents unknown to GAWorld",
+      "gaworld_node_not_in_simulation": "Node {node_id} not found in this simulation",
+      "gaworld_node_not_branch": "Node {node_id} is not a GAWorld branch node",
+      "gaworld_node_not_completed": "Node {node_id} has not completed its run",
+      "gaworld_state_history_missing": "Node state history not found at {path}",
+      "baseline_and_branch_nodes_required": "baseline_node and a non-empty branch_nodes list are required",
+      "authentication_required": "Authentication required",
+      "gaworld_unknown_roster_agents": "GAWorld: unknown agent IDs in the selected roster: {ids}; refusing to launch with a wrong population",
+      "gaworld_pending_interventions_no_path": "Node has pending_interventions but no interventions_path — apply isolate_node_runtime() first"
+    },
+    "compare": {
+      "node_unique_events": "Node {{node}} has {{count}} unique events.",
+      "agent_property_diffs": "{{count}} agents have property differences.",
+      "no_obvious_diff": "No obvious differences found (based on quick comparison of events and properties)."
+    },
+    "auth": {
+      "email_verified": "Email verified"
+    },
+    "environment": {
+      "event_broadcast": "Event broadcast to simulation",
+      "suggestions_dismissed": "Suggestions dismissed"
+    },
+    "experiments": {
+      "not_found": "not_found"
+    },
+    "providers": {
+      "connectivity_verified": "Provider connectivity verified",
+      "activated": "Activated provider",
+      "ollama_model_not_found": "Ollama model not found: {model_name}"
+    },
+    "templates": {
+      "deleted": "Template deleted"
+    },
+    "lifecycle": {
+      "start_enqueued": "Simulation start enqueued",
+      "resume_enqueued": "Simulation resume enqueued",
+      "reset_rebuilt": "Simulation reset and tree rebuilt",
+      "reset_success": "Simulation reset and tree rebuilt"
+    },
+    "documents": {
+      "deleted": "Document deleted successfully",
+      "memory_not_available": "Agent memory not available. Provide a valid node_id from a running simulation."
+    },
+    "knowledge": {
+      "deleted": "Knowledge item deleted successfully"
+    }
+  },
+  "simulation": {
+    "log": {
+      "action_chosen": "{agent} chose {action}",
+      "action_generic": "{agent} performed: {action}",
+      "public_goods_contribution": "{agent} decided to {action} {amount} {resource}",
+      "round_summary": "Round {round} complete",
+      "payoff_result": "{agent} received {payoff} points"
+    },
+    "results": {
+      "round_title": "Round {round} Results",
+      "agents_chose": "{count} agents chose this",
+      "total_contributed": "Total Contributed",
+      "pool_after_multiplier": "Pool (×{multiplier})",
+      "per_agent_share": "Per-Agent Share"
+    }
+  },
+  "prompts": {
+    "council_experiment": {
+      "first_round": "This is the first round - no prior context."
+    },
+    "policy_cascade": {
+      "shared": {
+        "follow_up_no_action": "There is currently no remaining action tendency. Inject a new environment event or release a new policy.",
+        "unknown": "unknown"
+      },
+      "guidelines": {
+        "notice_analysis": "When your tier is active: (1) Respond directly to the latest system notice, focusing on policy interpretation, reasonableness assessment, and pros/cons/risk/recommendation analysis, (2) Use formal governmental wording consistent with your tier's duties, (3) Only discuss your own tier's judgment, do not assign tasks to other tiers, and do not mechanically repeat old policy, (4) If the notice includes length, format, or focus requirements, obey them directly. Output must include send_message or yield; empty responses or None are forbidden.",
+        "notice_execution": "When your tier is active: (1) Respond directly to the latest system notice or task requirement and give your own analysis/judgment/execution plan, (2) Provide at least one distinctive detail tied to your duties, (3) Only answer for your own tier's work; do not assign work to other tiers, ask others to interpret, republish instructions, or mechanically repeat old content, (4) If the system notice includes length, format, or focus requirements, obey them directly. Output must include send_message or yield; empty responses or None are forbidden.",
+        "follow_up_thread_adjustment_strict": "Only under extreme risk may you use announce_policy_adjustment to republish a policy adjustment.",
+        "follow_up_thread_adjustment_relaxed": "If you believe the existing policy wording must be adjusted, you may use announce_policy_adjustment to publish a new policy adjustment and reopen downstream transmission.",
+        "follow_up_thread": "When your tier is active: (1) You are handling a private conversation or feedback thread; (2) You may use send_message to reply privately to the current message, or use yield to avoid it temporarily; (3) You may also continue with report_upward, escalate_complaint, consult_peer, or notify_subordinate to escalate, consult, or hand off the current problem; (4) {adjustment_rule} (5) If you judge that the current thread has no new tendency for discussion, feedback, escalation, handoff, or adjustment, do not stay empty; use send_message to reply explicitly: {no_action}",
+        "follow_up_adjustment_strict": "Only under extreme risk may a superior use announce_policy_adjustment to republish a policy adjustment.",
+        "follow_up_adjustment_relaxed": "Superiors may use notify_subordinate for private follow-up or handoff, and may also use announce_policy_adjustment to republish a policy adjustment.",
+        "follow_up": "When your tier is active: (1) There is no new broadcast policy right now, so you may continue interacting around existing policy execution difficulties, resource gaps, wording conflicts, and group backlash; (2) Frontline agents may report_upward to direct superiors, and may escalate_complaint when necessary; (3) Peers may use consult_peer for private consultation and wording alignment; (4) Superiors may use notify_subordinate for private follow-up or handoff; {adjustment_rule} (5) As long as you still have a new tendency toward feedback, discussion, consultation, escalation, handoff, or adjustment, you must keep acting; only when you judge there is truly nothing left to say or do may you use send_message to reply explicitly: {no_action}",
+        "distortion_cascade": "When your tier is active: (1) You must pass the policy only to the next tier and may not skip tiers; (2) Based on this tier's interests, pressures, risks, and interpretation bias, you may choose exact transmission, selective emphasis, weakening, rewriting, delay, or even non-transmission; (3) If you decide not to continue transmitting, use yield to indicate withholding/shelving; (4) Your wording must reflect this tier's real stance and incentives. You do not need to preserve the original text by force, but you may not speak for higher or lower tiers. Current parameters: distortion strength={distortion_strength}, conflict sensitivity={conflict_sensitivity}, withholding probability={block_probability}. Output must include send_message or yield; empty responses or None are forbidden.",
+        "default_cascade": "When your tier is active: (1) Paste the full latest policy/notice verbatim without omission or rewriting, (2) State attitude/concerns/execution plan/resource needs, (3) Pass the message only according to the configured tier order and stay silent when it is not your turn. Your attitude/plan must match your position and role and include at least one distinctive execution detail tied to your duties. Do not speak for other tiers. If you receive a new system notice or interpretation request, prioritize responding to that new content instead of repeating old content. Output must include send_message or yield; empty responses or None are forbidden."
+      },
+      "status": {
+        "notice_analysis": "Current task: respond directly to the latest system notice, focusing on reasonableness, strengths, weaknesses, risks, and recommendations. Do not write it as an execution order.",
+        "notice_execution": "Current task: respond directly to the latest system notice. Do not relay other people's instructions.",
+        "notice_top_scope": "Discuss only top-tier judgment: overall direction, organizational leadership, resource allocation, and supervision. Do not write task lists for middle or lower tiers.",
+        "notice_top_drift": "If phrases such as task decomposition, cross-department coordination, on-site verification, or problem rectification appear, that counts as tier drift.",
+        "notice_mid_scope": "Discuss only mid-tier judgment: task decomposition, cross-department coordination, ledger mechanisms, and timelines. Do not make top-tier strategic statements or write frontline details.",
+        "notice_mid_drift": "Do not use top-tier wording such as overall goals, resource allocation, or supervision, and do not write frontline actions such as on-site verification or problem rectification.",
+        "notice_low_scope": "Discuss only frontline judgment: inspection steps, on-site verification, problem rectification, and upward feedback. Do not keep issuing instructions or summarize overall deployment.",
+        "notice_low_drift": "Do not use upper-tier wording such as overall goals, resource allocation, supervision, task decomposition, or cross-department coordination.",
+        "cascade_intro": "Current task: pass down the latest policy by tier and add execution details related to your duties.",
+        "cascade_distortion": "Current mode is distortion cascade: you may relay faithfully, or selectively paraphrase, weaken, rewrite, delay, or directly stop transmission based on this tier's interests.",
+        "cascade_distortion_yield": "If you decide to withhold the policy, use yield; if you decide to transmit it, you may only send it to the next tier.",
+        "cascade_params": "Current parameters: distortion strength={distortion_strength}, conflict sensitivity={conflict_sensitivity}, withholding probability={block_probability}.",
+        "cascade_top_scope": "Write only top-tier coordination, resource approval, and accountability arrangements.",
+        "cascade_mid_scope": "Write only mid-tier task decomposition, coordination, and milestone tracking.",
+        "cascade_low_scope": "Write only frontline inspection, reporting, and feedback closure.",
+        "follow_up_thread_intro": "Current task: handle a private feedback/consultation thread. You may use send_message to reply privately, or yield to avoid it temporarily.",
+        "thread_notice": "Thread status hint: {notice}",
+        "thread_meta": "Conversation type: {thread_kind}; current sender: {sender}; default reply target: {reply_target}.",
+        "thread_focus": "Current focus of dispute: {focus}.",
+        "thread_message": "Current incoming content: {message}",
+        "thread_history": "Previous exchanges (latest {rounds} rounds):\n{history}",
+        "thread_continue": "This is not a new topic. You must directly answer the other side's specific claim, doubt, or refusal from the previous round and continue the existing dispute instead of reopening it.",
+        "thread_reply_requirements": "This round's reply must do at least one of the following: provide new resources/timeline/execution details, explicitly refute a concrete point from the previous round, ask the other side for evidence, or offer an acceptable compromise.",
+        "thread_ban_generic": "Do not write generic filler such as confirmed, continue advancing, ensure implementation, keep communicating, or please confirm whether optimization is needed. If you cannot add a new concrete point, use the fixed no-action sentence directly.",
+        "thread_no_action": "If you judge that the current thread no longer has a new tendency for discussion, feedback, escalation, handoff, or adjustment, do not idle and do not only write yield; use send_message to reply explicitly: {no_action}",
+        "thread_upward_options": "You may also continue escalating, handing off, coordinating privately, or publishing a new policy adjustment.",
+        "follow_up_intro": "There is currently no new broadcast policy. Enter the follow-up feedback and consultation stage.",
+        "follow_up_public_then_private": "If you also receive a private message this round, you must first give your own public follow-up judgment, then continue with one extra step to reply to that private message. The private reply cannot replace your public action.",
+        "pending_sender": "Private sender awaiting processing in this round: {sender}.",
+        "pending_message": "Private message awaiting processing in this round: {message}",
+        "issue_candidates": "Most likely execution issues right now: {issues}.",
+        "environment_notice": "Latest environment event: {notice}",
+        "environment_changed": "The latest environment event has changed the background of follow-up intervention. This round you must respond directly to how that change affects your execution plan instead of repeating existing policy wording.",
+        "latest_notice_priority": "The latest system notice has higher priority than the existing relayed policy version. You must respond to this new notice or new environmental change first, then decide how to cite the old policy; the old policy is only background and must not be treated as the latest notice.",
+        "external_changed": "The latest external event has changed the background of follow-up intervention. This round you must adjust your judgment to this new situation instead of repeating last round's stance.",
+        "direct_up": "You may give feedback to direct superiors: {targets}.",
+        "skip_up": "If direct superiors do not handle it, you may skip-level escalate to: {targets}.",
+        "peers": "You may privately consult same-tier connections: {targets}.",
+        "down": "You may also privately notify or hand off to subordinates: {targets}.",
+        "announce_adjustment": "If you believe the existing wording must be corrected, you may directly publish a new policy adjustment and reopen the cascade.",
+        "no_action_agents": "Agents that have already explicitly stated no further action tendency: {agents}. This does not automatically end discussion; you still need to judge independently whether you have room to act.",
+        "follow_up_continue": "As long as you still have a new tendency for feedback, discussion, consultation, escalation, handoff, or adjustment, you must continue producing an action or response. Only when you judge there is truly nothing to say or do may you use send_message to reply explicitly: {no_action}",
+        "no_repeat": "Do not repeat your previous assistant reply; provide new content that matches your current tier.",
+        "latest_notice": "Latest system notice: {notice}",
+        "min_chars": "Current reply length requirement: at least {min_chars} characters.",
+        "environment_full": "Full latest environment event: {notice}",
+        "relayed_policy_bg_prefix": "Summary of the previous tier's relayed version (background only, not the latest system notice): ",
+        "relayed_policy_prefix": "Summary of the previous tier's relayed version: ",
+        "source_policy_bg_prefix": "Summary of the original policy (background only, not the latest system notice): ",
+        "source_policy_prefix": "Summary of the original policy: ",
+        "conditions": "Current persistent institutional conditions: {conditions}.",
+        "competing": "There are competing interpretive lines right now: {summary}. Decide whether to align with, compromise with, or rebut them.",
+        "multiple_upstream": "You have simultaneously received multiple upstream versions from {senders}; integrate them first, then form a unified downstream version for your tier."
+      },
+      "runtime": {
+        "low_cannot_announce": "The frontline tier cannot directly publish a new policy adjustment.",
+        "strict_announce_only": "In strict mode, a new policy adjustment is allowed only under extreme pressure, severe distortion, or repeated escalation that still has not been relieved.",
+        "policy_adjustment_prefix": "[Policy Adjustment] {message}",
+        "summary_announce": "{agent} published a new policy adjustment",
+        "invalid_report_target": "{target} is not your valid direct-superior feedback target.",
+        "summary_report": "{agent} reported execution difficulties to {target}",
+        "invalid_escalate_target": "{target} is not a valid skip-level escalation target.",
+        "summary_escalate": "{agent} initiated a skip-level complaint to {target}",
+        "invalid_peer_target": "{target} is not a valid same-tier consultation target.",
+        "summary_peer": "{agent} initiated same-tier consultation with {target}",
+        "invalid_notify_target": "{target} is not a valid subordinate notification target.",
+        "summary_notify": "{agent} privately notified {target}"
+      },
+      "threads": {
+        "auto_upward": "Report to {target}: the current policy execution shows {issue_text}. Please assess whether resources, timing, or explanatory wording need adjustment.",
+        "auto_escalation": "Escalation to {target}: the {issue_text} previously reported to the direct superior still has not been effectively handled. The original unfiltered risk version is now submitted for your direct judgment.",
+        "auto_skip_level": "Skip-level complaint to {target}: there is currently {issue_text}, together with deletion of non-rewritable clauses, severe mismatch between resource conditions and execution requirements, or repeated non-response. Please intervene directly.",
+        "auto_peer": "Peer consultation with {target}: the main issue is currently {issue_text}. Please share your execution experience, wording, and risk judgment.",
+        "skip_complete": "{agent} does not need to continue responding. The scene has ended.",
+        "skip_wait_private_tier": "{agent} is waiting for tier {tier} to handle active private threads first.",
+        "skip_private_turn": "{agent} is now prioritized to handle private threads.",
+        "skip_no_action": "{agent} has already clearly stated no further action tendency and is waiting for a new environment event or the next policy broadcast.",
+        "skip_not_private_turn": "{agent} is not currently up to handle active private threads.",
+        "skip_wait_active_tier": "{agent} is waiting for tier {tier} to finish this round of transmission first.",
+        "skip_hold_position": "{agent} currently has no new action request and maintains the existing stance."
+      },
+      "followup": {
+        "thread_history_item": "Round {round} {sender} → {recipient}: {message}",
+        "target_guidance_intro": "If you are only replying to the current thread, prefer send_message and do not start a new consult_peer.",
+        "target_guidance_report": "If you use report_upward, target may only be: {targets}.",
+        "target_guidance_escalate": "If you use escalate_complaint, target may only be: {targets}.",
+        "target_guidance_peer": "If you use consult_peer, target must explicitly be: {targets}.",
+        "target_guidance_notify": "If you use notify_subordinate, target may only be: {targets}.",
+        "shock_negative_extra": "New pressure points: {issues}.",
+        "shock_negative": "The latest external shock is public protest / public-opinion escalation. This round you must explain how that changes your judgment about the previous round's plan instead of repeating it unchanged. {extra}",
+        "shock_positive": "The latest external shock is positive public feedback. This round you must explain which previous concerns can be eased and which measures can be reduced, rather than reusing exactly the same crisis wording.",
+        "ignore_notice": "{agent} has not yet handled the conversation you initiated.",
+        "upstream_merge_intro": "You have simultaneously received multiple upstream versions. Please integrate them before forming a unified version to pass on at your tier:",
+        "upstream_node": "upstream node {index}",
+        "upstream_merge_item": "Version {index} (from {sender}):\n{message}",
+        "upstream_merge_outro": "After integrating the upstream versions above, continue passing downward according to your current tier's responsibilities."
+      },
+      "messages": {
+        "constraint_top_soft": "When passing downward, keep the following policy points in sync:",
+        "constraint_mid_soft": "When continuing downward transmission, keep the following hard constraints in sync:",
+        "constraint_low_soft": "At the frontline, keep at least the following points in sync:",
+        "constraint_top_strong": "After screening at this tier, keep the following key wording:",
+        "constraint_mid_strong": "After screening at this tier, only keep the following requirements:",
+        "constraint_low_strong": "At present, only keep the following minimum requirements:",
+        "intro_top_soft": "After coordination at this tier, transmit downward according to this tier's judgment:",
+        "intro_top_strong": "After coordination at this tier, transmit downward in compressed form:",
+        "intro_mid_soft": "Considering this tier's execution pressure, continue transmission according to this tier's understanding:",
+        "intro_mid_strong": "Considering this tier's execution pressure, continue transmission after screening:",
+        "intro_low_soft": "Considering frontline execution conditions, restate using a frontline-executable wording:",
+        "intro_low_strong": "Considering frontline burden, keep only the minimum execution wording:",
+        "analysis_top": "As top-tier leadership, my judgment on the reasonableness of '{notice}' is as follows. Strengths: it helps unify learning and communication of the meeting spirit, clarifies policy goals, the responsibility chain, and supervision mechanisms together, and supports coordinated advancement and follow-up effectiveness. Weaknesses: if it only stresses short-term advancement and accountability, it may increase frontline form-filling pressure and produce formalistic implementation when resources and institutional support are insufficient. Risks: unclear leading departments, insufficient resource input, and inconsistent assessment wording can weaken execution results. Recommendation: top leadership should unify deployment, press responsibility, clarify the lead unit and monthly supervision cadence, and simultaneously guarantee budget, staffing, and technical support.",
+        "analysis_mid": "As the middle tier, my judgment on the reasonableness of '{notice}' is as follows. Strengths: it is conducive to decomposing tasks and advancing them against clear benchmarks, and cross-department coordination can be anchored to concrete milestones through task forces, ledgers, and weekly reporting. Weaknesses: if goals are not decomposed finely enough and acceptance wording is inconsistent, repeated reporting and idle responsibility transfer can emerge between departments. Risks: overly tight timelines, overly long coordination chains, and delayed information return can cause execution drift. Recommendation: refine measures quickly, clarify division tables, timelines, responsible persons, and supervision rules, and form checklist-based management.",
+        "analysis_low": "As frontline staff, my judgment on the reasonableness of '{notice}' is as follows. Strengths: it helps clarify frontline work standards and supports item-by-item inspection, on-site verification, rectification, and timely reporting. Weaknesses: if there are too many supporting templates and wording changes too frequently, field execution will incur repeated registration and communication costs. Risks: unclear personal responsibility, unrealistic rectification deadlines, and missing review/recheck will make closed-loop management formalistic. Recommendation: provide unified checklists, simplify reporting fields, and clarify standards for fixing everything that should be fixed and for close-out management so frontline staff can implement step by step.",
+        "expansion_analysis_top_1": "From the top-tier perspective, for '{notice}' to truly land, learning communication, unified deployment, supervision, and follow-up effectiveness must be placed on the same responsibility chain.",
+        "expansion_analysis_top_2": "If only results are emphasized while resources and institutional supply are not synchronized, the frontline may respond passively, so budget, staffing, and technical support must be clarified together.",
+        "expansion_analysis_top_3": "At the organizational level, responsibility pressure and lead-unit mechanisms should prevent slogan-style transmission and ensure the deployment can continue to execute.",
+        "expansion_analysis_mid_1": "From the mid-tier perspective, whether '{notice}' is reasonable depends on whether it can be converted into decomposed tasks, checklist management, and regular scheduling.",
+        "expansion_analysis_mid_2": "Without clear acceptance standards and cross-department coordination mechanisms, execution can easily produce repeated reporting, milestone loss of control, and overlapping responsibility.",
+        "expansion_analysis_mid_3": "Therefore task forces, ledgers, weekly scheduling, and supervision are needed to transmit policy requirements stably to the execution end.",
+        "expansion_analysis_low_1": "From the frontline perspective, whether '{notice}' is reasonable depends on whether on-site verification, item-by-item inspection, and rectification are truly operable.",
+        "expansion_analysis_low_2": "If there are too many templates and the reporting chain is too long, the frontline will spend time organizing materials instead of solving practical problems.",
+        "expansion_analysis_low_3": "Therefore concise checklists, clear personal responsibility, review/recheck, and close-out management rules should be provided to ensure closed-loop implementation.",
+        "expansion_exec_top_1": "Around '{notice}', I will place phased goals, budget arrangements, and accountability milestones onto the leadership agenda together, ensuring each requirement has a responsible lead.",
+        "expansion_exec_top_2": "I will also require each unit to submit risk points, resource gaps, and rectification deadlines in a unified template, and incorporate the results into monthly assessments and cadre performance evaluation.",
+        "expansion_exec_top_3": "For slow progress or distorted data, I will directly launch interviews and supervision to ensure the policy requirements land on the organizational responsibility chain.",
+        "expansion_exec_mid_1": "Around '{notice}', I will split tasks into departmental actions, time nodes, and acceptance wording item by item to avoid interpretation drift.",
+        "expansion_exec_mid_2": "I will build weekly reports and issue ledgers to continuously track cross-department dependencies, resource gaps, and delay risks, and feed them upward in time.",
+        "expansion_exec_mid_3": "For matters requiring coordinated advancement, I will organize counterpart departments to align in advance, clarifying responsibility boundaries, deliverables, and review arrangements.",
+        "expansion_exec_low_1": "Around '{notice}', I will first check execution item by item on site, recording discovered problems, evidence, and rectification suggestions into a checklist.",
+        "expansion_exec_low_2": "I will summarize verification results on the same day, immediately report abnormal cases, and follow up on responsible persons, rectification deadlines, and review results.",
+        "expansion_exec_low_3": "For public feedback, field deviations, and repetitive problems, I will retain process records to ensure each item can be closed in later review."
+      }
+    },
+    "game_theory": {
+      "battle_of_the_sexes": {
+        "intro": "You are playing Battle of the Sexes.",
+        "choose_instruction": "You can choose: {action_1} or {action_2}.",
+        "action_format": "- {action_name}: {action_description}"
+      },
+      "stag_hunt": {
+        "intro": "You are playing Stag Hunt.",
+        "choose_instruction": "You can choose: {action_1} or {action_2}.",
+        "action_format": "- {action_name}: {action_description}",
+        "payoff_context": "{action_1} pays {stag_reward} if ALL choose it, else 0. {action_2} always pays {hare_reward}."
+      },
+      "public_goods": {
+        "intro": "You have {initial_amount} {resource}.",
+        "action_instruction": "You can {action_name} some amount to a shared pool.",
+        "action_description": "{action_description}",
+        "pool_mechanics": "The pool is multiplied by {multiplier} and distributed equally among all participants.",
+        "choose_instruction": "Choose how much to {action_name} (0 to {initial_amount})."
+      }
+    },
+    "agent": {
+      "knowledge_base_header": "Knowledge Base:",
+      "knowledge_base_intro": "You have a personal knowledge base with {count} item(s) containing information you can reference:",
+      "knowledge_base_more": "... and {count} more items",
+      "query_instruction": "Use the query_knowledge action to search for specific information when needed. The knowledge base contains facts and information that you should use to inform your responses when relevant.",
+      "json_retry_feedback": "Your previous reply could not be parsed. Error: {error}. Return ONLY one valid JSON object with exactly these top-level keys: \"thoughts\", \"response\", \"action\", \"context_update\", \"metadata\". Do not use Markdown code fences. Do not use [Action] shorthand. The action field must contain a valid action name from the Action Space.",
+      "reprompt_instruction": "You selected the '{action_name}' action. Now write your {reprompt_param} (plain text only, no JSON):",
+      "context_summary_header": "Recent Context Summary:",
+      "language_instruction": "Language: {language}. Respond in {language} for content; use English for action names.",
+      "action_space_header": "Action Space:",
+      "usage_header": "Usage:",
+      "output_format_header": "IMPORTANT - Output Format:",
+      "output_format_intro": "You MUST respond with a valid JSON object containing these 5 sections:",
+      "output_thoughts": "Your brief thinking about the current situation (1-2 sentences)",
+      "output_response": "What you want to communicate (can be empty string if no speech needed)",
+      "output_action": "The action you want to take, containing:",
+      "output_action_name": "action name from the Action Space above",
+      "output_action_params": "Additional key-value pairs for action parameters (if required)",
+      "output_context_update": "Brief notes to remember for future (goals, observations, plans)",
+      "output_metadata": "Optional object with any additional metadata",
+      "example_json_header": "Example JSON response:",
+      "speak_without_action_header": "If you only want to speak without taking an action:",
+      "default_example_thoughts": "I need to respond to the greeting and consider next steps",
+      "default_example_response": "Hello! Nice to meet you.",
+      "default_example_update": "Met a new agent, should learn more about them",
+      "default_speak_thoughts": "Just responding to the question",
+      "default_speak_update": "Shared my opinion on the topic",
+      "closing_instruction": "You must always provide an \"action\" with a valid \"name\" from the Action Space. If you only want to speak, use \"send_message\" and include the text in the \"message\" field. Use \"yield\" when you are done with your turn.",
+      "cascade_example_thoughts": "Forward the latest policy, keeping the original text and attaching an execution plan.",
+      "cascade_silent_thoughts": "When there is nothing to forward, stay silent and wait.",
+      "notice_example_thoughts": "Need to respond directly to the latest system notice and provide an interpretation consistent with this position's responsibilities.",
+      "notice_silent_thoughts": "When there are no new tasks, end the turn.",
+      "default_example_template": "{header}\n    ```json\n    {{\n        \"thoughts\": \"{thoughts}\",\n        \"response\": \"{response}\",\n        \"action\": {{\n        \"name\": \"send_message\",\n        \"target\": \"other_agent\",\n        \"message\": \"{response}\"\n        }},\n        \"context_update\": \"{context_update}\",\n        \"metadata\": {{}}\n    }}\n    ```\n\n    {speak_header}\n    ```json\n    {{\n        \"thoughts\": \"{speak_thoughts}\",\n        \"response\": \"My opinion is...\",\n        \"action\": {{\n            \"name\": \"send_message\",\n            \"message\": \"My opinion is...\"\n        }},\n        \"context_update\": \"{speak_update}\",\n        \"metadata\": {{}}\n    }}\n    ```",
+      "cascade_example_template": "{header}\n    ```json\n    {{\n        \"thoughts\": \"{thoughts}\",\n        \"response\": \"\",\n        \"action\": {{\n        \"name\": \"send_message\",\n        \"message\": {message_json}\n        }},\n        \"context_update\": \"{context_update}\",\n        \"metadata\": {{}}\n    }}\n    ```\n\n    {speak_header}\n    ```json\n    {{\n        \"thoughts\": \"{silent_thoughts}\",\n        \"response\": \"\",\n        \"action\": {{\n            \"name\": \"yield\"\n        }},\n        \"context_update\": \"{silent_context}\",\n        \"metadata\": {{}}\n    }}\n    ```",
+      "notice_example_template": "{header}\n    ```json\n    {{\n        \"thoughts\": \"{thoughts}\",\n        \"response\": \"\",\n        \"action\": {{\n        \"name\": \"send_message\",\n        \"message\": {message_json}\n        }},\n        \"context_update\": \"{context_update}\",\n        \"metadata\": {{}}\n    }}\n    ```\n\n    {speak_header}\n    ```json\n    {{\n        \"thoughts\": \"{silent_thoughts}\",\n        \"response\": \"\",\n        \"action\": {{\n            \"name\": \"yield\"\n        }},\n        \"context_update\": \"{silent_context}\",\n        \"metadata\": {{}}\n    }}\n    ```",
+      "output_format_template": "{header}\n{intro}\n\n    1. \"thoughts\": {thoughts}\n\n    2. \"response\": {response}\n\n    3. \"action\": {action}\n       - \"name\": {action_name}\n       - {action_params}\n\n    4. \"context_update\": {context_update}\n\n    5. \"metadata\": {metadata}",
+      "examples": {
+        "cascade": {
+          "distortion_note": "Current distortion parameters: distortion_strength={strength:.2f}, conflict_sensitivity={sensitivity:.2f}, block_probability={probability:.2f}.",
+          "top_private_source": "For this policy communicated only to me privately, I decide to first emphasize \"{policy_summary}\", without expanding all resource commitments for now.",
+          "top_no_private": "Regarding what was just communicated from above, I decide to continue emphasizing \"{policy_summary}\", without expanding all resource commitments for now.",
+          "top_faithful": "I will continue to communicate \"{policy_summary}\" as written. Attitude: Full support and execute as written. Addition: I will approve special budget and establish monthly accountability mechanism.",
+          "mid_private_source": "I will only communicate the immediately executable parts downward, keeping \"{policy_summary}\" for now, with the rest to follow.",
+          "mid_no_private": "Considering our department's assessment pressure, I will only communicate the immediately executable parts downward, keeping \"{policy_summary}\" for now.",
+          "mid_faithful": "I will continue to communicate \"{policy_summary}\" as written. Attitude: Full support and execute as written. Addition: I will break down tasks to each department within 48 hours and establish weekly reporting ledger.",
+          "low_private_source": "This policy conflicts with frontline burden. I will first retain \"{policy_summary}\" in grassroots-executable terms and report execution difficulties.",
+          "low_no_private": "This policy conflicts with frontline burden. I will first retain the minimum execution requirements from \"{policy_summary}\".",
+          "low_faithful": "I will continue to communicate \"{policy_summary}\" as written. Attitude: Full support and execute as written. Addition: I will verify against the checklist item by item and report within 24 hours if anomalies are found.",
+          "context_top_distortion": "Restated policy priorities at this level's interest, retaining some information",
+          "context_mid_distortion": "Selectively transmitted policy considering middle-level pressure",
+          "context_low_distortion": "Weakened implementation due to grassroots execution conflict",
+          "context_top_faithful": "Forwarded as written, added high-level coordination and resource arrangements",
+          "context_mid_faithful": "Forwarded as written, added middle-level coordination and task breakdown",
+          "context_low_faithful": "Forwarded as written, added grassroots execution and anomaly reporting",
+          "silent_context": "Waiting for next level feedback",
+          "silent_context_distortion": "Temporarily holding transmission due to level interest conflict"
+        },
+        "notice": {
+          "analysis_top": "As top management, my view on \"{notice_text}\" is: The advantage is that it facilitates unified deployment, accountability consolidation, and follow-up effectiveness; the disadvantage is that if resources and supporting systems are insufficient, it can lead to layer-by-layer intensification; I recommend simultaneously clarifying the lead unit, budget arrangements, and supervision rhythm.",
+          "analysis_mid": "As middle management, my view on \"{notice_text}\" is: The advantage is that it facilitates task breakdown, ledger establishment, and coordinated advances; the disadvantage is that if acceptance criteria are unclear, it can cause duplicate reporting and overlapping responsibilities; I recommend promptly refining measures, clarifying timelines, and weekly reporting mechanisms.",
+          "analysis_low": "As a frontline executor, my view on \"{notice_text}\" is: The advantage is that it helps with item-by-item inspection, on-site verification, and timely reporting; the disadvantage is that if there are too many templates and frequent changes in standards, it increases execution burden; I recommend simplifying reporting fields and clarifying rectification, review, and closure standards.",
+          "response_top": "Regarding the system notice \"{notice_text}\", as top management, I will clarify overall objectives, resource allocation, accountability consolidation, and assessment mechanisms, and designate the lead responsible person.",
+          "response_mid": "Regarding the system notice \"{notice_text}\", as middle management, I will break down tasks, coordinate relevant units, establish work ledgers, and provide weekly progress timelines.",
+          "response_low": "Regarding the system notice \"{notice_text}\", as a frontline executor, I will follow the checklist for inspection steps, on-site verification of issues, advance rectification review, and report feedback in a timely manner.",
+          "context_analysis_top": "Completed policy interpretation and pros/cons analysis from top management perspective",
+          "context_analysis_mid": "Completed policy interpretation and pros/cons analysis from middle management perspective",
+          "context_analysis_low": "Completed policy interpretation and pros/cons analysis from frontline perspective",
+          "context_response_top": "Responded to system notice from top management perspective",
+          "context_response_mid": "Responded to system notice from middle management perspective",
+          "context_response_low": "Responded to system notice from frontline perspective",
+          "silent_context": "Waiting for next system notice"
+        },
+        "default_policy_summary": "Transmit policy level by level, retaining key execution clauses"
+      }
+    },
+    "werewolf": {
+      "moderator_hint": "You are the Moderator. Players: {players}. Roles: {roles_info}."
+    },
+    "archetype": {
+      "prompt": "Create a one sentence first-person bio for an agent with these attributes:\n{attrs}\n\nThe sentence must:\n- Start with \"I am\"\n- Reflect how this person thinks and makes decisions based on their attributes\n- Not just restate the demographics\n\nReturn JSON:\n{{\"description\": \"I am...\", \"roles\": [\"Job Title 1\", \"Job Title 2\", \"Job Title 3\", \"Job Title 4\", \"Job Title 5\"]}}\n\nJSON only, no other text.",
+      "fallback_roles": [
+        "Citizen",
+        "Worker",
+        "Professional",
+        "Student",
+        "Other"
+      ],
+      "fallback_description": "Individual with background: {archetype_label}"
+    },
+    "scenarios": {
+      "social_norm_disruption": {
+        "name": "Social Norm Disruption",
+        "description": "A new rule has been announced: All participants must comply with a new mandatory requirement.\n\nThe norm has a strength level of {norm_strength:.1f} (0=very weak, 1=very strong).\n\nAgents have different social statuses: {status_distribution}\n\nYour task is to decide how to respond to this new rule. You can:\n- Publicly comply with the rule\n- Covertly comply while privately resisting\n- Openly refuse or challenge the rule\n- Try to persuade others to join your position\n- Form coalitions with like-minded agents\n\nConsider your social status, temperament, and personal values when deciding."
+      },
+      "echo_chamber": {
+        "name": "Echo Chamber",
+        "description": "You are participating in an online discussion forum.\n\nYour political opinion: You are on a spectrum from strongly progressive (left)\nto strongly conservative (right). You have been assigned a position.\n\nThe group contains {num_agents} participants with diverse opinions.\n\nConnection pattern: Agents tend to connect with others who have similar opinions\n(homophily factor: {connection_homogeneity:.1f}, where 0=random, 1=similar only).\n\nYour task: Interact with other participants by:\n- Expressing your opinion on current topics\n- Engaging with those who share your views\n- Challenging or avoiding those with different views\n- Sharing content that reinforces your position\n- Seeking common ground or disengaging\n\nObserve how opinions shift over time and whether echo chambers form."
+      },
+      "policy_erosion": {
+        "name": "Policy Meaning Erosion",
+        "description": "POLICY ANNOUNCEMENT (from top-tier management):\n\n\"{policy_text}\"\n\nYou are in a three-tier organizational hierarchy:\n- Tier 1 (Top): Receives the original policy directly\n- Tier 2 (Middle): Receives policy from Tier 1, must pass to Tier 3\n- Tier 3 (Bottom): Receives policy from Tier 2, must implement\n\nEach tier decides how to interpret and pass on the policy. Observe how\nthe meaning changes as it moves down the chain.\n\nYour task:\n1. If you're Tier 1: Transmit the policy to Tier 2\n2. If you're Tier 2: Receive from Tier 1, interpret it, pass to Tier 3\n3. If you're Tier 3: Receive from Tier 2, decide how to implement\n\nYou can:\n- Transmit the policy exactly as received\n- Reinterpret or adapt the policy when passing it down\n- Comply with the directive from above\n- Quietly resist while appearing to comply\n- Report obstacles up the chain\n- Create workarounds to avoid implementation"
+      },
+      "policy_cascade_experiment": {
+        "name": "Policy Cascade (Experiment)",
+        "description": "A multi-tier hierarchy transmits a policy from top to bottom using the experiment engine.\nEach level may preserve, reinterpret, distort, or block the directive.\n\nYou can:\n- Transmit the policy exactly as received\n- Reinterpret or adapt the policy when passing it down\n- Comply with the directive from above\n- Quietly resist while appearing to comply"
+      },
+      "resource_scarcity": {
+        "name": "Resource Scarcity",
+        "description": "DISASTER SITUATION:\n\nA recent disaster has created severe resource scarcity. The community has\nonly {resource_amount} units of critical supplies to last {num_agents} people.\n\nInitial distribution: {initial_distribution}\n\nYour task: Decide how to manage these scarce resources.\n\nYou can:\n- Share resources with others in need\n- Hoard resources for yourself\n- Propose trades to exchange resources\n- Form cooperative contracts with others\n- Honor your contractual commitments\n- Defect from contracts for personal gain\n\nConsider:\n- Your current resource level\n- Others' resource levels and trustworthiness\n- Long-term community survival vs short-term gain\n- Your reputation and future cooperation\n\nThe goal is to survive while maintaining social relationships."
+      }
+    },
+    "llm": {
+      "generate_agents": {
+        "system": "You are an agent generator for a social simulation platform. Generate a list of diverse agents based on the user's scenario description. IMPORTANT: Return ONLY a valid JSON array, no markdown, no explanation, no code blocks. Each agent must have: name (string), role (string), profile (string), properties (object).",
+        "user": "Generate exactly {count} diverse agents for this scenario:\n\n{description}\n\nRequirements:\n1. Each agent should have different identity, stance, and personality\n2. Return ONLY a JSON array in this exact format:\n[\n  {{\"name\": \"John Smith\", \"role\": \"Village Chief\", \"profile\": \"60-year-old respected leader...\", \"properties\": {{\"trust\": 70}}}},\n  {{\"name\": \"Jane Doe\", \"role\": \"Merchant\", \"profile\": \"45-year-old shrewd businessperson...\", \"properties\": {{\"trust\": 45}}}}\n]\n\nOUTPUT ONLY THE JSON ARRAY, NO OTHER TEXT:",
+        "fallback_role": "Role",
+        "fallback_profile": "Agent profile unavailable",
+        "agent_name": "Agent {index}",
+        "agent_name_raw": "Agent profile unavailable. Raw output: {raw_text}"
+      },
+      "refine_report": {
+        "system": "You are a report refinement assistant. Return strictly valid JSON."
+      },
+      "errors": {
+        "traits_required": "Traits are required for demographic generation. Please add at least one trait (e.g., Trust, Empathy) with mean and standard deviation values.",
+        "demographics_required": "Demographics are required for demographic generation. Please add at least one demographic dimension (e.g., Age, Political View).",
+        "demographic_needs_categories": "Demographic '{name}' must have at least one category.",
+        "trait_mean_out_of_range": "Trait '{name}' mean value {value} is outside valid range [0, 100].",
+        "trait_std_out_of_range": "Trait '{name}' std value {value} is outside valid range [0, 50]."
+      }
+    },
+    "actions": {
+      "speak": {
+        "name": "speak",
+        "desc": "Say something.",
+        "instruction": "- speak: Broadcast a message\n  <Action name=\"speak\" />\n  (You will be prompted to write your message after selecting this action.)",
+        "error_missing_message": "Missing message.",
+        "summary_spoke": "{agent_name} said: {message}",
+        "summary_failed": "{agent_name} failed to speak"
+      },
+      "send_message": {
+        "name": "send_message",
+        "desc": "Post a message to all participants.",
+        "instruction": "- send_message: Send to everyone\n  <Action name=\"send_message\" />\n  (You will be prompted to write your message after selecting this action.)",
+        "error_missing_message": "Missing message.",
+        "summary_sent": "{agent_name}: {message}",
+        "summary_failed": "{agent_name} failed to post"
+      },
+      "yield": {
+        "name": "yield",
+        "desc": "Yield the floor and end your turn.",
+        "instruction": "- yield: End your turn\n  <Action name=\"yield\"/>",
+        "summary_yielded": "{agent_name} yielded the floor"
+      },
+      "talk_to": {
+        "name": "talk_to",
+        "desc": "Say something to a nearby person by name.",
+        "instruction": "- talk_to: Speak to nearby agent\n  <Action name=\"talk_to\"><target>Name</target><message>Hi!</message></Action>",
+        "error_missing_params": "Provide 'target' (name) and 'message'.",
+        "error_no_such_person": "No such person: {target_name}.",
+        "error_too_far": "{target_name} is too far to talk to.",
+        "summary_failed": "{agent_name} failed to talk",
+        "summary_talked": "{agent_name} to {target_name}: {message}"
+      },
+      "schedule_order": {
+        "name": "schedule_order",
+        "desc": "Moderator schedules the next few agents to act using a comma-separated list.",
+        "instruction": "- To schedule the next speakers/actors (moderator only):\n  <Action name=\"schedule_order\"><order>Alice, Bob, Charlie</order></Action>",
+        "error_schedule_not_empty": "The schedule is not empty; shouldn't schedule now.",
+        "summary_failed": "schedule_order failed: schedule not empty",
+        "feedback_scheduled": "Scheduled order: {names}",
+        "summary_scheduled": "{agent_name} scheduled: {names}"
+      },
+      "start_voting": {
+        "name": "start_voting",
+        "desc": "Initiate a voting round with a title. Any agent can propose when in discussion phase.",
+        "instruction": "- To start voting with a title:\n<Action name=\"start_voting\"><title>[short subject]</title></Action>",
+        "state_error": "Cannot start voting: a vote is already in progress",
+        "event_voting_started": "{agent_name} has initiated the voting round: {title}. Please cast your votes now.",
+        "feedback_voting_started": "Voting started: {title}",
+        "summary_voting_started": "{agent_name} started the voting: {title}"
+      },
+      "voting_status": {
+        "name": "voting_status",
+        "desc": "Show current voting progress: counts and pending voters.",
+        "instruction": "- To check voting status:\n<Action name=\"voting_status\" />",
+        "feedback_not_started": "Voting has not started.",
+        "summary_not_started": "Voting not started",
+        "feedback_status_header": "Voting status on: {title}:",
+        "feedback_participants": "- Participants: {count}",
+        "feedback_tally": "- Yes: {yes}, No: {no}, Abstain: {abstain}",
+        "feedback_pending": "- Pending: {pending} ({names})",
+        "feedback_pending_no_names": "- Pending: {pending}",
+        "summary_status": "Voting status on '{title}': yes {yes}, no {no}, abstain {abstain}, pending {pending}"
+      },
+      "request_brief": {
+        "name": "request_brief",
+        "desc": "Fetch a concise, neutral brief via LLM when debate stalls, facts are missing, or members request data; provide a clear 'desc' (topic + focus). Any agent can request.",
+        "instruction": "\n- To request a brief (any agent):\n<Action name=\"request_brief\"><desc>[topic + focus]</desc></Action>",
+        "llm_system_prompt": "You are a policy analyst assisting a legislative council debate. Generate a neutral, factual, concise briefing to unblock discussion. Output plain text only (no JSON, no role tags).",
+        "llm_user_prompt": "Provide 5–7 crisp bullets with concrete facts, examples, or precedents. Include numbers if helpful and clearly label estimates. Keep under ~180 words.\nNeed: {desc}",
+        "fallback_item_scope": "- Scope: {desc}",
+        "fallback_item_fact": "- Key fact/definition",
+        "fallback_item_example": "- Comparable example (outcome)",
+        "fallback_item_stakeholders": "- Stakeholders: who benefits / pays",
+        "fallback_item_cost": "- Rough cost or impact (estimate)",
+        "fallback_item_risk": "- Top risk and mitigation",
+        "fallback_item_question": "- Open question for the chamber",
+        "feedback_brief": "Brief (private) on '{desc}':\n{material}",
+        "summary_requested": "{agent_name} requested a brief: {desc}"
+      },
+      "vote": {
+        "name": "vote",
+        "desc": "Cast a vote with optional comment. Available during voting phase.",
+        "instruction": "- To vote (only after voting has started):\n<Action name=\"vote\"><vote>yes|no|abstain</vote><comment>[optional]</comment></Action>",
+        "state_error": "Cannot vote: voting has not started yet",
+        "error_already_voted": "You have already voted.",
+        "summary_vote_failed": "{agent_name} vote failed",
+        "message_vote": "I vote {vote} on '{title}'.",
+        "message_vote_with_comment": "I vote {vote} on '{title}'. Comment: {comment}",
+        "summary_voted": "{agent_name} voted {vote}",
+        "event_concluded_passed": "Voting on '{title}' has concluded. It passed with {yes} yes, {no} no, and {abstain} abstain.",
+        "event_concluded_failed": "Voting on '{title}' has concluded. It failed with {yes} yes, {no} no, and {abstain} abstain."
+      },
+      "finish_meeting": {
+        "name": "finish_meeting",
+        "desc": "Conclude the council meeting and end the scene. Any agent can propose when no vote is active.",
+        "instruction": "- To finish the council meeting (when voting is not in progress):\n<Action name=\"finish_meeting\" />",
+        "state_error": "Cannot finish meeting: voting is still in progress",
+        "event_adjourned": "{agent_name} has moved to adjourn the council. The session is concluded.",
+        "feedback_finished": "Meeting finished.",
+        "summary_finished": "{agent_name} finished the meeting"
+      },
+      "call_landlord": {
+        "name": "call_landlord",
+        "desc": "During bidding (call stage), call the landlord.",
+        "instruction": "\n- To call the landlord (bidding):\n<Action name=\"call_landlord\" />",
+        "error_wrong_stage": "You can only call during the call stage.",
+        "event_called": "{agent_name} called the landlord.",
+        "summary_failed": "{agent_name} call_landlord failed",
+        "summary_called": "{agent_name} called landlord"
+      },
+      "rob_landlord": {
+        "name": "rob_landlord",
+        "desc": "During bidding (rob stage), rob the landlord. Doubles score multiplier.",
+        "instruction": "\n- To rob the landlord (after someone has called):\n<Action name=\"rob_landlord\" />",
+        "error_wrong_stage": "You can only rob during the rob stage.",
+        "error_already_acted": "You already acted in rob stage.",
+        "event_robbed": "{agent_name} robbed the landlord. Multiplier x2.",
+        "summary_failed": "{agent_name} rob_landlord failed",
+        "summary_robbed": "{agent_name} robbed landlord"
+      },
+      "pass": {
+        "name": "pass",
+        "desc": "Pass in the current context (bidding: no-call/no-rob; playing: skip).",
+        "instruction": "\n- To pass (bidding: decline; playing: skip):\n<Action name=\"pass\" />",
+        "error_bad_stage": "Unknown bidding stage.",
+        "error_cannot_pass_lead": "You must lead; cannot pass.",
+        "error_bad_phase": "You cannot pass right now.",
+        "error_already_acted_rob": "You already acted in rob stage.",
+        "event_no_call": "{agent_name} did not call.",
+        "event_no_rob": "{agent_name} did not rob.",
+        "event_passed": "{agent_name} passed.",
+        "summary_pass_call": "{agent_name} passed call",
+        "summary_pass_rob": "{agent_name} passed rob",
+        "summary_pass_playing": "{agent_name} passed",
+        "summary_pass_failed": "{agent_name} pass failed"
+      },
+      "play_cards": {
+        "name": "play_cards",
+        "desc": "Play cards (strict tokens). Must beat current leading combo unless leading.",
+        "instruction": "\n- To play cards (tokens separated by single spaces):\n<Action name=\"play_cards\"><cards>3 3 3</cards></Action>\nAvailable tokens: 3 4 5 6 7 8 9 10 J Q K A 2 SJ BJ",
+        "error_wrong_phase": "You can only play during the playing phase.",
+        "error_missing_cards": "Provide cards to play.",
+        "error_not_in_hand": "You don't have those cards.",
+        "error_invalid_combo": "Invalid combination.",
+        "error_not_beating": "Your play does not beat the current lead.",
+        "event_played": "{agent_name} played: {cards_str} ({combo_type}).",
+        "summary_wrong_phase": "{agent_name} tried: {attempt_str} -> wrong_phase | remaining: {remaining_str}",
+        "summary_missing_cards": "{agent_name} tried: (none) -> missing_cards | remaining: {remaining_str}",
+        "summary_not_in_hand": "{agent_name} tried: {attempt_str} -> not_in_hand | remaining: {remaining_str}",
+        "summary_invalid_combo": "{agent_name} tried: {attempt_str} -> invalid_combo | remaining: {remaining_str}",
+        "summary_not_beating": "{agent_name} tried: {attempt_str} -> not_beating | remaining: {remaining_str}",
+        "summary_played": "{agent_name} played: {attempt_str} ({combo_type}), remaining: {remaining_str}",
+        "summary_won": "{agent_name} played: {attempt_str} ({combo_type}), remaining: {remaining_str} [WIN]"
+      },
+      "double": {
+        "name": "double",
+        "desc": "During doubling stage, choose to double and multiply the global multiplier by 2.",
+        "instruction": "\n- To double during the doubling stage:\n<Action name=\"double\" />",
+        "error_wrong_phase": "You can only double during the doubling stage.",
+        "error_already_acted": "You already acted in doubling stage.",
+        "event_doubled": "{agent_name} doubled. Multiplier x2.",
+        "summary_failed": "{agent_name} double failed",
+        "summary_doubled": "{agent_name} doubled"
+      },
+      "no_double": {
+        "name": "no_double",
+        "desc": "During doubling stage, explicitly decline doubling.",
+        "instruction": "\n- To decline doubling during the doubling stage:\n<Action name=\"no_double\" />",
+        "error_wrong_phase": "You can only act during the doubling stage.",
+        "error_already_acted": "You already acted in doubling stage.",
+        "event_declined": "{agent_name} declined to double.",
+        "summary_failed": "{agent_name} no_double failed",
+        "summary_declined": "{agent_name} declined doubling"
+      },
+      "report_upward": {
+        "name": "report_upward",
+        "desc": "Privately report execution difficulty to a direct superior.",
+        "instruction": "- report_upward: Report execution difficulty to a direct superior\n  <Action name=\"report_upward\"><target>Name</target><message>Your difficulty report</message></Action>"
+      },
+      "escalate_complaint": {
+        "name": "escalate_complaint",
+        "desc": "Escalate a complaint or risk report to a higher-level superior.",
+        "instruction": "- escalate_complaint: Escalate a complaint to a higher-level superior\n  <Action name=\"escalate_complaint\"><target>Name</target><message>Your escalation report</message></Action>"
+      },
+      "consult_peer": {
+        "name": "consult_peer",
+        "desc": "Privately consult or coordinate with a connected peer on the same tier.",
+        "instruction": "- consult_peer: Privately consult a connected peer on the same tier\n  <Action name=\"consult_peer\"><target>Name</target><message>Your consultation message</message></Action>"
+      },
+      "notify_subordinate": {
+        "name": "notify_subordinate",
+        "desc": "Privately notify a directly connected subordinate.",
+        "instruction": "- notify_subordinate: Privately notify a directly connected subordinate\n  <Action name=\"notify_subordinate\"><target>Name</target><message>Your notification</message></Action>"
+      },
+      "announce_policy_adjustment": {
+        "name": "announce_policy_adjustment",
+        "desc": "Issue a new policy adjustment announcement that reopens cascade transmission.",
+        "instruction": "- announce_policy_adjustment: Issue a policy adjustment announcement\n  <Action name=\"announce_policy_adjustment\"><message>Your adjustment announcement</message></Action>"
+      },
+      "query_knowledge": {
+        "name": "query_knowledge",
+        "desc": "Query your knowledge base for relevant information on a topic.",
+        "instruction": "- To query your knowledge base:\n<Action name=\"query_knowledge\"><query>[your search query]</query><max_results>3</max_results></Action>",
+        "error_no_query": "query_knowledge: no query provided.",
+        "error_no_query_summary": "{agent_name} query_knowledge failed: no query",
+        "feedback_empty_kb": "Knowledge base query for '{query}': No knowledge items in your knowledge base.",
+        "summary_empty_kb": "{agent_name} queried knowledge base (empty)",
+        "feedback_no_matches": "Knowledge base query for '{query}': No matching results found.",
+        "summary_no_matches": "{agent_name} queried knowledge base (no matches)",
+        "feedback_results_header": "Knowledge base results for '{query}':",
+        "feedback_results_item": "[{i}] {title}: {content}",
+        "summary_success": "{agent_name} queried knowledge base: '{query}' ({count} results)"
+      },
+      "list_knowledge": {
+        "name": "list_knowledge",
+        "desc": "List all items in your knowledge base.",
+        "instruction": "- To list all knowledge base items:\n<Action name=\"list_knowledge\" />",
+        "feedback_empty": "Your knowledge base is empty.",
+        "summary_empty": "{agent_name} listed knowledge base (empty)",
+        "feedback_list_header": "Your knowledge base ({count} items):",
+        "feedback_list_item": "[{i}] ({kb_type}) {title}: {content_preview}",
+        "summary_success": "{agent_name} listed knowledge base ({count} items)",
+        "item_untitled": "Untitled"
+      },
+      "web_search": {
+        "name": "web_search",
+        "desc": "Search the web and return top results (title, URL, snippet). Use this action to find up-to-date information with a concrete query.",
+        "instruction": "- To search the web for information:\n<Action name=\"web_search\"><query>[keywords or question]</query><max_results>5</max_results></Action>",
+        "error_no_results": "web_search: no results or network unavailable.",
+        "summary_failed": "{agent_name} web_search failed",
+        "feedback_results_header": "Web search results for '{query}':",
+        "summary_success": "{agent_name} searched: '{query}' ({count} results)"
+      },
+      "view_page": {
+        "name": "view_page",
+        "desc": "Fetch and preview the text content of a web page.",
+        "instruction": "- To view a web page's text content:\n<Action name=\"view_page\"><url>https://example.com/article</url><max_chars>4000</max_chars></Action>",
+        "error_http": "view_page HTTP error: {error}",
+        "error_general": "view_page failed: {error}",
+        "summary_failed": "{agent_name} view_page failed",
+        "feedback_header_with_title": "Page content preview: {title}",
+        "feedback_header_no_title": "Page content preview:",
+        "feedback_body": "{header}\nURL: {url}\n\n{text}",
+        "summary_success": "{agent_name} viewed page: {title_or_url}"
+      },
+      "vote_lynch": {
+        "name": "vote_lynch",
+        "desc": "During the day, vote to lynch a player. One vote per day.",
+        "instruction": "- To vote to lynch someone during the day:\n<Action name=\"vote_lynch\"><target>[player_name]</target></Action>",
+        "error_wrong_phase": "You can only vote during the voting phase.",
+        "error_dead": "You are dead and cannot act.",
+        "error_invalid_target": "Provide a living 'target' to vote.",
+        "event_vote_cast": "{agent_name} voted to lynch {target}.",
+        "summary_vote_cast": "{agent_name} voted to lynch {target}",
+        "summary_failed": "{agent_name} failed to vote: {action_data}"
+      },
+      "night_kill": {
+        "name": "night_kill",
+        "desc": "At night, werewolves vote on a victim to kill.",
+        "instruction": "- Werewolves: to vote a night kill target (at night only):\n<Action name=\"night_kill\"><target>[player_name]</target></Action>",
+        "error_wrong_phase": "Night kill can only be cast at night.",
+        "error_not_werewolf_or_dead": "Only living werewolves can vote a night kill.",
+        "error_first_night": "First night has no kills; discuss with fellow wolves.",
+        "error_invalid_target": "Provide a living non-werewolf 'target'.",
+        "event_vote_cast": "{agent_name} voted night kill to {target}.",
+        "summary_vote_cast": "{agent_name} voted night kill: {target}",
+        "summary_failed": "{agent_name} night_kill failed"
+      },
+      "inspect": {
+        "name": "inspect",
+        "desc": "At night, seer inspects a player and learns if they are a werewolf.",
+        "instruction": "- Seer: to inspect a player at night:\n<Action name=\"inspect\"><target>[player_name]</target></Action>",
+        "error_wrong_phase": "You can only inspect at night.",
+        "error_not_seer_or_dead": "Only a living Seer can inspect.",
+        "error_invalid_target": "Provide a living 'target' to inspect.",
+        "result_werewolf": "a werewolf",
+        "result_not_werewolf": "not a werewolf",
+        "feedback_result": "Inspection result: {target} is {result}.",
+        "event_inspected_werewolf": "{agent_name} inspected {target} (werewolf)",
+        "event_inspected_not_werewolf": "{agent_name} inspected {target} (not)",
+        "summary_inspected_werewolf": "{agent_name} inspected {target} (werewolf)",
+        "summary_inspected_not_werewolf": "{agent_name} inspected {target} (not)",
+        "summary_failed": "{agent_name} inspect failed"
+      },
+      "witch_save": {
+        "name": "witch_save",
+        "desc": "At night, witch may save the intended victim once per game.",
+        "instruction": "- Witch: to save tonight's victim (once per game):\n<Action name=\"witch_save\" />",
+        "error_wrong_phase": "You can only use save at night.",
+        "error_not_witch_or_dead": "Only a living Witch can save.",
+        "error_no_heal_left": "You have already used your save potion.",
+        "feedback_save_prepared": "You prepare the save potion for tonight's victim.",
+        "event_save_prepared": "{agent_name} prepared a save potion.",
+        "summary_used": "{agent_name} used witch save",
+        "summary_failed": "{agent_name} witch_save failed"
+      },
+      "witch_poison": {
+        "name": "witch_poison",
+        "desc": "At night, witch may poison one player once per game.",
+        "instruction": "- Witch: to poison a player at night (once per game):\n<Action name=\"witch_poison\"><target>[player_name]</target></Action>",
+        "error_wrong_phase": "You can only poison at night.",
+        "error_not_witch_or_dead": "Only a living Witch can poison.",
+        "error_invalid_target": "Provide a living 'target' other than yourself.",
+        "error_no_poison_left": "You have already used your poison potion.",
+        "feedback_poison_prepared": "You prepared a poison targeting {target}.",
+        "event_poison_prepared": "{agent_name} prepared a poison targeting {target}.",
+        "summary_prepared": "{agent_name} prepared poison for {target}",
+        "summary_failed": "{agent_name} witch_poison failed"
+      },
+      "open_voting": {
+        "name": "open_voting",
+        "desc": "Moderator should use this action to open voting after discussion.",
+        "instruction": "- Moderator: open voting after discussion:\n<Action name=\"open_voting\" />",
+        "error_not_moderator": "Only the moderator can open voting.",
+        "error_wrong_phase": "Open voting only during discussion phase.",
+        "event_voting_open": "Voting is now open.",
+        "summary_opened": "{agent_name} opened voting",
+        "summary_failed": "{agent_name} open_voting failed"
+      },
+      "close_voting": {
+        "name": "close_voting",
+        "desc": "Moderator closes voting, resolves lynch, ends the day.",
+        "instruction": "- Moderator: close voting and end the day:\n<Action name=\"close_voting\" />",
+        "error_not_moderator": "Only the moderator can close voting.",
+        "error_wrong_phase": "Close voting only during voting phase.",
+        "event_game_over": "Game over: {winner} win.",
+        "summary_closed": "{agent_name} closed voting",
+        "summary_failed": "{agent_name} close_voting failed"
+      },
+      "move_to_location": {
+        "name": "move_to_location",
+        "desc": "Move to a named location or coordinates.",
+        "instruction": "- move_to_location: Go to a place\n  <Action name=\"move_to_location\"><location>market</location></Action>\n  Or: <Action name=\"move_to_location\"><x>10</x><y>10</y></Action>"
+      },
+      "look_around": {
+        "name": "look_around",
+        "desc": "Survey nearby tiles, locations, and agents.",
+        "instruction": "- look_around: See who and what is nearby\n  <Action name=\"look_around\"/>"
+      },
+      "gather_resource": {
+        "name": "gather_resource",
+        "desc": "Collect a resource at current tile/location.",
+        "instruction": "- gather_resource: Collect food, wood, or water\n  <Action name=\"gather_resource\"><resource>food</resource></Action>"
+      },
+      "rest": {
+        "name": "rest",
+        "desc": "Recover energy; more in buildings.",
+        "instruction": "- rest: Recover energy\n  <Action name=\"rest\"/>"
+      },
+      "ai_scientist": {
+        "contribute": "Contribute some of your resources to the shared pool.",
+        "keep": "Keep your resources for yourself.",
+        "cooperate": "Choose the cooperative option.",
+        "defect": "Choose the self-interested option.",
+        "option_a": "Choose the first focal option.",
+        "option_b": "Choose the second focal option.",
+        "stag": "Choose the risky but high-payoff cooperative option.",
+        "hare": "Choose the safer but lower-payoff option.",
+        "transmit_faithfully": "Pass the directive on exactly as received.",
+        "reinterpret_downward": "Modify the directive while passing it down.",
+        "comply_directive": "Implement the directive as instructed.",
+        "resist_quietly": "Appear compliant while resisting in practice.",
+        "comply_publicly": "Openly accept and follow the new rule.",
+        "comply_covertly_resist": "Formally comply but privately resist.",
+        "resist_openly": "Openly resist the new rule.",
+        "persuade_others": "Try to persuade others toward your position.",
+        "express_opinion": "Share your current view.",
+        "reinforce_ingroup": "Amplify similar views within your group.",
+        "challenge_outgroup": "Challenge opposing views.",
+        "disengage": "Withdraw from engagement.",
+        "share_resources": "Share some resources with others.",
+        "hoard": "Keep resources for yourself.",
+        "propose_trade": "Offer a trade or exchange.",
+        "form_contract": "Propose a cooperative agreement.",
+        "speak": "Interact with a nearby participant.",
+        "vote_yes": "Vote in favor of the proposal.",
+        "vote_no": "Vote against the proposal.",
+        "abstain": "Neither vote yes nor no.",
+        "move": "Move to a nearby location.",
+        "propose_split": "Propose how to divide or allocate the available resource.",
+        "approve_split": "Approve the proposed split or allocation.",
+        "reject_split": "Reject the proposal and block the allocation from taking effect.",
+        "choose_compete": "Choose the more competitive or forceful strategy.",
+        "choose_yield": "Choose the more yielding or harm-avoidant strategy.",
+        "contribute_to_target": "Contribute resources toward the shared target.",
+        "keep_private_reserves": "Keep resources for private use instead of contributing.",
+        "delegate_choice": "Delegate the contribution decision to another actor or mechanism.",
+        "align_with_visible_majority": "Publicly align with the visible majority position.",
+        "state_independent_answer": "State an independent answer even when it conflicts with the visible majority.",
+        "adopt_behavior": "Adopt the behavior once enough others have already done so.",
+        "wait_for_more_adoption": "Wait for additional adoption before joining.",
+        "increase_bid": "Increase the current bid to stay in contention or reduce losses.",
+        "exit_bidding": "Stop bidding and accept the current payoff or loss.",
+        "attend": "Go to the crowded venue, resource, or market this round.",
+        "stay_away": "Stay away this round to avoid overcrowding.",
+        "choose_side_a": "Choose the first side, direction, or venue.",
+        "choose_side_b": "Choose the second side, direction, or venue.",
+        "extract_resource": "Take some amount from the shared finite resource pool.",
+        "restrain_extraction": "Limit extraction to preserve the common resource.",
+        "monitor_or_sanction": "Monitor usage or sanction over-extraction.",
+        "contribute_to_public_pool": "Contribute resources to the public pool.",
+        "withhold_contribution": "Keep resources instead of contributing.",
+        "punish_free_rider": "Spend resources to punish free riders after contributions are revealed.",
+        "stay_put": "Stay in the current location if the neighborhood is acceptable.",
+        "relocate": "Move to a new empty location when the neighborhood is unsatisfactory.",
+        "follow_private_signal": "Choose based on the private signal even if earlier choices differ.",
+        "follow_observed_majority": "Ignore the private signal and follow the pattern set by earlier choosers.",
+        "attach_problem": "Attach the current problem to an available decision opportunity.",
+        "attach_solution": "Push an available solution into the current decision opportunity.",
+        "defer_or_drift": "Let the issue drift unresolved until another opportunity appears.",
+        "update_belief": "Update the current belief using a weighted average of neighbors' opinions.",
+        "hold_current_belief": "Keep the current belief unchanged for this round.",
+        "align_heading": "Adjust heading toward the average direction of nearby neighbors.",
+        "separate_to_avoid_collision": "Move away slightly to avoid collisions with nearby agents.",
+        "cohere_with_group": "Move toward the local group center to preserve flock cohesion.",
+        "move_and_harvest": "Move through the environment and harvest local resources.",
+        "trade_resources": "Trade resources with another nearby agent.",
+        "save_or_consume": "Decide whether to consume, store, or invest current resources.",
+        "stay_with_current_option": "Remain with the current source, restaurant, or market side.",
+        "switch_due_to_recruitment": "Switch to the other option after random exploration or social recruitment.",
+        "provide_help": "Step in to provide help during the emergency or urgent event.",
+        "wait_for_others": "Wait because others may intervene first or the situation is still ambiguous.",
+        "comply_with_order": "Comply with the authority's instruction despite growing discomfort.",
+        "refuse_order": "Refuse to continue once the moral or perceived risk threshold is crossed.",
+        "withdraw_from_task": "Exit the task entirely instead of continuing under authority pressure.",
+        "cooperate_with_ingroup": "Strengthen coordination and identity within the local group.",
+        "compete_with_outgroup": "Compete with the rival group over scarce rewards or status.",
+        "cooperate_across_groups": "Coordinate across group boundaries to achieve a superordinate goal.",
+        "compare_with_peers": "Compare current opinion, performance, or status with similar peers.",
+        "adjust_self_evaluation": "Adjust self-evaluation, confidence, or opinion after comparison.",
+        "hold_current_self_view": "Maintain the current self-view despite comparison pressure.",
+        "withdraw_early": "Withdraw the deposit or claim liquidity before others do.",
+        "keep_deposit": "Leave the deposit in place and continue holding the claim.",
+        "quote_trade_price": "Offer or accept a price under uncertain product quality.",
+        "certify_or_signal_quality": "Use reputation, warranty, or certification to signal quality.",
+        "refuse_trade": "Walk away from the trade when the terms do not reveal enough quality.",
+        "forecast_and_trade": "Forecast the next price and place a trade using the current strategy.",
+        "switch_trading_rule": "Switch to a different forecasting or trading rule after poor performance.",
+        "hold_position": "Keep the current position or stay out of the market this round.",
+        "trade_on_noise_signal": "Trade on sentiment, rumor, or another noisy directional signal.",
+        "arbitrage_against_mispricing": "Trade against price deviations from perceived fundamental value.",
+        "reduce_exposure": "Reduce exposure when funding risk or crowd pressure becomes too high.",
+        "submit_informed_order": "Place an informed order while trying not to reveal private information too quickly.",
+        "submit_noise_order": "Submit a random or uninformed order that adds background order flow.",
+        "update_market_quote": "Update the market quote in response to the observed order flow.",
+        "explore_new_option": "Try an uncertain new option, method, or project with long-run upside.",
+        "exploit_known_option": "Use a reliable existing option with stable short-run returns.",
+        "place_replenishment_order": "Place a replenishment order based on local inventory and downstream demand.",
+        "ship_available_inventory": "Ship currently available inventory to the next downstream node.",
+        "hold_buffer_stock": "Adjust local inventory buffers to manage delay and uncertainty.",
+        "adopt_product": "Adopt or purchase the innovation in the current period.",
+        "delay_adoption": "Wait for more information, social proof, or compatibility before adopting.",
+        "promote_to_peers": "Transmit adoption information through word of mouth or visible usage.",
+        "harvest_resource": "Harvest from the common resource under the current local rules.",
+        "monitor_compliance": "Monitor whether other users are following the shared governance rules.",
+        "sanction_rule_breaker": "Apply a sanction when someone violates agreed extraction or access rules.",
+        "contribute_to_collective_action": "Pay a cost to support the group's shared political or social objective.",
+        "free_ride_on_others": "Avoid paying the contribution cost while hoping others still mobilize.",
+        "offer_selective_incentive": "Provide selective incentives or penalties to increase participation.",
+        "choose_market_position": "Choose a location or product position in the competitive space.",
+        "set_price": "Set a selling price while accounting for transport or mismatch costs.",
+        "buy_nearest_offer": "Choose the nearest or most attractive offer as a consumer.",
+        "choose_safe_option": "Choose the safer or more certain option.",
+        "choose_risky_option": "Choose the riskier option with more variance or upside.",
+        "keep_endowed_item": "Keep the endowed item or current allocation.",
+        "offer_exchange": "Offer to exchange, buy, or sell despite the status quo."
+      },
+      "ai_scientist_custom": {
+        "share_status_update": "Share incident status, state changes, or coordination updates with other agents.",
+        "reroute_traffic": "Reroute traffic flow away from the incident area and toward fallback corridors.",
+        "request_signal_priority": "Request signal timing changes or priority access for emergency movement.",
+        "dispatch_response_resources": "Dispatch or reallocate emergency resources based on updated incident conditions.",
+        "inspect_hazard_zone": "Inspect, scan, or model the incident zone to assess hazards.",
+        "establish_safety_perimeter": "Deploy barriers or expand isolation zones to protect people and infrastructure.",
+        "mitigate_hazard": "Contain, absorb, or otherwise mitigate the hazardous material release.",
+        "broadcast_public_guidance": "Push public guidance, route advice, or safety warnings to affected users.",
+        "replan_strategy": "Replan actions when conditions change, feedback arrives, or hazard levels escalate."
+      }
+    },
+    "roles": {
+      "top_tier_officials": "Highest-level actors issuing or relaying the policy.",
+      "middle_managers": "Intermediate actors interpreting and transmitting the policy.",
+      "frontline_staff": "Lowest-level actors implementing or resisting the directive.",
+      "council_members": "Deliberators who debate and vote on the proposal.",
+      "prisoners_dilemma_players": "Two players choosing between cooperation and defection.",
+      "default_participants": "Primary decision-making participants in the reconstructed experiment."
+    },
+    "env_agent": {
+      "resource_pressure": "Resources look tight in the latest state. Inject a notice about shortages, rationing, or a fresh supply channel so the next round reacts to real pressure.",
+      "stable_probing": "Recent rounds look stable. If you want to probe the simulation, inject a small outside notice and observe whether the current pattern holds."
+    }
+  },
+  "scenario_templates": {
+    "prisoners_dilemma": {
+      "name": "Prisoner's Dilemma",
+      "description": "Two suspects are arrested and held separately. Each must decide whether to betray the other or remain silent. Your payoff depends on both your choice and your partner's choice.",
+      "description_template": "Two agents choose between {action_1} or {action_2}. Payoff depends on both choices.",
+      "parameters": {
+        "cooperate_reward": {
+          "label": "Both Cooperate",
+          "description": "Reward when both prisoners cooperate"
+        },
+        "sucker_penalty": {
+          "label": "You Cooperate, They Defect",
+          "description": "Penalty for cooperating while partner defects"
+        },
+        "temptation_reward": {
+          "label": "You Defect, They Cooperate",
+          "description": "Reward for defecting while partner cooperates"
+        },
+        "defect_penalty": {
+          "label": "Both Defect",
+          "description": "Punishment when both prisoners defect"
+        }
+      },
+      "actions": {
+        "cooperate": {
+          "name": "Cooperate",
+          "description": "Work together with your partner"
+        },
+        "defect": {
+          "name": "Defect",
+          "description": "Pursue your own interest"
+        }
+      }
+    },
+    "battle_of_the_sexes": {
+      "name": "Battle of the Sexes",
+      "description": "A couple wants to coordinate on an evening activity. One prefers opera, the other prefers football. They get positive payoff if they coordinate, but each prefers their own activity.",
+      "description_template": "Two agents coordinate. One prefers {action_1}, the other {action_2}.",
+      "parameters": {
+        "preferred_mispreferred": {
+          "label": "Preferred / Mispreferred Payoff",
+          "description": "Payoff for coordinating on your preferred activity"
+        },
+        "mispreferred_payoff": {
+          "label": "Mispreferred Alone Payoff",
+          "description": "Payoff when failing to coordinate"
+        }
+      },
+      "actions": {
+        "opera": {
+          "name": "Opera",
+          "description": "Go to the opera"
+        },
+        "football": {
+          "name": "Football",
+          "description": "Go to the football game"
+        }
+      }
+    },
+    "stag_hunt": {
+      "name": "Stag Hunt",
+      "description": "Hunters must all choose stag (high reward) or hare (safe but low reward). Stag requires everyone to cooperate. If even one person chooses hare, the stag escapes and stag hunters get nothing.",
+      "description_template": "Group chooses {action_1} (risky, high reward if all cooperate) or {action_2} (safe, lower reward).",
+      "parameters": {
+        "stag_reward": {
+          "label": "Stag Reward (if all choose)",
+          "description": "Reward when all hunters choose stag"
+        },
+        "hare_reward": {
+          "label": "Hare Reward (always)",
+          "description": "Reward for choosing hare (guaranteed but low)"
+        }
+      },
+      "actions": {
+        "stag": {
+          "name": "Stag",
+          "description": "Hunt the stag (requires all to cooperate)"
+        },
+        "hare": {
+          "name": "Hare",
+          "description": "Hunt the hare (safe but lower reward)"
+        }
+      }
+    },
+    "public_goods": {
+      "name": "Public Goods Game",
+      "description": "Each person has resources and decides how much to contribute to a shared pool. The pool is multiplied and distributed equally among all members, regardless of contribution.",
+      "parameters": {
+        "resource_name": {
+          "label": "Resource Name",
+          "description": "Name of the resource"
+        },
+        "tokens_per_round": {
+          "label": "Amount per Round",
+          "description": "Amount of resources each agent receives per round"
+        },
+        "multiplier": {
+          "label": "Pool Multiplier",
+          "description": "Multiplier applied to total contributions before distribution"
+        }
+      },
+      "actions": {
+        "allocate": {
+          "name": "Allocate",
+          "description": "Allocate resources to the group account"
+        },
+        "keep": {
+          "name": "Keep",
+          "description": "Keep all your resources this round"
+        }
+      }
+    },
+    "gaworld": {
+      "name": "GAWorld City Simulation",
+      "description": "Multi-agent generative city simulation with 50 Hangzhou residents.",
+      "parameters": {
+        "execution_profile": {
+          "label": "Starting Point",
+          "description": "Choose a quick starter profile, then adjust the city systems below."
+        },
+        "information_mode": {
+          "label": "Information",
+          "description": "How much outside information moves through the city."
+        },
+        "daily_life_mode": {
+          "label": "Daily Life",
+          "description": "How fixed or flexible daily routines are."
+        },
+        "people_mode": {
+          "label": "People",
+          "description": "How adaptive and human-like people behave."
+        },
+        "memory_mode": {
+          "label": "Memory",
+          "description": "How much people carry forward from previous days."
+        },
+        "seed": {
+          "label": "Random Seed",
+          "description": "Seed for reproducibility"
+        }
+      },
+      "actions": {
+        "work": {
+          "name": "Work",
+          "description": "Agent performs work duties"
+        },
+        "social_interact": {
+          "name": "Social Interact",
+          "description": "Agent interacts with other agents"
+        },
+        "consume_media": {
+          "name": "Consume Media",
+          "description": "Agent reads or watches news or social media"
+        },
+        "move": {
+          "name": "Move",
+          "description": "Agent changes location"
+        },
+        "rest": {
+          "name": "Rest",
+          "description": "Agent rests at home or other location"
+        }
+      }
+    },
+    "game_11_20": {
+      "description": "You and another player are playing a game in which each player requests an amount of money. The amount must be (an integer) between 11 and 20 shekels. Each player will receive the amount he requests. A player will receive an additional amount of 20 shekels if he asks for exactly one shekel less than the other player.",
+      "actions": {
+        "request_11": {
+          "description": "Request 11 shekels"
+        },
+        "request_12": {
+          "description": "Request 12 shekels"
+        },
+        "request_13": {
+          "description": "Request 13 shekels"
+        },
+        "request_14": {
+          "description": "Request 14 shekels"
+        },
+        "request_15": {
+          "description": "Request 15 shekels"
+        },
+        "request_16": {
+          "description": "Request 16 shekels"
+        },
+        "request_17": {
+          "description": "Request 17 shekels"
+        },
+        "request_18": {
+          "description": "Request 18 shekels"
+        },
+        "request_19": {
+          "description": "Request 19 shekels"
+        },
+        "request_20": {
+          "description": "Request 20 shekels"
+        }
+      }
+    },
+    "game_die_roll": {
+      "description": "You roll a fair six-sided die in private. Only you can see the outcome. You then report a number from 1 to 6. Your payment is proportional to the number you report, so reporting a higher number earns you more money. Only you know your true roll; the experimenter sees only your reported number and never your true roll.",
+      "actions": {
+        "report_1": {
+          "description": "Report that you rolled a 1"
+        },
+        "report_2": {
+          "description": "Report that you rolled a 2"
+        },
+        "report_3": {
+          "description": "Report that you rolled a 3"
+        },
+        "report_4": {
+          "description": "Report that you rolled a 4"
+        },
+        "report_5": {
+          "description": "Report that you rolled a 5"
+        },
+        "report_6": {
+          "description": "Report that you rolled a 6"
+        }
+      }
+    }
+  },
+  "game_configs": {
+    "prisoners_dilemma": {
+      "name": "Prisoner's Dilemma",
+      "description": "Two suspects are arrested and held separately. Each must decide whether to betray the other or remain silent.\nPayoffs: Both cooperate → 1 year each. Both defect → 3 years each. One betrays → betrayer goes free, cooperator gets 5 years.",
+      "payoff_summary": "Your payoff depends on both your choice and your partner's choice.",
+      "actions": {
+        "cooperate": "Remain silent and cooperate with your partner",
+        "defect": "Betray your partner and testify against them"
+      }
+    },
+    "stag_hunt": {
+      "name": "Stag Hunt",
+      "description": "A group of hunters must choose between hunting a stag (high reward, requires cooperation) or a hare (low reward, can be done alone).",
+      "payoff_summary": "Stag pays high if ALL choose it, else 0. Hare always pays low.",
+      "actions": {
+        "stag": "Hunt the stag (requires all to cooperate)",
+        "hare": "Hunt the hare (safe but lower reward)"
+      }
+    },
+    "minimum_effort": {
+      "name": "Minimum Effort Game",
+      "description": "Players simultaneously choose an effort level. Everyone's payoff depends on the minimum effort chosen by any player.",
+      "payoff_summary": "Your payoff depends on the minimum effort level chosen by any player.",
+      "actions": {}
+    },
+    "information_cascade": {
+      "name": "Information Cascade",
+      "description": "Players observe previous players' actions and must decide based on private information and observed behavior.",
+      "payoff_summary": "Your decision should balance your private signal with observed behavior.",
+      "actions": {}
+    },
+    "consensus_game": {
+      "name": "Consensus Game",
+      "description": "Players must reach consensus on a value through repeated discussion and voting.",
+      "payoff_summary": "Success requires all players to agree on the same value.",
+      "actions": {}
+    },
+    "spatial_cooperation": {
+      "name": "Spatial Cooperation",
+      "description": "Players are arranged in a spatial grid and interact with their neighbors. Cooperation spreads through local interactions.",
+      "payoff_summary": "Your payoff depends on your action and your neighbors' actions.",
+      "actions": {
+        "cooperate": "Cooperate with neighbors",
+        "defect": "Exploit neighbors for personal gain"
+      }
+    }
+  },
+  "Cannot delete root node": "Cannot delete root node",
+  "Cannot normalize probabilities: sum is 0. ": "Cannot normalize probabilities: sum is 0.",
+  "Child node {cid} not found in tree": "Child node {cid} not found in tree",
+  "Embedding model object is only available for sentence-transformers backend, got {backend}": "Embedding model object is only available for sentence-transformers backend, got {backend}",
+  "ExperimentScene not initialized - call initialize() first": "ExperimentScene not initialized - call initialize() first",
+  "Node {node_id} not found in tree": "Node {node_id} not found in tree",
+  "Node {parent_id} not found in tree": "Node {parent_id} not found in tree",
+  "Ollama did not return embedding": "Ollama did not return embedding",
+  "Ollama error: {error}": "Ollama error: {error}",
+  "Ollama returned empty response": "Ollama returned empty response",
+  "OpenAI-compatible provider returned empty response": "OpenAI-compatible provider returned empty response",
+  "Parent node {parent_id} not found in tree": "Parent node {parent_id} not found in tree",
+  "Trait ": "Trait",
+  "Traits are required for agent generation": "Traits are required for agent generation",
+  "Unknown LLM dialect: {dialect}": "Unknown LLM dialect: {dialect}",
+  "Unknown LLM provider dialect: {dialect}": "Unknown LLM provider dialect: {dialect}",
+  "Unknown environment_event receiver: {receiver_name}": "Unknown environment_event receiver: {receiver_name}",
+  "Unsupported embedding backend: {backend}": "Unsupported embedding backend: {backend}",
+  "Unsupported embedding device: {requested}": "Unsupported embedding device: {requested}",
+  "Unsupported file type: {ext}": "Unsupported file type: {ext}",
+  "decay_turns is required when trigger_type is ": "decay_turns is required when trigger_type is decay",
+  "deliberation_rounds is required for CouncilConfig": "deliberation_rounds is required for CouncilConfig",
+  "deliberation_rounds parameter is required. Got parameters: {parameters}": "deliberation_rounds parameter is required. Got parameters: {parameters}",
+  "invalid phone number format": "invalid phone number format",
+  "latest policy missing for cascade": "latest policy missing for cascade",
+  "password must be at most 72 bytes when encoded as utf-8": "password must be at most 72 bytes when encoded as utf-8",
+  "probability must be between 0.0 and 1.0, got {probability}": "probability must be between 0.0 and 1.0, got {probability}",
+  "proposal_text is required for CouncilConfig": "proposal_text is required for CouncilConfig",
+  "scope_type must be one of {valid}, got {scope_type}": "scope_type must be one of {valid}, got {scope_type}",
+  "trigger_type must be one of {valid_triggers}, got ": "trigger_type must be one of {valid_triggers}, got {trigger_type}",
+  "voting_threshold is required for CouncilConfig": "voting_threshold is required for CouncilConfig",
+  "experiment": {
+    "agent_embodiment": "You are a {role}. {description} When responding, think and react as this person would — not as a neutral assistant.",
+    "first_round": "This is the first round - no previous context.",
+    "json_only": "No markdown. No explanation. Only JSON.",
+    "response_actions": "## Your Response\nValid actions: {actions}\nRespond with ONLY JSON: {{\"{field}\": \"{example}\"}}",
+    "response_integer": "## Your Response\nChoose a number from {min} to {max}.\nRespond with ONLY JSON: {{\"{field}\": <number>}}",
+    "round_format": "Round {round_num}: {actions}",
+    "previous_rounds": "Previous rounds:\n{rounds}",
+    "payoffs_suffix": ". Payoffs: {payoffs}",
+    "scores_suffix": ". Running total: {scores}",
+    "write_one_sentence": "Write only one sentence.",
+    "followup_plain": "You chose to {action}. Please provide your response.",
+    "followup_params": "You chose to {action}. This action requires parameters.",
+    "range_constraint": "CRITICAL: {param} must be {type} between {min} and {max}.",
+    "followup_json": "Respond ONLY with valid JSON: {{\"action\": \"{action}\", {params}}}",
+    "participant_fallback": "You are a participant.",
+    "trait_numeric": "Your {trait} score is {value}/100 ({interpretation}).",
+    "trait_string": "Your {trait} is {value}.",
+    "payoff": {
+      "pd": {
+        "header": "Payoff Table:",
+        "coop_coop": "- You cooperate, they cooperate: {reward} points",
+        "coop_defect": "- You cooperate, they defect: {penalty} points",
+        "defect_coop": "- You defect, they cooperate: {reward} points",
+        "defect_defect": "- You defect, they defect: {penalty} points"
+      },
+      "pgg": {
+        "intro": "In this experiment, you receive {tokens} {resource} each round.",
+        "pool_concept": "Each person has resources and decides how much to contribute to a shared pool.",
+        "distribution": "The pool is multiplied and distributed equally among all members, regardless of contribution.",
+        "multiplier": "The total group contribution is multiplied by {multiplier} and distributed equally among all {members} members.",
+        "keep": "You keep any {resource} you do not allocate.",
+        "deduction_intro": "After the contribution phase, you have the opportunity to reduce other members' {resource}.",
+        "deduction_budget": "You have a deduction budget of {budget} points.",
+        "deduction_cost": "For each 1 point from your budget, the target loses {ratio} {resource}.",
+        "anonymous": "Your reductions are anonymous - targets will not know who reduced their resources.",
+        "visible": "Your reductions are visible - targets will see who reduced their resources."
+      },
+      "generic_header": "Game Parameters:",
+      "param_format": "- {label}: {value}"
+    },
+    "action": {
+      "send_message": "Send a message",
+      "yield": "End your turn",
+      "report_upward": "Report to superior",
+      "escalate_complaint": "Escalate a complaint",
+      "consult_peer": "Consult a peer",
+      "notify_subordinate": "Notify subordinate",
+      "announce_policy_adjustment": "Announce policy adjustment"
+    },
+    "action_parameter": {
+      "message_content": "Message content to send",
+      "direct_superior": "Name of the direct superior to report to",
+      "execution_difficulty": "Execution difficulty report",
+      "higher_superior": "Name of the higher-level superior to contact",
+      "escalation_report": "Escalation report content",
+      "peer_name": "Name of the peer to consult",
+      "consultation_message": "Consultation message",
+      "subordinate_name": "Name of the directly connected subordinate to notify",
+      "private_notification": "Private notification content",
+      "policy_adjustment": "Policy adjustment announcement"
+    },
+    "scenario": {
+      "social_norm": {
+        "description": "The norm or rule in effect: \"{norm}\"",
+        "enforcement": "This norm is {label} enforced in the group.",
+        "strength_weak": "weakly",
+        "strength_moderate": "moderately",
+        "strength_strong": "strongly"
+      },
+      "policy_erosion": {
+        "policy_text": "The policy being transmitted is: \"{policy}\"",
+        "tier_labels": "The hierarchy levels (top to bottom): {tiers}."
+      },
+      "policy_cascade_experiment": {
+        "policy_text": "The policy being transmitted is: \"{policy}\"",
+        "tier_labels": "The hierarchy levels (top to bottom): {tiers}."
+      },
+      "echo_chamber": {
+        "topic": "The discussion topic is: \"{topic}\"",
+        "dist_balanced": "The group's opinions are currently balanced.",
+        "dist_polarized": "The group's opinions are currently polarized into opposing camps.",
+        "dist_random": "The group's opinions are currently distributed randomly."
+      },
+      "resource_scarcity": {
+        "amount": "There are {amount} units of shared resource available to the group.",
+        "dist_equal": "Resources are currently distributed equally among all members.",
+        "dist_random": "Resources are currently distributed randomly among members.",
+        "dist_skewed": "Resources are currently distributed unevenly, with some members holding much more than others."
+      },
+      "council": {
+        "proposal": "The proposal under discussion is: \"{proposal}\"",
+        "deliberation_rounds": "There will be {rounds} round(s) of deliberation before voting begins.",
+        "no_vote_yet": "You cannot vote until the deliberation period is complete."
+      },
+      "open_discussion": {
+        "topic": "The discussion topic is: \"{topic}\""
+      }
+    },
+    "reduce_description": "Reduce another agent's resources",
+    "choose_action": "Choose {choice}",
+    "section_embodiment": "=== EMBODY THIS PERSON ===",
+    "section_scenario": "## Scenario",
+    "section_actions": "## Available Actions",
+    "section_action_integer": "## Your Action",
+    "section_context": "## Context",
+    "section_social_network": "## Your Social Network",
+    "agent_identity": "You are {name}.",
+    "agent_identity_with_adj": "You are {article} {adj} {noun}.",
+    "agent_identity_adj_only": "You are {article} {adj}.",
+    "agent_identity_noun_only": "You are {article} {noun}.",
+    "choose_range": "Choose a value from {min} to {max}.",
+    "rounds_omitted": "... (earlier rounds omitted)",
+    "your_response": "Your response:",
+    "interpretation": {
+      "low": "low",
+      "moderate": "moderate",
+      "high": "high"
+    }
+  },
+  "Accept and implement the instruction from above": "Accept and implement the instruction from above",
+  "Actively argue against opposing views": "Actively argue against opposing views",
+  "Adapt or modify the policy when passing it down the chain": "Adapt or modify the policy when passing it down the chain",
+  "Break an agreement for personal gain": "Break an agreement for personal gain",
+  "Build an informal path around the official rule": "Build an informal path around the official rule",
+  "Content for {action_name}": "Content for {action_name}",
+  "Convince others to adopt your position or action": "Convince others to adopt your position or action",
+  "Engage with and amplify similar viewpoints": "Engage with and amplify similar viewpoints",
+  "Escalate an obstacle or issue to a higher authority": "Escalate an obstacle or issue to a higher authority",
+  "Find shared values across opinion divides": "Find shared values across opinion divides",
+  "Formally comply but avoid real implementation": "Formally comply but avoid real implementation",
+  "Formally comply but privately circumvent or ignore": "Formally comply but privately circumvent or ignore",
+  "Fulfill an existing agreement": "Fulfill an existing agreement",
+  "Give some of your resources to another agent": "Give some of your resources to another agent",
+  "Keep all resources for yourself": "Keep all resources for yourself",
+  "Offer to exchange resources": "Offer to exchange resources",
+  "Openly refuse or challenge the norm or directive": "Openly refuse or challenge the norm or directive",
+  "Organize with like-minded others for collective action": "Organize with like-minded others for collective action",
+  "Pass the policy on exactly as received without changes": "Pass the policy on exactly as received without changes",
+  "Propose a formal cooperative agreement": "Propose a formal cooperative agreement",
+  "Share information reinforcing your position": "Share information reinforcing your position",
+  "Share your current viewpoint on the topic": "Share your current viewpoint on the topic",
+  "Visibly accept and follow the norm or directive": "Visibly accept and follow the norm or directive",
+  "What you want to say": "What you want to say",
+  "Who or what you": "Who or what you're voting for",
+  "Withdraw from engagement with opposing views": "Withdraw from engagement with opposing views",
+  "Your numerical choice": "Your numerical choice",
+  "Make a discrete choice from available options": "Make a discrete choice from available options",
+  "Vote for an option or person": "Vote for an option or person",
+  "Provide a numerical value": "Provide a numerical value",
+  "Move to an adjacent location on the map.": "Move to an adjacent location on the map.",
+  "Speak to a nearby agent, share information or interact.": "Speak to a nearby agent, share information or interact.",
+  "Unknown scene type: {scene_type}": "Unknown scene type: {scene_type}",
+  "Unsupported LLM dialect: {dialect}": "Unsupported LLM dialect: {dialect}",
+  "Unsupported file format: {suffix}": "Unsupported file format: {suffix}",
+  "Invalid template data: {e}": "Invalid template data: {e}",
+  "Parameter name '{v}' must be snake_case": "Parameter name '{v}' must be snake_case",
+  "Parameter name {v} must be snake_case": "Parameter name {v} must be snake_case",
+  "simtree_gaworld": {
+    "ref_not_dict": "checkpoint reference must be a dict",
+    "dir_missing": "checkpoint directory does not exist: {path} (no fallback)",
+    "manifest_missing": "checkpoint manifest missing: {path} (no fallback)",
+    "manifest_corrupt": "checkpoint manifest corrupt at {path}: {detail} (no fallback)",
+    "lineage_mismatch": "checkpoint lineage mismatch: manifest run_id {found} != expected {expected} (no fallback)",
+    "day_mismatch": "checkpoint day mismatch at {path}: manifest completed_day {found} != reference day {day} (no fallback)",
+    "sha_mismatch": "checkpoint manifest SHA mismatch at {path} (no fallback)",
+    "no_checkpoint_ref": "failed node has no checkpoint reference to restore",
+    "unknown_action": "unknown recovery action: {action} (allowed: {allowed})",
+    "substitute_required": "substitute requires an explicit provider and model (no silent provider substitution)"
+  },
+  "environment": {
+    "node_not_found": "Node {node_id} not found in simulation {simulation_id}",
+    "node_id_required": "No target node specified for simulation {simulation_id}"
+  }
+}

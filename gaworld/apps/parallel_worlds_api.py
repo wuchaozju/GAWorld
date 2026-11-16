@@ -61,6 +61,7 @@ _LOG = get_logger("gaworld.dashboard.parallel")
 #: so the panel can still show why the last one failed after it ended.
 _JOBS: dict[str, dict[str, Any]] = {}
 _JOBS_LOCK = threading.Lock()
+_START_LOCK = threading.Lock()
 _MAX_JOBS = 10
 _ACTIVE: dict[str, Any] = {"job_id": None, "runner": None, "stop": None}
 #: Seeds one run may replicate over; each seed is a full set of worlds.
@@ -199,7 +200,7 @@ def _new_job(manifest: dict[str, Any]) -> str:
             "started_at": time.time(),
             "finished_at": None,
             "error": None,
-            **ownership.stamp(),
+            **workspaces.stamp(),
         }
         finished = sorted(
             (record["started_at"], key)
@@ -225,7 +226,7 @@ def job_status(job_id: str | None = None) -> dict[str, Any] | None:
         target = job_id or _ACTIVE.get("job_id")
         record = dict(_JOBS[target]) if target in _JOBS else None
         runner = _ACTIVE.get("runner") if target == _ACTIVE.get("job_id") else None
-    if record is None or not ownership.visible(record):
+    if record is None or not workspaces.visible(record):
         return None
     if runner is not None:
         record["snapshot"] = runner.snapshot()
@@ -736,6 +737,12 @@ def replicate_seeds(payload: dict[str, Any], seed: int) -> list[int]:
 
 
 def start(payload: dict[str, Any]) -> dict[str, Any]:
+    # Admission and preparation are one operation, including simultaneous API callers.
+    with _START_LOCK:
+        return _start(payload)
+
+
+def _start(payload: dict[str, Any]) -> dict[str, Any]:
     """Prepare the tree and fork the worlds in a background job.
 
     With several ``seeds`` the job runs the same design once per seed, one
@@ -751,24 +758,29 @@ def start(payload: dict[str, Any]) -> dict[str, Any]:
     spec = normalize_experiment(payload)
     seeds = replicate_seeds(payload, spec.seed)
     repo_root = _repo_root()
-    group = f"{time.strftime('%Y%m%d_%H%M%S')}_{spec.slug}" if len(seeds) > 1 else None
+    base_config = _config()
+    experiment_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{spec.slug}_{uuid.uuid4().hex[:12]}"
+    group = experiment_id if len(seeds) > 1 else None
 
     def prepare(seed: int) -> dict[str, Any]:
         return prunner.prepare_experiment(
             dataclasses.replace(spec, seed=seed),
             repo_root,
-            base_config=_config(),
-            experiment_id=f"{group}_s{seed}" if group else None,
+            base_config=base_config,
+            experiment_id=f"{group}_s{seed}" if group else experiment_id,
             group=group,
         )
 
     def make_runner(manifest: dict[str, Any]) -> prunner.ExperimentRunner:
-        return prunner.ExperimentRunner(
+        runner = prunner.ExperimentRunner(
             manifest,
             repo_root,
             max_parallel=spec.max_parallel,
             reset=payload.get("reset", True),
         )
+        if world_paths.current_world():
+            runner.research_frozen_config = base_config
+        return runner
 
     manifest = prepare(seeds[0])
     runner = make_runner(manifest)
@@ -842,6 +854,8 @@ def start(payload: dict[str, Any]) -> dict[str, Any]:
 def stop() -> dict[str, Any]:
     with _JOBS_LOCK:
         job_id = _ACTIVE.get("job_id")
+        if job_id is not None and not workspaces.visible(_JOBS.get(job_id)):
+            raise PermissionError("This experiment belongs to another account or world")
         runner = _ACTIVE.get("runner")
         stop_event = _ACTIVE.get("stop")
     if runner is None or job_id is None:
@@ -904,6 +918,9 @@ def handle_get(path: str, query: dict[str, Any] | None = None) -> tuple[dict[str
 def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     payload = payload if isinstance(payload, dict) else {}
     try:
+        from gaworld.accounts.api_token_payloads import validate_parallel
+
+        validate_parallel(path, payload)
         if path == "/api/parallel-worlds/preview":
             return _wire_safe(preview(payload)), 200
         if path == "/api/parallel-worlds/sweep":
@@ -914,6 +931,8 @@ def handle_post(path: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int
             return _wire_safe(stop()), 200
         if path == "/api/parallel-worlds/interpret":
             return _wire_safe({"interpretation": interpret_experiment(payload)}), 200
+    except PermissionError as exc:
+        return {"error": str(exc)}, 403
     except ValueError as exc:
         return {"error": str(exc)}, 400
     except RuntimeError as exc:

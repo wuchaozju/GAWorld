@@ -64,7 +64,7 @@ def test_concurrent_duplicate_posts_start_one_worker(monkeypatch):
 def test_reads_check_owner_and_world_in_memory_and_on_disk(monkeypatch):
     complete_inline(monkeypatch)
     USER.set({"id": "alice", "role": "member"})
-    WORLD.set({"id": "world-a"})
+    WORLD.set({"id": "world-a", "owner_id": "alice"})
     started = api.start_population_job({"spec": {"size": 20}, "request_id": "owner-request-123"})
     assert api.job_status(started["job_id"])["status"] == "done"
     USER.set({"id": "bob", "role": "member"})
@@ -109,8 +109,10 @@ def test_same_request_in_other_scope_does_not_reuse_a_job(monkeypatch):
     complete_inline(monkeypatch)
     payload = {"spec": {"size": 20}, "request_id": "separate-scope-123"}
     USER.set({"id": "alice", "role": "member"})
+    WORLD.set({"id": "world-a", "owner_id": "alice"})
     a = api.start_population_job(payload)
     USER.set({"id": "bob", "role": "member"})
+    WORLD.set({"id": "world-b", "owner_id": "bob"})
     b = api.start_population_job(payload)
     assert a["job_id"] != b["job_id"]
     assert api.recover_job(payload["request_id"])["id"] == b["job_id"]

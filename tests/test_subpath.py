@@ -185,3 +185,37 @@ def test_html_only_changes_url_attributes_not_data_or_scripts():
     assert 'href="/GAWorld/login?x=1&amp;y=2"' in result
     assert ">/api/config</a>" in result
     assert 'fetch("/api/config")' in result
+
+
+def test_fos_mount_uses_matching_bundle_and_scoped_session(host, monkeypatch, tmp_path):
+    root = tmp_path / "dist"
+    mounted = root / "mounts" / "GAWorld"
+    for directory, base in [(root, "/fos/"), (mounted, "/GAWorld/fos/")]:
+        (directory / "assets").mkdir(parents=True, exist_ok=True)
+        (directory / "index.html").write_text(f'<script src="{base}assets/app.js"></script>')
+        (directory / "assets" / "app.js").write_text(f'const api = "{base}api";')
+    monkeypatch.setattr(dashboard_server, "FOS_DIST", str(root))
+    root_cookie = login(host, "alice").split(";", 1)[0]
+    mounted_cookie = login(host, "bob", "/GAWorld").split(";", 1)[0]
+
+    def get(path, cookie, method="GET"):
+        connection = http.client.HTTPConnection("127.0.0.1", host.port, timeout=10)
+        connection.request(method, path, headers={"Cookie": cookie})
+        response = connection.getresponse()
+        body = response.read()
+        connection.close()
+        return response, body
+
+    response, body = get("/GAWorld/fos/simulations/example", mounted_cookie)
+    assert response.status == 200
+    assert b'src="/GAWorld/fos/assets/app.js"' in body
+    response, body = get("/GAWorld/fos/assets/app.js", mounted_cookie)
+    assert response.status == 200 and b'"/GAWorld/fos/api"' in body
+    response, body = get("/GAWorld/fos/", mounted_cookie, "HEAD")
+    assert response.status == 200 and not body
+    response, body = get("/fos/", root_cookie)
+    assert response.status == 200 and b'src="/fos/assets/app.js"' in body
+    assert get("/GAWorld/fos/", root_cookie)[0].status == 303
+    (mounted / "index.html").unlink()
+    response, _ = get("/GAWorld/fos/", mounted_cookie)
+    assert response.status == 503

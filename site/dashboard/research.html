@@ -13,9 +13,9 @@
   <link rel="stylesheet" href="/site/dashboard/organization-comparison.css" />
   <link rel="stylesheet" href="/site/dashboard/worlds.css" />
   <link rel="stylesheet" href="/site/brand.css" />
+  <link rel="stylesheet" href="/site/dashboard/resident-filters.css" />
   <link rel="stylesheet" href="/site/city-lab.css" />
   <link rel="icon" type="image/png" href="/site/auth/brand/gaworld-symbol-a.png" />
-  <link rel="stylesheet" href="/site/dashboard/resident-filters.css" />
 </head>
 <body class="studio-body">
   <main class="studio-shell">
@@ -381,13 +381,15 @@
             </label>
             <label class="rw-field sg-field-num">
               <span data-i18n="research.rp_sample_label">智能体规模</span>
-              <select id="rpSample"></select>
+              <input id="rpSample" type="number" min="5" max="500" step="1" value="50" required list="rpSamplePresets" aria-describedby="rpSampleHint" />
+              <datalist id="rpSamplePresets"></datalist>
             </label>
             <label class="rw-field sg-field-num">
               <span data-i18n="research.rp_seed_label">随机种子</span>
               <input id="rpSeed" type="number" min="1" data-i18n-placeholder="research.sg_auto" placeholder="自动" />
             </label>
           </div>
+          <p class="rw-hint" id="rpSampleHint"></p>
           <p id="rpEligible" class="resident-filter-count" role="status"></p>
           <div class="rw-kind" role="radiogroup" data-i18n-aria="research.rp_design_label" aria-label="分配方式">
             <label class="rw-kind-opt"><input type="radio" name="rpDesign" value="between" checked /><span data-i18n="research.rp_design_between">组间：每人随机分到一个条件（同文献）</span></label>

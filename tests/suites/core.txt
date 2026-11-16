@@ -108,3 +108,10 @@ tests/test_cluster.py::NodeRunnerTest
 tests/test_teacher_console.py
 tests/test_openapi.py
 tests/test_client.py
+
+# Personal API tokens: lifecycle, privilege boundaries and mounted client calls.
+tests/test_api_tokens.py::test_management_secret_once_and_revoke
+tests/test_api_tokens.py::test_invalid_bearer_never_falls_back_to_cookies
+tests/test_api_tokens.py::test_scopes_and_cookie_cannot_escalate_or_switch_world
+tests/test_api_tokens.py::test_cross_world_job_read_and_stop_are_denied
+tests/test_api_tokens.py::test_mount_and_quota_and_python_client

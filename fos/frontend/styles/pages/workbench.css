@@ -1,0 +1,8 @@
+@layer components {
+  .ss-workbench {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    gap: 0;
+  }
+}

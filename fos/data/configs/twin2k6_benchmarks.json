@@ -1,0 +1,450 @@
+{
+  "generated": "2026-09-18 23:29:33.143241",
+  "source_files": {
+    "wave1_3": "/home/justin/work/datasets/Twin-2K-500/question_catalog_and_human_response_csv/wave1_3_response.csv",
+    "wave4": "/home/justin/work/datasets/Twin-2K-500/question_catalog_and_human_response_csv/wave4_response.csv",
+    "catalog": "/home/justin/work/datasets/Twin-2K-500/question_catalog_and_human_response_csv/question_catalog.json"
+  },
+  "coding_rules": {
+    "disease": "P(safe) = share of responses in {1,2,3} (Program A side of the 6-pt scale); contrast = P(safe|loss) - P(safe|gain)",
+    "default": "mean of numeric code; code = 1-based position of the chosen option in catalog Options order (verified against wave*_response_label.csv)",
+    "sunk_cost": "numeric text parsed as float; all non-empty entries parseable, none dropped",
+    "waves_never_pooled": true
+  },
+  "waves": {
+    "wave1_3": {
+      "disease": {
+        "scale": "6-point favor scale, 1=strongly favor A ... 6=strongly favor B; safe = Program A = options 1-3",
+        "arms": {
+          "gain": {
+            "qid": "QID157",
+            "n": 1003,
+            "p_safe": 0.718843
+          },
+          "loss": {
+            "qid": "QID158",
+            "n": 1055,
+            "p_safe": 0.363033
+          }
+        },
+        "contrasts": {
+          "p_safe_loss_minus_gain": {
+            "computable": true,
+            "stat": "p_safe",
+            "arm2": "loss",
+            "arm1": "gain",
+            "value": -0.35581,
+            "n_arm2": 1055,
+            "n_arm1": 1003
+          }
+        }
+      },
+      "less_is_more": {
+        "scale": "1-5 agreement (1=Disagree strongly, 5=Agree strongly)",
+        "arms": {
+          "A": {
+            "qid": "QID171",
+            "n": 735,
+            "mean": 2.061224
+          },
+          "B": {
+            "qid": "QID172",
+            "n": 672,
+            "mean": 2.894345
+          },
+          "C": {
+            "qid": "QID173",
+            "n": 651,
+            "mean": 2.863287
+          }
+        },
+        "contrasts": {
+          "B_minus_A": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "B",
+            "arm1": "A",
+            "value": 0.833121,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "C_minus_A": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "C",
+            "arm1": "A",
+            "value": 0.802063,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "fire_extinguisher": {
+        "scale": "1-5 agreement (1=Disagree strongly, 5=Agree strongly)",
+        "arms": {
+          "all": {
+            "qid": "QID174",
+            "n": 735,
+            "mean": 4.028571
+          },
+          "98pct": {
+            "qid": "QID175",
+            "n": 672,
+            "mean": 4.285714
+          },
+          "95pct": {
+            "qid": "QID176",
+            "n": 651,
+            "mean": 4.296467
+          }
+        },
+        "contrasts": {
+          "98pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "98pct",
+            "arm1": "all",
+            "value": 0.257143,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "95pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "95pct",
+            "arm1": "all",
+            "value": 0.267896,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "seatbelt": {
+        "scale": "1-6 likelihood (1=very unlikely, 6=very likely)",
+        "arms": {
+          "all": {
+            "qid": "QID177",
+            "n": 735,
+            "mean": 4.314286
+          },
+          "98pct": {
+            "qid": "QID178",
+            "n": 672,
+            "mean": 4.668155
+          },
+          "95pct": {
+            "qid": "QID179",
+            "n": 651,
+            "mean": 4.671275
+          }
+        },
+        "contrasts": {
+          "98pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "98pct",
+            "arm1": "all",
+            "value": 0.353869,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "95pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "95pct",
+            "arm1": "all",
+            "value": 0.356989,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "sunk_cost": {
+        "scale": "integer 0-20 purchases from competitor",
+        "arms": {
+          "no_card": {
+            "qid": "QID181_TEXT",
+            "n": 1035,
+            "mean": 14.884058
+          },
+          "card": {
+            "qid": "QID182_TEXT",
+            "n": 1023,
+            "mean": 10.636364
+          }
+        },
+        "contrasts": {
+          "card_minus_no_card": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "card",
+            "arm1": "no_card",
+            "value": -4.247694,
+            "n_arm2": 1023,
+            "n_arm1": 1035
+          }
+        }
+      },
+      "wta_wtp": {
+        "scale": "payment bracket 1-10 (ascending lower-bound $ brackets: 10,100,1e3,1e4,5e4,1e5,2.5e5,5e5,1e6,>=5e6)",
+        "arms": {
+          "wtp_certainty": {
+            "qid": "QID189",
+            "n": 712,
+            "mean": 3.265449
+          },
+          "wta_certainty": {
+            "qid": "QID190",
+            "n": 673,
+            "mean": 6.824666
+          },
+          "wtp_noncertainty": {
+            "qid": "QID191",
+            "n": 673,
+            "mean": 2.203566
+          }
+        },
+        "contrasts": {
+          "wta_minus_wtp_certainty": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "wta_certainty",
+            "arm1": "wtp_certainty",
+            "value": 3.559216,
+            "n_arm2": 673,
+            "n_arm1": 712
+          },
+          "wtp_noncertainty_minus_wtp_certainty": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "wtp_noncertainty",
+            "arm1": "wtp_certainty",
+            "value": -1.061883,
+            "n_arm2": 673,
+            "n_arm1": 712
+          }
+        }
+      }
+    },
+    "wave4": {
+      "disease": {
+        "scale": "6-point favor scale, 1=strongly favor A ... 6=strongly favor B; safe = Program A = options 1-3",
+        "arms": {
+          "gain": {
+            "qid": "QID157",
+            "n": 1003,
+            "p_safe": 0.729811
+          },
+          "loss": {
+            "qid": "QID158",
+            "n": 1055,
+            "p_safe": 0.375355
+          }
+        },
+        "contrasts": {
+          "p_safe_loss_minus_gain": {
+            "computable": true,
+            "stat": "p_safe",
+            "arm2": "loss",
+            "arm1": "gain",
+            "value": -0.354455,
+            "n_arm2": 1055,
+            "n_arm1": 1003
+          }
+        }
+      },
+      "less_is_more": {
+        "scale": "1-5 agreement (1=Disagree strongly, 5=Agree strongly)",
+        "arms": {
+          "A": {
+            "qid": "QID171",
+            "n": 735,
+            "mean": 2.153741
+          },
+          "B": {
+            "qid": "QID172",
+            "n": 672,
+            "mean": 3.153274
+          },
+          "C": {
+            "qid": "QID173",
+            "n": 651,
+            "mean": 3.010753
+          }
+        },
+        "contrasts": {
+          "B_minus_A": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "B",
+            "arm1": "A",
+            "value": 0.999532,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "C_minus_A": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "C",
+            "arm1": "A",
+            "value": 0.857011,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "fire_extinguisher": {
+        "scale": "1-5 agreement (1=Disagree strongly, 5=Agree strongly)",
+        "arms": {
+          "all": {
+            "qid": "QID174",
+            "n": 735,
+            "mean": 3.972789
+          },
+          "98pct": {
+            "qid": "QID175",
+            "n": 672,
+            "mean": 4.215774
+          },
+          "95pct": {
+            "qid": "QID176",
+            "n": 651,
+            "mean": 4.273425
+          }
+        },
+        "contrasts": {
+          "98pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "98pct",
+            "arm1": "all",
+            "value": 0.242985,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "95pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "95pct",
+            "arm1": "all",
+            "value": 0.300636,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "seatbelt": {
+        "scale": "1-6 likelihood (1=very unlikely, 6=very likely)",
+        "arms": {
+          "all": {
+            "qid": "QID177",
+            "n": 735,
+            "mean": 4.338776
+          },
+          "98pct": {
+            "qid": "QID178",
+            "n": 672,
+            "mean": 4.654762
+          },
+          "95pct": {
+            "qid": "QID179",
+            "n": 651,
+            "mean": 4.705069
+          }
+        },
+        "contrasts": {
+          "98pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "98pct",
+            "arm1": "all",
+            "value": 0.315986,
+            "n_arm2": 672,
+            "n_arm1": 735
+          },
+          "95pct_minus_all": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "95pct",
+            "arm1": "all",
+            "value": 0.366294,
+            "n_arm2": 651,
+            "n_arm1": 735
+          }
+        }
+      },
+      "sunk_cost": {
+        "scale": "integer 0-20 purchases from competitor",
+        "arms": {
+          "no_card": {
+            "qid": "QID181_TEXT",
+            "n": 1035,
+            "mean": 14.461836
+          },
+          "card": {
+            "qid": "QID182_TEXT",
+            "n": 1023,
+            "mean": 11.008798
+          }
+        },
+        "contrasts": {
+          "card_minus_no_card": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "card",
+            "arm1": "no_card",
+            "value": -3.453038,
+            "n_arm2": 1023,
+            "n_arm1": 1035
+          }
+        }
+      },
+      "wta_wtp": {
+        "scale": "payment bracket 1-10 (ascending lower-bound $ brackets: 10,100,1e3,1e4,5e4,1e5,2.5e5,5e5,1e6,>=5e6)",
+        "arms": {
+          "wtp_certainty": {
+            "qid": "QID189",
+            "n": 712,
+            "mean": 3.234551
+          },
+          "wta_certainty": {
+            "qid": "QID190",
+            "n": 673,
+            "mean": 7.242199
+          },
+          "wtp_noncertainty": {
+            "qid": "QID191",
+            "n": 673,
+            "mean": 2.20208
+          }
+        },
+        "contrasts": {
+          "wta_minus_wtp_certainty": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "wta_certainty",
+            "arm1": "wtp_certainty",
+            "value": 4.007649,
+            "n_arm2": 673,
+            "n_arm1": 712
+          },
+          "wtp_noncertainty_minus_wtp_certainty": {
+            "computable": true,
+            "stat": "mean",
+            "arm2": "wtp_noncertainty",
+            "arm1": "wtp_certainty",
+            "value": -1.03247,
+            "n_arm2": 673,
+            "n_arm1": 712
+          }
+        }
+      }
+    }
+  },
+  "_provenance": {
+    "source": "/home/justin/work/research/TWIN2K-UNBLIND-6TASKS/human_benchmark/benchmarks.json",
+    "copied": "2026-09-18",
+    "task": "TASK-2058",
+    "note": "Verbatim copy of the research-delivered file (TASK-2058); only this _provenance key was added."
+  }
+}

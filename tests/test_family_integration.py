@@ -68,7 +68,7 @@ class TestFamilyEndToEnd(unittest.TestCase):
             "agent_ids", "sim_days", "stateful", "simulate_realtime",
             "seconds_per_day", "news", "intervention",
             "external_environment_service", "distributed", "visualization",
-            "external_rag", "family", "human_realism",
+            "external_rag", "family", "human_realism", "records",
         )
         originals = {k: CONFIG[k] for k in touched if k in CONFIG}
 
@@ -84,6 +84,10 @@ class TestFamilyEndToEnd(unittest.TestCase):
         CONFIG["stateful"] = False
         CONFIG["simulate_realtime"] = False
         CONFIG["seconds_per_day"] = 1
+        CONFIG["records"] = {
+            **(CONFIG.get("records") or {}),
+            "output_dir": os.path.join(self.tmp.name, "output", "records"),
+        }
         for key in ("news", "intervention", "external_environment_service",
                     "distributed", "visualization"):
             if isinstance(CONFIG.get(key), dict):

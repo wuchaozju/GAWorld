@@ -333,6 +333,7 @@ class ApiTest(_StoreCase):
 
         self.assertEqual(research_api.handle_get("/api/research/games/sessions/nope")[1], 404)
         self.assertEqual(research_api.handle_post("/api/research/games/design", {})[1], 400)
+        self._wait(lambda: sid not in serious_game_api._DRIVING)
         deleted, _ = research_api.handle_post(f"/api/research/games/sessions/{sid}/delete", {})
         self.assertTrue(deleted["deleted"])
 

@@ -1,0 +1,258 @@
+/* ========= 全局基础样式 ========= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "PingFang SC", "Segoe UI", sans-serif;
+  color: #0f172a;
+  background-color: #0b1120; /* 和导航深色背景差不多 */
+}
+
+/* 让主内容区域有统一的背景和内边距 */
+main {
+  min-height: calc(100vh - 56px); /* 顶部导航大概 56px 高 */
+  background-color: #f1f5f9;      /* slate-100 */
+  padding: 2.5rem 1.5rem;         /* 上下 40px，左右 24px */
+}
+
+/* 大屏的时候让内容居中一点，不至于贴满屏 */
+@media (min-width: 1024px) {
+  main {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+
+  main > * {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ========= 标题与段落 ========= */
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  color: #0f172a;
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+p {
+  margin: 0 0 0.5rem 0;
+  line-height: 1.6;
+}
+
+/* 给 section / div 略微拉开一点距离，避免全挤在一起 */
+main section,
+main > div {
+  margin-bottom: 1.5rem;
+}
+
+/* ========= 卡片风格（仪表盘、设置等会受益） ========= */
+
+.card,
+.dashboard-card,
+.settings-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+/* 最近的模块列表等，给列表稍微留点空间 */
+ul {
+  padding-left: 1.2rem;
+}
+
+/* ========= 表单通用样式（登录 / 注册 等） ========= */
+
+/* 让主内容里的第一个 form 变成一个“卡片”居中显示 */
+main form {
+  max-width: 480px;
+  margin: 2rem auto;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.75rem 1.75rem 2rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.15);
+}
+
+/* 表单内部排版 */
+main form h1,
+main form h2,
+main form h3 {
+  margin-bottom: 1rem;
+}
+
+main form label {
+  display: block;
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+main form input[type="text"],
+main form input[type="email"],
+main form input[type="password"],
+main form input[type="number"] {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 0.9rem;
+}
+
+main form input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* 主按钮 */
+main form button[type="submit"],
+main form .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.1s ease,
+    background-color 0.15s ease;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.28);
+}
+
+main form button[type="submit"]:hover,
+main form .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+}
+
+main form button[type="submit"]:active,
+main form .btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+/* 表单底部的小文字，例如“还没有账号？去注册” */
+main form .form-footer {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+main form .form-footer a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+main form .form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ========= 旧导航的一点微调（如果你已经有 nav 的样式，可以忽略这一段） ========= */
+
+.nav {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background-color: #020617; /* 很深的蓝色 */
+  color: #e5e7eb;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f9fafb;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  color: #cbd5f5;
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: #ffffff;
+}
+
+.nav-link.active {
+  color: #ffffff;
+  border-bottom-color: #60a5fa;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.text-button {
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.nav-username {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}

@@ -48,6 +48,24 @@
           <div id="popIssues" class="pop-issues"></div>
         </div>
         <div class="pop-side-card">
+          <h3 data-i18n="population.enrich_title">LLM 丰富画像</h3>
+          <p class="pop-hint">对已写入的居民，用 LLM 撰写叙述画像；结构事实（姓名/年龄/户籍/居住地等）锁定不可更改，模型只写叙述。选「全部」会按居民人数逐个调用模型，注意成本。</p>
+          <div>范围：<select id="enrichScope">
+            <option value="selected">选定居民</option>
+            <option value="focal_n">前 N 名</option>
+            <option value="all">全部（成本警告）</option>
+          </select></div>
+          <div><input id="enrichIds" placeholder="居民编号，逗号分隔，如 3,7" style="width:100%"></div>
+          <div><input id="enrichN" type="number" min="1" value="5" style="width:100%;display:none"></div>
+          <div><input id="enrichProvider" placeholder="模型提供商（留空用默认路由）" style="width:100%"></div>
+          <div>
+            <button class="btn" id="enrichStartBtn">开始丰富</button>
+            <button class="btn ghost" id="enrichRetryBtn" style="display:none">只重试失败的</button>
+          </div>
+          <div id="enrichStatus"></div>
+          <div id="enrichAgents"></div>
+        </div>
+        <div class="pop-side-card">
           <h3 data-i18n="population.current_batch">当前这批人</h3>
           <div id="popSummary" class="pop-summary"></div>
         </div>

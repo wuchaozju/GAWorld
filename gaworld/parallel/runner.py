@@ -26,7 +26,8 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from gaworld.accounts import ownership
 from gaworld.core.comparability import CURRENT_EPOCH
@@ -87,6 +88,30 @@ def set_admission(check: Callable[[], bool] | None) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _seed_source_dir(repo_root: str, ref: str) -> str:
+    """Resolve a ``WorldSpec.seed_from_checkpoint`` ref to a seedable run dir.
+
+    The ref may name the run's output dir itself or a checkpoint directory
+    inside it (``<run>/checkpoints/<day>``); the run dir is what
+    ``worldrun.seed_from_dir`` reads (history + checkpoints). Unresolvable
+    refs fail loudly — a silent fresh start would corrupt the counterfactual.
+    """
+    from gaworld.worldrun.history import history_path
+
+    path = ref if os.path.isabs(ref) else os.path.join(repo_root, ref)
+    path = os.path.normpath(path)
+    if os.path.isdir(os.path.join(path, "checkpoints")) or os.path.exists(
+        history_path(path)
+    ):
+        return path
+    parent = os.path.dirname(path)
+    if os.path.basename(parent) == "checkpoints" and os.path.isdir(path):
+        return os.path.dirname(parent)
+    raise FileNotFoundError(
+        f"seed_from_checkpoint {ref!r} 不指向可用的运行目录或 checkpoint"
+    )
+
+
 def prepare_experiment(
     spec: ExperimentSpec,
     repo_root: str,
@@ -113,9 +138,12 @@ def prepare_experiment(
     os.makedirs(root_abs, exist_ok=True)
 
     worlds: dict[str, Any] = {}
+    from gaworld.worldrun.run import seed_from_dir
+
     for world in spec.worlds:
         world_rel = os.path.join(root_rel, "worlds", world.id)
-        os.makedirs(os.path.join(repo_root, world_rel), exist_ok=True)
+        world_abs = os.path.join(repo_root, world_rel)
+        os.makedirs(world_abs, exist_ok=True)
         worlds[world.id] = {
             "dir": world_rel,
             "overrides": world_overrides(spec, world, world_rel, base_config=base_config),
@@ -124,6 +152,14 @@ def prepare_experiment(
             "state_csv": os.path.join(world_rel, "state", "agent_state_history.csv"),
             "trace": os.path.join(world_rel, "visualization", "simulation_trace.json"),
         }
+        if world.seed_from_checkpoint:
+            # §23: materialize this world from the checkpoint ref via the
+            # worldrun seeding subsystem (fresh dir, history carry-over,
+            # checkpoint copy, source never mutated). The runner skips the
+            # destructive reset for a world whose dir was pre-seeded.
+            source = _seed_source_dir(repo_root, world.seed_from_checkpoint)
+            seed_from_dir(source, world_abs)
+            worlds[world.id]["seeded_from"] = world.seed_from_checkpoint
 
     manifest = {
         "id": exp_id,
@@ -144,28 +180,27 @@ def prepare_experiment(
 
 
 def manifest_path(repo_root: str, root_rel: str) -> str:
-    return os.path.join(repo_root, root_rel, "experiment.json")
+    """Delegates to ``gaworld.worldrun.manifest`` (single implementation)."""
+    from gaworld.worldrun.manifest import manifest_path as _wr_path
+
+    return _wr_path(repo_root, root_rel)
 
 
 def write_manifest(repo_root: str, manifest: dict[str, Any]) -> None:
-    path = manifest_path(repo_root, manifest["root"])
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = f"{path}.tmp"
-    with open(tmp, "w", encoding="utf-8") as handle:
-        json.dump(manifest, handle, ensure_ascii=False, indent=2)
-    os.replace(tmp, path)
+    """Atomically write the run manifest (root / worlds keys and any
+    additive v2 fields) via ``gaworld.worldrun.manifest`` — the ONE
+    manifest writer, so partial writes are never discoverable and secrets
+    are stripped before anything reaches disk."""
+    from gaworld.worldrun.manifest import write_manifest as _wr_write
+
+    _wr_write(repo_root, manifest)
 
 
 def load_manifest(repo_root: str, root_rel: str) -> dict[str, Any] | None:
-    path = manifest_path(repo_root, root_rel)
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return None
-    return payload if isinstance(payload, dict) else None
+    """Delegates to ``gaworld.worldrun.manifest`` (single implementation)."""
+    from gaworld.worldrun.manifest import load_manifest as _wr_load
+
+    return _wr_load(repo_root, root_rel)
 
 
 # ---------------------------------------------------------------------------
@@ -361,7 +396,9 @@ class ExperimentRunner:
         env = self._env(world_id)
         self._set(world_id, status="running", started_at=time.time())
 
-        if self.reset:
+        if self.reset and not entry.get("seeded_from"):
+            # A seeded world's dir was materialized from its checkpoint at
+            # prepare time; resetting it would wipe the seed.
             reset_log = self._abs(entry["reset_log"])
             os.makedirs(os.path.dirname(reset_log), exist_ok=True)
             with open(reset_log, "w", encoding="utf-8") as handle:
@@ -494,7 +531,18 @@ class ExperimentRunner:
         self, world_id: str, env: dict[str, str], handle: Any
     ) -> subprocess.Popen | None:
         """Start the world's simulator once the host has room for one more
-        simulation; None if the run is stopped while it waits."""
+        simulation; None if the run is stopped while it waits.
+
+        Delegates process creation to ``gaworld.worldrun.run.launch_subprocess``
+        (the ONE launch primitive) and unwraps its handle: the runner keeps
+        owning orchestration (admission, pause/resume, stop), so it tracks the
+        raw ``Popen`` exactly as before. ``new_process_group=False`` preserves
+        the historical process-group semantics (the child stays signalable by
+        this runner's ``pause``/``resume``), and ``stdout`` tees the child's
+        output into the world's ``run.log``.
+        """
+        from gaworld.worldrun.run import launch_subprocess as worldrun_launch_subprocess
+
         waiting = False
         try:
             while not self._stop.is_set():
@@ -506,23 +554,33 @@ class ExperimentRunner:
                 with _ADMIT_LOCK:
                     check = _ADMISSION["check"]
                     if check is None or check():
-                        # Register under the same lock used to enumerate
-                        # processes for pause/stop: neither request can miss
-                        # a world between spawning and registration.
+                        # Launch through the ONE worldrun primitive; Dev's
+                        # child env (usage stamping, research provider config,
+                        # frozen-config/override vars) is already baked into
+                        # ``env`` by _env(), so it flows through the delegation
+                        # additively. Registration in self._procs happens in
+                        # the caller under the same lock as before.
+                        wr_handle = worldrun_launch_subprocess(
+                            [self.python_bin, self.script_path, "run"],
+                            world_id=world_id,
+                            cwd=self.repo_root,
+                            env=env,
+                            output_dir=self._abs(self.manifest["worlds"][world_id]["dir"]),
+                            stdout=handle,
+                            stderr=subprocess.STDOUT,
+                            new_process_group=False,
+                        )
+                        proc = wr_handle.proc
+                        # Dev's registration semantics: register under the
+                        # same lock used to enumerate processes for
+                        # pause/stop, so neither request can miss a world
+                        # between spawning and registration. The launch
+                        # itself stays delegated to worldrun.
                         with self._lock:
-                            if self._go.is_set() and not self._stop.is_set():
-                                proc = subprocess.Popen(
-                                    [self.python_bin, self.script_path, "run"],
-                                    cwd=self.repo_root,
-                                    env=env,
-                                    stdout=handle,
-                                    stderr=subprocess.STDOUT,
-                                    text=True,
-                                )
-                                self._procs[world_id] = proc
-                                with _LIVE_LOCK:
-                                    _LIVE.add(proc)
-                                return proc
+                            self._procs[world_id] = proc
+                        with _LIVE_LOCK:
+                            _LIVE.add(proc)
+                        return proc
                 if not waiting:
                     waiting = True
                     self._set(world_id, waiting_for_slot=True, queued_at=time.time())
@@ -578,7 +636,7 @@ class ExperimentRunner:
                     return
                 try:
                     self._run_world(world_id)
-                except Exception as exc:  # noqa: BLE001 — one world must not kill the rest
+                except Exception as exc:
                     _LOG.exception("world %s crashed", world_id)
                     self._set(world_id, status="error", error=str(exc), finished_at=time.time())
 
@@ -652,13 +710,33 @@ class ExperimentRunner:
 # ---------------------------------------------------------------------------
 
 
-def analyze_experiment(repo_root: str, manifest: dict[str, Any]) -> dict[str, Any]:
+def analyze_experiment(
+    repo_root: str,
+    manifest: dict[str, Any],
+    path_resolver: Callable[[dict[str, Any], str], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Build the divergence report and the counterfactual estimates for a
-    manifest from artifacts on disk."""
-    series = {
-        world_id: read_state_series(os.path.join(repo_root, entry["state_csv"]), panel=True)
-        for world_id, entry in manifest.get("worlds", {}).items()
-    }
+    manifest from artifacts on disk.
+
+    ``path_resolver`` (optional) receives each world entry and the canonical
+    repo root (``world_paths.REPO_ROOT``) and returns the entry with resolved
+    ``state_csv`` / ``dir`` paths. The default keeps the historical
+    repo-root-relative join EXACTLY (regression locked); callers holding
+    absolute run dirs (e.g. branch comparison) can resolve paths themselves
+    without copying runs into the repo.
+    """
+    resolved: dict[str, dict[str, Any]] = {}
+    series: dict[str, Any] = {}
+    for world_id, entry in manifest.get("worlds", {}).items():
+        if path_resolver is not None:
+            from gaworld.apps import world_paths  # late-bound, see module use
+
+            resolved[world_id] = path_resolver(entry, world_paths.REPO_ROOT)
+            csv_path = resolved[world_id]["state_csv"]
+        else:
+            resolved[world_id] = entry
+            csv_path = os.path.join(repo_root, entry["state_csv"])
+        series[world_id] = read_state_series(csv_path, panel=True)
     report = build_report(manifest, series)
     # A placebo world measures how far histories drift with nothing real
     # happening; the fixed default threshold is only a guess at that number.
@@ -687,7 +765,7 @@ def analyze_experiment(repo_root: str, manifest: dict[str, Any]) -> dict[str, An
     report["comparability_epoch"] = manifest.get("comparability_epoch")
     report["summary"] = summarize_report(report)
     for world in report.get("worlds", []):
-        entry = manifest.get("worlds", {}).get(world["id"], {})
+        entry = resolved.get(world["id"], manifest.get("worlds", {}).get(world["id"], {}))
         world["trace"] = entry.get("trace")
         world["dir"] = entry.get("dir")
     return report

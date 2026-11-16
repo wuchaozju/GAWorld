@@ -1,0 +1,93 @@
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  html {
+    font-size: calc(16px * var(--ss-density-scale));
+    font-family: var(--font-sans);
+    background: var(--ss-bg);
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--ss-text);
+    background:
+      radial-gradient(circle at 8% 0%, rgba(255, 200, 112, 0.10), transparent 26%),
+      radial-gradient(circle at 90% 0%, rgba(135, 189, 255, 0.08), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 34%),
+      var(--ss-bg);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body,
+  .theme-dark body {
+    background:
+      radial-gradient(circle at 14% 0%, rgba(47, 230, 166, 0.1), transparent 22%),
+      radial-gradient(circle at 82% 0%, rgba(31, 209, 194, 0.08), transparent 20%),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      var(--ss-bg);
+    background-size: auto, auto, 36px 36px, 36px 36px, auto;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--ss-brand-soft) 88%, transparent);
+    color: inherit;
+  }
+
+  .dark ::selection,
+  .theme-dark ::selection {
+    background: rgba(47, 230, 166, 0.2);
+  }
+
+  .dark *,
+  .theme-dark * {
+    scrollbar-color: rgba(47, 230, 166, 0.44) rgba(12, 30, 26, 0.52);
+  }
+
+  .dark *::-webkit-scrollbar,
+  .theme-dark *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .dark *::-webkit-scrollbar-track,
+  .theme-dark *::-webkit-scrollbar-track {
+    background: rgba(12, 30, 26, 0.56);
+    border-radius: 999px;
+  }
+
+  .dark *::-webkit-scrollbar-thumb,
+  .theme-dark *::-webkit-scrollbar-thumb {
+    border: 2px solid rgba(12, 30, 26, 0.56);
+    border-radius: 999px;
+    background: rgba(47, 230, 166, 0.36);
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover,
+  .theme-dark *::-webkit-scrollbar-thumb:hover {
+    background: rgba(69, 240, 179, 0.52);
+  }
+}

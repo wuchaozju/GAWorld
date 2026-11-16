@@ -78,7 +78,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       });
   }
 
-  var state = { providers: [], cities: [], runs: [], spec: null, run: null, maxSample: 500, running:false, educationSchema:{}, eligible:null, generation:null, extraction:null };
+  var state = { providers: [], cities: [], runs: [], spec: null, run: null, minSample: 5, maxSample: 500, defaultSample: 50, sampleEdited: false, running:false, educationSchema:{}, eligible:null, generation:null, extraction:null };
   var eligibilityTimer = null, eligibilitySequence = 0;
 
   /* ----------------------------------------------------------------- 模型参数
@@ -241,12 +241,21 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   }
 
   function fillSamples() {
+    var input = $("rpSample");
+    input.min = state.minSample;
+    input.max = state.maxSample;
+    if (!state.sampleEdited) input.value = state.defaultSample;
     var sizes = SAMPLES.filter(function (n) {
-      return n <= state.maxSample;
+      return n >= state.minSample && n <= state.maxSample;
     });
-    $("rpSample").innerHTML = gwHTML(sizes.map(function (n) {
-      return '<option value="' + n + '"' + (n === 50 ? " selected" : "") + ">" + n + "</option>";
+    $("rpSamplePresets").innerHTML = gwHTML(sizes.map(function (n) {
+      return '<option value="' + n + '"></option>';
     }).join(""));
+    $("rpSampleHint").textContent = tf(
+      "rp_sample_hint", "可输入 {min}～{max} 的任意整数；实际人数不超过城市里符合年龄条件的居民数。",
+      { min: state.minSample, max: state.maxSample }
+    );
+    syncCost();
   }
 
   function cityName(slug) {
@@ -259,7 +268,10 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
   function refreshRuns() {
     return api("GET", "/api/research/replication").then(function (data) {
       state.runs = data.runs || [];
+      state.minSample = data.min_sample || state.minSample;
       state.maxSample = data.max_sample || state.maxSample;
+      state.defaultSample = data.default_sample || state.defaultSample;
+      fillSamples();
       fillGeneration(data.generation || null);
       renderRuns();
     });
@@ -714,7 +726,11 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
 
   function syncCost() {
     if (!state.spec) return;
-    var n = Number($("rpSample").value) || 50;
+    if (!$("rpSample").checkValidity()) {
+      $("rpCost").textContent = "";
+      return;
+    }
+    var n = Number($("rpSample").value);
     var paired = (document.querySelector("input[name=rpDesign]:checked") || {}).value === "paired";
     var calls = paired ? n * state.spec.conditions.length : n;
     var checks = state.spec.bias_checks || {};
@@ -728,6 +744,15 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
 
   function start() {
     if (!state.spec || state.running || syncIdentity().error || syncInteraction().error || syncSampling().error) return;
+    var sample = $("rpSample");
+    if (!sample.checkValidity()) {
+      setProgress("rpProgress", tf(
+        "rp_sample_invalid", "请输入 {min}～{max} 之间的整数人数。",
+        { min: state.minSample, max: state.maxSample }
+      ), "error");
+      sample.reportValidity();
+      return;
+    }
     var city = $("rpCity").value;
     var seed = $("rpSeed").value.trim();
     var generation = generationPayload();
@@ -742,7 +767,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       spec: state.spec,
       city: city,
       city_name: cityName(city),
-      sample_size: Number($("rpSample").value) || 50,
+      sample_size: Number(sample.value),
       seed: seed ? Number(seed) : null,
       design: (document.querySelector("input[name=rpDesign]:checked") || {}).value || "between",
       provider: $("rpProvider").value,
@@ -1280,6 +1305,10 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
     $("rpSpec").addEventListener("change", onSpecInput);
     $("rpSpec").addEventListener("click", onSpecClick);
     $("rpJsonApply").addEventListener("click", applyJson);
+    $("rpSample").addEventListener("input", function () {
+      state.sampleEdited = true;
+      syncCost();
+    });
     $("rpSample").addEventListener("change", function () { syncCost(); refreshEligibility(); });
     $("rpCity").addEventListener("change", refreshEligibility);
     $("rpInterpret").addEventListener("change", syncCost);
@@ -1293,6 +1322,7 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       if (item) openRun(item.getAttribute("data-run"));
     });
     document.addEventListener("locale-changed", function () {
+      fillSamples();
       renderRuns();
       renderSpec();
       syncCost();
@@ -1316,7 +1346,6 @@ var gwHTML = globalThis.GAWorldURL ? globalThis.GAWorldURL.html : function (valu
       .catch(function () {});
     refreshRuns()
       .then(function () {
-        fillSamples();
         var runId = query.get("rep");
         if (runId) openRun(runId);
       })

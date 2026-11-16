@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const charts = require("./survey-charts.js");
+const jobs = require("./survey-jobs.js");
 
 function boot() {
   let query;
@@ -30,7 +31,10 @@ function boot() {
       };
     },
   };
-  const window = { GAWorldSurveyCharts: charts };
+  const window = {
+    GAWorldSurveyCharts: charts, GAWorldSurveyJobs: jobs,
+    location: { pathname: "/site/dashboard/survey.html" },
+  };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "survey.js"), "utf8"), {window, document});
   const survey = window.__gaworldSurvey;
   survey.state.roster = { cities: [], axes: [], groups: [] };

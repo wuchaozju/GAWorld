@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!--
+  FOS frontend entry HTML.
+
+  Responsibilities:
+  - Hosts the React root element (#root).
+  - Preconnects to font origins to eliminate handshake latency.
+  - Shows an inline skeleton so the user sees structure before React hydrates.
+  - Loads the bundled scripts and styles produced by Vite.
+
+  Key exports: #root mount point.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="%BASE_URL%assets/favicon.png" />
+    <title>FOS</title>
+
+    <!-- Font preconnects — eliminates DNS + TCP + TLS handshake latency for Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- dns-prefetch for the API origin (same domain, but harmless and catches future CDN moves) -->
+    <link rel="dns-prefetch" href="//mo.zju.edu.cn" />
+
+    <script>
+      (function () {
+        const basePath = "%BASE_URL%";
+        if (!("serviceWorker" in navigator)) return;
+
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => {
+              try {
+                const scopePath = new URL(registration.scope).pathname;
+                if (scopePath.startsWith(basePath)) registration.unregister();
+              } catch {
+                registration.unregister();
+              }
+            });
+          });
+
+          if (!("caches" in window)) return;
+          caches.keys().then((keys) => {
+            keys
+              .filter((key) => key.startsWith("workbox-") || key.includes("precache"))
+              .forEach((key) => {
+                caches.delete(key);
+              });
+          });
+        });
+      })();
+    </script>
+
+    <style>
+      /*
+        Inline skeleton — visible immediately before JS loads.
+        The user sees the landing page hero structure instead of a white screen.
+        React removes this on first render (createRoot replaces the innerHTML).
+      */
+      .ss-skeleton {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        padding: 80px 24px 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        color: #1a1a2e;
+      }
+      .ss-skeleton__nav {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        width: 100%;
+        margin-bottom: 40px;
+      }
+      .ss-skeleton__logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #e0e0e0;
+      }
+      .ss-skeleton__links {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+      }
+      .ss-skeleton__link {
+        width: 80px;
+        height: 14px;
+        border-radius: 4px;
+        background: #e0e0e0;
+      }
+      .ss-skeleton__hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+        max-width: 720px;
+        text-align: center;
+      }
+      .ss-skeleton__title {
+        width: 80%;
+        height: 36px;
+        border-radius: 6px;
+        background: #e0e0e0;
+      }
+      .ss-skeleton__title--short {
+        width: 55%;
+      }
+      .ss-skeleton__subtitle {
+        width: 90%;
+        height: 16px;
+        border-radius: 4px;
+        background: #e8e8e8;
+      }
+      .ss-skeleton__actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .ss-skeleton__button {
+        width: 160px;
+        height: 44px;
+        border-radius: 8px;
+        background: #e0e0e0;
+      }
+      .ss-skeleton__button--secondary {
+        background: #eee;
+      }
+      @media (prefers-color-scheme: dark) {
+        .ss-skeleton { color: #e0e0e0; }
+        .ss-skeleton__logo,
+        .ss-skeleton__link,
+        .ss-skeleton__title,
+        .ss-skeleton__subtitle,
+        .ss-skeleton__button { background: #2a2a3e; }
+        .ss-skeleton__button--secondary { background: #222; }
+        .ss-skeleton__subtitle { background: #333; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Inline skeleton — React replaces this on hydration -->
+      <div class="ss-skeleton" aria-hidden="true">
+        <div class="ss-skeleton__nav">
+          <div class="ss-skeleton__logo"></div>
+          <div class="ss-skeleton__links">
+            <div class="ss-skeleton__link"></div>
+            <div class="ss-skeleton__link"></div>
+            <div class="ss-skeleton__link"></div>
+            <div class="ss-skeleton__link"></div>
+          </div>
+        </div>
+        <div class="ss-skeleton__hero">
+          <div class="ss-skeleton__title"></div>
+          <div class="ss-skeleton__title ss-skeleton__title--short"></div>
+          <div class="ss-skeleton__subtitle"></div>
+          <div class="ss-skeleton__subtitle" style="width:65%"></div>
+          <div class="ss-skeleton__actions">
+            <div class="ss-skeleton__button"></div>
+            <div class="ss-skeleton__button ss-skeleton__button--secondary"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

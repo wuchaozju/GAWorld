@@ -55,6 +55,9 @@ class HttpTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         shutil.copytree(os.path.join(REPO, "benchmark"), os.path.join(self.tmp.name, "benchmark"),
                         ignore=shutil.ignore_patterns("results", "__pycache__"))
+        # The game harness now uses the runtime's versioned measurement helpers.
+        shutil.copytree(os.path.join(REPO, "gaworld"), os.path.join(self.tmp.name, "gaworld"),
+                        ignore=shutil.ignore_patterns("_assets", "__pycache__"))
         self._saved = world_paths.REPO_ROOT
         world_paths.REPO_ROOT = self.tmp.name
         bench_api._JOBS.clear()

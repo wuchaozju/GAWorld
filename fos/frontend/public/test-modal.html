@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment Builder Modal Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-8">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-4xl">
+      <h1 class="text-2xl font-bold mb-4">Experiment Builder Modal Test</h1>
+      <p class="text-gray-600 mb-4">This page tests the ExperimentBuilderModal component in isolation</p>
+
+      <!-- Debug Output -->
+      <div id="debug-output" class="bg-gray-50 rounded p-4 mb-4 font-mono text-sm"></div>
+
+      <!-- Test Button -->
+      <button onclick="testModal()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+        Open Experiment Builder Modal
+      </button>
+
+      <!-- Status -->
+      <div id="status" class="mt-6">
+        <div>ExperimentBuilderModal component: <span id="modal-status" class="font-bold"></span></div>
+      </div>
+
+      <script src="/src/main.tsx" type="module"></script>
+      <script>
+        import React from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { ExperimentBuilderModal } from '../components/ExperimentBuilderModal';
+        import { useSimulationStore } from '../store';
+
+        const App: React.FC = () => {
+          const [logs, setLogs] = React.useState<string[]>([]);
+
+          // Function to add logs for display
+          const addLog = (message: string) => {
+            setLogs(prev => [...prev, message]);
+            console.log(message);
+          };
+
+          const openModal = () => {
+            addLog('Opening modal...');
+            const isOpen = useSimulationStore.getState().isWizardOpen;
+            addLog('isWizardOpen before:' + isOpen);
+            useSimulationStore.getState().toggleWizard(true);
+          };
+
+          return (
+            <div>
+              <ExperimentBuilderModal />
+            </div>
+          );
+          };
+
+          return (
+            <div className="p-8">
+              <button onClick={openModal}>Open Experiment Builder Modal</button>
+              <div id="debug-output" className="mt-4"></div>
+              <button onclick={() => setLogs([])} className="ml-4 px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Clear Logs</button>
+            <div id="status">ExperimentBuilderModal component: <span id="modal-status" class="font-bold"></span></div>
+            </div>
+          );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        );
+
+      </script>
+  </div>
+  </div>
+</body>
+</html>
